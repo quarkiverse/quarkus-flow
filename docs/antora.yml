@@ -1,0 +1,5 @@
+name: quarkus-flow
+title: Flow
+version: dev
+nav:
+  - modules/ROOT/nav.adoc

@@ -1,0 +1,25 @@
+name: "📝 Docs improvement"
+description: Fixes, examples, or clarifications for docs
+title: "docs: <short description>"
+labels: ["kind/docs", "good first issue"]
+body:
+  - type: textarea
+    id: location
+    attributes:
+      label: Page / section
+      placeholder: e.g. README Getting Started → Step 3
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: What should change?
+      placeholder: Describe the fix or paste the improved snippet.
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Why?
+      placeholder: Why this helps new users / removes friction.

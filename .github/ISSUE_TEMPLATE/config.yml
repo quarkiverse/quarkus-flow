@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Q&A / How-to (Discussions)
+    url: https://github.com/quarkiverse/quarkus-flow/discussions
+    about: Usage questions, examples, and troubleshooting that isn’t a bug.
+  - name: CNCF Serverless Workflow Spec
+    url: https://serverlessworkflow.io/
+    about: Reference for the underlying workflow spec and DSL.

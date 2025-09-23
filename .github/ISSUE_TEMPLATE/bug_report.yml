@@ -1,0 +1,68 @@
+name: "🐞 Bug report"
+description: Something broke or behaves unexpectedly
+title: "bug: <short description>"
+labels: ["needs-triage", "kind/bug"]
+body:
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Pre-flight
+      options:
+        - label: I’m using the latest release or a recent snapshot.
+          required: true
+        - label: I searched existing issues and Discussions.
+          required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Tell us what you expected vs. what actually happened.
+      placeholder: >
+        Expected X, got Y. Any error messages? Screenshots? Logs? Stack traces?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproducer
+      description: Link to a repo or zip; or paste minimal code (workflow + runner call).
+      placeholder: >
+        @WorkflowDefinition
+        Workflow hello() { return workflow("hello").tasks(t -> t.set("{ message: \"hi\" }")).build(); }
+        // How do you run it? (FlowRunner.start(...))
+      render: bash
+    validations:
+      required: false
+  - type: input
+    id: env-quarkus
+    attributes:
+      label: Quarkus version
+      placeholder: e.g. 3.12.1
+  - type: input
+    id: env-flow
+    attributes:
+      label: quarkus-flow version
+      placeholder: e.g. 0.1.0 / 999-SNAPSHOT
+  - type: input
+    id: env-java
+    attributes:
+      label: Java version
+      placeholder: e.g. 17.0.11 (Temurin)
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Runtime
+      options: ["JVM (dev/test)", "JVM (prod)", "Native (GraalVM)", "Native (Mandrel)"]
+  - type: textarea
+    id: extensions
+    attributes:
+      label: Quarkus extensions in use
+      description: Output of `./mvnw quarkus:list-extensions` or list the relevant ones.
+      placeholder: >
+        quarkus-rest-jackson, quarkus-opentelemetry, ...
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs/stack traces
+      description: Please trim to the failing section.
+      render: text

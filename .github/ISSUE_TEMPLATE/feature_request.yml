@@ -1,0 +1,52 @@
+name: "✨ Feature request"
+description: New capability or improvement
+title: "feat: <short description>"
+labels: ["kind/feature", "needs-triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to accomplish? What’s painful today?
+      placeholder: >
+        I want to do X with workflows/agents/messaging, but today Y is awkward/impossible.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution / API
+      description: Show what you’d like the code to look like.
+      placeholder: >
+        Example:
+        @FlowDefinition
+        Workflow order() { ... }
+
+        // New runner API:
+        runner.start(OrderWorkflow::placeOrder, Map.of(...))
+      render: java
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      placeholder: Any other approaches you tried or rejected?
+  - type: checkboxes
+    id: areas
+    attributes:
+      label: Area(s)
+      options:
+        - label: Runtime / Engine
+        - label: DSL / API
+        - label: Dev UI / Mermaid
+        - label: Persistence
+        - label: Messaging / CloudEvents
+        - label: Observability (Micrometer / OTEL)
+        - label: Docs & examples
+        - label: Agentic AI
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact & scope
+      placeholder: Who benefits? Any migration concerns? Breaking changes?

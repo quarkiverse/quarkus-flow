@@ -1,0 +1,20 @@
+name: Flow
+description: |
+  Quarkus Flow is the CNCF Workflow Specification implementation engine to the Quarkus ecosystem. 
+  The CNCF specification is an open-source, vendor-neutral, community-driven project that redefines workflow creation through its high-level Domain Specific Language (DSL).
+  
+  In this extension, we deliver the runtime engine for Java Enterprise, covering both general workflows and Agentic AI (see quarkus-flow-agentic) use cases for Java developers.
+
+  The current implementation is based on the CNCF Java SDK.
+metadata:
+  keywords:
+    - workflow
+    - workflows
+    - cncf
+    - serverless
+    - cloudevents
+#  guide: https://docs.quarkiverse.io/flow/dev/ # To create and publish this guide, see https://github.com/quarkiverse/quarkiverse/wiki#documenting-your-extension
+  categories:
+    - "integration"
+    - "messaging"
+  status: "preview"
