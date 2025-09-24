@@ -1,19 +1,16 @@
 package io.quarkiverse.flow.recorders;
 
 import java.lang.reflect.Method;
-import java.util.List;
 import java.util.function.Supplier;
 
-import io.quarkiverse.flow.FlowKey;
-import io.quarkiverse.flow.FlowRegistry;
-import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.arc.Arc;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
-import io.serverlessworkflow.api.types.Document;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
+import io.serverlessworkflow.impl.WorkflowDefinition;
 
-// TODO: registry workflows in the YAML format within the current classpath
+// TODO: produce definitions from workflows in the YAML format within the current classpath
 
 /**
  * Registries all Workflow definitions found in the classpath built via the Java DSL.
@@ -33,38 +30,30 @@ public class FlowRecorder {
         };
     }
 
-    public void registerWorkflows(BeanContainer container, List<DiscoveredFlow> items) {
-        final FlowRegistry registry = container.beanInstance(FlowRegistry.class);
+    public Supplier<WorkflowDefinition> workflowDefinitionSupplier(DiscoveredFlow d) {
 
-        // registry idempotent for hot-reload
-        registry.clear();
-
-        ClassLoader appCl = Thread.currentThread().getContextClassLoader();
-
-        for (DiscoveredFlow item : items) {
+        return () -> {
             try {
-                Class<?> clazz = Class.forName(item.className(), true, appCl);
-                Method method = clazz.getDeclaredMethod(item.methodName());
-                method.setAccessible(true);
+                WorkflowApplication app = Arc.container().instance(WorkflowApplication.class).get();
+                ClassLoader cl = Thread.currentThread().getContextClassLoader();
+                Class<?> owner = Class.forName(d.className, true, cl);
+                Method m = owner.getDeclaredMethod(d.methodName);
+                m.setAccessible(true);
 
-                Object instance = item.isStatic() ? null : container.beanInstance(clazz);
-                Object ret = method.invoke(instance);
+                Object target = d.isStatic ? null : Arc.container().instance(owner).get();
+                Workflow wf = (Workflow) m.invoke(target);
 
-                if (!(ret instanceof Workflow wf)) {
-                    throw new IllegalStateException("@WorkflowDefinition method must return Workflow: "
-                            + item.className() + "#" + item.methodName());
-                }
+                // We always enforce the qualifier value to the workflow name
+                wf.getDocument().setName(d.workflowName);
 
-                final Document doc = wf.getDocument();
-                String id = item.methodName();
-                if (doc != null && doc.getName() != null && !doc.getName().isBlank()) {
-                    id = doc.getName();
-                }
-                registry.register(id, wf, new FlowKey(item.className(), item.methodName()));
+                return app.workflowDefinition(wf);
+            } catch (RuntimeException re) {
+                throw re;
             } catch (Exception e) {
-                throw new RuntimeException("Failed to instantiate @WorkflowDefinition: "
-                        + item.className() + "#" + item.methodName(), e);
+                throw new RuntimeException("Failed to create WorkflowDefinition for "
+                        + d.className + "#" + d.methodName, e);
             }
-        }
+        };
+
     }
 }

@@ -6,14 +6,13 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 
-import io.quarkiverse.flow.FlowRegistry;
-import io.quarkiverse.flow.FlowRunner;
-import io.quarkiverse.flow.recorders.DiscoveredFlow;
+import io.quarkiverse.flow.FlowDefinition;
+import io.quarkiverse.flow.FlowDescriptor;
 import io.quarkiverse.flow.recorders.FlowRecorder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -24,11 +23,13 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.serverlessworkflow.impl.WorkflowApplication;
+import io.serverlessworkflow.impl.WorkflowDefinition;
 
 class FlowProcessor {
 
     private static final String FEATURE = "quarkus-flow";
-    private static final DotName FLOW_DEFINITION_DOTNAME = DotName.createSimple("io.quarkiverse.flow.FlowDefinition");
+    private static final DotName FLOW_DEFINITION_DOTNAME = DotName.createSimple(FlowDefinition.class.getName());
+    private static final DotName FLOW_DESCRIPTOR_DOTNAME = DotName.createSimple(FlowDescriptor.class.getName());
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -36,28 +37,24 @@ class FlowProcessor {
     }
 
     /**
-     * Collect all FlowDefinition beans.
+     * Collect all FlowDescriptor beans.
      */
     @BuildStep
-    void wireDefinitions(CombinedIndexBuildItem index, BuildProducer<DiscoveredFlowBuildItem> wf) {
-        for (AnnotationInstance inst : index.getIndex().getAnnotations(FLOW_DEFINITION_DOTNAME)) {
+    void collectFlowDescriptors(CombinedIndexBuildItem index, BuildProducer<DiscoveredFlowBuildItem> wf) {
+        for (AnnotationInstance inst : index.getIndex().getAnnotations(FLOW_DESCRIPTOR_DOTNAME)) {
             final AnnotationTarget target = inst.target();
             if (target == null || target.kind() != AnnotationTarget.Kind.METHOD) {
-                throw new IllegalStateException("@FlowDefinition must target a METHOD");
+                throw new IllegalStateException("@FlowDescriptor must target a METHOD");
             }
-            wf.produce(new DiscoveredFlowBuildItem(target.asMethod()));
-        }
-    }
 
-    /**
-     * Register all workflows collected and add them to the FlowRegister.
-     */
-    @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep
-    void registerWorkflows(FlowRecorder recorder, BeanContainerBuildItem beanContainer,
-            List<DiscoveredFlowBuildItem> discovered) {
-        List<DiscoveredFlow> defs = discovered.stream().map(b -> b.workflow).toList();
-        recorder.registerWorkflows(beanContainer.getValue(), defs);
+            String workflowName = target.asMethod().name();
+            AnnotationValue val = inst.value("value");
+            if (val != null && val.asString() != null && !val.asString().isBlank()) {
+                workflowName = val.asString();
+            }
+
+            wf.produce(new DiscoveredFlowBuildItem(target.asMethod(), workflowName));
+        }
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -72,24 +69,53 @@ class FlowProcessor {
                 .done());
     }
 
+    /**
+     * In case @FlowDescriptors are not bind to any other bean, we mark them as `unremovable`.
+     */
     @BuildStep
-    AdditionalBeanBuildItem registerCoreBeans() {
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClass(FlowRegistry.class)
-                .setUnremovable()
-                .addBeanClass(FlowRunner.class)
-                .setUnremovable()
-                .build();
+    void keepFlowDescriptors(List<DiscoveredFlowBuildItem> discovered,
+            BuildProducer<UnremovableBeanBuildItem> keep) {
+        keep.produce(UnremovableBeanBuildItem.beanClassNames(
+                discovered.stream().map(d -> d.workflow.className).distinct().toArray(String[]::new)));
     }
 
     /**
-     * In case @WorkflowDefinitions are not bind to any other bean, we mark them as `unremovable`.
+     * Produce one WorkflowDefinition bean per discovered descriptor.
+     * Each bean is qualified with @FlowDefinition("<id>").
+     */
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep
+    void produceWorkflowDefinitions(FlowRecorder recorder,
+            BuildProducer<SyntheticBeanBuildItem> beans,
+            List<DiscoveredFlowBuildItem> discovered) {
+
+        for (var it : discovered) {
+            var df = it.workflow;// decided at build-time
+
+            // Build a @FlowDefinition("<id>") qualifier
+            var qualifier = AnnotationInstance.create(
+                    FLOW_DEFINITION_DOTNAME, null,
+                    new AnnotationValue[] { AnnotationValue.createStringValue("value", it.workflow.workflowName) });
+
+            beans.produce(SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
+                    .scope(ApplicationScoped.class)
+                    .unremovable()
+                    .setRuntimeInit()
+                    .addQualifier(qualifier)
+                    .supplier(recorder.workflowDefinitionSupplier(df))
+                    .done());
+        }
+    }
+
+    /**
+     * Make sure our annotation types are in the bean archive, and any helpers if needed.
      */
     @BuildStep
-    void keepWorkflowProducers(List<DiscoveredFlowBuildItem> discovered,
-            BuildProducer<UnremovableBeanBuildItem> keep) {
-        keep.produce(UnremovableBeanBuildItem.beanClassNames(
-                discovered.stream().map(d -> d.workflow.className()).distinct().toArray(String[]::new)));
+    AdditionalBeanBuildItem coreBeans() {
+        return AdditionalBeanBuildItem.builder()
+                .addBeanClass(FlowDefinition.class)
+                .addBeanClass(FlowDescriptor.class)
+                .build();
     }
 
 }

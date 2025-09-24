@@ -1,14 +1,21 @@
 package io.quarkiverse.flow;
 
-import java.lang.annotation.ElementType;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
 import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import jakarta.inject.Qualifier;
+
 /**
- * Marker interface for Workflow descriptors.
+ * Qualifier for injecting a specific WorkflowDefinition by id.
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
+@Qualifier
+@Retention(RUNTIME)
+@Target({ FIELD, PARAMETER, METHOD })
 public @interface FlowDefinition {
+    String value();
 }
