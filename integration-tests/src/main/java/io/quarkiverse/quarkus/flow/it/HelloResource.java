@@ -26,19 +26,20 @@ import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.ResponseStatus;
 
-import io.quarkiverse.flow.FlowRunner;
+import io.quarkiverse.flow.FlowDefinition;
+import io.serverlessworkflow.impl.WorkflowDefinition;
 
 @Path("/hello")
 @ApplicationScoped
 public class HelloResource {
 
     @Inject
-    FlowRunner workflowRunner;
+    @FlowDefinition("helloWorld")
+    WorkflowDefinition helloWorldWorkflow;
 
     @ResponseStatus(200)
     @GET
     public CompletionStage<Message> hello() {
-        return workflowRunner
-                .start("hello", Map.of()).thenApply(w -> w.as(Message.class).orElseThrow());
+        return helloWorldWorkflow.instance(Map.of()).start().thenApply(w -> w.as(Message.class).orElseThrow());
     }
 }

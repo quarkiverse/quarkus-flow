@@ -1,19 +1,24 @@
 package io.quarkiverse.flow.recorders;
 
-import java.lang.reflect.Method;
-import java.util.List;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.function.Supplier;
 
-import io.quarkiverse.flow.FlowKey;
-import io.quarkiverse.flow.FlowRegistry;
-import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
-import io.serverlessworkflow.api.types.Document;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
+import io.serverlessworkflow.impl.WorkflowDefinition;
+import io.serverlessworkflow.impl.events.EventConsumer;
+import io.serverlessworkflow.impl.events.EventPublisher;
+import io.serverlessworkflow.impl.executors.TaskExecutorFactory;
+import io.serverlessworkflow.impl.expressions.ExpressionFactory;
+import io.serverlessworkflow.impl.schema.SchemaValidatorFactory;
 
-// TODO: registry workflows in the YAML format within the current classpath
+// TODO: produce definitions from workflows in the YAML format within the current classpath
 
 /**
  * Registries all Workflow definitions found in the classpath built via the Java DSL.
@@ -27,44 +32,49 @@ public class FlowRecorder {
 
     public Supplier<WorkflowApplication> workflowAppSupplier(ShutdownContext shutdownContext) {
         return () -> {
-            WorkflowApplication app = WorkflowApplication.builder().build();
+            final ArcContainer container = Arc.container();
+            final WorkflowApplication.Builder builder = WorkflowApplication.builder();
+            builder.withEventConsumer(container.instance(EventConsumer.class).get())
+                    .withExpressionFactory(container.instance(ExpressionFactory.class).get())
+                    .withSchemaValidatorFactory(container.instance(SchemaValidatorFactory.class).get())
+                    .withTaskExecutorFactory(container.instance(TaskExecutorFactory.class).get());
+            for (var p : container.select(EventPublisher.class))
+                builder.withEventPublisher(p);
+            final WorkflowApplication app = builder.build();
+
             shutdownContext.addShutdownTask(app::close);
             return app;
         };
     }
 
-    public void registerWorkflows(BeanContainer container, List<DiscoveredFlow> items) {
-        final FlowRegistry registry = container.beanInstance(FlowRegistry.class);
+    public Supplier<WorkflowDefinition> workflowDefinitionSupplier(DiscoveredFlow d) {
 
-        // registry idempotent for hot-reload
-        registry.clear();
-
-        ClassLoader appCl = Thread.currentThread().getContextClassLoader();
-
-        for (DiscoveredFlow item : items) {
+        return () -> {
             try {
-                Class<?> clazz = Class.forName(item.className(), true, appCl);
-                Method method = clazz.getDeclaredMethod(item.methodName());
-                method.setAccessible(true);
+                final WorkflowApplication app = Arc.container().instance(WorkflowApplication.class).get();
+                final ClassLoader cl = Thread.currentThread().getContextClassLoader();
+                final Class<?> owner = Class.forName(d.className, true, cl);
 
-                Object instance = item.isStatic() ? null : container.beanInstance(clazz);
-                Object ret = method.invoke(instance);
+                final Object target = d.isStatic ? null : Arc.container().instance(owner).get();
 
-                if (!(ret instanceof Workflow wf)) {
-                    throw new IllegalStateException("@WorkflowDefinition method must return Workflow: "
-                            + item.className() + "#" + item.methodName());
-                }
+                final MethodHandles.Lookup lookup = MethodHandles.lookup();
+                final MethodType mt = MethodType.methodType(Workflow.class);
+                final MethodHandle mh = d.isStatic ? lookup.findStatic(owner, d.methodName, mt)
+                        : lookup.findVirtual(owner, d.methodName, mt);
 
-                final Document doc = wf.getDocument();
-                String id = item.methodName();
-                if (doc != null && doc.getName() != null && !doc.getName().isBlank()) {
-                    id = doc.getName();
-                }
-                registry.register(id, wf, new FlowKey(item.className(), item.methodName()));
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to instantiate @WorkflowDefinition: "
-                        + item.className() + "#" + item.methodName(), e);
+                Workflow wf = d.isStatic ? (Workflow) mh.invokeExact() : (Workflow) mh.bindTo(target).invokeExact();
+
+                // We always enforce the qualifier value to the workflow name
+                wf.getDocument().setName(d.workflowName);
+
+                return app.workflowDefinition(wf);
+            } catch (RuntimeException re) {
+                throw re;
+            } catch (Throwable e) {
+                throw new RuntimeException("Failed to create WorkflowDefinition for "
+                        + d.className + "#" + d.methodName, e);
             }
-        }
+        };
+
     }
 }
