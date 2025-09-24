@@ -16,31 +16,31 @@ Nothing beats a tiny example.
 
 ```xml
 <dependency>
-  <groupId>io.quarkiverse.quarkus-flow</groupId>
-  <artifactId>quarkus-flow</artifactId>
-  <version>999-SNAPSHOT</version>
+   <groupId>io.quarkiverse.quarkus-flow</groupId>
+   <artifactId>quarkus-flow</artifactId>
+   <version>999-SNAPSHOT</version>
 </dependency>
 ```
 
 > Tip: if you’re returning POJOs from JAX‑RS, also add `quarkus-rest-jackson` for JSON.
 
-### 2) Define a workflow with the Java DSL
+### 2) Define a workflow **descriptor** with the Java DSL
 
 ```java
 package org.acme;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import io.quarkiverse.flow.FlowDefinition;            // marker annotation
-import io.serverlessworkflow.api.types.Workflow;       // SDK type
+import io.quarkiverse.flow.FlowDescriptor;              // marker annotation
+import io.serverlessworkflow.api.types.Workflow;        // SDK type
 import io.serverlessworkflow.fluent.spec.WorkflowBuilder;
 
 @ApplicationScoped
 public class HelloWorkflow {
 
-  @FlowDefinition
+  @FlowDescriptor // id defaults to method name: "hello"
   public Workflow hello() {
-    return WorkflowBuilder.workflow("hello")
+    return WorkflowBuilder.workflow()                    // name is set for you at runtime
         .tasks(t -> t.set("{ message: \"hello world!\" }"))
         .build();
   }
@@ -49,7 +49,7 @@ public class HelloWorkflow {
 
 > The DSL mirrors the CNCF spec. Deep dive: [DSL reference](https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md).
 
-### 3) Run it with `FlowRunner`
+### 3) Inject a workflow **definition** and run it
 
 ```java
 package org.acme;
@@ -64,51 +64,42 @@ import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.ResponseStatus;
 
-import io.quarkiverse.flow.FlowRunner;
+import io.quarkiverse.flow.FlowDefinition;              // qualifier
+import io.serverlessworkflow.impl.WorkflowDefinition;   // runtime definition
 
 @Path("/hello")
 @ApplicationScoped
 public class HelloResource {
 
   @Inject
-  FlowRunner workflowRunner;
+  @FlowDefinition("hello")
+  WorkflowDefinition helloWorkflow;                     // CDI *is* your workflow catalog
 
   @ResponseStatus(200)
   @GET
   public CompletionStage<Message> hello() {
-    return workflowRunner
-        .start(HelloWorkflow::hello, Map.of())          // method ref = traceable linkage
+    return helloWorkflow
+        .instance(Map.of())
+        .start()
         .thenApply(w -> w.as(Message.class).orElseThrow());
   }
 }
 ```
 
-**Other ways to reference a workflow**
+**How IDs are chosen**
 
-1. **By name** (from the DSL `document().name()`):
-
-   ```java
-   workflowRunner.start("hello", Map.of());
-   ```
-2. **By method reference** *(recommended for traceability)*:
-
-   ```java
-   workflowRunner.start(HelloWorkflow::hello, Map.of());
-   ```
-3. **By `Workflow` instance** (less common):
-
-   ```java
-   workflowRunner.start(helloWorkflow.hello(), Map.of());
-   ```
+* If you specify `@FlowDescriptor("my-id")`, that id is used.
+* Otherwise, the **method name** is used (e.g., `hello`).
+* At runtime the recorder sets `document().name(id)` on the `Workflow`, so your SDK/Dev UI see the same id—no duplication needed in the DSL.
 
 ---
 
 ## What you get
 
 * 🧩 **CNCF‑compliant** workflows via a simple Java DSL
-* ⚡ **Fast start & low footprint** (Quarkus native‑friendly)
-* 🧪 **Great DX**: method‑ref linkage (`HelloWorkflow::hello`), build‑time discovery, Dev UI hooks
-* 🔌 **CDI‑first** engine + registries you can inject anywhere
+* ⚡ **Fast start & low footprint** (Quarkus/native‑friendly)
+* 🧪 **Great DX**: build‑time discovery → CDI injection of `WorkflowDefinition`
+* 🔌 **CDI‑first**: no manual registries/runners—just inject and run
 
 *(More docs, Dev UI, and examples coming—see roadmap.)*
 
@@ -122,7 +113,7 @@ This extension is under active development. APIs may change and bugs may exist. 
 
 ## Roadmap
 
-Please check our [Issues](issues) and [Milestones](milestones).
+Please check our [Issues](https://github.com/quarkiverse/quarkus-flow/issues) and [Milestones](https://github.com/quarkiverse/quarkus-flow/milestones).
 
 ## License
 

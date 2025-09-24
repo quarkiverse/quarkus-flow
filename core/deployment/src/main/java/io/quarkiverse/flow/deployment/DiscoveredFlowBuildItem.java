@@ -8,10 +8,11 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class DiscoveredFlowBuildItem extends MultiBuildItem {
     public final DiscoveredFlow workflow;
 
-    public DiscoveredFlowBuildItem(MethodInfo method) {
+    public DiscoveredFlowBuildItem(MethodInfo method, String workflowName) {
         this.workflow = new DiscoveredFlow(
                 method.declaringClass().name().toString(),
                 method.name(),
+                workflowName,
                 method.isStaticInitializer());
     }
 

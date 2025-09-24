@@ -1,28 +1,28 @@
 package io.quarkiverse.flow.deployment.test;
 
-import io.quarkiverse.flow.FlowDefinition;
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkiverse.flow.FlowDescriptor;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.spec.WorkflowBuilder;
-import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class ExampleWorkflows {
 
-    @FlowDefinition
+    @FlowDescriptor
     public Workflow helloWorld() {
         return WorkflowBuilder
-                .workflow("hello-world")
+                .workflow()
                 .tasks(t -> t.set("${ .message }"))
                 .build();
     }
 
-    @FlowDefinition
+    @FlowDescriptor
     public Workflow greetings() {
-        return WorkflowBuilder.workflow("greetings")
-                .tasks(t ->
-                        t.when("${ .language == 'spanish' }").set("${ { message = \"Saludos \" + .name } }")
-                                .when("${ language == 'portuguese' }").set("${ { message = \"Salve \" + .name } }")
-                                .when("${ language == 'english'}").set("${ { message = \"Howdy \" + .name } }"))
+        return WorkflowBuilder.workflow()
+                .tasks(t -> t.set(s -> s.expr("{ message: \"Saludos \" + .name }").when(".language == \"spanish\""))
+                        .set(s -> s.expr("{ message: \"Salve \" + .name }").when(".language == \"portuguese\""))
+                        .set(s -> s.expr("{ message: \"Howdy \" + .name }").when(".language == \"english\"")))
                 .build();
     }
 

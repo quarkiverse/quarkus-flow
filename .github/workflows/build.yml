@@ -37,8 +37,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        # TODO: we need specific config for macos - the native build should not rely on container, but use native-image bin instead.
+        # os: [windows-latest, macos-latest, ubuntu-latest]
         # os: [ubuntu-latest]
+        os: [windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Prepare git
@@ -56,5 +58,7 @@ jobs:
       - name: Build with Maven
         run: mvn -B clean install -Dno-format
 
-      - name: Build with Maven (Native)
-        run: mvn -B install -Dnative -Dquarkus.native.container-build -Dnative.surefire.skip
+      # TODO: fix the native-image build problems with our dependencies.
+      # See: https://github.com/quarkiverse/quarkus-flow/issues/8
+      #- name: Build with Maven (Native)
+      #  run: mvn -B install -Dnative -Dquarkus.native.container-build -Dnative.surefire.skip
