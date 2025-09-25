@@ -16,20 +16,4 @@
         <module>runtime</module>
         <module>deployment</module>
     </modules>
-
-    <dependencies>
-        <dependency>
-            <groupId>io.serverlessworkflow</groupId>
-            <artifactId>serverlessworkflow-impl-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.serverlessworkflow</groupId>
-            <artifactId>serverlessworkflow-impl-http</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.serverlessworkflow</groupId>
-            <artifactId>serverlessworkflow-impl-jackson</artifactId>
-        </dependency>
-    </dependencies>
-
 </project>
