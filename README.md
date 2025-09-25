@@ -1,6 +1,6 @@
 # Quarkus Flow
 
-[![Version](https://img.shields.io/maven-central/v/io.quarkiverse.quarkus-flow/quarkus-flow?logo=apache-maven\&style=flat-square)](https://central.sonatype.com/artifact/io.quarkiverse.quarkus-flow/quarkus-flow-parent)
+[![Version](https://img.shields.io/maven-central/v/io.quarkiverse.quarkus.flow/quarkus-flow?logo=apache-maven\&style=flat-square)](https://central.sonatype.com/artifact/io.quarkiverse.quarkus.flow/quarkus-flow-parent)
 
 **Quarkus Flow** is a lightweight, low‑dependency, fast, production‑grade workflow engine for Quarkus, built on the CNCF [Serverless Workflow](https://serverlessworkflow.io/) specification.
 
@@ -16,7 +16,7 @@ Nothing beats a tiny example.
 
 ```xml
 <dependency>
-   <groupId>io.quarkiverse.quarkus-flow</groupId>
+   <groupId>io.quarkiverse.quarkus.flow</groupId>
    <artifactId>quarkus-flow</artifactId>
    <version>999-SNAPSHOT</version>
 </dependency>
