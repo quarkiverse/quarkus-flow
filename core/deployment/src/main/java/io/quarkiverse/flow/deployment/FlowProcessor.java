@@ -11,10 +11,7 @@ import org.jboss.jandex.DotName;
 
 import io.quarkiverse.flow.FlowDefinition;
 import io.quarkiverse.flow.FlowDescriptor;
-import io.quarkiverse.flow.producers.DefaultExpressionFactoryProducer;
-import io.quarkiverse.flow.producers.DefaultSchemaValidatorFactoryProducer;
-import io.quarkiverse.flow.producers.DefaultTaskExecutorFactoryProducer;
-import io.quarkiverse.flow.producers.InMemoryEventsBean;
+import io.quarkiverse.flow.providers.QuarkusJQExpressionFactory;
 import io.quarkiverse.flow.recorders.FlowRecorder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -26,7 +23,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 
@@ -69,9 +66,9 @@ class FlowProcessor {
     void keepAndReflectFlowDescriptors(
             List<DiscoveredFlowBuildItem> discovered,
             BuildProducer<UnremovableBeanBuildItem> keep,
-            BuildProducer<ReflectiveClassBuildItem> reflective) {
+            BuildProducer<ReflectiveMethodBuildItem> reflective) {
 
-        var owners = discovered.stream()
+        List<String> owners = discovered.stream()
                 .map(d -> d.workflow.className)
                 .distinct()
                 .toList();
@@ -79,14 +76,8 @@ class FlowProcessor {
         // Keep producers from being removed
         keep.produce(UnremovableBeanBuildItem.beanClassNames(owners.toArray(String[]::new)));
 
-        // Make all declared methods on the owner classes available at runtime
-        for (String cn : owners) {
-            reflective.produce(
-                    ReflectiveClassBuildItem.builder(cn)
-                            .methods(true) // keep methods (needed for MethodHandles / reflection)
-                            .fields(false) // not needed here
-                            .constructors(false)
-                            .build());
+        for (DiscoveredFlowBuildItem d : discovered) {
+            reflective.produce(new ReflectiveMethodBuildItem(d.workflow.className, d.workflow.methodName, d.workflow.params));
         }
     }
 
@@ -104,10 +95,7 @@ class FlowProcessor {
     @BuildStep
     AdditionalBeanBuildItem registerRuntimeDefaults() {
         return AdditionalBeanBuildItem.builder()
-                .addBeanClass(InMemoryEventsBean.class)
-                .addBeanClass(DefaultExpressionFactoryProducer.class)
-                .addBeanClass(DefaultSchemaValidatorFactoryProducer.class)
-                .addBeanClass(DefaultTaskExecutorFactoryProducer.class)
+                .addBeanClass(QuarkusJQExpressionFactory.class)
                 .setUnremovable()
                 .build();
     }

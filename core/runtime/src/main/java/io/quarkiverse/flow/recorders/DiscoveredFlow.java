@@ -9,13 +9,15 @@ public final class DiscoveredFlow {
     public final String className;
     public final String methodName;
     public final String workflowName;
+    public final String[] params;
     public final boolean isStatic;
 
     @RecordableConstructor
-    public DiscoveredFlow(String className, String methodName, String workflowName, boolean isStatic) {
+    public DiscoveredFlow(String className, String methodName, String workflowName, String[] params, boolean isStatic) {
         this.className = className;
         this.methodName = methodName;
         this.isStatic = isStatic;
         this.workflowName = workflowName;
+        this.params = params;
     }
 }

@@ -12,11 +12,7 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
-import io.serverlessworkflow.impl.events.EventConsumer;
-import io.serverlessworkflow.impl.events.EventPublisher;
-import io.serverlessworkflow.impl.executors.TaskExecutorFactory;
 import io.serverlessworkflow.impl.expressions.ExpressionFactory;
-import io.serverlessworkflow.impl.schema.SchemaValidatorFactory;
 
 // TODO: produce definitions from workflows in the YAML format within the current classpath
 
@@ -34,12 +30,7 @@ public class FlowRecorder {
         return () -> {
             final ArcContainer container = Arc.container();
             final WorkflowApplication.Builder builder = WorkflowApplication.builder();
-            builder.withEventConsumer(container.instance(EventConsumer.class).get())
-                    .withExpressionFactory(container.instance(ExpressionFactory.class).get())
-                    .withSchemaValidatorFactory(container.instance(SchemaValidatorFactory.class).get())
-                    .withTaskExecutorFactory(container.instance(TaskExecutorFactory.class).get());
-            for (var p : container.select(EventPublisher.class))
-                builder.withEventPublisher(p);
+            builder.withExpressionFactory(container.instance(ExpressionFactory.class).get());
             final WorkflowApplication app = builder.build();
 
             shutdownContext.addShutdownTask(app::close);
@@ -57,7 +48,7 @@ public class FlowRecorder {
 
                 final Object target = d.isStatic ? null : Arc.container().instance(owner).get();
 
-                final MethodHandles.Lookup lookup = MethodHandles.lookup();
+                final MethodHandles.Lookup lookup = MethodHandles.publicLookup();
                 final MethodType mt = MethodType.methodType(Workflow.class);
                 final MethodHandle mh = d.isStatic ? lookup.findStatic(owner, d.methodName, mt)
                         : lookup.findVirtual(owner, d.methodName, mt);

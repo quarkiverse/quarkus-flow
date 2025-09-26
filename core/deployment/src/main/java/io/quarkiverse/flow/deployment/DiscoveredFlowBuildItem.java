@@ -13,6 +13,7 @@ public final class DiscoveredFlowBuildItem extends MultiBuildItem {
                 method.declaringClass().name().toString(),
                 method.name(),
                 workflowName,
+                method.parameterTypes().stream().map(t -> t.name().toString()).toArray(String[]::new),
                 method.isStaticInitializer());
     }
 

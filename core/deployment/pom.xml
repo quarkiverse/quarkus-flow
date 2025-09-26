@@ -20,6 +20,15 @@
             <artifactId>quarkus-flow</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- Required by Native compilation for serverlessworkflow-core-http module -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client-jackson-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.jackson-jq</groupId>
+            <artifactId>quarkus-jackson-jq-deployment</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.serverlessworkflow</groupId>
             <artifactId>serverlessworkflow-fluent-spec</artifactId>

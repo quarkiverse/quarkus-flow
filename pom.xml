@@ -31,7 +31,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.version>3.28.1</quarkus.version>
         <io.serverlessworkflow.version>7.2.0.Final</io.serverlessworkflow.version>
-        <quarkus-jq.version>2.4.0</quarkus-jq.version>
+        <io.quarkiverse.jackson-jq.version>2.4.0</io.quarkiverse.jackson-jq.version>
     </properties>
 
     <dependencyManagement>
@@ -62,6 +62,16 @@
                 <groupId>io.serverlessworkflow</groupId>
                 <artifactId>serverlessworkflow-impl-jackson</artifactId>
                 <version>${io.serverlessworkflow.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkiverse.jackson-jq</groupId>
+                <artifactId>quarkus-jackson-jq</artifactId>
+                <version>${io.quarkiverse.jackson-jq.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkiverse.jackson-jq</groupId>
+                <artifactId>quarkus-jackson-jq-deployment</artifactId>
+                <version>${io.quarkiverse.jackson-jq.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
