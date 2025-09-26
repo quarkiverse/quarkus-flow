@@ -2,26 +2,10 @@ name: Build
 
 on:
   push:
-    branches:
-      - "main"
-    paths-ignore:
-      - '.gitignore'
-      - 'CODEOWNERS'
-      - 'LICENSE'
-      - '*.md'
-      - '*.adoc'
-      - '*.txt'
-      - '.all-contributorsrc'
-      - '.github/project.yml'
+    branches: [ "main" ]
+    paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "*.md", "*.adoc", "*.txt", ".all-contributorsrc", ".github/project.yml" ]
   pull_request:
-    paths-ignore:
-      - '.gitignore'
-      - 'CODEOWNERS'
-      - 'LICENSE'
-      - '*.md'
-      - '*.adoc'
-      - '*.txt'
-      - '.all-contributorsrc'
+    paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "*.md", "*.adoc", "*.txt", ".all-contributorsrc" ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -32,33 +16,53 @@ defaults:
     shell: bash
 
 jobs:
-  build:
-    name: Build on ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        # TODO: we need specific config for macos - the native build should not rely on container, but use native-image bin instead.
-        # os: [windows-latest, macos-latest, ubuntu-latest]
-        # os: [ubuntu-latest]
-        os: [windows-latest, ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+  build-linux:
+    name: Build & test (Ubuntu with Ollama)
+    runs-on: ubuntu-latest
     steps:
-      - name: Prepare git
-        run: git config --global core.autocrlf false
-        if: startsWith(matrix.os, 'windows')
-
       - uses: actions/checkout@v5
+
       - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
-          cache: 'maven'
+          cache: maven
+
+      - name: Restore Ollama models cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.OLLAMA_MODELS }}
+          key: ${{ runner.os }}-ollama-${{ hashFiles('.github/ollama-models.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-ollama-
+
+      - name: Setup Ollama CLI
+        uses: ai-action/setup-ollama@v1
+
+      - name: Pre-pull models (tiny default)
+        run: |
+          # List the models in tests—one per line
+          xargs -n1 -I{} bash -c 'echo "Pulling {}"; ollama pull "{}"' < .github/ollama-models.txt
 
       - name: Build with Maven
         run: mvn -B clean install -Dno-format
 
-      # TODO: fix the native-image build problems with our dependencies.
-      # See: https://github.com/quarkiverse/quarkus-flow/issues/8
-      #- name: Build with Maven (Native)
-      #  run: mvn -B install -Dnative -Dquarkus.native.container-build -Dnative.surefire.skip
+  build-windows:
+    name: Build only (Windows)
+    runs-on: windows-latest
+    steps:
+      - name: Prepare git (CRLF)
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - name: Build with Maven (skip agentic tests)
+        run: mvn -B -Dno-format -DskipITs=true clean install
