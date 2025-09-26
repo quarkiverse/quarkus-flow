@@ -8,7 +8,7 @@
         <artifactId>quarkiverse-parent</artifactId>
         <version>20</version>
     </parent>
-    <groupId>io.quarkiverse.quarkus.flow</groupId>
+    <groupId>io.quarkiverse.flow</groupId>
     <artifactId>quarkus-flow-parent</artifactId>
     <version>999-SNAPSHOT</version>
     <packaging>pom</packaging>

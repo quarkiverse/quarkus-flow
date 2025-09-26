@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.quarkiverse.quarkus.flow.it;
+package io.quarkiverse.flow.it;
 
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
