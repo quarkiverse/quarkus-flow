@@ -63,4 +63,4 @@ jobs:
           cache: maven
 
       - name: Build with Maven (skip agentic tests)
-        run: mvn -B -Dno-format -DskipITs=true clean install
+        run: mvn -B -Dno-format -DskipITs=true -Dquarkus.langchain4j.ollama.devservices.enabled=false clean install
