@@ -29,6 +29,16 @@
             <artifactId>serverlessworkflow-fluent-spec</artifactId>
             <version>${io.serverlessworkflow.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.serverlessworkflow</groupId>
+            <artifactId>serverlessworkflow-experimental-fluent-func</artifactId>
+            <version>${io.serverlessworkflow.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.serverlessworkflow</groupId>
+            <artifactId>serverlessworkflow-experimental-lambda</artifactId>
+            <version>${io.serverlessworkflow.version}</version>
+        </dependency>
 
         <!-- Quarkus -->
         <dependency>

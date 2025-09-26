@@ -32,6 +32,8 @@
         <quarkus.version>3.28.1</quarkus.version>
         <io.serverlessworkflow.version>7.2.0.Final</io.serverlessworkflow.version>
         <io.quarkiverse.jackson-jq.version>2.4.0</io.quarkiverse.jackson-jq.version>
+        <io.quarkiverse.langchain4j.version>1.2.0</io.quarkiverse.langchain4j.version>
+        <org.assertj.version>3.27.5</org.assertj.version>
     </properties>
 
     <dependencyManagement>
@@ -73,6 +75,12 @@
                 <artifactId>quarkus-jackson-jq-deployment</artifactId>
                 <version>${io.quarkiverse.jackson-jq.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.assertj</groupId>
+                <artifactId>assertj-core</artifactId>
+                <version>${org.assertj.version}</version>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -111,18 +119,6 @@
             </activation>
             <modules>
                 <module>docs</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>it</id>
-            <activation>
-                <property>
-                    <name>performRelease</name>
-                    <value>!true</value>
-                </property>
-            </activation>
-            <modules>
-                <module>integration-tests</module>
             </modules>
         </profile>
     </profiles>
