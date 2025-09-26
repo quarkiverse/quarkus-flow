@@ -1,4 +1,4 @@
-package io.quarkiverse.quarkus.flow.it;
+package io.quarkiverse.flow.it;
 
 import jakarta.enterprise.context.ApplicationScoped;
 

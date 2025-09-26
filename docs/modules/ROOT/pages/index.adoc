@@ -6,14 +6,14 @@ TIP: Describe what the extension does here.
 
 == Installation
 
-If you want to use this extension, you need to add the `io.quarkiverse.quarkus-flow:quarkus-flow` extension first to your build file.
+If you want to use this extension, you need to add the `io.quarkiverse.flow:quarkus-flow` extension first to your build file.
 
 For instance, with Maven, add the following dependency to your POM file:
 
 [source,xml,subs=attributes+]
 ----
 <dependency>
-    <groupId>io.quarkiverse.quarkus-flow</groupId>
+    <groupId>io.quarkiverse.flow</groupId>
     <artifactId>quarkus-flow</artifactId>
     <version>{project-version}</version>
 </dependency>

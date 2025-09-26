@@ -1,4 +1,4 @@
-package io.quarkiverse.quarkus.flow.it;
+package io.quarkiverse.flow.it;
 
 public record Message(String message) {
 
