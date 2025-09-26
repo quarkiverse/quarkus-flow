@@ -32,10 +32,8 @@ jobs:
       - name: Restore Ollama models cache
         uses: actions/cache@v4
         with:
-          path: ${{ env.OLLAMA_MODELS }}
+          path: ~/.ollama
           key: ${{ runner.os }}-ollama-${{ hashFiles('.github/ollama-models.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-ollama-
 
       - name: Setup Ollama CLI
         uses: ai-action/setup-ollama@v1
