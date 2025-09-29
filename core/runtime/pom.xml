@@ -55,6 +55,11 @@
             <artifactId>quarkus-rest-client-jackson</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>io.serverlessworkflow</groupId>
+            <artifactId>serverlessworkflow-mermaid</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -70,7 +75,9 @@
                             <goal>extension-descriptor</goal>
                         </goals>
                         <configuration>
-                            <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}</deployment>
+                            <conditionalDevDependencies>
+                                <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact>
+                            </conditionalDevDependencies>
                         </configuration>
                     </execution>
                 </executions>
