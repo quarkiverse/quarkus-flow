@@ -1,5 +1,6 @@
 package io.quarkiverse.flow.deployment;
 
+import java.util.Collections;
 import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -82,14 +83,9 @@ class FlowProcessor {
             BuildProducer<SyntheticBeanBuildItem> beans,
             List<DiscoveredFlowBuildItem> discovered) {
 
-        if (discovered.isEmpty()) {
-            LOG.info("No workflows found");
-            return;
-        }
+        List<String> fqcnList = new java.util.ArrayList<>();
 
-        LOG.info("------- Registered Workflows -------");
         for (DiscoveredFlowBuildItem it : discovered) {
-            // TODO: log each produced bean
             beans.produce(SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
                     .scope(ApplicationScoped.class)
                     .unremovable()
@@ -97,9 +93,10 @@ class FlowProcessor {
                     .addQualifier().annotation(IDENTIFIER_DOTNAME).addValue("value", it.getClassName()).done()
                     .supplier(recorder.workflowDefinitionSupplier(it.getClassName()))
                     .done());
-            LOG.info("Workflow {}", it.getClassName());
+            fqcnList.add(it.getClassName());
         }
-        LOG.info("------- End Registered Workflows -------");
+
+        logWorkflowList(fqcnList);
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -113,4 +110,34 @@ class FlowProcessor {
                 .supplier(recorder.workflowAppSupplier(shutdown))
                 .done());
     }
+
+    private void logWorkflowList(List<String> fqcns) {
+        if (fqcns.isEmpty()) {
+            LOG.info("No WorkflowDefinition beans were registered.");
+            return;
+        }
+
+        // sort for stable output
+        Collections.sort(fqcns);
+
+        final String header = "Workflow class (Qualifier)";
+        int w = header.length();
+        for (String s : fqcns)
+            w = Math.max(w, s.length());
+
+        String sep = "+" + "-".repeat(w + 2) + "+";
+        StringBuilder sb = new StringBuilder(64 + fqcns.size() * (w + 8));
+        sb.append('\n');
+        sb.append("Registered WorkflowDefinition beans\n");
+        sb.append(sep).append('\n');
+        sb.append(String.format("| %-" + w + "s |\n", header));
+        sb.append(sep).append('\n');
+        for (String s : fqcns) {
+            sb.append(String.format("| %-" + w + "s |\n", s));
+        }
+        sb.append(sep).append('\n');
+
+        LOG.info(sb.toString());
+    }
+
 }
