@@ -29,7 +29,7 @@ import io.serverlessworkflow.impl.WorkflowDefinition;
 
 class FlowProcessor {
 
-    private static final String FEATURE = "quarkus-flow";
+    private static final String FEATURE = "flow";
     private static final DotName FLOW_DEFINITION_DOTNAME = DotName.createSimple(FlowDefinition.class.getName());
     private static final DotName FLOW_DESCRIPTOR_DOTNAME = DotName.createSimple(FlowDescriptor.class.getName());
 
