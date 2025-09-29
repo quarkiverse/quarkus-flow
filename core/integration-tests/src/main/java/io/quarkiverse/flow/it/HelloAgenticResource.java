@@ -23,8 +23,6 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 
-import io.quarkiverse.flow.FlowDefinition;
-import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.smallrye.common.annotation.Blocking;
 
 @Path("/hello")
@@ -32,8 +30,7 @@ import io.smallrye.common.annotation.Blocking;
 public class HelloAgenticResource {
 
     @Inject
-    @FlowDefinition("helloAgenticWorkflow")
-    WorkflowDefinition helloAgenticWorkflow;
+    HelloAgenticWorkflow helloAgenticWorkflow;
 
     @POST
     @Blocking

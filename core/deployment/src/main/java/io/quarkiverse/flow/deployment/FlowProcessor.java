@@ -4,13 +4,12 @@ import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import io.quarkiverse.flow.FlowDefinition;
-import io.quarkiverse.flow.FlowDescriptor;
+import io.quarkiverse.flow.Flow;
 import io.quarkiverse.flow.providers.QuarkusJQExpressionFactory;
 import io.quarkiverse.flow.recorders.FlowRecorder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -23,15 +22,17 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
+import io.smallrye.common.annotation.Identifier;
 
 class FlowProcessor {
 
+    private static final Logger LOG = LoggerFactory.getLogger(FlowProcessor.class); // NEW
+
     private static final String FEATURE = "flow";
-    private static final DotName FLOW_DEFINITION_DOTNAME = DotName.createSimple(FlowDefinition.class.getName());
-    private static final DotName FLOW_DESCRIPTOR_DOTNAME = DotName.createSimple(FlowDescriptor.class.getName());
+    private static final DotName FLOW_DOTNAME = DotName.createSimple(Flow.class.getName());
+    private static final DotName IDENTIFIER_DOTNAME = DotName.createSimple(Identifier.class.getName());
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -39,57 +40,28 @@ class FlowProcessor {
     }
 
     /**
-     * Collect all FlowDescriptor beans.
+     * Collect all Flow beans.
      */
     @BuildStep
-    void collectFlowDescriptors(CombinedIndexBuildItem index, BuildProducer<DiscoveredFlowBuildItem> wf) {
-        for (AnnotationInstance inst : index.getIndex().getAnnotations(FLOW_DESCRIPTOR_DOTNAME)) {
-            final AnnotationTarget target = inst.target();
-            if (target == null || target.kind() != AnnotationTarget.Kind.METHOD) {
-                throw new IllegalStateException("@FlowDescriptor must target a METHOD");
-            }
-
-            String workflowName = target.asMethod().name();
-            AnnotationValue val = inst.value("value");
-            if (val != null && val.asString() != null && !val.asString().isBlank()) {
-                workflowName = val.asString();
-            }
-
-            wf.produce(new DiscoveredFlowBuildItem(target.asMethod(), workflowName));
+    void collectFlows(CombinedIndexBuildItem index, BuildProducer<DiscoveredFlowBuildItem> wf) {
+        for (ClassInfo flow : index.getIndex().getAllKnownSubclasses(FLOW_DOTNAME)) {
+            if (flow.isAbstract())
+                continue;
+            wf.produce(new DiscoveredFlowBuildItem(flow.name().toString()));
         }
     }
 
-    /**
-     * In case @FlowDescriptors are not bind to any other bean, we mark them as `unremovable`.
-     */
     @BuildStep
     void keepAndReflectFlowDescriptors(
             List<DiscoveredFlowBuildItem> discovered,
-            BuildProducer<UnremovableBeanBuildItem> keep,
-            BuildProducer<ReflectiveMethodBuildItem> reflective) {
+            BuildProducer<UnremovableBeanBuildItem> keep) {
 
-        List<String> owners = discovered.stream()
-                .map(d -> d.workflow.className)
+        List<String> flows = discovered.stream()
+                .map(DiscoveredFlowBuildItem::getClassName)
                 .distinct()
                 .toList();
-
         // Keep producers from being removed
-        keep.produce(UnremovableBeanBuildItem.beanClassNames(owners.toArray(String[]::new)));
-
-        for (DiscoveredFlowBuildItem d : discovered) {
-            reflective.produce(new ReflectiveMethodBuildItem(d.workflow.className, d.workflow.methodName, d.workflow.params));
-        }
-    }
-
-    /**
-     * Make sure our annotation types are in the bean archive, and any helpers if needed.
-     */
-    @BuildStep
-    AdditionalBeanBuildItem coreBeans() {
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClass(FlowDefinition.class)
-                .addBeanClass(FlowDescriptor.class)
-                .build();
+        keep.produce(UnremovableBeanBuildItem.beanClassNames(flows.toArray(String[]::new)));
     }
 
     @BuildStep
@@ -102,7 +74,7 @@ class FlowProcessor {
 
     /**
      * Produce one WorkflowDefinition bean per discovered descriptor.
-     * Each bean is qualified with @FlowDefinition("<id>").
+     * Each bean is qualified with @Identifier("<id>").
      */
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
@@ -110,22 +82,24 @@ class FlowProcessor {
             BuildProducer<SyntheticBeanBuildItem> beans,
             List<DiscoveredFlowBuildItem> discovered) {
 
-        for (var it : discovered) {
-            var df = it.workflow;// decided at build-time
+        if (discovered.isEmpty()) {
+            LOG.info("No workflows found");
+            return;
+        }
 
-            // Build a @FlowDefinition("<id>") qualifier
-            var qualifier = AnnotationInstance.create(
-                    FLOW_DEFINITION_DOTNAME, null,
-                    new AnnotationValue[] { AnnotationValue.createStringValue("value", it.workflow.workflowName) });
-
+        LOG.info("------- Registered Workflows -------");
+        for (DiscoveredFlowBuildItem it : discovered) {
+            // TODO: log each produced bean
             beans.produce(SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
                     .scope(ApplicationScoped.class)
                     .unremovable()
                     .setRuntimeInit()
-                    .addQualifier(qualifier)
-                    .supplier(recorder.workflowDefinitionSupplier(df))
+                    .addQualifier().annotation(IDENTIFIER_DOTNAME).addValue("value", it.getClassName()).done()
+                    .supplier(recorder.workflowDefinitionSupplier(it.getClassName()))
                     .done());
+            LOG.info("Workflow {}", it.getClassName());
         }
+        LOG.info("------- End Registered Workflows -------");
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -139,5 +113,4 @@ class FlowProcessor {
                 .supplier(recorder.workflowAppSupplier(shutdown))
                 .done());
     }
-
 }
