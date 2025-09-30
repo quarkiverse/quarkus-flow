@@ -1,10 +1,10 @@
 package io.quarkiverse.flow.recorders;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.inject.Any;
+
+import io.quarkiverse.flow.Flow;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.runtime.ShutdownContext;
@@ -38,32 +38,22 @@ public class FlowRecorder {
         };
     }
 
-    public Supplier<WorkflowDefinition> workflowDefinitionSupplier(DiscoveredFlow d) {
+    public Supplier<WorkflowDefinition> workflowDefinitionSupplier(String flowDescriptorClassName) {
 
         return () -> {
             try {
                 final WorkflowApplication app = Arc.container().instance(WorkflowApplication.class).get();
                 final ClassLoader cl = Thread.currentThread().getContextClassLoader();
-                final Class<?> owner = Class.forName(d.className, true, cl);
+                final Class<?> flowClass = Class.forName(flowDescriptorClassName, true, cl);
 
-                final Object target = d.isStatic ? null : Arc.container().instance(owner).get();
-
-                final MethodHandles.Lookup lookup = MethodHandles.publicLookup();
-                final MethodType mt = MethodType.methodType(Workflow.class);
-                final MethodHandle mh = d.isStatic ? lookup.findStatic(owner, d.methodName, mt)
-                        : lookup.findVirtual(owner, d.methodName, mt);
-
-                Workflow wf = d.isStatic ? (Workflow) mh.invokeExact() : (Workflow) mh.bindTo(target).invokeExact();
-
-                // We always enforce the qualifier value to the workflow name
-                wf.getDocument().setName(d.workflowName);
+                Flow flow = (Flow) Arc.container().instance(flowClass, Any.Literal.INSTANCE).get();
+                final Workflow wf = flow.descriptor();
 
                 return app.workflowDefinition(wf);
             } catch (RuntimeException re) {
                 throw re;
             } catch (Throwable e) {
-                throw new RuntimeException("Failed to create WorkflowDefinition for "
-                        + d.className + "#" + d.methodName, e);
+                throw new RuntimeException("Failed to create WorkflowDefinition for " + flowDescriptorClassName, e);
             }
         };
 
