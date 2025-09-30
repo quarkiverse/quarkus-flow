@@ -127,7 +127,9 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
                 flowchart: {
                     useMaxWidth: true,
                     htmlLabels: true,
-                }
+                },
+                themeCSS: ".label foreignObject { font-size: 14px; overflow: visible; width: auto; }"
+
             }, '.mermaid');
         }
     }
