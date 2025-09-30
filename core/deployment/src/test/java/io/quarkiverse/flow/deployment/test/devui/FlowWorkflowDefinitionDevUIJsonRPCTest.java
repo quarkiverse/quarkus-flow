@@ -18,7 +18,7 @@ public class FlowWorkflowDefinitionDevUIJsonRPCTest extends DevUIJsonRPCTest {
     @RegisterExtension
     static final QuarkusDevModeTest devMode = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(HelloResource.class, HelloWorkflow.class));
+                    .addClasses(GreetingResource.class, DevUIWorkflow.class));
 
     public FlowWorkflowDefinitionDevUIJsonRPCTest() {
         super("quarkus-flow");
@@ -32,14 +32,14 @@ public class FlowWorkflowDefinitionDevUIJsonRPCTest extends DevUIJsonRPCTest {
 
     @Test
     void shouldGenerateMermaidDefinition() throws Exception {
-        JsonNode node = super.executeJsonRPCMethod("generateMermaid", Map.of("name", "helloWorld"));
+        JsonNode node = super.executeJsonRPCMethod("generateMermaid", Map.of("name", "helloQuarkus"));
         Assertions.assertTrue(node.get("mermaid").asText().contains("flowchart TD"));
     }
 
     @Test
     void shouldGetWorkflowInfo() throws Exception {
         JsonNode node = super.executeJsonRPCMethod("getWorkflows");
-        Assertions.assertEquals("helloWorld", node.get(0).get("name").asText());
+        Assertions.assertEquals("helloQuarkus", node.get(0).get("name").asText());
     }
 
 }
