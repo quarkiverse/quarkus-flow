@@ -14,8 +14,8 @@ public class HelloAgenticWorkflow extends Flow {
     HelloAgent helloAgent;
 
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow()
-                .tasks(t -> t.callFn(f -> f.function(helloAgent::helloWorld)))
+        return FuncWorkflowBuilder.workflow("helloAgent")
+                .tasks(t -> t.callFn("interactWithAI", f -> f.function(helloAgent::helloWorld)))
                 .build();
     }
 

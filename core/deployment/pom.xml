@@ -20,6 +20,11 @@
             <artifactId>quarkus-flow</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-dev</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <!-- Required by Native compilation for serverlessworkflow-core-http module -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -37,6 +42,16 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devui-test-spi</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -81,6 +81,11 @@
                 <version>${org.assertj.version}</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>io.serverlessworkflow</groupId>
+                <artifactId>serverlessworkflow-mermaid</artifactId>
+                <version>${io.serverlessworkflow.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
