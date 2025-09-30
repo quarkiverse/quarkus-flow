@@ -12,9 +12,9 @@ Use it to model **classic workflows** *and* **Agentic AI orchestrations**, with 
 
 * 🧩 **CNCF-compliant** workflows via a fluent Java DSL
 * ⚡ **Fast start & low footprint** (Quarkus/native-friendly)
-* 🧪 **Great DX**: build-time discovery → CDI injection of `WorkflowDefinition`
-* 🤝 **Agentic AI ready**: out-of-the-box LangChain4j integration
-* 🔌 **CDI-first**: no manual registries/runners—just inject and run
+* 🔌 **CDI-first**: build-time discovery → CDI injection, no registries to wire
+* 🧪 **Great DX**: inject your workflow class *or* the compiled `WorkflowDefinition`
+* 🤝 **Agentic AI ready**: seamless LangChain4j integration
 
 ---
 
@@ -22,50 +22,51 @@ Use it to model **classic workflows** *and* **Agentic AI orchestrations**, with 
 
 Nothing beats a tiny example.
 
-### 1. Add the dependency
+### 1) Add the dependency
 
 ```xml
 <dependency>
-   <groupId>io.quarkiverse.flow</groupId>
-   <artifactId>quarkus-flow</artifactId>
-   <version>999-SNAPSHOT</version>
+  <groupId>io.quarkiverse.flow</groupId>
+  <artifactId>quarkus-flow</artifactId>
+  <version>999-SNAPSHOT</version>
 </dependency>
 ```
 
-> [!TIP]
 > If you’re returning POJOs from JAX-RS, also add `quarkus-rest-jackson` for JSON.
 
 ---
 
-### 2. Define a workflow **descriptor** with the Java DSL
+### 2) Define a workflow by extending `Flow`
 
 ```java
 package org.acme;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import io.quarkiverse.flow.FlowDescriptor;
+import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.spec.WorkflowBuilder;
 
 @ApplicationScoped
-public class HelloWorkflow {
+public class HelloWorkflow extends Flow {
 
-  @FlowDescriptor // id defaults to method name: "hello"
-  public Workflow hello() {
-    return WorkflowBuilder.workflow()
+  @Override
+  public Workflow descriptor() {
+    return WorkflowBuilder.workflow("hello")
         .tasks(t -> t.set("{ message: \"hello world!\" }"))
         .build();
   }
 }
 ```
 
-> [!NOTE]
-> The DSL mirrors the CNCF spec. Deep dive: [DSL reference](https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md).
+* You **extend `Flow`** and implement a single method: `descriptor()`, using the fluent DSL.
+* CDI is available in your workflow class — feel free to `@Inject` collaborators and use them while building the descriptor.
 
 ---
 
-### 3. Inject a workflow **definition** and run it
+### 3) Run it – two ergonomic options
+
+#### A) Inject your workflow class and start it
 
 ```java
 package org.acme;
@@ -77,62 +78,70 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
-
 import org.jboss.resteasy.reactive.ResponseStatus;
-
-import io.quarkiverse.flow.FlowDefinition;
-import io.serverlessworkflow.impl.WorkflowDefinition;
 
 @Path("/hello")
 @ApplicationScoped
 public class HelloResource {
 
   @Inject
-  @FlowDefinition("hello")
-  WorkflowDefinition helloWorkflow;
+  HelloWorkflow hello; // inject the Flow subclass
 
-  @ResponseStatus(200)
   @GET
+  @ResponseStatus(200)
   public CompletionStage<Message> hello() {
-    return helloWorkflow
-        .instance(Map.of())
-        .start()
+    return hello
+        .startInstance(Map.of())                // convenience on Flow
         .thenApply(w -> w.as(Message.class).orElseThrow());
   }
 }
 ```
 
-**How IDs are chosen**
+#### B) Inject the compiled `WorkflowDefinition` by **FQCN qualifier**
 
-* If you specify `@FlowDescriptor("my-id")`, that id is used.
-* Otherwise, the **method name** is used (e.g., `hello`).
-* At runtime, the recorder sets `document().name(id)` on the `Workflow`, so your SDK/Dev UI see the same id—no duplication needed in the DSL.
+Every discovered workflow produces a CDI bean:
+
+```java
+import io.smallrye.common.annotation.Identifier;
+import io.serverlessworkflow.impl.WorkflowDefinition;
+
+@Inject
+@Identifier("org.acme.HelloWorkflow") // FQCN of the workflow class
+WorkflowDefinition helloDef;
+```
+
+> Tip: pick option A unless you specifically need the raw `WorkflowDefinition`.
 
 ---
 
-## Agentic Workflows
+## How discovery, naming & injection work
 
-Quarkus Flow integrates seamlessly with [Quarkus LangChain4j](https://docs.quarkiverse.io/quarkus-langchain4j/dev/quickstart.html), so you can orchestrate **AI agents** as first-class workflow tasks.
+* At **build time**, Quarkus Flow finds every non-abstract subclass of `io.quarkiverse.flow.Flow`.
+* For each, it compiles a `WorkflowDefinition` and publishes it as a CDI bean **qualified with `@Identifier("<workflow FQCN>")`**.
+  Example: class `org.acme.HelloWorkflow` → qualifier `@Identifier("org.acme.HelloWorkflow")`.
 
-### 1. Add the LangChain4j dependency
+---
+
+## Agentic Workflows (LangChain4j)
+
+Quarkus Flow integrates with [Quarkus LangChain4j](https://docs.quarkiverse.io/quarkus-langchain4j/dev/quickstart.html) so you can orchestrate **AI agents** as first-class tasks.
+
+### 1) Add a LangChain4j implementation
 
 ```xml
 <dependency>
-    <groupId>io.quarkiverse.langchain4j</groupId>
-    <artifactId>quarkus-langchain4j-ollama</artifactId>
-    <version>YOUR VERSION</version>
+  <groupId>io.quarkiverse.langchain4j</groupId>
+  <artifactId>quarkus-langchain4j-ollama</artifactId>
+  <version>YOUR_VERSION</version>
 </dependency>
 ```
 
-> [!NOTE]
-> You may pick a different model (e.g., OpenAI, Vertex AI). See the [Quarkus LangChain4j docs](https://docs.quarkiverse.io/quarkus-langchain4j/dev/quickstart.html).
+*(Use OpenAI/Vertex/etc. if you prefer.)*
 
----
-
-### 2. Define your **Agent Interface**
+### 2) Define your Agent interface
 
 ```java
-package org.acme.agentic.ai;
+package org.acme.agentic;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -142,58 +151,48 @@ import dev.langchain4j.service.V;
 import io.quarkiverse.langchain4j.RegisterAiService;
 
 @RegisterAiService
-@SystemMessage("""
-        You are a minimal echo agent.
-
-        - If the user's message is empty, missing, "null", or whitespace, respond: Your message is empty
-        - Otherwise, respond with exactly the user's message content.
-        """)
 @ApplicationScoped
-public interface HelloAgent {
-
-    @UserMessage("{{message}}")
-    String helloWorld(@V("message") String message);
+@SystemMessage("""
+  You are a minimal echo agent.
+  - If the input is empty/blank/null → reply 'Your message is empty'
+  - Otherwise reply with the same text
+""")
+public interface EchoAgent {
+  @UserMessage("{{message}}")
+  String echo(@V("message") String message);
 }
 ```
 
----
-
-### 3. Define a workflow descriptor
+### 3) Create an agentic workflow
 
 ```java
-package org.acme.agentic.ai;
+package org.acme.agentic;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import io.quarkiverse.flow.FlowDescriptor;
+import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.agentic.AgentWorkflowBuilder;
 
 @ApplicationScoped
-public class HelloAgenticWorkflow {
+public class HelloAgenticWorkflow extends Flow {
 
-    @Inject
-    HelloAgent helloAgent;
+  @Inject EchoAgent agent;
 
-    @FlowDescriptor
-    public Workflow helloAgenticWorkflow() {
-        return FuncWorkflowBuilder.workflow()
-                .tasks(t -> t.callFn(f -> f.function(helloAgent::helloWorld)))
-                .build();
-    }
+  @Override
+  public Workflow descriptor() {
+    return AgentWorkflowBuilder.workflow("hello-agentic")
+        .tasks(t -> t.callFn(f -> f.function(agent::echo))) // call the agent
+        .build();
+  }
 }
 ```
 
-> [!IMPORTANT]
-> You can chain multiple agents together or mix with REST calls, events, timers, etc.
-
----
-
-### 4. Inject and run it
+### 4) Use it
 
 ```java
-package org.acme.agentic.ai;
+package org.acme.agentic;
 
 import java.util.concurrent.CompletionStage;
 
@@ -202,46 +201,43 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 
-import io.quarkiverse.flow.FlowDefinition;
-import io.serverlessworkflow.impl.WorkflowDefinition;
-import io.smallrye.common.annotation.Blocking;
-
-@Path("/hello")
+@Path("/echo")
 @ApplicationScoped
 public class HelloAgenticResource {
 
-    @Inject
-    @FlowDefinition("helloAgenticWorkflow")
-    WorkflowDefinition helloAgenticWorkflow;
+  @Inject HelloAgenticWorkflow wf;
 
-    @POST
-    @Blocking
-    public CompletionStage<String> hello(String message) {
-        return helloAgenticWorkflow
-                .instance(message)
-                .start()
-                .thenApply(w -> w.asText().orElseThrow());
-    }
+  @POST
+  public CompletionStage<String> echo(String message) {
+    return wf.startInstance(message)
+             .thenApply(m -> m.asText().orElseThrow());
+  }
 }
 ```
 
 ---
 
-## Status
+## FAQ
 
-This extension is under active development. APIs may change and bugs may exist. Feedback & issues are welcome.
+**Can my workflow class use CDI?**
+Absolutely. `descriptor()` runs on a CDI bean; `@Inject` whatever you need.
+
+**How do I inject the compiled definition?**
+Use the workflow **class FQCN** as the qualifier:
+`@Inject @Identifier("org.acme.HelloWorkflow") WorkflowDefinition def;`
+
+**Dev mode & native?**
+Fully supported. Definitions are built at startup, designed for Quarkus native friendliness.
 
 ---
 
 ## Roadmap
 
-* More workflow DSL coverage
-* Dev UI visualizations
-* Pre-built AI orchestration patterns
+* Richer DSL coverage (events, retries, compensation, etc.)
+* Dev-UI visualizations & tracers
+* Prebuilt AI orchestration patterns
 * Native build optimizations
-* Tight LangChain4j integration
-
-See [Issues](https://github.com/quarkiverse/quarkus-flow/issues) and [Milestones](https://github.com/quarkiverse/quarkus-flow/milestones).
+* Deeper LangChain4j glue
 
 ---
 
