@@ -215,6 +215,11 @@ public class HelloAgenticResource {
 }
 ```
 
+## Native compilation
+
+Due to the limitation described in https://github.com/quarkiverse/quarkus-flow/issues/8, we recommend using either the `25.0.0.1-Final-java25` native image builder to generate native images or pass `--report-unsupported-elements-at-runtime` to the native image build command with `-Dquarkus.native.additional-build-args-append=
+--report-unsupported-elements-at-runtime` when using the Mandrel 23.1 native image builder image (current default).
+
 ---
 
 ## FAQ

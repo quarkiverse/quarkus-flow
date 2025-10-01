@@ -1,7 +1,6 @@
 package io.quarkiverse.flow.deployment;
 
-import com.github.f4b6a3.ulid.UlidCreator;
-import com.github.f4b6a3.ulid.UlidFactory;
+import java.util.List;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -12,6 +11,7 @@ import io.serverlessworkflow.impl.events.EventPublisher;
 import io.serverlessworkflow.impl.events.InMemoryEvents;
 import io.serverlessworkflow.impl.executors.DefaultTaskExecutorFactory;
 import io.serverlessworkflow.impl.executors.TaskExecutorFactory;
+import io.serverlessworkflow.impl.executors.func.JavaTaskExecutorFactory;
 import io.serverlessworkflow.impl.expressions.ExpressionFactory;
 import io.serverlessworkflow.impl.expressions.jq.JQExpressionFactory;
 import io.serverlessworkflow.impl.jackson.schema.JsonSchemaValidatorFactory;
@@ -46,7 +46,7 @@ final class FlowNativeProcessor {
         sp.produce(new ServiceProviderBuildItem(ExpressionFactory.class.getName(),
                 JQExpressionFactory.class.getName()));
         sp.produce(new ServiceProviderBuildItem(TaskExecutorFactory.class.getName(),
-                DefaultTaskExecutorFactory.class.getName()));
+                List.of(DefaultTaskExecutorFactory.class.getName(), JavaTaskExecutorFactory.class.getName())));
         sp.produce(new ServiceProviderBuildItem(SchemaValidatorFactory.class.getName(),
                 JsonSchemaValidatorFactory.class.getName()));
         sp.produce(new ServiceProviderBuildItem(EventConsumer.class.getName(),
