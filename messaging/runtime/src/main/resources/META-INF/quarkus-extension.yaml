@@ -1,0 +1,18 @@
+name: Flow Messaging
+description: |
+  SmallRye Messaging support for Quarkus Flow.
+  Please see the main extension for more details.
+metadata:
+  keywords:
+    - workflow
+    - workflows
+    - cncf
+    - serverless
+    - cloudevents
+    - smallrye
+    - messaging
+#  guide: https://docs.quarkiverse.io/flow/dev/ # To create and publish this guide, see https://github.com/quarkiverse/quarkiverse/wiki#documenting-your-extension
+  categories:
+    - "integration"
+    - "messaging"
+  status: "preview"
