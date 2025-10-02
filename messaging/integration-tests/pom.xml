@@ -21,15 +21,6 @@
             <artifactId>quarkus-flow</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!--
-        To facilitate the extension development, we are manually adding the dependency here. In your production code you don't need to add it explicitly:
-        the main extension will add it for you if any `quarkus-messaging` dependency is on your classpath.
-        -->
-        <dependency>
-            <groupId>io.quarkiverse.flow</groupId>
-            <artifactId>quarkus-flow-messaging</artifactId>
-            <version>${project.version}</version>
-        </dependency>
         <!-- Since we are using Kafka, we use its connector - but can be any SmallRye connector -->
         <dependency>
             <groupId>io.quarkus</groupId>
