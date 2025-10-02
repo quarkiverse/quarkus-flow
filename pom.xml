@@ -29,7 +29,7 @@
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <quarkus.version>3.28.1</quarkus.version>
+        <quarkus.version>3.28.2</quarkus.version>
         <io.serverlessworkflow.version>7.2.0.Final</io.serverlessworkflow.version>
         <io.quarkiverse.jackson-jq.version>2.4.0</io.quarkiverse.jackson-jq.version>
         <io.quarkiverse.langchain4j.version>1.3.0</io.quarkiverse.langchain4j.version>
