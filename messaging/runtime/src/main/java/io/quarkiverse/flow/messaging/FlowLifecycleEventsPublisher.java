@@ -16,7 +16,7 @@ public class FlowLifecycleEventsPublisher extends ContentBasedRouterEventsPublis
     private static final String CHANNEL_NAME = "flow-lifecycle-out";
 
     @Inject
-    @Channel(CHANNEL_NAME) // <— new channel name
+    @Channel(CHANNEL_NAME)
     MutinyEmitter<byte[]> out;
 
     @Override

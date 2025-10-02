@@ -51,9 +51,9 @@ public class FlowMessagingConsumer
                 c.accept(ce);
 
             return msg.ack();
-        } catch (Throwable t) {
-            LOG.error("Flow: Failed to process incoming event", t);
-            return msg.nack(t);
+        } catch (Exception e) {
+            LOG.error("Flow: Failed to process incoming event", e);
+            return msg.nack(e);
         }
     }
 
