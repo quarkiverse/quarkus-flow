@@ -37,7 +37,7 @@ public class HelloMessagingFlow extends Flow {
                         // "name" is expected in the message body payload
                         // by design, we receive an array from the listen task, since it's only one we are expecting it's safe to index
                         // on more a more robust scenario, you should use `forEach`.
-                        .set("{ message: \"Hello \" + .[0].name }")
+                        .set("{ message: \"Hello \" + .[0].name + \"!\" }")
                         // We emit a new event with the specified type having the property `message` in the body that we built in the previous `set` task.
                         .emit(e -> e
                                 .event(event().type("io.quarkiverse.flow.messaging.hello.response").jsonData("{ message }"))))

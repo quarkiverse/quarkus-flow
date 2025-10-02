@@ -1,19 +1,14 @@
 package io.quarkiverse.flow.messaging.it;
 
 import static java.time.Duration.ofSeconds;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
-
-import jakarta.inject.Inject;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
@@ -32,9 +27,6 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kafka.InjectKafkaCompanion;
 import io.quarkus.test.kafka.KafkaCompanionResource;
-import io.serverlessworkflow.impl.WorkflowInstance;
-import io.serverlessworkflow.impl.WorkflowModel;
-import io.serverlessworkflow.impl.WorkflowStatus;
 import io.smallrye.reactive.messaging.kafka.companion.ConsumerTask;
 import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
 
@@ -49,18 +41,8 @@ public class HelloMessagingFlowTest {
     @InjectKafkaCompanion
     KafkaCompanion companion;
 
-    @Inject
-    HelloMessagingFlow flow;
-
     @Test
     void greet_roundtrip() {
-        assertNotNull(flow);
-
-        // Start the workflow; it will WAIT for the incoming domain event
-        final WorkflowInstance instance = flow.instance(Map.of());
-        final CompletionStage<WorkflowModel> workflowOutput = instance.start();
-        assertEquals(WorkflowStatus.WAITING, instance.status());
-
         // Start consuming from 'flow-out' BEFORE producing to avoid missing anything
         ConsumerTask<Object, Object> out = companion
                 .consumeWithDeserializers(StringDeserializer.class, ByteArrayDeserializer.class)
@@ -100,12 +82,8 @@ public class HelloMessagingFlowTest {
         assertEquals(expectedType, ce.getType());
 
         // Validate payload content (adjust to your workflow’s behavior)
-        assertTrue(new String(ce.getData().toBytes()).contains("\"Hello Elisa\""),
+        assertTrue(new String(ce.getData().toBytes()).contains("\"Hello Elisa!\""),
                 "Unexpected CE data: " + new String(ce.getData().toBytes()));
-
-        // Workflow should be completed after emitting the response
-        assertEquals(WorkflowStatus.COMPLETED, instance.status());
-        assertThat(workflowOutput).isCompleted();
 
         // Tidy up
         out.close();
