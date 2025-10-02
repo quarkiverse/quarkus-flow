@@ -46,6 +46,8 @@ jobs:
       - name: Build with Maven
         run: mvn -B clean install -Dno-format
 
+      - name: Build with Maven (Native)
+        run: mvn -B install -Dnative -Dquarkus.native.container-build -Dnative.surefire.skip -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25
   build-windows:
     name: Build only (Windows)
     runs-on: windows-latest
