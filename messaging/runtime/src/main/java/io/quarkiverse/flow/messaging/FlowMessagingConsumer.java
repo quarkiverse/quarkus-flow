@@ -41,6 +41,7 @@ public class FlowMessagingConsumer
         try {
             final CloudEvent ce = parseStructuredCE(msg.getPayload());
             LOG.debug("Flow: Received event: {}", ce);
+
             final Consumer<CloudEvent> all = allConsumerRef.get();
             if (all != null)
                 all.accept(ce);

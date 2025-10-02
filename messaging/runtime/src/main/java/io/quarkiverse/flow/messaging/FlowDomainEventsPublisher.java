@@ -16,18 +16,17 @@ public class FlowDomainEventsPublisher extends ContentBasedRouterEventsPublisher
     MutinyEmitter<byte[]> out;
 
     @Override
-    MutinyEmitter<byte[]> outEmitter() {
+    protected MutinyEmitter<byte[]> outEmitter() {
         return out;
     }
 
     @Override
-    boolean accept(CloudEvent event) {
-        final String type = event.getType();
-        return type != null && !type.startsWith(ENGINE_PREFIX);
+    protected boolean accept(CloudEvent event) {
+        return !isLifecycleEvent(event);
     }
 
     @Override
-    String channelName() {
+    protected String channelName() {
         return CHANNEL_NAME;
     }
 }

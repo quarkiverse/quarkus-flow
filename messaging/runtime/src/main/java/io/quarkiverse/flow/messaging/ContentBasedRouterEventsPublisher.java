@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.cloudevents.CloudEvent;
+import io.cloudevents.core.format.EventFormat;
 import io.cloudevents.core.provider.EventFormatProvider;
 import io.cloudevents.jackson.JsonFormat;
 import io.serverlessworkflow.impl.events.EventPublisher;
@@ -20,23 +21,30 @@ import io.smallrye.reactive.messaging.MutinyEmitter;
  */
 public abstract class ContentBasedRouterEventsPublisher implements EventPublisher {
 
-    protected static final String ENGINE_PREFIX = "io.serverlessworkflow";
+    private static final String ENGINE_PREFIX = "io.serverlessworkflow";
     private static final Logger LOG = LoggerFactory.getLogger(ContentBasedRouterEventsPublisher.class);
-    private static final JsonFormat FORMAT = (JsonFormat) EventFormatProvider.getInstance()
+    private static final EventFormat FORMAT = EventFormatProvider.getInstance()
             .resolveFormat(JsonFormat.CONTENT_TYPE);
+
+    protected boolean isLifecycleEvent(CloudEvent event) {
+        final String type = event.getType();
+        return type != null && type.startsWith(ENGINE_PREFIX);
+    }
 
     @Override
     public final CompletableFuture<Void> publish(CloudEvent event) {
-        if (!accept(event)) {
+        if (!accept(event))
             return CompletableFuture.completedFuture(null);
-        }
+
         try {
             byte[] structured = FORMAT.serialize(event);
-            LOG.debug("Flow: Publishing on channel {} event={}", channelName(), new String(structured));
+            if (LOG.isDebugEnabled())
+                LOG.debug("Flow: Publishing on channel {} event={}", channelName(), new String(structured));
+
             return outEmitter().sendMessage(Message.of(structured)).subscribeAsCompletionStage();
-        } catch (Throwable t) {
+        } catch (Exception e) {
             final CompletableFuture<Void> cf = new CompletableFuture<>();
-            cf.completeExceptionally(t);
+            cf.completeExceptionally(e);
             return cf;
         }
     }
@@ -46,13 +54,13 @@ public abstract class ContentBasedRouterEventsPublisher implements EventPublishe
         // no-op;
     }
 
-    abstract MutinyEmitter<byte[]> outEmitter();
+    protected abstract MutinyEmitter<byte[]> outEmitter();
 
     /**
      * Whether we should accept the event based on child's class criteria
      */
-    abstract boolean accept(CloudEvent event);
+    protected abstract boolean accept(CloudEvent event);
 
-    abstract String channelName();
+    protected abstract String channelName();
 
 }
