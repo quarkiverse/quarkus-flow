@@ -23,7 +23,8 @@ import io.quarkus.runtime.StartupEvent;
  * "Schedule: Specifies the events that trigger the workflow execution."
  * <p/>
  * The "Schedule" implementation is not yet ready on our core CNCF engine. Once it does, we can rely on it instead of the
- * Application Lifecycle. See: <a href="https://github.com/serverlessworkflow/sdk-java/issues/847">https://github.com/serverlessworkflow/sdk-java/issues/847</a>
+ * Application Lifecycle. See: <a href=
+ * "https://github.com/serverlessworkflow/sdk-java/issues/847">https://github.com/serverlessworkflow/sdk-java/issues/847</a>
  * <p/>
  * The example below, works great for functions/serverless environments where the system process once and terminates.
  */
