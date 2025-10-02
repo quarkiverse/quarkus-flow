@@ -109,11 +109,13 @@ class FlowProcessor {
                 .setRuntimeInit()
                 .supplier(recorder.workflowAppSupplier(shutdown))
                 .done());
+
+        LOG.info("Flow: Registering Workflow Application bean: {}", WorkflowApplication.class.getName());
     }
 
     private void logWorkflowList(List<String> fqcns) {
         if (fqcns.isEmpty()) {
-            LOG.info("No WorkflowDefinition beans were registered.");
+            LOG.info("Flow: No WorkflowDefinition beans were registered.");
             return;
         }
 
@@ -128,7 +130,7 @@ class FlowProcessor {
         String sep = "+" + "-".repeat(w + 2) + "+";
         StringBuilder sb = new StringBuilder(64 + fqcns.size() * (w + 8));
         sb.append('\n');
-        sb.append("Registered WorkflowDefinition beans\n");
+        sb.append("Flow: Registered WorkflowDefinition beans\n");
         sb.append(sep).append('\n');
         sb.append(String.format("| %-" + w + "s |\n", header));
         sb.append(sep).append('\n');
@@ -138,6 +140,12 @@ class FlowProcessor {
         sb.append(sep).append('\n');
 
         LOG.info(sb.toString());
+    }
+
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep
+    void overrideObjectMapper(FlowRecorder recorder) {
+        recorder.injectQuarkusObjectMapper();
     }
 
 }

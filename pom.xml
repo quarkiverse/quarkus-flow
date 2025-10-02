@@ -16,6 +16,7 @@
 
     <modules>
         <module>core</module>
+        <module>messaging</module>
     </modules>
 
     <scm>
@@ -34,6 +35,7 @@
         <io.quarkiverse.jackson-jq.version>2.4.0</io.quarkiverse.jackson-jq.version>
         <io.quarkiverse.langchain4j.version>1.3.0</io.quarkiverse.langchain4j.version>
         <org.assertj.version>3.27.6</org.assertj.version>
+        <io.cloudevents.version>4.0.1</io.cloudevents.version>
     </properties>
 
     <dependencyManagement>
@@ -74,6 +76,11 @@
                 <groupId>io.quarkiverse.jackson-jq</groupId>
                 <artifactId>quarkus-jackson-jq-deployment</artifactId>
                 <version>${io.quarkiverse.jackson-jq.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.cloudevents</groupId>
+                <artifactId>cloudevents-json-jackson</artifactId>
+                <version>${io.cloudevents.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.assertj</groupId>

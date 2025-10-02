@@ -25,7 +25,10 @@
             <artifactId>quarkus-flow-dev</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!-- Required by Native compilation for serverlessworkflow-core-http module -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson-deployment</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-client-jackson-deployment</artifactId>
@@ -33,6 +36,12 @@
         <dependency>
             <groupId>io.quarkiverse.jackson-jq</groupId>
             <artifactId>quarkus-jackson-jq-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-messaging-deployment</artifactId>
+            <version>${project.version}</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.serverlessworkflow</groupId>

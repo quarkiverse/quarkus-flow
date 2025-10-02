@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -11,6 +12,11 @@
     <name>Quarkus Flow :: Core :: Runtime</name>
 
     <dependencies>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
         <!-- CNCF Java SDK -->
         <dependency>
             <groupId>io.serverlessworkflow</groupId>
@@ -46,8 +52,18 @@
             <artifactId>quarkus-arc</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkiverse.jackson-jq</groupId>
             <artifactId>quarkus-jackson-jq</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-messaging</artifactId>
+            <version>${project.version}</version>
+            <optional>true</optional>
         </dependency>
         <!-- Required by serverlessworkflow-core-http HttpExecutor service module -->
         <dependency>
@@ -78,6 +94,11 @@
                             <conditionalDevDependencies>
                                 <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact>
                             </conditionalDevDependencies>
+                            <conditionalDependencies>
+                                <dependency>${project.groupId}:${project.artifactId}-messaging:${project.version}</dependency>
+                            </conditionalDependencies>
+                            <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}
+                            </deployment>
                         </configuration>
                     </execution>
                 </executions>

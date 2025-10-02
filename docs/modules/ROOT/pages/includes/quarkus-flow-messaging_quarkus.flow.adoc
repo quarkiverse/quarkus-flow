@@ -1,0 +1,53 @@
+[.configuration-legend]
+icon:lock[title=Fixed at build time] Configuration property fixed at build time - All other configuration properties are overridable at runtime
+[.configuration-reference.searchable, cols="80,.^10,.^10"]
+|===
+
+h|[.header-title]##Configuration property##
+h|Type
+h|Default
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow-messaging_quarkus-flow-messaging-defaults-enabled]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-defaults-enabled[`quarkus.flow.messaging.defaults-enabled`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.messaging.defaults-enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Register default consumer/publisher beans bound to 'flow-in'/'flow-out' channels
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_MESSAGING_DEFAULTS_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_MESSAGING_DEFAULTS_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++false+++`
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow-messaging_quarkus-flow-messaging-lifecycle-enabled]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-lifecycle-enabled[`quarkus.flow.messaging.lifecycle-enabled`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.messaging.lifecycle-enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Register the default events lifecycle publisher to the 'flow-lifecycle-out'. By default, the application won't publish any lifecycle event to this channel.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_MESSAGING_LIFECYCLE_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_MESSAGING_LIFECYCLE_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++false+++`
+
+|===
+
