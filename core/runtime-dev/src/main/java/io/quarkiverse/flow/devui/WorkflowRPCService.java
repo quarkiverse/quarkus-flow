@@ -6,6 +6,7 @@ import java.util.Objects;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.logging.Log;
 import io.quarkus.runtime.annotations.JsonRpcDescription;
 import io.serverlessworkflow.api.types.SchemaUnion;
 import io.serverlessworkflow.impl.WorkflowDefinition;
@@ -57,6 +58,7 @@ public class WorkflowRPCService {
             finalInputAsText = inputAsText;
         }
 
+        Log.info("inputAsObject: " + inputAsObject);
         WorkflowModel wm = workflowDefinition.instance(Objects.isNull(inputAsObject) ? finalInputAsText : inputAsObject)
                 .start()
                 .join();

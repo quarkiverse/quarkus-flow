@@ -7,7 +7,6 @@ import '@vaadin/grid';
 import '@vaadin/button';
 import '@vaadin/icon';
 import '@vaadin/dialog';
-import '@vaadin/progress-bar';
 
 import { notifier } from 'notifier';
 import './qwc-flow-workflow-execution.js';
@@ -196,4 +195,4 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
     }
 }
 
-customElements.define('qwc-flow-workflow-definitions', QwcFlow);
+customElements.define('qwc-flow-workflows', QwcFlow);

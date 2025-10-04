@@ -9,6 +9,7 @@ import '@vaadin/dialog';
 import '@vaadin/vertical-layout';
 import '@vaadin/split-layout';
 import '@vaadin/combo-box';
+import '@vaadin/progress-bar';
 import 'qui-themed-code-block';
 import 'qui-badge';
 
@@ -68,22 +69,23 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
         _inputSpec: { state: true },
         _output: { state: true },
         _input: { state: true },
-        _selectedInputFormat: { state: true }
+        _selectedInputFormat: { state: true },
+        _loading: { state: true }
     };
 
     constructor() {
         super();
         this._inputSpec = null;
-        this._input = '';
-        this._output = '';
+        this._input = '\n\n\n\n\n\n\n\n\n';
+        this._output = '\n\n\n\n\n\n\n\n\n\n# Your workflow output will be displayed here';
         this._selectedInputFormat = '';
+        this._loading = false;
     }
 
     connectedCallback() {
         super.connectedCallback();
         this.jsonRpc = new JsonRpc(this.extensionName);
         this.jsonRpc.getInputSpecification({ workflowName: this.workflow }).then(({ result }) => {
-            console.log('workflow output: ', result)
             this._inputSpec = result;
         });
     }
@@ -144,6 +146,7 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
                             class="code-block"
                             mode="${this._codeModeMapping[this._selectedInputFormat]}"
                             value="${this._input}"
+                            content="${this._input}"
                             editable
                             showLineNumbers
                             theme="${themeState.theme.name}">
@@ -153,19 +156,20 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
                         <qui-badge level="info" small><span>Output</span></qui-badge>
                         <qui-themed-code-block
                             class="code-block"
-                            mode="json"
+                            mode="markdown"
                             theme="${themeState.theme.name}"
                             content="${this._output}">
                         </qui-themed-code-block>
                     </detail-content>
                 </vaadin-split-layout>
                 <div class="button-container">
-                    <vaadin-button @click=${() => this._executeWorkflow()}>
+                    ${this._loading ?
+                    html`<vaadin-progress-bar class="progress" indeterminate></vaadin-progress-bar>` :
+                    html`<vaadin-button @click=${() => this._executeWorkflow()}>
                         <vaadin-icon icon="font-awesome-solid:play"></vaadin-icon>
                         Start workflow
-                    </vaadin-button>
-                </div>
-                `;
+                    </vaadin-button>`}
+                </div>`;
         }
     }
 
@@ -190,6 +194,8 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
             };
         }
 
+        this._loading = true;
+
         this.jsonRpc.executeWorkflow(workflowInput).then(({ result }) => {
             if (this._selectedInputFormat === "text") {
                 console.log(result);
@@ -199,7 +205,10 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
             } else {
                 this._output = JSON.stringify(result);
             }
-        })
+        }).catch(err => console.error(err))
+            .finally(() => {
+                this._loading = false;
+            })
     }
 
     render() {
