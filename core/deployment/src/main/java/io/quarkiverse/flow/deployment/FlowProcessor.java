@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.Flow;
-import io.quarkiverse.flow.providers.QuarkusJQExpressionFactory;
+import io.quarkiverse.flow.providers.JQScopeSupplier;
 import io.quarkiverse.flow.recorders.FlowRecorder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -68,7 +68,7 @@ class FlowProcessor {
     @BuildStep
     AdditionalBeanBuildItem registerRuntimeDefaults() {
         return AdditionalBeanBuildItem.builder()
-                .addBeanClass(QuarkusJQExpressionFactory.class)
+                .addBeanClass(JQScopeSupplier.class)
                 .setUnremovable()
                 .build();
     }
