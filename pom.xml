@@ -17,6 +17,7 @@
     <modules>
         <module>core</module>
         <module>messaging</module>
+        <module>examples</module>
     </modules>
 
     <scm>
@@ -131,6 +132,7 @@
             </activation>
             <modules>
                 <module>docs</module>
+                <module>examples</module>
             </modules>
         </profile>
     </profiles>
