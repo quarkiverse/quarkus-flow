@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.providers.JQScopeSupplier;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableInstance;
@@ -24,7 +25,7 @@ import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.events.EventConsumer;
 import io.serverlessworkflow.impl.events.EventPublisher;
-import io.serverlessworkflow.impl.expressions.ExpressionFactory;
+import io.serverlessworkflow.impl.expressions.jq.JQExpressionFactory;
 import io.serverlessworkflow.impl.jackson.JsonUtils;
 
 // TODO: produce definitions from workflows in the YAML format within the current classpath
@@ -45,7 +46,7 @@ public class FlowRecorder {
         return () -> {
             final ArcContainer container = Arc.container();
             final WorkflowApplication.Builder builder = WorkflowApplication.builder()
-                    .withExpressionFactory(container.instance(ExpressionFactory.class).get());
+                    .withExpressionFactory(new JQExpressionFactory(container.instance(JQScopeSupplier.class).get()));
 
             final InjectableInstance<EventConsumer<?, ?>> consumerHandle = container.select(new TypeLiteral<>() {
             }, Any.Literal.INSTANCE);
