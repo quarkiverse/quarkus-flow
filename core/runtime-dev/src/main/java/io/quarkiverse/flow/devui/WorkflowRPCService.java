@@ -2,11 +2,9 @@ package io.quarkiverse.flow.devui;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.logging.Log;
 import io.quarkus.runtime.annotations.JsonRpcDescription;
 import io.serverlessworkflow.api.types.SchemaUnion;
 import io.serverlessworkflow.impl.WorkflowDefinition;
@@ -48,26 +46,31 @@ public class WorkflowRPCService {
 
     @Blocking
     @JsonRpcDescription("Execute Workflow given an input")
-    public Map<String, Object> executeWorkflow(@JsonRpcDescription("Workflow name") String workflowName,
-            @JsonRpcDescription("Workflow input as JSON format") Map<String, Object> inputAsObject,
-            @JsonRpcDescription("Workflow input as text form") String inputAsText) {
+    public WorkflowOutput executeWorkflow(
+            @JsonRpcDescription("Workflow name") String workflowName,
+            @JsonRpcDescription("Workflow input as JSON format") Map<String, Object> inputJson,
+            @JsonRpcDescription("Workflow input as text format") String inputText) {
+
         WorkflowDefinition workflowDefinition = findWorkflowDefinitionByName(workflowName);
 
-        String finalInputAsText = "";
-        if (!Objects.isNull(inputAsText)) {
-            finalInputAsText = inputAsText;
+        Object input;
+        if (inputJson != null) {
+            input = inputJson;
+        } else if (inputText != null) {
+            input = inputText;
+        } else {
+            input = "";
         }
 
-        Log.info("inputAsObject: " + inputAsObject);
-        WorkflowModel wm = workflowDefinition.instance(Objects.isNull(inputAsObject) ? finalInputAsText : inputAsObject)
+        WorkflowModel wm = workflowDefinition.instance(input)
                 .start()
                 .join();
 
-        if (wm.asJavaObject().getClass().equals(String.class)) {
-            return Map.of("output", wm.asText().orElseThrow());
+        if (wm.asJavaObject() instanceof String) {
+            return new WorkflowOutput("text/plain", wm.asText());
         }
 
-        return wm.asMap().orElseGet(Map::of);
+        return new WorkflowOutput("application/json", wm.asMap());
     }
 
     /**
@@ -97,5 +100,8 @@ public class WorkflowRPCService {
     }
 
     public record WorkflowInput(boolean hasSchema, SchemaUnion schemaUnion) {
+    }
+
+    public record WorkflowOutput(String mimetype, Object data) {
     }
 }

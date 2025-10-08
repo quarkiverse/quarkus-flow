@@ -7,12 +7,12 @@ import '@vaadin/grid';
 import '@vaadin/button';
 import '@vaadin/icon';
 import '@vaadin/dialog';
+import { dialogRenderer, dialogFooterRenderer } from '@vaadin/dialog/lit.js';
+import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 
 import { notifier } from 'notifier';
 import './qwc-flow-workflow-execution.js';
 
-import { dialogRenderer, dialogFooterRenderer } from '@vaadin/dialog/lit.js';
-import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import { themeState } from 'theme-state';
 
 export class QwcFlow extends observeState(QwcHotReloadElement) {
@@ -46,6 +46,49 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
         this._currentMermaid = '';
         this._mermaidDialogOpened = false;
         this._selectedWorkflow = null;
+    }
+
+    render() {
+        if (this._selectedWorkflow != null) {
+            return html`
+                <qwc-flow-workflow-execution 
+                    extensionName="${this.jsonRpc.getExtensionName()}" 
+                    workflow="${this._selectedWorkflow.name}" 
+                    @flow-workflows-back=${this._showWorkflows}>
+                </qwc-flow-workflow-execution>
+            `;
+        } else {
+            return html`
+                <div class="workflows">
+                    <vaadin-grid
+                        .items=${this._workflows}
+                        theme="row-stripes"
+                        column-reordering-allowed
+                        multi-sort>
+                        <vaadin-grid-column
+                            path="name"
+                            header="Name"
+                            auto-width>
+                        </vaadin-grid-column>
+                        <vaadin-grid-column
+                            header="Actions"
+                            auto-width
+                            ${columnBodyRenderer(workflow => html`
+                                <vaadin-button @click=${() => this._visualizeMermaid(workflow)}>
+                                    <vaadin-icon icon="font-awesome-solid:eye"></vaadin-icon>
+                                </vaadin-button>
+                                <vaadin-button @click=${() => this._executeWorkflow(workflow)}>
+                                    <vaadin-icon icon="font-awesome-solid:play"></vaadin-icon>
+                                </vaadin-button>
+                                `,
+                []
+            )}>
+                        </vaadin-grid-column>
+                    </vaadin-grid>
+                    ${this._mermaidDialog()}
+                </div>
+        `;
+        }
     }
 
     connectedCallback() {
@@ -148,50 +191,6 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
 
     _showWorkflows() {
         this._selectedWorkflow = null;
-    }
-
-    render() {
-        if (this._selectedWorkflow != null) {
-            return html`
-                <qwc-flow-workflow-execution 
-                    extensionName="${this.jsonRpc.getExtensionName()}" 
-                    workflow="${this._selectedWorkflow.name}" 
-                    @flow-workflows-back=${this._showWorkflows}>
-                </qwc-flow-workflow-execution>
-            `;
-        } else {
-            return html`
-                <div class="workflows">
-                    <vaadin-grid
-                        .items=${this._workflows}
-                        theme="row-stripes"
-                        column-reordering-allowed
-                        multi-sort>
-                        <vaadin-grid-column
-                            path="name"
-                            header="Name"
-                            auto-width>
-                        </vaadin-grid-column>
-                        <vaadin-grid-column
-                            header="Actions"
-                            auto-width
-                            ${columnBodyRenderer(workflow => html`
-                                <vaadin-button @click=${() => this._visualizeMermaid(workflow)}>
-                                    <vaadin-icon icon="font-awesome-solid:eye"></vaadin-icon>
-                                </vaadin-button>
-                                <vaadin-button @click=${() => this._executeWorkflow(workflow)}>
-                                    <vaadin-icon icon="font-awesome-solid:play"></vaadin-icon>
-                                </vaadin-button>
-                                `,
-                []
-            )}>
-                        </vaadin-grid-column>
-                    </vaadin-grid>
-                    ${this._mermaidDialog()}
-                </div>
-        `;
-        }
-
     }
 }
 

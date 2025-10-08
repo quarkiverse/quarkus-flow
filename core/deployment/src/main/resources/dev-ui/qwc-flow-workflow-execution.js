@@ -1,6 +1,7 @@
 import { QwcHotReloadElement, html, css } from 'qwc-hot-reload-element';
 import { observeState } from 'lit-element-state';
 import { JsonRpc } from 'jsonrpc';
+import { notifier } from 'notifier';
 
 import '@vaadin/grid';
 import '@vaadin/button';
@@ -35,33 +36,17 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
 
         .layout-container {
             height: 100%;
+            overflow: hidden;
         }
 
         .button-container {
             margin-top: auto;
         }
-    `;
 
-    _codeModeMapping = {
-        "text": "markdown",
-        "no_input": "markdown",
-        "json": "json"
-    };
-
-    _items = [
-        {
-            value: "json",
-            label: "JSON"
-        },
-        {
-            value: "text",
-            label: "Text"
-        },
-        {
-            value: "no_input",
-            label: "No input"
+        .workflow-name {
+            margin: 12px 0px;
         }
-    ];
+    `;
 
     static properties = {
         workflow: { type: String },
@@ -77,9 +62,15 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
         super();
         this._inputSpec = null;
         this._input = '\n\n\n\n\n\n\n\n\n';
-        this._output = '\n\n\n\n\n\n\n\n\n\n# Your workflow output will be displayed here';
+        this._output = '# Your workflow output will be displayed here\n\n\n\n\n\n\n\n\n\n';
         this._selectedInputFormat = '';
         this._loading = false;
+    }
+
+    render() {
+        return html`<div class="workflow-execution">
+                ${this._renderForm()}
+        </div>`;
     }
 
     connectedCallback() {
@@ -95,7 +86,7 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
     }
 
     hotReload() {
-        // no-op, it is necessary due to QwcHotReloadElement extends
+        // no-op, it is necessary due to QwcHotReloadElement
     }
 
     _onInputFormatChange({ detail }) {
@@ -119,7 +110,7 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
                             <vaadin-icon icon="font-awesome-solid:caret-left" slot="prefix"></vaadin-icon>
                             Back
                         </vaadin-button>
-                        <h2>${this.workflow}</h2>
+                        <h2 class="workflow-name">${this.workflow}</h2>
                     </div>`;
     }
 
@@ -129,22 +120,12 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
         } else {
             return html`
                 ${this._renderTopBar()}
-                <vaadin-combo-box
-                    class="fmt-combo"
-                    label="Input format"
-                    .items="${this._items}"
-                    @value-changed="${this._onInputFormatChange}"
-                    item-label-path="label"
-                    item-value-path="value">
-                </vaadin-combo-box>
-
                 <vaadin-split-layout orientation="vertical" style="min-height: 600px; max-height: 600px;">
-                    <master-content class="layout-container">
+                    <master-content class="layout-container" style="heigh: 50%;">
                         <qui-badge level='info' small><span>Input</span></qui-badge>
                         <qui-themed-code-block
                             id="code"
                             class="code-block"
-                            mode="${this._codeModeMapping[this._selectedInputFormat]}"
                             value="${this._input}"
                             content="${this._input}"
                             editable
@@ -152,7 +133,7 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
                             theme="${themeState.theme.name}">
                         </qui-themed-code-block>
                     </master-content>
-                    <detail-content class="layout-container">
+                    <detail-content class="layout-container" style="heigh: 50%;" >
                         <qui-badge level="info" small><span>Output</span></qui-badge>
                         <qui-themed-code-block
                             class="code-block"
@@ -165,7 +146,7 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
                 <div class="button-container">
                     ${this._loading ?
                     html`<vaadin-progress-bar class="progress" indeterminate></vaadin-progress-bar>` :
-                    html`<vaadin-button @click=${() => this._executeWorkflow()}>
+                    html`<vaadin-button theme="primary success" @click=${() => this._executeWorkflow()}>
                         <vaadin-icon icon="font-awesome-solid:play"></vaadin-icon>
                         Start workflow
                     </vaadin-button>`}
@@ -173,48 +154,66 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
         }
     }
 
-    _executeWorkflow() {
-        const inputElement = this.shadowRoot.getElementById('code');
+    _tryParse(value) {
+        try {
+            return JSON.parse(value);
+        } catch (err) {
+            return null;
+        }
+    }
 
+    _tryStringify(value) {
+        try {
+            return JSON.stringify(value);
+        } catch (err) {
+            return null
+        }
+    }
+    _executeWorkflow() {
+        const value = this.shadowRoot.getElementById('code').getAttribute('value');
         let workflowInput = {
             workflowName: this.workflow
         };
 
-        if (["json"].includes(this._selectedInputFormat)) {
-            workflowInput = {
-                ...workflowInput,
-                inputAsObject: JSON.parse(inputElement.getAttribute('value')),
-                inputAsText: null
-            };
-        } else if (["text", "no_input"].includes(this._selectedInputFormat)) {
-            workflowInput = {
-                ...workflowInput,
-                inputAsObject: null,
-                inputAsText: inputElement.getAttribute('value')
-            };
+        if (!value || value.trim() === '') {
+            workflowInput = { ...workflowInput, inputJson: {} };
+        } else {
+            let parsedValue = this._tryParse(value);
+            if (parsedValue) {
+                workflowInput = {
+                    ...workflowInput,
+                    inputJson: parsedValue
+                };
+            } else {
+                workflowInput = {
+                    ...workflowInput,
+                    inputText: value
+                };
+            }
         }
 
         this._loading = true;
 
         this.jsonRpc.executeWorkflow(workflowInput).then(({ result }) => {
-            if (this._selectedInputFormat === "text") {
-                console.log(result);
-                this._output = result.output;
-            } else if (this._selectedInputFormat === "no_input") {
-                this._output = result;
+            console.log('workflow result', result);
+            if (result.mimetype === 'text/plain') {
+                this._output = result.data;
             } else {
-                this._output = JSON.stringify(result);
+                const parsedOutput = this._tryStringify(result.data);
+                if (parsedOutput) {
+                    this._output = parsedOutput;
+                } else {
+                    this._output = result;
+                }
             }
-        }).catch(err => console.error(err))
+        })
+            .catch(err => {
+                notifier.showError('Error executing workflow: ' + err.message);
+                this._output = '# Error\n\n' + err.message;
+            })
             .finally(() => {
                 this._loading = false;
-            })
-    }
-
-    render() {
-        return html`<div class="workflow-execution">
-                ${this._renderForm()}
-        </div>`;
+            });
     }
 }
 
