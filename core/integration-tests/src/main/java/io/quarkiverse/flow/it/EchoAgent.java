@@ -20,7 +20,7 @@ import io.quarkiverse.langchain4j.RegisterAiService;
         - Trim leading/trailing whitespace before deciding.
         """)
 @ApplicationScoped
-public interface HelloAgent {
+public interface EchoAgent {
 
     @UserMessage("My message is: {{message}}")
     String helloWorld(@V("message") String message);
