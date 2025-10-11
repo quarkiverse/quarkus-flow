@@ -97,8 +97,7 @@
                             <conditionalDependencies>
                                 <dependency>${project.groupId}:${project.artifactId}-messaging:${project.version}</dependency>
                             </conditionalDependencies>
-                            <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}
-                            </deployment>
+                            <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}</deployment>
                         </configuration>
                     </execution>
                 </executions>
