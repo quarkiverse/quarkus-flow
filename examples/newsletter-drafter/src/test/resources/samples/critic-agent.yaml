@@ -1,21 +1,23 @@
-# src/test/resources/samples/critic-agent.yaml
 - name: approve-friendly-standard
   parameters:
     - |
-      Markets were mixed today with modest moves across major indices.
-      We remain focused on long-term fundamentals and diversified positioning.
-    - "friendly"     # tone
-    - "standard"     # compliance
+      {
+        "draft": "Markets were mixed today with modest moves across major indices.\nWe remain focused on long-term fundamentals and diversified positioning.",
+        "tone": "friendly",
+        "compliance": "standard"
+      }
   expected-output: |
     EXPECT_VERDICT: approve
 
 - name: revise-tone
   parameters:
     - |
-      BUY NOW! GUARANTEED 20% RETURNS NEXT WEEK!
-      This is the only strategy you need.
-    - "neutral"      # tone
-    - "standard"     # compliance
+      {
+        "draft": "BUY NOW! GUARANTEED 20% RETURNS NEXT WEEK!\nThis is the only strategy you need.",
+        "tone": "neutral",
+        "compliance": "standard"
+      }
   expected-output: |
     EXPECT_VERDICT: revise
-    EXPECT_FIND: promotion
+    EXPECT_FIND: guarantee
+    EXPECT_REVISED: true

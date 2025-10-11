@@ -3,7 +3,6 @@ package org.acme.newsletter.agents;
 import java.util.Locale;
 import java.util.UUID;
 
-import org.acme.newsletter.domain.NewsletterInput;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkiverse.langchain4j.scorer.junit5.AiScorer;
 import io.quarkiverse.langchain4j.scorer.junit5.SampleLocation;
 import io.quarkiverse.langchain4j.scorer.junit5.ScorerConfiguration;
@@ -27,7 +27,6 @@ import jakarta.inject.Singleton;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-
 @QuarkusTest
 @AiScorer
 public class DrafterAgentTest {
@@ -36,30 +35,41 @@ public class DrafterAgentTest {
 
     @Inject
     DrafterAgent agent;
-
     @Inject
     NewsletterDraftEvaluationStrategy strategy;
+    @Inject
+    ObjectMapper mapper;
 
     @Test
     void testDrafterAgent(@ScorerConfiguration(concurrency = 2) Scorer scorer,
                           @SampleLocation("src/test/resources/samples/drafter-agent.yaml") Samples<String> samples) {
         final EvaluationReport<String> report = scorer.evaluate(
                 samples,
-                (Parameters p) -> {
-                    final NewsletterInput input =
-                            new NewsletterInput(
-                                    p.get(0).toString(),
-                                    p.get(1).toString(),
-                                    p.get(2).toString(),
-                                    p.get(3).toString(),
-                                    p.get(4).toString(),
-                                    p.get(5).toString());
-                    return agent.draft(UUID.randomUUID().toString(), input);
-                },
+                (Parameters p) -> agent.draft(UUID.randomUUID().toString(), toDrafterJson(p)),
                 strategy
         );
-        assertThat(report.score()).as(() -> "AI output did not satisfy JSON contract or content checks.")
+        assertThat(report.score())
+                .as(() -> "AI output did not satisfy JSON contract or content checks.")
                 .isGreaterThanOrEqualTo(80.0);
+    }
+
+    /**
+     * Accepts either 1 JSON param or 6 separate params and returns a JSON string.
+     */
+    private String toDrafterJson(Parameters p) {
+        if (p.size() == 1) {
+            // Single parameter is already a JSON string
+            return p.get(0).toString();
+        }
+        // Expecting: 0=marketMood, 1=topMovers, 2=macroData, 3=tone, 4=length, 5=notes
+        ObjectNode payload = mapper.createObjectNode()
+                .put("marketMood", p.get(0).toString())
+                .put("topMovers", p.get(1).toString())
+                .put("macroData", p.get(2).toString())
+                .put("tone", p.get(3).toString())
+                .put("length", p.get(4).toString())
+                .put("notes", p.get(5).toString());
+        return payload.toString();
     }
 
     @Singleton
@@ -118,8 +128,5 @@ public class DrafterAgentTest {
                 return false;
             }
         }
-
-
     }
-
 }

@@ -1,21 +1,27 @@
 - name: Basic draft without notes
   parameters:
-    - "bullish"
-    - "AAPL:+3%, MSFT:+2%"
-    - "CPI cooling; jobs steady"
-    - "friendly"
-    - "short"
-    - ""
+    - |
+      {
+        "marketMood": "bullish",
+        "topMovers": "AAPL:+3%, MSFT:+2%",
+        "macroData": "CPI cooling; jobs steady",
+        "tone": "friendly",
+        "length": "short",
+        "notes": ""
+      }
   expected-output: |
     MUST_CONTAIN: bullish, AAPL, CPI
 
 - name: Draft incorporating notes
   parameters:
-    - "neutral"
-    - "TSLA:-1.2%, NVDA:+1.1%"
-    - "Fed on hold; GDP +2.2%"
-    - "neutral"
-    - "short"
-    - "Please mention semiconductor outlook and TSLA delivery miss."
+    - |
+      {
+        "marketMood": "neutral",
+        "topMovers": "TSLA:-1.2%, NVDA:+1.1%",
+        "macroData": "Fed on hold; GDP +2.2%",
+        "tone": "neutral",
+        "length": "short",
+        "notes": "Please mention semiconductor outlook and TSLA delivery miss."
+      }
   expected-output: |
     MUST_CONTAIN: semiconductor, TSLA
