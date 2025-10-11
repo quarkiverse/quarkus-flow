@@ -1,36 +1,50 @@
 package org.acme.newsletter.agents;
 
-import org.acme.newsletter.domain.NewsletterInput;
-
 import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 import io.quarkiverse.langchain4j.RegisterAiService;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @RegisterAiService
 @ApplicationScoped
 @SystemMessage("""
-        You draft a weekly investment newsletter.\s
-        Return JSON with fields:
-        {
-          "draft": "<final draft text>",
-        }
-        If 'notes' are provided, incorporate them.
+        You draft a weekly investment newsletter.
+
+        You will receive ONE JSON string. It will be EITHER:
+        A) Initial input:
+           {
+             "marketMood": "string",
+             "topMovers": "string",
+             "macroData": "string",
+             "tone": "string",
+             "length": "string",
+             "notes": "string (optional)"
+           }
+        OR
+        B) Human review loop:
+           {
+             "draft": "string",
+             "notes": "string (optional)",
+             "status": "needs_revision | done"
+           }
+
+        Behaviors:
+        - If shape A: create a new draft using those fields.
+        - If shape B and status != "done": refine the provided 'draft' using 'notes' and your conversation memory.
+        - If shape B and status == "done": return the draft as-is (no change).
+
+        Return STRICT JSON:
+        { "draft": "<final draft text>" }
         """)
 public interface DrafterAgent {
 
     @UserMessage("""
-            Create or refine a newsletter with:
-            - marketMood: {input.marketMood}
-            - topMovers: {input.topMovers}
-            - macroData: {input.macroData}
-            - tone: {input.tone}
-            - length: {input.length}
-            - notes: {input.notes}
-            Return JSON as specified.
+            INPUT_JSON:
+            {payload}
             """)
     String draft(@MemoryId String memoryId,
-                 NewsletterInput input);
+                 @V("payload") String payloadJson);
 }
