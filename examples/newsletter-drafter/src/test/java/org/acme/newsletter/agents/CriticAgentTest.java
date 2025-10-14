@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import io.quarkiverse.langchain4j.scorer.junit5.AiScorer;
 import io.quarkiverse.langchain4j.scorer.junit5.SampleLocation;
 import io.quarkiverse.langchain4j.scorer.junit5.ScorerConfiguration;
@@ -34,9 +33,12 @@ public class CriticAgentTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(CriticAgentTest.class);
 
-    @Inject CriticAgent agent;
-    @Inject CritiqueEvaluationStrategy strategy;
-    @Inject ObjectMapper mapper;
+    @Inject
+    CriticAgent agent;
+    @Inject
+    CritiqueEvaluationStrategy strategy;
+    @Inject
+    ObjectMapper mapper;
 
     @Test
     void critic_checks_json_and_constraints(
@@ -44,7 +46,7 @@ public class CriticAgentTest {
             @SampleLocation("src/test/resources/samples/critic-agent.yaml") Samples<CriticOutput> samples
     ) {
         // Agent now returns CriticOutput, so the report is parameterized with CriticOutput
-        EvaluationReport<CriticOutput> report = scorer.<CriticOutput>evaluate(
+        EvaluationReport<CriticOutput> report = scorer.evaluate(
                 samples,
                 (Parameters p) -> agent.critique(UUID.randomUUID().toString(), toCriticJson(p)),
                 strategy
@@ -54,7 +56,9 @@ public class CriticAgentTest {
                 .isGreaterThanOrEqualTo(80.0);
     }
 
-    /** Accepts either 1 JSON param or 3 separate params and returns a JSON string. */
+    /**
+     * Accepts either 1 JSON param or 3 separate params and returns a JSON string.
+     */
     private String toCriticJson(Parameters p) {
         if (p.size() == 1) {
             // Single parameter is already a JSON string
@@ -71,6 +75,14 @@ public class CriticAgentTest {
     @Singleton
     public static class CritiqueEvaluationStrategy implements EvaluationStrategy<CriticOutput> {
 
+        private static String safeLower(String s) {
+            return s == null ? "" : s.toLowerCase(Locale.ROOT);
+        }
+
+        private static String safe(String s) {
+            return s == null ? "" : s;
+        }
+
         @Override
         public boolean evaluate(EvaluationSample<CriticOutput> sample, CriticOutput output) {
             try {
@@ -80,9 +92,16 @@ public class CriticAgentTest {
                 String verdict = safeLower(output.getVerdict());
                 if (!"approve".equals(verdict) && !"revise".equals(verdict)) return false;
 
-                if (output.getReasons() == null || output.getReasons().isEmpty()) return false;
-                for (String r : output.getReasons()) {
-                    if (r == null || r.isBlank()) return false;
+                // Always require original draft echo
+                if (output.getOriginalDraft() == null || output.getOriginalDraft().isBlank()) return false;
+
+                // Reasons / suggestions presence
+                boolean hasReason = output.getReasons() != null && output.getReasons().stream().anyMatch(r -> r != null && !r.isBlank());
+
+                // For REVISE: must have at least one reason and a non-empty revised draft
+                if ("revise".equals(verdict)) {
+                    if (!hasReason) return false;
+                    if (output.getRevisedDraft() == null || output.getRevisedDraft().isBlank()) return false;
                 }
 
                 // Scores sanity if present
@@ -99,7 +118,6 @@ public class CriticAgentTest {
                     }
                 }
 
-                // Parse expectations from sample (coerce to String to keep YAML like EXPECT_VERDICT working)
                 String expectedText = String.valueOf(sample.expectedOutput());
                 String[] lines = expectedText.split("\\R+");
                 String expectVerdict = null;
@@ -125,7 +143,6 @@ public class CriticAgentTest {
                     if (!verdict.equals(expectVerdict)) return false;
                 }
 
-                // If revision is expected or verdict is revise, ensure we have a non-empty revised draft
                 if (expectRevised || "revise".equals(verdict)) {
                     if (output.getRevisedDraft() == null || output.getRevisedDraft().isBlank()) return false;
                 }
@@ -152,13 +169,6 @@ public class CriticAgentTest {
                 LOG.error("Failed to evaluate CriticAgent response.", e);
                 return false;
             }
-        }
-
-        private static String safeLower(String s) {
-            return s == null ? "" : s.toLowerCase(Locale.ROOT);
-        }
-        private static String safe(String s) {
-            return s == null ? "" : s;
         }
     }
 }

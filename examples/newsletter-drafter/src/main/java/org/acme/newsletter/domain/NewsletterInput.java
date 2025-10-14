@@ -7,7 +7,7 @@ public record NewsletterInput(String marketMood, String topMovers, String macroD
 
     public NewsletterInput(String marketMood, String topMovers, String macroData, String tone, String length,
                            String notes) {
-        this(marketMood, topMovers, macroData, Tone.valueOf(tone.toUpperCase(Locale.ENGLISH)), Length.valueOf(length.toUpperCase(Locale.ENGLISH)), notes);
+        this(marketMood, topMovers, macroData, Tone.valueOf(tone.toUpperCase(Locale.ROOT)), Length.valueOf(length.toUpperCase(Locale.ROOT)), notes);
     }
 
     public NewsletterInput(String marketMood, String topMovers, String macroData, Tone tone, Length length) {
