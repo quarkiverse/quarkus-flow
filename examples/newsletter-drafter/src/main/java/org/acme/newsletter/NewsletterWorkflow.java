@@ -13,8 +13,12 @@ import io.serverlessworkflow.impl.jackson.JsonUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.emit;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.event;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.eventJson;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.fn;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.listen;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.switchWhenOrElse;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.to;
 
@@ -43,18 +47,15 @@ public class NewsletterWorkflow extends Flow {
                 // TODO: in agent we receive a BiFunction(String, T). The first is the memoryId. We then use a JavaFilterFunction to inject the workflowId
                 .tasks(f -> f.callFn("draftAgent", fn((String input) -> drafterAgent.draft("ABC", input), String.class)),
                         f -> f.callFn("criticAgent", fn((String input) -> criticAgent.critique("ABC", input), String.class)),
-                        e -> e.emit("draftReady", event("org.acme.email.review.required",
-                                // TODO: incorporate into the DSL
-                                payload -> PojoCloudEventData.wrap(payload, p -> JsonUtils.mapper().writeValueAsString(payload).getBytes()), CriticOutput.class)),
-                        l -> l.listen("waitHumanReview", to().one(event("org.acme.newsletter.review.done"))
-                                // TODO: incorporate this into DSL
-                                .andThen(o -> o.outputAs(helper::unwrapEventArray, Object.class))),
+                        emit("draftReady", eventJson("org.acme.email.review.required", CriticOutput.class)),
+                        listen("waitHumanReview", to().one(event("org.acme.newsletter.review.done")))
+                                .outputAs(helper::unwrapEventArray, Object.class),
                         switchWhenOrElse(helper::needsAnotherRevision, "draftAgent", "sendNewsletter"),
-                        f -> f.callFn("sendNewsletter", fn((String reviewedDraft) -> {
+                        function("sendNewsletter", (String reviewedDraft) -> {
                             String draft = helper.extractDraft(reviewedDraft);
                             mailService.send("subscribers@acme.finance.org", "Weekly Newsletter", draft);
                             return null;
-                        }, String.class)))
+                        }, String.class))
                 .build();
     }
 
