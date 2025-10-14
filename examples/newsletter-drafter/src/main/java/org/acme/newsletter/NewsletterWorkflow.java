@@ -3,6 +3,7 @@ package org.acme.newsletter;
 import org.acme.newsletter.agents.CriticAgent;
 import org.acme.newsletter.agents.DrafterAgent;
 import org.acme.newsletter.domain.CriticOutput;
+import org.acme.newsletter.services.MailService;
 
 import io.cloudevents.core.data.PojoCloudEventData;
 import io.quarkiverse.flow.Flow;
@@ -28,6 +29,9 @@ public class NewsletterWorkflow extends Flow {
     CriticAgent criticAgent;
 
     @Inject
+    MailService mailService;
+
+    @Inject
     HumanReviewHelper helper;
 
     @Override
@@ -44,10 +48,13 @@ public class NewsletterWorkflow extends Flow {
                                 payload -> PojoCloudEventData.wrap(payload, p -> JsonUtils.mapper().writeValueAsString(payload).getBytes()), CriticOutput.class)),
                         l -> l.listen("waitHumanReview", to().one(event("org.acme.newsletter.review.done"))
                                 // TODO: incorporate this into DSL
-                                .andThen(o -> o.outputAs(helper::unwrapToString, Object.class))),
+                                .andThen(o -> o.outputAs(helper::unwrapEventArray, Object.class))),
                         switchWhenOrElse(helper::needsAnotherRevision, "draftAgent", "sendNewsletter"),
-                        // TODO: call a function to send the newsletter
-                        f -> f.callFn("sendNewsletter", fn(helper::toMap)))
+                        f -> f.callFn("sendNewsletter", fn((String reviewedDraft) -> {
+                            String draft = helper.extractDraft(reviewedDraft);
+                            mailService.send("subscribers@acme.finance.org", "Weekly Newsletter", draft);
+                            return null;
+                        }, String.class)))
                 .build();
     }
 

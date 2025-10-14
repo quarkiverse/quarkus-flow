@@ -1,36 +1,36 @@
 package org.acme.newsletter;
 
-import java.net.URI;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.acme.newsletter.domain.CriticOutput;
-import org.apache.kafka.clients.producer.ProducerRecord;
+import org.acme.newsletter.services.MailService;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
-import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.mockito.ArgumentCaptor;
 
 import io.cloudevents.CloudEvent;
-import io.cloudevents.core.builder.CloudEventBuilder;
 import io.cloudevents.core.provider.EventFormatProvider;
 import io.cloudevents.jackson.JsonFormat;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kafka.InjectKafkaCompanion;
 import io.quarkus.test.kafka.KafkaCompanionResource;
 import io.smallrye.reactive.messaging.kafka.companion.ConsumerTask;
 import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
-import jakarta.inject.Inject;
 
+import static io.restassured.RestAssured.given;
 import static java.time.Duration.ofSeconds;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
 
 @DisabledOnOs(OS.WINDOWS)
 @QuarkusTest
@@ -40,22 +40,27 @@ public class NewsletterWorkflowTest {
     private static final JsonFormat CE_JSON = (JsonFormat) EventFormatProvider.getInstance()
             .resolveFormat(JsonFormat.CONTENT_TYPE);
 
-    @Inject
-    NewsletterWorkflow workflow;
-
     @InjectKafkaCompanion
     KafkaCompanion companion;
+
+    @InjectMock
+    MailService mailService;
 
     private static String jsonEsc(String s) {
         return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
     }
 
     @Test
-    void agent_chain_human_review_two_rounds() throws Exception {
-        // Start consuming BEFORE we start the workflow so we don't miss the event
+    void agent_chain_human_review_two_rounds_via_rest() {
+        // Start consuming BEFORE triggering the workflow
         ConsumerTask<Object, Object> out = companion
                 .consumeWithDeserializers(StringDeserializer.class, ByteArrayDeserializer.class)
                 .fromTopics("flow-out");
+
+        final String expectedType = "org.acme.email.review.required";
+        final AtomicReference<CriticOutput> critic1 = new AtomicReference<>();
+        final AtomicReference<CriticOutput> critic2 = new AtomicReference<>();
+        final AtomicLong firstReviewOffset = new AtomicLong(-1L);
 
         final String initialInput = """
                 {
@@ -68,95 +73,83 @@ public class NewsletterWorkflowTest {
                 }
                 """;
 
-        var instanceFuture = workflow.instance(initialInput).start(); // pauses at listen
+        // 1) start via REST
+        given().contentType("application/json").body(initialInput)
+                .when().post("/api/newsletter")
+                .then().statusCode(202);
 
-        // Round 1: wait the first email.review.required
-        final String expectedType = "org.acme.email.review.required";
-        final AtomicReference<CriticOutput> critic1 = new AtomicReference<>();
-
-        await().atMost(ofSeconds(20)).untilAsserted(() -> {
+        // 2) ROUND #1 — wait first review-required and capture its offset
+        await().atMost(ofSeconds(60)).untilAsserted(() -> {
             boolean found = out.stream()
-                    .map(rec -> CE_JSON.deserialize((byte[]) rec.value()))
-                    .anyMatch(ce -> {
+                    .map(r -> (ConsumerRecord<Object, Object>) r)
+                    .anyMatch(rec -> {
+                        CloudEvent ce = CE_JSON.deserialize((byte[]) rec.value());
                         if (expectedType.equals(ce.getType())) {
-                            CriticOutput co = CE_JSON
-                                    .deserialize((byte[]) out.getLastRecord().value())
-                                    .getData() == null ? null
-                                    : parseCriticFrom(ce);
-                            if (co != null) critic1.set(co);
+                            critic1.set(parseCriticFrom(ce));
+                            firstReviewOffset.set(rec.offset());
                             return true;
                         }
                         return false;
                     });
             assertThat(found).isTrue();
         });
-
         assertThat(critic1.get()).isNotNull();
 
-        // Send human review event with status needs_revision → loop back to drafter
-        sendHumanReview(critic1.get().getOriginalDraft(),
-                "Please tone down hype.",
-                "needs_revision");
+        // 3) needs_revision -> loop back to drafter
+        sendHumanReview(critic1.get().getOriginalDraft(), "Please tone down hype.", "NEEDS_REVISION");
 
-        // Round 2: expect another email.review.required due to loop
-        final AtomicReference<CriticOutput> critic2 = new AtomicReference<>();
-
-        await().atMost(ofSeconds(20)).untilAsserted(() -> {
+        // 4) ROUND #2 — wait NEXT review-required (offset strictly greater)
+        await().atMost(ofSeconds(60)).untilAsserted(() -> {
             boolean found = out.stream()
-                    .map(rec -> CE_JSON.deserialize((byte[]) rec.value()))
-                    .anyMatch(ce -> {
+                    .map(r -> (ConsumerRecord<Object, Object>) r)
+                    .anyMatch(rec -> {
+                        if (rec.offset() <= firstReviewOffset.get()) return false;
+                        CloudEvent ce = CE_JSON.deserialize((byte[]) rec.value());
                         if (expectedType.equals(ce.getType())) {
-                            CriticOutput co = parseCriticFrom(ce);
-                            if (co != null) critic2.set(co);
+                            critic2.set(parseCriticFrom(ce));
                             return true;
                         }
                         return false;
                     });
             assertThat(found).isTrue();
         });
-
         assertThat(critic2.get()).isNotNull();
 
-        // Send human review event with status done → workflow finishes
-        sendHumanReview(critic2.get().getOriginalDraft(),
-                "",
-                "done");
+        // 5) done -> workflow proceeds to sendNewsletter
+        sendHumanReview(critic2.get().getOriginalDraft(), "", "DONE");
 
-        // Await completion; expect the last result to be a CriticOutput (from last critic pass)
-        Map<String, Object> result = instanceFuture.get(30, TimeUnit.SECONDS)
-                .asMap()
-                .orElseThrow(() -> new AssertionError("No final output"));
+        // 6) verify MailService was called with some non-empty body
+        await().atMost(ofSeconds(30)).untilAsserted(() -> {
+            ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
+            verify(mailService, atLeastOnce())
+                    .send(eq("subscribers@acme.finance.org"), eq("Weekly Newsletter"), bodyCaptor.capture());
+            assertThat(bodyCaptor.getValue()).isNotBlank();
+        });
 
-        assertThat(result).isNotNull();
-
-        // tidy up
         out.close();
     }
 
     private void sendHumanReview(String draft, String notes, String status) {
-        final String body = """
-                { "draft": %s, "notes": %s, "status": %s }
-                """.formatted(jsonEsc(draft), jsonEsc(notes), jsonEsc(status));
-
-        CloudEvent reviewEvent = CloudEventBuilder.v1()
-                .withId(UUID.randomUUID().toString())
-                .withSource(URI.create("test:/newsletter"))
-                .withType("org.acme.newsletter.review.done")
-                .withDataContentType("application/json")
-                .withData(body.getBytes())
-                .build();
-
-        byte[] payload = CE_JSON.serialize(reviewEvent);
-        companion.produceWithSerializers(StringSerializer.class, ByteArraySerializer.class)
-                .fromRecords(new ProducerRecord<>("flow-in", payload));
+        // REST wrapper sends CloudEvent to flow-in
+        given()
+                .contentType("application/json")
+                .body("""
+                        {
+                          "draft": %s,
+                          "notes": %s,
+                          "status": %s
+                        }
+                        """.formatted(jsonEsc(draft), jsonEsc(notes), jsonEsc(status)))
+                .when()
+                .put("/api/newsletter")
+                .then()
+                .statusCode(202);
     }
 
     private CriticOutput parseCriticFrom(CloudEvent ce) {
         try {
             byte[] data = ce.getData() == null ? null : ce.getData().toBytes();
             if (data == null) return null;
-            // The workflow emitted PojoCloudEventData<CriticOutput>, but it was serialized as JSON bytes.
-            // Just bind it using the same Jackson type the producer used (CriticOutput).
             return io.serverlessworkflow.impl.jackson.JsonUtils.mapper()
                     .readValue(data, CriticOutput.class);
         } catch (Exception e) {

@@ -1,15 +1,10 @@
 package org.acme.newsletter;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 @Singleton
 public class HumanReviewHelper {
@@ -21,7 +16,7 @@ public class HumanReviewHelper {
      * Normalizes the listen output to a plain JSON string body.
      * Handles ArrayNode, String, single JsonNode, or arbitrary POJO.
      */
-    public String unwrapToString(Object in) {
+    public String unwrapEventArray(Object in) {
         try {
             if (in instanceof JsonNode node) {
                 if (node.isArray()) {
@@ -53,13 +48,17 @@ public class HumanReviewHelper {
         }
     }
 
-    /** Converts the final JSON body into a Map for the test’s .asMap() */
-    public Map<String, Object> toMap(String body) {
+    /**
+     * Extracts the `draft` text from a review JSON payload.
+     * If parsing fails or `draft` is missing/null, returns the original input.
+     */
+    public String extractDraft(String body) {
         try {
-            return objectMapper.readValue(body, new TypeReference<>() {
-            });
-        }  catch (Exception e) {
-            throw new RuntimeException(e);
+            JsonNode root = objectMapper.readTree(body);
+            JsonNode draft = root.get("draft");
+            return (draft != null && !draft.isNull()) ? draft.asText() : body;
+        } catch (Exception e) {
+            return body;
         }
     }
 }
