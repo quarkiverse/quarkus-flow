@@ -11,7 +11,7 @@ import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
 @DisabledOnOs(OS.WINDOWS)
-public class HelloAgenticResourceTest {
+public class EchoAgenticResourceTest {
 
     @Test
     public void testHelloEndpoint() {
