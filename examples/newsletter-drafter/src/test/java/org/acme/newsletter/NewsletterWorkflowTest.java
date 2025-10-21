@@ -33,7 +33,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 
-@Disabled
 @DisabledOnOs(OS.WINDOWS)
 @QuarkusTest
 @QuarkusTestResource(KafkaCompanionResource.class)

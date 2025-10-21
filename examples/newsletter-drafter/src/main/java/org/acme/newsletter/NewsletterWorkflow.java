@@ -45,8 +45,8 @@ public class NewsletterWorkflow extends Flow {
     @Override
     public Workflow descriptor() {
         return FuncWorkflowBuilder.workflow()
-                .tasks(agent("draftAgent", drafterAgent::draft, String.class),
-                        agent("criticAgent", criticAgent::critique, String.class),
+                .tasks(agent("draftAgent", drafterAgent::draft, Object.class),
+                        agent("criticAgent", criticAgent::critique, Object.class),
                         emitJson("draftReady", "org.acme.email.review.required", CriticOutput.class),
                         listen("waitHumanReview", to().one(event("org.acme.newsletter.review.done")))
                                 .outputAs((Collection<Object> c) -> c.iterator().next()),

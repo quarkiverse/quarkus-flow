@@ -49,5 +49,5 @@ public interface CriticAgent {
             {payload}
             """)
     CriticOutput critique(@MemoryId String memoryId,
-                          @V("payload") String payloadJson);
+                          @V("payload") Object payloadJson);
 }
