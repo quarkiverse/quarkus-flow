@@ -1,24 +1,28 @@
 package org.acme.newsletter;
 
+import java.util.Collection;
+import java.util.Map;
+
 import org.acme.newsletter.agents.CriticAgent;
 import org.acme.newsletter.agents.DrafterAgent;
 import org.acme.newsletter.domain.CriticOutput;
+import org.acme.newsletter.domain.NewsletterReview;
 import org.acme.newsletter.services.MailService;
 
-import io.cloudevents.core.data.PojoCloudEventData;
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
-import io.serverlessworkflow.impl.jackson.JsonUtils;
+import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.emit;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.agent;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.consume;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.emitJson;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.event;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.eventJson;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.fn;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.listen;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.selectFirst;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.selectFirstStringify;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.switchWhenOrElse;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.to;
 
@@ -40,22 +44,16 @@ public class NewsletterWorkflow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        // TODO: transform the input into a JSON to keep the UI ergonomic
-
         return FuncWorkflowBuilder.workflow()
-                // TODO: agent(drafterAgent::draft)
-                // TODO: in agent we receive a BiFunction(String, T). The first is the memoryId. We then use a JavaFilterFunction to inject the workflowId
-                .tasks(f -> f.callFn("draftAgent", fn((String input) -> drafterAgent.draft("ABC", input), String.class)),
-                        f -> f.callFn("criticAgent", fn((String input) -> criticAgent.critique("ABC", input), String.class)),
-                        emit("draftReady", eventJson("org.acme.email.review.required", CriticOutput.class)),
+                .tasks(agent("draftAgent", drafterAgent::draft, String.class),
+                        agent("criticAgent", criticAgent::critique, String.class),
+                        emitJson("draftReady", "org.acme.email.review.required", CriticOutput.class),
                         listen("waitHumanReview", to().one(event("org.acme.newsletter.review.done")))
-                                .outputAs(helper::unwrapEventArray, Object.class),
-                        switchWhenOrElse(helper::needsAnotherRevision, "draftAgent", "sendNewsletter"),
-                        function("sendNewsletter", (String reviewedDraft) -> {
-                            String draft = helper.extractDraft(reviewedDraft);
-                            mailService.send("subscribers@acme.finance.org", "Weekly Newsletter", draft);
-                            return null;
-                        }, String.class))
+                                .outputAs((Collection<Object> c) -> c.iterator().next()),
+                        switchWhenOrElse(".status != \"DONE\"", "draftAgent", "sendNewsletter"),
+                        consume("sendNewsletter", (Map reviewedDraft) -> {
+                            mailService.send("subscribers@acme.finance.org", "Weekly Newsletter", reviewedDraft.get("draft").toString());
+                        }, Map.class))
                 .build();
     }
 

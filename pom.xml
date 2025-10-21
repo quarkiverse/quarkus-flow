@@ -62,12 +62,29 @@
                 <groupId>io.serverlessworkflow</groupId>
                 <artifactId>serverlessworkflow-fluent-spec</artifactId>
                 <version>${io.serverlessworkflow.version}</version>
+           </dependency>
+            <dependency>
+                <groupId>io.serverlessworkflow</groupId>
+                <artifactId>serverlessworkflow-impl-jq</artifactId>
+                <version>${io.serverlessworkflow.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.serverlessworkflow</groupId>
-                <artifactId>serverlessworkflow-impl-jackson</artifactId>
+                <artifactId>serverlessworkflow-impl-model</artifactId>
                 <version>${io.serverlessworkflow.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.serverlessworkflow</groupId>
+                <artifactId>serverlessworkflow-impl-validation</artifactId>
+                <version>${io.serverlessworkflow.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.serverlessworkflow</groupId>
+                <artifactId>serverlessworkflow-impl-lifecycle-events</artifactId>
+                <version>${io.serverlessworkflow.version}</version>
+            </dependency>
+
+
             <dependency>
                 <groupId>io.quarkiverse.jackson-jq</groupId>
                 <artifactId>quarkus-jackson-jq</artifactId>

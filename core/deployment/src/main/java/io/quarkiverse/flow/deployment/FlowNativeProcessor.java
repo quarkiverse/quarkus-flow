@@ -10,8 +10,6 @@ import io.serverlessworkflow.impl.executors.TaskExecutorFactory;
 import io.serverlessworkflow.impl.executors.func.JavaTaskExecutorFactory;
 import io.serverlessworkflow.impl.expressions.ExpressionFactory;
 import io.serverlessworkflow.impl.expressions.jq.JQExpressionFactory;
-import io.serverlessworkflow.impl.jackson.schema.JsonSchemaValidatorFactory;
-import io.serverlessworkflow.impl.schema.SchemaValidatorFactory;
 
 final class FlowNativeProcessor {
 
@@ -28,8 +26,6 @@ final class FlowNativeProcessor {
                 JQExpressionFactory.class.getName()));
         sp.produce(new ServiceProviderBuildItem(TaskExecutorFactory.class.getName(),
                 JavaTaskExecutorFactory.class.getName()));
-        sp.produce(new ServiceProviderBuildItem(SchemaValidatorFactory.class.getName(),
-                JsonSchemaValidatorFactory.class.getName()));
         sp.produce(new ServiceProviderBuildItem(EventConsumer.class.getName(),
                 InMemoryEvents.class.getName()));
         sp.produce(new ServiceProviderBuildItem(EventPublisher.class.getName(),

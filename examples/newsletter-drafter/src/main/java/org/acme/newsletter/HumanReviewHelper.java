@@ -3,6 +3,7 @@ package org.acme.newsletter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -52,13 +53,21 @@ public class HumanReviewHelper {
      * Extracts the `draft` text from a review JSON payload.
      * If parsing fails or `draft` is missing/null, returns the original input.
      */
-    public String extractDraft(String body) {
+    public String extractDraft(Object body) {
         try {
-            JsonNode root = objectMapper.readTree(body);
-            JsonNode draft = root.get("draft");
-            return (draft != null && !draft.isNull()) ? draft.asText() : body;
+            // Expect a TextNode; tolerate plain CharSequence for robustness
+            final String text =
+                    (body instanceof TextNode tn) ? tn.textValue() :
+                            (body instanceof CharSequence cs) ? cs.toString() :
+                                    objectMapper.writeValueAsString(body); // last-resort stringify
+
+            JsonNode root = objectMapper.readTree(text); // parse the JSON string
+            JsonNode draft = root.path("draft");         // safely navigate
+            return (draft.isMissingNode() || draft.isNull()) ? text : draft.asText("");
         } catch (Exception e) {
-            return body;
+            // Conservative fallback: return the original textual content
+            if (body instanceof TextNode tn) return tn.textValue();
+            return String.valueOf(body);
         }
     }
 }
