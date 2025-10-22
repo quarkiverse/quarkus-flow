@@ -2,7 +2,6 @@ package io.quarkiverse.flow.deployment;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.serverlessworkflow.impl.events.EventConsumer;
 import io.serverlessworkflow.impl.events.EventPublisher;
@@ -15,21 +14,6 @@ import io.serverlessworkflow.impl.jackson.schema.JsonSchemaValidatorFactory;
 import io.serverlessworkflow.impl.schema.SchemaValidatorFactory;
 
 final class FlowNativeProcessor {
-
-    /**
-     * see <a href="https://github.com/serverlessworkflow/sdk-java/issues/812">Native-image build fails due to UlidCreator
-     * static
-     * initialization (Random in image heap)</a>
-     */
-    @BuildStep
-    void runtimeInitUlid(BuildProducer<RuntimeInitializedClassBuildItem> producer) {
-        producer.produce(new RuntimeInitializedClassBuildItem(
-                "com.github.f4b6a3.ulid.UlidCreator$MonotonicFactoryHolder"));
-        producer.produce(new RuntimeInitializedClassBuildItem(
-                com.github.f4b6a3.ulid.UlidCreator.class.getName()));
-        producer.produce(new RuntimeInitializedClassBuildItem(
-                com.github.f4b6a3.ulid.UlidFactory.class.getName()));
-    }
 
     /**
      * Registers the CNCF Java SDK default providers for native compilation.
