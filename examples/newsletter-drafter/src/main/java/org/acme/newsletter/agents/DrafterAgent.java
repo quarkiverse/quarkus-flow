@@ -28,13 +28,13 @@ import jakarta.enterprise.context.ApplicationScoped;
            {
              "draft": "string",
              "notes": "string (optional)",
-             "status": "needs_revision | done"
+             "status": "NEEDS_REVISION | DONE"
            }
 
         Behaviors:
         - If shape A: create a new draft using those fields.
-        - If shape B and status != "done": refine the provided 'draft' using 'notes' and your conversation memory.
-        - If shape B and status == "done": return the draft as-is (no change).
+        - If shape B and status != "DONE": refine the provided 'draft' using 'notes' and your conversation memory.
+        - If shape B and status == "DONE": return the draft as-is (no change).
 
         Return STRICT JSON:
         { "draft": "<final draft text>" }

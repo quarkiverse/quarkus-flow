@@ -38,7 +38,7 @@ public class NewsletterWorkflow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow()
+        return FuncWorkflowBuilder.workflow("intelligent-newsletter")
                 .tasks(agent("draftAgent", drafterAgent::draft, String.class),
                         agent("criticAgent", criticAgent::critique, String.class),
                         emitJson("draftReady", "org.acme.email.review.required", CriticAgentReview.class),

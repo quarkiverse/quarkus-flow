@@ -6,7 +6,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 
 public enum Tone {
     FRIENDLY,
-    NEUTRAL;
+    NEUTRAL,
+    FORMAL,
+    CAUTIOUS;
 
     @Override
     public String toString() {
