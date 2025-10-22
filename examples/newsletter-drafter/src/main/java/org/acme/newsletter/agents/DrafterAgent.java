@@ -46,5 +46,5 @@ public interface DrafterAgent {
             {payload}
             """)
     String draft(@MemoryId String memoryId,
-                 @V("payload") Object payloadJson);
+                 @V("payload") String payloadJson);
 }

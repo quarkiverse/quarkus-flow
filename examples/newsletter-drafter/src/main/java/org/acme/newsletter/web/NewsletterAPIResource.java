@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import org.acme.newsletter.NewsletterWorkflow;
 import org.acme.newsletter.domain.NewsletterInput;
-import org.acme.newsletter.domain.NewsletterReview;
+import org.acme.newsletter.domain.HumanReview;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 
@@ -62,7 +62,7 @@ public class NewsletterAPIResource {
 
     @PUT
     @Path("/newsletter")
-    public Response sendReview(NewsletterReview review) throws JsonProcessingException {
+    public Response sendReview(HumanReview review) throws JsonProcessingException {
         byte[] body = objectMapper.writeValueAsBytes(review);
 
         CloudEvent ce = CloudEventBuilder.v1()

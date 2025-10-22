@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
-import org.acme.newsletter.domain.CriticOutput;
+import org.acme.newsletter.domain.CriticAgentReview;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,10 +43,10 @@ public class CriticAgentTest {
     @Test
     void critic_checks_json_and_constraints(
             @ScorerConfiguration(concurrency = 2) Scorer scorer,
-            @SampleLocation("src/test/resources/samples/critic-agent.yaml") Samples<CriticOutput> samples
+            @SampleLocation("src/test/resources/samples/critic-agent.yaml") Samples<CriticAgentReview> samples
     ) {
-        // Agent now returns CriticOutput, so the report is parameterized with CriticOutput
-        EvaluationReport<CriticOutput> report = scorer.evaluate(
+        // Agent now returns CriticAgentReview, so the report is parameterized with CriticAgentReview
+        EvaluationReport<CriticAgentReview> report = scorer.evaluate(
                 samples,
                 (Parameters p) -> agent.critique(UUID.randomUUID().toString(), toCriticJson(p)),
                 strategy
@@ -73,7 +73,7 @@ public class CriticAgentTest {
     }
 
     @Singleton
-    public static class CritiqueEvaluationStrategy implements EvaluationStrategy<CriticOutput> {
+    public static class CritiqueEvaluationStrategy implements EvaluationStrategy<CriticAgentReview> {
 
         private static String safeLower(String s) {
             return s == null ? "" : s.toLowerCase(Locale.ROOT);
@@ -84,7 +84,7 @@ public class CriticAgentTest {
         }
 
         @Override
-        public boolean evaluate(EvaluationSample<CriticOutput> sample, CriticOutput output) {
+        public boolean evaluate(EvaluationSample<CriticAgentReview> sample, CriticAgentReview output) {
             try {
                 if (output == null) return false;
 

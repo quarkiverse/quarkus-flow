@@ -10,7 +10,7 @@ import java.util.Objects;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class CriticOutput {
+public class CriticAgentReview {
 
     /** "approve" | "revise" */
     @JsonProperty("verdict")
@@ -37,10 +37,10 @@ public class CriticOutput {
     @JsonProperty("scores")
     private Scores scores;
 
-    public CriticOutput() {}
+    public CriticAgentReview() {}
 
-    public CriticOutput(String verdict, List<String> reasons, List<String> suggestions,
-                        String revisedDraft, Scores scores, String originalDraft) {
+    public CriticAgentReview(String verdict, List<String> reasons, List<String> suggestions,
+                             String revisedDraft, Scores scores, String originalDraft) {
         this.verdict = verdict;
         this.reasons = reasons;
         this.suggestions = suggestions;
@@ -71,7 +71,7 @@ public class CriticOutput {
 
     @Override
     public String toString() {
-        return "CriticOutput{" +
+        return "CriticAgentReview{" +
                 "verdict='" + verdict + '\'' +
                 ", reasons=" + reasons +
                 ", suggestions=" + suggestions +
@@ -83,7 +83,7 @@ public class CriticOutput {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof CriticOutput that)) return false;
+        if (!(o instanceof CriticAgentReview that)) return false;
         return Objects.equals(verdict, that.verdict) &&
                 Objects.equals(reasons, that.reasons) &&
                 Objects.equals(suggestions, that.suggestions) &&

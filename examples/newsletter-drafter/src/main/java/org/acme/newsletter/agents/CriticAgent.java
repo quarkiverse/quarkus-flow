@@ -1,13 +1,12 @@
 package org.acme.newsletter.agents;
 
-import org.acme.newsletter.domain.CriticOutput;
+import org.acme.newsletter.domain.CriticAgentReview;
 
 import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 import io.quarkiverse.langchain4j.RegisterAiService;
-import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @RegisterAiService
@@ -48,6 +47,6 @@ public interface CriticAgent {
             INPUT_JSON:
             {payload}
             """)
-    CriticOutput critique(@MemoryId String memoryId,
-                          @V("payload") Object payloadJson);
+    CriticAgentReview critique(@MemoryId String memoryId,
+                               @V("payload") String payloadJson);
 }

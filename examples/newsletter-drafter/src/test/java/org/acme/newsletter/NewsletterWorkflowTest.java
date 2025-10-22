@@ -3,12 +3,10 @@ package org.acme.newsletter;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.acme.newsletter.domain.CriticOutput;
+import org.acme.newsletter.domain.CriticAgentReview;
 import org.acme.newsletter.services.MailService;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -59,8 +57,8 @@ public class NewsletterWorkflowTest {
                 .fromTopics("flow-out");
 
         final String expectedType = "org.acme.email.review.required";
-        final AtomicReference<CriticOutput> critic1 = new AtomicReference<>();
-        final AtomicReference<CriticOutput> critic2 = new AtomicReference<>();
+        final AtomicReference<CriticAgentReview> critic1 = new AtomicReference<>();
+        final AtomicReference<CriticAgentReview> critic2 = new AtomicReference<>();
         final AtomicLong firstReviewOffset = new AtomicLong(-1L);
 
         final String initialInput = """
@@ -145,14 +143,14 @@ public class NewsletterWorkflowTest {
                 .statusCode(202);
     }
 
-    private CriticOutput parseCriticFrom(CloudEvent ce) {
+    private CriticAgentReview parseCriticFrom(CloudEvent ce) {
         try {
             byte[] data = ce.getData() == null ? null : ce.getData().toBytes();
             if (data == null) return null;
             return io.serverlessworkflow.impl.jackson.JsonUtils.mapper()
-                    .readValue(data, CriticOutput.class);
+                    .readValue(data, CriticAgentReview.class);
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to parse CriticOutput from CloudEvent data", e);
+            throw new IllegalStateException("Failed to parse CriticAgentReview from CloudEvent data", e);
         }
     }
 }
