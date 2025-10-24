@@ -34,7 +34,7 @@ import static org.mockito.Mockito.verify;
 @DisabledOnOs(OS.WINDOWS)
 @QuarkusTest
 @QuarkusTestResource(KafkaCompanionResource.class)
-public class NewsletterWorkflowTest {
+public class NewsletterWorkflowIT {
 
     private static final JsonFormat CE_JSON = (JsonFormat) EventFormatProvider.getInstance()
             .resolveFormat(JsonFormat.CONTENT_TYPE);

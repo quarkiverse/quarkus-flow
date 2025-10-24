@@ -7,6 +7,8 @@ import java.util.UUID;
 
 import org.acme.newsletter.domain.CriticAgentReview;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +29,7 @@ import jakarta.inject.Singleton;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@DisabledOnOs(OS.WINDOWS)
 @QuarkusTest
 @AiScorer
 public class CriticAgentTest {
