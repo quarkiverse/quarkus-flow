@@ -13,4 +13,5 @@ A user must be able to copy and paste the `pom.xml` file and be able to reuse it
 1. Create the sub module project via `mvn quarkus:create` and commit the project as it's generated.
 2. Add the project as a sub module in the main `examples/pom.xml` file, but DO NOT add the examples project as parent.
 3. Document your example with a detailed README.md file. DO NOT commit the default Quarkus readme.
-4. Add your example to the list in the section above.
+4. Ensure that integration tests has `*IT` suffix and configure the failsafe plugin to run them by default.
+5. Add your example to the list in the section above.

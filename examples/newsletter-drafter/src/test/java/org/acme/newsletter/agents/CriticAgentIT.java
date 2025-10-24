@@ -32,9 +32,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisabledOnOs(OS.WINDOWS)
 @QuarkusTest
 @AiScorer
-public class CriticAgentTest {
+public class CriticAgentIT {
 
-    private static final Logger LOG = LoggerFactory.getLogger(CriticAgentTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CriticAgentIT.class);
 
     @Inject
     CriticAgent agent;
