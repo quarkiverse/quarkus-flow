@@ -171,6 +171,8 @@
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
                     </systemPropertyVariables>
+                    <!-- Skip ITs with ollama since GHA does not have the necessary resources to run them -->
+                    <skipITs>true</skipITs>
                 </configuration>
             </plugin>
         </plugins>
