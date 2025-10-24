@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Newsletter – Compose</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="stylesheet"
+          href="https://unpkg.com/@picocss/pico@1.5.10/css/pico.min.css">
+    <style>
+        body { padding-block: 2rem; }
+        .grid { gap: 1rem; }
+        .muted { opacity: .8; font-size: .9rem; }
+        .badge { background: var(--primary); color: white; border-radius: 999px; padding: .25rem .6rem; }
+        .spinner { width:1rem; height:1rem; border:2px solid var(--muted-border-color); border-top-color: var(--primary); border-radius:50%; animation: spin .8s linear infinite; display:inline-block; vertical-align: middle; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+<main class="container">
+    <header>
+        <h1>Weekly Newsletter</h1>
+        <p class="muted">Draft the newsletter and kick off the agentic workflow.</p>
+    </header>
+
+    <article>
+        <form id="composeForm">
+            <div class="grid">
+                <label>
+                    Market mood
+                    <input name="marketMood" placeholder="bullish, cautious, ..." required>
+                </label>
+
+                <label>
+                    Top movers
+                    <input name="topMovers" placeholder="AAPL:+3%, MSFT:+2%">
+                </label>
+            </div>
+
+            <label>
+                Macro data
+                <textarea name="macroData" rows="3" placeholder="CPI cooling; jobs steady"></textarea>
+            </label>
+
+            <div class="grid">
+                <label>
+                    Tone
+                    <select name="tone" required>
+                        <option value="friendly">friendly</option>
+                        <option value="neutral">neutral</option>
+                        <option value="formal">formal</option>
+                        <option value="cautious">cautious</option>
+                    </select>
+                </label>
+
+                <label>
+                    Length
+                    <select name="length" required>
+                        <option value="short">short</option>
+                        <option value="medium">medium</option>
+                        <option value="long">long</option>
+                    </select>
+                </label>
+            </div>
+
+            <label>
+                Notes (optional)
+                <textarea name="notes" rows="3" placeholder="Extra hints for the drafter"></textarea>
+            </label>
+
+            <footer class="grid">
+                <button id="submitBtn" type="submit">
+                    <span id="submitLabel">Generate draft</span>
+                    <span id="submitSpinner" class="spinner" style="display:none;margin-left:.5rem;"></span>
+                </button>
+                <a class="secondary" href="/review.html">Open review page</a>
+            </footer>
+        </form>
+    </article>
+
+    <article id="resultCard" hidden>
+        <header><strong>Workflow started</strong></header>
+        <p>
+            Instance ID: <span id="instanceId" class="badge"></span>
+        </p>
+        <footer>
+            <a id="toReview" role="button" href="/review.html">Go to review</a>
+        </footer>
+    </article>
+</main>
+
+<script>
+    const form = document.getElementById('composeForm');
+    const resultCard = document.getElementById('resultCard');
+    const instanceIdEl = document.getElementById('instanceId');
+    const toReview = document.getElementById('toReview');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitLabel = document.getElementById('submitLabel');
+    const submitSpinner = document.getElementById('submitSpinner');
+
+    function setLoading(isLoading) {
+        submitBtn.disabled = isLoading;
+        submitSpinner.style.display = isLoading ? 'inline-block' : 'none';
+        submitLabel.textContent = isLoading ? 'Generating…' : 'Generate draft';
+    }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const fd = new FormData(form);
+            const payload = {
+                marketMood: fd.get('marketMood'),
+                topMovers: fd.get('topMovers'),
+                macroData: fd.get('macroData'),
+                tone: fd.get('tone'),
+                length: fd.get('length'),
+                notes: fd.get('notes')
+            };
+            const res = await fetch('/api/newsletter', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+                alert('Failed to start workflow. Check server logs.');
+                return;
+            }
+            const json = await res.json();
+            const instanceId = json.instanceId || '(unknown)';
+            instanceIdEl.textContent = instanceId;
+            toReview.href = `/review.html?instanceId=${encodeURIComponent(instanceId)}`;
+            resultCard.hidden = false;
+        } finally {
+            setLoading(false);
+        }
+    });
+</script>
+</body>
+</html>

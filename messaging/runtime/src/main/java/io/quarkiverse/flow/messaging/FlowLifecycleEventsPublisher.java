@@ -8,8 +8,6 @@ import org.eclipse.microprofile.reactive.messaging.Channel;
 import io.cloudevents.CloudEvent;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 
-// TODO: in the engine, create a specialized EventPublisher for lifecycle events
-
 @ApplicationScoped
 public class FlowLifecycleEventsPublisher extends ContentBasedRouterEventsPublisher {
 

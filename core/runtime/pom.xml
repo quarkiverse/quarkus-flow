@@ -28,7 +28,15 @@
         </dependency>
         <dependency>
             <groupId>io.serverlessworkflow</groupId>
-            <artifactId>serverlessworkflow-impl-jackson</artifactId>
+            <artifactId>serverlessworkflow-impl-jq</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.serverlessworkflow</groupId>
+            <artifactId>serverlessworkflow-impl-model</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.serverlessworkflow</groupId>
+            <artifactId>serverlessworkflow-impl-lifecycle-events</artifactId>
         </dependency>
         <dependency>
             <groupId>io.serverlessworkflow</groupId>
@@ -97,8 +105,7 @@
                             <conditionalDependencies>
                                 <dependency>${project.groupId}:${project.artifactId}-messaging:${project.version}</dependency>
                             </conditionalDependencies>
-                            <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}
-                            </deployment>
+                            <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}</deployment>
                         </configuration>
                     </execution>
                 </executions>

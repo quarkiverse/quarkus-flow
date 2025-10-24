@@ -17,6 +17,7 @@
     <modules>
         <module>core</module>
         <module>messaging</module>
+        <module>examples</module>
     </modules>
 
     <scm>
@@ -31,7 +32,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.version>3.29.0</quarkus.version>
-        <io.serverlessworkflow.version>7.2.1.Final</io.serverlessworkflow.version>
+        <io.serverlessworkflow.version>7.3.0.Final</io.serverlessworkflow.version>
         <io.quarkiverse.jackson-jq.version>2.4.0</io.quarkiverse.jackson-jq.version>
         <io.quarkiverse.langchain4j.version>1.3.1</io.quarkiverse.langchain4j.version>
         <org.assertj.version>3.27.6</org.assertj.version>
@@ -61,12 +62,28 @@
                 <groupId>io.serverlessworkflow</groupId>
                 <artifactId>serverlessworkflow-fluent-spec</artifactId>
                 <version>${io.serverlessworkflow.version}</version>
+           </dependency>
+            <dependency>
+                <groupId>io.serverlessworkflow</groupId>
+                <artifactId>serverlessworkflow-impl-jq</artifactId>
+                <version>${io.serverlessworkflow.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.serverlessworkflow</groupId>
-                <artifactId>serverlessworkflow-impl-jackson</artifactId>
+                <artifactId>serverlessworkflow-impl-model</artifactId>
                 <version>${io.serverlessworkflow.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.serverlessworkflow</groupId>
+                <artifactId>serverlessworkflow-impl-validation</artifactId>
+                <version>${io.serverlessworkflow.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.serverlessworkflow</groupId>
+                <artifactId>serverlessworkflow-impl-lifecycle-events</artifactId>
+                <version>${io.serverlessworkflow.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>io.quarkiverse.jackson-jq</groupId>
                 <artifactId>quarkus-jackson-jq</artifactId>
@@ -131,6 +148,7 @@
             </activation>
             <modules>
                 <module>docs</module>
+                <module>examples</module>
             </modules>
         </profile>
     </profiles>
