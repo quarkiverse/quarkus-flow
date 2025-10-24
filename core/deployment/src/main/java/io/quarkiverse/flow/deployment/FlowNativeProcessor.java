@@ -10,6 +10,7 @@ import io.serverlessworkflow.impl.events.InMemoryEvents;
 import io.serverlessworkflow.impl.executors.TaskExecutorFactory;
 import io.serverlessworkflow.impl.executors.func.JavaTaskExecutorFactory;
 import io.serverlessworkflow.impl.expressions.ExpressionFactory;
+import io.serverlessworkflow.impl.expressions.func.JavaExpressionFactory;
 import io.serverlessworkflow.impl.expressions.jq.JQExpressionFactory;
 import io.serverlessworkflow.impl.model.jackson.JacksonModelFactory;
 
@@ -26,13 +27,16 @@ final class FlowNativeProcessor {
 
         sp.produce(new ServiceProviderBuildItem(ExpressionFactory.class.getName(),
                 JQExpressionFactory.class.getName()));
+        sp.produce(new ServiceProviderBuildItem(ExpressionFactory.class.getName(),
+                JavaExpressionFactory.class.getName()));
         sp.produce(new ServiceProviderBuildItem(TaskExecutorFactory.class.getName(),
                 JavaTaskExecutorFactory.class.getName()));
         sp.produce(new ServiceProviderBuildItem(EventConsumer.class.getName(),
                 InMemoryEvents.class.getName()));
         sp.produce(new ServiceProviderBuildItem(EventPublisher.class.getName(),
                 InMemoryEvents.class.getName()));
-        sp.produce(new ServiceProviderBuildItem(WorkflowModelFactory.class.getName(), JacksonModelFactory.class.getName()));
+        sp.produce(new ServiceProviderBuildItem(WorkflowModelFactory.class.getName(),
+                JacksonModelFactory.class.getName()));
     }
 
 }
