@@ -11,6 +11,10 @@
     <name>Quarkus Flow :: Examples</name>
     <packaging>pom</packaging>
 
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <modules>
         <module>newsletter-drafter</module>
     </modules>
