@@ -16,7 +16,6 @@
     <modules>
         <module>core</module>
         <module>messaging</module>
-        <module>examples</module>
     </modules>
 
     <scm>
