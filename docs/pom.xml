@@ -38,6 +38,23 @@
         </dependency>
     </dependencies>
 
+    <profiles>
+        <profile>
+            <id>skip-antora-on-windows</id>
+            <activation>
+                <os>
+                    <family>Windows</family>
+                </os>
+            </activation>
+            <properties>
+                <quarkus.build.skip>true</quarkus.build.skip>
+                <maven.install.skip>true</maven.install.skip>
+                <maven.deploy.skip>true</maven.deploy.skip>
+                <maven.test.skip>true</maven.test.skip>
+            </properties>
+        </profile>
+    </profiles>
+
     <build>
         <sourceDirectory>modules/ROOT/examples</sourceDirectory>
         <plugins>
@@ -49,6 +66,9 @@
                         <goals>
                             <goal>build</goal>
                         </goals>
+                        <configuration>
+                            <skip>${quarkus.build.skip}</skip>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
