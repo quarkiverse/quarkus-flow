@@ -1,0 +1,78 @@
+= Getting started
+include::./includes/attributes.adoc[]
+
+This page shows the shortest path to run a Quarkus Flow workflow inside your Quarkus app, with Quarkus-native ergonomics (CDI, build-time discovery, dev mode).
+
+== 1) Add the dependency
+
+.Maven
+[source,xml,subs=attributes+]
+----
+<dependency>
+  <groupId>io.quarkiverse.flow</groupId>
+  <artifactId>quarkus-flow</artifactId>
+  <version>{project-version}</version>
+</dependency>
+----
+
+== 2) Define a minimal workflow
+
+Create a `Flow` subclass. At build time, Quarkus Flow discovers it and makes it injectable.
+
+[source,java]
+----
+include::{examples-dir}HelloWorkflow.java[]
+----
+
+== 3) Run it (two ergonomic options)
+
+=== Inject the Flow subclass (recommended)
+[source,java]
+----
+package org.acme;
+
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import org.jboss.resteasy.reactive.ResponseStatus;
+
+@Path("/hello")
+@ApplicationScoped
+public class HelloResource {
+
+  @Inject
+  HelloWorkflow hello; // inject the Flow subclass
+
+  @GET
+  @ResponseStatus(200)
+  public CompletionStage<Message> hello() {
+    return hello
+        .startInstance(Map.of())                // convenience on Flow
+        .thenApply(w -> w.as(Message.class).orElseThrow());
+  }
+}
+----
+
+=== Or inject the compiled definition (advanced)
+If you need a `WorkflowDefinition`, inject it by FQCN:
+
+[source,java]
+----
+import io.smallrye.common.annotation.Identifier;
+import io.serverlessworkflow.impl.WorkflowDefinition;
+
+@Inject
+@Identifier("org.acme.HelloWorkflow") // FQCN of the workflow class
+WorkflowDefinition helloDef;
+----
+
+== What’s next?
+
+* xref:dsl-cheatsheet.adoc[Java DSL cheatsheet] — common patterns and snippets
+* xref:langchain4j.adoc[Agentic workflows] — agents, critique/revise loops, HITL
+* xref:messaging.adoc[Messaging] — emit/listen event patterns
+* xref:configuration.adoc[Configuration] — all config keys and generated tables

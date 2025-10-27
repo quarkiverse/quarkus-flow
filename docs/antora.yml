@@ -1,5 +1,11 @@
 name: quarkus-flow
 title: Flow
 version: dev
+display_version: latest
 nav:
   - modules/ROOT/nav.adoc
+asciidoc:
+  attributes:
+    page-pagination: ''
+    sectanchors: ''
+    source-highlighter: highlight.js

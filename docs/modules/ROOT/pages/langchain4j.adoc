@@ -1,0 +1,157 @@
+= Agentic workflows (LangChain4j)
+include::./includes/attributes.adoc[]
+
+This page shows how to orchestrate link:https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html[**LangChain4j**] agents inside Quarkus Flow using the Java DSL.
+You’ll define one or more agents (interfaces) and then compose them as **tasks** (`agent(...)`) with optional loops and human-in-the-loop (HITL) steps.
+
+== Add LangChain4j (choose a backend)
+
+Pick the provider(s) you want; Quarkus will configure them via application properties.
+
+.Ollama (local models)
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkiverse.langchain4j</groupId>
+  <artifactId>quarkus-langchain4j-ollama</artifactId>
+</dependency>
+----
+
+.OpenAI (hosted)
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkiverse.langchain4j</groupId>
+  <artifactId>quarkus-langchain4j-openai</artifactId>
+</dependency>
+----
+
+[NOTE]
+You can have multiple providers on the classpath. Bind agents to a provider using standard LangChain4j/Quarkus config.
+
+== Define an agent
+
+Agents are plain interfaces with annotations (`@SystemMessage`, `@UserMessage`) and are registered as CDI beans.  
+For workflows, it’s common to accept a **memory id** and structured parameters.
+
+[source,java]
+----
+include::{examples-dir}DrafterAgent.java[tag=agent]
+----
+
+Key points:
+
+* `@RegisterAiService` registers the interface as a CDI bean.
+* `@SystemMessage` defines role/instructions and output shape.
+* `@UserMessage` builds the prompt from method arguments.
+* Use `@MemoryId` when the backend supports per-conversation memory.
+
+== Compose agents in a workflow
+
+Create a `Flow` that calls agents with `agent(name, fn, ResultType.class)`.  
+You can **export**, **branch**, and **loop** based on typed results.
+
+[source,java]
+----
+include::{examples-dir}HelloAgenticWorkflow.java[tag=workflow]
+----
+
+What’s happening:
+
+1. **Draft** via the first agent (e.g., a newsletter drafter).
+2. **Critique** the draft via a second agent.
+3. Optionally **emit** an event to request human review (`emitJson(...)`), then **listen** for a review result (`listen(...).outputAs(...)`).
+4. **Branch** with `switchWhenOrElse(...)` to either revise (loop back to the drafter) or **consume** the final output (e.g., send email).
+
+== Shaping data between steps
+
+Use the standard transformations to keep prompts/results clean:
+
+* **`inputFrom(...)`** — select what the step consumes (jq or Java lambda).
+* **`exportAs(...)`** — expose only part of a result to the next step (without committing to global state).
+* **`outputAs(...)`** — write a shaped result to the workflow data.
+
+Example (agent → agent piping):
+[source,java]
+----
+agent("draftAgent", drafterAgent::draft, String.class)
+  .inputFrom("$.seedPrompt")           // read only the seed
+  .exportAs("$.draft");                // pass only the draft text forward
+
+agent("criticAgent", criticAgent::critique, String.class)
+  .outputAs(r -> Map.of(               // persist a structured review
+      "review", r,
+      "status", r.needsRevision() ? "REVISION" : "OK"
+  ));
+----
+
+== Human-in-the-loop (optional)
+
+Add an approval gate with events:
+
+[source,java]
+----
+emitJson("org.acme.email.review.required", CriticAgentReview.class);
+
+listen("waitHumanReview", to().one(event("org.acme.newsletter.review.done")))
+  .outputAs((java.util.Collection<Object> c) -> c.iterator().next());
+
+switchWhenOrElse(
+  (HumanReview h) -> ReviewStatus.NEEDS_REVISION.equals(h.status()),
+  "draftAgent",            // loop back to the drafter
+  "sendNewsletter",        // or finalize
+  HumanReview.class
+);
+----
+
+== Configuration
+
+Choose one provider (or both). Below are minimal, pragmatic settings.
+
+.Ollama (local)
+[source,properties]
+----
+quarkus.langchain4j.ollama.base-url=http://localhost:11434
+quarkus.langchain4j.ollama.chat-model.model=llama3.1
+# Optional: temperature/max-tokens/etc. (provider-specific)
+# quarkus.langchain4j.ollama.chat-model.temperature=0.3
+----
+
+.OpenAI
+[source,properties]
+----
+quarkus.langchain4j.openai.api-key=${OPENAI_API_KEY}
+quarkus.langchain4j.openai.chat-model.model=gpt-4o-mini
+# Optional knobs:
+# quarkus.langchain4j.openai.chat-model.temperature=0.2
+# quarkus.langchain4j.openai.chat-model.max-tokens=1024
+----
+
+.Memory (optional, if used by your agent)
+[source,properties]
+----
+# Example: enable memory if the provider supports it; scope depends on backend
+# quarkus.langchain4j.memory.enabled=true
+# quarkus.langchain4j.memory.window-size=20
+----
+
+[TIP]
+Keep prompts **short and strict** in `@SystemMessage` with an explicit JSON schema for outputs—this makes downstream workflow tasks easier to type and test.
+
+== Testing agents
+
+* Unit-test your **agent interface** by injecting it directly and calling the method (mock the provider if you want speed/consistency).
+* Unit-test your **Flow** by injecting the `Flow` subclass and calling `startInstance()`; mock agents to avoid network calls.
+* For end-to-end tests, run `quarkus:dev` (or use Testcontainers) with your chosen provider.
+
+== Troubleshooting
+
+* **Output doesn’t parse as expected** – tighten your `@SystemMessage` contract and **validate** in a small unit test; then use `outputAs(...)` to normalize.
+* **Prompt drift** – keep `@UserMessage` minimal, compute heavy strings in Java, and feed only what’s needed via `inputFrom(...)`.
+* **Latency/cost** – export narrow fields (`exportAs`) and cache intermediate results in your workflow data.
+* **Memory** – if the provider keeps chat history, ensure you pass a stable `@MemoryId` (e.g., your workflow instance id) or turn memory off for deterministic runs.
+
+== See also
+* xref:dsl-cheatsheet.adoc[] — all task providers + transformations (`inputFrom`, `exportAs`, `outputAs`)  
+* xref:specification.adoc[] — spec concepts behind `call`, events, conditions, loops  
+* xref:messaging.adoc[] — emitting review requests and waiting for approvals

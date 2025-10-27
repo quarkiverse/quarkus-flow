@@ -15,7 +15,6 @@
         <module>runtime</module>
         <module>deployment</module>
         <module>runtime-dev</module>
-        <module>integration-tests</module>
     </modules>
 
     <profiles>

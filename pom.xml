@@ -36,6 +36,7 @@
         <io.quarkiverse.langchain4j.version>1.3.1</io.quarkiverse.langchain4j.version>
         <org.assertj.version>3.27.6</org.assertj.version>
         <io.cloudevents.version>4.0.1</io.cloudevents.version>
+        <quarkus-antora.version>3.25.0</quarkus-antora.version>
     </properties>
 
     <dependencyManagement>

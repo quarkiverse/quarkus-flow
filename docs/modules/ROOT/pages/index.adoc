@@ -1,27 +1,104 @@
 = Quarkus Flow
+:page-layout: default
+:description: Workflow engine for Quarkus based on the CNCF Workflow Specification, with Java DSL and Agentic AI support.
 
 include::./includes/attributes.adoc[]
 
-TIP: Describe what the extension does here.
 
-== Installation
+Quarkus Flow is a lightweight, native-friendly workflow engine for Quarkus, built on the link:https://serverlessworkflow.io/[CNCF Workflow Specification].
+It lets you model classic workflows and Agentic AI orchestrations, with first-class CDI/Quarkus ergonomics.
 
-If you want to use this extension, you need to add the `io.quarkiverse.flow:quarkus-flow` extension first to your build file.
+== Highlights
 
-For instance, with Maven, add the following dependency to your POM file:
+* CNCF-compliant workflows via a fluent Java DSL
+* Build-time discovery of workflow descriptors and injection of compiled beans
+* Agentic workflows with link:https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html[LangChain4j]
+* Messaging support with link:https://quarkus.io/guides/messaging[SmallRye]
 
-[source,xml,subs=attributes+]
-----
-<dependency>
-    <groupId>io.quarkiverse.flow</groupId>
-    <artifactId>quarkus-flow</artifactId>
-    <version>{project-version}</version>
-</dependency>
-----
+== When you’d use it
 
-[[extension-configuration-reference]]
-== Extension Configuration Reference
+* **You’re already on Quarkus** and want orchestration without leaving your stack (CDI, Dev Services, config, build-time optimization).
+* **You need deterministic, debuggable flows** in Java—code-reviewable, testable, and observable—rather than opaque or bespoke DSLs.
+* **You want agentic AI orchestration** beside regular services (LangChain4j agents as first-class tasks: call, critique, loop, HITL).
+* **You prefer CNCF alignment** so your workflow concepts match an open specification and aren’t locked into a closed runtime.
+* **You need fast start & low memory** for container/serverless deployments (Quarkus + native image friendly).
+* **You want compile-time discovery** of flows for safer wiring and simpler DI (`Flow` subclasses discovered at build time).
 
-TIP: Remove this section if you don't have Quarkus configuration properties in your extension.
+== Why Quarkus Flow?
 
-include::includes/quarkus-flow.adoc[leveloffset=+1, opts=optional]
+* **Reduce time-to-market for automations**:
+Model cross-service processes (APIs, events, agents) with a consistent DSL and Quarkus dev-mode feedback.
+
+* **Lower operational risk**:
+Typed Java flows + unit/integration tests + Quarkus observability = fewer production surprises.
+
+* **Govern AI interactions**:
+Encode guardrails (critique/revise loops, compliance checks, HITL steps) as explicit tasks and transitions.
+
+* **Improve portability & longevity**:
+Concepts map to the CNCF Workflow Spec, lowering re-platforming cost and vendor lock-in.
+
+* **Orchestration in the same language/runtime as services**:
+Developers implement and review workflows in Java, using familiar Quarkus tooling and CI.
+* **Compliance & auditability of automated decisions**:
+Flows are explicit code; reviews, tests, and logs provide traceability for audits.
+* **Human-in-the-loop (HITL) control for AI**:
+Encode pause/review/approve steps and event-driven resumes to keep humans in control.
+* **Resilience & recoverability**:
+Declarative retries, error paths, and event listeners make failure behavior predictable.
+* **Observability & supportability**:
+Integrates with Quarkus metrics/logging; flow boundaries make SRE triage easier.
+* **Performance & scalability in cloud environments**:
+Quarkus native compatibility supports fast startup and high density for microservices/serverless.
+* **Standards alignment**:
+Tasks, events, data mapping, and transitions align with the CNCF Workflow Specification to ease long-term maintenance.
+* **Extensibility for AI & integrations**:
+LangChain4j agents, HTTP/OpenAPI calls, and messaging tasks can be combined in one model.
+
+== Typical use cases
+
+* **Back-office automation:** approval chains, enrichment, notifications, SLAs with retries and timeouts.
+* **Agentic AI pipelines:** draft → critique → revise loops with compliance checks and HITL reviews.
+* **Service orchestration:** call multiple microservices (OpenAPI/HTTP), correlate events, and emit domain events.
+* **Event-driven processes:** wait for external signals (e.g., “review.required”), then resume with captured context.
+
+== How it compares (high-level)
+
+The landscape is rich; here’s a brief, opinionated snapshot to help positioning. This is not exhaustive—evaluate with your team’s constraints.
+
+[%autowidth,cols="1,2,3,2,2"]
+|===
+|Project |Model & runtime |Strengths |Consider when… |Fit vs Quarkus Flow
+
+|**Temporal**
+|Code-first workflows (SDKs in several languages) with a separate Temporal Cluster (services: History/Matching/Frontend). Durable timers/queues built-in.
+|Excellent reliability story (durable execution, retries, signals), strong developer experience for long-running workflows.
+|You’re fine running a dedicated Temporal cluster and adopting its programming model/SDK; language polyglot is important.
+|**Quarkus Flow** keeps everything in your Quarkus app with CDI & build-time discovery, and aligns with the CNCF Workflow concepts. You avoid running a separate orchestration control plane.
+
+|**Camunda 8**
+|BPMN 2.0 (diagram-first) with Zeebe engine; separate SaaS/self-managed control plane; Java/Polyglot workers.
+|Business-friendly diagrams, mature ecosystem, monitoring/ops tooling out of the box.
+|You want BPMN for stakeholder collaboration and can operate Zeebe/Console (or use SaaS).
+|**Quarkus Flow** favors code-first (fluent Java) and CNCF alignment; lighter footprint inside your Quarkus services; easier to unit test alongside code.
+
+|**Netflix Conductor**
+|JSON/YAML workflow definitions; server orchestrator + workers (HTTP/GRPC); strong microservice orchestration patterns.
+|Good for service orchestration with pluggable tasks and external workers; battle-tested at scale.
+|You’re comfortable with an external orchestrator and JSON/YAML modeling + worker model.
+|**Quarkus Flow** keeps models and tests in Java, integrates tightly with CDI/Quarkus, and adds agentic AI/HITL patterns while mapping to CNCF concepts.
+|===
+
+[TIP]
+====
+Nothing stops you from a **hybrid** approach:
+
+- Use **Quarkus Flow** for in-service workflows, developer-centric testing, and **agentic AI/HITL** loops tightly coupled to your Quarkus modules.
+- Use a **centralized orchestrator** (Temporal/Camunda/Conductor) for enterprise-wide, cross-language processes or when you need their managed ops and dashboards.
+====
+
+== What's next?
+
+* xref:getting-started.adoc[]
+* xref:dsl-cheatsheet.adoc[]
+* xref:specification.adoc[]

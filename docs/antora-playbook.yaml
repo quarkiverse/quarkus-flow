@@ -1,0 +1,26 @@
+site:
+  title: Quarkus Flow
+  start_page: quarkus-flow:ROOT:index.adoc
+content:
+  sources:
+    - url: ./../
+      branches: HEAD
+      start_path: docs
+ui:
+  bundle:
+    url: https://github.com/quarkiverse/antora-ui-quarkiverse/releases/latest/download/ui-bundle.zip
+    snapshot: true
+
+asciidoc:
+  extensions:
+    - asciidoctor-kroki
+  attributes:
+    kroki-fetch-diagram: false
+    page-pagination: ''
+    hide-uri-scheme: '@'
+    tabs-sync-option: '@'
+    chomp: 'all'
+    stem: 'asciimath'
+
+output:
+  dir: ./target/site

@@ -1,0 +1,374 @@
+= Java DSL cheatsheet
+include::./includes/attributes.adoc[]
+
+Quarkus Flow uses the CNCF Serverless Workflow link:https://github.com/serverlessworkflow/sdk-java[**Java Fluent DSL**] to define workflows in code.
+This page shows:
+
+- how to define a workflow class,
+- the complete set of **chainable task providers** from the DSL (the ones you pass directly into `workflow(...).tasks(...)`), and
+- how to shape data with **transformations**: `exportAs`, `inputFrom`, and `outputAs`.
+
+[NOTE]
+====
+Source of truth for the DSL classes:
+
+- Builder: `io.serverlessworkflow.fluent.func.spec.FuncWorkflowBuilder`
+- Shortcuts (task providers): `io.serverlessworkflow.fluent.func.dsl.FuncDSL` (import statically)
+- Transformations: `io.serverlessworkflow.fluent.func.spi.FuncTransformations` and `io.serverlessworkflow.fluent.func.spi.FuncTaskTransformations`
+====
+
+== Define a workflow class (required)
+
+Workflows are **discovered at build time** from CDI beans that extend `io.quarkiverse.flow.Flow` and override `descriptor()`.
+
+[source,java]
+----
+include::{examples-dir}HelloWorkflow.java[]
+----
+
+== Setup (imports)
+
+[source,java]
+----
+import io.serverlessworkflow.api.types.Workflow;
+import io.serverlessworkflow.fluent.func.spec.FuncWorkflowBuilder;
+
+// Static imports recommended for brevity:
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+import static io.serverlessworkflow.fluent.func.spec.FuncWorkflowBuilder.workflow;
+----
+
+== Complete task providers (chainable)
+
+All helpers below return a chainable provider/step (e.g., `FuncTaskConfigurer`, `FuncCallStep`, `EmitStep`, `ListenStep`, `ConsumeStep`) so you can pass them straight into `.tasks(...)`:
+
+[%autowidth,cols="2,2,4,5"]
+|===
+|Method |Returns |What it does |Example
+
+|`set(String expr)`
+|`FuncTaskConfigurer`
+|Set/merge into data context using jq-style JSON expression.
+|`set("{ message: \"hello\" }")`
+
+|`set(Map<String,Object> map)`
+|`FuncTaskConfigurer`
+|Set/merge from a map (useful in Java without inline JSON).
+|`set(Map.of("flag", true, "count", 0))`
+
+|`function(Function<T,R> fn)`
+|`FuncCallStep`
+|Call a Java `Function` (input inferred).
+|`function(ai::answer).exportAs("answer")`
+
+|`function(Function<T,R> fn, Class<T> inClass)`
+|`FuncCallStep`
+|Call a Java `Function` with explicit input type.
+|`function(pricing::quote, QuoteRequest.class)`
+
+|`function(String name, Function<T,R> fn)`
+|`FuncCallStep`
+|Named variant, input inferred.
+|`function("quote", pricing::quote)`
+
+|`function(String name, Function<T,R> fn, Class<T> inClass)`
+|`FuncCallStep`
+|Named + explicit input type.
+|`function("classify", nlp::classify, Text.class)`
+
+|`withContext(BiFunction<WorkflowContext,T,R> fn, Class<T> inClass)`
+|`FuncCallStep`
+|Call with workflow context `(ctx, payload) -> result`.
+|`withContext((ctx,p) -> svc.do(ctx,p), Input.class)`
+
+|`withContext(String name, BiFunction<WorkflowContext,T,R> fn, Class<T> inClass)`
+|`FuncCallStep`
+|Named `(ctx,payload)` call.
+|`withContext("doWithCtx", svc::withCtx, Input.class)`
+
+|`withInstanceId(BiFunction<String,T,R> fn, Class<T> inClass)`
+|`FuncCallStep`
+|Call with instance id `(instanceId, payload) -> result`.
+|`withInstanceId((id,p) -> agent.run(id,p), Prompt.class)`
+
+|`withInstanceId(String name, BiFunction<String,T,R> fn, Class<T> inClass)`
+|`FuncCallStep`
+|Named `(instanceId,payload)` call.
+|`withInstanceId("agent", agent::run, Prompt.class)`
+
+|`agent(BiFunction<String,T,R> fn, Class<T> inClass)`
+|`FuncCallStep`
+|Sugar for agent-style calls that need the instance id.
+|`agent(critic::critique, String.class)`
+
+|`agent(String name, BiFunction<String,T,R> fn, Class<T> inClass)`
+|`FuncCallStep`
+|Named agent call.
+|`agent("criticAgent", critic::critique, String.class)`
+
+|`consume(Consumer<T> consumer, Class<T> inClass)`
+|`ConsumeStep`
+|Fire-and-forget side-effect.
+|`consume(msg -> mail.send(msg), Email.class)`
+
+|`consume(String name, Consumer<T> consumer, Class<T> inClass)`
+|`ConsumeStep`
+|Named side-effect.
+|`consume("audit", audit::log, Event.class)`
+
+|`emit(Consumer<FuncEmitTaskBuilder> cfg)`
+|`EmitStep`
+|Low-level emit using builder config.
+|`emit(e -> e.type("org.acme.created"))`
+
+|`emit(String name, Consumer<FuncEmitTaskBuilder> cfg)`
+|`EmitStep`
+|Named low-level emit.
+|`emit("publish", e -> e.type("..."))`
+
+|`emit(String type, Function<T,CloudEventData> bodyFn)`
+|`EmitStep`
+|Emit event; body encoded from `T -> CloudEventData`.
+|`emit("org.acme.ready", DataMappers::toCloudEvent)`
+
+|`emit(String name, String type, Function<T,CloudEventData> bodyFn)`
+|`EmitStep`
+|Named variant.
+|`emit("notify","org.acme.ready", DataMappers::toCloudEvent)`
+
+|`emit(String type, BiFunction<ObjectMapper,T,byte[]> serializer, Class<T> inClass)`
+|`EmitStep`
+|Custom bytes serializer (Jackson provided).
+|`emit("org.acme.raw", Ser::toBytes, Payload.class)`
+
+|`emit(String name, String type, BiFunction<ObjectMapper,T,byte[]> serializer, Class<T> inClass)`
+|`EmitStep`
+|Named custom bytes emit.
+|`emit("binaryOut","...", Ser::toBytes, Payload.class)`
+
+|`emitJson(String type, Class<T> inClass)`
+|`EmitStep`
+|Emit JSON CloudEvent for POJO input.
+|`emitJson("org.acme.review.required", Review.class)`
+
+|`emitJson(String name, String type, Class<T> inClass)`
+|`EmitStep`
+|Named JSON emit.
+|`emitJson("draftReady","org.acme.type", Review.class)`
+
+|`listen(FuncListenSpec spec)`
+|`ListenStep`
+|Listen using a spec (e.g., `to().one(event("..."))`).
+|`listen(to().one(event("org.acme.done")))`
+
+|`listen(String name, FuncListenSpec spec)`
+|`ListenStep`
+|Named listen.
+|`listen("waitHuman", to().one(event("org.acme.review.done")))`
+
+|`switchCase(Consumer<FuncSwitchTaskBuilder> switchConsumer)`
+|`FuncTaskConfigurer`
+|Low-level switch (builder consumer).
+|`switchCase(sw -> sw.on(...).onDefault(...))`
+
+|`switchCase(String taskName, Consumer<FuncSwitchTaskBuilder> switchConsumer)`
+|`FuncTaskConfigurer`
+|Named low-level switch.
+|`switchCase("route", sw -> ... )`
+
+|`switchCase(FuncSwitchCase... cases)`
+|`FuncTaskConfigurer`
+|Switch from cases helpers.
+|`switchCase(cases(caseOf(p).then("A"), caseDefault("B")))`
+
+|`switchCase(String taskName, FuncSwitchCase... cases)`
+|`FuncTaskConfigurer`
+|Named cases switch.
+|`switchCase("route", caseOf(p).then("A"), caseDefault("B"))`
+
+|`switchWhen(Predicate<T> pred, String thenTask, Class<T> predClass)`
+|`FuncTaskConfigurer`
+|Typed single-case jump.
+|`switchWhen((HumanReview h) -> h.needsRevision(), "revise", HumanReview.class)`
+
+|`switchWhen(String jqExpr, String thenTask)`
+|`FuncTaskConfigurer`
+|JQ expression single-case jump.
+|`switchWhen(".score >= 80", "send")`
+
+|`switchWhenOrElse(Predicate<T> pred, String thenTask, String otherwiseTask, Class<T> predClass)`
+|`FuncTaskConfigurer`
+|Typed single-case + default task.
+|`switchWhenOrElse(h -> !ok(h), "fix", "abort", HumanReview.class)`
+
+|`switchWhenOrElse(Predicate<T> pred, String thenTask, FlowDirectiveEnum otherwiseDirective, Class<T> predClass)`
+|`FuncTaskConfigurer`
+|Typed single-case + default directive (`END`, etc.).
+|`switchWhenOrElse(h -> ok(h), "ok", FlowDirectiveEnum.END, HumanReview.class)`
+
+|`switchWhenOrElse(String jqExpr, String thenTask, String otherwiseTask)`
+|`FuncTaskConfigurer`
+|JQ single-case + default task.
+|`switchWhenOrElse(".approved", "ship", "reject")`
+
+|`switchWhenOrElse(String jqExpr, String thenTask, FlowDirectiveEnum otherwiseDirective)`
+|`FuncTaskConfigurer`
+|JQ single-case + directive.
+|`switchWhenOrElse(".approved", "ship", FlowDirectiveEnum.END)`
+
+|`forEach(Function<WorkflowData,Collection<E>> collectionFn, Consumer<FuncTaskItemListBuilder> body)`
+|`FuncTaskConfigurer`
+|Iterate over a computed collection.
+|`forEach(ctx -> ctx.items(), inner -> inner.tasks(set("{...}")))`
+
+|`forEach(Collection<E> collection, Consumer<FuncTaskItemListBuilder> body)`
+|`FuncTaskConfigurer`
+|Iterate over a constant collection.
+|`forEach(List.of(1,2,3), inner -> inner.tasks(set("{...}")))`
+
+|`forEach(List<E> list, Consumer<FuncTaskItemListBuilder> body)`
+|`FuncTaskConfigurer`
+|Iterate over a constant list.
+|`forEach(List.of(user1,user2), inner -> inner.tasks(...))`
+
+|`tasks(TaskProvider... steps)`
+|`Consumer<FuncTaskItemListBuilder>`
+|Group multiple steps/configurers (useful inside `forEach`).
+|`tasks(set("{x:1}"), function(svc::op), emitJson("..."))`
+|===
+
+[NOTE]
+Helpers that help you **build** specs for emit/listen/switch but are not task providers themselves:
+`event(...)`, `eventJson(...)`, `eventBytes(...)`, `to().one(...)`, `to().any(...)`, `to().all(...)`, and cases helpers `cases(...)`, `caseOf(...)`, `caseDefault(...)`.
+
+== Transformations: `exportAs`, `inputFrom`, `outputAs`
+
+Every task/step can transform how it **reads** input, **exposes** its result to the next step, and **writes** to the workflow data. Internally, Quarkus Flow keeps your workflow context as JSON (via **Jackson**) and seamlessly (de)serializes your domain objects.
+
+You can use either **jq expressions** (string-based) or **Java lambdas** to transform data.
+
+=== `inputFrom(...)` — where the task reads its input
+
+Apply to a task step (call/agent/consume/emit/listen):
+
+- **jq**:
++
+[source,java]
+----
+function(pricing::quote, QuoteRequest.class)
+  .inputFrom("$.cart.quoteRequest")   // slice of the workflow data
+----
+- **Java**:
++
+[source,java]
+----
+function(pricing::quote, QuoteRequest.class)
+  .inputFrom(ctx -> ctx.get("cart", QuoteEnvelope.class).quoteRequest())
+----
+
+=== `exportAs(...)` — what the task exposes to the *next* step
+
+This defines the **ephemeral output** visible to the next step in the chain (before any `outputAs` writes to the global data). Useful to pipe values across steps without polluting global state.
+
+- **jq**:
++
+[source,java]
+----
+function(ai::answer, Prompt.class)
+  .exportAs("$.choices[0].text")    // only the LLM's first text is exposed
+----
+- **Java**:
++
+[source,java]
+----
+function(ai::answer, Prompt.class)
+  .exportAs(result -> result.choices().get(0).text())
+----
+
+=== `outputAs(...)` — how the task writes into the workflow data
+
+Persist (part of) the step result into the workflow data context.
+
+- **jq**:
++
+[source,java]
+----
+function(nlp::classify, Text.class)
+  .outputAs("{ sentiment: ., reviewed: false }")
+// writes a JSON object with the classification result under the current scope
+----
+- **Java (typed)**:
++
+[source,java]
+----
+function(pricing::quote, QuoteRequest.class)
+  .outputAs(q -> Map.of("quote", q, "ts", System.currentTimeMillis()))
+----
+- **Listen multi-event adapter**:
++
+[source,java]
+----
+listen("waitHuman", to().one(event("org.acme.review.done")))
+  .outputAs((java.util.Collection<Object> c) -> c.iterator().next());
+----
+
+[NOTE]
+You can combine the three:
+1) `inputFrom(...)` selects what the step consumes,
+2) the step runs,
+3) `exportAs(...)` narrows what the next step receives, and
+4) `outputAs(...)` commits data into the workflow context.
+
+== End-to-end example (agentic + HITL + transforms)
+
+[source,java]
+----
+Workflow w = workflow("intelligent-newsletter")
+  .tasks(
+    // 1) Draft with input selection and export the 'draft' only
+    agent("draftAgent", drafterAgent::draft, String.class)
+      .inputFrom("$.seedPrompt")
+      .exportAs("$.draft"),
+
+    // 2) Critique receives only the 'draft' (exported) and writes a composite result
+    agent("criticAgent", criticAgent::critique, String.class)
+      .outputAs(r -> Map.of("review", r, "status", r.needsRevision() ? "REVISION" : "OK")),
+
+    // 3) Emit review request
+    emitJson("org.acme.email.review.required", CriticAgentReview.class),
+
+    // 4) Wait human review; adapt multi-event collection
+    listen("waitHumanReview", to().one(event("org.acme.newsletter.review.done")))
+      .outputAs((java.util.Collection<Object> c) -> c.iterator().next()),
+
+    // 5) Branch: revision loop or final send
+    switchWhenOrElse(
+      (HumanReview h) -> ReviewStatus.NEEDS_REVISION.equals(h.status()),
+      "draftAgent",
+      "sendNewsletter",
+      HumanReview.class
+    ),
+
+    // 6) Final side-effect
+    consume("sendNewsletter",
+      (HumanReview reviewedDraft) ->
+        mailService.send("subscribers@acme.finance.org", "Weekly Newsletter", reviewedDraft.draft()),
+      HumanReview.class
+    )
+  )
+  .build();
+----
+
+== Tips
+
+- Prefer **static imports**: `workflow`, `set`, `function`, `agent`, `emitJson`, `listen`, `switchWhenOrElse`, `consume`, `to`, `event`.
+- **Name** tasks you branch to: stable task names make `switchWhen*` targets explicit.
+- Keep transformations **close to the step** that needs them (`inputFrom`, `exportAs`, `outputAs`) for readability.
+- Remember: the workflow data is JSON; your domain objects are (de)serialized via **Jackson**, so you can keep typed payloads in your steps while still using jq for quick projections.
+
+== See also
+
+- xref:specification.adoc[]
+- xref:getting-started.adoc[]
+- xref:langchain4j.adoc[]
+- xref:messaging.adoc[]
