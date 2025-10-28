@@ -21,7 +21,39 @@
             <artifactId>quarkus-flow-deployment</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.langchain4j</groupId>
+            <artifactId>quarkus-langchain4j-core</artifactId>
+            <version>${io.quarkiverse.langchain4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.langchain4j</groupId>
+            <artifactId>quarkus-langchain4j-ollama</artifactId>
+            <version>${io.quarkiverse.langchain4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.antora</groupId>
+            <artifactId>quarkus-antora</artifactId>
+            <version>${quarkus-antora.version}</version>
+        </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>skip-antora-on-windows</id>
+            <activation>
+                <os>
+                    <family>Windows</family>
+                </os>
+            </activation>
+            <properties>
+                <quarkus.build.skip>true</quarkus.build.skip>
+                <maven.install.skip>true</maven.install.skip>
+                <maven.deploy.skip>true</maven.deploy.skip>
+                <maven.test.skip>true</maven.test.skip>
+            </properties>
+        </profile>
+    </profiles>
 
     <build>
         <sourceDirectory>modules/ROOT/examples</sourceDirectory>
@@ -34,6 +66,9 @@
                         <goals>
                             <goal>build</goal>
                         </goals>
+                        <configuration>
+                            <skip>${quarkus.build.skip}</skip>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -93,6 +128,22 @@
                             <resources>
                                 <resource>
                                     <directory>${project.basedir}/modules/ROOT/assets/images/</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-css</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/generated-docs/_css/</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/modules/ROOT/assets/css/</directory>
                                     <filtering>false</filtering>
                                 </resource>
                             </resources>

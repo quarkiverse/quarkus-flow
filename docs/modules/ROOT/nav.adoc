@@ -1,1 +1,7 @@
-* xref:index.adoc[Getting started]
+* xref:index.adoc[Introduction]
+* xref:getting-started.adoc[Getting Started]
+* xref:specification.adoc[Specification (quick reference)]
+* xref:dsl-cheatsheet.adoc[Java DSL cheatsheet]
+* xref:langchain4j.adoc[Agentic workflows (LangChain4j)]
+* xref:messaging.adoc[Messaging]
+* xref:configuration.adoc[Configuration]

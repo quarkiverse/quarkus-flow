@@ -1,0 +1,4 @@
+[[extension-configuration-reference]]
+= Extension Configuration Reference
+
+include::includes/quarkus-flow-messaging.adoc[leveloffset=+1, opts=optional]
