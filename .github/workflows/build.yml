@@ -48,24 +48,45 @@ jobs:
 
       - name: Wait for Ollama & warm up model(s)
         shell: bash
+        env:
+          NO_PROXY: localhost,127.0.0.1
+          no_proxy: localhost,127.0.0.1
         run: |
           set -Eeuo pipefail
 
           for i in {1..60}; do
-            if curl -sf http://localhost:11434/api/tags >/dev/null; then break; fi
+            if curl -sf --noproxy '*' http://127.0.0.1:11434/api/tags >/dev/null; then break; fi
             sleep 1
           done
-          
-          # Warm each model listed in .github/ollama-models.txt
+
           while IFS= read -r line || [[ -n "${line:-}" ]]; do
             model="${line%$'\r'}"
-            [[ -z "${model}" || "${model}" == \#* ]] && continue    
+            [[ -z "${model}" || "${model}" == \#* ]] && continue
+
             echo "Warming up ${model}"
-            curl -s -X POST http://localhost:11434/api/generate \
-              -H 'Content-Type: application/json' \
-              -d "{\"model\":\"${model}\",\"prompt\":\"say ok\",\"stream\":false,\"keep_alive\":\"30m\",\"options\":{\"num_predict\":8}}" \
-              >/dev/null || true
+
+            # retry up to 3 times in case model is being pulled/loaded
+            for attempt in 1 2 3; do
+              status=$(curl -sS \
+                --noproxy '*' \
+                --connect-timeout 10 \
+                --max-time 180 \
+                -H 'Content-Type: application/json' \
+                -d '{"model":"'"${model}"'","messages":[{"role":"user","content":"ping"}],"stream":false,"keep_alive":"30m","options":{"temperature":0,"num_predict":8}}' \
+                -w '%{http_code}' \
+                http://127.0.0.1:11434/api/chat \
+                -o /dev/null || true)
+
+              if [[ "${status}" == "200" ]]; then
+                echo "Warm-up OK for ${model}"
+                break
+              fi
+
+              echo "Warm-up attempt ${attempt} failed for ${model} (HTTP ${status:-curl error}); retrying..."
+              sleep 3
+            done
           done < .github/ollama-models.txt
+      
 
       - name: Build with Maven
         run: mvn -B clean install -Dno-format
