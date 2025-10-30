@@ -41,7 +41,7 @@ public class HelloAgenticResourceTest {
     }
 
     private int getOllamaTimeoutMillis() {
-        String timeoutProp = "quarkus.langchain4j.timeout";
+        String timeoutProp = "quarkus.langchain4j.ollama.timeout";
         Optional<Duration> dur = config.getOptionalValue(timeoutProp, Duration.class);
         if (dur.isPresent())
             return (int) Math.min(Integer.MAX_VALUE, dur.get().toMillis());
@@ -63,7 +63,7 @@ public class HelloAgenticResourceTest {
 
     @Test
     public void testHelloEndpoint() {
-        final String result = given().config(restAssuredConfig)
+        final String result = given()//.config(restAssuredConfig)
                 .when()
                 .body("Hello World!")
                 .post("/hello")
@@ -75,7 +75,7 @@ public class HelloAgenticResourceTest {
 
     @Test
     public void testHelloEndpoint_EmptyBody() {
-        final String result = given().config(restAssuredConfig)
+        final String result = given()//.config(restAssuredConfig)
                 .when()
                 .body("")
                 .post("/hello")
