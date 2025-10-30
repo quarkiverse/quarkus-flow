@@ -1,5 +1,7 @@
 package io.quarkiverse.flow.it;
 
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -15,7 +17,7 @@ public class EchoAgenticWorkflow extends Flow {
 
     public Workflow descriptor() {
         return FuncWorkflowBuilder.workflow("workflowEchoAgentic")
-                .tasks(t -> t.callFn("interactWithAI", f -> f.function(echoAgent::helloWorld)))
+                .tasks(function("interactWithAI", echoAgent::helloWorld, String.class))
                 .build();
     }
 

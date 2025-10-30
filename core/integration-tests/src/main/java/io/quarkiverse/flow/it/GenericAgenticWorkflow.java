@@ -1,5 +1,7 @@
 package io.quarkiverse.flow.it;
 
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -16,7 +18,7 @@ public class GenericAgenticWorkflow extends Flow {
     @Override
     public Workflow descriptor() {
         return FuncWorkflowBuilder.workflow("genericAgent")
-                .tasks(t -> t.callFn("interactWithGenericAgent", f -> f.function(genericAgentic::sendMessage)))
+                .tasks(function("interactWithGenericAgent", genericAgentic::sendMessage, String.class))
                 .build();
     }
 }
