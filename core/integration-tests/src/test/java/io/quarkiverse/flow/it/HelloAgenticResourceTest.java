@@ -16,7 +16,6 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.RestAssured;
 import io.restassured.config.HttpClientConfig;
 import io.restassured.config.RestAssuredConfig;
 
@@ -28,11 +27,13 @@ public class HelloAgenticResourceTest {
     @Inject
     Config config;
 
+    RestAssuredConfig restAssuredConfig;
+
     @BeforeAll
     void configureRestAssuredTimeouts() {
         // Read the same timeout Quarkus uses for Ollama. Accepts ISO-8601 (e.g., PT2M) or "120s".
         int ms = getOllamaTimeoutMillis();
-        RestAssured.config = RestAssuredConfig.config().httpClient(
+        restAssuredConfig = RestAssuredConfig.config().httpClient(
                 HttpClientConfig.httpClientConfig()
                         .setParam("http.connection.timeout", ms) // connect timeout
                         .setParam("http.socket.timeout", ms) // read timeout
@@ -40,11 +41,12 @@ public class HelloAgenticResourceTest {
     }
 
     private int getOllamaTimeoutMillis() {
-        Optional<Duration> dur = config.getOptionalValue("quarkus.langchain4j.ollama.timeout", Duration.class);
+        String timepoutProp = "quarkus.langchain4j.timeout";
+        Optional<Duration> dur = config.getOptionalValue(timepoutProp, Duration.class);
         if (dur.isPresent())
             return (int) Math.min(Integer.MAX_VALUE, dur.get().toMillis());
 
-        String raw = config.getOptionalValue("quarkus.langchain4j.ollama.timeout", String.class).orElse("120s");
+        String raw = config.getOptionalValue(timepoutProp, String.class).orElse("120s");
         try {
             if (raw.endsWith("ms"))
                 return Integer.parseInt(raw.substring(0, raw.length() - 2));
@@ -61,7 +63,7 @@ public class HelloAgenticResourceTest {
 
     @Test
     public void testHelloEndpoint() {
-        final String result = given()
+        final String result = given().config(restAssuredConfig)
                 .when()
                 .body("Hello World!")
                 .post("/hello")
@@ -73,7 +75,7 @@ public class HelloAgenticResourceTest {
 
     @Test
     public void testHelloEndpoint_EmptyBody() {
-        final String result = given()
+        final String result = given().config(restAssuredConfig)
                 .when()
                 .body("")
                 .post("/hello")
