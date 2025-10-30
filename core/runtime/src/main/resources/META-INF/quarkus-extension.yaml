@@ -13,5 +13,3 @@ metadata:
     - "integration"
     - "messaging"
   status: "preview"
-artifact: quarkus-flow
-group-id: io.quarkiverse.flow
