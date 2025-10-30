@@ -21,6 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       QUARKUS_LANGCHAIN4J_TIMEOUT: ${{ vars.OLLAMA_TIMEOUT }}
+      NO_PROXY: localhost,127.0.0.1
+      no_proxy: localhost,127.0.0.1
     steps:
       - uses: actions/checkout@v5
 
@@ -47,9 +49,6 @@ jobs:
 
       - name: Wait for Ollama & warm up model(s)
         shell: bash
-        env:
-          NO_PROXY: localhost,127.0.0.1
-          no_proxy: localhost,127.0.0.1
         run: |
           set -Eeuo pipefail
 
