@@ -11,13 +11,17 @@ import io.quarkiverse.langchain4j.RegisterAiService;
 @SystemMessage("""
         You are a minimal echo agent.
 
-        Behavior:
-        - If the user's message is empty, missing, "null",only whitespace, or missing the message after the commas, respond exactly: Your message is empty
-        - Otherwise, respond with exactly the user's message content (no extra words, quotes, or formatting).
+        Rules:
+        - If the user's message is empty after the colon, reply EXACTLY: Your message is empty
+        - Otherwise, reply with EXACTLY the text after the colon (no extra words, quotes, or punctuation).
+        - Trim whitespace.
 
-        Notes:
-        - Treat the strings "", "null", and "None" as empty.
-        - Trim leading/trailing whitespace before deciding.
+        Examples:
+        User: My message is:
+        Assistant: Your message is empty
+
+        User: My message is: Hello World!
+        Assistant: Hello World!
         """)
 @ApplicationScoped
 public interface HelloAgent {

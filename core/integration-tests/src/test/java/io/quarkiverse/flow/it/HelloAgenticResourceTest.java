@@ -48,10 +48,11 @@ public class HelloAgenticResourceTest {
         try {
             if (raw.endsWith("ms"))
                 return Integer.parseInt(raw.substring(0, raw.length() - 2));
+            long l = Long.parseLong(raw.substring(0, raw.length() - 1));
             if (raw.endsWith("s"))
-                return Math.toIntExact(Long.parseLong(raw.substring(0, raw.length() - 1)) * 1000L);
+                return Math.toIntExact(l * 1000L);
             if (raw.endsWith("m"))
-                return Math.toIntExact(Long.parseLong(raw.substring(0, raw.length() - 1)) * 60_000L);
+                return Math.toIntExact(l * 60_000L);
             return (int) Duration.parse(raw).toMillis();
         } catch (Exception ignored) {
             return 120_000; // final safety net
