@@ -31,8 +31,8 @@ public class FlowWorkflowDefinitionDevUIJsonRPCTest extends DevUIJsonRPCTest {
     }
 
     @Test
-    void shouldGenerateMermaidDefinition() throws Exception {
-        JsonNode node = super.executeJsonRPCMethod("generateMermaid", Map.of("name", "helloQuarkus"));
+    void shouldGenerateMermaidDiagram() throws Exception {
+        JsonNode node = super.executeJsonRPCMethod("generateMermaidDiagram", Map.of("workflowName", "helloQuarkus"));
         Assertions.assertTrue(node.get("mermaid").asText().contains("flowchart TD"));
     }
 
@@ -40,6 +40,15 @@ public class FlowWorkflowDefinitionDevUIJsonRPCTest extends DevUIJsonRPCTest {
     void shouldGetWorkflowInfo() throws Exception {
         JsonNode node = super.executeJsonRPCMethod("getWorkflows");
         Assertions.assertEquals("helloQuarkus", node.get(0).get("name").asText());
+    }
+
+    @Test
+    void shouldExecuteWorkflow() throws Exception {
+        JsonNode node = super.executeJsonRPCMethod("executeWorkflow", Map.of(
+                "workflowName", "helloQuarkus"));
+
+        Assertions.assertEquals("application/json", node.get("mimetype").asText());
+        Assertions.assertTrue(node.get("data").has("message"));
     }
 
 }

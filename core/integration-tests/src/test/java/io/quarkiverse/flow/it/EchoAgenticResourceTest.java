@@ -24,7 +24,7 @@ import io.restassured.config.RestAssuredConfig;
 @QuarkusTest
 @DisabledOnOs(OS.WINDOWS)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class HelloAgenticResourceTest {
+public class EchoAgenticResourceTest {
 
     @Inject
     Config config;

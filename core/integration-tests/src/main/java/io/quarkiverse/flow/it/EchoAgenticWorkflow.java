@@ -1,7 +1,5 @@
 package io.quarkiverse.flow.it;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -10,14 +8,14 @@ import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 
 @ApplicationScoped
-public class HelloAgenticWorkflow extends Flow {
+public class EchoAgenticWorkflow extends Flow {
 
     @Inject
-    HelloAgent helloAgent;
+    EchoAgent echoAgent;
 
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("helloAgent")
-                .tasks(function("interactWithAI", helloAgent::helloWorld, String.class))
+        return FuncWorkflowBuilder.workflow("workflowEchoAgentic")
+                .tasks(t -> t.callFn("interactWithAI", f -> f.function(echoAgent::helloWorld)))
                 .build();
     }
 
