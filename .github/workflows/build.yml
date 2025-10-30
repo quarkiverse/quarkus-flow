@@ -21,6 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       QUARKUS_LANGCHAIN4J_TIMEOUT: ${{ vars.OLLAMA_TIMEOUT }}
+      
     steps:
       - uses: actions/checkout@v5
 

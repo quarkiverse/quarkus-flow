@@ -41,12 +41,12 @@ public class HelloAgenticResourceTest {
     }
 
     private int getOllamaTimeoutMillis() {
-        String timepoutProp = "quarkus.langchain4j.timeout";
-        Optional<Duration> dur = config.getOptionalValue(timepoutProp, Duration.class);
+        String timeoutProp = "quarkus.langchain4j.timeout";
+        Optional<Duration> dur = config.getOptionalValue(timeoutProp, Duration.class);
         if (dur.isPresent())
             return (int) Math.min(Integer.MAX_VALUE, dur.get().toMillis());
 
-        String raw = config.getOptionalValue(timepoutProp, String.class).orElse("120s");
+        String raw = config.getOptionalValue(timeoutProp, String.class).orElse("120s");
         try {
             if (raw.endsWith("ms"))
                 return Integer.parseInt(raw.substring(0, raw.length() - 2));
