@@ -10,6 +10,7 @@ import jakarta.inject.Inject;
 import org.assertj.core.api.Assertions;
 import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -19,6 +20,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.config.HttpClientConfig;
 import io.restassured.config.RestAssuredConfig;
 
+@Disabled("Disabled since on GitHub Actions Ollama stopped working")
 @QuarkusTest
 @DisabledOnOs(OS.WINDOWS)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

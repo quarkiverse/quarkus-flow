@@ -17,11 +17,11 @@ defaults:
 
 jobs:
   build-linux:
-    name: Build & test (Ubuntu with Ollama)
+    name: Build & test (Ubuntu)
     runs-on: ubuntu-latest
-    env:
-      QUARKUS_LANGCHAIN4J_OLLAMA_TIMEOUT: ${{ vars.OLLAMA_TIMEOUT }}
-      NO_PROXY: localhost,127.0.0.1
+#    env:
+#      QUARKUS_LANGCHAIN4J_OLLAMA_TIMEOUT: ${{ vars.OLLAMA_TIMEOUT }}
+#      NO_PROXY: localhost,127.0.0.1
     steps:
       - uses: actions/checkout@v5
 
@@ -32,64 +32,64 @@ jobs:
           java-version: 17
           cache: maven
 
-      - name: Restore Ollama models cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.ollama
-          key: ${{ runner.os }}-ollama-${{ hashFiles('.github/ollama-models.txt') }}
+#      - name: Restore Ollama models cache
+#        uses: actions/cache@v4
+#        with:
+#          path: ~/.ollama
+#          key: ${{ runner.os }}-ollama-${{ hashFiles('.github/ollama-models.txt') }}
+#
+#      - name: Setup Ollama CLI
+#        uses: ai-action/setup-ollama@v1
 
-      - name: Setup Ollama CLI
-        uses: ai-action/setup-ollama@v1
-
-      - name: Pre-pull models (tiny default)
-        run: |
-          # List the models in tests—one per line
-          xargs -n1 -I{} bash -c 'echo "Pulling {}"; ollama pull "{}"' < .github/ollama-models.txt
-
-      - name: Wait for Ollama & warm up model(s)
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-
-          for i in {1..60}; do
-            if curl -sf --noproxy '*' http://127.0.0.1:11434/api/tags >/dev/null; then break; fi
-            sleep 1
-          done
-
-          while IFS= read -r line || [[ -n "${line:-}" ]]; do
-            model="${line%$'\r'}"
-            [[ -z "${model}" || "${model}" == \#* ]] && continue
-
-            echo "Warming up ${model}"
-
-            # retry up to 3 times in case model is being pulled/loaded
-            for attempt in 1 2 3; do
-              status=$(curl -sS \
-                --noproxy '*' \
-                --connect-timeout 10 \
-                --max-time 180 \
-                -H 'Content-Type: application/json' \
-                -d '{"model":"'"${model}"'","messages":[{"role":"user","content":"ping"}],"stream":false,"keep_alive":"30m","options":{"temperature":0,"num_predict":8}}' \
-                -w '%{http_code}' \
-                http://127.0.0.1:11434/api/chat \
-                -o /dev/null || true)
-
-              if [[ "${status}" == "200" ]]; then
-                echo "Warm-up OK for ${model}"
-                break
-              fi
-
-              echo "Warm-up attempt ${attempt} failed for ${model} (HTTP ${status:-curl error}); retrying..."
-              sleep 3
-            done
-          done < .github/ollama-models.txt
+#      - name: Pre-pull models (tiny default)
+#        run: |
+#          # List the models in tests—one per line
+#          xargs -n1 -I{} bash -c 'echo "Pulling {}"; ollama pull "{}"' < .github/ollama-models.txt
+#
+#      - name: Wait for Ollama & warm up model(s)
+#        shell: bash
+#        run: |
+#          set -Eeuo pipefail
+#
+#          for i in {1..60}; do
+#            if curl -sf --noproxy '*' http://127.0.0.1:11434/api/tags >/dev/null; then break; fi
+#            sleep 1
+#          done
+#
+#          while IFS= read -r line || [[ -n "${line:-}" ]]; do
+#            model="${line%$'\r'}"
+#            [[ -z "${model}" || "${model}" == \#* ]] && continue
+#
+#            echo "Warming up ${model}"
+#
+#            # retry up to 3 times in case model is being pulled/loaded
+#            for attempt in 1 2 3; do
+#              status=$(curl -sS \
+#                --noproxy '*' \
+#                --connect-timeout 10 \
+#                --max-time 180 \
+#                -H 'Content-Type: application/json' \
+#                -d '{"model":"'"${model}"'","messages":[{"role":"user","content":"ping"}],"stream":false,"keep_alive":"30m","options":{"temperature":0,"num_predict":8}}' \
+#                -w '%{http_code}' \
+#                http://127.0.0.1:11434/api/chat \
+#                -o /dev/null || true)
+#
+#              if [[ "${status}" == "200" ]]; then
+#                echo "Warm-up OK for ${model}"
+#                break
+#              fi
+#
+#              echo "Warm-up attempt ${attempt} failed for ${model} (HTTP ${status:-curl error}); retrying..."
+#              sleep 3
+#            done
+#          done < .github/ollama-models.txt
       
 
       - name: Build with Maven
-        run: mvn -B clean install -Dno-format
+        run: mvn -B clean install -Dno-format -Dquarkus.langchain4j.ollama.devservices.enabled=false
 
       - name: Build with Maven (Native)
-        run: mvn -B install -Dnative -Dquarkus.native.container-build -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25 -DskipITs=true
+        run: mvn -B install -Dnative -Dquarkus.langchain4j.ollama.devservices.enabled=false -Dquarkus.native.container-build -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25 -DskipITs=true
   build-windows:
     name: Build only (Windows)
     runs-on: windows-latest
