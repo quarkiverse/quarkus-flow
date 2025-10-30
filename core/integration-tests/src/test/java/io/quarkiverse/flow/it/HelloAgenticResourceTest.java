@@ -35,9 +35,9 @@ public class HelloAgenticResourceTest {
         int ms = getOllamaTimeoutMillis();
         restAssuredConfig = RestAssuredConfig.config().httpClient(
                 HttpClientConfig.httpClientConfig()
-                        .setParam("http.connection.timeout", ms) // connect timeout
-                        .setParam("http.socket.timeout", ms) // read timeout
-                        .setParam("http.connection-manager.timeout", (long) ms)); // pool wait
+                        .setParam("http.connection.timeout", ms)
+                        .setParam("http.socket.timeout", ms)
+                        .setParam("http.connection-manager.timeout", (long) ms));
     }
 
     private int getOllamaTimeoutMillis() {
@@ -57,13 +57,13 @@ public class HelloAgenticResourceTest {
                 return Math.toIntExact(l * 60_000L);
             return (int) Duration.parse(raw).toMillis();
         } catch (Exception ignored) {
-            return 120_000; // final safety net
+            return 120_000;
         }
     }
 
     @Test
     public void testHelloEndpoint() {
-        final String result = given()//.config(restAssuredConfig)
+        final String result = given().config(restAssuredConfig)
                 .when()
                 .body("Hello World!")
                 .post("/hello")
@@ -75,7 +75,7 @@ public class HelloAgenticResourceTest {
 
     @Test
     public void testHelloEndpoint_EmptyBody() {
-        final String result = given()//.config(restAssuredConfig)
+        final String result = given().config(restAssuredConfig)
                 .when()
                 .body("")
                 .post("/hello")
