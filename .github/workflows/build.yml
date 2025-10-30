@@ -19,6 +19,8 @@ jobs:
   build-linux:
     name: Build & test (Ubuntu with Ollama)
     runs-on: ubuntu-latest
+    env:
+      OLLAMA_TIMEOUT: ${{ vars.OLLAMA_TIMEOUT }}
     steps:
       - uses: actions/checkout@v5
 
@@ -42,6 +44,30 @@ jobs:
         run: |
           # List the models in tests—one per line
           xargs -n1 -I{} bash -c 'echo "Pulling {}"; ollama pull "{}"' < .github/ollama-models.txt
+
+      - name: Set global LangChain4j timeout (with default)
+        run: |
+          # Fallback to 60s if OLLAMA_TIMEOUT is empty
+          : "${OLLAMA_TIMEOUT:=60s}"
+          echo "Using QUARKUS_LANGCHAIN4J_OLLAMA_TIMEOUT=$OLLAMA_TIMEOUT"
+          echo "QUARKUS_LANGCHAIN4J_OLLAMA_TIMEOUT=$OLLAMA_TIMEOUT" >> "$GITHUB_ENV"
+
+      - name: Wait for Ollama & warm up model(s)
+        run: |
+          # Wait for API
+          for i in {1..60}; do
+            if curl -sf http://localhost:11434/api/tags >/dev/null; then break; fi
+            sleep 1
+          done
+          # Warm-up each model listed (loads into RAM; keeps alive for 30m)
+          while read -r MODEL; do
+            [ -z "$MODEL" ] && continue
+            echo "Warming up $MODEL"
+            curl -s -X POST http://localhost:11434/api/chat \
+              -H 'Content-Type: application/json' \
+              -d "{\"model\":\"$MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}],\"stream\":false,\"keep_alive\":\"30m\"}" \
+              >/dev/null || true
+          done < .github/ollama-models.txt
 
       - name: Build with Maven
         run: mvn -B clean install -Dno-format
