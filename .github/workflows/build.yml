@@ -53,19 +53,23 @@ jobs:
           echo "QUARKUS_LANGCHAIN4J_OLLAMA_TIMEOUT=$OLLAMA_TIMEOUT" >> "$GITHUB_ENV"
 
       - name: Wait for Ollama & warm up model(s)
+        shell: bash
         run: |
-          # Wait for API
+          set -Eeuo pipefail
+
           for i in {1..60}; do
             if curl -sf http://localhost:11434/api/tags >/dev/null; then break; fi
             sleep 1
           done
-          # Warm-up each model listed (loads into RAM; keeps alive for 30m)
-          while read -r MODEL; do
-            [ -z "$MODEL" ] && continue
-            echo "Warming up $MODEL"
-            curl -s -X POST http://localhost:11434/api/chat \
+          
+          # Warm each model listed in .github/ollama-models.txt
+          while IFS= read -r line || [[ -n "${line:-}" ]]; do
+            model="${line%$'\r'}"
+            [[ -z "${model}" || "${model}" == \#* ]] && continue    
+            echo "Warming up ${model}"
+            curl -s -X POST http://localhost:11434/api/generate \
               -H 'Content-Type: application/json' \
-              -d "{\"model\":\"$MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}],\"stream\":false,\"keep_alive\":\"30m\"}" \
+              -d "{\"model\":\"${model}\",\"prompt\":\"say ok\",\"stream\":false,\"keep_alive\":\"30m\",\"options\":{\"num_predict\":8}}" \
               >/dev/null || true
           done < .github/ollama-models.txt
 
