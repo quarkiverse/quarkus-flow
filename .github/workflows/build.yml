@@ -20,7 +20,7 @@ jobs:
     name: Build & test (Ubuntu with Ollama)
     runs-on: ubuntu-latest
     env:
-      OLLAMA_TIMEOUT: ${{ vars.OLLAMA_TIMEOUT }}
+      QUARKUS_LANGCHAIN4J_OLLAMA_TIMEOUT: ${{ vars.OLLAMA_TIMEOUT }}
     steps:
       - uses: actions/checkout@v5
 
@@ -44,13 +44,6 @@ jobs:
         run: |
           # List the models in tests—one per line
           xargs -n1 -I{} bash -c 'echo "Pulling {}"; ollama pull "{}"' < .github/ollama-models.txt
-
-      - name: Set global LangChain4j timeout (with default)
-        run: |
-          # Fallback to 60s if OLLAMA_TIMEOUT is empty
-          : "${OLLAMA_TIMEOUT:=60s}"
-          echo "Using QUARKUS_LANGCHAIN4J_OLLAMA_TIMEOUT=$OLLAMA_TIMEOUT"
-          echo "QUARKUS_LANGCHAIN4J_OLLAMA_TIMEOUT=$OLLAMA_TIMEOUT" >> "$GITHUB_ENV"
 
       - name: Wait for Ollama & warm up model(s)
         shell: bash
