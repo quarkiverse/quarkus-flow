@@ -30,12 +30,12 @@ import io.smallrye.common.annotation.Blocking;
 public class HelloAgenticResource {
 
     @Inject
-    HelloAgenticWorkflow helloAgenticWorkflow;
+    EchoAgenticWorkflow echoAgenticWorkflow;
 
     @POST
     @Blocking
     public CompletionStage<String> hello(String message) {
-        return helloAgenticWorkflow
+        return echoAgenticWorkflow
                 .instance(message)
                 .start()
                 .thenApply(w -> w.asText().orElseThrow());

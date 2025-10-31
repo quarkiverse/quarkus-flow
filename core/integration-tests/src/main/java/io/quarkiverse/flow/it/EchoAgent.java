@@ -24,7 +24,7 @@ import io.quarkiverse.langchain4j.RegisterAiService;
         Assistant: Hello World!
         """)
 @ApplicationScoped
-public interface HelloAgent {
+public interface EchoAgent {
 
     @UserMessage("My message is: {{message}}")
     String helloWorld(@V("message") String message);

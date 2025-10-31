@@ -10,15 +10,15 @@ import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 
 @ApplicationScoped
-public class HelloAgenticWorkflow extends Flow {
+public class GenericAgenticWorkflow extends Flow {
 
     @Inject
-    HelloAgent helloAgent;
+    GenericAgentic genericAgentic;
 
+    @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("helloAgent")
-                .tasks(function("interactWithAI", helloAgent::helloWorld, String.class))
+        return FuncWorkflowBuilder.workflow("genericAgent")
+                .tasks(function("interactWithGenericAgent", genericAgentic::sendMessage, String.class))
                 .build();
     }
-
 }

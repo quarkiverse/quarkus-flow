@@ -14,8 +14,8 @@ public class FlowDevUIProcessor {
     CardPageBuildItem card() {
         CardPageBuildItem cardPage = new CardPageBuildItem();
         cardPage.addPage(Page.webComponentPageBuilder()
-                .title("Workflow definitions")
-                .componentLink("qwc-flow-workflow-definitions.js")
+                .title("Workflows")
+                .componentLink("qwc-flow-workflows.js")
                 .dynamicLabelJsonRPCMethodName(
                         "getNumbersOfWorkflows")
                 .icon("font-awesome-solid:diagram-project"));
