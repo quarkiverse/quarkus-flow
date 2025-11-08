@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.FlowTracingConfig;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
 import io.quarkiverse.flow.recorders.FlowRecorder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -22,6 +23,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
@@ -101,13 +103,19 @@ class FlowProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void registerWorkflowApp(FlowRecorder recorder, ShutdownContextBuildItem shutdown,
+    void registerWorkflowApp(FlowRecorder recorder,
+            ShutdownContextBuildItem shutdown,
+            FlowTracingConfig cfg,
+            LaunchModeBuildItem launchMode,
             BuildProducer<SyntheticBeanBuildItem> beans) {
+
+        boolean tracingEnabled = cfg.enabled().orElse(launchMode.getLaunchMode().isDevOrTest());
+
         beans.produce(SyntheticBeanBuildItem.configure(WorkflowApplication.class)
                 .scope(ApplicationScoped.class)
                 .unremovable()
                 .setRuntimeInit()
-                .supplier(recorder.workflowAppSupplier(shutdown))
+                .supplier(recorder.workflowAppSupplier(shutdown, tracingEnabled))
                 .done());
 
         LOG.info("Flow: Registering Workflow Application bean: {}", WorkflowApplication.class.getName());

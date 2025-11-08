@@ -1,0 +1,113 @@
+= Tracing (logging-only)
+:page-aliases: tracing/index.adoc
+:sectnums:
+
+Quarkus Flow provides a *logging-only* execution tracer. It emits human-readable log lines and attaches
+structured fields via MDC so you can search/graph them in Kibana/Datadog. This tracer is independent
+of Messaging/CloudEvents.
+
+== Enable
+
+Add to `application.properties`:
+
+[source,properties]
+----
+# Production (explicit ON)
+quarkus.flow.tracing.enabled=true
+----
+
+=== Defaults
+
+Tracing is **enabled by default** in **dev** and **test** modes, and **disabled by default** in **prod**.
+
+- Dev/Test (default ON):
++
+[source,properties]
+----
+# implicit default (no config needed)
+# %dev.quarkus.flow.tracing.enabled=true
+# %test.quarkus.flow.tracing.enabled=true
+
+# you can explicitly turn it off:
+%dev.quarkus.flow.tracing.enabled=false
+%test.quarkus.flow.tracing.enabled=false
+----
+
+- Prod (default OFF):
++
+[source,properties]
+----
+# enable tracing explicitly
+quarkus.flow.tracing.enabled=true
+----
+
+== Structured logging & MDC
+
+To make fields queryable, enable **JSON console logging** and include MDC. Example for the **test** profile:
+
+[source,properties]
+----
+%test.quarkus.flow.tracing.enabled=true
+
+# Enable JSON console logging (disabled by default)
+%test.quarkus.log.console.json.enabled=true
+
+# Optional: when using *pattern* (non-JSON) logging, you can surface MDC values in the format:
+# (Note: this format string is ignored when JSON logging is enabled.)
+%test.quarkus.log.console.format=%d{HH:mm:ss} %-5p quarkus.flow.instanceId=%X{quarkus.flow.instanceId} quarkus.flow.event=%X{quarkus.flow.event} [%c{2.}] (%t) %s%n
+----
+
+TIP: Quarkus logging options evolve; see the official guide for the most up-to-date knobs:
+link:https://quarkus.io/guides/logging[Quarkus Logging guide].
+
+=== MDC keys emitted by the tracing listener
+
+|===
+| Key | Example | Description
+
+| `quarkus.flow.instanceId`
+| `01K9GDCXJVN89V0N4CWVG40R7C`
+| Workflow instance ID.
+
+| `quarkus.flow.event`
+| `workflow.started`, `workflow.completed`, `task.started`, `task.completed`, `task.failed`, …
+| Normalized lifecycle event name.
+
+| `quarkus.flow.time`
+| `2025-11-07T19:20:59.120084-05:00`
+| Event timestamp (same as the event’s `eventDate()`).
+
+| `quarkus.flow.task`
+| `sayHelloWorld`
+| Task name (task events only).
+
+| `quarkus.flow.taskPos`
+| `do/0/sayHelloWorld`
+| JSON pointer to the task position in the workflow definition (task events only).
+|===
+
+[NOTE]
+====
+MDC fields become first-class, searchable fields only when:
+`quarkus.log.console.json.enabled=true` **and** JSON logging includes MDC by default (Quarkus JSON encoder).
+With pattern logging you must reference `%X{key}` in `quarkus.log.console.format`.
+See link:https://quarkus.io/guides/logging[Quarkus Logging guide].
+====
+
+== Example output (test profile)
+
+When JSON console logging is enabled, logs resemble:
+
+[source,json]
+----
+{"timestamp":"2025-11-07T19:20:59.096591-05:00","loggerName":"io.quarkiverse.flow.recorders.FlowRecorder","level":"INFO","message":"Flow: Tracing enabled","mdc":{}}
+{"timestamp":"2025-11-07T19:20:59.117491-05:00","loggerName":"io.quarkiverse.flow.tracing.TraceExecutionListener","level":"INFO","message":"Workflow id=01K9GDCXJVN89V0N4CWVG40R7C started at 2025-11-07T19:20:59.106716-05:00 input={}","mdc":{"quarkus.flow.event":"workflow.started","quarkus.flow.time":"2025-11-07T19:20:59.106716-05:00","quarkus.flow.instanceId":"01K9GDCXJVN89V0N4CWVG40R7C"}}
+{"timestamp":"2025-11-07T19:20:59.118746-05:00","loggerName":"io.quarkiverse.flow.tracing.TraceExecutionListener","level":"INFO","message":"Task 'sayHelloWorld' started at 2025-11-07T19:20:59.118675-05:00 pos=do/0/sayHelloWorld","mdc":{"quarkus.flow.event":"task.started","quarkus.flow.time":"2025-11-07T19:20:59.118675-05:00","quarkus.flow.task":"sayHelloWorld","quarkus.flow.taskPos":"do/0/sayHelloWorld","quarkus.flow.instanceId":"01K9GDCXJVN89V0N4CWVG40R7C"}}
+{"timestamp":"2025-11-07T19:20:59.120407-05:00","loggerName":"io.quarkiverse.flow.tracing.TraceExecutionListener","level":"INFO","message":"Task 'sayHelloWorld' completed at 2025-11-07T19:20:59.120084-05:00 output={\"message\":\"hello world!\"}","mdc":{"quarkus.flow.event":"task.completed","quarkus.flow.time":"2025-11-07T19:20:59.120084-05:00","quarkus.flow.task":"sayHelloWorld","quarkus.flow.taskPos":"do/0/sayHelloWorld","quarkus.flow.instanceId":"01K9GDCXJVN89V0N4CWVG40R7C"}}
+{"timestamp":"2025-11-07T19:20:59.120991-05:00","loggerName":"io.quarkiverse.flow.tracing.TraceExecutionListener","level":"INFO","message":"Workflow id=01K9GDCXJVN89V0N4CWVG40R7C completed at 2025-11-07T19:20:59.120947-05:00","mdc":{"quarkus.flow.event":"workflow.completed","quarkus.flow.time":"2025-11-07T19:20:59.120947-05:00","quarkus.flow.instanceId":"01K9GDCXJVN89V0N4CWVG40R7C"}}
+----
+
+== Relation to Messaging
+
+This tracer is *independent* from Messaging lifecycle publishing. If you want CloudEvents on a channel,
+see xref:messaging.adoc[Messaging]. You can enable either or both (depending on your deployment needs).

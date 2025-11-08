@@ -4,4 +4,5 @@
 * xref:dsl-cheatsheet.adoc[Java DSL cheatsheet]
 * xref:langchain4j.adoc[Agentic workflows (LangChain4j)]
 * xref:messaging.adoc[Messaging]
+* xref:tracing.adoc[Tracing]
 * xref:configuration.adoc[Configuration]
