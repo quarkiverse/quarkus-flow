@@ -34,7 +34,9 @@ public class WorkflowRPCService {
     @JsonRpcDescription("Generate a mermaid diagram from the workflow's definition")
     public MermaidDefinition generateMermaidDiagram(
             @JsonRpcDescription("Workflow's name") String workflowName) {
-        Log.info("Generating diagram for workflow: " + workflowName);
+        if (Log.isDebugEnabled()) {
+            Log.debug("Generating diagram for workflow: " + workflowName);
+        }
         WorkflowDefinition workflowDefinition = findWorkflowDefinitionByName(workflowName);
         return new MermaidDefinition(new Mermaid().from(workflowDefinition.workflow()));
     }
