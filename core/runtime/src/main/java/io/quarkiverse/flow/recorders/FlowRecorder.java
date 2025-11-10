@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import io.quarkiverse.flow.tracing.TraceLoggerExecutionListener;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.util.TypeLiteral;
 
@@ -15,7 +16,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.flow.Flow;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
-import io.quarkiverse.flow.tracing.TraceExecutionListener;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableInstance;
@@ -51,7 +51,7 @@ public class FlowRecorder {
 
             if (tracingEnabled) {
                 LOG.info("Flow: Tracing enabled");
-                builder.withListener(new TraceExecutionListener());
+                builder.withListener(new TraceLoggerExecutionListener());
             }
 
             this.injectEventConsumers(container, builder);

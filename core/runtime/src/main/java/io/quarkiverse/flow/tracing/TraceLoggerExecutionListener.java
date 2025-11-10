@@ -45,9 +45,9 @@ import io.serverlessworkflow.impl.lifecycle.WorkflowSuspendedEvent;
  * Logging-only execution listener. Emits structured, MDC-enriched lines that are
  * friendly to Kibana/Datadog when JSON logging + include-MDC are enabled.
  */
-public final class TraceExecutionListener implements WorkflowExecutionListener {
+public final class TraceLoggerExecutionListener implements WorkflowExecutionListener {
 
-    private static final Logger log = LoggerFactory.getLogger(TraceExecutionListener.class);
+    private static final Logger log = LoggerFactory.getLogger(TraceLoggerExecutionListener.class);
 
     /**
      * Max bytes to include from serialized payloads to keep logs sane.
