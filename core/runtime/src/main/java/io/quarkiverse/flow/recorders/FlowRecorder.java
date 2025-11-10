@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.flow.Flow;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
+import io.quarkiverse.flow.tracing.TraceLoggerExecutionListener;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableInstance;
@@ -42,44 +43,56 @@ public class FlowRecorder {
     // TODO: add injected providers from user
     // TODO: wire persistence/REST/RESTClient/etc infrastructure to the WorkflowApplication
 
-    public Supplier<WorkflowApplication> workflowAppSupplier(ShutdownContext shutdownContext) {
+    public Supplier<WorkflowApplication> workflowAppSupplier(ShutdownContext shutdownContext, boolean tracingEnabled) {
         return () -> {
             final ArcContainer container = Arc.container();
             final WorkflowApplication.Builder builder = WorkflowApplication.builder()
                     .withExpressionFactory(new JQExpressionFactory(container.instance(JQScopeSupplier.class).get()));
 
-            final InjectableInstance<EventConsumer<?, ?>> consumerHandle = container.select(new TypeLiteral<>() {
-            }, Any.Literal.INSTANCE);
-            if (consumerHandle.isResolvable()) {
-                EventConsumer<?, ?> consumer = consumerHandle.get();
-                builder.withEventConsumer(consumer);
-                LOG.info("Flow: Bound EventConsumer bean: {}", consumer.getClass().getName());
-            } else if (consumerHandle.isAmbiguous()) {
-                throw new IllegalStateException(
-                        "Multiple EventConsumer beans found. Provide exactly one, or configure selection.");
-            } else {
-                LOG.info("Flow: No EventConsumer bean found; using default fallback.");
+            if (tracingEnabled) {
+                LOG.info("Flow: Tracing enabled");
+                builder.withListener(new TraceLoggerExecutionListener());
             }
 
-            final List<EventPublisher> pubHandles = container.select(EventPublisher.class, Any.Literal.INSTANCE).stream()
-                    .toList();
-            if (!pubHandles.isEmpty()) {
-                for (EventPublisher pub : pubHandles) {
-                    builder.withEventPublisher(pub);
-                }
-                LOG.info("Flow: Bound {} EventPublisher bean(s): {}",
-                        pubHandles.size(), pubHandles.stream()
-                                .map(p -> p.getClass().getName())
-                                .collect(Collectors.joining(", ")));
-            } else {
-                LOG.info("Flow: No EventPublisher beans found; using default fallback.");
-            }
+            this.injectEventConsumers(container, builder);
+            this.injectEventPublishers(container, builder);
 
             WorkflowApplication app = builder.build();
 
             shutdownContext.addShutdownTask(app::close);
             return app;
         };
+    }
+
+    private void injectEventConsumers(final ArcContainer container, final WorkflowApplication.Builder builder) {
+        final InjectableInstance<EventConsumer<?, ?>> consumerHandle = container.select(new TypeLiteral<>() {
+        }, Any.Literal.INSTANCE);
+        if (consumerHandle.isResolvable()) {
+            EventConsumer<?, ?> consumer = consumerHandle.get();
+            builder.withEventConsumer(consumer);
+            LOG.info("Flow: Bound EventConsumer bean: {}", consumer.getClass().getName());
+        } else if (consumerHandle.isAmbiguous()) {
+            throw new IllegalStateException(
+                    "Multiple EventConsumer beans found. Provide exactly one, or configure selection.");
+        } else {
+            LOG.info("Flow: No EventConsumer bean found; using default fallback.");
+        }
+    }
+
+    private void injectEventPublishers(final ArcContainer container, final WorkflowApplication.Builder builder) {
+        final List<EventPublisher> pubHandles = container.select(EventPublisher.class, Any.Literal.INSTANCE).stream()
+                .toList();
+        if (!pubHandles.isEmpty()) {
+            for (EventPublisher pub : pubHandles) {
+                builder.withEventPublisher(pub);
+            }
+            LOG.info("Flow: Bound {} EventPublisher bean(s): {}",
+                    pubHandles.size(), pubHandles.stream()
+                            .map(p -> p.getClass().getName())
+                            .collect(Collectors.joining(", ")));
+        } else {
+            LOG.info("Flow: No EventPublisher beans found; using default fallback.");
+        }
     }
 
     public Supplier<WorkflowDefinition> workflowDefinitionSupplier(String flowDescriptorClassName) {

@@ -5,7 +5,7 @@ To edit the documentation with live-reload, start Quarkus in dev mode
 [source,shell]
 ----
 $ cd docs
-$ mvn quarkus:dev
+$ mvn clean quarkus:dev
 ----
 
 Once the application has started, hit `w` to open the freshly generated site in browser.

@@ -1,0 +1,32 @@
+[.configuration-legend]
+icon:lock[title=Fixed at build time] Configuration property fixed at build time - All other configuration properties are overridable at runtime
+[.configuration-reference.searchable, cols="80,.^10,.^10"]
+|===
+
+h|[.header-title]##Configuration property##
+h|Type
+h|Default
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-tracing-enabled]] [.property-path]##link:#quarkus-flow_quarkus-flow-tracing-enabled[`quarkus.flow.tracing.enabled`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.tracing.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether to enable workflow execution tracing. If not set, it defaults to true in dev and test mode.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_TRACING_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_TRACING_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+|===
+
