@@ -62,7 +62,7 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
                 <div class="workflows">
                     <vaadin-grid
                         .items=${this._workflows}
-                        theme="row-stripes"
+                        theme="no-border"
                         column-reordering-allowed
                         multi-sort>
                         <vaadin-grid-column
