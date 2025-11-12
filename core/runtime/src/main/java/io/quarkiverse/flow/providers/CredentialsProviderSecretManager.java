@@ -57,6 +57,7 @@ public class CredentialsProviderSecretManager implements SecretManager {
     void init() {
         if (providers.isResolvable() && !providers.isAmbiguous()) {
             singleProvider = Optional.of(providers.get());
+            return;
         }
 
         providers.stream().forEach(p -> {
@@ -134,11 +135,6 @@ public class CredentialsProviderSecretManager implements SecretManager {
                 .sorted()
                 .collect(joining(", "));
         return "named=[" + names + "], classes=[" + classes + "]";
-    }
-
-    private String namedOf(CredentialsProvider p) {
-        var n = p.getClass().getAnnotation(Named.class);
-        return (n != null && !n.value().isBlank()) ? n.value() : "<unnamed>";
     }
 
     @Override
