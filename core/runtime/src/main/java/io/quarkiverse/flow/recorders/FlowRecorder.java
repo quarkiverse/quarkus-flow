@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.recorders;
 
 import java.lang.reflect.Field;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -24,6 +25,7 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
+import io.serverlessworkflow.impl.config.SecretManager;
 import io.serverlessworkflow.impl.events.EventConsumer;
 import io.serverlessworkflow.impl.events.EventPublisher;
 import io.serverlessworkflow.impl.expressions.jq.JQExpressionFactory;
@@ -56,6 +58,7 @@ public class FlowRecorder {
 
             this.injectEventConsumers(container, builder);
             this.injectEventPublishers(container, builder);
+            this.injectSecretManager(container, builder);
 
             WorkflowApplication app = builder.build();
 
@@ -93,6 +96,38 @@ public class FlowRecorder {
         } else {
             LOG.info("Flow: No EventPublisher beans found; using default fallback.");
         }
+    }
+
+    private void injectSecretManager(final ArcContainer container, final WorkflowApplication.Builder builder) {
+        List<SecretManager> managers = container.select(SecretManager.class, Any.Literal.INSTANCE).stream().toList();
+
+        if (managers.isEmpty()) {
+            LOG.info("Flow: No SecretManager bean found; skipping so SDK can fall back to MicroProfile Config.");
+            return;
+        }
+
+        List<SecretManager> usable = managers.stream()
+                .filter(sm -> {
+                    if (sm instanceof io.quarkiverse.flow.providers.CredentialsProviderSecretManager qsm) {
+                        return qsm.hasAnyProviders();
+                    }
+                    return true;
+                })
+                .toList();
+
+        if (usable.isEmpty()) {
+            LOG.info("Flow: SecretManager beans present but none usable (no CredentialsProvider available); " +
+                    "skipping so SDK can fall back to MicroProfile Config.");
+            return;
+        }
+
+        SecretManager chosen = usable.stream()
+                .min(Comparator.comparingInt(SecretManager::priority))
+                .orElseThrow();
+
+        builder.withSecretManager(chosen);
+        LOG.info("Flow: SecretManager bound: {} (priority: {})",
+                chosen.getClass().getName(), chosen.priority());
     }
 
     public Supplier<WorkflowDefinition> workflowDefinitionSupplier(String flowDescriptorClassName) {
