@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
 import io.quarkiverse.flow.tracing.TraceLoggerExecutionListener;
 import io.quarkus.arc.Arc;
@@ -31,8 +32,6 @@ import io.serverlessworkflow.impl.events.EventPublisher;
 import io.serverlessworkflow.impl.expressions.jq.JQExpressionFactory;
 import io.serverlessworkflow.impl.jackson.JsonUtils;
 
-// TODO: produce definitions from workflows in the YAML format within the current classpath
-
 /**
  * Registries all Workflow definitions found in the classpath built via the Java DSL.
  */
@@ -40,10 +39,6 @@ import io.serverlessworkflow.impl.jackson.JsonUtils;
 public class FlowRecorder {
 
     private static final Logger LOG = LoggerFactory.getLogger(FlowRecorder.class);
-
-    // TODO: expose WorkflowApplication build via configuration
-    // TODO: add injected providers from user
-    // TODO: wire persistence/REST/RESTClient/etc infrastructure to the WorkflowApplication
 
     public Supplier<WorkflowApplication> workflowAppSupplier(ShutdownContext shutdownContext, boolean tracingEnabled) {
         return () -> {
@@ -108,7 +103,7 @@ public class FlowRecorder {
 
         List<SecretManager> usable = managers.stream()
                 .filter(sm -> {
-                    if (sm instanceof io.quarkiverse.flow.providers.CredentialsProviderSecretManager qsm) {
+                    if (sm instanceof CredentialsProviderSecretManager qsm) {
                         return qsm.hasAnyProviders();
                     }
                     return true;

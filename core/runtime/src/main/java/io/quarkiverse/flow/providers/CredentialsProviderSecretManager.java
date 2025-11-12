@@ -1,6 +1,8 @@
 package io.quarkiverse.flow.providers;
 
-import java.util.List;
+import static java.util.stream.Collectors.joining;
+
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeSet;
@@ -34,71 +36,64 @@ public class CredentialsProviderSecretManager implements SecretManager {
     private static final String ROOT = FlowSecretsConfig.ROOT_KEY;
     private static final String GLOBAL_KEY = ROOT + ".credentials-provider-name";
     private static final String PER_SECRET_KEY = ROOT + ".credentials-provider-names.<secret>";
+
     private final Map<String, CredentialsProvider> providerBeanCache = new ConcurrentHashMap<>();
     private final Map<String, CredentialsProvider> secretCache = new ConcurrentHashMap<>();
+
     @Inject
     FlowSecretsConfig flowSecrets;
+
     @Inject
     @Any
     Instance<CredentialsProvider> providers;
-    private volatile boolean hasAnyProviders;
+
     private volatile Optional<CredentialsProvider> singleProvider = Optional.empty();
 
     private static String nullSafeTrim(String v) {
-        if (v == null)
-            return null;
-        String t = v.trim();
-        return t.isEmpty() ? null : t;
+        return v == null ? null : v.trim();
     }
 
     @PostConstruct
     void init() {
-        final List<CredentialsProvider> all = providers.stream().toList();
-        hasAnyProviders = !all.isEmpty();
-
         if (providers.isResolvable() && !providers.isAmbiguous()) {
             singleProvider = Optional.of(providers.get());
         }
 
-        for (CredentialsProvider p : all) {
+        providers.stream().forEach(p -> {
             Named n = p.getClass().getAnnotation(Named.class);
             if (n != null && !n.value().isBlank()) {
                 providerBeanCache.putIfAbsent(n.value(), p);
             }
-        }
+        });
     }
 
     /**
      * Recorder checks this to decide whether to wire this SM or let the SDK fallback handle resolution.
      */
     public boolean hasAnyProviders() {
-        return hasAnyProviders;
+        return !providers.isUnsatisfied();
     }
 
     @Override
     public Map<String, String> secret(String secretName) {
         CredentialsProvider provider = secretCache.computeIfAbsent(secretName, this::resolveProviderForSecret);
         Map<String, String> creds = provider.getCredentials(secretName);
-        if (creds == null || creds.isEmpty()) {
-            throw new IllegalStateException("No credentials found for secret '" + secretName
-                    + "' from provider @" + namedOf(provider) + " (" + provider.getClass().getName() + ")");
-        }
-        return creds;
+        return creds == null ? Collections.emptyMap() : creds;
     }
 
     private CredentialsProvider resolveProviderForSecret(String secretName) {
+        if (singleProvider.isPresent()) {
+            return singleProvider.get();
+        }
+
         String per = nullSafeTrim(flowSecrets.credentialsProviderNames().get(secretName));
         if (per != null) {
             return selectConfigProvider(per);
         }
 
-        Optional<String> global = flowSecrets.credentialsProviderName().map(String::trim).filter(s -> !s.isEmpty());
+        Optional<String> global = flowSecrets.credentialsProviderName().filter(s -> !s.isBlank());
         if (global.isPresent()) {
             return selectConfigProvider(global.get());
-        }
-
-        if (singleProvider.isPresent()) {
-            return singleProvider.get();
         }
 
         throw new IllegalStateException(
@@ -130,14 +125,14 @@ public class CredentialsProviderSecretManager implements SecretManager {
     }
 
     private String availableProviders() {
-        if (!hasAnyProviders)
+        if (providers.isUnsatisfied())
             return "<none>";
         String names = providerBeanCache.isEmpty() ? "<no @Named providers>"
                 : String.join(", ", new TreeSet<>(providerBeanCache.keySet()));
         String classes = providers.stream()
                 .map(p -> p.getClass().getName())
                 .sorted()
-                .collect(java.util.stream.Collectors.joining(", "));
+                .collect(joining(", "));
         return "named=[" + names + "], classes=[" + classes + "]";
     }
 
