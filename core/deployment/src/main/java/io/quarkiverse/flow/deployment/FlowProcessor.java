@@ -14,7 +14,10 @@ import io.quarkiverse.flow.Flow;
 import io.quarkiverse.flow.config.FlowTracingConfig;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
-import io.quarkiverse.flow.recorders.FlowRecorder;
+import io.quarkiverse.flow.providers.MicroprofileConfigManager;
+import io.quarkiverse.flow.recorders.SDKRecorder;
+import io.quarkiverse.flow.recorders.WorkflowApplicationRecorder;
+import io.quarkiverse.flow.recorders.WorkflowDefinitionRecorder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -73,6 +76,7 @@ class FlowProcessor {
         return AdditionalBeanBuildItem.builder()
                 .addBeanClass(JQScopeSupplier.class)
                 .addBeanClass(CredentialsProviderSecretManager.class)
+                .addBeanClass(MicroprofileConfigManager.class)
                 .setUnremovable()
                 .build();
     }
@@ -83,7 +87,7 @@ class FlowProcessor {
      */
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void produceWorkflowDefinitions(FlowRecorder recorder,
+    void produceWorkflowDefinitions(WorkflowDefinitionRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> beans,
             List<DiscoveredFlowBuildItem> discovered) {
 
@@ -105,7 +109,7 @@ class FlowProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void registerWorkflowApp(FlowRecorder recorder,
+    void registerWorkflowApp(WorkflowApplicationRecorder recorder,
             ShutdownContextBuildItem shutdown,
             FlowTracingConfig cfg,
             LaunchModeBuildItem launchMode,
@@ -154,7 +158,7 @@ class FlowProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void overrideObjectMapper(FlowRecorder recorder) {
+    void overrideObjectMapper(SDKRecorder recorder) {
         recorder.injectQuarkusObjectMapper();
     }
 

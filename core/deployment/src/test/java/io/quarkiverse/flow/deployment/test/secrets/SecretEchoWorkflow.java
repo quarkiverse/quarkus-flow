@@ -14,7 +14,7 @@ public class SecretEchoWorkflow extends Flow {
         return WorkflowBuilder
                 .workflow()
                 .use(u -> u.secrets("mySecret")) // refer to the credentials provider via secret name
-                .tasks(t -> t.set("${ $secret.mySecret.key }")) // will resolve to "s3cr3t!"
+                .tasks(t -> t.set("${ $secret.mySecret.password }")) // will resolve to "s3cr3t!"
                 .build();
     }
 }

@@ -37,7 +37,7 @@ public class CredentialsProviderSecretManager implements SecretManager {
     private static final String GLOBAL_KEY = ROOT + ".credentials-provider-name";
     private static final String PER_SECRET_KEY = ROOT + ".credentials-provider-names.<secret>";
 
-    private final Map<String, CredentialsProvider> providerBeanCache = new ConcurrentHashMap<>();
+    private final Map<String, CredentialsProvider> configProviderBeanCache = new ConcurrentHashMap<>();
     private final Map<String, CredentialsProvider> secretCache = new ConcurrentHashMap<>();
 
     @Inject
@@ -63,7 +63,7 @@ public class CredentialsProviderSecretManager implements SecretManager {
         providers.stream().forEach(p -> {
             Named n = p.getClass().getAnnotation(Named.class);
             if (n != null && !n.value().isBlank()) {
-                providerBeanCache.putIfAbsent(n.value(), p);
+                configProviderBeanCache.putIfAbsent(n.value(), p);
             }
         });
     }
@@ -107,14 +107,14 @@ public class CredentialsProviderSecretManager implements SecretManager {
      * Centralized config → provider resolution with cache + CDI fallback.
      */
     private CredentialsProvider selectConfigProvider(String named) {
-        CredentialsProvider cached = providerBeanCache.get(named);
+        CredentialsProvider cached = configProviderBeanCache.get(named);
         if (cached != null)
             return cached;
 
         Instance<CredentialsProvider> handle = providers.select(NamedLiteral.of(named));
         if (handle.isResolvable() && !handle.isAmbiguous()) {
             CredentialsProvider p = handle.get();
-            providerBeanCache.putIfAbsent(named, p);
+            configProviderBeanCache.putIfAbsent(named, p);
             return p;
         }
         if (handle.isAmbiguous()) {
@@ -128,8 +128,8 @@ public class CredentialsProviderSecretManager implements SecretManager {
     private String availableProviders() {
         if (providers.isUnsatisfied())
             return "<none>";
-        String names = providerBeanCache.isEmpty() ? "<no @Named providers>"
-                : String.join(", ", new TreeSet<>(providerBeanCache.keySet()));
+        String names = configProviderBeanCache.isEmpty() ? "<no @Named providers>"
+                : String.join(", ", new TreeSet<>(configProviderBeanCache.keySet()));
         String classes = providers.stream()
                 .map(p -> p.getClass().getName())
                 .sorted()

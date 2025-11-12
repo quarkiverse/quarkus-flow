@@ -15,7 +15,7 @@ public class DumbCredentialsProvider implements CredentialsProvider {
     public Map<String, String> getCredentials(String credentialsName) {
         if ("mySecret".equals(credentialsName)) {
             return Map.of(
-                    "key", "s3cr3t!");
+                    "password", "s3cr3t!");
         }
         return Map.of();
     }
