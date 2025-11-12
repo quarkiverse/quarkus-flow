@@ -8,7 +8,7 @@ metadata:
     - cncf
     - serverless
     - cloudevents
-  guide: https://docs.quarkiverse.io/flow/dev/ # To create and publish this guide, see https://github.com/quarkiverse/quarkiverse/wiki#documenting-your-extension
+  guide: https://docs.quarkiverse.io/quarkus-flow/dev/
   categories:
     - "integration"
     - "messaging"
