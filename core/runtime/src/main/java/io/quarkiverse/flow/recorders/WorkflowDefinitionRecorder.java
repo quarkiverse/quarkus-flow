@@ -28,9 +28,7 @@ public class WorkflowDefinitionRecorder {
                 final Workflow wf = flow.descriptor();
 
                 return app.workflowDefinition(wf);
-            } catch (RuntimeException re) {
-                throw re;
-            } catch (Throwable e) {
+            } catch (RuntimeException | ClassNotFoundException e) {
                 throw new RuntimeException("Failed to create WorkflowDefinition for " + flowDescriptorClassName, e);
             }
         };

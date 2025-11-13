@@ -93,27 +93,20 @@ public class WorkflowApplicationRecorder {
         }
 
         List<SecretManager> usable = managers.stream()
-                .filter(sm -> {
-                    if (sm instanceof CredentialsProviderSecretManager qsm) {
-                        return qsm.hasAnyProviders();
-                    }
-                    return true;
-                })
+                .filter(sm -> !(sm instanceof CredentialsProviderSecretManager)
+                        || ((CredentialsProviderSecretManager) sm).hasAnyProviders())
+                .sorted(Comparator.comparingInt(SecretManager::priority))
                 .toList();
 
         if (usable.isEmpty()) {
             LOG.info("Flow: SecretManager beans present but none usable (no CredentialsProvider available); " +
                     "skipping so SDK can fall back to MicroProfile Config.");
-            return;
+        } else {
+            SecretManager chosen = usable.get(0);
+            builder.withSecretManager(chosen);
+            LOG.info("Flow: SecretManager bound: {} (priority: {})",
+                    chosen.getClass().getName(), chosen.priority());
         }
-
-        SecretManager chosen = usable.stream()
-                .min(Comparator.comparingInt(SecretManager::priority))
-                .orElseThrow();
-
-        builder.withSecretManager(chosen);
-        LOG.info("Flow: SecretManager bound: {} (priority: {})",
-                chosen.getClass().getName(), chosen.priority());
     }
 
     private void injectConfigManager(final ArcContainer container, final WorkflowApplication.Builder builder) {

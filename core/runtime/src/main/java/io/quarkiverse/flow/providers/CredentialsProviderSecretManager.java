@@ -57,15 +57,14 @@ public class CredentialsProviderSecretManager implements SecretManager {
     void init() {
         if (providers.isResolvable() && !providers.isAmbiguous()) {
             singleProvider = Optional.of(providers.get());
-            return;
+        } else {
+            providers.stream().forEach(p -> {
+                Named n = p.getClass().getAnnotation(Named.class);
+                if (n != null && !n.value().isBlank()) {
+                    configProviderBeanCache.putIfAbsent(n.value(), p);
+                }
+            });
         }
-
-        providers.stream().forEach(p -> {
-            Named n = p.getClass().getAnnotation(Named.class);
-            if (n != null && !n.value().isBlank()) {
-                configProviderBeanCache.putIfAbsent(n.value(), p);
-            }
-        });
     }
 
     /**
@@ -107,22 +106,18 @@ public class CredentialsProviderSecretManager implements SecretManager {
      * Centralized config → provider resolution with cache + CDI fallback.
      */
     private CredentialsProvider selectConfigProvider(String named) {
-        CredentialsProvider cached = configProviderBeanCache.get(named);
-        if (cached != null)
-            return cached;
-
-        Instance<CredentialsProvider> handle = providers.select(NamedLiteral.of(named));
-        if (handle.isResolvable() && !handle.isAmbiguous()) {
-            CredentialsProvider p = handle.get();
-            configProviderBeanCache.putIfAbsent(named, p);
-            return p;
-        }
-        if (handle.isAmbiguous()) {
-            throw new IllegalStateException("Multiple CredentialsProvider beans match @Named='" + named
-                    + "'. Available: " + availableProviders());
-        }
-        throw new IllegalStateException("CredentialsProvider @Named='" + named
-                + "' not found. Available: " + availableProviders());
+        return configProviderBeanCache.computeIfAbsent(named, k -> {
+            Instance<CredentialsProvider> handle = providers.select(NamedLiteral.of(named));
+            if (handle.isAmbiguous()) {
+                throw new IllegalStateException("Multiple CredentialsProvider beans match @Named='" + named
+                        + "'. Available: " + availableProviders());
+            }
+            if (!handle.isResolvable()) {
+                throw new IllegalStateException("CredentialsProvider @Named='" + named
+                        + "' not found. Available: " + availableProviders());
+            }
+            return handle.get();
+        });
     }
 
     private String availableProviders() {
