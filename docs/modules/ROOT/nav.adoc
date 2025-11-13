@@ -5,4 +5,5 @@
 * xref:langchain4j.adoc[Agentic workflows (LangChain4j)]
 * xref:messaging.adoc[Messaging]
 * xref:tracing.adoc[Tracing]
+* xref:secrets.adoc[Secrets]
 * xref:configuration.adoc[Configuration]

@@ -28,5 +28,51 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |
 
+a| [[quarkus-flow_quarkus-flow-secrets-credentials-provider-name]] [.property-path]##link:#quarkus-flow_quarkus-flow-secrets-credentials-provider-name[`quarkus.flow.secrets.credentials-provider-name`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.secrets.credentials-provider-name+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Name of the custom `io.quarkus.credentials.CredentialsProvider` bean name to use as a global source for Workflow Secrets. This means that every `io.serverlessworkflow.impl.WorkflowDefinition` will use the same credential provider.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_SECRETS_CREDENTIALS_PROVIDER_NAME+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_SECRETS_CREDENTIALS_PROVIDER_NAME+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow_quarkus-flow-secrets-credentials-provider-names-credentials-provider-names]] [.property-path]##link:#quarkus-flow_quarkus-flow-secrets-credentials-provider-names-credentials-provider-names[`quarkus.flow.secrets.credentials-provider-names."credentials-provider-names"`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.secrets.credentials-provider-names."credentials-provider-names"+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Specific custom `io.quarkus.credentials.CredentialsProvider` per workflow secret definition. In this case, you can specify one credential provider per `io.serverlessworkflow.impl.WorkflowDefinition` secret. Use the secret name as a key, e.g.:
+
+```
+quarkus.flow.secrets.credentials-provider-names.myCustomSecret=theNamedCredentialsProvider
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_SECRETS_CREDENTIALS_PROVIDER_NAMES__CREDENTIALS_PROVIDER_NAMES_+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_SECRETS_CREDENTIALS_PROVIDER_NAMES__CREDENTIALS_PROVIDER_NAMES_+++`
+endif::add-copy-button-to-env-var[]
+--
+|Map<String,String>
+|
+
 |===
 

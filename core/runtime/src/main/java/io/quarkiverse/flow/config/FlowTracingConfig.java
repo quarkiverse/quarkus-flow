@@ -1,4 +1,4 @@
-package io.quarkiverse.flow;
+package io.quarkiverse.flow.config;
 
 import java.util.Optional;
 

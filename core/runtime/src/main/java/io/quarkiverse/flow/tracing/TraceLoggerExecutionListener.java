@@ -149,9 +149,9 @@ public final class TraceLoggerExecutionListener implements WorkflowExecutionList
     @Override
     public void onWorkflowFailed(WorkflowFailedEvent ev) {
         withMdc(ev, "workflow.failed", () -> log.info(
-                "Workflow name={} id={} failed at {} cause={}",
+                "Workflow name={} id={} failed at {} error={} cause={}",
                 ev.workflowContext().definition().workflow().getDocument().getName(),
-                ev.workflowContext().instanceData().id(), ev.eventDate(), safe(ev.cause())));
+                ev.workflowContext().instanceData().id(), ev.eventDate(), ev.cause().getMessage(), safe(ev.cause())));
     }
 
     @Override
@@ -182,9 +182,9 @@ public final class TraceLoggerExecutionListener implements WorkflowExecutionList
     @Override
     public void onTaskFailed(TaskFailedEvent ev) {
         withMdc(ev, "task.failed", () -> log.info(
-                "Task '{}' failed at {} output={} cause={}",
+                "Task '{}' failed at {} output={} error={} cause={}",
                 ev.taskContext().taskName(), ev.eventDate(),
-                safe(ev.taskContext().output().asJavaObject()), safe(ev.cause())));
+                safe(ev.taskContext().output().asJavaObject()), ev.cause().getMessage(), safe(ev.cause())));
     }
 
     @Override
