@@ -1,0 +1,8 @@
+name: quarkus-flow-codestart
+ref: quarkus-flow
+type: code
+tags: extension-codestart
+metadata:
+  title: Quarkus Flow
+  description: Workflow engine for Quarkus based on the CNCF Workflow Specification, with Java DSL and Agentic AI support.
+  related-guide-section: https://quarkus.io/extensions/io.quarkiverse.flow/quarkus-flow/
