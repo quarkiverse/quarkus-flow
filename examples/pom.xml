@@ -17,5 +17,6 @@
 
     <modules>
         <module>newsletter-drafter</module>
+        <module>petstore-http-openapi</module>
     </modules>
 </project>

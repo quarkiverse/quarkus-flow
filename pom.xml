@@ -31,12 +31,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.version>3.30.0</quarkus.version>
-        <io.serverlessworkflow.version>7.4.0.Final</io.serverlessworkflow.version>
+        <io.serverlessworkflow.version>8.0.0-SNAPSHOT</io.serverlessworkflow.version>
         <io.quarkiverse.jackson-jq.version>2.4.0</io.quarkiverse.jackson-jq.version>
         <io.quarkiverse.langchain4j.version>1.4.1</io.quarkiverse.langchain4j.version>
         <org.assertj.version>3.27.6</org.assertj.version>
         <io.cloudevents.version>4.0.1</io.cloudevents.version>
         <quarkus-antora.version>3.25.0</quarkus-antora.version>
+        <mockserver.version>5.15.0</mockserver.version>
     </properties>
 
     <dependencyManagement>
@@ -56,6 +57,11 @@
             <dependency>
                 <groupId>io.serverlessworkflow</groupId>
                 <artifactId>serverlessworkflow-impl-http</artifactId>
+                <version>${io.serverlessworkflow.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.serverlessworkflow</groupId>
+                <artifactId>serverlessworkflow-impl-openapi</artifactId>
                 <version>${io.serverlessworkflow.version}</version>
             </dependency>
             <dependency>

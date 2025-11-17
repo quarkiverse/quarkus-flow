@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.config.FlowTracingConfig;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
+import io.quarkiverse.flow.providers.HttpClientProvider;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
 import io.quarkiverse.flow.providers.MicroprofileConfigManager;
 import io.quarkiverse.flow.recorders.SDKRecorder;
@@ -56,11 +57,12 @@ class FlowProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem registerRuntimeDefaults() {
+    AdditionalBeanBuildItem registerRuntimeProviders() {
         return AdditionalBeanBuildItem.builder()
                 .addBeanClass(JQScopeSupplier.class)
                 .addBeanClass(CredentialsProviderSecretManager.class)
                 .addBeanClass(MicroprofileConfigManager.class)
+                .addBeanClass(HttpClientProvider.class)
                 .setUnremovable()
                 .build();
     }

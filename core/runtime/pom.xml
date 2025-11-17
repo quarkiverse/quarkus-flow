@@ -27,6 +27,10 @@
         </dependency>
         <dependency>
             <groupId>io.serverlessworkflow</groupId>
+            <artifactId>serverlessworkflow-impl-openapi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.serverlessworkflow</groupId>
             <artifactId>serverlessworkflow-impl-jq</artifactId>
         </dependency>
         <dependency>
