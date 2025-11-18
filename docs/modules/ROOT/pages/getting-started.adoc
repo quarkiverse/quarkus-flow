@@ -42,7 +42,7 @@ import org.jboss.resteasy.reactive.ResponseStatus;
 
 @Path("/hello")
 @ApplicationScoped
-public class org.acme.HelloResource {
+public class HelloResource {
 
   @Inject
   HelloWorkflow hello; // inject the Flow subclass
