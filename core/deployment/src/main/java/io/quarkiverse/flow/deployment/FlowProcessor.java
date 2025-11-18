@@ -1,17 +1,17 @@
 package io.quarkiverse.flow.deployment;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.quarkiverse.flow.Flow;
 import io.quarkiverse.flow.config.FlowTracingConfig;
+import io.quarkiverse.flow.deployment.items.DiscoveredFlowBuildItem;
+import io.quarkiverse.flow.deployment.items.DiscoveredWorkflowFileDataBuildItem;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
 import io.quarkiverse.flow.providers.MicroprofileConfigManager;
@@ -21,41 +21,27 @@ import io.quarkiverse.flow.recorders.WorkflowDefinitionRecorder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
-import io.smallrye.common.annotation.Identifier;
 
 class FlowProcessor {
 
     private static final Logger LOG = LoggerFactory.getLogger(FlowProcessor.class); // NEW
 
     private static final String FEATURE = "flow";
-    private static final DotName FLOW_DOTNAME = DotName.createSimple(Flow.class.getName());
-    private static final DotName IDENTIFIER_DOTNAME = DotName.createSimple(Identifier.class.getName());
 
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FEATURE);
-    }
-
-    /**
-     * Collect all Flow beans.
-     */
-    @BuildStep
-    void collectFlows(CombinedIndexBuildItem index, BuildProducer<DiscoveredFlowBuildItem> wf) {
-        for (ClassInfo flow : index.getIndex().getAllKnownSubclasses(FLOW_DOTNAME)) {
-            if (flow.isAbstract())
-                continue;
-            wf.produce(new DiscoveredFlowBuildItem(flow.name().toString()));
-        }
     }
 
     @BuildStep
@@ -89,22 +75,36 @@ class FlowProcessor {
     @BuildStep
     void produceWorkflowDefinitions(WorkflowDefinitionRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> beans,
-            List<DiscoveredFlowBuildItem> discovered) {
+            List<DiscoveredFlowBuildItem> discovered,
+            List<DiscoveredWorkflowFileDataBuildItem> workflows) {
 
-        List<String> fqcnList = new java.util.ArrayList<>();
+        List<String> identifiers = new ArrayList<>();
 
         for (DiscoveredFlowBuildItem it : discovered) {
             beans.produce(SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
                     .scope(ApplicationScoped.class)
                     .unremovable()
                     .setRuntimeInit()
-                    .addQualifier().annotation(IDENTIFIER_DOTNAME).addValue("value", it.getClassName()).done()
+                    .addQualifier().annotation(DotNames.IDENTIFIER).addValue("value", it.getClassName()).done()
                     .supplier(recorder.workflowDefinitionSupplier(it.getClassName()))
                     .done());
-            fqcnList.add(it.getClassName());
+            identifiers.add(it.getClassName());
         }
 
-        logWorkflowList(fqcnList);
+        for (DiscoveredWorkflowFileDataBuildItem workflow : workflows) {
+            beans.produce(SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
+                    .scope(ApplicationScoped.class)
+                    .unremovable()
+                    .setRuntimeInit()
+                    .addQualifier().annotation(DotNames.IDENTIFIER)
+                    .addValue("value", workflow.identifier()).done()
+                    .supplier(recorder.workflowDefinitionFromFileSupplier(workflow.locationString()))
+                    .done());
+
+            identifiers.add(workflow.identifier());
+        }
+
+        logWorkflowList(identifiers);
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -127,28 +127,28 @@ class FlowProcessor {
         LOG.info("Flow: Registering Workflow Application bean: {}", WorkflowApplication.class.getName());
     }
 
-    private void logWorkflowList(List<String> fqcns) {
-        if (fqcns.isEmpty()) {
+    private void logWorkflowList(List<String> identifiers) {
+        if (identifiers.isEmpty()) {
             LOG.info("Flow: No WorkflowDefinition beans were registered.");
             return;
         }
 
         // sort for stable output
-        Collections.sort(fqcns);
+        Collections.sort(identifiers);
 
         final String header = "Workflow class (Qualifier)";
         int w = header.length();
-        for (String s : fqcns)
+        for (String s : identifiers)
             w = Math.max(w, s.length());
 
         String sep = "+" + "-".repeat(w + 2) + "+";
-        StringBuilder sb = new StringBuilder(64 + fqcns.size() * (w + 8));
+        StringBuilder sb = new StringBuilder(64 + identifiers.size() * (w + 8));
         sb.append('\n');
         sb.append("Flow: Registered WorkflowDefinition beans\n");
         sb.append(sep).append('\n');
         sb.append(String.format("| %-" + w + "s |\n", header));
         sb.append(sep).append('\n');
-        for (String s : fqcns) {
+        for (String s : identifiers) {
             sb.append(String.format("| %-" + w + "s |\n", s));
         }
         sb.append(sep).append('\n');
@@ -162,4 +162,14 @@ class FlowProcessor {
         recorder.injectQuarkusObjectMapper();
     }
 
+    @BuildStep(onlyIf = { IsDevelopment.class })
+    public void watchChanges(List<DiscoveredWorkflowFileDataBuildItem> workflows,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) {
+        for (DiscoveredWorkflowFileDataBuildItem workflow : workflows) {
+            watchedFiles.produce(HotDeploymentWatchedFileBuildItem.builder()
+                    .setLocation(workflow.locationString())
+                    .setRestartNeeded(true)
+                    .build());
+        }
+    }
 }

@@ -1,0 +1,9 @@
+document:
+  dsl: '1.0.0'
+  namespace: default
+  name: echo-name
+  version: '0.1.0'
+do:
+  - setEcho:
+      set:
+        message: '${ "Echo: " + .name }'

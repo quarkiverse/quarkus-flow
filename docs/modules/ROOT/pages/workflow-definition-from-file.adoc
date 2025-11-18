@@ -1,0 +1,116 @@
+= How to load Workflow Definitions from files
+include::./includes/attributes.adoc[]
+
+This guide shows you how to load and use Serverless Workflow definitions from YAML files in your Quarkus application, making them available as CDI beans for injection and execution.
+
+
+== 1) Create the workflow specification file
+
+Create a directory `src/main/flow` in your project and add a Serverless Workflow specification file:
+
+[source,yaml]
+.src/main/flow/echo-name.yaml
+----
+document:
+  dsl: '1.0.0'
+  namespace: flow
+  name: echo-name
+  version: '0.1.0'
+do:
+  - setEcho:
+      set:
+        message: '${ "Echo: " + .name }'
+----
+
+[TIP]
+====
+You can customize the directory location by setting the xref:configuration.adoc#quarkus-flow_quarkus-flow-definitions-dir[`quarkus.flow.definitions.dir`] property in your `application.properties`.
+====
+
+== 2) Inject the WorkflowDefinition bean
+
+The Quarkus Flow extension automatically creates a `WorkflowDefinition` CDI bean for each specification file. The bean qualifier follows the pattern `\{namespace}:\{name}` from your YAML file.
+
+Create a JAX-RS resource to use the workflow:
+
+[source,java]
+.src/main/java/org/acme/EchoResource.java
+----
+package org.acme;
+
+import java.util.Map;
+import java.util.Objects;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Response;
+
+import io.quarkus.flow.WorkflowApplication;
+import io.quarkus.flow.WorkflowDefinition;
+import io.quarkus.flow.WorkflowModel;
+import io.quarkus.flow.cdi.Identifier;
+
+@Path("/echo")
+public class EchoResource {
+
+    @Inject
+    WorkflowApplication app; // <1>
+
+    @Inject
+    @Identifier("flow:echo-name") // <2>
+    WorkflowDefinition definition;
+
+    @GET
+    public Response echo(@QueryParam("name") String name) {
+        String finalName = Objects.requireNonNullElse(name, "(Duke)");
+
+        WorkflowModel model = app.workflowDefinition(definition.workflow())
+            .instance(Map.of("name", finalName))
+            .start()
+            .join();
+
+        return Response.ok(model.asText().orElseThrow()).build();
+    }
+}
+----
+<1> Inject the main workflow application
+<2> Use the `@Identifier` annotation with the format `\{namespace}:\{name}` from your YAML file
+
+[IMPORTANT]
+====
+The `@Identifier` value must exactly match the `document.namespace:document.name` from your YAML specification. If you change these values in the YAML file, update the `@Identifier` accordingly.
+====
+
+== 3) Test the workflow
+
+Start your Quarkus application in development mode:
+
+[source,shell]
+----
+./mvnw quarkus:dev
+----
+
+Test the workflow endpoint:
+
+[source,shell]
+----
+curl http://localhost:8080/echo?name=John
+----
+
+== Expected outcome
+
+After completing these steps, you should have:
+
+* A workflow specification file loaded automatically by Quarkus Flow
+* A `WorkflowDefinition` bean available for CDI injection
+* A working REST endpoint that executes the workflow and returns results
+
+The expected response from the test curl command:
+
+[source,json]
+----
+{"message": "Echo: John"}
+----
+
