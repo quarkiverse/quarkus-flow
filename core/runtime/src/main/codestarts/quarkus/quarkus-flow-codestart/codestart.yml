@@ -6,3 +6,7 @@ metadata:
   title: Quarkus Flow
   description: Workflow engine for Quarkus based on the CNCF Workflow Specification, with Java DSL and Agentic AI support.
   related-guide-section: https://docs.quarkiverse.io/quarkus-flow/dev/index.html
+language:
+  java:
+    test-dependencies:
+      - io.rest-assured:rest-assured

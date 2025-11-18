@@ -1,5 +1,7 @@
 package io.quarkiverse.flow.it;
 
+import java.io.IOException;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,6 +24,11 @@ public class FlowCodestartTest {
         codestartTest.checkGeneratedSource("org.acme.Message");
         codestartTest.checkGeneratedTestSource("org.acme.HelloResourceTest");
 
+    }
+
+    @Test
+    void buildAllProjects() throws IOException {
+        codestartTest.buildAllProjects();
     }
 
 }
