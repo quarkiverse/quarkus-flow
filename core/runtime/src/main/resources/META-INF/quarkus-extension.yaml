@@ -12,4 +12,9 @@ metadata:
   categories:
     - "integration"
     - "messaging"
+  codestart:
+    name: flow
+    languages:
+      - java
+    artifact: "io.quarkiverse.flow:quarkus-flow:codestarts:jar:${project.version}"
   status: "preview"
