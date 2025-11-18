@@ -18,12 +18,10 @@ public class FlowCodestartTest {
 
     @Test
     void testContent() throws Throwable {
-
         codestartTest.checkGeneratedSource("org.acme.HelloWorkflow");
         codestartTest.checkGeneratedSource("org.acme.HelloResource");
         codestartTest.checkGeneratedSource("org.acme.Message");
         codestartTest.checkGeneratedTestSource("org.acme.HelloResourceTest");
-
     }
 
     @Test

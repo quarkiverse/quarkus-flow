@@ -1,4 +1,4 @@
-package ilove.quark.us;
+package org.acme.codestart;
 
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;

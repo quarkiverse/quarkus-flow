@@ -1,4 +1,4 @@
-package ilove.quark.us;
+package org.acme.codestart;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

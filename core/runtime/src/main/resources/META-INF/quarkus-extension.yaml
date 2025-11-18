@@ -13,8 +13,7 @@ metadata:
     - "integration"
     - "messaging"
   codestart:
-    name: flow
+    name: Quarkus Flow
     languages:
       - java
     artifact: "io.quarkiverse.flow:quarkus-flow:codestarts:jar:${project.version}"
-  status: "preview"
