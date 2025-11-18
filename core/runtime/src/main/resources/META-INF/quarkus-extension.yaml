@@ -18,3 +18,7 @@ metadata:
       - java
     artifact: "io.quarkiverse.flow:quarkus-flow:codestarts:jar:${project.version}"
   status: "preview"
+  language:
+    java:
+      test-dependencies:
+        - io.rest-assured:rest-assured
