@@ -66,7 +66,7 @@ class FlowProcessor {
     }
 
     /**
-     * Produce one WorkflowDefinition bean per discoveredFlows descriptor.
+     * Produce one WorkflowDefinition bean per discovered descriptor.
      * Each bean is qualified with @Identifier("<id>").
      */
     @Record(ExecutionTime.RUNTIME_INIT)
