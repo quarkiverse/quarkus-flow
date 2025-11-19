@@ -1,4 +1,4 @@
-package org.acme.codestart;
+package ilove.quark.us;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;

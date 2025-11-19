@@ -1,4 +1,4 @@
-package org.acme.codestart;
+package ilove.quark.us;
 
 public class Message {
     public String message;

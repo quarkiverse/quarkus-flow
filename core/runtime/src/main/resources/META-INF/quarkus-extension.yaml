@@ -1,4 +1,4 @@
-name: Flow
+name: Quarkus Flow
 description: |
   Workflow engine for Quarkus based on the CNCF Workflow Specification, with Java DSL and Agentic AI support.
 metadata:
