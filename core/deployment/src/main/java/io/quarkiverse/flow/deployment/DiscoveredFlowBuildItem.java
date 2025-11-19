@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.deployment.items;
+package io.quarkiverse.flow.deployment;
 
 import io.quarkus.builder.item.MultiBuildItem;
 

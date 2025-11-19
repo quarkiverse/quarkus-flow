@@ -1,12 +1,13 @@
 = How to load Workflow Definitions from files
 include::./includes/attributes.adoc[]
+:sectnums:
 
-This guide shows you how to load and use Serverless Workflow definitions from YAML files in your Quarkus application, making them available as CDI beans for injection and execution.
+This guide shows you how to load and use link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md[CNCF Workflow definitions] from YAML files in your Quarkus application, making them available as CDI beans for injection and execution.
 
 
-== 1) Create the workflow specification file
+== Create the workflow specification file
 
-Create a directory `src/main/flow` in your project and add a Serverless Workflow specification file:
+Create a directory `src/main/flow` in your project and workflow specification file:
 
 [source,yaml]
 .src/main/flow/echo-name.yaml
@@ -27,7 +28,7 @@ do:
 You can customize the directory location by setting the xref:configuration.adoc#quarkus-flow_quarkus-flow-definitions-dir[`quarkus.flow.definitions.dir`] property in your `application.properties`.
 ====
 
-== 2) Inject the WorkflowDefinition bean
+== Inject the WorkflowDefinition bean
 
 The Quarkus Flow extension automatically creates a `WorkflowDefinition` CDI bean for each specification file. The bean qualifier follows the pattern `\{namespace}:\{name}` from your YAML file.
 
@@ -83,7 +84,7 @@ public class EchoResource {
 The `@Identifier` value must exactly match the `document.namespace:document.name` from your YAML specification. If you change these values in the YAML file, update the `@Identifier` accordingly.
 ====
 
-== 3) Test the workflow
+== Test the workflow
 
 Start your Quarkus application in development mode:
 

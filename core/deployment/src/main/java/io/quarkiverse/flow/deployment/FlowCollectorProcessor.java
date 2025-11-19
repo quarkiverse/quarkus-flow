@@ -13,9 +13,7 @@ import org.jboss.jandex.ClassInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.quarkiverse.flow.config.FlowConfig;
-import io.quarkiverse.flow.deployment.items.DiscoveredFlowBuildItem;
-import io.quarkiverse.flow.deployment.items.DiscoveredWorkflowFileDataBuildItem;
+import io.quarkiverse.flow.config.FlowDefinitionsConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -49,21 +47,21 @@ public class FlowCollectorProcessor {
      */
     @BuildStep
     public void collectUniqueWorkflowFileData(OutputTargetBuildItem outputTarget,
-            FlowConfig flowConfig,
-            BuildProducer<DiscoveredWorkflowFileDataBuildItem> workflows) throws IOException {
+            FlowDefinitionsConfig flowDefinitionsConfig,
+            BuildProducer<DiscoveredWorkflowFileBuildItem> workflows) throws IOException {
 
-        Path flowDir = Paths.get(flowConfig.dir().orElse("flow"));
+        Path flowDir = Paths.get(flowDefinitionsConfig.dir().orElse(FlowDefinitionsConfig.DEFAULT_FLOW_DIR));
         final Path flowResourcesPath = outputTarget.getOutputDirectory().resolve(
                 Paths.get("..", "src", "main").resolve(flowDir));
         if (Files.exists(flowResourcesPath)) {
-            Set<DiscoveredWorkflowFileDataBuildItem> uniqueBuildItems = collectUniqueWorkflowFileData(flowResourcesPath);
+            Set<DiscoveredWorkflowFileBuildItem> uniqueBuildItems = collectUniqueWorkflowFileData(flowResourcesPath);
             uniqueBuildItems.forEach(workflows::produce);
         }
     }
 
-    private static Set<DiscoveredWorkflowFileDataBuildItem> collectUniqueWorkflowFileData(
+    private static Set<DiscoveredWorkflowFileBuildItem> collectUniqueWorkflowFileData(
             Path flowDir) {
-        Set<DiscoveredWorkflowFileDataBuildItem> items = new HashSet<>();
+        Set<DiscoveredWorkflowFileBuildItem> items = new HashSet<>();
 
         try (var stream = Files.walk(flowDir)) {
             stream.filter(file -> Files.isRegularFile(file) && SUPPORTED_WORKFLOW_FILE_EXTENSIONS.stream()
@@ -76,12 +74,11 @@ public class FlowCollectorProcessor {
         return items;
     }
 
-    private static Consumer<Path> consumeWorkflowFile(Set<DiscoveredWorkflowFileDataBuildItem> workflowsSet) {
+    private static Consumer<Path> consumeWorkflowFile(Set<DiscoveredWorkflowFileBuildItem> workflowsSet) {
         return file -> {
-
             try {
                 Workflow workflow = WorkflowReader.readWorkflow(file);
-                DiscoveredWorkflowFileDataBuildItem buildItem = new DiscoveredWorkflowFileDataBuildItem(file,
+                DiscoveredWorkflowFileBuildItem buildItem = new DiscoveredWorkflowFileBuildItem(file,
                         workflow.getDocument().getNamespace(),
                         workflow.getDocument().getName());
                 if (!workflowsSet.add(buildItem)) {
@@ -89,8 +86,8 @@ public class FlowCollectorProcessor {
                             buildItem.namespace(), buildItem.name(), file.toAbsolutePath());
                 }
             } catch (IOException e) {
-                LOG.error("Failed to read workflow file at path: {}", file, e);
-                throw new UncheckedIOException("Error while reading workflow file: " + file, e);
+                LOG.error("Failed to parse workflow file at path: {}", file, e);
+                throw new UncheckedIOException("Error while parsing workflow file: " + file, e);
             }
         };
     }

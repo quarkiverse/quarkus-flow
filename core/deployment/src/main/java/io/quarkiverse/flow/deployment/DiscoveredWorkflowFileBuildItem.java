@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.deployment.items;
+package io.quarkiverse.flow.deployment;
 
 import java.nio.file.Path;
 import java.util.Objects;
@@ -6,18 +6,18 @@ import java.util.Objects;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Workflow file data discovered during the build.
+ * Workflow file discovered during the build.
  * <p>
  * Holds the path to the workflow file, its namespace, and name.
  */
-public final class DiscoveredWorkflowFileDataBuildItem extends MultiBuildItem {
+public final class DiscoveredWorkflowFileBuildItem extends MultiBuildItem {
 
     private final Path workflowPath;
     private final String namespace;
     private final String name;
     private final String identifier;
 
-    public DiscoveredWorkflowFileDataBuildItem(Path workflowPath, String namespace, String name) {
+    public DiscoveredWorkflowFileBuildItem(Path workflowPath, String namespace, String name) {
         this.workflowPath = workflowPath;
         this.namespace = namespace;
         this.name = name;
@@ -44,7 +44,7 @@ public final class DiscoveredWorkflowFileDataBuildItem extends MultiBuildItem {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass())
             return false;
-        DiscoveredWorkflowFileDataBuildItem that = (DiscoveredWorkflowFileDataBuildItem) o;
+        DiscoveredWorkflowFileBuildItem that = (DiscoveredWorkflowFileBuildItem) o;
         return Objects.equals(identifier, that.identifier);
     }
 

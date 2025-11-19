@@ -1,6 +1,6 @@
 package io.quarkiverse.flow.config;
 
-import static io.quarkiverse.flow.config.FlowConfig.ROOT_KEY;
+import static io.quarkiverse.flow.config.FlowDefinitionsConfig.ROOT_KEY;
 
 import java.util.Optional;
 
@@ -11,8 +11,9 @@ import io.smallrye.config.WithDefault;
 
 @ConfigMapping(prefix = ROOT_KEY)
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-public interface FlowConfig {
+public interface FlowDefinitionsConfig {
 
+    String DEFAULT_FLOW_DIR = "flow";
     String ROOT_KEY = "quarkus.flow.definitions";
 
     /**
@@ -23,7 +24,7 @@ public interface FlowConfig {
      * If you set by example <code>workflows</code>, the Workflow definitions must be located in
      * <code>src/main/workflows</code>.
      */
-    @WithDefault("flow")
+    @WithDefault(DEFAULT_FLOW_DIR)
     Optional<String> dir();
 
 }

@@ -10,8 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.config.FlowTracingConfig;
-import io.quarkiverse.flow.deployment.items.DiscoveredFlowBuildItem;
-import io.quarkiverse.flow.deployment.items.DiscoveredWorkflowFileDataBuildItem;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
 import io.quarkiverse.flow.providers.MicroprofileConfigManager;
@@ -46,10 +44,10 @@ class FlowProcessor {
 
     @BuildStep
     void keepAndReflectFlowDescriptors(
-            List<DiscoveredFlowBuildItem> discovered,
+            List<DiscoveredFlowBuildItem> discoveredFlows,
             BuildProducer<UnremovableBeanBuildItem> keep) {
 
-        List<String> flows = discovered.stream()
+        List<String> flows = discoveredFlows.stream()
                 .map(DiscoveredFlowBuildItem::getClassName)
                 .distinct()
                 .toList();
@@ -68,19 +66,19 @@ class FlowProcessor {
     }
 
     /**
-     * Produce one WorkflowDefinition bean per discovered descriptor.
+     * Produce one WorkflowDefinition bean per discoveredFlows descriptor.
      * Each bean is qualified with @Identifier("<id>").
      */
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void produceWorkflowDefinitions(WorkflowDefinitionRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> beans,
-            List<DiscoveredFlowBuildItem> discovered,
-            List<DiscoveredWorkflowFileDataBuildItem> workflows) {
+            List<DiscoveredFlowBuildItem> discoveredFlows,
+            List<DiscoveredWorkflowFileBuildItem> workflows) {
 
         List<String> identifiers = new ArrayList<>();
 
-        for (DiscoveredFlowBuildItem it : discovered) {
+        for (DiscoveredFlowBuildItem it : discoveredFlows) {
             beans.produce(SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
                     .scope(ApplicationScoped.class)
                     .unremovable()
@@ -91,7 +89,7 @@ class FlowProcessor {
             identifiers.add(it.getClassName());
         }
 
-        for (DiscoveredWorkflowFileDataBuildItem workflow : workflows) {
+        for (DiscoveredWorkflowFileBuildItem workflow : workflows) {
             beans.produce(SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
                     .scope(ApplicationScoped.class)
                     .unremovable()
@@ -163,9 +161,9 @@ class FlowProcessor {
     }
 
     @BuildStep(onlyIf = { IsDevelopment.class })
-    public void watchChanges(List<DiscoveredWorkflowFileDataBuildItem> workflows,
+    public void watchChanges(List<DiscoveredWorkflowFileBuildItem> workflows,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) {
-        for (DiscoveredWorkflowFileDataBuildItem workflow : workflows) {
+        for (DiscoveredWorkflowFileBuildItem workflow : workflows) {
             watchedFiles.produce(HotDeploymentWatchedFileBuildItem.builder()
                     .setLocation(workflow.locationString())
                     .setRestartNeeded(true)
