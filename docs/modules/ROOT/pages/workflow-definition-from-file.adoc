@@ -35,49 +35,10 @@ The Quarkus Flow extension automatically creates a `WorkflowDefinition` CDI bean
 Create a JAX-RS resource to use the workflow:
 
 [source,java]
-.src/main/java/org/acme/EchoResource.java
 ----
-package org.acme;
-
-import java.util.Map;
-import java.util.Objects;
-
-import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.core.Response;
-
-import io.quarkus.flow.WorkflowApplication;
-import io.quarkus.flow.WorkflowDefinition;
-import io.quarkus.flow.WorkflowModel;
-import io.quarkus.flow.cdi.Identifier;
-
-@Path("/echo")
-public class EchoResource {
-
-    @Inject
-    WorkflowApplication app; // <1>
-
-    @Inject
-    @Identifier("flow:echo-name") // <2>
-    WorkflowDefinition definition;
-
-    @GET
-    public Response echo(@QueryParam("name") String name) {
-        String finalName = Objects.requireNonNullElse(name, "(Duke)");
-
-        WorkflowModel model = app.workflowDefinition(definition.workflow())
-            .instance(Map.of("name", finalName))
-            .start()
-            .join();
-
-        return Response.ok(model.asText().orElseThrow()).build();
-    }
-}
+include::{examples-dir}EchoResource.java[]
 ----
-<1> Inject the main workflow application
-<2> Use the `@Identifier` annotation with the format `\{namespace}:\{name}` from your YAML file
+<1> Use the `@Identifier` annotation with the format `\{namespace}:\{name}` from your YAML file
 
 [IMPORTANT]
 ====

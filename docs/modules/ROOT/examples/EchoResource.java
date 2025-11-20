@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.it;
+package org.acme;
 
 import java.util.Map;
 import java.util.Objects;
@@ -17,7 +17,7 @@ import io.smallrye.common.annotation.Identifier;
 public class EchoResource {
 
     @Inject
-    @Identifier("flow:echo-name")
+    @Identifier("flow:echo-name") // <1>
     WorkflowDefinition definition;
 
     @GET
