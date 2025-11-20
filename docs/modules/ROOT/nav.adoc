@@ -3,7 +3,9 @@
 * xref:specification.adoc[Specification (quick reference)]
 * xref:dsl-cheatsheet.adoc[Java DSL cheatsheet]
 * xref:langchain4j.adoc[Agentic workflows (LangChain4j)]
-* xref:http-client.adoc[HTTP Client Configuration]
+* HTTP
+** xref:http-openapi-tasks.adoc[HTTP and OpenAPI Tasks]
+** xref:http-client.adoc[HTTP Client Configuration]
 * xref:messaging.adoc[Messaging]
 * xref:tracing.adoc[Tracing]
 * xref:secrets.adoc[Secrets]

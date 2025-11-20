@@ -21,7 +21,7 @@ Create a `Flow` subclass. At build time, Quarkus Flow discovers it and makes it 
 
 [source,java]
 ----
-include::{examples-dir}HelloWorkflow.java[]
+include::{examples-dir}org/acme/HelloWorkflow.java[]
 ----
 
 == 3) Run it (two ergonomic options)
@@ -29,32 +29,7 @@ include::{examples-dir}HelloWorkflow.java[]
 === Inject the Flow subclass (recommended)
 [source,java]
 ----
-package org.acme;
-
-import java.util.Map;
-import java.util.concurrent.CompletionStage;
-
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import org.jboss.resteasy.reactive.ResponseStatus;
-
-@Path("/hello")
-@ApplicationScoped
-public class HelloResource {
-
-  @Inject
-  HelloWorkflow hello; // inject the Flow subclass
-
-  @GET
-  @ResponseStatus(200)
-  public CompletionStage<Message> hello() {
-    return hello
-        .startInstance(Map.of())                // convenience on Flow
-        .thenApply(w -> w.as(Message.class).orElseThrow());
-  }
-}
+include::{examples-dir}org/acme/HelloResource.java[]
 ----
 
 === Or inject the compiled definition (advanced)

@@ -36,7 +36,7 @@ For workflows, it’s common to accept a **memory id** and structured parameters
 
 [source,java]
 ----
-include::{examples-dir}DrafterAgent.java[tag=agent]
+include::{examples-dir}org/acme/agentic/DrafterAgent.java[tag=agent]
 ----
 
 Key points:
@@ -53,7 +53,7 @@ You can **export**, **branch**, and **loop** based on typed results.
 
 [source,java]
 ----
-include::{examples-dir}HelloAgenticWorkflow.java[tag=workflow]
+include::{examples-dir}org/acme/agentic/HelloAgenticWorkflow.java[tag=workflow]
 ----
 
 What’s happening:

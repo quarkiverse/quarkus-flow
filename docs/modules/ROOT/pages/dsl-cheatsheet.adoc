@@ -24,7 +24,7 @@ Workflows are **discovered at build time** from CDI beans that extend `io.quarki
 
 [source,java]
 ----
-include::{examples-dir}HelloWorkflow.java[]
+include::{examples-dir}/org/acme/HelloWorkflow.java[]
 ----
 
 == Setup (imports)
