@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.acme</groupId>
-    <artifactId>newsletter-drafter</artifactId>
+    <artifactId>petstore-openapi</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <name>Quarkus Flow :: Examples :: Newsletter Drafter</name>
+    <name>Quarkus Flow :: Examples :: Petstore OpenAPI</name>
 
     <properties>
         <compiler-plugin.version>3.14.1</compiler-plugin.version>
@@ -13,16 +15,18 @@
         <maven.deploy.skip>true</maven.deploy.skip>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.29.4</quarkus.platform.version>
-        <skipITs>true</skipITs>
+        <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+        <quarkus.platform.version>3.29.3</quarkus.platform.version>
+
+        <quarkus.flow.version>1.0.0-SNAPSHOT</quarkus.flow.version>
         <surefire-plugin.version>3.5.4</surefire-plugin.version>
         <failsafe-plugin.version>3.5.4</failsafe-plugin.version>
 
-        <quarkus.flow.version>1.0.0-SNAPSHOT</quarkus.flow.version>
-        <io.quarkiverse.langchain4j.version>1.4.1</io.quarkiverse.langchain4j.version>
-        <org.assertj.version>3.27.6</org.assertj.version>
+        <version.assertj>3.27.6</version.assertj>
+
+        <skipITs>true</skipITs>
     </properties>
 
     <dependencyManagement>
@@ -38,60 +42,29 @@
     </dependencyManagement>
 
     <dependencies>
+        <!-- REST + JSON -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
+
+        <!-- Qute templating for the small web UI -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-messaging-kafka</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-websockets</artifactId>
+            <artifactId>quarkus-rest-qute</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>io.quarkiverse.langchain4j</groupId>
-            <artifactId>quarkus-langchain4j-ollama</artifactId>
-            <version>${io.quarkiverse.langchain4j.version}</version>
-            <optional>true</optional>
-        </dependency>
+        <!-- Quarkus Flow runtime -->
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow</artifactId>
             <version>${quarkus.flow.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
         </dependency>
 
         <!-- Tests -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkiverse.langchain4j</groupId>
-            <artifactId>quarkus-langchain4j-testing-scorer-junit5</artifactId>
-            <version>${io.quarkiverse.langchain4j.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-test-kafka-companion</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-mockito</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.awaitility</groupId>
-            <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -102,7 +75,7 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>${org.assertj.version}</version>
+            <version>${version.assertj}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -125,6 +98,7 @@
                     </execution>
                 </executions>
             </plugin>
+
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${compiler-plugin.version}</version>
@@ -132,6 +106,7 @@
                     <parameters>true</parameters>
                 </configuration>
             </plugin>
+
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${surefire-plugin.version}</version>
@@ -142,9 +117,10 @@
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
+
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <version>${surefire-plugin.version}</version>
+                <version>${failsafe-plugin.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -158,12 +134,11 @@
                         <include>**/*IT.java</include>
                     </includes>
                     <systemPropertyVariables>
-                        <native.image.path>${project.build.directory}/${project.build.finalName}-runner
-                        </native.image.path>
+                        <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
                     </systemPropertyVariables>
-                    <!-- Skip ITs with ollama since GHA does not have the necessary resources to run them -->
+                    <!-- We won't add external petstore tests to CI for reliability -->
                     <skipITs>${skipITs}</skipITs>
                 </configuration>
             </plugin>

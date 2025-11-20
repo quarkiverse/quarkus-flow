@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.Priorities;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,7 @@ import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
 import io.quarkiverse.flow.providers.HttpClientProvider;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
 import io.quarkiverse.flow.providers.MicroprofileConfigManager;
+import io.quarkiverse.flow.providers.WorkflowExceptionMapper;
 import io.quarkiverse.flow.recorders.SDKRecorder;
 import io.quarkiverse.flow.recorders.WorkflowApplicationRecorder;
 import io.quarkiverse.flow.recorders.WorkflowDefinitionRecorder;
@@ -29,8 +31,12 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
+import io.serverlessworkflow.impl.WorkflowException;
+import io.smallrye.common.annotation.Identifier;
+
 
 class FlowProcessor {
 
@@ -68,15 +74,27 @@ class FlowProcessor {
     }
 
     /**
+     * Registers our default {@link WorkflowExceptionMapper} to the JAX-RS exception mappers.
+     */
+    @BuildStep
+    void registerWorkflowExceptionMapper(BuildProducer<ExceptionMapperBuildItem> mappers) {
+        mappers.produce(new ExceptionMapperBuildItem(
+                WorkflowExceptionMapper.class.getName(),
+                WorkflowException.class.getName(),
+                Priorities.USER,
+                true));
+    }
+
+    /**
      * Produce one WorkflowDefinition bean per discovered descriptor.
      * Each bean is qualified with @Identifier("<id>").
      */
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void produceWorkflowDefinitions(WorkflowDefinitionRecorder recorder,
-            BuildProducer<SyntheticBeanBuildItem> beans,
-            List<DiscoveredFlowBuildItem> discoveredFlows,
-            List<DiscoveredWorkflowFileBuildItem> workflows) {
+                                    BuildProducer<SyntheticBeanBuildItem> beans,
+                                    List<DiscoveredFlowBuildItem> discoveredFlows,
+                                    List<DiscoveredWorkflowFileBuildItem> workflows) {
 
         List<String> identifiers = new ArrayList<>();
 
@@ -110,10 +128,10 @@ class FlowProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void registerWorkflowApp(WorkflowApplicationRecorder recorder,
-            ShutdownContextBuildItem shutdown,
-            FlowTracingConfig cfg,
-            LaunchModeBuildItem launchMode,
-            BuildProducer<SyntheticBeanBuildItem> beans) {
+                             ShutdownContextBuildItem shutdown,
+                             FlowTracingConfig cfg,
+                             LaunchModeBuildItem launchMode,
+                             BuildProducer<SyntheticBeanBuildItem> beans) {
 
         boolean tracingEnabled = cfg.enabled().orElse(launchMode.getLaunchMode().isDevOrTest());
 
@@ -162,9 +180,9 @@ class FlowProcessor {
         recorder.injectQuarkusObjectMapper();
     }
 
-    @BuildStep(onlyIf = { IsDevelopment.class })
+    @BuildStep(onlyIf = {IsDevelopment.class})
     public void watchChanges(List<DiscoveredWorkflowFileBuildItem> workflows,
-            BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) {
+                             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) {
         for (DiscoveredWorkflowFileBuildItem workflow : workflows) {
             watchedFiles.produce(HotDeploymentWatchedFileBuildItem.builder()
                     .setLocation(workflow.locationString())

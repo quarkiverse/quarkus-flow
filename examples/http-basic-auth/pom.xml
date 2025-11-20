@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
     <groupId>org.acme</groupId>
-    <artifactId>petstore-http-openapi</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <name>Quarkus Flow :: Examples :: Petstore HTTP + OpenAPI</name>
+    <artifactId>http-basic-auth</artifactId>
+    <name>Quarkus Flow :: Examples :: HTTP Basic Auth</name>
 
     <properties>
         <compiler-plugin.version>3.14.1</compiler-plugin.version>
@@ -18,7 +17,7 @@
 
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
-        <quarkus.platform.version>3.29.2</quarkus.platform.version>
+        <quarkus.platform.version>3.29.3</quarkus.platform.version>
 
         <quarkus.flow.version>1.0.0-SNAPSHOT</quarkus.flow.version>
         <surefire-plugin.version>3.5.4</surefire-plugin.version>
@@ -39,6 +38,7 @@
         </dependencies>
     </dependencyManagement>
 
+
     <dependencies>
         <!-- REST + JSON -->
         <dependency>
@@ -49,7 +49,7 @@
         <!-- Qute templating for the small web UI -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-qute</artifactId>
+            <artifactId>quarkus-rest-qute</artifactId>
         </dependency>
 
         <!-- Quarkus Flow runtime -->
@@ -59,13 +59,13 @@
             <version>${quarkus.flow.version}</version>
         </dependency>
 
-        <!-- Logging API (to show results, etc.) -->
+        <!-- Quarkus security using users.properties / roles.properties -->
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-elytron-security-properties-file</artifactId>
         </dependency>
 
-        <!-- Tests (we can keep them super minimal / or add later) -->
+        <!-- Tests -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
@@ -138,12 +138,11 @@
                         <include>**/*IT.java</include>
                     </includes>
                     <systemPropertyVariables>
-                        <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
+                        <native.image.path>${project.build.directory}/${project.build.finalName}-runner
+                        </native.image.path>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
                     </systemPropertyVariables>
-                    <!-- We won't add external petstore tests to CI for reliability -->
-                    <skipITs>true</skipITs>
                 </configuration>
             </plugin>
         </plugins>
@@ -165,3 +164,4 @@
         </profile>
     </profiles>
 </project>
+

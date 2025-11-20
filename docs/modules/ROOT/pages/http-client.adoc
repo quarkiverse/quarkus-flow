@@ -1,4 +1,4 @@
-= HTTP and OpenAPI tasks
+= HTTP Client Configuration
 :page-aliases: http/index.adoc
 :sectnums:
 
