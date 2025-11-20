@@ -37,7 +37,6 @@ import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowException;
 import io.smallrye.common.annotation.Identifier;
 
-
 class FlowProcessor {
 
     private static final Logger LOG = LoggerFactory.getLogger(FlowProcessor.class); // NEW
@@ -92,9 +91,9 @@ class FlowProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void produceWorkflowDefinitions(WorkflowDefinitionRecorder recorder,
-                                    BuildProducer<SyntheticBeanBuildItem> beans,
-                                    List<DiscoveredFlowBuildItem> discoveredFlows,
-                                    List<DiscoveredWorkflowFileBuildItem> workflows) {
+            BuildProducer<SyntheticBeanBuildItem> beans,
+            List<DiscoveredFlowBuildItem> discoveredFlows,
+            List<DiscoveredWorkflowFileBuildItem> workflows) {
 
         List<String> identifiers = new ArrayList<>();
 
@@ -128,10 +127,10 @@ class FlowProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void registerWorkflowApp(WorkflowApplicationRecorder recorder,
-                             ShutdownContextBuildItem shutdown,
-                             FlowTracingConfig cfg,
-                             LaunchModeBuildItem launchMode,
-                             BuildProducer<SyntheticBeanBuildItem> beans) {
+            ShutdownContextBuildItem shutdown,
+            FlowTracingConfig cfg,
+            LaunchModeBuildItem launchMode,
+            BuildProducer<SyntheticBeanBuildItem> beans) {
 
         boolean tracingEnabled = cfg.enabled().orElse(launchMode.getLaunchMode().isDevOrTest());
 
@@ -180,9 +179,9 @@ class FlowProcessor {
         recorder.injectQuarkusObjectMapper();
     }
 
-    @BuildStep(onlyIf = {IsDevelopment.class})
+    @BuildStep(onlyIf = { IsDevelopment.class })
     public void watchChanges(List<DiscoveredWorkflowFileBuildItem> workflows,
-                             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) {
+            BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) {
         for (DiscoveredWorkflowFileBuildItem workflow : workflows) {
             watchedFiles.produce(HotDeploymentWatchedFileBuildItem.builder()
                     .setLocation(workflow.locationString())
