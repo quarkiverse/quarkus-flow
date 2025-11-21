@@ -23,7 +23,7 @@ jobs:
 #      QUARKUS_LANGCHAIN4J_OLLAMA_TIMEOUT: ${{ vars.OLLAMA_TIMEOUT }}
 #      NO_PROXY: localhost,127.0.0.1
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
@@ -97,7 +97,7 @@ jobs:
       - name: Prepare git (CRLF)
         run: git config --global core.autocrlf false
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
