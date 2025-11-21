@@ -24,7 +24,7 @@ At runtime, Quarkus Flow:
 * builds a *default client* from `quarkus.flow.http.client.*`
 * optionally builds *named clients* from `quarkus.flow.http.client.named.<name>.*`
 * resolves *which client to use* for a given workflow + task using `quarkus.flow.http.client.workflow.*` routing
-* reuses and closes these clients automatically for you
+* reuses and closes these clients automatically for you at the end of the application lifecycle
 
 Internally, the extension maps these configuration properties to a RESTEasy Reactive `ClientBuilderImpl` and Vert.x `HttpClientOptions`, but the API you configure is purely Quarkus Flow configuration.
 

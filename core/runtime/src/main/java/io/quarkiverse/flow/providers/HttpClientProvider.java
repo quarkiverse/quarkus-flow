@@ -178,8 +178,7 @@ public class HttpClientProvider {
                 .ifPresent(v -> builder.property(NAME, v));
         httpCfg.staticHeaders()
                 .ifPresent(v -> builder.property(STATIC_HEADERS, parseStaticHeaders(v)));
-        httpCfg.userAgent()
-                .ifPresent(v -> builder.property(USER_AGENT, v));
+        builder.property(USER_AGENT, httpCfg.userAgent().orElse(DEFAULT_AGENT));
 
         if (builder instanceof ClientBuilderImpl quarkus) {
             httpCfg.http2().ifPresent(quarkus::http2);
