@@ -89,6 +89,7 @@ jobs:
         run: mvn -B clean install -Dno-format -Dquarkus.langchain4j.ollama.devservices.enabled=false
 
       - name: Build with Maven (Native)
+        # If this changes, make sure to also update .github/quarkus-ecosystem-test
         run: mvn -B install -Dnative -Dquarkus.langchain4j.ollama.devservices.enabled=false -Dquarkus.native.container-build -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25 -DskipITs=true
   build-windows:
     name: Build only (Windows)
