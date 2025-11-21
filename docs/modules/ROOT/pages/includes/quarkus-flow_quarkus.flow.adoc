@@ -53,6 +53,1144 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |
 
+a| [[quarkus-flow_quarkus-flow-http-client-connect-timeout]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-connect-timeout[`quarkus.flow.http.client.connect-timeout`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.connect-timeout+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Connect timeout in milliseconds.
+
+Default client:
+
+```
+quarkus.flow.http.client.connect-timeout=...
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.connect-timeout=...
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_CONNECT_TIMEOUT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_CONNECT_TIMEOUT+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-read-timeout]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-read-timeout[`quarkus.flow.http.client.read-timeout`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.read-timeout+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Read timeout in milliseconds.
+
+Default client:
+
+```
+quarkus.flow.http.client.read-timeout=...
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.read-timeout=...
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_READ_TIMEOUT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_READ_TIMEOUT+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-connection-pool-size]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-connection-pool-size[`quarkus.flow.http.client.connection-pool-size`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.connection-pool-size+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Maximum size of the HTTP connection pool (number of concurrent connections).
+
+Default client:
+
+```
+quarkus.flow.http.client.connection-pool-size=...
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.connection-pool-size=...
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_CONNECTION_POOL_SIZE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_CONNECTION_POOL_SIZE+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-keep-alive-enabled]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-keep-alive-enabled[`quarkus.flow.http.client.keep-alive-enabled`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.keep-alive-enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether HTTP keep-alive is enabled.
+
+Default client:
+
+```
+quarkus.flow.http.client.keep-alive-enabled=true
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.keep-alive-enabled=true
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_KEEP_ALIVE_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_KEEP_ALIVE_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-connection-ttl]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-connection-ttl[`quarkus.flow.http.client.connection-ttl`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.connection-ttl+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Connection time-to-live in seconds.
+
+After this time, idle connections can be closed and reestablished.
+
+Default client:
+
+```
+quarkus.flow.http.client.connection-ttl=...
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.connection-ttl=...
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_CONNECTION_TTL+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_CONNECTION_TTL+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-name]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-name[`quarkus.flow.http.client.name`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.name+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Quarkus REST client name used when the underlying HTTP client is shared.
+
+This name corresponds to the Vert.x HTTP client name and is only used when `shared()` is `true`.
+
+Default client:
+
+```
+quarkus.flow.http.client.name=flow-default
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.name=flow-secureA
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAME+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAME+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-shared]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-shared[`quarkus.flow.http.client.shared`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.shared+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether this HTTP client is shared with other Quarkus REST clients.
+
+When `true`, the underlying Vert.x `HttpClient` can be reused across multiple REST clients based on the `name()`.
+
+Default client:
+
+```
+quarkus.flow.http.client.shared = true
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.shared=true
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_SHARED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_SHARED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-max-redirects]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-max-redirects[`quarkus.flow.http.client.max-redirects`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.max-redirects+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Maximum number of redirects allowed for a request.
+
+Default client:
+
+```
+quarkus.flow.http.client.max-redirects=...
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.max-redirects=...
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_MAX_REDIRECTS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_MAX_REDIRECTS+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-max-header-size]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-max-header-size[`quarkus.flow.http.client.max-header-size`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.max-header-size+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Maximum size of all HTTP headers for HTTP/1.x, in bytes.
+
+Default client:
+
+```
+quarkus.flow.http.client.max-header-size=...
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.max-header-size=...
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_MAX_HEADER_SIZE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_MAX_HEADER_SIZE+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-max-initial-line-length]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-max-initial-line-length[`quarkus.flow.http.client.max-initial-line-length`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.max-initial-line-length+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Maximum length of the initial HTTP/1.x request line, in bytes.
+
+Default client:
+
+```
+quarkus.flow.http.client.max-initial-line-length=...
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.max-initial-line-length=...
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_MAX_INITIAL_LINE_LENGTH+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_MAX_INITIAL_LINE_LENGTH+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-user-agent]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-user-agent[`quarkus.flow.http.client.user-agent`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.user-agent+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+HTTP `User-Agent` header to use for requests.
+
+Default client:
+
+```
+quarkus.flow.http.client.user-agent=MyApp/1.0
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.user-agent=MyCompanyBot/1.0
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_USER_AGENT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_USER_AGENT+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-http2]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-http2[`quarkus.flow.http.client.http2`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.http2+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enables HTTP/2 for this client when set to `true`.
+
+Default client:
+
+```
+quarkus.flow.http.client.http2 = true
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.http2=true
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_HTTP2+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_HTTP2+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-alpn]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-alpn[`quarkus.flow.http.client.alpn`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.alpn+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enables ALPN (Application-Layer Protocol Negotiation) for this client when set to `true`.
+
+ALPN is typically required for HTTP/2 over TLS.
+
+Default client:
+
+```
+quarkus.flow.http.client.alpn = true
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.alpn=true
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_ALPN+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_ALPN+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-capture-stacktrace]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-capture-stacktrace[`quarkus.flow.http.client.capture-stacktrace`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.capture-stacktrace+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether to capture the stack trace of REST client invocations.
+
+This is mainly useful for debugging and error reporting, at the cost of some overhead.
+
+Default client:
+
+```
+quarkus.flow.http.client.capture-stacktrace=true
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.capture-stacktrace=true
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_CAPTURE_STACKTRACE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_CAPTURE_STACKTRACE+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-logging-scope]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-logging-scope[`quarkus.flow.http.client.logging.scope`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.logging.scope+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Logging scope for the underlying REST client.
+
+Supported values (case-insensitive):
+
+ - `request-response`
+ - `all`
+ - `none`
+
+Default client:
+
+```
+quarkus.flow.http.client.logging.scope = request - response
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.logging.scope=request-response
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_LOGGING_SCOPE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_LOGGING_SCOPE+++`
+endif::add-copy-button-to-env-var[]
+--
+a|`none`, `request-response`, `all`
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-logging-body-limit]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-logging-body-limit[`quarkus.flow.http.client.logging.body-limit`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.logging.body-limit+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Maximum number of characters of the request/response body to log.
+
+Default client:
+
+```
+quarkus.flow.http.client.logging.body-limit=100
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.logging.body-limit=100
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_LOGGING_BODY_LIMIT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_LOGGING_BODY_LIMIT+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-static-headers]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-static-headers[`quarkus.flow.http.client.static-headers`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.static-headers+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Static HTTP headers to apply to every request by this client.
+
+The value is parsed as a comma-separated list of `name=value` pairs, for example:
+
+```
+quarkus.flow.http.client.static-headers=X-Env=prod,X-Tenant=acme
+```
+
+
+
+For a named client:
+
+```
+quarkus.flow.http.client.named.secureA.static-headers=Authorization=Bearer xyz
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_STATIC_HEADERS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_STATIC_HEADERS+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-proxy-host]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-proxy-host[`quarkus.flow.http.client.proxy-host`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.proxy-host+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+HTTP proxy host.
+
+When set together with `proxy-port()`, requests are sent through the given HTTP proxy.
+
+Default client:
+
+```
+quarkus.flow.http.client.proxy-host=proxy.mycorp.local
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.proxy-host=proxy.mycorp.local
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.proxy(host, port)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_HOST+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_HOST+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-proxy-port]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-proxy-port[`quarkus.flow.http.client.proxy-port`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.proxy-port+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+HTTP proxy port.
+
+Only used when `proxy-host()` is also set.
+
+Default client:
+
+```
+quarkus.flow.http.client.proxy-port=8080
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.proxy-port=8080
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.proxy(host, port)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_PORT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_PORT+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-proxy-user]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-proxy-user[`quarkus.flow.http.client.proxy-user`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.proxy-user+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Username for authenticating with the HTTP proxy.
+
+Default client:
+
+```
+quarkus.flow.http.client.proxy-user=svc-flow
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.proxy-user=svc-flow
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.proxyUser(user)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_USER+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_USER+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-proxy-password]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-proxy-password[`quarkus.flow.http.client.proxy-password`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.proxy-password+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Password for authenticating with the HTTP proxy.
+
+Default client:
+
+```
+quarkus.flow.http.client.proxy-password=secret
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.proxy-password=secret
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.proxyPassword(password)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_PASSWORD+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_PASSWORD+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-non-proxy-hosts]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-non-proxy-hosts[`quarkus.flow.http.client.non-proxy-hosts`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.non-proxy-hosts+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Hosts that should bypass the HTTP proxy.
+
+The value is a `++\|++`-separated pattern list, similar to the standard `http.nonProxyHosts` format:
+
+```
+quarkus.flow.http.client.non-proxy-hosts=localhost\|127.*\|[::1]
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.non-proxy-hosts=localhost\|127.*
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.nonProxyHosts(hostsPattern)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NON_PROXY_HOSTS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NON_PROXY_HOSTS+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-proxy-connect-timeout]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-proxy-connect-timeout[`quarkus.flow.http.client.proxy-connect-timeout`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.proxy-connect-timeout+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Proxy connect timeout in milliseconds.
+
+Controls how long the client will wait when establishing a connection to the configured HTTP proxy.
+
+Default client:
+
+```
+quarkus.flow.http.client.proxy-connect-timeout=3000
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.proxy-connect-timeout=3000
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.proxyConnectTimeout(Duration)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_CONNECT_TIMEOUT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_CONNECT_TIMEOUT+++`
+endif::add-copy-button-to-env-var[]
+--
+|long
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-follow-redirects]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-follow-redirects[`quarkus.flow.http.client.follow-redirects`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.follow-redirects+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether the client should automatically follow HTTP redirects.
+
+When `true`, 3xx responses are transparently followed up to `max-redirects()`.
+
+Default client:
+
+```
+quarkus.flow.http.client.follow-redirects=true
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.follow-redirects=true
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.followRedirects(boolean)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_FOLLOW_REDIRECTS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_FOLLOW_REDIRECTS+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-enable-compression]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-enable-compression[`quarkus.flow.http.client.enable-compression`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.enable-compression+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether HTTP compression is enabled.
+
+When `true`, the client advertises support for compressed responses and transparently decompresses them when supported by the server.
+
+Default client:
+
+```
+quarkus.flow.http.client.enable-compression=true
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.enable-compression=true
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.enableCompression(boolean)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_ENABLE_COMPRESSION+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_ENABLE_COMPRESSION+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-max-chunk-size]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-max-chunk-size[`quarkus.flow.http.client.max-chunk-size`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.max-chunk-size+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Maximum HTTP chunk size in bytes.
+
+This controls the underlying Vert.x HTTP parser chunk size. For most users the default is sufficient; only adjust if you need fine-grained control over streaming behaviour.
+
+Default client:
+
+```
+quarkus.flow.http.client.max-chunk-size=8192
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.max-chunk-size=8192
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.maxChunkSize(int)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_MAX_CHUNK_SIZE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_MAX_CHUNK_SIZE+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-http2-upgrade-max-content-length]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-http2-upgrade-max-content-length[`quarkus.flow.http.client.http2-upgrade-max-content-length`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.http2-upgrade-max-content-length+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Maximum content length (in bytes) for HTTP/2 clear-text upgrade (h2c).
+
+Controls the threshold used when upgrading HTTP/1.1 connections to HTTP/2 without TLS.
+
+Default client:
+
+```
+quarkus.flow.http.client.http2-upgrade-max-content-length=65536
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.http2-upgrade-max-content-length=65536
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.http2UpgradeMaxContentLength(int)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_HTTP2_UPGRADE_MAX_CONTENT_LENGTH+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_HTTP2_UPGRADE_MAX_CONTENT_LENGTH+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-multi-query-param-mode]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-multi-query-param-mode[`quarkus.flow.http.client.multi-query-param-mode`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.multi-query-param-mode+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+How multiple query parameters with the same name are encoded.
+
+Valid values correspond to `org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode`: for example `COMMA`, `DUPLICATE`, `ARRAY`.
+
+Default client:
+
+```
+quarkus.flow.http.client.multi-query-param-mode=COMMA
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.multi-query-param-mode=DUPLICATE
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.multiQueryParamMode(MultiQueryParamMode)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_MULTI_QUERY_PARAM_MODE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_MULTI_QUERY_PARAM_MODE+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-trust-all]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-trust-all[`quarkus.flow.http.client.trust-all`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.trust-all+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether to trust all TLS certificates.
+
+*Warning:* enabling this effectively disables certificate validation and should only be used in development or controlled environments.
+
+Default client:
+
+```
+quarkus.flow.http.client.trust-all=false
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.trust-all=false
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.trustAll(boolean)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_TRUST_ALL+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_TRUST_ALL+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-verify-host]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-verify-host[`quarkus.flow.http.client.verify-host`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.verify-host+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether to verify the remote TLS hostname.
+
+When `false`, hostname verification is disabled. This is insecure and should only be used in development or with great care in production.
+
+Default client:
+
+```
+quarkus.flow.http.client.verify-host=true
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.verify-host=true
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.verifyHost(boolean)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_VERIFY_HOST+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_VERIFY_HOST+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
 a| [[quarkus-flow_quarkus-flow-secrets-credentials-provider-name]] [.property-path]##link:#quarkus-flow_quarkus-flow-secrets-credentials-provider-name[`quarkus.flow.secrets.credentials-provider-name`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.secrets.credentials-provider-name+++[]
@@ -97,6 +1235,1198 @@ Environment variable: `+++QUARKUS_FLOW_SECRETS_CREDENTIALS_PROVIDER_NAMES__CREDE
 endif::add-copy-button-to-env-var[]
 --
 |Map<String,String>
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-connect-timeout]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-connect-timeout[`quarkus.flow.http.client.named."named".connect-timeout`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".connect-timeout+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Connect timeout in milliseconds.
+
+Default client:
+
+```
+quarkus.flow.http.client.connect-timeout=...
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.connect-timeout=...
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__CONNECT_TIMEOUT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__CONNECT_TIMEOUT+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-read-timeout]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-read-timeout[`quarkus.flow.http.client.named."named".read-timeout`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".read-timeout+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Read timeout in milliseconds.
+
+Default client:
+
+```
+quarkus.flow.http.client.read-timeout=...
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.read-timeout=...
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__READ_TIMEOUT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__READ_TIMEOUT+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-connection-pool-size]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-connection-pool-size[`quarkus.flow.http.client.named."named".connection-pool-size`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".connection-pool-size+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Maximum size of the HTTP connection pool (number of concurrent connections).
+
+Default client:
+
+```
+quarkus.flow.http.client.connection-pool-size=...
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.connection-pool-size=...
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__CONNECTION_POOL_SIZE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__CONNECTION_POOL_SIZE+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-keep-alive-enabled]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-keep-alive-enabled[`quarkus.flow.http.client.named."named".keep-alive-enabled`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".keep-alive-enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether HTTP keep-alive is enabled.
+
+Default client:
+
+```
+quarkus.flow.http.client.keep-alive-enabled=true
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.keep-alive-enabled=true
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__KEEP_ALIVE_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__KEEP_ALIVE_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-connection-ttl]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-connection-ttl[`quarkus.flow.http.client.named."named".connection-ttl`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".connection-ttl+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Connection time-to-live in seconds.
+
+After this time, idle connections can be closed and reestablished.
+
+Default client:
+
+```
+quarkus.flow.http.client.connection-ttl=...
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.connection-ttl=...
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__CONNECTION_TTL+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__CONNECTION_TTL+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-name]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-name[`quarkus.flow.http.client.named."named".name`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".name+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Quarkus REST client name used when the underlying HTTP client is shared.
+
+This name corresponds to the Vert.x HTTP client name and is only used when `shared()` is `true`.
+
+Default client:
+
+```
+quarkus.flow.http.client.name=flow-default
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.name=flow-secureA
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__NAME+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__NAME+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-shared]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-shared[`quarkus.flow.http.client.named."named".shared`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".shared+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether this HTTP client is shared with other Quarkus REST clients.
+
+When `true`, the underlying Vert.x `HttpClient` can be reused across multiple REST clients based on the `name()`.
+
+Default client:
+
+```
+quarkus.flow.http.client.shared = true
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.shared=true
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__SHARED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__SHARED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-max-redirects]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-max-redirects[`quarkus.flow.http.client.named."named".max-redirects`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".max-redirects+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Maximum number of redirects allowed for a request.
+
+Default client:
+
+```
+quarkus.flow.http.client.max-redirects=...
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.max-redirects=...
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__MAX_REDIRECTS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__MAX_REDIRECTS+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-max-header-size]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-max-header-size[`quarkus.flow.http.client.named."named".max-header-size`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".max-header-size+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Maximum size of all HTTP headers for HTTP/1.x, in bytes.
+
+Default client:
+
+```
+quarkus.flow.http.client.max-header-size=...
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.max-header-size=...
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__MAX_HEADER_SIZE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__MAX_HEADER_SIZE+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-max-initial-line-length]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-max-initial-line-length[`quarkus.flow.http.client.named."named".max-initial-line-length`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".max-initial-line-length+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Maximum length of the initial HTTP/1.x request line, in bytes.
+
+Default client:
+
+```
+quarkus.flow.http.client.max-initial-line-length=...
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.max-initial-line-length=...
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__MAX_INITIAL_LINE_LENGTH+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__MAX_INITIAL_LINE_LENGTH+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-user-agent]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-user-agent[`quarkus.flow.http.client.named."named".user-agent`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".user-agent+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+HTTP `User-Agent` header to use for requests.
+
+Default client:
+
+```
+quarkus.flow.http.client.user-agent=MyApp/1.0
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.user-agent=MyCompanyBot/1.0
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__USER_AGENT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__USER_AGENT+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-http2]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-http2[`quarkus.flow.http.client.named."named".http2`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".http2+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enables HTTP/2 for this client when set to `true`.
+
+Default client:
+
+```
+quarkus.flow.http.client.http2 = true
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.http2=true
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__HTTP2+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__HTTP2+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-alpn]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-alpn[`quarkus.flow.http.client.named."named".alpn`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".alpn+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enables ALPN (Application-Layer Protocol Negotiation) for this client when set to `true`.
+
+ALPN is typically required for HTTP/2 over TLS.
+
+Default client:
+
+```
+quarkus.flow.http.client.alpn = true
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.alpn=true
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__ALPN+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__ALPN+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-capture-stacktrace]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-capture-stacktrace[`quarkus.flow.http.client.named."named".capture-stacktrace`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".capture-stacktrace+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether to capture the stack trace of REST client invocations.
+
+This is mainly useful for debugging and error reporting, at the cost of some overhead.
+
+Default client:
+
+```
+quarkus.flow.http.client.capture-stacktrace=true
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.capture-stacktrace=true
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__CAPTURE_STACKTRACE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__CAPTURE_STACKTRACE+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-logging-scope]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-logging-scope[`quarkus.flow.http.client.named."named".logging.scope`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".logging.scope+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Logging scope for the underlying REST client.
+
+Supported values (case-insensitive):
+
+ - `request-response`
+ - `all`
+ - `none`
+
+Default client:
+
+```
+quarkus.flow.http.client.logging.scope = request - response
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.logging.scope=request-response
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__LOGGING_SCOPE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__LOGGING_SCOPE+++`
+endif::add-copy-button-to-env-var[]
+--
+a|`none`, `request-response`, `all`
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-logging-body-limit]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-logging-body-limit[`quarkus.flow.http.client.named."named".logging.body-limit`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".logging.body-limit+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Maximum number of characters of the request/response body to log.
+
+Default client:
+
+```
+quarkus.flow.http.client.logging.body-limit=100
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.logging.body-limit=100
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__LOGGING_BODY_LIMIT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__LOGGING_BODY_LIMIT+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-static-headers]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-static-headers[`quarkus.flow.http.client.named."named".static-headers`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".static-headers+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Static HTTP headers to apply to every request by this client.
+
+The value is parsed as a comma-separated list of `name=value` pairs, for example:
+
+```
+quarkus.flow.http.client.static-headers=X-Env=prod,X-Tenant=acme
+```
+
+
+
+For a named client:
+
+```
+quarkus.flow.http.client.named.secureA.static-headers=Authorization=Bearer xyz
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__STATIC_HEADERS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__STATIC_HEADERS+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-proxy-host]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-proxy-host[`quarkus.flow.http.client.named."named".proxy-host`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".proxy-host+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+HTTP proxy host.
+
+When set together with `proxy-port()`, requests are sent through the given HTTP proxy.
+
+Default client:
+
+```
+quarkus.flow.http.client.proxy-host=proxy.mycorp.local
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.proxy-host=proxy.mycorp.local
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.proxy(host, port)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_HOST+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_HOST+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-proxy-port]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-proxy-port[`quarkus.flow.http.client.named."named".proxy-port`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".proxy-port+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+HTTP proxy port.
+
+Only used when `proxy-host()` is also set.
+
+Default client:
+
+```
+quarkus.flow.http.client.proxy-port=8080
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.proxy-port=8080
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.proxy(host, port)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_PORT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_PORT+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-proxy-user]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-proxy-user[`quarkus.flow.http.client.named."named".proxy-user`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".proxy-user+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Username for authenticating with the HTTP proxy.
+
+Default client:
+
+```
+quarkus.flow.http.client.proxy-user=svc-flow
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.proxy-user=svc-flow
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.proxyUser(user)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_USER+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_USER+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-proxy-password]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-proxy-password[`quarkus.flow.http.client.named."named".proxy-password`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".proxy-password+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Password for authenticating with the HTTP proxy.
+
+Default client:
+
+```
+quarkus.flow.http.client.proxy-password=secret
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.proxy-password=secret
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.proxyPassword(password)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_PASSWORD+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_PASSWORD+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-non-proxy-hosts]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-non-proxy-hosts[`quarkus.flow.http.client.named."named".non-proxy-hosts`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".non-proxy-hosts+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Hosts that should bypass the HTTP proxy.
+
+The value is a `++\|++`-separated pattern list, similar to the standard `http.nonProxyHosts` format:
+
+```
+quarkus.flow.http.client.non-proxy-hosts=localhost\|127.*\|[::1]
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.non-proxy-hosts=localhost\|127.*
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.nonProxyHosts(hostsPattern)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__NON_PROXY_HOSTS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__NON_PROXY_HOSTS+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-proxy-connect-timeout]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-proxy-connect-timeout[`quarkus.flow.http.client.named."named".proxy-connect-timeout`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".proxy-connect-timeout+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Proxy connect timeout in milliseconds.
+
+Controls how long the client will wait when establishing a connection to the configured HTTP proxy.
+
+Default client:
+
+```
+quarkus.flow.http.client.proxy-connect-timeout=3000
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.proxy-connect-timeout=3000
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.proxyConnectTimeout(Duration)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_CONNECT_TIMEOUT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_CONNECT_TIMEOUT+++`
+endif::add-copy-button-to-env-var[]
+--
+|long
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-follow-redirects]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-follow-redirects[`quarkus.flow.http.client.named."named".follow-redirects`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".follow-redirects+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether the client should automatically follow HTTP redirects.
+
+When `true`, 3xx responses are transparently followed up to `max-redirects()`.
+
+Default client:
+
+```
+quarkus.flow.http.client.follow-redirects=true
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.follow-redirects=true
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.followRedirects(boolean)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__FOLLOW_REDIRECTS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__FOLLOW_REDIRECTS+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-enable-compression]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-enable-compression[`quarkus.flow.http.client.named."named".enable-compression`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".enable-compression+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether HTTP compression is enabled.
+
+When `true`, the client advertises support for compressed responses and transparently decompresses them when supported by the server.
+
+Default client:
+
+```
+quarkus.flow.http.client.enable-compression=true
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.enable-compression=true
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.enableCompression(boolean)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__ENABLE_COMPRESSION+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__ENABLE_COMPRESSION+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-max-chunk-size]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-max-chunk-size[`quarkus.flow.http.client.named."named".max-chunk-size`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".max-chunk-size+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Maximum HTTP chunk size in bytes.
+
+This controls the underlying Vert.x HTTP parser chunk size. For most users the default is sufficient; only adjust if you need fine-grained control over streaming behaviour.
+
+Default client:
+
+```
+quarkus.flow.http.client.max-chunk-size=8192
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.max-chunk-size=8192
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.maxChunkSize(int)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__MAX_CHUNK_SIZE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__MAX_CHUNK_SIZE+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-http2-upgrade-max-content-length]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-http2-upgrade-max-content-length[`quarkus.flow.http.client.named."named".http2-upgrade-max-content-length`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".http2-upgrade-max-content-length+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Maximum content length (in bytes) for HTTP/2 clear-text upgrade (h2c).
+
+Controls the threshold used when upgrading HTTP/1.1 connections to HTTP/2 without TLS.
+
+Default client:
+
+```
+quarkus.flow.http.client.http2-upgrade-max-content-length=65536
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.http2-upgrade-max-content-length=65536
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.http2UpgradeMaxContentLength(int)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__HTTP2_UPGRADE_MAX_CONTENT_LENGTH+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__HTTP2_UPGRADE_MAX_CONTENT_LENGTH+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-multi-query-param-mode]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-multi-query-param-mode[`quarkus.flow.http.client.named."named".multi-query-param-mode`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".multi-query-param-mode+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+How multiple query parameters with the same name are encoded.
+
+Valid values correspond to `org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode`: for example `COMMA`, `DUPLICATE`, `ARRAY`.
+
+Default client:
+
+```
+quarkus.flow.http.client.multi-query-param-mode=COMMA
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.multi-query-param-mode=DUPLICATE
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.multiQueryParamMode(MultiQueryParamMode)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__MULTI_QUERY_PARAM_MODE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__MULTI_QUERY_PARAM_MODE+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-trust-all]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-trust-all[`quarkus.flow.http.client.named."named".trust-all`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".trust-all+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether to trust all TLS certificates.
+
+*Warning:* enabling this effectively disables certificate validation and should only be used in development or controlled environments.
+
+Default client:
+
+```
+quarkus.flow.http.client.trust-all=false
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.trust-all=false
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.trustAll(boolean)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__TRUST_ALL+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__TRUST_ALL+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-verify-host]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-verify-host[`quarkus.flow.http.client.named."named".verify-host`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".verify-host+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether to verify the remote TLS hostname.
+
+When `false`, hostname verification is disabled. This is insecure and should only be used in development or with great care in production.
+
+Default client:
+
+```
+quarkus.flow.http.client.verify-host=true
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.verify-host=true
+```
+
+
+
+Internally mapped to `ClientBuilderImpl.verifyHost(boolean)`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__VERIFY_HOST+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__VERIFY_HOST+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-workflow-workflow-name]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-workflow-workflow-name[`quarkus.flow.http.client.workflow."workflow".name`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.workflow."workflow".name+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Client name to use for all HTTP/OpenAPI tasks in this workflow when there is no task-level override.
+
+Property:
+
+```
+quarkus.flow.http.client.workflow.<workflowId>.name=<clientName>
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_WORKFLOW__WORKFLOW__NAME+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_WORKFLOW__WORKFLOW__NAME+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-workflow-workflow-task-task-name]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-workflow-workflow-task-task-name[`quarkus.flow.http.client.workflow."workflow".task."task".name`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.workflow."workflow".task."task".name+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Client name to use for this specific task.
+
+Property:
+
+```
+quarkus.flow.http.client.workflow.<workflowId>.task.<taskName>.name=<clientName>
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_WORKFLOW__WORKFLOW__TASK__TASK__NAME+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_WORKFLOW__WORKFLOW__TASK__TASK__NAME+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
 |
 
 |===

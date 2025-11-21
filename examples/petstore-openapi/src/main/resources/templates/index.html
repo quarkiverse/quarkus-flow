@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quarkus Flow · Petstore demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card-bg: #020617;
+            --accent: #38bdf8;
+            --accent-soft: rgba(56, 189, 248, 0.12);
+            --text: #e5e7eb;
+            --muted: #9ca3af;
+            --border: #1f2937;
+            --danger: #f97373;
+            --radius-lg: 18px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #1e293b, #020617);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .shell {
+            width: 100%;
+            max-width: 960px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            box-shadow: 0 24px 80px rgba(15, 23, 42, 0.8);
+            padding: 1.75rem;
+        }
+
+        @media (min-width: 768px) {
+            .card {
+                padding: 2.25rem;
+            }
+        }
+
+        .header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .title-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 0.75rem;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.55rem;
+            letter-spacing: 0.03em;
+        }
+
+        .badge {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: var(--accent);
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+            background: var(--accent-soft);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+        }
+
+        .subtitle {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        .links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        .link-pill {
+            font-size: 0.8rem;
+            color: var(--muted);
+            text-decoration: none;
+            padding: 0.25rem 0.7rem;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .link-pill span {
+            font-size: 0.9em;
+        }
+
+        .link-pill:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+            gap: 1.75rem;
+        }
+
+        @media (max-width: 768px) {
+            .layout {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        button#get-pet {
+            border: none;
+            border-radius: 999px;
+            padding: 0.7rem 1.3rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            background: linear-gradient(135deg, var(--accent), #4ade80);
+            color: #0f172a;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            box-shadow: 0 10px 30px rgba(56, 189, 248, 0.35);
+            transition: transform 0.08s ease-out, box-shadow 0.08s ease-out,
+            filter 0.08s ease-out;
+        }
+
+        button#get-pet:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.03);
+            box-shadow: 0 18px 40px rgba(56, 189, 248, 0.5);
+        }
+
+        button#get-pet:active {
+            transform: translateY(0);
+            box-shadow: 0 8px 20px rgba(56, 189, 248, 0.35);
+        }
+
+        button#get-pet[disabled] {
+            opacity: 0.55;
+            cursor: default;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .status-pill {
+            font-size: 0.75rem;
+            border-radius: 999px;
+            padding: 0.25rem 0.6rem;
+            border: 1px solid var(--border);
+            color: var(--muted);
+        }
+
+        .status-pill.loading {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .status-pill.error {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .table-card {
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            background: radial-gradient(circle at top left, #111827, #020617);
+            padding: 1rem;
+            overflow: hidden;
+        }
+
+        .table-title {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin: 0 0 0.75rem 0;
+            color: var(--muted);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th,
+        td {
+            padding: 0.45rem 0.25rem;
+            text-align: left;
+        }
+
+        th {
+            font-size: 0.75rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:first-of-type td {
+            padding-top: 0.6rem;
+        }
+
+        tr + tr td {
+            border-top: 1px dashed rgba(31, 41, 55, 0.6);
+        }
+
+        .key {
+            width: 30%;
+            color: var(--muted);
+        }
+
+        .value {
+            width: 70%;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+            "Courier New", monospace;
+            font-size: 0.82rem;
+        }
+
+        .chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+
+        .chip {
+            padding: 0.15rem 0.5rem;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            font-size: 0.75rem;
+        }
+
+        .secondary {
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .json-block {
+            margin-top: 0.75rem;
+            background: rgba(15, 23, 42, 0.9);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 0.75rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+            "Courier New", monospace;
+            font-size: 0.8rem;
+            max-height: 220px;
+            overflow: auto;
+        }
+
+        .json-block pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+    </style>
+</head>
+<body>
+<div class="shell">
+    <div class="card">
+        <header class="header">
+            <div class="title-row">
+                <h1>Petstore demo · Quarkus Flow + OpenAPI</h1>
+                <span class="badge">Sample workflow</span>
+            </div>
+            <p class="subtitle">
+                Click the button and let a workflow call the public Petstore OpenAPI for you.
+                We pick one <code>sold</code> pet and show its details below.
+            </p>
+            <div class="links">
+                <a class="link-pill" href="{docsUrl}" target="_blank" rel="noreferrer">
+                    <span>Quarkus Flow documentation</span> ⟶
+                </a>
+                <a class="link-pill" href="https://petstore.swagger.io/" target="_blank" rel="noreferrer">
+                    <span>Swagger Petstore API</span> ⟶
+                </a>
+            </div>
+        </header>
+
+        <div class="layout">
+            <!-- Left: controls and status -->
+            <section class="controls">
+                <div class="button-row">
+                    <button id="get-pet" type="button">
+                        <span id="btn-label">Get me a pet</span>
+                        <span aria-hidden="true">🐾</span>
+                    </button>
+                    <span id="status" class="status-pill">Idle</span>
+                </div>
+                <p class="hint">
+                    This calls the <code>PetstoreFlow</code> workflow, which:
+                    <br>
+                    1) finds pets by status <code>sold</code> and
+                    2) fetches the details of the selected pet by id.
+                </p>
+                <p class="hint">
+                    If the public Petstore is offline, you might see an error here.
+                </p>
+            </section>
+
+            <!-- Right: table with pet data -->
+            <section class="table-card">
+                <h2 class="table-title">Selected pet</h2>
+                <table>
+                    <tbody id="pet-table">
+                    <tr>
+                        <th class="key">Field</th>
+                        <th class="value">Value</th>
+                    </tr>
+                    <tr>
+                        <td class="key">ID</td>
+                        <td class="value" id="pet-id">—</td>
+                    </tr>
+                    <tr>
+                        <td class="key">Name</td>
+                        <td class="value" id="pet-name">—</td>
+                    </tr>
+                    <tr>
+                        <td class="key">Status</td>
+                        <td class="value" id="pet-status">—</td>
+                    </tr>
+                    <tr>
+                        <td class="key">Category</td>
+                        <td class="value" id="pet-category">—</td>
+                    </tr>
+                    <tr>
+                        <td class="key">Tags</td>
+                        <td class="value">
+                            <div id="pet-tags" class="chip-row secondary">—</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="key">Photo URLs</td>
+                        <td class="value">
+                            <div id="pet-photos" class="chip-row secondary">—</div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <div class="json-block">
+                    <div class="secondary" style="margin-bottom: 0.3rem;">
+                        Raw workflow output (JSON):
+                    </div>
+                    <pre id="pet-json">{ }</pre>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<script>
+    const button = document.getElementById("get-pet");
+    const statusEl = document.getElementById("status");
+    const btnLabel = document.getElementById("btn-label");
+
+    const idEl = document.getElementById("pet-id");
+    const nameEl = document.getElementById("pet-name");
+    const statusFieldEl = document.getElementById("pet-status");
+    const categoryEl = document.getElementById("pet-category");
+    const tagsEl = document.getElementById("pet-tags");
+    const photosEl = document.getElementById("pet-photos");
+    const jsonEl = document.getElementById("pet-json");
+
+    function setStatus(text, mode) {
+        statusEl.textContent = text;
+        statusEl.classList.remove("loading", "error");
+        if (mode) {
+            statusEl.classList.add(mode);
+        }
+    }
+
+    function clearChips(container) {
+        while (container.firstChild) {
+            container.removeChild(container.firstChild);
+        }
+    }
+
+    function addChip(container, text) {
+        const span = document.createElement("span");
+        span.className = "chip";
+        span.textContent = text;
+        container.appendChild(span);
+    }
+
+    async function fetchPet() {
+        button.disabled = true;
+        btnLabel.textContent = "Fetching…";
+        setStatus("Calling PetstoreFlow…", "loading");
+
+        try {
+            const res = await fetch("/pet", {
+                headers: {
+                    "Accept": "application/json"
+                }
+            });
+
+            if (!res.ok) {
+                throw new Error("HTTP " + res.status);
+            }
+
+            const pet = await res.json();
+
+            // Basic fields
+            idEl.textContent = pet.id ?? "—";
+            nameEl.textContent = pet.name ?? "—";
+            statusFieldEl.textContent = pet.status ?? "—";
+            categoryEl.textContent = pet.category && pet.category.name
+                ? pet.category.name
+                : "—";
+
+            // Tags
+            clearChips(tagsEl);
+            if (Array.isArray(pet.tags) && pet.tags.length > 0) {
+                pet.tags.forEach(tag => addChip(tagsEl, tag.name ?? String(tag.id ?? "?")));
+            } else {
+                tagsEl.textContent = "—";
+            }
+
+            // Photos
+            clearChips(photosEl);
+            if (Array.isArray(pet.photoUrls) && pet.photoUrls.length > 0) {
+                pet.photoUrls.forEach(url => addChip(photosEl, url));
+            } else {
+                photosEl.textContent = "—";
+            }
+
+            // Raw JSON
+            jsonEl.textContent = JSON.stringify(pet, null, 2);
+
+            setStatus("Got a pet from Petstore 🎉", null);
+        } catch (e) {
+            console.error(e);
+            setStatus("Error calling Petstore / workflow", "error");
+        } finally {
+            button.disabled = false;
+            btnLabel.textContent = "Get me a pet";
+        }
+    }
+
+    button.addEventListener("click", fetchPet);
+</script>
+</body>
+</html>

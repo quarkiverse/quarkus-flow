@@ -3,6 +3,7 @@ package io.quarkiverse.flow.providers;
 import static java.util.stream.Collectors.joining;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeSet;
@@ -33,7 +34,7 @@ import io.serverlessworkflow.impl.config.SecretManager;
 @ApplicationScoped
 public class CredentialsProviderSecretManager implements SecretManager {
 
-    private static final String ROOT = FlowSecretsConfig.ROOT_KEY;
+    private static final String ROOT = FlowSecretsConfig.SECRETS_ROOT_KEY;
     private static final String GLOBAL_KEY = ROOT + ".credentials-provider-name";
     private static final String PER_SECRET_KEY = ROOT + ".credentials-provider-names.<secret>";
 
@@ -75,10 +76,15 @@ public class CredentialsProviderSecretManager implements SecretManager {
     }
 
     @Override
-    public Map<String, String> secret(String secretName) {
+    public Map<String, Object> secret(String secretName) {
         CredentialsProvider provider = secretCache.computeIfAbsent(secretName, this::resolveProviderForSecret);
         Map<String, String> creds = provider.getCredentials(secretName);
-        return creds == null ? Collections.emptyMap() : creds;
+
+        if (creds == null || creds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        return new LinkedHashMap<>(creds);
     }
 
     private CredentialsProvider resolveProviderForSecret(String secretName) {

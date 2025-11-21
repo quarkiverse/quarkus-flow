@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
+import io.quarkiverse.flow.providers.HttpClientProvider;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
 import io.quarkiverse.flow.tracing.TraceLoggerExecutionListener;
 import io.quarkus.arc.Arc;
@@ -24,6 +25,7 @@ import io.serverlessworkflow.impl.config.ConfigManager;
 import io.serverlessworkflow.impl.config.SecretManager;
 import io.serverlessworkflow.impl.events.EventConsumer;
 import io.serverlessworkflow.impl.events.EventPublisher;
+import io.serverlessworkflow.impl.executors.http.HttpClientResolver;
 import io.serverlessworkflow.impl.expressions.jq.JQExpressionFactory;
 
 @Recorder
@@ -45,6 +47,7 @@ public class WorkflowApplicationRecorder {
             this.injectEventPublishers(container, builder);
             this.injectSecretManager(container, builder);
             this.injectConfigManager(container, builder);
+            this.injectHttpClientProvider(container, builder);
 
             WorkflowApplication app = builder.build();
 
@@ -122,6 +125,16 @@ public class WorkflowApplicationRecorder {
         } else {
             LOG.info("Flow: No ConfigManager bean found; workflow runtime 'secrets' expression and definitions won't work.");
         }
+    }
+
+    private void injectHttpClientProvider(final ArcContainer container, final WorkflowApplication.Builder builder) {
+        final HttpClientProvider httpClientProvider = container.instance(HttpClientProvider.class).get();
+        LOG.info("Flow: Bound HttpClientProvider bean: {}", httpClientProvider.getClass().getName());
+        builder.withAdditionalObject(HttpClientResolver.HTTP_CLIENT_PROVIDER, ((workflowContextData, taskContextData) -> {
+            final String workflowName = workflowContextData.definition().workflow().getDocument().getName();
+            final String taskName = taskContextData.taskName();
+            return httpClientProvider.clientFor(workflowName, taskName);
+        }));
     }
 
 }

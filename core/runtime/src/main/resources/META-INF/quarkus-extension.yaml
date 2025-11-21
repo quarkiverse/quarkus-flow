@@ -1,4 +1,4 @@
-name: Quarkus Flow
+name: Flow
 description: |
   Workflow engine for Quarkus based on the CNCF Workflow Specification, with Java DSL and Agentic AI support.
 metadata:
@@ -13,7 +13,7 @@ metadata:
     - "integration"
     - "messaging"
   codestart:
-    name: Quarkus Flow
+    name: Flow
     languages:
       - java
     artifact: "io.quarkiverse.flow:quarkus-flow:codestarts:jar:${project.version}"

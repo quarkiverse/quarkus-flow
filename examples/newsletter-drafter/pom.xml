@@ -164,7 +164,7 @@
                         <maven.home>${maven.home}</maven.home>
                     </systemPropertyVariables>
                     <!-- Skip ITs with ollama since GHA does not have the necessary resources to run them -->
-                    <skipITs>true</skipITs>
+                    <skipITs>${skipITs}</skipITs>
                 </configuration>
             </plugin>
         </plugins>

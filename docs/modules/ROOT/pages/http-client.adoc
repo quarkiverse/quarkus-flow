@@ -1,0 +1,383 @@
+= HTTP Client Configuration
+:page-aliases: http/index.adoc
+:sectnums:
+
+Quarkus Flow supports calling external services over HTTP and OpenAPI.
+All HTTP / OpenAPI tasks share a common, tunable HTTP client layer powered by RESTEasy Reactive and Vert.x.
+
+This page explains:
+
+* which HTTP client Quarkus Flow uses for a given workflow / task
+* how to configure the *default* HTTP client
+* how to define *named* HTTP clients
+* how to route specific workflows / tasks to a named client
+* how to configure static headers, logging, proxy, and other network options
+
+TIP: The low-level configuration reference for all HTTP properties lives in the xref:configuration.adoc[Configuration] page under the `quarkus.flow.http.client.*` namespace.
+
+== Overview
+
+All Flow HTTP / OpenAPI tasks use a `jakarta.ws.rs.client.Client` managed by Quarkus Flow.
+
+At runtime, Quarkus Flow:
+
+* builds a *default client* from `quarkus.flow.http.client.*`
+* optionally builds *named clients* from `quarkus.flow.http.client.named.<name>.*`
+* resolves *which client to use* for a given workflow + task using `quarkus.flow.http.client.workflow.*` routing
+* reuses and closes these clients automatically for you at the end of the application lifecycle
+
+Internally, the extension maps these configuration properties to a RESTEasy Reactive `ClientBuilderImpl` and Vert.x `HttpClientOptions`, but the API you configure is purely Quarkus Flow configuration.
+
+== Default HTTP client
+
+The **default HTTP client** is used when no routing is configured for a workflow or task.
+
+All default client properties live under:
+
+[source,properties]
+----
+quarkus.flow.http.client.<property>=<value>
+----
+
+Common examples:
+
+[source,properties]
+----
+# Basic timeouts (milliseconds)
+quarkus.flow.http.client.connect-timeout=5000
+quarkus.flow.http.client.read-timeout=10000
+
+# HTTP connection pool and keep-alive
+quarkus.flow.http.client.connection-pool-size=50
+quarkus.flow.http.client.keep-alive-enabled=true
+quarkus.flow.http.client.connection-ttl=60
+
+# User agent
+quarkus.flow.http.client.user-agent=quarkus-flow/1.0
+
+# Logging (maps to Quarkus REST client logging)
+quarkus.flow.http.client.logging.scope=request-response
+quarkus.flow.http.client.logging.body-limit=512
+----
+
+These settings apply to all HTTP / OpenAPI tasks unless a more specific **named client** is selected via routing.
+
+== Named HTTP clients
+
+You can declare as many **named HTTP clients** as you need, each with its own tuning (timeouts, headers, logging, proxy, etc.).
+
+Named clients live under:
+
+[source,properties]
+----
+quarkus.flow.http.client.named.<name>.<property>=<value>
+----
+
+Example: two named clients, `secureA` and `internal`:
+
+[source,properties]
+----
+# "secureA" – external API with strict timeouts and custom UA
+quarkus.flow.http.client.named.secureA.connect-timeout=3000
+quarkus.flow.http.client.named.secureA.read-timeout=8000
+quarkus.flow.http.client.named.secureA.user-agent=MyCompanyBot/1.0
+quarkus.flow.http.client.named.secureA.logging.scope=request-response
+quarkus.flow.http.client.named.secureA.logging.body-limit=256
+quarkus.flow.http.client.named.secureA.static-headers=X-Env=prod,X-Tenant=acme
+
+# "internal" – internal service with a larger pool and relaxed timeouts
+quarkus.flow.http.client.named.internal.connect-timeout=1000
+quarkus.flow.http.client.named.internal.read-timeout=20000
+quarkus.flow.http.client.named.internal.connection-pool-size=100
+quarkus.flow.http.client.named.internal.keep-alive-enabled=true
+----
+
+If a named client is resolved but not configured, Quarkus Flow falls back to the *default* HTTP client.
+
+== Routing workflows and tasks to clients
+
+Routing is configured under the `workflow` section of the HTTP config:
+
+[source,properties]
+----
+# Use "secureA" for all HTTP/OpenAPI tasks in workflow "order-flow"
+quarkus.flow.http.client.workflow.order-flow.name=secureA
+
+# Override only the "fetchCustomers" task in "order-flow" to use "internal"
+quarkus.flow.http.client.workflow.order-flow.task.fetchCustomers.name=internal
+----
+
+Resolution order for a call:
+
+. Task-level override
+`quarkus.flow.http.client.workflow.<workflowId>.task.<taskId>.name`
+. Workflow-level default
+`quarkus.flow.http.client.workflow.<workflowId>.name`
+. Fallback to the global default client (`quarkus.flow.http.client.*`)
+
+Here, `<workflowId>` is the workflow id (from the Workflow DSL), and `<taskId>` is the HTTP/OpenAPI task name.
+
+IMPORTANT: Although you can have an inner task named the same as a parent task per specification,
+for HTTP clients it's highly recommended that you keep HTTP-related tasks unique.
+
+== Static headers
+
+Use `static-headers` to attach headers to *every* request sent by a client.
+
+The value is a comma-separated list of `name=value` pairs:
+
+[source,properties]
+----
+# Default client
+quarkus.flow.http.client.static-headers=X-Env=prod,X-Tenant=acme
+
+# Named client "secureA"
+quarkus.flow.http.client.named.secureA.static-headers=X-Env=prod,X-Region=us-east-1
+----
+
+Rules:
+
+* entries are separated by commas `,`
+* each entry must be `name=value`
+* whitespace around names/values is ignored
+* invalid entries are ignored with a warning in the logs
+
+Example: the following line
+
+[source,properties]
+----
+quarkus.flow.http.client.static-headers=X-Env=prod,X-Tenant=acme
+----
+
+will result in:
+
+* `X-Env: prod`
+* `X-Tenant: acme`
+
+on every request performed by the selected client.
+
+== Logging
+
+Logging integrates with the RESTEasy Reactive client logging support via two properties:
+
+[source,properties]
+----
+# Scope: request-response, all, or none
+quarkus.flow.http.client.logging.scope=request-response
+
+# Truncate logged body after N characters
+quarkus.flow.http.client.logging.body-limit=512
+----
+
+You can configure them per client:
+
+[source,properties]
+----
+quarkus.flow.http.client.named.secureA.logging.scope=request-response
+quarkus.flow.http.client.named.secureA.logging.body-limit=256
+
+quarkus.flow.http.client.named.internal.logging.scope=none
+----
+
+NOTE: For full control over log format and sinks, combine this with your regular Quarkus logging configuration (JSON, MDC, etc.).
+
+== HTTP/2 and ALPN
+
+You can enable HTTP/2 and ALPN per client:
+
+[source,properties]
+----
+# Default client
+quarkus.flow.http.client.http2=true
+quarkus.flow.http.client.alpn=true
+
+# Named client
+quarkus.flow.http.client.named.secureA.http2=true
+quarkus.flow.http.client.named.secureA.alpn=true
+----
+
+Quarkus Flow passes these flags to the underlying Vert.x `HttpClientOptions`. If you also configure TLS, ALPN is used to negotiate the protocol when supported by the server.
+
+== Proxy support
+
+Proxy support is exposed as a thin layer over the RESTEasy Reactive `ClientBuilderImpl` API. All properties follow the usual `quarkus.flow.http.client` naming:
+
+[source,properties]
+----
+# Default client proxy (host/port)
+quarkus.flow.http.client.proxy-host=proxy.mycorp.internal
+quarkus.flow.http.client.proxy-port=3128
+
+# Optional credentials
+quarkus.flow.http.client.proxy-user=api-user
+quarkus.flow.http.client.proxy-password=change-me
+
+# Pipe-separated non proxy hosts pattern (mirrors Java proxy syntax)
+quarkus.flow.http.client.non-proxy-hosts=localhost|127.*|[::1]|*.svc.cluster.local
+
+# Connect timeout (milliseconds) for proxy handshake
+quarkus.flow.http.client.proxy-connect-timeout=5000
+----
+
+Named clients use the same pattern:
+
+[source,properties]
+----
+quarkus.flow.http.client.named.secureA.proxy-host=proxy.mycorp.internal
+quarkus.flow.http.client.named.secureA.proxy-port=3128
+----
+
+If `proxy-host` is not set, the client falls back to standard JVM system properties (`http(s).proxyHost`, etc.), consistent with the underlying Vert.x behavior.
+
+== Redirects, compression and chunk size
+
+Additional tuning is available:
+
+[source,properties]
+----
+# Max redirects
+quarkus.flow.http.client.max-redirects=5
+
+# Follow redirects at the client level
+quarkus.flow.http.client.follow-redirects=true
+
+# Enable transparent decompression
+quarkus.flow.http.client.enable-compression=true
+
+# HTTP chunk size (bytes)
+quarkus.flow.http.client.max-chunk-size=16384
+----
+
+All of these can be set per named client as well:
+
+[source,properties]
+----
+quarkus.flow.http.client.named.internal.max-redirects=2
+quarkus.flow.http.client.named.internal.enable-compression=true
+----
+
+== Multi-valued query parameters
+
+If you rely on repeated query parameters (e.g. `?tag=a&tag=b`), you can control how the underlying REST client encodes them:
+
+[source,properties]
+----
+# See MultiQueryParamMode enum in RESTEasy Reactive for supported values
+quarkus.flow.http.client.multi-query-param-mode=multi
+----
+
+This maps to `ClientBuilderImpl.multiQueryParamMode(...)`.
+
+== TLS, trust and host verification
+
+For most use cases, you configure TLS using standard Quarkus SSL / REST client facilities.
+
+Quarkus Flow exposes two booleans that directly map to `ClientBuilderImpl.trustAll(boolean)` and `verifyHost(boolean)`:
+
+[source,properties]
+----
+# Trust all certificates (including self-signed)
+quarkus.flow.http.client.trust-all=true
+
+# Disable hostname verification
+quarkus.flow.http.client.verify-host=false
+----
+
+WARNING: Only enable `trust-all` or disable `verify-host` in controlled environments (e.g. local development). In production these settings significantly reduce TLS security.
+
+== Putting it all together
+
+Example: a typical setup using both default and named clients:
+
+[source,properties]
+----
+# Default client: used by most workflows
+quarkus.flow.http.client.connect-timeout=5000
+quarkus.flow.http.client.read-timeout=10000
+quarkus.flow.http.client.user-agent=quarkus-flow/1.0
+quarkus.flow.http.client.logging.scope=request-response
+quarkus.flow.http.client.logging.body-limit=512
+
+# Named client for a SaaS API
+quarkus.flow.http.client.named.crm.connect-timeout=3000
+quarkus.flow.http.client.named.crm.read-timeout=8000
+quarkus.flow.http.client.named.crm.user-agent=MyCRMIntegrator/1.0
+quarkus.flow.http.client.named.crm.static-headers=X-Env=prod
+quarkus.flow.http.client.named.crm.http2=true
+quarkus.flow.http.client.named.crm.enable-compression=true
+
+# Route "customer-sync-flow" to the CRM client
+quarkus.flow.http.client.workflow.customer-sync-flow.name=crm
+
+# Override only a specific task in another flow
+quarkus.flow.http.client.workflow.order-flow.task.pushOrderToCrm.name=crm
+----
+
+With this configuration:
+
+* most workflows use the default client
+* any HTTP / OpenAPI task in `customer-sync-flow` uses the `crm` client
+* within `order-flow`, only the `pushOrderToCrm` task uses `crm`; other tasks fall back to the default client
+
+This lets you centralize all HTTP behavior (timeouts, logging, headers, proxy, TLS) per *logical client*, and route workflows / tasks declaratively without touching your Java or DSL code.
+
+== Debugging and logging HTTP requests
+
+When you are wiring workflows to external HTTP or OpenAPI services, being able to see the actual requests and responses is crucial for debugging.
+
+Quarkus Flow reuses the RESTEasy Reactive client logger, which you can enable and tune via `quarkus.flow.http.client.*` and standard Quarkus logging categories.
+
+=== Enabling request/response logging
+
+At minimum, set the logging scope for the (default) HTTP client and turn on DEBUG logging for the REST client logger:
+
+[source,properties]
+----
+# Log both request and response line + headers (+ body, see below)
+quarkus.flow.http.client.logging.scope=request-response
+
+# Increase the maximum number of characters of body content to log
+quarkus.flow.http.client.logging.body-limit=1024
+
+# Enable the REST client logger
+quarkus.log.category."org.jboss.resteasy.reactive.client.logging".level=DEBUG
+----
+
+The `logging.scope` property maps to `LoggingScope`:
+
+* `none` – no logging (default)
+* `request-response` – log one line per request/response, plus headers and body (up to `logging.body-limit` chars)
+* `all` – most verbose; includes additional internal details
+
+The `logging.body-limit` controls how much of the request/response body is included in the logs. This helps avoid flooding your logs with very large payloads.
+
+=== Named clients
+
+You can also enable logging per named client:
+
+[source,properties]
+----
+# Named client "petstore"
+quarkus.flow.http.client.named.petstore.logging.scope=request-response
+quarkus.flow.http.client.named.petstore.logging.body-limit=2048
+----
+
+The logging category stays the same:
+
+[source,properties]
+----
+quarkus.log.category."org.jboss.resteasy.reactive.client.logging".level=DEBUG
+----
+
+Once enabled, every HTTP/OpenAPI task that uses those clients will emit debug logs with the full HTTP interaction, which is especially useful when iterating on workflow definitions or diagnosing failures against third-party APIs.
+
+== References
+
+- Quarkus guide — REST Client Reactive:
+link:https://quarkus.io/guides/rest-client-reactive[Using the REST Client Reactive]
+- RESTEasy Reactive client — HTTP client properties:
+link:https://javadoc.io/doc/io.quarkus/quarkus-rest-client-reactive/latest/org/jboss/resteasy/reactive/client/api/QuarkusRestClientProperties.html[QuarkusRestClientProperties]
+- SmallRye Config — map and complex value support:
+link:https://smallrye.io/smallrye-config/Main/config/map-support/[Map support]
+- Vert.x HTTP client — low-level tuning options:
+link:https://vertx.io/docs/apidocs/io/vertx/core/http/HttpClientOptions.html[HttpClientOptions]

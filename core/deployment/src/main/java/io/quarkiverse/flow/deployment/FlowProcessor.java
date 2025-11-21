@@ -5,14 +5,17 @@ import java.util.Collections;
 import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.Priorities;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.config.FlowTracingConfig;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
+import io.quarkiverse.flow.providers.HttpClientProvider;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
 import io.quarkiverse.flow.providers.MicroprofileConfigManager;
+import io.quarkiverse.flow.providers.WorkflowExceptionMapper;
 import io.quarkiverse.flow.recorders.SDKRecorder;
 import io.quarkiverse.flow.recorders.WorkflowApplicationRecorder;
 import io.quarkiverse.flow.recorders.WorkflowDefinitionRecorder;
@@ -28,8 +31,11 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
+import io.serverlessworkflow.impl.WorkflowException;
+import io.smallrye.common.annotation.Identifier;
 
 class FlowProcessor {
 
@@ -56,13 +62,26 @@ class FlowProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem registerRuntimeDefaults() {
+    AdditionalBeanBuildItem registerRuntimeProviders() {
         return AdditionalBeanBuildItem.builder()
                 .addBeanClass(JQScopeSupplier.class)
                 .addBeanClass(CredentialsProviderSecretManager.class)
                 .addBeanClass(MicroprofileConfigManager.class)
+                .addBeanClass(HttpClientProvider.class)
                 .setUnremovable()
                 .build();
+    }
+
+    /**
+     * Registers our default {@link WorkflowExceptionMapper} to the JAX-RS exception mappers.
+     */
+    @BuildStep
+    void registerWorkflowExceptionMapper(BuildProducer<ExceptionMapperBuildItem> mappers) {
+        mappers.produce(new ExceptionMapperBuildItem(
+                WorkflowExceptionMapper.class.getName(),
+                WorkflowException.class.getName(),
+                Priorities.USER,
+                true));
     }
 
     /**

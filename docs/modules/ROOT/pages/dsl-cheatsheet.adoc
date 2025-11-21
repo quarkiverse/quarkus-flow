@@ -1,7 +1,7 @@
 = Java DSL cheatsheet
 include::./includes/attributes.adoc[]
 
-Quarkus Flow uses the CNCF Serverless Workflow link:https://github.com/serverlessworkflow/sdk-java[**Java Fluent DSL**] to define workflows in code.
+Quarkus Flow uses the CNCF Workflow link:https://github.com/serverlessworkflow/sdk-java[**Java Fluent DSL**] to define workflows in code.
 This page shows:
 
 - how to define a workflow class,
@@ -15,6 +15,7 @@ Source of truth for the DSL classes:
 - Builder: `io.serverlessworkflow.fluent.func.spec.FuncWorkflowBuilder`
 - Shortcuts (task providers): `io.serverlessworkflow.fluent.func.dsl.FuncDSL` (import statically)
 - Transformations: `io.serverlessworkflow.fluent.func.spi.FuncTransformations` and `io.serverlessworkflow.fluent.func.spi.FuncTaskTransformations`
+- HTTP / OpenAPI steps: `io.serverlessworkflow.fluent.func.dsl.FuncCallHttpStep`, `io.serverlessworkflow.fluent.func.dsl.FuncCallOpenAPIStep`
 ====
 
 == Define a workflow class (required)
@@ -23,7 +24,7 @@ Workflows are **discovered at build time** from CDI beans that extend `io.quarki
 
 [source,java]
 ----
-include::{examples-dir}HelloWorkflow.java[]
+include::{examples-dir}/org/acme/HelloWorkflow.java[]
 ----
 
 == Setup (imports)
@@ -40,7 +41,7 @@ import static io.serverlessworkflow.fluent.func.spec.FuncWorkflowBuilder.workflo
 
 == Complete task providers (chainable)
 
-All helpers below return a chainable provider/step (e.g., `FuncTaskConfigurer`, `FuncCallStep`, `EmitStep`, `ListenStep`, `ConsumeStep`) so you can pass them straight into `.tasks(...)`:
+All helpers below return a chainable provider/step (e.g., `FuncTaskConfigurer`, `FuncCallStep`, `EmitStep`, `ListenStep`, `ConsumeStep`, `FuncCallHttpStep`, `FuncCallOpenAPIStep`) so you can pass them straight into `.tasks(...)`:
 
 [%autowidth,cols="2,2,4,5"]
 |===
@@ -58,7 +59,7 @@ All helpers below return a chainable provider/step (e.g., `FuncTaskConfigurer`, 
 
 |`function(Function<T,R> fn)`
 |`FuncCallStep`
-|Call a Java `Function` (input inferred).
+|Call a Java `Function` (input type inferred).
 |`function(ai::answer).exportAs("answer")`
 
 |`function(Function<T,R> fn, Class<T> inClass)`
@@ -68,7 +69,7 @@ All helpers below return a chainable provider/step (e.g., `FuncTaskConfigurer`, 
 
 |`function(String name, Function<T,R> fn)`
 |`FuncCallStep`
-|Named variant, input inferred.
+|Named Java function call (input inferred).
 |`function("quote", pricing::quote)`
 
 |`function(String name, Function<T,R> fn, Class<T> inClass)`
@@ -76,39 +77,59 @@ All helpers below return a chainable provider/step (e.g., `FuncTaskConfigurer`, 
 |Named + explicit input type.
 |`function("classify", nlp::classify, Text.class)`
 
-|`withContext(BiFunction<WorkflowContext,T,R> fn, Class<T> inClass)`
+|`withContext(JavaContextFunction<T,R> fn, Class<T> inClass)`
 |`FuncCallStep`
-|Call with workflow context `(ctx, payload) -> result`.
-|`withContext((ctx,p) -> svc.do(ctx,p), Input.class)`
+|Call with workflow context `(payload, ctx) -> result`.
+|`withContext((payload, ctx) -> svc.do(ctx, payload), Input.class)`
 
-|`withContext(String name, BiFunction<WorkflowContext,T,R> fn, Class<T> inClass)`
+|`withContext(String name, JavaContextFunction<T,R> fn, Class<T> inClass)`
 |`FuncCallStep`
-|Named `(ctx,payload)` call.
-|`withContext("doWithCtx", svc::withCtx, Input.class)`
+|Named context-aware call.
+|`withContext("withCtx", svc::withCtx, Input.class)`
 
-|`withInstanceId(BiFunction<String,T,R> fn, Class<T> inClass)`
+|`withInstanceId(InstanceIdBiFunction<T,R> fn, Class<T> inClass)`
 |`FuncCallStep`
-|Call with instance id `(instanceId, payload) -> result`.
+|Call with workflow instance id `(instanceId, payload) -> result`.
 |`withInstanceId((id,p) -> agent.run(id,p), Prompt.class)`
 
-|`withInstanceId(String name, BiFunction<String,T,R> fn, Class<T> inClass)`
+|`withInstanceId(String name, InstanceIdBiFunction<T,R> fn, Class<T> inClass)`
 |`FuncCallStep`
-|Named `(instanceId,payload)` call.
+|Named `(instanceId, payload)` call.
 |`withInstanceId("agent", agent::run, Prompt.class)`
 
-|`agent(BiFunction<String,T,R> fn, Class<T> inClass)`
+|`withFilter(JavaFilterFunction<T,R> fn, Class<T> inClass)`
 |`FuncCallStep`
-|Sugar for agent-style calls that need the instance id.
-|`agent(critic::critique, String.class)`
+|Call that can see both workflow and task context `(payload, wctx, tctx) -> result`.
+|`withFilter((payload, wctx, tctx) -> audit(payload, wctx, tctx), Event.class)`
 
-|`agent(String name, BiFunction<String,T,R> fn, Class<T> inClass)`
+|`withFilter(String name, JavaFilterFunction<T,R> fn, Class<T> inClass)`
+|`FuncCallStep`
+|Named context+task-aware call.
+|`withFilter("auditFilter", auditFn, Event.class)`
+
+|`withUniqueId(UniqueIdBiFunction<T,R> fn, Class<T> inClass)`
+|`FuncCallStep`
+|Call with a stable **unique id** `(uniqueId, payload) -> result`, where `uniqueId = "<instanceId>-<taskJsonPointer>"`.
+|`withUniqueId((uid,p) -> tool.call(uid,p), Prompt.class)`
+
+|`withUniqueId(String name, UniqueIdBiFunction<T,R> fn, Class<T> inClass)`
+|`FuncCallStep`
+|Named unique-id-aware call.
+|`withUniqueId("toolCall", (uid,p) -> tool.call(uid,p), Prompt.class)`
+
+|`agent(UniqueIdBiFunction<T,R> fn, Class<T> inClass)`
+|`FuncCallStep`
+|Sugar for “agent-style” calls that need a **memory id** (the unique id described above).
+|`agent(criticAgent::critique, String.class)`
+
+|`agent(String name, UniqueIdBiFunction<T,R> fn, Class<T> inClass)`
 |`FuncCallStep`
 |Named agent call.
-|`agent("criticAgent", critic::critique, String.class)`
+|`agent("criticAgent", criticAgent::critique, String.class)`
 
 |`consume(Consumer<T> consumer, Class<T> inClass)`
 |`ConsumeStep`
-|Fire-and-forget side-effect.
+|Fire-and-forget side-effect. No data is exported; only effects.
 |`consume(msg -> mail.send(msg), Email.class)`
 
 |`consume(String name, Consumer<T> consumer, Class<T> inClass)`
@@ -118,17 +139,17 @@ All helpers below return a chainable provider/step (e.g., `FuncTaskConfigurer`, 
 
 |`emit(Consumer<FuncEmitTaskBuilder> cfg)`
 |`EmitStep`
-|Low-level emit using builder config.
+|Low-level emit using the CloudEvent builder.
 |`emit(e -> e.type("org.acme.created"))`
 
 |`emit(String name, Consumer<FuncEmitTaskBuilder> cfg)`
 |`EmitStep`
 |Named low-level emit.
-|`emit("publish", e -> e.type("..."))`
+|`emit("publish", e -> e.type("org.acme.created"))`
 
 |`emit(String type, Function<T,CloudEventData> bodyFn)`
 |`EmitStep`
-|Emit event; body encoded from `T -> CloudEventData`.
+|Emit event; body encoded via `T -> CloudEventData`.
 |`emit("org.acme.ready", DataMappers::toCloudEvent)`
 
 |`emit(String name, String type, Function<T,CloudEventData> bodyFn)`
@@ -136,54 +157,54 @@ All helpers below return a chainable provider/step (e.g., `FuncTaskConfigurer`, 
 |Named variant.
 |`emit("notify","org.acme.ready", DataMappers::toCloudEvent)`
 
-|`emit(String type, BiFunction<ObjectMapper,T,byte[]> serializer, Class<T> inClass)`
+|`emit(String type, Function<T,byte[]> serializer, Class<T> inClass)`
 |`EmitStep`
-|Custom bytes serializer (Jackson provided).
+|Custom bytes payload from `T -> byte[]` (no explicit `ObjectMapper`).
 |`emit("org.acme.raw", Ser::toBytes, Payload.class)`
 
-|`emit(String name, String type, BiFunction<ObjectMapper,T,byte[]> serializer, Class<T> inClass)`
+|`emit(String name, String type, Function<T,byte[]> serializer, Class<T> inClass)`
 |`EmitStep`
 |Named custom bytes emit.
-|`emit("binaryOut","...", Ser::toBytes, Payload.class)`
+|`emit("binaryOut","org.acme.raw", Ser::toBytes, Payload.class)`
 
 |`emitJson(String type, Class<T> inClass)`
 |`EmitStep`
-|Emit JSON CloudEvent for POJO input.
+|Emit JSON CloudEvent for POJO input (content-type `application/json`).
 |`emitJson("org.acme.review.required", Review.class)`
 
 |`emitJson(String name, String type, Class<T> inClass)`
 |`EmitStep`
 |Named JSON emit.
-|`emitJson("draftReady","org.acme.type", Review.class)`
+|`emitJson("draftReady","org.acme.newsletter.review", Review.class)`
 
 |`listen(FuncListenSpec spec)`
 |`ListenStep`
-|Listen using a spec (e.g., `to().one(event("..."))`).
-|`listen(to().one(event("org.acme.done")))`
+|Listen using a spec (e.g., `toOne`, `toAny`, `toAll`).
+|`listen(toAny("org.acme.done", "org.acme.skipped"))`
 
 |`listen(String name, FuncListenSpec spec)`
 |`ListenStep`
 |Named listen.
-|`listen("waitHuman", to().one(event("org.acme.review.done")))`
+|`listen("waitHuman", toOne("org.acme.review.done"))`
 
 |`switchCase(Consumer<FuncSwitchTaskBuilder> switchConsumer)`
 |`FuncTaskConfigurer`
 |Low-level switch (builder consumer).
-|`switchCase(sw -> sw.on(...).onDefault(...))`
+|`switchCase(sw -> sw.on(c -> c.when(".flag").then("ok")).onDefault("fallback"))`
 
 |`switchCase(String taskName, Consumer<FuncSwitchTaskBuilder> switchConsumer)`
 |`FuncTaskConfigurer`
 |Named low-level switch.
-|`switchCase("route", sw -> ... )`
+|`switchCase("route", sw -> sw.on(...).onDefault(...))`
 
-|`switchCase(FuncSwitchCase... cases)`
+|`switchCase(SwitchCaseConfigurer... cases)`
 |`FuncTaskConfigurer`
-|Switch from cases helpers.
+|Switch composed from `caseOf(...)` and `caseDefault(...)`.
 |`switchCase(cases(caseOf(p).then("A"), caseDefault("B")))`
 
-|`switchCase(String taskName, FuncSwitchCase... cases)`
+|`switchCase(String taskName, SwitchCaseConfigurer... cases)`
 |`FuncTaskConfigurer`
-|Named cases switch.
+|Named switch composed from cases.
 |`switchCase("route", caseOf(p).then("A"), caseDefault("B"))`
 
 |`switchWhen(Predicate<T> pred, String thenTask, Class<T> predClass)`
@@ -203,7 +224,7 @@ All helpers below return a chainable provider/step (e.g., `FuncTaskConfigurer`, 
 
 |`switchWhenOrElse(Predicate<T> pred, String thenTask, FlowDirectiveEnum otherwiseDirective, Class<T> predClass)`
 |`FuncTaskConfigurer`
-|Typed single-case + default directive (`END`, etc.).
+|Typed single-case + default directive (`END`, `CONTINUE`, ...).
 |`switchWhenOrElse(h -> ok(h), "ok", FlowDirectiveEnum.END, HumanReview.class)`
 
 |`switchWhenOrElse(String jqExpr, String thenTask, String otherwiseTask)`
@@ -216,47 +237,183 @@ All helpers below return a chainable provider/step (e.g., `FuncTaskConfigurer`, 
 |JQ single-case + directive.
 |`switchWhenOrElse(".approved", "ship", FlowDirectiveEnum.END)`
 
-|`forEach(Function<WorkflowData,Collection<E>> collectionFn, Consumer<FuncTaskItemListBuilder> body)`
+|`forEach(Function<T,Collection<?>> collectionFn, Consumer<FuncTaskItemListBuilder> body)`
 |`FuncTaskConfigurer`
-|Iterate over a computed collection.
-|`forEach(ctx -> ctx.items(), inner -> inner.tasks(set("{...}")))`
+|Iterate over a collection computed from the current input.
+|`forEach((Order o) -> o.items(), inner -> inner.tasks(set("{ item: . }")))`
 
-|`forEach(Collection<E> collection, Consumer<FuncTaskItemListBuilder> body)`
+|`forEach(Collection<?> collection, Consumer<FuncTaskItemListBuilder> body)`
 |`FuncTaskConfigurer`
 |Iterate over a constant collection.
-|`forEach(List.of(1,2,3), inner -> inner.tasks(set("{...}")))`
+|`forEach(List.of(1,2,3), inner -> inner.tasks(set("{ n: . }")))`
 
 |`forEach(List<E> list, Consumer<FuncTaskItemListBuilder> body)`
 |`FuncTaskConfigurer`
-|Iterate over a constant list.
-|`forEach(List.of(user1,user2), inner -> inner.tasks(...))`
+|Iterate over a constant list (convenience).
+|`forEach(List.of(user1,user2), inner -> inner.tasks(set("{ user: . }")))`
 
-|`tasks(TaskProvider... steps)`
+|`tasks(FuncTaskConfigurer... steps)`
 |`Consumer<FuncTaskItemListBuilder>`
 |Group multiple steps/configurers (useful inside `forEach`).
-|`tasks(set("{x:1}"), function(svc::op), emitJson("..."))`
+|`tasks(set("{x:1}"), function(svc::op), emitJson("org.acme.done", Result.class))`
+
+|`http()`
+|`FuncCallHttpStep`
+|Start a fluent HTTP call spec (method, headers, body, etc.). Pass it directly to `.tasks(...)` or through `call("name", http(...))` to force a name.
+|`http().GET().endpoint("https://service/api").acceptJSON()`
+
+|`http(String name)`
+|`FuncCallHttpStep`
+|Named HTTP call spec.
+|`http("fetchUsers").GET().endpoint("https://service/users")`
+
+|`http(String urlExpr, AuthenticationConfigurer auth)`
+|`FuncCallHttpStep`
+|HTTP spec preconfigured with endpoint expression + auth.
+|`http("http://service/api", auth -> auth.use("my-auth")).GET()`
+
+|`http(URI url, AuthenticationConfigurer auth)`
+|`FuncCallHttpStep`
+|HTTP spec preconfigured with a concrete URI + auth.
+|`http(URI.create("https://service/api"), auth -> auth.use("default"))`
+
+|`get(String endpoint)`
+|`FuncCallHttpStep`
+|Convenience HTTP `GET` spec (unnamed) for a string endpoint.
+|`get("https://service/health")`
+
+|`get(String name, String endpoint)`
+|`FuncCallHttpStep`
+|Named `GET` spec for a string endpoint.
+|`get("checkHealth", "https://service/health")`
+
+|`get(String endpoint, AuthenticationConfigurer auth)`
+|`FuncCallHttpStep`
+|`GET` with auth (unnamed).
+|`get("https://service/users", auth -> auth.use("users-auth"))`
+
+|`get(String name, String endpoint, AuthenticationConfigurer auth)`
+|`FuncCallHttpStep`
+|Named `GET` with auth.
+|`get("fetchUsers", "https://service/users", auth -> auth.use("users-auth"))`
+
+|`get(URI endpoint)`
+|`FuncCallHttpStep`
+|`GET` for a concrete URI (unnamed).
+|`get(URI.create("https://service/health"))`
+
+|`get(String name, URI endpoint)`
+|`FuncCallHttpStep`
+|Named `GET` for a concrete URI.
+|`get("health", URI.create("https://service/health"))`
+
+|`get(URI endpoint, AuthenticationConfigurer auth)`
+|`FuncCallHttpStep`
+|`GET` for a URI with auth (unnamed).
+|`get(URI.create("https://service/api"), auth -> auth.use("api-auth"))`
+
+|`get(String name, URI endpoint, AuthenticationConfigurer auth)`
+|`FuncCallHttpStep`
+|Named `GET` for a URI with auth.
+|`get("fetchApi", URI.create("https://service/api"), auth -> auth.use("api-auth"))`
+
+|`post(Object body, String endpointExpr)`
+|`FuncCallHttpStep`
+|`POST` spec (unnamed) with body and string endpoint.
+|`post(Map.of("name","Ricardo"), "https://service/users")`
+
+|`post(String name, Object body, String endpointExpr)`
+|`FuncCallHttpStep`
+|Named `POST` spec.
+|`post("createUser", user, "https://service/users")`
+
+|`post(Object body, String endpointExpr, AuthenticationConfigurer auth)`
+|`FuncCallHttpStep`
+|`POST` with body + auth (unnamed).
+|`post(payload, "https://service/users", auth -> auth.use("users-auth"))`
+
+|`post(String name, Object body, String endpointExpr, AuthenticationConfigurer auth)`
+|`FuncCallHttpStep`
+|Named `POST` with body + auth.
+|`post("createUser", payload, "https://service/users", auth -> auth.use("users-auth"))`
+
+|`call(FuncCallHttpStep spec)`
+|`FuncTaskConfigurer`
+|Attach an HTTP spec as a task (unnamed or using its internal name).
+|`call(http().GET().endpoint("https://service/ping"))`
+
+|`call(String name, FuncCallHttpStep spec)`
+|`FuncTaskConfigurer`
+|Attach an HTTP spec as a **named** task (overrides internal name).
+|`call("pingService", http().GET().endpoint("https://service/ping"))`
+
+|`call(FuncCallHttpConfigurer configurer)`
+|`FuncTaskConfigurer`
+|Low-level HTTP call based on a builder configurer.
+|`call(b -> b.GET().endpoint("https://service/ping"))`
+
+|`call(String name, FuncCallHttpConfigurer configurer)`
+|`FuncTaskConfigurer`
+|Named low-level HTTP call.
+|`call("pingService", b -> b.GET().endpoint("https://service/ping"))`
+
+|`openapi()`
+|`FuncCallOpenAPIStep`
+|Start a fluent OpenAPI call spec (document, operation, params, auth, etc.).
+|`openapi().document("https://petstore3.swagger.io/api/v3/openapi.json").operation("findPetById")`
+
+|`openapi(String name)`
+|`FuncCallOpenAPIStep`
+|Named OpenAPI spec.
+|`openapi("findPet").document("...").operation("findPetById")`
+
+|`call(FuncCallOpenAPIStep spec)`
+|`FuncTaskConfigurer`
+|Attach an OpenAPI spec as a task (unnamed or using its internal name).
+|`call(openapi().document("...").operation("findPetById"))`
+
+|`call(String name, FuncCallOpenAPIStep spec)`
+|`FuncTaskConfigurer`
+|Attach an OpenAPI spec as a **named** task (overrides internal name).
+|`call("fetchPet", openapi().document("...").operation("findPetById"))`
+
+|`call(FuncCallOpenAPIConfigurer configurer)`
+|`FuncTaskConfigurer`
+|Low-level OpenAPI call based on a builder configurer.
+|`call(b -> b.document("...").operation("findPetById"))`
+
+|`call(String name, FuncCallOpenAPIConfigurer configurer)`
+|`FuncTaskConfigurer`
+|Named low-level OpenAPI call.
+|`call("fetchPet", b -> b.document("...").operation("findPetById"))`
 |===
 
 [NOTE]
-Helpers that help you **build** specs for emit/listen/switch but are not task providers themselves:
-`event(...)`, `eventJson(...)`, `eventBytes(...)`, `to().one(...)`, `to().any(...)`, `to().all(...)`, and cases helpers `cases(...)`, `caseOf(...)`, `caseDefault(...)`.
+Helpers that help you **build** specs for emit/listen/switch/HTTP/OpenAPI but are not task providers themselves:
+
+- Events & listen: `event(...)`, `eventJson(...)`, `eventBytes(...)`, `to()`, `toOne(...)`, `toAny(...)`, `toAll(...)`
+- Switch helpers: `cases(...)`, `caseOf(...)`, `caseDefault(...)`
+
+You pass the *resulting* steps/specs (e.g. `listen(...)`, `emitJson(...)`, `openapi()`, `http()`, `get(...)`, `post(...)`) into `.tasks(...)`.
 
 == Transformations: `exportAs`, `inputFrom`, `outputAs`
 
-Every task/step can transform how it **reads** input, **exposes** its result to the next step, and **writes** to the workflow data. Internally, Quarkus Flow keeps your workflow context as JSON (via **Jackson**) and seamlessly (de)serializes your domain objects.
+Every task/step can transform how it **reads** input, **exposes** its result to the next step, and **writes** to the workflow data. Internally, Quarkus Flow keeps your workflow context as JSON and seamlessly (de)serializes your domain objects.
 
 You can use either **jq expressions** (string-based) or **Java lambdas** to transform data.
 
+The following apply to all `Step` subclasses (functions, agents, HTTP/OpenAPI calls, emit, listen, consume, etc.):
+
 === `inputFrom(...)` — where the task reads its input
 
-Apply to a task step (call/agent/consume/emit/listen):
+Apply to a task step (call/agent/HTTP/OpenAPI/consume/emit/listen):
 
 - **jq**:
 +
 [source,java]
 ----
 function(pricing::quote, QuoteRequest.class)
-  .inputFrom("$.cart.quoteRequest")   // slice of the workflow data
+  .inputFrom("$.cart.quoteRequest")  // slice of the workflow data
 ----
 - **Java**:
 +
@@ -304,20 +461,21 @@ function(nlp::classify, Text.class)
 function(pricing::quote, QuoteRequest.class)
   .outputAs(q -> Map.of("quote", q, "ts", System.currentTimeMillis()))
 ----
-- **Listen multi-event adapter**:
+- **Listen multi-event adapter** (collection -> single object):
 +
 [source,java]
 ----
-listen("waitHuman", to().one(event("org.acme.review.done")))
+listen("waitHuman", toOne("org.acme.review.done"))
   .outputAs((java.util.Collection<Object> c) -> c.iterator().next());
 ----
 
 [NOTE]
 You can combine the three:
-1) `inputFrom(...)` selects what the step consumes,
-2) the step runs,
-3) `exportAs(...)` narrows what the next step receives, and
-4) `outputAs(...)` commits data into the workflow context.
+
+1. `inputFrom(...)` selects what the step consumes,
+2. the step runs,
+3. `exportAs(...)` narrows what the next step receives, and
+4. `outputAs(...)` commits data into the workflow context.
 
 == End-to-end example (agentic + HITL + transforms)
 
@@ -335,10 +493,10 @@ Workflow w = workflow("intelligent-newsletter")
       .outputAs(r -> Map.of("review", r, "status", r.needsRevision() ? "REVISION" : "OK")),
 
     // 3) Emit review request
-    emitJson("org.acme.email.review.required", CriticAgentReview.class),
+    emitJson("org.acme.newsletter.review.required", CriticAgentReview.class),
 
-    // 4) Wait human review; adapt multi-event collection
-    listen("waitHumanReview", to().one(event("org.acme.newsletter.review.done")))
+    // 4) Wait human review; adapt multi-event collection -> single event
+    listen("waitHumanReview", toOne("org.acme.newsletter.review.done"))
       .outputAs((java.util.Collection<Object> c) -> c.iterator().next()),
 
     // 5) Branch: revision loop or final send
@@ -361,9 +519,12 @@ Workflow w = workflow("intelligent-newsletter")
 
 == Tips
 
-- Prefer **static imports**: `workflow`, `set`, `function`, `agent`, `emitJson`, `listen`, `switchWhenOrElse`, `consume`, `to`, `event`.
-- **Name** tasks you branch to: stable task names make `switchWhen*` targets explicit.
+- Prefer **static imports**: `workflow`, `set`, `function`, `withContext`, `withFilter`, `withUniqueId`, `agent`, `emitJson`, `listen`, `switchWhenOrElse`, `consume`, `to`, `event`, `http`, `get`, `post`, `openapi`, `call`.
+- **Name** tasks you branch to: stable task names make `switchWhen*` targets explicit and work well with `withUniqueId`/`agent` memory ids.
 - Keep transformations **close to the step** that needs them (`inputFrom`, `exportAs`, `outputAs`) for readability.
+- HTTP/OpenAPI: you can either:
+- use fluent specs directly as steps: `tasks(http().GET().endpoint("..."))`, or
+- wrap them with `call("name", http().GET()...)` / `call("name", openapi().operation("..."))` to force an explicit task name.
 - Remember: the workflow data is JSON; your domain objects are (de)serialized via **Jackson**, so you can keep typed payloads in your steps while still using jq for quick projections.
 
 == See also

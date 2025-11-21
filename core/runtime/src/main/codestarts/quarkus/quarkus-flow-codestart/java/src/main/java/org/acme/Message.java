@@ -1,11 +1,7 @@
 package org.acme;
 
-public class Message {
-    public String message;
-
-    public Message() {} // JSON-B/Jackson
-
-    public Message(String message) {
-        this.message = message;
-    }
+public record Message(String message) {
+    public Message() {
+        this("");
+    } // JSON-B/Jackson
 }

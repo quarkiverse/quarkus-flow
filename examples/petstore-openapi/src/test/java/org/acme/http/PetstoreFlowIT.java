@@ -1,0 +1,34 @@
+package org.acme.http;
+
+import java.util.Map;
+
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@QuarkusTest
+class PetstoreFlowIT {
+
+    @Inject
+    PetstoreFlow petstoreFlow;
+
+    @Test
+    void petstoreWorkflowShouldReturnPetDetails() throws Exception {
+        // This will trigger:
+        //  1) openapi() call against the Petstore OpenAPI document
+        //  2) GET https://petstore.swagger.io/v2/pet/{selectedPetId}
+        //
+        // and give us the final workflow context as a Map.
+        Map<String, Object> pet = petstoreFlow.instance(Map.of()).start().get().asMap().orElseThrow();
+
+        // Very lightweight sanity checks – we mainly care that the flow ran end-to-end
+        assertThat(pet).isNotNull();
+        assertThat(pet).isNotEmpty();
+        assertThat(pet.get("id"))
+                .as("pet id from Petstore response")
+                .isNotNull();
+    }
+}
