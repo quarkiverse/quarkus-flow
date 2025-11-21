@@ -16,96 +16,41 @@ defaults:
     shell: bash
 
 jobs:
-  build-linux:
-    name: Build & test (Ubuntu)
-    runs-on: ubuntu-latest
-#    env:
-#      QUARKUS_LANGCHAIN4J_OLLAMA_TIMEOUT: ${{ vars.OLLAMA_TIMEOUT }}
-#      NO_PROXY: localhost,127.0.0.1
-    steps:
-      - uses: actions/checkout@v6
+  build:
+    name: Build & test (${{ matrix.os }} / JDK ${{ matrix.java-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+        java-version: [ 17, 21, 25 ]
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 17
-          cache: maven
-
-#      - name: Restore Ollama models cache
-#        uses: actions/cache@v4
-#        with:
-#          path: ~/.ollama
-#          key: ${{ runner.os }}-ollama-${{ hashFiles('.github/ollama-models.txt') }}
-#
-#      - name: Setup Ollama CLI
-#        uses: ai-action/setup-ollama@v1
-
-#      - name: Pre-pull models (tiny default)
-#        run: |
-#          # List the models in tests—one per line
-#          xargs -n1 -I{} bash -c 'echo "Pulling {}"; ollama pull "{}"' < .github/ollama-models.txt
-#
-#      - name: Wait for Ollama & warm up model(s)
-#        shell: bash
-#        run: |
-#          set -Eeuo pipefail
-#
-#          for i in {1..60}; do
-#            if curl -sf --noproxy '*' http://127.0.0.1:11434/api/tags >/dev/null; then break; fi
-#            sleep 1
-#          done
-#
-#          while IFS= read -r line || [[ -n "${line:-}" ]]; do
-#            model="${line%$'\r'}"
-#            [[ -z "${model}" || "${model}" == \#* ]] && continue
-#
-#            echo "Warming up ${model}"
-#
-#            # retry up to 3 times in case model is being pulled/loaded
-#            for attempt in 1 2 3; do
-#              status=$(curl -sS \
-#                --noproxy '*' \
-#                --connect-timeout 10 \
-#                --max-time 180 \
-#                -H 'Content-Type: application/json' \
-#                -d '{"model":"'"${model}"'","messages":[{"role":"user","content":"ping"}],"stream":false,"keep_alive":"30m","options":{"temperature":0,"num_predict":8}}' \
-#                -w '%{http_code}' \
-#                http://127.0.0.1:11434/api/chat \
-#                -o /dev/null || true)
-#
-#              if [[ "${status}" == "200" ]]; then
-#                echo "Warm-up OK for ${model}"
-#                break
-#              fi
-#
-#              echo "Warm-up attempt ${attempt} failed for ${model} (HTTP ${status:-curl error}); retrying..."
-#              sleep 3
-#            done
-#          done < .github/ollama-models.txt
-      
-
-      - name: Build with Maven
-        run: mvn -B clean install -Dno-format -Dquarkus.langchain4j.ollama.devservices.enabled=false
-
-      - name: Build with Maven (Native)
-        # If this changes, make sure to also update .github/quarkus-ecosystem-test
-        run: mvn -B install -Dnative -Dquarkus.langchain4j.ollama.devservices.enabled=false -Dquarkus.native.container-build -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25 -DskipITs=true
-  build-windows:
-    name: Build only (Windows)
-    runs-on: windows-latest
     steps:
       - name: Prepare git (CRLF)
+        if: matrix.os == 'windows-latest'
         run: git config --global core.autocrlf false
 
       - uses: actions/checkout@v6
 
-      - name: Set up JDK 17
+      - name: Set up JDK ${{ matrix.java-version }}
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 17
+          java-version: ${{ matrix.java-version }}
           cache: maven
 
-      - name: Build with Maven (skip agentic tests)
-        run: mvn -B -Dno-format -DskipITs=true -Dquarkus.langchain4j.ollama.devservices.enabled=false clean install
+      - name: Build with Maven (Linux, full tests)
+        if: matrix.os == 'ubuntu-latest'
+        run: mvn -B clean install -Dno-format -Dquarkus.langchain4j.ollama.devservices.enabled=false
+
+      - name: Build with Maven (Windows, skip ITs)
+        if: matrix.os == 'windows-latest'
+        run: mvn -B clean install -Dno-format -DskipITs=true -Dquarkus.langchain4j.ollama.devservices.enabled=false
+
+      - name: Build with Maven (Native, Mandrel on JDK 25 only)
+        if: matrix.os == 'ubuntu-latest' && matrix.java-version == 25
+        run: >
+          mvn -B install -Dnative
+          -Dquarkus.langchain4j.ollama.devservices.enabled=false
+          -Dquarkus.native.container-build
+          -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25
+          -DskipITs=true
