@@ -2,7 +2,7 @@
 include::./includes/attributes.adoc[]
 :sectnums:
 
-This guide shows you how to load link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md[CNCF Workflow definitions] (YAML DSL) into your Quarkus application and expose them as `WorkflowDefinition` CDI beans you can inject and execute.
+This guide shows you how to load link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md[CNCF Workflow definitions] (YAML DSL) into your Quarkus application and expose them as `WorkflowDefinition`/`Flow` CDI beans you can inject and execute.
 
 Quarkus Flow **recommends the Java DSL** as the primary way to define workflows in Quarkus applications, because it gives you type safety, refactor-friendly code and excellent IDE support.
 Loading workflows from YAML is available as an alternative for teams that already maintain CNCF Workflow specification files or need to share definitions across runtimes.
@@ -21,7 +21,7 @@ Create the directory and add a simple workflow:
 ----
 document:
   dsl: '1.0.0'
-  namespace: flow
+  namespace: company
   name: echo-name
   version: '0.1.0'
 
@@ -45,8 +45,15 @@ property in your `application.properties`. All `*.yaml` and `*.yml` files in tha
 
 [NOTE]
 ====
-The file name (for example, `echo-name.yaml`) is **not** used as the identifier.
-Quarkus Flow uses `document.namespace` and `document.name` from the YAML as the canonical workflow identifier.
+Quarkus Flow extension generates `WorkflowDefinition` and `Flow` beans based on the content of the YAML files.
+More specifically, the `document.namespace` and `document.name` fields are used to create unique identifiers for each workflow.
+
+There are two types of identifiers involved:
+
+* *Regular:* `\{namespace}:\{name}`.
+* *Fully Qualified Class Name:* `io.quarkiverse.flow.generated.flow.\{namespace}.\{name}Workflow`.
+
+*All identifiers can be used for `WorkflowDefinition` and `Flow` injection points.*
 ====
 
 == Inject the `WorkflowDefinition` bean
@@ -60,18 +67,23 @@ Create a JAX-RS resource that injects and runs the workflow:
 ----
 include::{examples-dir}org/acme/EchoResource.java[]
 ----
-<1> Use the `@Identifier` annotation with the format `\{namespace}:\{name}` from your YAML file, for example `flow:echo-name`.
+<1> Use the `@Identifier` annotation with the *Fully Qualified Class Name* from your YAML file.
 
 [IMPORTANT]
 ====
-The `@Identifier` value must exactly match `document.namespace:document.name` in your YAML specification.
+The `@Identifier` value must exactly match *Regular* or *Fully Qualified Class Name* generated from in your YAML specification.
 
 If you change either `document.namespace` or `document.name`, you must update every injection point that references this workflow.
 ====
 
+[TIP]
+====
+You can change the base namespace (`io.quarkiverse.flow.generated`) using the xref:configuration.adoc#quarkus-flow_quarkus-flow-definitions-namespace[`quarkus.flow.definitions.namespace`] property in your `application.properties`.
+====
+
 A typical execution flow in this example looks like:
 
-1. `definition.instance(Map.of("name", finalName))` creates a new workflow instance with the initial data (`name`).
+1. `flow.instance(Map.of("name", finalName))` creates a new workflow instance with the initial data (`name`).
 2. `.start()` begins the workflow execution and returns a `CompletionStage<WorkflowModel>`.
 3. `.thenApply(result -> result.asText().orElseThrow())` transforms the `WorkflowModel` into a JSON `String` representation of the workflow data.
 4. The JAX-RS method returns a `CompletionStage<String>`, so the endpoint remains reactive/non-blocking.
@@ -106,7 +118,7 @@ Start your Quarkus application in development mode:
 Quarkus Flow will:
 
 * Discover the YAML file in `src/main/flow`.
-* Compile it into a `WorkflowDefinition` bean.
+* Compile it into a `Flow` bean.
 * Wire it into your `EchoResource` via CDI.
 
 Any change to the YAML file is picked up by Quarkus dev mode with a live reload, just like regular Java code.
