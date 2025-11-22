@@ -32,6 +32,31 @@ endif::add-copy-button-to-env-var[]
 |string
 |`+++flow+++`
 
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-definitions-namespace]] [.property-path]##link:#quarkus-flow_quarkus-flow-definitions-namespace[`quarkus.flow.definitions.namespace`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.definitions.namespace+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Namespace to be used as prefix for `Identifier++#++value()` when generating `io.quarkiverse.flow.Flow` and `io.serverlessworkflow.impl.WorkflowDefinition` beans.
+
+By default, the prefix is `io.quarkiverse.flow.generated`.
+
+It means that if a Workflow definition has name `myWorkflow` and the namespace is set to `my-company`, the generated beans will have the identifier `@Identifier("io.quarkiverse.flow.generated.my.company.MyWorkflowWorkflow")`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DEFINITIONS_NAMESPACE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_DEFINITIONS_NAMESPACE+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|`+++io.quarkiverse.flow.generated+++`
+
 a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-tracing-enabled]] [.property-path]##link:#quarkus-flow_quarkus-flow-tracing-enabled[`quarkus.flow.tracing.enabled`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.tracing.enabled+++[]

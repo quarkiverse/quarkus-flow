@@ -48,7 +48,7 @@ public class FlowCollectorProcessor {
     @BuildStep
     public void collectUniqueWorkflowFileData(OutputTargetBuildItem outputTarget,
             FlowDefinitionsConfig flowDefinitionsConfig,
-            BuildProducer<DiscoveredWorkflowFileBuildItem> workflows) throws IOException {
+            BuildProducer<DiscoveredWorkflowFileBuildItem> workflows) {
 
         Path flowDir = Paths.get(flowDefinitionsConfig.dir().orElse(FlowDefinitionsConfig.DEFAULT_FLOW_DIR));
         final Path flowResourcesPath = outputTarget.getOutputDirectory().resolve(
@@ -65,7 +65,8 @@ public class FlowCollectorProcessor {
 
         try (var stream = Files.walk(flowDir)) {
             stream.filter(file -> Files.isRegularFile(file) && SUPPORTED_WORKFLOW_FILE_EXTENSIONS.stream()
-                    .anyMatch(ext -> file.getFileName().toString().endsWith(ext))).forEach(consumeWorkflowFile(items));
+                    .anyMatch(ext -> file.getFileName().toString().endsWith(ext)))
+                    .forEach(consumeWorkflowFile(items));
         } catch (IOException e) {
             LOG.error("Failed to scan flow resources in path: {}", flowDir, e);
             throw new UncheckedIOException(
@@ -78,9 +79,11 @@ public class FlowCollectorProcessor {
         return file -> {
             try {
                 Workflow workflow = WorkflowReader.readWorkflow(file);
+
                 DiscoveredWorkflowFileBuildItem buildItem = new DiscoveredWorkflowFileBuildItem(file,
                         workflow.getDocument().getNamespace(),
                         workflow.getDocument().getName());
+
                 if (!workflowsSet.add(buildItem)) {
                     LOG.warn("Duplicate workflow detected: namespace='{}', name='{}'. The file at '{}' will be ignored.",
                             buildItem.namespace(), buildItem.name(), file.toAbsolutePath());
