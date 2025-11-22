@@ -1,27 +1,39 @@
-= HTTP and OpenAPI tasks
-include::./includes/attributes.adoc[]
+= Call HTTP and OpenAPI services
+:page-role: howto
+include::includes/attributes.adoc[]
 
-Quarkus Flow builds on top of the CNCF Workflow Specification to give you **first‑class HTTP and OpenAPI tasks**.
+Quarkus Flow builds on top of the CNCF Workflow Specification to give you *first-class HTTP and OpenAPI tasks*.
 
-This page explains how to:
+This guide shows how to:
 
-* Call any HTTP endpoint from a workflow.
-* Call operations defined in an OpenAPI document.
-* Configure logging for troubleshooting.
-* Understand the HTTP error shape you get back (RFC 7807 / CNCF WorkflowError) and how it is mapped from `WorkflowException`.
+* call any HTTP endpoint from a workflow
+* call operations defined in an OpenAPI document
+* configure logging for troubleshooting
+* understand the HTTP error shape you get back (RFC 7807 / CNCF `WorkflowError`) and how it is mapped from `WorkflowException`
 
-TIP: For HTTP client timeouts, TLS, proxies and connection pooling, see the dedicated xref:http-client.adoc[HTTP client configuration] page.
+[TIP]
+For HTTP client timeouts, TLS, proxies and connection pooling, see
+xref:http-client.adoc[Configure the HTTP client].
 
-== HTTP tasks
+== Prerequisites
 
-HTTP calls are represented in the CNCF Workflow Spec as link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#http-call[**HTTP Call tasks**]. In Quarkus Flow you normally interact with them through:
+* A Quarkus application with xref:getting-started.adoc[Quarkus Flow set up].
+* At least one workflow class where you want to add HTTP or OpenAPI calls.
+* Basic familiarity with the CNCF Workflow Java DSL and Quarkus configuration.
+
+== 1. Call HTTP endpoints
+
+HTTP calls are represented in the CNCF Workflow Spec as
+link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#http-call[HTTP Call tasks].
+In Quarkus Flow you normally interact with them through:
 
 * **Func DSL shortcuts**: `get(...)`, `post(...)`, etc. (imported from `io.serverlessworkflow.fluent.func.dsl.FuncDSL`).
-* The lower‑level **spec DSL**: `http()` and auth helpers (`basic(...)`, `bearer(...)`, `digest(...)`, `oidc(...)`, `oauth2(...)`) from `io.serverlessworkflow.fluent.spec.dsl.DSL`.
+* The lower-level **spec DSL**: `http()` and auth helpers (`basic(...)`, `bearer(...)`, `digest(...)`, `oidc(...)`, `oauth2(...)`)
+from `io.serverlessworkflow.fluent.spec.dsl.DSL`.
 
-Under the hood they all produce a HTTP call task executed by the same HTTP client.
+Under the hood they all produce an HTTP call task executed by the same HTTP client.
 
-=== Simple GET/POST with Func DSL
+=== 1.1 Simple GET/POST with Func DSL
 
 For the majority of use cases you can rely on the Func DSL shortcuts:
 
@@ -48,7 +60,7 @@ Workflow wf = workflow("customer-get")
 
 Use `post(...)` similarly for POST calls.
 
-=== Adding HTTP Basic authentication
+=== 1.2 Add HTTP Basic authentication
 
 To add auth, you combine the Func DSL shortcuts with the **spec DSL auth helpers**:
 
@@ -59,8 +71,9 @@ include::{examples-dir}org/acme/example/CustomerProfileFlow.java[]
 
 Key points:
 
-* `use(secret("demo"))` loads a **secret bundle** named `demo` into the workflow context.
-* `${ $secret.demo.username }` and `${ $secret.demo.password }` are **workflow expressions** that resolve to the values stored by the secret manager (for example from `application.properties`).
+* `use(secret("demo"))` loads a *secret bundle* named `demo` into the workflow context.
+* `${ $secret.demo.username }` and `${ $secret.demo.password }` are *workflow expressions*
+that resolve to the values stored by the secret manager (for example from `application.properties`).
 * `basic(...)` configures HTTP Basic auth on the outgoing request.
 
 In your `application.properties` you typically have:
@@ -87,12 +100,12 @@ demo.username=alice
 demo.password=secret
 ----
 
-This lets you showcase a full end‑to‑end story:
+This lets you showcase a full end-to-end story:
 
-1. A Quarkus endpoint secured with **HTTP Basic** (`/secure/profile`).
-2. A workflow that uses **HTTP Call** to call that endpoint using credentials stored as **secrets**.
+. A Quarkus endpoint secured with *HTTP Basic* (`/secure/profile`).
+. A workflow that uses *HTTP Call* to call that endpoint using credentials stored as *secrets*.
 
-=== Other authentication modes
+=== 1.3 Other authentication modes
 
 The spec DSL also provides helpers for other auth schemes:
 
@@ -119,9 +132,10 @@ call(http().POST().endpoint("https://api.example.com/v1/resource",
 
 These are useful when you need to call external identity providers or APIs protected by OAuth2 / OIDC.
 
-=== Using the low‑level HTTP builder
+=== 1.4 Use the low-level HTTP builder
 
-When you need HTTP methods other than GET/POST or want to fine‑tune the endpoint, you can drop down to the **HTTP builder** from the spec DSL and wrap it in `call(...)`:
+When you need HTTP methods other than GET/POST or want to fine-tune the endpoint,
+you can drop down to the **HTTP builder** from the spec DSL and wrap it in `call(...)`:
 
 [source,java]
 ----
@@ -133,19 +147,20 @@ Workflow wf = WorkflowBuilder.workflow("update-customer", "ns", "1")
                 .build();
 ----
 
-Use this style when you need full control over the HTTP Call arguments. For day‑to‑day Quarkus Flow development, the Func DSL shortcuts (`get`, `post`, etc.) are usually enough.
+Use this style when you need full control over the HTTP Call arguments.
+For day-to-day Quarkus Flow development, the Func DSL shortcuts (`get`, `post`, etc.) are usually enough.
 
-== OpenAPI tasks
+== 2. Call OpenAPI operations
 
-OpenAPI tasks are a higher‑level wrapper around CallHTTP that:
+OpenAPI tasks are a higher-level wrapper around CallHTTP that:
 
-* Read an **OpenAPI document** (JSON or YAML).
-* Let you call an operation by its **`operationId`**.
-* Take care of building the correct HTTP method, path and content type.
+* read an *OpenAPI document* (JSON or YAML)
+* let you call an operation by its *`operationId`*
+* take care of building the correct HTTP method, path and content type
 
 In the Func DSL this is exposed via the `openapi()` builder.
 
-=== Where to put the OpenAPI file
+=== 2.1 Place the OpenAPI file
 
 In Quarkus, the most convenient place for example/demo specs is under `src/main/resources`.
 
@@ -156,9 +171,9 @@ For example, in the Petstore demo:
 src/
     main/
         java/...
-            resources/
-                openapi/
-                    petstore.json
+        resources/
+            openapi/
+                petstore.json
 ----
 
 You then point the OpenAPI task at it using a classpath URI:
@@ -170,20 +185,20 @@ final URI petstoreUri = URI.create("openapi/petstore.json");
 
 You can also use an absolute URI to load specs from HTTP/file if needed.
 
-=== Calling operations by `operationId`
+=== 2.2 Call operations by `operationId`
 
 Each operation in an OpenAPI document has an `operationId`. For example, in the Petstore spec you will find:
 
 [source,json]
 ----
 {
-    "paths": {
-      "/pet/findByStatus": {
-        "get": {
-            "operationId": "findPetsByStatus"
-          }
+  "paths": {
+    "/pet/findByStatus": {
+      "get": {
+        "operationId": "findPetsByStatus"
       }
     }
+  }
 }
 ----
 
@@ -198,15 +213,16 @@ Notes:
 
 * `document(petstoreUri)` tells the builder which OpenAPI document to read.
 * `operation("findPetsByStatus")` selects the operation by `operationId`.
-* `.parameter("status", "sold")` configures the path/query parameter. The actual mapping (path vs query vs body) is derived from the OpenAPI spec.
+* `.parameter("status", "sold")` configures the path/query parameter.
+The actual mapping (path vs query vs body) is derived from the OpenAPI spec.
 * You can use workflow expressions (`${ ... }`) for parameter values to dynamically pull from the workflow data.
 
-== Logging and troubleshooting
+== 3. Logging and troubleshooting
 
-For HTTP and OpenAPI tasks you usually want to see **both**:
+For HTTP and OpenAPI tasks you usually want to see *both*:
 
-* The workflow‑level tracing (which task ran, what error occurred).
-* The HTTP client logs (method, URL, status, and optionally body).
+* the workflow-level tracing (which task ran, what error occurred)
+* the HTTP client logs (method, URL, status, and optionally body)
 
 A typical configuration:
 
@@ -216,7 +232,6 @@ A typical configuration:
 quarkus.flow.tracing.enabled=true
 
 # Log HTTP requests/responses performed by CallHTTP/OpenAPI tasks
-
 quarkus.flow.http.client.logging.scope=request-response
 quarkus.flow.http.client.logging.body-limit=2048
 quarkus.log.category."org.jboss.resteasy.reactive.client.logging".level=DEBUG
@@ -224,42 +239,56 @@ quarkus.log.category."org.jboss.resteasy.reactive.client.logging".level=DEBUG
 
 When something goes wrong you will see:
 
-* A **tracing line** for the failing task (including the `WorkflowError`).
-* The HTTP request/response pair for the exact call that failed.
+* a *tracing line* for the failing task (including the `WorkflowError`)
+* the HTTP request/response pair for the exact call that failed
 
 This makes it much easier to debug connectivity, auth and payload issues.
 
-For even richer tracing (including MDC with workflow instance id, task id, etc.) see the dedicated xref:tracing.adoc[Tracing] documentation.
+For even richer tracing (including MDC with workflow instance id, task id, etc.)
+see xref:tracing.adoc[Enable tracing].
 
-== HTTP errors and `WorkflowException` mapping
+== 4. HTTP errors and `WorkflowException` mapping
 
-When an HTTP or OpenAPI task fails (4xx/5xx, timeouts, etc.), the workflow engine throws a `WorkflowException` containing a **`WorkflowError`**. `WorkflowError` follows the link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#error[CNCF Workflow Spec error model], which is aligned with **RFC 7807 Problem Details**:
+When an HTTP or OpenAPI task fails (4xx/5xx, timeouts, etc.), the workflow engine
+throws a `WorkflowException` containing a `WorkflowError`.
+
+`WorkflowError` follows the
+link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#error[CNCF Workflow Spec error model],
+which is aligned with *RFC 7807 Problem Details*:
 
 [source,json]
 ----
 {
-    "type": "https://serverlessworkflow.io/spec/1.0.0/errors/communication",
-    "status": 401,
-    "instance": "do/0/370b9a91-22c2-4b3e-85c4-10892c2864ff",
-    "title": "HTTP 401 Unauthorized",
-    "details": null
+  "type": "https://serverlessworkflow.io/spec/1.0.0/errors/communication",
+  "status": 401,
+  "instance": "do/0/370b9a91-22c2-4b3e-85c4-10892c2864ff",
+  "title": "HTTP 401 Unauthorized",
+  "details": null
 }
 ----
 
-Quarkus Flow provides an **exception mapper** that turns `WorkflowException` into an HTTP response whose:
+Quarkus Flow provides an *exception mapper* that turns `WorkflowException` into an HTTP response whose:
 
-* status code is `error.status` (e.g. `401`), and
+* status code is `error.status` (for example `401`), and
 * body is the `WorkflowError` serialized as JSON (Problem Details style).
 
-=== CompletionStage vs blocking style
+[[completionstage-vs-blocking-style]]
+=== 4.1 CompletionStage vs blocking style
 
-How this surfaces in your REST resources depends on how you call the workflow:
+How HTTP errors surface in your REST resources depends on how you call the workflow:
 
-* If you return a **`CompletionStage`** from your JAX‑RS endpoint and call `instance(...).start()` without blocking, any `WorkflowException` will propagate directly and be handled by the mapper.
-* If you choose the **blocking style** (`.start().get()`), Java wraps the underlying exception in `ExecutionException`. In that case you should either:
+* If you return a *`CompletionStage`* from your JAX-RS endpoint and call
+`instance(...).start()` without blocking, any `WorkflowException` will propagate
+directly and be handled by Quarkus Flow’s `ExceptionMapper<WorkflowException>`.
+The mapper turns it into an RFC 7807 / `WorkflowError` HTTP response.
+* If you choose the *blocking style* (`.start().get()`, `.join()`, …), Java wraps
+the underlying exception in `ExecutionException`. In that case you should either:
+**(a)** unwrap and rethrow the `WorkflowException`, or **(b)** prefer the
+`CompletionStage` style so the mapper can see the original exception.
 
-  * unwrap and rethrow the `WorkflowException`, or
-  * prefer the `CompletionStage` style so the mapper can see the original exception.
+The mapper is not limited to HTTP/OpenAPI tasks: **any JAX-RS resource that throws
+`WorkflowException`** (directly, or via a non-blocked `CompletionStage`) will be
+handled by the same mapper and produce an RFC 7807 response.
 
 A recommended pattern for REST endpoints is:
 
@@ -270,7 +299,8 @@ include::{examples-dir}org/acme/example/CustomerProfileResource.java[]
 
 If the HTTP/OpenAPI task succeeds, you get a `200 OK` with the workflow data as JSON.
 
-If the HTTP call fails (for example `401 Unauthorized`), Quarkus Flow’s `WorkflowException` mapper will automatically return a response like:
+If the HTTP call fails (for example `401 Unauthorized`), Quarkus Flow’s `WorkflowException`
+mapper will automatically return a response like:
 
 [source,http]
 ----
@@ -278,12 +308,20 @@ HTTP/1.1 401 Unauthorized
 Content-Type: application/json
 
 {
-"type": "https://serverlessworkflow.io/spec/1.0.0/errors/communication",
-"status": 401,
-"instance": "do/0/...",
-"title": "HTTP 401 Unauthorized",
-"details": null
+  "type": "https://serverlessworkflow.io/spec/1.0.0/errors/communication",
+  "status": 401,
+  "instance": "do/0/...",
+  "title": "HTTP 401 Unauthorized",
+  "details": null
 }
 ----
 
-This keeps HTTP and OpenAPI task errors **predictable and machine‑friendly** while still exposing the full workflow error semantics defined by the CNCF Workflow Specification.
+This keeps HTTP and OpenAPI task errors *predictable and machine-friendly* while still
+exposing the full workflow error semantics defined by the CNCF Workflow Specification.
+
+== See also
+
+* xref:http-client.adoc[Configure the HTTP client] — timeouts, TLS, proxies and connection pooling.
+* xref:tracing.adoc[Enable tracing] — richer workflow-level traces and MDC fields.
+* xref:dsl-cheatsheet.adoc[Java DSL cheatsheet] — HTTP / OpenAPI task builders and helpers.
+* xref:specification.adoc[CNCF Workflow mapping and concepts] — background on CallHTTP and error semantics.

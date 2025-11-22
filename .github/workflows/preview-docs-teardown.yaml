@@ -1,0 +1,24 @@
+name: Surge.sh Teardown
+
+on:
+  pull_request_target:
+    types: [closed]
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Teardown surge preview
+        id: deploy
+        run: npx surge teardown https://quarkiverse-flow-pr-${{ github.event.number }}-preview.surge.sh --token ${{ secrets.SURGE_TOKEN }} || true
+      - name: Update PR status comment
+        uses: quarkusio/action-helpers@main
+        with:
+          action: maintain-one-comment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-number: ${{ github.event.number }}
+          body: |
+            🙈 The PR is closed and the preview is expired.
+          body-marker: <!-- Preview status comment marker -->

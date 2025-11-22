@@ -1,5 +1,6 @@
 = Java DSL cheatsheet
-include::./includes/attributes.adoc[]
+:page-role: reference
+include::includes/attributes.adoc[]
 
 Quarkus Flow uses the CNCF Workflow link:https://github.com/serverlessworkflow/sdk-java[**Java Fluent DSL**] to define workflows in code.
 This page shows:

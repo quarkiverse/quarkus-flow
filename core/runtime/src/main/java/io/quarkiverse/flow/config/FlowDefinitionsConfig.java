@@ -13,7 +13,7 @@ import io.smallrye.config.WithDefault;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public interface FlowDefinitionsConfig {
 
-    String DEFAULT_FLOW_DIR = "flow";
+    String DEFAULT_FLOW_DIR = "src/main/flow";
     String ROOT_KEY = "quarkus.flow.definitions";
 
     /**
