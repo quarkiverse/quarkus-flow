@@ -30,7 +30,7 @@ Environment variable: `+++QUARKUS_FLOW_DEFINITIONS_DIR+++`
 endif::add-copy-button-to-env-var[]
 --
 |string
-|`+++flow+++`
+|`+++src/main/flow+++`
 
 a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-tracing-enabled]] [.property-path]##link:#quarkus-flow_quarkus-flow-tracing-enabled[`quarkus.flow.tracing.enabled`]##
 ifdef::add-copy-button-to-config-props[]

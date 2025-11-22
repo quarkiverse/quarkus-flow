@@ -1,5 +1,6 @@
-= Specification (quick reference)
-include::./includes/attributes.adoc[]
+= CNCF Workflow mapping and concepts
+:page-role: explanation
+include::includes/attributes.adoc[]
 
 This page is a fast orientation to the **CNCF Serverless Workflow Specification 1.0.0** that Quarkus Flow aligns with. It highlights the core ideas and gives you a compact cheatsheet of the most used components—each linking back to the spec for deeper reading.
 

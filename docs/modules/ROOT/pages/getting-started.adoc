@@ -1,9 +1,26 @@
-= Getting started
-include::./includes/attributes.adoc[]
+= Getting started with Quarkus Flow
+:page-role: tutorial
+:sectnums:
+include::includes/attributes.adoc[]
 
-This page shows the shortest path to run a Quarkus Flow workflow inside your Quarkus app, with Quarkus-native ergonomics (CDI, build-time discovery, dev mode).
+This tutorial shows the shortest path to run a Quarkus Flow workflow inside your Quarkus
+application, using Quarkus-native ergonomics (CDI, build-time discovery, dev mode).
 
-== 1) Add the dependency
+== Prerequisites
+
+* Java 17 or newer with `JAVA_HOME` configured.
+* Maven 3.8+.
+* A Quarkus project. You can generate one with:
++
+[source,bash]
+----
+mvn io.quarkus:quarkus-maven-plugin:create
+----
+
+
+== Add the dependency
+
+Add the Quarkus Flow extension to your application.
 
 .Maven
 [source,xml,subs=attributes+]
@@ -15,25 +32,39 @@ This page shows the shortest path to run a Quarkus Flow workflow inside your Qua
 </dependency>
 ----
 
-== 2) Define a minimal workflow
+== Define a minimal workflow
 
-Create a `Flow` subclass. At build time, Quarkus Flow discovers it and makes it injectable.
+Create a `Flow` subclass. At build time, Quarkus Flow discovers it and makes it injectable
+as a CDI bean.
+
+The example below defines a simple workflow that sets a JSON message into the workflow
+context.
 
 [source,java]
 ----
 include::{examples-dir}org/acme/HelloWorkflow.java[]
 ----
 
-== 3) Run it (two ergonomic options)
+== Expose the workflow via HTTP
+
+There are two ergonomic options depending on how much control you want over the
+injection point.
 
 === Inject the Flow subclass (recommended)
+
+Inject the `HelloWorkflow` bean directly and use the convenience methods on `Flow`
+to start a new instance.
+
 [source,java]
 ----
 include::{examples-dir}org/acme/HelloResource.java[]
 ----
 
-=== Or inject the compiled definition (advanced)
-If you need a `WorkflowDefinition`, inject it by FQCN:
+=== Inject the compiled definition (advanced)
+
+If you need the compiled `WorkflowDefinition`, you can inject it by FQCN instead.
+This is useful when you want to work at a more generic level (for example, selecting
+workflows dynamically).
 
 [source,java]
 ----
@@ -45,9 +76,28 @@ import io.serverlessworkflow.impl.WorkflowDefinition;
 WorkflowDefinition helloDef;
 ----
 
+== Run the application
+
+Start Quarkus in dev mode:
+
+[source,bash]
+----
+./mvnw quarkus:dev
+----
+
+Then invoke the HTTP endpoint you exposed (for example, if `HelloResource` is mapped to
+`/hello`):
+
+[source,bash]
+----
+curl http://localhost:8080/hello
+----
+
+You should see a JSON response with the message produced by the workflow.
+
 == What’s next?
 
-* xref:dsl-cheatsheet.adoc[Java DSL cheatsheet] — common patterns and snippets
-* xref:langchain4j.adoc[Agentic workflows] — agents, critique/revise loops, HITL
-* xref:messaging.adoc[Messaging] — emit/listen event patterns
-* xref:configuration.adoc[Configuration] — all config keys and generated tables
+* xref:dsl-cheatsheet.adoc[Java DSL cheatsheet] — common patterns and snippets.
+* xref:langchain4j.adoc[Agentic workflows with LangChain4j] — agents, critique/revise loops, HITL.
+* xref:messaging.adoc[Use messaging and events] — emit/listen event patterns.
+* xref:configuration.adoc[Extension Configuration Reference] — all config keys and generated tables.

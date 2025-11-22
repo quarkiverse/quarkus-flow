@@ -16,7 +16,7 @@ public class FlowWorkflowFromFileDevModeTest {
     static final QuarkusDevModeTest devModeTest = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource(new StringAsset("""
-                            quarkus.flow.definitions.dir=resources/flow
+                            quarkus.flow.definitions.dir=src/main/resources/flow
                             quarkus.flow.tracing.enabled=false
                             """), "application.properties")
                     .addClass(IdentifierResource.class)

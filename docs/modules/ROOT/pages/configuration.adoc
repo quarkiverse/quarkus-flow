@@ -1,5 +1,6 @@
 [[extension-configuration-reference]]
 = Extension Configuration Reference
+:page-role: reference
 
 == Core
 include::includes/quarkus-flow.adoc[leveloffset=+1, opts=optional]

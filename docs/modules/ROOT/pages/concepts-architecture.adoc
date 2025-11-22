@@ -1,0 +1,67 @@
+= Concepts & architecture
+:page-role: explanation
+
+This page explains the core concepts behind Quarkus Flow and how they relate to the
+CNCF Workflow Specification and the Quarkus runtime.
+
+== Core concepts
+
+=== Workflows
+
+* A *workflow* describes a unit of work: tasks, transitions, inputs and outputs.
+* In Quarkus Flow, workflows are defined using the CNCF Workflow Java DSL and exposed
+as CDI beans.
+
+Link: xref:dsl-cheatsheet.adoc[Java DSL cheatsheet].
+
+=== Flow classes
+
+* A `Flow` is a CDI bean that provides a `descriptor()` method returning a Workflow.
+* At build time, Quarkus Flow discovers all `Flow` beans and generates compiled
+workflow definitions.
+
+=== Workflow definitions and instances
+
+* A *workflow definition* is the compiled representation used at runtime.
+* A *workflow instance* is a running execution of that definition with its own data
+(context) and lifecycle (created, running, completed, failed).
+
+== Lifecycle
+
+=== Build time
+
+* Quarkus scans for `Flow` beans or xref:workflow-definitions.adoc[YAML definitions].
+* For each one, it compiles the Java/YAML DSL into a `WorkflowDefinition`.
+* The definitions are registered for injection and use at runtime.
+
+=== Runtime
+
+* Your application code starts instances from injected Flows or definitions.
+* The engine executes tasks, transitions, and event waits.
+* Results and errors are exposed through a simple API (`as(...)`, etc.).
+
+== Integration points
+
+=== HTTP and OpenAPI
+
+* Use HTTP/OpenAPI tasks to call external services from workflows.
+* See xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services].
+
+=== Messaging and events
+
+* Integrate with MicroProfile Reactive Messaging to consume and emit CloudEvents.
+* See xref:messaging.adoc[Use messaging and events].
+
+=== Agentic workflows
+
+* Orchestrate AI agents built with LangChain4j as tasks in your workflows.
+* See xref:langchain4j.adoc[Agentic workflows with LangChain4j].
+
+//== Error handling and retries
+
+//
+
+== Where to go next
+
+* For a first hands-on walkthrough, see xref:getting-started.adoc[Getting Started].
+* For configuration details, see xref:configuration.adoc[Extension Configuration Reference].

@@ -1,10 +1,19 @@
-= Agentic workflows (LangChain4j)
-include::./includes/attributes.adoc[]
+= Agentic workflows with LangChain4j
+:page-role: howto
+include::includes/attributes.adoc[]
 
-This page shows how to orchestrate link:https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html[**LangChain4j**] agents inside Quarkus Flow using the Java DSL.
-You’ll define one or more agents (interfaces) and then compose them as **tasks** (`agent(...)`) with optional loops and human-in-the-loop (HITL) steps.
+This guide shows how to orchestrate link:https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html[LangChain4j]
+agents inside Quarkus Flow using the Java DSL.
+You will define one or more agents (interfaces) and then compose them as *tasks* (`agent(...)`)
+with optional loops and human-in-the-loop (HITL) steps.
 
-== Add LangChain4j (choose a backend)
+== Prerequisites
+
+* A Quarkus application with xref:getting-started.adoc[Quarkus Flow already set up].
+* At least one LangChain4j provider dependency on the classpath (Ollama, OpenAI, …).
+* Basic familiarity with Quarkus configuration and CDI.
+
+== 1. Add LangChain4j (choose a backend)
 
 Pick the provider(s) you want; Quarkus will configure them via application properties.
 
@@ -27,12 +36,14 @@ Pick the provider(s) you want; Quarkus will configure them via application prope
 ----
 
 [NOTE]
-You can have multiple providers on the classpath. Bind agents to a provider using standard LangChain4j/Quarkus config.
+You can have multiple providers on the classpath.
+Bind agents to a provider using standard LangChain4j / Quarkus configuration.
 
-== Define an agent
+== 2. Define an agent
 
-Agents are plain interfaces with annotations (`@SystemMessage`, `@UserMessage`) and are registered as CDI beans.  
-For workflows, it’s common to accept a **memory id** and structured parameters.
+Agents are plain interfaces with annotations such as `@SystemMessage` and `@UserMessage`
+and are registered as CDI beans.
+For workflows, it is common to accept a *memory id* and structured parameters.
 
 [source,java]
 ----
@@ -46,32 +57,35 @@ Key points:
 * `@UserMessage` builds the prompt from method arguments.
 * Use `@MemoryId` when the backend supports per-conversation memory.
 
-== Compose agents in a workflow
+== 3. Compose agents in a workflow
 
-Create a `Flow` that calls agents with `agent(name, fn, ResultType.class)`.  
-You can **export**, **branch**, and **loop** based on typed results.
+Create a `Flow` that calls agents with `agent(name, fn, ResultType.class)`.
+You can export results, branch, and loop based on typed outputs.
 
 [source,java]
 ----
 include::{examples-dir}org/acme/agentic/HelloAgenticWorkflow.java[tag=workflow]
 ----
 
-What’s happening:
+What is happening:
 
-1. **Draft** via the first agent (e.g., a newsletter drafter).
-2. **Critique** the draft via a second agent.
-3. Optionally **emit** an event to request human review (`emitJson(...)`), then **listen** for a review result (`listen(...).outputAs(...)`).
-4. **Branch** with `switchWhenOrElse(...)` to either revise (loop back to the drafter) or **consume** the final output (e.g., send email).
+. *Draft* via the first agent (for example, a newsletter drafter).
+. *Critique* the draft via a second agent.
+. Optionally *emit* an event to request human review (`emitJson(...)`), then *listen* for a
+review result (`listen(...).outputAs(...)`).
+. *Branch* with `switchWhenOrElse(...)` to either revise (loop back to the drafter) or
+*consume* the final output (for example, send an email).
 
-== Shaping data between steps
+== 4. Shape data between steps
 
-Use the standard transformations to keep prompts/results clean:
+Use the standard transformations to keep prompts and results clean:
 
-* **`inputFrom(...)`** — select what the step consumes (jq or Java lambda).
-* **`exportAs(...)`** — expose only part of a result to the next step (without committing to global state).
-* **`outputAs(...)`** — write a shaped result to the workflow data.
+* `inputFrom(...)` – select what the step consumes (jq or Java lambda).
+* `exportAs(...)` – expose only part of a result to the next step without committing to global state.
+* `outputAs(...)` – write a shaped result to the workflow data.
 
 Example (agent → agent piping):
+
 [source,java]
 ----
 agent("draftAgent", drafterAgent::draft, String.class)
@@ -85,9 +99,9 @@ agent("criticAgent", criticAgent::critique, String.class)
   ));
 ----
 
-== Human-in-the-loop (optional)
+== 5. Add an optional human-in-the-loop gate
 
-Add an approval gate with events:
+You can insert a human approval step using events:
 
 [source,java]
 ----
@@ -104,9 +118,12 @@ switchWhenOrElse(
 );
 ----
 
-== Configuration
+This pattern lets you have a drafter → critic → human triad, while still keeping the
+workflow deterministic and observable.
 
-Choose one provider (or both). Below are minimal, pragmatic settings.
+== 6. Configure providers
+
+Choose one provider (or both) and configure it via `application.properties` (or YAML).
 
 .Ollama (local)
 [source,properties]
@@ -136,22 +153,34 @@ quarkus.langchain4j.openai.chat-model.model=gpt-4o-mini
 ----
 
 [TIP]
-Keep prompts **short and strict** in `@SystemMessage` with an explicit JSON schema for outputs—this makes downstream workflow tasks easier to type and test.
+Keep prompts *short and strict* in `@SystemMessage` with an explicit JSON schema for outputs.
+This makes downstream workflow tasks easier to type and test.
 
-== Testing agents
+== 7. Testing agents and workflows
 
-* Unit-test your **agent interface** by injecting it directly and calling the method (mock the provider if you want speed/consistency).
-* Unit-test your **Flow** by injecting the `Flow` subclass and calling `startInstance()`; mock agents to avoid network calls.
-* For end-to-end tests, run `quarkus:dev` (or use Testcontainers) with your chosen provider.
+* Unit-test your *agent interface* by injecting it directly and calling the method
+(mock the provider if you want speed or deterministic outputs).
+* Unit-test your *Flow* by injecting the `Flow` subclass and calling `startInstance(...)`;
+mock agents to avoid network calls.
+* For end-to-end tests, run `quarkus:dev` (or use Testcontainers) with your chosen provider
+and exercise the HTTP endpoints or messaging entry points.
 
 == Troubleshooting
 
-* **Output doesn’t parse as expected** – tighten your `@SystemMessage` contract and **validate** in a small unit test; then use `outputAs(...)` to normalize.
-* **Prompt drift** – keep `@UserMessage` minimal, compute heavy strings in Java, and feed only what’s needed via `inputFrom(...)`.
-* **Latency/cost** – export narrow fields (`exportAs`) and cache intermediate results in your workflow data.
-* **Memory** – if the provider keeps chat history, ensure you pass a stable `@MemoryId` (e.g., your workflow instance id) or turn memory off for deterministic runs.
+* *Output does not parse as expected* –
+tighten your `@SystemMessage` contract and validate it in a small unit test; then use
+`outputAs(...)` to normalize the result into a stable shape.
+* *Prompt drift* –
+keep `@UserMessage` minimal, compute heavy strings in Java, and feed only what is needed
+via `inputFrom(...)`.
+* *Latency or cost* –
+export narrow fields (`exportAs(...)`) and cache intermediate results in your workflow data.
+* *Memory issues* –
+if the provider keeps chat history, ensure you pass a stable `@MemoryId`
+(for example, your workflow instance id) or turn memory off for deterministic runs.
 
 == See also
-* xref:dsl-cheatsheet.adoc[] — all task providers + transformations (`inputFrom`, `exportAs`, `outputAs`)  
-* xref:specification.adoc[] — spec concepts behind `call`, events, conditions, loops  
-* xref:messaging.adoc[] — emitting review requests and waiting for approvals
+
+* xref:dsl-cheatsheet.adoc[] — all task providers and transformations (`inputFrom`, `exportAs`, `outputAs`, …).
+* xref:specification.adoc[] — CNCF Workflow concepts behind `call`, events, conditions, and loops.
+* xref:messaging.adoc[] — emitting review requests and waiting for approvals via messaging.

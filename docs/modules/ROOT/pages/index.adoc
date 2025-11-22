@@ -14,6 +14,7 @@ It lets you model classic workflows and Agentic AI orchestrations, with first-cl
 * Build-time discovery of workflow descriptors and injection of compiled beans
 * Agentic workflows with link:https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html[LangChain4j]
 * Messaging support with link:https://quarkus.io/guides/messaging[SmallRye]
+* HTTP Client support with link:https://resteasy.dev/[RESTEasy Reactive].
 
 == When you’d use it
 
