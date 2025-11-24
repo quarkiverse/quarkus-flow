@@ -30,33 +30,25 @@ public class FlowCollectorProcessor {
     private static final Set<String> SUPPORTED_WORKFLOW_FILE_EXTENSIONS = Set.of(".json", ".yaml", ".yml");
 
     /**
-     * Collect all beans that implement the {@link io.quarkiverse.flow.Flow } interface.
+     * If the configured directory is relative to the module, we must identify where we are.
+     * Usually, outputDir is `target/classes`, so then we try to go up until we get the target parent, which is the module root.
+     * In synthetic projects (aka QuarkusDevModeTest), the module root is within a temp dir inside `target`
+     * (target/quarkus-dev-mode-testXXXXX), in this scenario the module root is the temp dir.
      */
-    @BuildStep
-    void collectFlows(CombinedIndexBuildItem index, BuildProducer<DiscoveredFlowBuildItem> wf) {
-        for (ClassInfo flow : index.getIndex().getAllKnownSubclasses(DotNames.FLOW)) {
-            if (flow.isAbstract())
-                continue;
-            wf.produce(new DiscoveredFlowBuildItem(flow.name().toString()));
+    private static Path findModuleRootFromTarget(Path outputDir) {
+        Path targetDir = outputDir;
+        while (targetDir != null && !"target".equals(targetDir.getFileName().toString())) {
+            targetDir = targetDir.getParent();
         }
-    }
 
-    /**
-     * Collect all workflow files from the specified flow directory and produce
-     * build items for each unique workflow.
-     */
-    @BuildStep
-    public void collectUniqueWorkflowFileData(OutputTargetBuildItem outputTarget,
-            FlowDefinitionsConfig flowDefinitionsConfig,
-            BuildProducer<DiscoveredWorkflowFileBuildItem> workflows) throws IOException {
-
-        Path flowDir = Paths.get(flowDefinitionsConfig.dir().orElse(FlowDefinitionsConfig.DEFAULT_FLOW_DIR));
-        final Path flowResourcesPath = outputTarget.getOutputDirectory().resolve(
-                Paths.get("..", "src", "main").resolve(flowDir));
-        if (Files.exists(flowResourcesPath)) {
-            Set<DiscoveredWorkflowFileBuildItem> uniqueBuildItems = collectUniqueWorkflowFileData(flowResourcesPath);
-            uniqueBuildItems.forEach(workflows::produce);
+        if (targetDir != null && targetDir.getParent() != null) {
+            return targetDir.getParent();
         }
+
+        if (outputDir != null && outputDir.getParent() != null) {
+            return outputDir.getParent();
+        }
+        return outputDir;
     }
 
     private static Set<DiscoveredWorkflowFileBuildItem> collectUniqueWorkflowFileData(
@@ -90,5 +82,37 @@ public class FlowCollectorProcessor {
                 throw new UncheckedIOException("Error while parsing workflow file: " + file, e);
             }
         };
+    }
+
+    /**
+     * Collect all beans that implement the {@link io.quarkiverse.flow.Flow } interface.
+     */
+    @BuildStep
+    void collectFlows(CombinedIndexBuildItem index, BuildProducer<DiscoveredFlowBuildItem> wf) {
+        for (ClassInfo flow : index.getIndex().getAllKnownSubclasses(DotNames.FLOW)) {
+            if (flow.isAbstract())
+                continue;
+            wf.produce(new DiscoveredFlowBuildItem(flow.name().toString()));
+        }
+    }
+
+    /**
+     * Collect all workflow files from the specified flow directory and produce
+     * build items for each unique workflow.
+     */
+    @BuildStep
+    public void collectUniqueWorkflowFileData(OutputTargetBuildItem outputTarget,
+            FlowDefinitionsConfig flowDefinitionsConfig,
+            BuildProducer<DiscoveredWorkflowFileBuildItem> workflows) {
+
+        final Path configuredPath = Paths.get(flowDefinitionsConfig.dir().orElse(FlowDefinitionsConfig.DEFAULT_FLOW_DIR));
+        final Path flowResourcesPath = configuredPath.isAbsolute()
+                ? configuredPath
+                : findModuleRootFromTarget(outputTarget.getOutputDirectory()).resolve(configuredPath).normalize();
+
+        if (Files.exists(flowResourcesPath)) {
+            Set<DiscoveredWorkflowFileBuildItem> uniqueBuildItems = collectUniqueWorkflowFileData(flowResourcesPath);
+            uniqueBuildItems.forEach(workflows::produce);
+        }
     }
 }
