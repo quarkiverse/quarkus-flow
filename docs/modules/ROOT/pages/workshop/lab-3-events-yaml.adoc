@@ -1,0 +1,183 @@
+= Lab 3 – Events with YAML workflows
+:page-role: tutorial
+include::../includes/attributes.adoc[]
+
+In this lab you:
+
+* Define a CNCF Workflow in YAML.
+* Load it via `quarkus.flow.definitions.dir`.
+* Wire it to messaging so it reacts to and emits CloudEvents.
+* Start the same workflow either from **events** or directly from the **Flow Dev UI**.
+
+We’ll keep the scenario intentionally simple: when an incoming event arrives
+with a `message` field, the workflow uppercases it and emits a new event.
+
+== 1. Ensure messaging is on the classpath
+
+Add a connector (for example Kafka):
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-messaging-kafka</artifactId>
+</dependency>
+----
+
+Enable the default Flow messaging bridge:
+
+[source,properties]
+----
+quarkus.flow.messaging.defaults-enabled=true
+----
+
+and map the default channels to topics as shown in
+xref:messaging.adoc[Use messaging and events].
+
+== 2. Create the YAML workflow
+
+Create `src/main/flow/uppercase-message.yaml`:
+
+[source,yaml]
+.src/main/flow/uppercase-message.yaml
+----
+document:
+  dsl: '1.0.0'
+  namespace: demo
+  name: uppercase-message
+  version: '0.1.0'
+
+schedule:
+  on:
+    one:
+      with:
+        type: demo.message.incoming
+
+do:
+  - setUpper:
+      set:
+        message: "${ .message | ascii_upcase }"
+  - emitResult:
+      emit:
+        event:
+          with:
+            type: demo.message.uppercased
+            source: demo/workshop
+            data:
+              message: '${ .message }'
+----
+
+This workflow:
+
+* Declares a **schedule** that starts a new instance whenever a CloudEvent
+of type `demo.message.incoming` is received.
+* Reads `.message` from the input data.
+* Sets it to uppercase using a jq filter (`ascii_upcase`).
+* Emits a CloudEvent `demo.message.uppercased` with the transformed payload.
+
+[NOTE]
+====
+The `schedule.on` section controls **event-driven starts** (when a matching
+CloudEvent arrives on the input channel).
+
+You can still start the same workflow manually from the **Flow Dev UI**:
+the Dev UI uses the standard “start instance with input data” API and does
+*not* require an incoming event. In that case, the workflow will still
+execute the `do` sequence and emit the outgoing event.
+====
+
+== 3. Configure definitions directory (optional)
+
+By default, Quarkus Flow scans `src/main/flow`. If you use a custom directory,
+set:
+
+[source,properties]
+----
+quarkus.flow.definitions.dir=src/main/flow
+----
+
+See xref:workflow-definitions.adoc[Workflow definitions from YAML files] for details.
+
+== 4. Drive the workflow with messaging
+
+With `quarkus.flow.messaging.defaults-enabled=true`, the Flow engine will consume
+CloudEvents from `flow-in` and publish to `flow-out` (or your chosen channels).
+
+A minimal setup (Kafka):
+
+[source,properties]
+----
+mp.messaging.incoming.flow-in.connector=smallrye-kafka
+mp.messaging.incoming.flow-in.topic=flow-in
+mp.messaging.incoming.flow-in.value.deserializer=org.apache.kafka.common.serialization.ByteArrayDeserializer
+mp.messaging.incoming.flow-in.key.deserializer=org.apache.kafka.common.serialization.StringDeserializer
+
+mp.messaging.outgoing.flow-out.connector=smallrye-kafka
+mp.messaging.outgoing.flow-out.topic=flow-out
+mp.messaging.outgoing.flow-out.value.serializer=org.apache.kafka.common.serialization.ByteArraySerializer
+mp.messaging.outgoing.flow-out.key.serializer=org.apache.kafka.common.serialization.StringSerializer
+----
+
+=== 4.1 Start from an incoming event
+
+Send an inbound structured CloudEvent on `flow-in`:
+
+[source,json]
+----
+{
+  "specversion": "1.0",
+  "type": "demo.message.incoming",
+  "source": "demo/workshop",
+  "id": "1",
+  "datacontenttype": "application/json",
+  "data": {
+    "message": "hello from events"
+  }
+}
+----
+
+The `schedule.on` section matches `type: demo.message.incoming`, so a new
+`uppercase-message` instance is started with `data` as the workflow input.
+
+=== 4.2 Start from the Flow Dev UI
+
+You can also trigger the workflow manually, without going through messaging:
+
+. Open Quarkus Dev UI (for example `http://localhost:8080/q/dev-ui`).
+. Navigate to **Flow → Workflows**.
+. Select the `uppercase-message` workflow.
+. In the *Input* pane, paste:
+
++
+[source,json]
+----
+{ "message": "hello from devui" }
+----
++
+. Click **Start workflow**.
+
+The workflow runs exactly as if it had been started by an event:
+it uppercases the message and executes the `emit` task, which sends a
+CloudEvent to `flow-out`.
+
+== 5. Observe the result
+
+You can observe the result in two ways:
+
+* **Workflow output** – in the Flow Dev UI, the *Output* pane will show the
+final workflow data (for example `{"message":"HELLO FROM DEVUI"}`).
+* **Outgoing CloudEvent** – in the Kafka Dev UI extension:
+** Navigate to **Apache Kafka Client → Topics**.
+** Open the `flow-out` topic.
+** You should see a structured CloudEvent with `type: "demo.message.uppercased"`
+and `data` containing `"message":"HELLO FROM DEVUI"` (or from your event).
+
+== 6. What you learned
+
+* How to define workflows in YAML and load them as `WorkflowDefinition` beans.
+* How to use `schedule.on` to start workflows from incoming events.
+* That the same workflow can also be started manually from the Flow Dev UI with JSON input.
+* How to plug workflows into messaging using the default bridge and inspect
+outgoing events from the Kafka Dev UI.
+
+Next: xref:workshop/lab-4-agentic-langchain4j.adoc[Lab 4 – Agentic workflows]

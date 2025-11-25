@@ -1,3 +1,5 @@
 :project-version: 0.2.0
 
 :examples-dir: ./../examples/
+:examples-dir-level1: ./../../examples/
+:docs-repo: https://github.com/quarkiverse/quarkus-flow/tree/main/docs/modules/ROOT/examples

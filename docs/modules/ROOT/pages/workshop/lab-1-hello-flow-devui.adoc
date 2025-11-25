@@ -1,0 +1,98 @@
+= Lab 1 – Hello Flow & Dev UI
+:page-role: tutorial
+include::../includes/attributes.adoc[]
+
+In this lab you:
+
+* Create (or reuse) a Quarkus app.
+* Add the Quarkus Flow extension.
+* Write a minimal workflow using the Java DSL.
+* Invoke it via REST and inspect it in Quarkus Dev UI.
+
+== 1. Create the Quarkus project
+
+If you don’t have a project yet, use the Quarkus CLI:
+
+[source,shell]
+----
+quarkus create app org.acme:hello-flow \
+  --extension=resteasy-reactive-jackson,io.quarkiverse.flow:quarkus-flow
+cd hello-flow
+----
+
+Or add RESTEasy Reactive with JSON to an existing project.
+
+== 2. Create a minimal workflow
+
+Create a `Flow` subclass that returns a simple greeting.
+For example:
+
+[source,java]
+----
+include::{examples-dir-level1}org/acme/HelloWorkflow.java[]
+----
+
+This workflow builds a simple `do` sequence with one task that sets `message = "hello world!"`
+and returns it as the workflow output.
+
+== 3. Expose it through REST
+
+Create a REST resource that injects the workflow and starts an instance:
+
+[source,java]
+----
+include::{examples-dir-level1}org/acme/HelloResource.java[]
+----
+
+Key points:
+
+* The resource injects the `HelloWorkflow` class directly.
+* `startInstance()` starts the workflow and returns a `CompletionStage`.
+* The method returns `CompletionStage<String>` so the endpoint stays non-blocking.
+
+== 4. Run in dev mode
+
+Start Quarkus in dev mode:
+
+[source,shell]
+----
+./mvnw quarkus:dev
+----
+
+Test the endpoint:
+
+[source,shell]
+----
+curl http://localhost:8080/hello
+----
+
+You should see a JSON output similar to:
+
+[source,json]
+----
+{"message":"hello world!"}
+----
+
+== 5. Explore Quarkus Dev UI
+
+With dev mode still running, open the Dev UI in your browser:
+
+* `http://localhost:8080/q/dev` or `http://localhost:8080/q/dev-ui` (depending on Quarkus version).
+
+Look for the **Flow** card (if available in your version). From there you can:
+
+* Inspect available workflows.
+* Trigger them with custom input data.
+
+Even without a dedicated card, you can:
+
+* Hit the REST endpoint from the Dev UI *REST Client* panel (if you expose an OpenAPI description).
+* Watch logs and tracing output as the workflow runs.
+
+== 6. What you learned
+
+* Quarkus Flow discovers `Flow` subclasses at build time and makes them injectable.
+* You can expose workflows through normal Quarkus REST endpoints using `CompletionStage`.
+* Dev UI gives you a convenient front-end for iterating on workflows while in dev mode.
+
+Next: xref:workshop/lab-2-http-openapi.adoc[Lab 2 – Call HTTP & OpenAPI services].
