@@ -65,29 +65,44 @@ LangChain4j agents, HTTP/OpenAPI calls, and messaging tasks can be combined in o
 
 == How it compares (high-level)
 
-The landscape is rich; here’s a brief, opinionated snapshot to help positioning. This is not exhaustive—evaluate with your team’s constraints.
+The landscape is rich; here’s a brief, opinionated snapshot to help positioning.
+This is not exhaustive—evaluate with your team’s constraints.
 
-[%autowidth,cols="1,2,3,2,2"]
+[cols="1,3,3,3,3",options="header"]
 |===
-|Project |Model & runtime |Strengths |Consider when… |Fit vs Quarkus Flow
+| Project
+| Model & runtime
+| Strengths
+| Consider when…
+| Fit vs Quarkus Flow
 
-|**Temporal**
-|Code-first workflows (SDKs in several languages) with a separate Temporal Cluster (services: History/Matching/Frontend). Durable timers/queues built-in.
-|Excellent reliability story (durable execution, retries, signals), strong developer experience for long-running workflows.
-|You’re fine running a dedicated Temporal cluster and adopting its programming model/SDK; language polyglot is important.
-|**Quarkus Flow** keeps everything in your Quarkus app with CDI & build-time discovery, and aligns with the CNCF Workflow concepts. You avoid running a separate orchestration control plane.
+| **Temporal**
+| Code-first workflows (SDKs in several languages) with a separate Temporal Cluster
+(services: History/Matching/Frontend). Durable timers/queues built-in.
+| Excellent reliability story (durable execution, retries, signals),
+strong developer experience for long-running workflows.
+| You’re fine running a dedicated Temporal cluster and adopting its programming model/SDK;
+language polyglot is important.
+| **Quarkus Flow** keeps everything in your Quarkus app with CDI & build-time discovery,
+and aligns with the CNCF Workflow concepts. You avoid running a separate orchestration
+control plane.
 
-|**Camunda 8**
-|BPMN 2.0 (diagram-first) with Zeebe engine; separate SaaS/self-managed control plane; Java/Polyglot workers.
-|Business-friendly diagrams, mature ecosystem, monitoring/ops tooling out of the box.
-|You want BPMN for stakeholder collaboration and can operate Zeebe/Console (or use SaaS).
-|**Quarkus Flow** favors code-first (fluent Java) and CNCF alignment; lighter footprint inside your Quarkus services; easier to unit test alongside code.
+| **Camunda 8**
+| BPMN 2.0 (diagram-first) with Zeebe engine; separate SaaS/self-managed control plane;
+Java/Polyglot workers.
+| Business-friendly diagrams, mature ecosystem, monitoring/ops tooling out of the box.
+| You want BPMN for stakeholder collaboration and can operate Zeebe/Console (or use SaaS).
+| **Quarkus Flow** favors code-first (fluent Java) and CNCF alignment; lighter footprint
+inside your Quarkus services; easier to unit test alongside code.
 
-|**Netflix Conductor**
-|JSON/YAML workflow definitions; server orchestrator + workers (HTTP/GRPC); strong microservice orchestration patterns.
-|Good for service orchestration with pluggable tasks and external workers; battle-tested at scale.
-|You’re comfortable with an external orchestrator and JSON/YAML modeling + worker model.
-|**Quarkus Flow** keeps models and tests in Java, integrates tightly with CDI/Quarkus, and adds agentic AI/HITL patterns while mapping to CNCF concepts.
+| **Netflix Conductor**
+| JSON/YAML workflow definitions; server orchestrator + workers (HTTP/GRPC);
+strong microservice orchestration patterns.
+| Good for service orchestration with pluggable tasks and external workers;
+battle-tested at scale.
+| You’re comfortable with an external orchestrator and JSON/YAML modeling + worker model.
+| **Quarkus Flow** keeps models and tests in Java, integrates tightly with CDI/Quarkus,
+and adds agentic AI/HITL patterns while mapping to CNCF concepts.
 |===
 
 [TIP]
