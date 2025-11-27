@@ -1,16 +1,14 @@
 package org.acme.newsletter.web;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import org.eclipse.microprofile.reactive.messaging.Incoming;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.provider.EventFormatProvider;
 import io.cloudevents.jackson.JsonFormat;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
 import java.nio.charset.StandardCharsets;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Listens to Kafka topic "flow-out" and forwards only the critic "review required" events

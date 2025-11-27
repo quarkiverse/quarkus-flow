@@ -1,13 +1,11 @@
 package org.acme.http;
 
-import java.util.Map;
-
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 class PetstoreFlowIT {

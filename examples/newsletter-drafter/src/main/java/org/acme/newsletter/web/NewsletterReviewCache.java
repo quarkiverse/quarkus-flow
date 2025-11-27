@@ -1,7 +1,6 @@
 package org.acme.newsletter.web;
 
 import jakarta.enterprise.context.ApplicationScoped;
-
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;

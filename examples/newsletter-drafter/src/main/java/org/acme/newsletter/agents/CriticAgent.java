@@ -1,13 +1,12 @@
 package org.acme.newsletter.agents;
 
-import org.acme.newsletter.domain.CriticAgentReview;
-
 import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 import io.quarkiverse.langchain4j.RegisterAiService;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.acme.newsletter.domain.CriticAgentReview;
 
 @RegisterAiService
 @ApplicationScoped

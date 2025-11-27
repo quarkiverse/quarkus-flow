@@ -1,13 +1,12 @@
 package org.acme.http;
 
-import java.net.URI;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.openapi;
 
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
-
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.openapi;
+import java.net.URI;
 
 @ApplicationScoped
 public class PetstoreFlow extends Flow {

@@ -38,6 +38,8 @@
         <io.cloudevents.version>4.0.1</io.cloudevents.version>
         <quarkus-antora.version>3.25.0</quarkus-antora.version>
         <mockserver.version>5.15.0</mockserver.version>
+
+        <plugin.version.impsort>1.12.0</plugin.version.impsort>
     </properties>
 
     <dependencyManagement>
@@ -141,6 +143,22 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>net.revelc.code</groupId>
+                <artifactId>impsort-maven-plugin</artifactId>
+                <version>${plugin.version.impsort}</version>
+                <executions>
+                    <execution>
+                        <id>sort-imports</id>
+                        <phase>process-sources</phase>
+                        <goals>
+                            <goal>sort</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 
     <profiles>

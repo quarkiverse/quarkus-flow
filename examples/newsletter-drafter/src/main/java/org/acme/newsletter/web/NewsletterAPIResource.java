@@ -1,16 +1,5 @@
 package org.acme.newsletter.web;
 
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import org.acme.newsletter.NewsletterWorkflow;
-import org.acme.newsletter.domain.NewsletterInput;
-import org.acme.newsletter.domain.HumanReview;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.cloudevents.CloudEvent;
@@ -26,6 +15,15 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.acme.newsletter.NewsletterWorkflow;
+import org.acme.newsletter.domain.HumanReview;
+import org.acme.newsletter.domain.NewsletterInput;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 
 @Path("/api")
 public class NewsletterAPIResource {

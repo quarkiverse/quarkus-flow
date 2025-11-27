@@ -1,17 +1,15 @@
 package org.acme.http;
 
-import java.net.URI;
-
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
-import io.quarkiverse.flow.Flow;
-import io.serverlessworkflow.api.types.Workflow;
-import jakarta.enterprise.context.ApplicationScoped;
-
 import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.get;
 import static io.serverlessworkflow.fluent.spec.dsl.DSL.basic;
 import static io.serverlessworkflow.fluent.spec.dsl.DSL.secret;
+
+import io.quarkiverse.flow.Flow;
+import io.serverlessworkflow.api.types.Workflow;
+import jakarta.enterprise.context.ApplicationScoped;
+import java.net.URI;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
 public class CustomerProfileFlow extends Flow {

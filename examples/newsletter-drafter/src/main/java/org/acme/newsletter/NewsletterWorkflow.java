@@ -1,20 +1,5 @@
 package org.acme.newsletter;
 
-import java.util.Collection;
-
-import org.acme.newsletter.agents.CriticAgent;
-import org.acme.newsletter.agents.DrafterAgent;
-import org.acme.newsletter.domain.CriticAgentReview;
-import org.acme.newsletter.domain.HumanReview;
-import org.acme.newsletter.domain.ReviewStatus;
-import org.acme.newsletter.services.MailService;
-
-import io.quarkiverse.flow.Flow;
-import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.agent;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.consume;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.emitJson;
@@ -23,6 +8,18 @@ import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.listen;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.switchWhenOrElse;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.to;
 
+import io.quarkiverse.flow.Flow;
+import io.serverlessworkflow.api.types.Workflow;
+import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import java.util.Collection;
+import org.acme.newsletter.agents.CriticAgent;
+import org.acme.newsletter.agents.DrafterAgent;
+import org.acme.newsletter.domain.CriticAgentReview;
+import org.acme.newsletter.domain.HumanReview;
+import org.acme.newsletter.domain.ReviewStatus;
+import org.acme.newsletter.services.MailService;
 
 @ApplicationScoped
 public class NewsletterWorkflow extends Flow {
