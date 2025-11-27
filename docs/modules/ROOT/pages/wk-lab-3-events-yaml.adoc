@@ -1,6 +1,6 @@
 = Lab 3 – Events with YAML workflows
 :page-role: tutorial
-include::../includes/attributes.adoc[]
+include::includes/attributes.adoc[]
 
 In this lab you:
 
@@ -180,4 +180,4 @@ and `data` containing `"message":"HELLO FROM DEVUI"` (or from your event).
 * How to plug workflows into messaging using the default bridge and inspect
 outgoing events from the Kafka Dev UI.
 
-Next: xref:workshop/lab-4-agentic-langchain4j.adoc[Lab 4 – Agentic workflows]
+Next: xref:wk-lab-4-agentic-langchain4j.adoc[Lab 4 – Agentic workflows]

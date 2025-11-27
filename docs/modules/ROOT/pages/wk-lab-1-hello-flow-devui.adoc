@@ -1,6 +1,6 @@
 = Lab 1 – Hello Flow & Dev UI
 :page-role: tutorial
-include::../includes/attributes.adoc[]
+include::includes/attributes.adoc[]
 
 In this lab you:
 
@@ -29,7 +29,7 @@ For example:
 
 [source,java]
 ----
-include::{examples-dir-level1}org/acme/HelloWorkflow.java[]
+include::{examples-dir}org/acme/HelloWorkflow.java[]
 ----
 
 This workflow builds a simple `do` sequence with one task that sets `message = "hello world!"`
@@ -41,7 +41,7 @@ Create a REST resource that injects the workflow and starts an instance:
 
 [source,java]
 ----
-include::{examples-dir-level1}org/acme/HelloResource.java[]
+include::{examples-dir}org/acme/HelloResource.java[]
 ----
 
 Key points:
@@ -95,4 +95,4 @@ Even without a dedicated card, you can:
 * You can expose workflows through normal Quarkus REST endpoints using `CompletionStage`.
 * Dev UI gives you a convenient front-end for iterating on workflows while in dev mode.
 
-Next: xref:workshop/lab-2-http-openapi.adoc[Lab 2 – Call HTTP & OpenAPI services].
+Next: xref:wk-lab-2-http-openapi.adoc[Lab 2 – Call HTTP & OpenAPI services].

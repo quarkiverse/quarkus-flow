@@ -22,10 +22,10 @@
 ** xref:configuration.adoc[Extension Configuration Reference]
 
 * Workshop
-** xref:workshop/index.adoc[Workshop overview]
-** xref:workshop/lab-1-hello-flow-devui.adoc[Lab 1 – Hello Flow & Dev UI]
-** xref:workshop/lab-2-http-openapi.adoc[Lab 2 – Call HTTP & OpenAPI services]
-** xref:workshop/lab-3-events-yaml.adoc[Lab 3 – Events with YAML workflows]
-** xref:workshop/lab-4-agentic-langchain4j.adoc[Lab 4 – Agentic workflows]
+** xref:wk-index.adoc[Workshop overview]
+** xref:wk-lab-1-hello-flow-devui.adoc[Lab 1 – Hello Flow & Dev UI]
+** xref:wk-lab-2-http-openapi.adoc[Lab 2 – Call HTTP & OpenAPI services]
+** xref:wk-lab-3-events-yaml.adoc[Lab 3 – Events with YAML workflows]
+** xref:wk-lab-4-agentic-langchain4j.adoc[Lab 4 – Agentic workflows]
 
 // TODO: devui

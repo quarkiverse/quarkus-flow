@@ -1,5 +1,4 @@
 :project-version: ${release.current-version}
 
 :examples-dir: ./../examples/
-:examples-dir-level1: ./../../examples/
 :docs-repo: https://github.com/quarkiverse/quarkus-flow/tree/main/docs/modules/ROOT/examples

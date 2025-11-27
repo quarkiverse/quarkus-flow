@@ -16,6 +16,7 @@
     </properties>
 
     <modules>
+        <module>agentic-http</module>
         <module>newsletter-drafter</module>
         <module>petstore-openapi</module>
         <module>http-basic-auth</module>

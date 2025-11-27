@@ -106,7 +106,7 @@ MDC fields become first-class, searchable fields only when
 `quarkus.log.console.json.enabled=true` *and* JSON logging includes MDC by default
 (Quarkus JSON encoder).
 
-With pattern logging you must reference `%X{key}` in `quarkus.log.console.format`.
+With pattern logging you must reference `%X\{key}` in `quarkus.log.console.format`.
 See link:https://quarkus.io/guides/logging[Quarkus Logging guide].
 ====
 
