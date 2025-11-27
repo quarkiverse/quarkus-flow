@@ -1,0 +1,52 @@
+= Quarkus Flow workshop
+:page-role: tutorial
+include::includes/attributes.adoc[]
+
+This workshop is a guided, hands-on path through the main Quarkus Flow features.
+Each lab builds on the previous one, but you can also run them independently.
+
+You will:
+
+* Bootstrap a Quarkus project and run a first workflow using the Java DSL.
+* Explore the Flow Dev experience: Dev UI, logs, tracing, and data output.
+* Call external HTTP and OpenAPI services from workflows.
+* React to and emit events using messaging (Kafka or another connector).
+* Orchestrate AI agents (LangChain4j) with agentic workflows.
+
+== Prerequisites
+
+* Java and Maven installed (same versions as your Quarkus project).
+* Quarkus CLI or Maven wrapper (`./mvnw`).
+* A recent Quarkus version compatible with Quarkus Flow.
+* For the optional labs:
+** HTTP/OpenAPI: a running demo endpoint (the guides use small, local examples).
+** Messaging: Kafka (or another SmallRye connector) – Dev Services is enough.
+** Agentic: a LangChain4j backend (Ollama, OpenAI, …).
+
+== Labs
+
+The workshop is split into four labs:
+
+. xref:wk-lab-1-hello-flow-devui.adoc[Lab 1 – Hello Flow & Dev UI] +
+Create a Quarkus app, add Quarkus Flow, write a first workflow with the Java DSL, and run it via REST and Dev UI.
+
+. xref:wk-lab-2-http-openapi.adoc[Lab 2 – Call HTTP & OpenAPI services] +
+Extend the app with HTTP and OpenAPI tasks, configure the HTTP client, and observe errors through the Problem Details mapper.
+
+. xref:wk-lab-3-events-yaml.adoc[Lab 3 – Events with YAML workflows] +
+Introduce a YAML-based workflow that reacts to events from messaging, and emit CloudEvents back out.
+
+. xref:wk-lab-4-agentic-langchain4j.adoc[Lab 4 – Agentic workflows] +
+Wire LangChain4j agents into a Flow, add a simple critique/approve loop, and discuss human-in-the-loop patterns.
+
+Each lab is short and focused so you can run it in ~15–20 minutes and still see the full feature in action.
+
+== Where to look for the code
+
+The snippets in these labs reference the link:{docs-repo}[same example code] used across the documentation:
+
+* Java classes under {docs-repo} (for example `org/acme/HelloWorkflow.java`).
+* YAML workflows under {docs-repo}/flow.
+
+You can copy-paste them into your own project or simply follow along in your editor.
+

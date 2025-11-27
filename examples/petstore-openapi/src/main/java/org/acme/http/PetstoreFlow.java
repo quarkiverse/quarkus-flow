@@ -1,13 +1,12 @@
 package org.acme.http;
 
-import java.net.URI;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.openapi;
 
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
-
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.openapi;
+import java.net.URI;
 
 @ApplicationScoped
 public class PetstoreFlow extends Flow {
@@ -16,10 +15,10 @@ public class PetstoreFlow extends Flow {
     public Workflow descriptor() {
         final URI petstoreUri = URI.create("openapi/petstore.json");
 
-        return FuncWorkflowBuilder
-                .workflow("petstore")
+        return FuncWorkflowBuilder.workflow("petstore")
                 // You find the operation in the spec file, field operationId.
-                .tasks(openapi("findPetByStatus").document(petstoreUri).operation("findPetsByStatus").parameter("status", "sold")
+                .tasks(openapi("findPetByStatus").document(petstoreUri).operation("findPetsByStatus")
+                        .parameter("status", "sold")
                         // We use a jq expression to select from the JSON array the first item after the task response.
                         .outputAs("${ { selectedPetId: .[0].id } }"),
                         openapi("getPetById").document(petstoreUri).operation("getPetById")

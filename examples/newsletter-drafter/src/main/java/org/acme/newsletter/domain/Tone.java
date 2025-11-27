@@ -1,14 +1,10 @@
 package org.acme.newsletter.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import java.util.Locale;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-
 public enum Tone {
-    FRIENDLY,
-    NEUTRAL,
-    FORMAL,
-    CAUTIOUS;
+    FRIENDLY, NEUTRAL, FORMAL, CAUTIOUS;
 
     @Override
     public String toString() {

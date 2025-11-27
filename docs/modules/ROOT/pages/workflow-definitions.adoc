@@ -66,7 +66,7 @@ Quarkus Flow uses `document.namespace` and `document.name` from the YAML as the 
 == 2. Inject the `WorkflowDefinition` bean
 
 For each discovered specification file, Quarkus Flow generates a `WorkflowDefinition` CDI bean.
-The bean qualifier follows the pattern `{namespace}:{name}` from your YAML file.
+The bean qualifier follows the pattern `\{namespace}:\{name}` from your YAML file.
 
 Create a JAX-RS resource that injects and runs the workflow:
 
@@ -74,7 +74,7 @@ Create a JAX-RS resource that injects and runs the workflow:
 ----
 include::{examples-dir}org/acme/EchoResource.java[]
 ----
-<1> Use the `@Identifier` annotation with the format `{namespace}:{name}` from your YAML file,
+<1> Use the `@Identifier` annotation with the format `\{namespace}:\{name}` from your YAML file,
 for example `flow:echo-name`.
 
 [IMPORTANT]

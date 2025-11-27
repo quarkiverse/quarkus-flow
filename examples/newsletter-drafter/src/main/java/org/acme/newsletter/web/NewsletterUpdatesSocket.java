@@ -9,13 +9,12 @@ import jakarta.websocket.server.ServerEndpoint;
 import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Simple WebSocket endpoint used to broadcast review-required CloudEvents payloads
- * to all connected browsers. The payload string broadcasted should already be JSON.
+ * Simple WebSocket endpoint used to broadcast review-required CloudEvents payloads to all connected browsers. The
+ * payload string broadcasted should already be JSON.
  */
 @ServerEndpoint("/ws/newsletter")
 @ApplicationScoped
@@ -46,7 +45,8 @@ public class NewsletterUpdatesSocket {
             if (s.isOpen()) {
                 try {
                     s.getBasicRemote().sendText(json);
-                } catch (IOException ignored) { }
+                } catch (IOException ignored) {
+                }
             }
         }
     }

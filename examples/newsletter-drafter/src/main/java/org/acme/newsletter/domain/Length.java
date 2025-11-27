@@ -1,14 +1,10 @@
 package org.acme.newsletter.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import java.util.Locale;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-
 public enum Length {
-    SHORT,
-    MEDIUM,
-    LONG;
-
+    SHORT, MEDIUM, LONG;
 
     @JsonCreator
     public static Length from(String v) {

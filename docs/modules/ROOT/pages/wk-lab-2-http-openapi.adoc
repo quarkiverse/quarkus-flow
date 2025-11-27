@@ -1,0 +1,119 @@
+= Lab 2 – Call HTTP & OpenAPI services
+:page-role: tutorial
+include::includes/attributes.adoc[]
+
+In this lab you:
+
+* Add an HTTP call to a secured endpoint.
+* Call an OpenAPI operation by `operationId`.
+* See how `WorkflowException` is mapped to an RFC 7807 / `WorkflowError` response.
+* Use Dev UI and logs to troubleshoot.
+
+We will reuse the existing example classes:
+
+* `org.acme.example.CustomerProfileFlow`
+* `org.acme.example.CustomerProfileResource`
+* `org.acme.example.PetstoreFlow`
+
+== 1. Add HTTP client configuration
+
+First, configure basic HTTP timeouts and logging:
+
+[source,properties]
+----
+quarkus.flow.http.client.connect-timeout=5000
+quarkus.flow.http.client.read-timeout=10000
+quarkus.flow.http.client.logging.scope=request-response
+quarkus.flow.http.client.logging.body-limit=2048
+quarkus.log.category."org.jboss.resteasy.reactive.client.logging".level=DEBUG
+----
+
+For details see xref:http-client.adoc[Configure the HTTP client].
+
+== 2. Add the HTTP workflow
+
+Create a workflow that calls a secured endpoint and uses Basic auth via secrets:
+
+[source,java]
+----
+include::{examples-dir}org/acme/example/CustomerProfileFlow.java[]
+----
+
+This workflow uses:
+
+* `get(...)` from the Func DSL to perform an HTTP GET.
+* `basic(...)` auth wired to secret values (`demo.username` / `demo.password`).
+* Standard data transformations to shape the response.
+
+Configure the demo credentials in `application.properties` as shown in
+xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services].
+
+TIP: You can see a fully functional project of this example at https://github.com/quarkiverse/quarkus-flow/tree/main/examples/http-basic-auth.
+
+== 3. Expose the workflow as a REST endpoint
+
+Create a resource that invokes the workflow:
+
+[source,java]
+----
+include::{examples-dir}org/acme/example/CustomerProfileResource.java[]
+----
+
+Notice:
+
+* The method returns `CompletionStage<Response>` and calls `instance(...).start()`.
+* If the HTTP call fails (for example, `401` or `404`), a `WorkflowException` is thrown.
+* Quarkus Flow’s `ExceptionMapper<WorkflowException>` returns a Problem Details JSON body
+based on the underlying `WorkflowError`.
+
+== 4. Try a failing call
+
+With dev mode running:
+
+* Call the endpoint with wrong credentials or misconfigured auth.
+* Observe the HTTP response:
+
+[source,http]
+----
+HTTP/1.1 401 Unauthorized
+Content-Type: application/json
+
+{
+  "type": "https://serverlessworkflow.io/spec/1.0.0/errors/communication",
+  "status": 401,
+  "title": "HTTP 401 Unauthorized",
+  "instance": "do/0/..."
+}
+----
+
+* Open Dev UI and look at:
+** REST call in the *REST Client* (if OpenAPI is enabled).
+** Logs from the REST client logger and from Flow tracing.
+
+== 5. Call an OpenAPI operation
+
+Add a workflow that calls the Petstore demo by `operationId`:
+
+[source,java]
+----
+include::{examples-dir}org/acme/example/PetstoreFlow.java[]
+----
+
+and put the `petstore.json` OpenAPI document under `src/main/resources/openapi/petstore.json`
+(or similar) as shown in xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services].
+
+TIP: You can see a fully functional project of this example at https://github.com/quarkiverse/quarkus-flow/tree/main/examples/petstore-openapi.
+
+Run the workflow and:
+
+* Inspect how the operation is resolved by `operationId`.
+* Use Dev UI and logs to verify the actual URL, method and payload being used.
+
+== 6. What you learned
+
+* How to perform HTTP and OpenAPI calls from workflows.
+* How to configure HTTP behaviour (timeouts, logging, auth).
+* How HTTP failures become `WorkflowException` / `WorkflowError` Problem Details responses.
+* How Dev UI + logs make troubleshooting much easier.
+
+Next: xref:wk-lab-3-events-yaml.adoc[Lab 3 – Events with YAML workflows].
