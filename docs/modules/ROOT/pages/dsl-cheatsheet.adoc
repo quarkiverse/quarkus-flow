@@ -397,55 +397,71 @@ Helpers that help you **build** specs for emit/listen/switch/HTTP/OpenAPI but ar
 
 You pass the *resulting* steps/specs (e.g. `listen(...)`, `emitJson(...)`, `openapi()`, `http()`, `get(...)`, `post(...)`) into `.tasks(...)`.
 
-== Transformations: `exportAs`, `inputFrom`, `outputAs`
+== Data flow and transformations
 
-Every task/step can transform how it **reads** input, **exposes** its result to the next step, and **writes** to the workflow data. Internally, Quarkus Flow keeps your workflow context as JSON and seamlessly (de)serializes your domain objects.
+Quarkus Flow follows the CNCF Workflow data-flow model: every step can shape
+what it **reads** as input, what it **exports** to the next step, and what it
+**writes** into the workflow data document.
 
-You can use either **jq expressions** (string-based) or **Java lambdas** to transform data.
+[NOTE]
+====
+This section is only a quick reference.
+For a full explanation, context-aware Java functions, and more examples, see
+xref:data-flow.adoc[Data flow and transformations].
+====
 
-The following apply to all `Step` subclasses (functions, agents, HTTP/OpenAPI calls, emit, listen, consume, etc.):
+=== `inputFrom(...)` — what the step sees as input
 
-=== `inputFrom(...)` — where the task reads its input
-
-Apply to a task step (call/agent/HTTP/OpenAPI/consume/emit/listen):
+Choose which slice of the workflow data a step receives as input.
 
 - **jq**:
 +
 [source,java]
 ----
 function(pricing::quote, QuoteRequest.class)
-  .inputFrom("$.cart.quoteRequest")  // slice of the workflow data
+  .inputFrom("$.cart.quoteRequest")
 ----
-- **Java**:
+- **Java** (with domain type):
 +
 [source,java]
 ----
 function(pricing::quote, QuoteRequest.class)
-  .inputFrom(ctx -> ctx.get("cart", QuoteEnvelope.class).quoteRequest())
+  .inputFrom((MyCheckout ctx) -> ctx.quoteRequest(), MyCheckout.class)
 ----
 
-=== `exportAs(...)` — what the task exposes to the *next* step
+If you need workflow/task context (ids, position, raw input/output), use the
+`JavaContextFunction` / `JavaFilterFunction` overloads described in
+xref:data-flow.adoc[Data flow and transformations].
 
-This defines the **ephemeral output** visible to the next step in the chain (before any `outputAs` writes to the global data). Useful to pipe values across steps without polluting global state.
+=== `exportAs(...)` — what the next step receives
 
-- **jq**:
-+
-[source,java]
-----
-function(ai::answer, Prompt.class)
-  .exportAs("$.choices[0].text")    // only the LLM's first text is exposed
-----
+Shape the **ephemeral result** passed to the next step or to an event, without
+directly committing it to workflow data.
+
 - **Java**:
 +
 [source,java]
 ----
-function(ai::answer, Prompt.class)
-  .exportAs(result -> result.choices().get(0).text())
+agent("draftNewsletter", drafter::draft, Draft.class)
+  .exportAs(draft -> Map.of("draftText", draft.text()), Draft.class);
 ----
 
-=== `outputAs(...)` — how the task writes into the workflow data
+[NOTE]
+====
+`exportAs(...)` does not mutate the main workflow data document.
+It updates the workflow **context** that is carried along the execution.
 
-Persist (part of) the step result into the workflow data context.
+Later steps can read that context via `WorkflowContextData` / `TaskContextData`
+(e.g. in a `JavaContextFunction` or `JavaFilterFunction`), which is ideal for
+values like tokens or correlation ids that you want available across many steps
+without surfacing them in the business payload.
+====
+
+
+=== `outputAs(...)` — what is written to workflow data
+
+Control what is persisted into the workflow data document (what you see as
+workflow Output in Dev UI).
 
 - **jq**:
 +
@@ -453,30 +469,22 @@ Persist (part of) the step result into the workflow data context.
 ----
 function(nlp::classify, Text.class)
   .outputAs("{ sentiment: ., reviewed: false }")
-// writes a JSON object with the classification result under the current scope
 ----
-- **Java (typed)**:
+- **Java**:
 +
 [source,java]
 ----
-function(pricing::quote, QuoteRequest.class)
-  .outputAs(q -> Map.of("quote", q, "ts", System.currentTimeMillis()))
-----
-- **Listen multi-event adapter** (collection -> single object):
-+
-[source,java]
-----
-listen("waitHuman", toOne("org.acme.review.done"))
-  .outputAs((java.util.Collection<Object> c) -> c.iterator().next());
+agent("investmentAnalyst", analyst::analyse, InvestmentMemo.class)
+  .outputAs(memo -> Map.of("memo", memo), InvestmentMemo.class);
 ----
 
-[NOTE]
-You can combine the three:
+You can combine the three in a single step:
 
-1. `inputFrom(...)` selects what the step consumes,
-2. the step runs,
-3. `exportAs(...)` narrows what the next step receives, and
-4. `outputAs(...)` commits data into the workflow context.
+. `inputFrom(...)` selects the step input.
+. The step runs.
+. `exportAs(...)` narrows what the next step sees.
+. `outputAs(...)` commits the final shape into workflow data.
+
 
 == End-to-end example (agentic + HITL + transforms)
 

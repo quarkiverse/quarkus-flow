@@ -16,6 +16,7 @@
 * Concepts
 ** xref:concepts-architecture.adoc[Concepts & architecture]
 ** xref:specification.adoc[CNCF Workflow mapping and concepts]
+** xref:data-flow.adoc[]
 
 * Reference
 ** xref:dsl-cheatsheet.adoc[Java DSL cheatsheet]
