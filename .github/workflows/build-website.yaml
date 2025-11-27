@@ -62,5 +62,5 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: site
-          path: ./docs/target/classes/META-INF/antora
+          path: ./docs/target/classes/META-INF/resources/antora
           retention-days: 3
