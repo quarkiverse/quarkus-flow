@@ -17,8 +17,6 @@ public class CustomerProfileResource {
 
     @GET
     public CompletionStage<Map<String, Object>> getProfileViaWorkflow() throws Exception {
-        return customerProfileFlow.instance(Map.of())
-                .start()
-                .thenApply(r -> r.asMap().orElseThrow());
+        return customerProfileFlow.instance(Map.of()).start().thenApply(r -> r.asMap().orElseThrow());
     }
 }

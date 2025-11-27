@@ -21,9 +21,7 @@ public class CustomerProfileFlow extends Flow {
     public Workflow descriptor() {
         URI endpoint = URI.create(securedServer + "/secure/profile");
 
-        return workflow("secure-customer-profile")
-                .use(secret("demo"))
-                .tasks(get(endpoint, basic("${ $secret.demo.username }", "${ $secret.demo.password }")))
-                .build();
+        return workflow("secure-customer-profile").use(secret("demo"))
+                .tasks(get(endpoint, basic("${ $secret.demo.username }", "${ $secret.demo.password }"))).build();
     }
 }

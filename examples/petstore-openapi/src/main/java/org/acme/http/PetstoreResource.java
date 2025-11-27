@@ -31,8 +31,6 @@ public class PetstoreResource {
     @Path("/pet")
     @Produces(MediaType.APPLICATION_JSON)
     public CompletionStage<Map<String, Object>> getPet() throws Exception {
-        return petstoreFlow.instance(Map.of())
-                .start()
-                .thenApply(result -> result.asMap().orElseThrow());
+        return petstoreFlow.instance(Map.of()).start().thenApply(result -> result.asMap().orElseThrow());
     }
 }

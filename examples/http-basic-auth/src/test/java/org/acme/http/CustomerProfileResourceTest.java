@@ -12,19 +12,9 @@ class CustomerProfileResourceTest {
 
     @Test
     void profileEndpointShouldReturnProfileFromWorkflow() {
-        given()
-                .when()
-                .get("/api/profile")
-                .then()
-                .statusCode(200)
-                .body("$", notNullValue())
-                .body("customerId", notNullValue())
-                .body("name", notNullValue())
-                .body("tier", notNullValue())
-                .body("lastUpdatedAt", notNullValue())
-                .body("servedBy", notNullValue())
-                .body("name", equalTo("Jane Doe"))
-                .body("tier", equalTo("GOLD"))
-                .body("servedBy", equalTo("alice"));
+        given().when().get("/api/profile").then().statusCode(200).body("$", notNullValue())
+                .body("customerId", notNullValue()).body("name", notNullValue()).body("tier", notNullValue())
+                .body("lastUpdatedAt", notNullValue()).body("servedBy", notNullValue())
+                .body("name", equalTo("Jane Doe")).body("tier", equalTo("GOLD")).body("servedBy", equalTo("alice"));
     }
 }

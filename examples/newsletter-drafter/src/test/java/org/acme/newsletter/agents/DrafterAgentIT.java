@@ -43,14 +43,10 @@ public class DrafterAgentIT {
 
     @Test
     void testDrafterAgent(@ScorerConfiguration(concurrency = 2) Scorer scorer,
-                          @SampleLocation("src/test/resources/samples/drafter-agent.yaml") Samples<String> samples) {
-        final EvaluationReport<String> report = scorer.evaluate(
-                samples,
-                (Parameters p) -> agent.draft(UUID.randomUUID().toString(), toDrafterJson(p)),
-                strategy
-        );
-        assertThat(report.score())
-                .as(() -> "AI output did not satisfy JSON contract or content checks.")
+            @SampleLocation("src/test/resources/samples/drafter-agent.yaml") Samples<String> samples) {
+        final EvaluationReport<String> report = scorer.evaluate(samples,
+                (Parameters p) -> agent.draft(UUID.randomUUID().toString(), toDrafterJson(p)), strategy);
+        assertThat(report.score()).as(() -> "AI output did not satisfy JSON contract or content checks.")
                 .isGreaterThanOrEqualTo(80.0);
     }
 
@@ -63,13 +59,9 @@ public class DrafterAgentIT {
             return p.get(0).toString();
         }
         // Expecting: 0=marketMood, 1=topMovers, 2=macroData, 3=tone, 4=length, 5=notes
-        ObjectNode payload = mapper.createObjectNode()
-                .put("marketMood", p.get(0).toString())
-                .put("topMovers", p.get(1).toString())
-                .put("macroData", p.get(2).toString())
-                .put("tone", p.get(3).toString())
-                .put("length", p.get(4).toString())
-                .put("notes", p.get(5).toString());
+        ObjectNode payload = mapper.createObjectNode().put("marketMood", p.get(0).toString())
+                .put("topMovers", p.get(1).toString()).put("macroData", p.get(2).toString())
+                .put("tone", p.get(3).toString()).put("length", p.get(4).toString()).put("notes", p.get(5).toString());
         return payload.toString();
     }
 
@@ -96,11 +88,14 @@ public class DrafterAgentIT {
                     node = mapper.readTree(output);
                 }
 
-                if (!node.isObject()) return false;
-                if (!node.has("draft") || !node.get("draft").isTextual()) return false;
+                if (!node.isObject())
+                    return false;
+                if (!node.has("draft") || !node.get("draft").isTextual())
+                    return false;
 
                 String draft = node.get("draft").asText("");
-                if (draft.isBlank()) return false;
+                if (draft.isBlank())
+                    return false;
 
                 String expected = sample.expectedOutput() == null ? "" : sample.expectedOutput();
                 String[] lines = expected.split("\\R+");

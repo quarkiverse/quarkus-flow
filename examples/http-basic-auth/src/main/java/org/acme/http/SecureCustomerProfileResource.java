@@ -22,16 +22,10 @@ public class SecureCustomerProfileResource {
     public Map<String, Object> getProfile() {
         // In a real system, you'd look up the current customer context.
         // Here we just return a canned "profile" plus the caller principal.
-        String caller = securityContext.getUserPrincipal() != null
-                ? securityContext.getUserPrincipal().getName()
+        String caller = securityContext.getUserPrincipal() != null ? securityContext.getUserPrincipal().getName()
                 : "anonymous";
 
-        return Map.of(
-                "customerId", 123,
-                "name", "Jane Doe",
-                "tier", "GOLD",
-                "lastUpdatedAt", Instant.now().toString(),
-                "servedBy", caller
-        );
+        return Map.of("customerId", 123, "name", "Jane Doe", "tier", "GOLD", "lastUpdatedAt", Instant.now().toString(),
+                "servedBy", caller);
     }
 }

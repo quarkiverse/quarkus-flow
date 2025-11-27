@@ -13,6 +13,8 @@ public class MailServiceLoggingImpl implements MailService {
 
     @Override
     public void send(String to, String subject, String body) {
-        LOG.info("\n\n-------------------------- NEWSLETTER -------------------------\n\nSending {} to {} \n--\n\n{}\n--", subject, to, body);
+        LOG.info(
+                "\n\n-------------------------- NEWSLETTER -------------------------\n\nSending {} to {} \n--\n\n{}\n--",
+                subject, to, body);
     }
 }

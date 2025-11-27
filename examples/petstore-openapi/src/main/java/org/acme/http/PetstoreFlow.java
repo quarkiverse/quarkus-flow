@@ -15,10 +15,10 @@ public class PetstoreFlow extends Flow {
     public Workflow descriptor() {
         final URI petstoreUri = URI.create("openapi/petstore.json");
 
-        return FuncWorkflowBuilder
-                .workflow("petstore")
+        return FuncWorkflowBuilder.workflow("petstore")
                 // You find the operation in the spec file, field operationId.
-                .tasks(openapi("findPetByStatus").document(petstoreUri).operation("findPetsByStatus").parameter("status", "sold")
+                .tasks(openapi("findPetByStatus").document(petstoreUri).operation("findPetsByStatus")
+                        .parameter("status", "sold")
                         // We use a jq expression to select from the JSON array the first item after the task response.
                         .outputAs("${ { selectedPetId: .[0].id } }"),
                         openapi("getPetById").document(petstoreUri).operation("getPetById")

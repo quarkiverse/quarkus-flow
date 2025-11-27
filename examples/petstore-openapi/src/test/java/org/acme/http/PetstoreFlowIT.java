@@ -16,8 +16,8 @@ class PetstoreFlowIT {
     @Test
     void petstoreWorkflowShouldReturnPetDetails() throws Exception {
         // This will trigger:
-        //  1) openapi() call against the Petstore OpenAPI document
-        //  2) GET https://petstore.swagger.io/v2/pet/{selectedPetId}
+        // 1) openapi() call against the Petstore OpenAPI document
+        // 2) GET https://petstore.swagger.io/v2/pet/{selectedPetId}
         //
         // and give us the final workflow context as a Map.
         Map<String, Object> pet = petstoreFlow.instance(Map.of()).start().get().asMap().orElseThrow();
@@ -25,8 +25,6 @@ class PetstoreFlowIT {
         // Very lightweight sanity checks – we mainly care that the flow ran end-to-end
         assertThat(pet).isNotNull();
         assertThat(pet).isNotEmpty();
-        assertThat(pet.get("id"))
-                .as("pet id from Petstore response")
-                .isNotNull();
+        assertThat(pet.get("id")).as("pet id from Petstore response").isNotNull();
     }
 }

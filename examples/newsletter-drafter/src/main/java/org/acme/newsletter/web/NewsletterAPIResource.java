@@ -48,9 +48,13 @@ public class NewsletterAPIResource {
     /**
      * Starts the workflow to create a new newsletter draft.
      *
-     * @param newsletter input from the user
+     * @param newsletter
+     *            input from the user
+     *
      * @return A workflow instance that will call the agents and produce a request for review event once it's done.
-     * @throws JsonProcessingException in case of an error converting the object into a JSON string for the agent.
+     *
+     * @throws JsonProcessingException
+     *             in case of an error converting the object into a JSON string for the agent.
      */
     @POST
     @Path("/newsletter")
@@ -70,13 +74,9 @@ public class NewsletterAPIResource {
     public Response sendReview(HumanReview review) throws JsonProcessingException {
         byte[] body = objectMapper.writeValueAsBytes(review);
 
-        CloudEvent ce = CloudEventBuilder.v1()
-                .withId(UUID.randomUUID().toString())
-                .withSource(URI.create("api:/newsletter"))
-                .withType("org.acme.newsletter.review.done")
-                .withDataContentType("application/json")
-                .withData(body)
-                .build();
+        CloudEvent ce = CloudEventBuilder.v1().withId(UUID.randomUUID().toString())
+                .withSource(URI.create("api:/newsletter")).withType("org.acme.newsletter.review.done")
+                .withDataContentType("application/json").withData(body).build();
 
         byte[] ceBytes = CE_JSON.serialize(ce);
         flowIn.send(ceBytes);
@@ -84,16 +84,13 @@ public class NewsletterAPIResource {
         return Response.accepted().build();
     }
 
-    /** GET /api/newsletter/reviews/latest?limit=1  -> newest-first array of items */
+    /** GET /api/newsletter/reviews/latest?limit=1 -> newest-first array of items */
     @GET
     @Path("/newsletter/reviews/latest")
     public Response latestReviews(@QueryParam("limit") @DefaultValue("1") int limit) {
         limit = Math.max(1, Math.min(50, limit));
         List<Map<String, String>> items = cache.latest(limit).stream()
-                .map(it -> Map.of(
-                        "received", it.received.toString(),
-                        "payload", it.json))
-                .toList();
+                .map(it -> Map.of("received", it.received.toString(), "payload", it.json)).toList();
 
         return Response.ok(items).build();
     }

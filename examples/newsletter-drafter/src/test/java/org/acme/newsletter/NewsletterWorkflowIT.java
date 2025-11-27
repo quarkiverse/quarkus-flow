@@ -51,8 +51,7 @@ public class NewsletterWorkflowIT {
     void agent_chain_human_review_two_rounds_via_rest() {
         // Start consuming BEFORE triggering the workflow
         ConsumerTask<Object, Object> out = companion
-                .consumeWithDeserializers(StringDeserializer.class, ByteArrayDeserializer.class)
-                .fromTopics("flow-out");
+                .consumeWithDeserializers(StringDeserializer.class, ByteArrayDeserializer.class).fromTopics("flow-out");
 
         final String expectedType = "org.acme.email.review.required";
         final AtomicReference<CriticAgentReview> critic1 = new AtomicReference<>();
@@ -71,22 +70,20 @@ public class NewsletterWorkflowIT {
                 """;
 
         // 1) start via REST
-        given().contentType("application/json").body(initialInput)
-                .when().post("/api/newsletter")
-                .then().statusCode(202);
+        given().contentType("application/json").body(initialInput).when().post("/api/newsletter").then()
+                .statusCode(202);
 
         // 2) ROUND #1 — wait first review-required and capture its offset
         await().atMost(ofSeconds(60)).untilAsserted(() -> {
-            boolean found = out.stream()
-                    .anyMatch(rec -> {
-                        CloudEvent ce = CE_JSON.deserialize((byte[]) rec.value());
-                        if (expectedType.equals(ce.getType())) {
-                            critic1.set(parseCriticFrom(ce));
-                            firstReviewOffset.set(rec.offset());
-                            return true;
-                        }
-                        return false;
-                    });
+            boolean found = out.stream().anyMatch(rec -> {
+                CloudEvent ce = CE_JSON.deserialize((byte[]) rec.value());
+                if (expectedType.equals(ce.getType())) {
+                    critic1.set(parseCriticFrom(ce));
+                    firstReviewOffset.set(rec.offset());
+                    return true;
+                }
+                return false;
+            });
             assertThat(found).isTrue();
         });
         assertThat(critic1.get()).isNotNull();
@@ -96,16 +93,16 @@ public class NewsletterWorkflowIT {
 
         // 4) ROUND #2 — wait NEXT review-required (offset strictly greater)
         await().atMost(ofSeconds(60)).untilAsserted(() -> {
-            boolean found = out.stream()
-                    .anyMatch(rec -> {
-                        if (rec.offset() <= firstReviewOffset.get()) return false;
-                        CloudEvent ce = CE_JSON.deserialize((byte[]) rec.value());
-                        if (expectedType.equals(ce.getType())) {
-                            critic2.set(parseCriticFrom(ce));
-                            return true;
-                        }
-                        return false;
-                    });
+            boolean found = out.stream().anyMatch(rec -> {
+                if (rec.offset() <= firstReviewOffset.get())
+                    return false;
+                CloudEvent ce = CE_JSON.deserialize((byte[]) rec.value());
+                if (expectedType.equals(ce.getType())) {
+                    critic2.set(parseCriticFrom(ce));
+                    return true;
+                }
+                return false;
+            });
             assertThat(found).isTrue();
         });
         assertThat(critic2.get()).isNotNull();
@@ -116,8 +113,8 @@ public class NewsletterWorkflowIT {
         // 6) verify MailService was called with some non-empty body
         await().atMost(ofSeconds(30)).untilAsserted(() -> {
             ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
-            verify(mailService, atLeastOnce())
-                    .send(eq("subscribers@acme.finance.org"), eq("Weekly Newsletter"), bodyCaptor.capture());
+            verify(mailService, atLeastOnce()).send(eq("subscribers@acme.finance.org"), eq("Weekly Newsletter"),
+                    bodyCaptor.capture());
             assertThat(bodyCaptor.getValue()).isNotBlank();
         });
 
@@ -126,27 +123,22 @@ public class NewsletterWorkflowIT {
 
     private void sendHumanReview(String draft, String notes, String status) {
         // REST wrapper sends CloudEvent to flow-in
-        given()
-                .contentType("application/json")
-                .body("""
-                        {
-                          "draft": %s,
-                          "notes": %s,
-                          "status": %s
-                        }
-                        """.formatted(jsonEsc(draft), jsonEsc(notes), jsonEsc(status)))
-                .when()
-                .put("/api/newsletter")
-                .then()
+        given().contentType("application/json").body("""
+                {
+                  "draft": %s,
+                  "notes": %s,
+                  "status": %s
+                }
+                """.formatted(jsonEsc(draft), jsonEsc(notes), jsonEsc(status))).when().put("/api/newsletter").then()
                 .statusCode(202);
     }
 
     private CriticAgentReview parseCriticFrom(CloudEvent ce) {
         try {
             byte[] data = ce.getData() == null ? null : ce.getData().toBytes();
-            if (data == null) return null;
-            return io.serverlessworkflow.impl.jackson.JsonUtils.mapper()
-                    .readValue(data, CriticAgentReview.class);
+            if (data == null)
+                return null;
+            return io.serverlessworkflow.impl.jackson.JsonUtils.mapper().readValue(data, CriticAgentReview.class);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to parse CriticAgentReview from CloudEvent data", e);
         }

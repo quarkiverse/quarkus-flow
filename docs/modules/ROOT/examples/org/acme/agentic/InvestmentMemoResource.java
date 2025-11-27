@@ -26,8 +26,7 @@ public class InvestmentMemoResource {
     @Path("/{ticker}")
     @Produces(MediaType.APPLICATION_JSON)
     public CompletionStage<InvestmentMemo> analyse(@PathParam("ticker") String ticker) {
-        return flow.instance(Map.of("ticker", ticker, "objective", "Long-term growth", "horizon", "3–5 years"))
-                .start()
+        return flow.instance(Map.of("ticker", ticker, "objective", "Long-term growth", "horizon", "3–5 years")).start()
                 .thenApply(data -> data.as(InvestmentMemo.class).orElseThrow());
     }
 }

@@ -42,18 +42,12 @@ public class CriticAgentIT {
     ObjectMapper mapper;
 
     @Test
-    void critic_checks_json_and_constraints(
-            @ScorerConfiguration(concurrency = 2) Scorer scorer,
-            @SampleLocation("src/test/resources/samples/critic-agent.yaml") Samples<CriticAgentReview> samples
-    ) {
+    void critic_checks_json_and_constraints(@ScorerConfiguration(concurrency = 2) Scorer scorer,
+            @SampleLocation("src/test/resources/samples/critic-agent.yaml") Samples<CriticAgentReview> samples) {
         // Agent now returns CriticAgentReview, so the report is parameterized with CriticAgentReview
-        EvaluationReport<CriticAgentReview> report = scorer.evaluate(
-                samples,
-                (Parameters p) -> agent.critique(UUID.randomUUID().toString(), toCriticJson(p)),
-                strategy
-        );
-        assertThat(report.score())
-                .as("CriticAgent output didn’t satisfy JSON contract or constraint checks")
+        EvaluationReport<CriticAgentReview> report = scorer.evaluate(samples,
+                (Parameters p) -> agent.critique(UUID.randomUUID().toString(), toCriticJson(p)), strategy);
+        assertThat(report.score()).as("CriticAgent output didn’t satisfy JSON contract or constraint checks")
                 .isGreaterThanOrEqualTo(80.0);
     }
 
@@ -66,10 +60,8 @@ public class CriticAgentIT {
             return p.get(0).toString();
         }
         // Expecting: 0=draft, 1=tone, 2=compliance
-        ObjectNode payload = mapper.createObjectNode()
-                .put("draft", p.get(0).toString())
-                .put("tone", p.get(1).toString())
-                .put("compliance", p.get(2).toString());
+        ObjectNode payload = mapper.createObjectNode().put("draft", p.get(0).toString())
+                .put("tone", p.get(1).toString()).put("compliance", p.get(2).toString());
         return payload.toString();
     }
 
@@ -87,35 +79,38 @@ public class CriticAgentIT {
         @Override
         public boolean evaluate(EvaluationSample<CriticAgentReview> sample, CriticAgentReview output) {
             try {
-                if (output == null) return false;
+                if (output == null)
+                    return false;
 
                 // Basic contract checks
                 String verdict = safeLower(output.getVerdict());
-                if (!"approve".equals(verdict) && !"revise".equals(verdict)) return false;
+                if (!"approve".equals(verdict) && !"revise".equals(verdict))
+                    return false;
 
                 // Always require original draft echo
-                if (output.getOriginalDraft() == null || output.getOriginalDraft().isBlank()) return false;
+                if (output.getOriginalDraft() == null || output.getOriginalDraft().isBlank())
+                    return false;
 
                 // Reasons / suggestions presence
-                boolean hasReason = output.getReasons() != null && output.getReasons().stream().anyMatch(r -> r != null && !r.isBlank());
+                boolean hasReason = output.getReasons() != null
+                        && output.getReasons().stream().anyMatch(r -> r != null && !r.isBlank());
 
                 // For REVISE: must have at least one reason and a non-empty revised draft
                 if ("revise".equals(verdict)) {
-                    if (!hasReason) return false;
-                    if (output.getRevisedDraft() == null || output.getRevisedDraft().isBlank()) return false;
+                    if (!hasReason)
+                        return false;
+                    if (output.getRevisedDraft() == null || output.getRevisedDraft().isBlank())
+                        return false;
                 }
 
                 // Scores sanity if present
                 if (output.getScores() != null) {
-                    Integer[] vals = {
-                            output.getScores().getClarity(),
-                            output.getScores().getTone(),
-                            output.getScores().getCompliance(),
-                            output.getScores().getFactuality(),
-                            output.getScores().getOverall()
-                    };
+                    Integer[] vals = { output.getScores().getClarity(), output.getScores().getTone(),
+                            output.getScores().getCompliance(), output.getScores().getFactuality(),
+                            output.getScores().getOverall() };
                     for (Integer v : vals) {
-                        if (v != null && (v < 0 || v > 100)) return false;
+                        if (v != null && (v < 0 || v > 100))
+                            return false;
                     }
                 }
 
@@ -135,33 +130,39 @@ public class CriticAgentIT {
                         String list = t.substring("EXPECT_FIND:".length());
                         for (String token : list.split(",")) {
                             String norm = token.trim().toLowerCase(Locale.ROOT);
-                            if (!norm.isEmpty()) expectFind.add(norm);
+                            if (!norm.isEmpty())
+                                expectFind.add(norm);
                         }
                     }
                 }
 
                 if (expectVerdict != null && !expectVerdict.isBlank()) {
-                    if (!verdict.equals(expectVerdict)) return false;
+                    if (!verdict.equals(expectVerdict))
+                        return false;
                 }
 
                 if (expectRevised || "revise".equals(verdict)) {
-                    if (output.getRevisedDraft() == null || output.getRevisedDraft().isBlank()) return false;
+                    if (output.getRevisedDraft() == null || output.getRevisedDraft().isBlank())
+                        return false;
                 }
 
                 if (!expectFind.isEmpty()) {
                     // Search in reasons + suggestions + revised_draft
                     StringBuilder haystack = new StringBuilder();
                     if (output.getReasons() != null) {
-                        for (String r : output.getReasons()) haystack.append(' ').append(safe(r));
+                        for (String r : output.getReasons())
+                            haystack.append(' ').append(safe(r));
                     }
                     if (output.getSuggestions() != null) {
-                        for (String s2 : output.getSuggestions()) haystack.append(' ').append(safe(s2));
+                        for (String s2 : output.getSuggestions())
+                            haystack.append(' ').append(safe(s2));
                     }
                     haystack.append(' ').append(safe(output.getRevisedDraft()));
 
                     String lower = haystack.toString().toLowerCase(Locale.ROOT);
                     for (String token : expectFind) {
-                        if (!lower.contains(token)) return false;
+                        if (!lower.contains(token))
+                            return false;
                     }
                 }
 

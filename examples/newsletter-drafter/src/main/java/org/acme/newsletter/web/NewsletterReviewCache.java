@@ -14,8 +14,8 @@ import java.util.List;
 public class NewsletterReviewCache {
 
     public static final class Item {
-        public final String json;       // raw JSON payload
-        public final Instant received;  // when it hit the app
+        public final String json; // raw JSON payload
+        public final Instant received; // when it hit the app
 
         public Item(String json, Instant received) {
             this.json = json;
@@ -27,7 +27,8 @@ public class NewsletterReviewCache {
     private final Deque<Item> buffer = new ArrayDeque<>(MAX);
 
     public synchronized void add(String json) {
-        if (buffer.size() == MAX) buffer.removeFirst();
+        if (buffer.size() == MAX)
+            buffer.removeFirst();
         buffer.addLast(new Item(json, Instant.now()));
     }
 
@@ -36,9 +37,12 @@ public class NewsletterReviewCache {
         int n = Math.min(limit, buffer.size());
         ArrayList<Item> out = new ArrayList<>(n);
         var it = buffer.descendingIterator();
-        while (it.hasNext() && out.size() < n) out.add(it.next());
+        while (it.hasNext() && out.size() < n)
+            out.add(it.next());
         return out;
     }
 
-    public synchronized int size() { return buffer.size(); }
+    public synchronized int size() {
+        return buffer.size();
+    }
 }

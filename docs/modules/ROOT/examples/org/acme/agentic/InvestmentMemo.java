@@ -5,8 +5,5 @@ import java.util.List;
 /**
  * Output returned by the {@link InvestmentAnalystAgent}.
  */
-public record InvestmentMemo(
-        String summary,
-        String stance,
-        List<String> keyRisks) {
+public record InvestmentMemo(String summary, String stance, List<String> keyRisks) {
 }

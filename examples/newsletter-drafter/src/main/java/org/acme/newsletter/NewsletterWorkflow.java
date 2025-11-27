@@ -35,16 +35,18 @@ public class NewsletterWorkflow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("intelligent-newsletter")
+        return FuncWorkflowBuilder
+                .workflow(
+                        "intelligent-newsletter")
                 .tasks(agent("draftAgent", drafterAgent::draft, String.class),
                         agent("criticAgent", criticAgent::critique, String.class),
                         emitJson("draftReady", "org.acme.email.review.required", CriticAgentReview.class),
                         listen("waitHumanReview", to().one(event("org.acme.newsletter.review.done")))
                                 .outputAs((Collection<Object> c) -> c.iterator().next()),
-                        switchWhenOrElse(h -> ReviewStatus.NEEDS_REVISION.equals(h.status()), "draftAgent", "sendNewsletter", HumanReview.class),
-                        consume("sendNewsletter",
-                                reviewedDraft -> mailService.send("subscribers@acme.finance.org", "Weekly Newsletter", reviewedDraft.draft()),
-                                HumanReview.class))
+                        switchWhenOrElse(h -> ReviewStatus.NEEDS_REVISION.equals(h.status()), "draftAgent",
+                                "sendNewsletter", HumanReview.class),
+                        consume("sendNewsletter", reviewedDraft -> mailService.send("subscribers@acme.finance.org",
+                                "Weekly Newsletter", reviewedDraft.draft()), HumanReview.class))
                 .build();
     }
 

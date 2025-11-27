@@ -18,8 +18,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Simple test that drives the InvestmentMemoFlow through the REST endpoint.
  * <p>
- * We mock the InvestmentAnalystAgent so the test is fast and does not depend
- * on an external LLM or network.
+ * We mock the InvestmentAnalystAgent so the test is fast and does not depend on an external LLM or network.
  */
 @QuarkusTest
 public class InvestmentMemoResourceTest {
@@ -30,21 +29,13 @@ public class InvestmentMemoResourceTest {
     @Test
     void shouldReturnInvestmentMemoForTicker() {
         when(analyst.analyse(anyString(), any(InvestmentPrompt.class)))
-                .thenAnswer(invocation -> new InvestmentMemo(
-                        "Solid long-term compounder with predictable cash flows.",
-                        "BUY",
-                        List.of("Valuation risk", "Regulation risk")));
+                .thenAnswer(invocation -> new InvestmentMemo("Solid long-term compounder with predictable cash flows.",
+                        "BUY", List.of("Valuation risk", "Regulation risk")));
 
         // Act + Assert: call the REST endpoint and verify the JSON payload
-        given()
-                .when()
-                .get("/investments/CSU.TO")
-                .then()
-                .statusCode(200)
-                .body("summary",
-                        equalTo("Solid long-term compounder with predictable cash flows."))
-                .body("stance", equalTo("BUY"))
-                .body("keyRisks", hasItem("Valuation risk"))
+        given().when().get("/investments/CSU.TO").then().statusCode(200)
+                .body("summary", equalTo("Solid long-term compounder with predictable cash flows."))
+                .body("stance", equalTo("BUY")).body("keyRisks", hasItem("Valuation risk"))
                 .body("keyRisks", hasItem("Regulation risk"));
     }
 }
