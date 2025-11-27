@@ -2,30 +2,44 @@ package io.quarkiverse.flow.it;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.core.Response;
 
+import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.impl.WorkflowDefinition;
-import io.serverlessworkflow.impl.WorkflowModel;
 import io.smallrye.common.annotation.Identifier;
 
 @Path("/echo")
 public class EchoResource {
 
     @Inject
+    @Identifier("flow.EchoName")
+    Flow flow;
+
+    @Inject
     @Identifier("flow:echo-name")
-    WorkflowDefinition definition;
+    WorkflowDefinition workflowDefinition;
 
     @GET
-    public Response echo(@QueryParam("name") String name) {
+    @Path("/from-workflow-def")
+    public CompletableFuture<String> echoFromWorkflowDef(@QueryParam("name") String name) {
         final String finalName = Objects.requireNonNullElse(name, "(Duke)");
-        final WorkflowModel model = definition.instance(Map.of("name", finalName))
+        return workflowDefinition.instance(Map.of("name", finalName))
                 .start()
-                .join();
-        return Response.ok(model.asText().orElseThrow()).build();
+                .thenApply(model -> model.asText().orElseThrow());
     }
+
+    @GET
+    @Path("/from-flow")
+    public CompletableFuture<String> echoFromFlow(@QueryParam("name") String name) {
+        final String finalName = Objects.requireNonNullElse(name, "(Duke)");
+        return flow.instance(Map.of("name", finalName))
+                .start()
+                .thenApply(model -> model.asText().orElseThrow());
+    }
+
 }

@@ -57,7 +57,8 @@ public class FlowCollectorProcessor {
 
         try (var stream = Files.walk(flowDir)) {
             stream.filter(file -> Files.isRegularFile(file) && SUPPORTED_WORKFLOW_FILE_EXTENSIONS.stream()
-                    .anyMatch(ext -> file.getFileName().toString().endsWith(ext))).forEach(consumeWorkflowFile(items));
+                    .anyMatch(ext -> file.getFileName().toString().endsWith(ext)))
+                    .forEach(consumeWorkflowFile(items));
         } catch (IOException e) {
             LOG.error("Failed to scan flow resources in path: {}", flowDir, e);
             throw new UncheckedIOException(

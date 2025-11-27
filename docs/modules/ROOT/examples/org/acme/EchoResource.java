@@ -9,20 +9,20 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 
-import io.serverlessworkflow.impl.WorkflowDefinition;
+import io.quarkiverse.flow.Flow;
 import io.smallrye.common.annotation.Identifier;
 
 @Path("/echo")
 public class EchoResource {
 
     @Inject
-    @Identifier("flow:echo-name") // <1>
-    WorkflowDefinition definition;
+    @Identifier("company.EchoName") // <1>
+    Flow flow;
 
     @GET
     public CompletionStage<String> echo(@QueryParam("name") String name) {
         final String finalName = Objects.requireNonNullElse(name, "(Duke)");
-        return definition.instance(Map.of("name", finalName))
+        return flow.instance(Map.of("name", finalName))
                 .start()
                 .thenApply(result -> result.asText().orElseThrow());
     }

@@ -8,23 +8,30 @@ import io.quarkus.builder.item.MultiBuildItem;
 /**
  * Workflow file discovered during the build.
  * <p>
- * Holds the path to the workflow file, its namespace, and name.
+ * Holds the path to the workflow file, its namespace, name, and regular identifier.
  */
 public final class DiscoveredWorkflowFileBuildItem extends MultiBuildItem {
 
     private final Path workflowPath;
     private final String namespace;
     private final String name;
-    private final String identifier;
+    private final String regularIdentifier;
 
+    /**
+     * Constructs a new {@link DiscoveredWorkflowFileBuildItem} instance.
+     *
+     * @param workflowPath Path to the workflow file
+     * @param namespace Document's namespace from specification
+     * @param name Document's name from specification
+     */
     public DiscoveredWorkflowFileBuildItem(Path workflowPath, String namespace, String name) {
         this.workflowPath = workflowPath;
         this.namespace = namespace;
         this.name = name;
-        this.identifier = namespace + ":" + name;
+        this.regularIdentifier = namespace + ":" + name;
     }
 
-    public String locationString() {
+    public String location() {
         return this.workflowPath.toString();
     }
 
@@ -36,8 +43,8 @@ public final class DiscoveredWorkflowFileBuildItem extends MultiBuildItem {
         return name;
     }
 
-    public String identifier() {
-        return identifier;
+    public String regularIdentifier() {
+        return regularIdentifier;
     }
 
     @Override
@@ -45,11 +52,11 @@ public final class DiscoveredWorkflowFileBuildItem extends MultiBuildItem {
         if (o == null || getClass() != o.getClass())
             return false;
         DiscoveredWorkflowFileBuildItem that = (DiscoveredWorkflowFileBuildItem) o;
-        return Objects.equals(identifier, that.identifier);
+        return Objects.equals(regularIdentifier, that.regularIdentifier);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(identifier);
+        return Objects.hash(regularIdentifier);
     }
 }
