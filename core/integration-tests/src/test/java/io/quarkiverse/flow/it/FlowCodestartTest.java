@@ -24,10 +24,10 @@ public class FlowCodestartTest {
 
     @Test
     void testContent() throws Throwable {
-        codestartTest.assertThatGeneratedFileMatchSnapshot(JAVA, "src/main/java/ilove/quark/us/HelloWorkflow.java");
-        codestartTest.assertThatGeneratedFileMatchSnapshot(JAVA, "src/main/java/ilove/quark/us/HelloResource.java");
-        codestartTest.assertThatGeneratedFileMatchSnapshot(JAVA, "src/main/java/ilove/quark/us/Message.java");
-        codestartTest.assertThatGeneratedFileMatchSnapshot(JAVA, "src/test/java/ilove/quark/us/HelloResourceTest.java");
+        codestartTest.checkGeneratedSource("org.acme.HelloWorkflow");
+        codestartTest.checkGeneratedSource("org.acme.HelloResource");
+        codestartTest.checkGeneratedSource("org.acme.Message");
+        codestartTest.checkGeneratedTestSource("org.acme.HelloResourceTest");
     }
 
     @Test
