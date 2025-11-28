@@ -16,11 +16,38 @@ If you don’t have a project yet, use the Quarkus CLI:
 [source,shell]
 ----
 quarkus create app org.acme:hello-flow \
-  --extension=resteasy-reactive-jackson,io.quarkiverse.flow:quarkus-flow
+  --extension=resteasy-reactive-jackson
 cd hello-flow
 ----
 
 Or add RESTEasy Reactive with JSON to an existing project.
+
+[NOTE]
+====
+Quarkus Flow has a Codestart available, which you can use to create a project with a sample workflow and JAX-RS endpoint.
+
+As we are focusing on creating a minimal example here, we won’t use the Codestart in this lab.
+====
+
+== Add the Quarkus Flow extension
+
+Add the Quarkus Flow extension to your project:
+
+[source,shell]
+----
+./mvnw quarkus:add-extension -Dextensions="io.quarkiverse.flow:quarkus-flow"
+----
+
+Or add manually to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkiverse.flow</groupId>
+    <artifactId>quarkus-flow</artifactId>
+    <version>{project-version}</version>
+</dependency>
+----
 
 == 2. Create a minimal workflow
 
