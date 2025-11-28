@@ -33,30 +33,54 @@ public class FlowWorkflowFromFileDevModeTest {
                             """), "flow/wait-duration-inline.yaml"));
 
     @Test
-    void shouldReloadIdentifier() {
+    void should_reload_workflow_def_identifier() {
 
-        RestAssured.given()
-                .queryParam("identifier", "default:wait-duration-inline")
-                .get("/identifier")
-                .then()
-                .statusCode(200)
-                .body(Matchers.is("default:wait-duration-inline"));
+        String oldIdentifier = "default:wait-duration-inline";
+        String path = "/identifier/workflow-def";
+
+        identifierMustMatch(path, oldIdentifier);
 
         devModeTest.modifyResourceFile("flow/wait-duration-inline.yaml",
-                // replace name: default
+                // replace namespace: default
                 content -> content.replace("default", "quarkiverse"));
 
-        RestAssured.given()
-                .queryParam("identifier", "quarkiverse:wait-duration-inline")
-                .get("/identifier")
-                .then()
-                .statusCode(200)
-                .body(Matchers.is("quarkiverse:wait-duration-inline"));
+        identifierMustMatch(path, "quarkiverse:wait-duration-inline");
 
         // Old identifier should no longer be available
+        shouldNoLongerBeAvailable(path, oldIdentifier);
+    }
+
+    @Test
+    void should_reload_flow_identifier() {
+
+        String oldIdentifier = "default.WaitDurationInline";
+        String path = "/identifier/flow";
+
+        identifierMustMatch(path, oldIdentifier);
+
+        devModeTest.modifyResourceFile("flow/wait-duration-inline.yaml",
+                // replace name wait-duration-inline to wait-please
+                content -> content.replace("wait-duration-inline", "wait-please"));
+
+        identifierMustMatch(path, "default.WaitPlease");
+
+        // Old identifier should no longer be available
+        shouldNoLongerBeAvailable(path, oldIdentifier);
+    }
+
+    private static void identifierMustMatch(String path, String identifier) {
         RestAssured.given()
-                .queryParam("identifier", "default:wait-duration-inline")
-                .get("/identifier")
+                .queryParam("identifier", identifier)
+                .get(path)
+                .then()
+                .statusCode(200)
+                .body(Matchers.is(identifier));
+    }
+
+    private static void shouldNoLongerBeAvailable(String path, String oldIdentifier) {
+        RestAssured.given()
+                .queryParam("identifier", oldIdentifier)
+                .get(path)
                 .then()
                 .statusCode(404);
     }

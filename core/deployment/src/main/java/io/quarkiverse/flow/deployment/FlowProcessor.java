@@ -1,15 +1,19 @@
 package io.quarkiverse.flow.deployment;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
 
+import org.objectweb.asm.Opcodes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.quarkiverse.flow.config.FlowDefinitionsConfig;
 import io.quarkiverse.flow.config.FlowTracingConfig;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
 import io.quarkiverse.flow.providers.HttpClientProvider;
@@ -19,19 +23,27 @@ import io.quarkiverse.flow.providers.WorkflowExceptionMapper;
 import io.quarkiverse.flow.recorders.SDKRecorder;
 import io.quarkiverse.flow.recorders.WorkflowApplicationRecorder;
 import io.quarkiverse.flow.recorders.WorkflowDefinitionRecorder;
+import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.FieldCreator;
+import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
+import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowException;
@@ -92,10 +104,8 @@ class FlowProcessor {
     @BuildStep
     void produceWorkflowDefinitions(WorkflowDefinitionRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> beans,
-            List<DiscoveredFlowBuildItem> discoveredFlows,
-            List<DiscoveredWorkflowFileBuildItem> workflows) {
-
-        List<String> identifiers = new ArrayList<>();
+            BuildProducer<FlowIdentifierBuildItem> identifiers,
+            List<DiscoveredFlowBuildItem> discoveredFlows) {
 
         for (DiscoveredFlowBuildItem it : discoveredFlows) {
             beans.produce(SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
@@ -105,23 +115,76 @@ class FlowProcessor {
                     .addQualifier().annotation(DotNames.IDENTIFIER).addValue("value", it.getClassName()).done()
                     .supplier(recorder.workflowDefinitionSupplier(it.getClassName()))
                     .done());
-            identifiers.add(it.getClassName());
+            identifiers.produce(new FlowIdentifierBuildItem(Set.of(it.getClassName())));
         }
+    }
 
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void produceWorkflowDefinitionsFromFile(
+            List<DiscoveredWorkflowFileBuildItem> workflows,
+            BuildProducer<SyntheticBeanBuildItem> beans,
+            BuildProducer<FlowIdentifierBuildItem> identifiers,
+            WorkflowDefinitionRecorder recorder,
+            FlowDefinitionsConfig config) {
         for (DiscoveredWorkflowFileBuildItem workflow : workflows) {
+
+            String flowSubclassIdentifier = WorkflowNamingConverter.generateFlowClassIdentifier(
+                    workflow.namespace(), workflow.name(), config.namespace().prefix());
+
             beans.produce(SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
                     .scope(ApplicationScoped.class)
                     .unremovable()
                     .setRuntimeInit()
                     .addQualifier().annotation(DotNames.IDENTIFIER)
-                    .addValue("value", workflow.identifier()).done()
-                    .supplier(recorder.workflowDefinitionFromFileSupplier(workflow.locationString()))
+                    .addValue("value", workflow.regularIdentifier()).done()
+                    .addQualifier().annotation(DotNames.IDENTIFIER)
+                    .addValue("value", flowSubclassIdentifier).done()
+                    .supplier(recorder.workflowDefinitionFromFileSupplier(workflow.location()))
                     .done());
 
-            identifiers.add(workflow.identifier());
+            identifiers.produce(new FlowIdentifierBuildItem(
+                    Set.of(flowSubclassIdentifier, workflow.regularIdentifier())));
         }
+    }
 
-        logWorkflowList(identifiers);
+    @BuildStep
+    void produceGeneratedFlows(List<DiscoveredWorkflowFileBuildItem> workflows,
+            BuildProducer<GeneratedBeanBuildItem> classes,
+            FlowDefinitionsConfig definitionsConfig) {
+
+        GeneratedBeanGizmoAdaptor gizmo = new GeneratedBeanGizmoAdaptor(classes);
+        for (DiscoveredWorkflowFileBuildItem workflow : workflows) {
+            String flowSubclassIdentifier = WorkflowNamingConverter.generateFlowClassIdentifier(
+                    workflow.namespace(), workflow.name(), definitionsConfig.namespace().prefix());
+
+            try (ClassCreator creator = ClassCreator.builder()
+                    .className(flowSubclassIdentifier)
+                    .superClass(DotNames.FLOW.toString())
+                    .classOutput(gizmo)
+                    .build()) {
+
+                creator.addAnnotation(Unremovable.class);
+                creator.addAnnotation(ApplicationScoped.class);
+                creator.addAnnotation(Identifier.class).add("value", flowSubclassIdentifier);
+
+                // workflowDefinition field
+                FieldCreator fieldCreator = creator.getFieldCreator("workflowDefinition",
+                        WorkflowDefinition.class.getName());
+                fieldCreator.setModifiers(Opcodes.ACC_PUBLIC);
+                fieldCreator.addAnnotation(Inject.class);
+                fieldCreator.addAnnotation(Identifier.class)
+                        .add("value", flowSubclassIdentifier);
+
+                // descriptor() method
+                var method = creator.getMethodCreator("descriptor", Workflow.class);
+                method.setModifiers(Opcodes.ACC_PUBLIC);
+                method.returnValue(
+                        method.invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(WorkflowDefinition.class, "workflow", Workflow.class),
+                                method.readInstanceField(fieldCreator.getFieldDescriptor(), method.getThis())));
+            }
+        }
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -142,6 +205,17 @@ class FlowProcessor {
                 .done());
 
         LOG.info("Flow: Registering Workflow Application bean: {}", WorkflowApplication.class.getName());
+    }
+
+    @BuildStep
+    @Produce(SyntheticBeanBuildItem.class)
+    void logRegisteredWorkflows(
+            List<FlowIdentifierBuildItem> registeredIdentifiers) {
+        List<String> allIdentifiers = registeredIdentifiers.stream().map(FlowIdentifierBuildItem::identifiers)
+                .map(set -> String.join(", ", set))
+                .distinct()
+                .collect(Collectors.toList());
+        logWorkflowList(allIdentifiers);
     }
 
     private void logWorkflowList(List<String> identifiers) {
@@ -184,7 +258,7 @@ class FlowProcessor {
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) {
         for (DiscoveredWorkflowFileBuildItem workflow : workflows) {
             watchedFiles.produce(HotDeploymentWatchedFileBuildItem.builder()
-                    .setLocation(workflow.locationString())
+                    .setLocation(workflow.location())
                     .setRestartNeeded(true)
                     .build());
         }

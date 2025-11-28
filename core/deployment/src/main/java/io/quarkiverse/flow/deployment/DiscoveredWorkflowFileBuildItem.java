@@ -4,40 +4,46 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.serverlessworkflow.api.types.Workflow;
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
 /**
  * Workflow file discovered during the build.
  * <p>
- * Holds the path to the workflow file, its namespace, and name.
+ * Holds the path to the workflow file, its namespace, name, and regular identifier.
  */
 public final class DiscoveredWorkflowFileBuildItem extends MultiBuildItem {
 
     private final Path workflowPath;
-    private final String namespace;
-    private final String name;
-    private final String identifier;
+    private final WorkflowDefinitionId workflowDefinitionId;
+    private final String regularIdentifier;
 
-    public DiscoveredWorkflowFileBuildItem(Path workflowPath, String namespace, String name) {
+    /**
+     * Constructs a new {@link DiscoveredWorkflowFileBuildItem} instance.
+     *
+     * @param workflowPath Path to the workflow file
+     * @param workflow {@link Workflow} instance representing the workflow
+     */
+    public DiscoveredWorkflowFileBuildItem(Path workflowPath, Workflow workflow) {
         this.workflowPath = workflowPath;
-        this.namespace = namespace;
-        this.name = name;
-        this.identifier = namespace + ":" + name;
+        this.workflowDefinitionId = WorkflowDefinitionId.of(workflow);
+        this.regularIdentifier = workflowDefinitionId.namespace() + ":" + workflowDefinitionId.name();
     }
 
-    public String locationString() {
+    public String location() {
         return this.workflowPath.toString();
     }
 
     public String namespace() {
-        return namespace;
+        return workflowDefinitionId.namespace();
     }
 
     public String name() {
-        return name;
+        return workflowDefinitionId.name();
     }
 
-    public String identifier() {
-        return identifier;
+    public String regularIdentifier() {
+        return regularIdentifier;
     }
 
     @Override
@@ -45,11 +51,11 @@ public final class DiscoveredWorkflowFileBuildItem extends MultiBuildItem {
         if (o == null || getClass() != o.getClass())
             return false;
         DiscoveredWorkflowFileBuildItem that = (DiscoveredWorkflowFileBuildItem) o;
-        return Objects.equals(identifier, that.identifier);
+        return Objects.equals(regularIdentifier, that.regularIdentifier);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(identifier);
+        return Objects.hash(regularIdentifier);
     }
 }
