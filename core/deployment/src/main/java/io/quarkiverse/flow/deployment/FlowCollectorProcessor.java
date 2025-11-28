@@ -72,8 +72,7 @@ public class FlowCollectorProcessor {
             try {
                 Workflow workflow = WorkflowReader.readWorkflow(file);
                 DiscoveredWorkflowFileBuildItem buildItem = new DiscoveredWorkflowFileBuildItem(file,
-                        workflow.getDocument().getNamespace(),
-                        workflow.getDocument().getName());
+                        workflow);
                 if (!workflowsSet.add(buildItem)) {
                     LOG.warn("Duplicate workflow detected: namespace='{}', name='{}'. The file at '{}' will be ignored.",
                             buildItem.namespace(), buildItem.name(), file.toAbsolutePath());

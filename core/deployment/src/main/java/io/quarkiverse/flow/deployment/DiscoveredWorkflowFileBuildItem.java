@@ -4,6 +4,8 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.serverlessworkflow.api.types.Workflow;
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
 /**
  * Workflow file discovered during the build.
@@ -13,22 +15,19 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class DiscoveredWorkflowFileBuildItem extends MultiBuildItem {
 
     private final Path workflowPath;
-    private final String namespace;
-    private final String name;
+    private final WorkflowDefinitionId workflowDefinitionId;
     private final String regularIdentifier;
 
     /**
      * Constructs a new {@link DiscoveredWorkflowFileBuildItem} instance.
      *
      * @param workflowPath Path to the workflow file
-     * @param namespace Document's namespace from specification
-     * @param name Document's name from specification
+     * @param workflow {@link Workflow} instance representing the workflow
      */
-    public DiscoveredWorkflowFileBuildItem(Path workflowPath, String namespace, String name) {
+    public DiscoveredWorkflowFileBuildItem(Path workflowPath, Workflow workflow) {
         this.workflowPath = workflowPath;
-        this.namespace = namespace;
-        this.name = name;
-        this.regularIdentifier = namespace + ":" + name;
+        this.workflowDefinitionId = WorkflowDefinitionId.of(workflow);
+        this.regularIdentifier = workflowDefinitionId.namespace() + ":" + workflowDefinitionId.name();
     }
 
     public String location() {
@@ -36,11 +35,11 @@ public final class DiscoveredWorkflowFileBuildItem extends MultiBuildItem {
     }
 
     public String namespace() {
-        return namespace;
+        return workflowDefinitionId.namespace();
     }
 
     public String name() {
-        return name;
+        return workflowDefinitionId.name();
     }
 
     public String regularIdentifier() {
