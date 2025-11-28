@@ -8,5 +8,7 @@ metadata:
   related-guide-section: https://docs.quarkiverse.io/quarkus-flow/dev/index.html
 language:
   java:
+    dependencies:
+      - io.quarkus:quarkus-rest-jackson
     test-dependencies:
       - io.rest-assured:rest-assured

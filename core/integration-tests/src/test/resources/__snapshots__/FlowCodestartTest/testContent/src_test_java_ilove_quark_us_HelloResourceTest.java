@@ -12,7 +12,7 @@ public class HelloResourceTest {
     @Test
     void hello_returns_hello_world() {
         given()
-                .when().get("/hello")
+                .when().get("/hello-flow")
                 .then()
                 .statusCode(200)
                 .body("message", equalTo("hello world!"));
