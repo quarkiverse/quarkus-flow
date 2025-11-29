@@ -9,7 +9,7 @@ import org.jboss.resteasy.reactive.ResponseStatus;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-@Path("/hello")
+@Path("/hello-flow")
 @ApplicationScoped
 public class HelloResource {
 
