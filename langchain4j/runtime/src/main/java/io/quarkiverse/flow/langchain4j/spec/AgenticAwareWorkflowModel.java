@@ -6,54 +6,38 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.langchain4j.agentic.scope.AgenticScope;
+import io.serverlessworkflow.impl.AbstractWorkflowModel;
 import io.serverlessworkflow.impl.WorkflowModel;
+import io.serverlessworkflow.impl.jackson.JsonUtils;
 
-public class AgenticAwareWorkflowModel implements WorkflowModel {
+public class AgenticAwareWorkflowModel extends AbstractWorkflowModel {
 
     private final AgenticScope agenticScope;
     private final WorkflowModel delegate;
-    private final ObjectMapper mapper = new ObjectMapper();
 
     public AgenticAwareWorkflowModel(AgenticScope agenticScope, WorkflowModel delegate) {
         this.agenticScope = agenticScope;
         this.delegate = delegate;
     }
 
-    @Override
-    public <T> Optional<T> as(Class<T> clazz) {
-        Optional<T> converted = convert(clazz);
-        if (converted.isPresent()) {
-            return converted;
-        }
-        return delegate.as(clazz);
-    }
-
-    @SuppressWarnings("unchecked")
     protected <T> Optional<T> convert(Class<T> clazz) {
         if (agenticScope != null) {
-            if (clazz.isAssignableFrom(AgenticScope.class)) {
+            if (AgenticScope.class.isAssignableFrom(clazz)) {
                 return Optional.of(clazz.cast(agenticScope));
             }
 
-            if (clazz == JsonNode.class) {
-                Map<String, Object> state = agenticScope.state();
-                JsonNode node = mapper.valueToTree(state);
-                return Optional.of(clazz.cast(node));
-            }
-
-            if (clazz == Map.class) {
-                return (Optional<T>) asMap();
-            }
-
             Object state = agenticScope.state();
-            if (clazz.isInstance(state)) {
+            if (state != null && state.getClass().isAssignableFrom(clazz)) {
                 return Optional.of(clazz.cast(state));
             }
+
+            if (JsonNode.class.isAssignableFrom(clazz)) {
+                return Optional.of(clazz.cast(JsonUtils.fromValue(agenticScope.state())));
+            }
         }
-        return Optional.empty();
+        return delegate.as(clazz);
     }
 
     @Override
@@ -91,11 +75,11 @@ public class AgenticAwareWorkflowModel implements WorkflowModel {
 
     @Override
     public Object asJavaObject() {
-        return agenticScope;
+        return agenticScope != null ? agenticScope : delegate.asJavaObject();
     }
 
     @Override
     public Class<?> objectClass() {
-        return delegate.objectClass();
+        return agenticScope != null ? AgenticScope.class : delegate.objectClass();
     }
 }
