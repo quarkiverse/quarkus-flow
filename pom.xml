@@ -16,6 +16,7 @@
     <modules>
         <module>core</module>
         <module>messaging</module>
+        <module>langchain4j</module>
     </modules>
 
     <scm>

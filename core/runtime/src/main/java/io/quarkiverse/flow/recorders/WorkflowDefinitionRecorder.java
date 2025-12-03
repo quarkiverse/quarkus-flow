@@ -7,8 +7,9 @@ import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Any;
 
-import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.Flowable;
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.annotations.Recorder;
 import io.serverlessworkflow.api.WorkflowReader;
 import io.serverlessworkflow.api.types.Workflow;
@@ -28,7 +29,14 @@ public class WorkflowDefinitionRecorder {
                 final ClassLoader cl = Thread.currentThread().getContextClassLoader();
                 final Class<?> flowClass = Class.forName(flowDescriptorClassName, true, cl);
 
-                Flow flow = (Flow) Arc.container().instance(flowClass, Any.Literal.INSTANCE).get();
+                final InstanceHandle<?> handle = Arc.container().instance(flowClass, Any.Literal.INSTANCE);
+                if (!handle.isAvailable()) {
+                    throw new IllegalStateException(
+                            "Flow class '" + flowDescriptorClassName
+                                    + "' was discovered as Flowable but is not a CDI bean. "
+                                    + "Annotate it with @ApplicationScoped (or another CDI scope).");
+                }
+                final Flowable flow = (Flowable) handle.get();
                 final Workflow wf = flow.descriptor();
 
                 return app.workflowDefinition(wf);

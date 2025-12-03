@@ -1,10 +1,22 @@
 package io.quarkiverse.flow.devui;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkiverse.flow.internal.WorkflowInvocationMetadata;
+import io.quarkiverse.flow.internal.WorkflowInvoker;
+import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.logging.Log;
@@ -14,20 +26,29 @@ import io.serverlessworkflow.impl.WorkflowModel;
 import io.serverlessworkflow.mermaid.Mermaid;
 import io.smallrye.common.annotation.Blocking;
 
+@ApplicationScoped
 public class WorkflowRPCService {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static Logger LOG = LoggerFactory.getLogger(WorkflowRPCService.class);
+    @Inject
+    ObjectMapper objectMapper;
+    @Inject
+    WorkflowRegistry registry;
+
+    public WorkflowRPCService() {
+    }
 
     @JsonRpcDescription("Get numbers of workflows available in the application")
     public int getNumbersOfWorkflows() {
-        return Arc.container().listAll(WorkflowDefinition.class).size();
+        return registry.count();
     }
 
     @JsonRpcDescription("Get info about workflows")
     public List<WorkflowInfo> getWorkflows() {
-        return Arc.container().listAll(WorkflowDefinition.class).stream()
-                .map(w -> new WorkflowInfo(w.get().workflow().getDocument().getName(),
-                        w.get().workflow().getDocument().getSummary()))
+        return registry.all().stream()
+                .map(w -> new WorkflowInfo(
+                        w.workflow().getDocument().getName(),
+                        w.workflow().getDocument().getSummary()))
                 .toList();
     }
 
@@ -37,8 +58,8 @@ public class WorkflowRPCService {
         if (Log.isDebugEnabled()) {
             Log.debug("Generating diagram for workflow: " + workflowName);
         }
-        WorkflowDefinition workflowDefinition = findWorkflowDefinitionByName(workflowName);
-        return new MermaidDefinition(new Mermaid().from(workflowDefinition.workflow()));
+        WorkflowDefinition def = findWorkflowDefinitionByName(workflowName);
+        return new MermaidDefinition(new Mermaid().from(def.workflow()));
     }
 
     @Blocking
@@ -47,27 +68,122 @@ public class WorkflowRPCService {
             @JsonRpcDescription("Workflow's name") String workflowName,
             @JsonRpcDescription("Workflow's input") String input) {
 
-        WorkflowDefinition workflowDefinition = findWorkflowDefinitionByName(workflowName);
+        WorkflowDefinition def = findWorkflowDefinitionByName(workflowName);
+        Object parsedInput = parseStringIfNeeded(input);
 
-        WorkflowModel wm = workflowDefinition.instance(parseStringIfNeeded(input))
-                .start()
-                .join();
+        Object result = executeWithInvokerIfPresent(def, parsedInput);
 
-        Object obj = wm.asJavaObject();
-
-        return new WorkflowOutput(obj instanceof String ? "text/plain" : "application/json", obj);
+        return new WorkflowOutput(
+                (result instanceof String) ? "text/plain" : "application/json",
+                result);
     }
 
     /**
-     * Finds {@link WorkflowDefinition} by the given workflow name.
+     * If the workflow has an attached bean invoker (e.g. LC4J agent interface),
+     * use that as the entrypoint; otherwise call the workflow engine directly.
+     */
+    private Object executeWithInvokerIfPresent(WorkflowDefinition def, Object parsedInput) {
+        var workflow = def.workflow();
+        var beanInvokerOpt = WorkflowInvocationMetadata.beanInvokerOf(workflow);
+
+        if (beanInvokerOpt.isEmpty()) {
+            WorkflowModel wm = def.instance(parsedInput)
+                    .start()
+                    .join();
+            return wm.asJavaObject();
+        }
+
+        WorkflowInvoker invoker = beanInvokerOpt.get();
+        return invokeBeanEntryPoint(invoker, parsedInput);
+    }
+
+    /**
+     * Use Arc to obtain the bean and invoke the configured method.
+     */
+    private Object invokeBeanEntryPoint(WorkflowInvoker invoker, Object parsedInput) {
+        String beanClassName = invoker.beanClassName();
+        String methodName = invoker.methodName();
+
+        if (Log.isDebugEnabled()) {
+            LOG.debug("Invoking workflow via bean: {}#{}", beanClassName, methodName);
+        }
+
+        try {
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            Class<?> beanClass = Class.forName(beanClassName, true, cl);
+
+            InstanceHandle<?> handle = Arc.container().instance(beanClass);
+            if (!handle.isAvailable()) {
+                throw new IllegalStateException(
+                        "Bean invoker class '" + beanClassName + "' not available in CDI");
+            }
+
+            Object bean = handle.get();
+            Method method = resolveInvokerMethod(beanClass, invoker);
+            Object[] args = resolveArgumentsForMethod(method, parsedInput);
+
+            return method.invoke(bean, args);
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Failed to invoke workflow via bean invoker: " + beanClassName + "#" + methodName, e);
+        }
+    }
+
+    private Method resolveInvokerMethod(Class<?> beanClass, WorkflowInvoker invoker) {
+        String methodName = invoker.methodName();
+        String[] expectedTypes = invoker.parameterTypeNames();
+
+        return Arrays.stream(beanClass.getMethods())
+                .filter(m -> m.getName().equals(methodName))
+                .filter(m -> m.getParameterTypes().length == expectedTypes.length)
+                .filter(m -> Arrays.equals(Arrays.stream(m.getParameterTypes()).map(Class::getName).toArray(), expectedTypes))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "No suitable method '" + methodName + "(" + String.join(",", expectedTypes) + ")' found on "
+                                + beanClass.getName()));
+    }
+
+    /**
+     * Simple argument resolution strategy:
+     * <p>
+     * - 0 params: ignore input
+     * - 1 param: map the whole parsed input into that param type
+     * - N params: expect JSON object; map by parameter name
+     */
+    private Object[] resolveArgumentsForMethod(Method method, Object parsedInput) {
+        int paramCount = method.getParameterCount();
+        if (paramCount == 0) {
+            return new Object[0];
+        }
+
+        if (paramCount == 1) {
+            Class<?> paramType = method.getParameterTypes()[0];
+            return new Object[] { objectMapper.convertValue(parsedInput, paramType) };
+        }
+
+        if (!(parsedInput instanceof Map<?, ?> map)) {
+            throw new IllegalArgumentException(
+                    "Expected JSON object for multi-argument method '" + method + "', but got: " + parsedInput);
+        }
+
+        Object[] args = new Object[paramCount];
+        Parameter[] parameters = method.getParameters();
+        for (int i = 0; i < paramCount; i++) {
+            Parameter p = parameters[i];
+            Object rawValue = map.get(p.getName());
+            args[i] = objectMapper.convertValue(rawValue, p.getType());
+        }
+        return args;
+    }
+
+    /**
+     * Finds {@link WorkflowDefinition} by the given workflow document name.
      */
     private WorkflowDefinition findWorkflowDefinitionByName(final String workflowName) {
-        return Arc.container().listAll(WorkflowDefinition.class)
-                .stream()
-                .filter(w -> w.get().workflow().getDocument().getName().equals(workflowName))
-                .findFirst().map(InstanceHandle::get)
-                .orElseThrow(
-                        () -> new IllegalStateException("Workflow with name '" + workflowName + "'" + "not found"));
+        return registry.lookupByDocumentName(workflowName)
+                .orElseThrow(() -> new IllegalStateException("Workflow with name '" + workflowName + "' not found"));
     }
 
     /**
@@ -75,9 +191,9 @@ public class WorkflowRPCService {
      */
     private Object parseStringIfNeeded(String str) {
         try {
-            return OBJECT_MAPPER.readValue(str, Map.class);
+            return objectMapper.readValue(str, Map.class);
         } catch (Exception e) {
-            // Not a JSON string, return as is
+            // Not a JSON string, return as-is
             return str;
         }
     }

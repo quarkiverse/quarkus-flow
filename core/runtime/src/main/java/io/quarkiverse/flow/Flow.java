@@ -2,6 +2,8 @@ package io.quarkiverse.flow;
 
 import java.util.concurrent.CompletionStage;
 
+import jakarta.annotation.PostConstruct;
+
 import io.quarkus.arc.Arc;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowDefinition;
@@ -9,7 +11,16 @@ import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.smallrye.common.annotation.Identifier;
 
-public abstract class Flow {
+public abstract class Flow implements Flowable {
+
+    private WorkflowDefinition definition;
+
+    @PostConstruct
+    public void init() {
+        this.definition = Arc.container()
+                .select(WorkflowDefinition.class, Identifier.Literal.of(this.getClass().getName()))
+                .get();
+    }
 
     /**
      * Workflow descriptor you can describe via the CNCF Java SDK DSL.
@@ -17,9 +28,11 @@ public abstract class Flow {
     public abstract Workflow descriptor();
 
     protected WorkflowDefinition definition() {
-        return Arc.container()
-                .select(WorkflowDefinition.class, Identifier.Literal.of(this.getClass().getName()))
-                .get();
+        if (definition != null) {
+            return definition;
+        }
+        this.init();
+        return definition;
     }
 
     public WorkflowInstance instance(Object in) {

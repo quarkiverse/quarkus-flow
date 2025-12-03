@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.config.FlowDefinitionsConfig;
 import io.quarkiverse.flow.config.FlowTracingConfig;
+import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
 import io.quarkiverse.flow.providers.HttpClientProvider;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
@@ -47,7 +48,6 @@ import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowException;
-import io.smallrye.common.annotation.Identifier;
 
 class FlowProcessor {
 
@@ -74,12 +74,13 @@ class FlowProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem registerRuntimeProviders() {
+    AdditionalBeanBuildItem registerRuntimeServices() {
         return AdditionalBeanBuildItem.builder()
                 .addBeanClass(JQScopeSupplier.class)
                 .addBeanClass(CredentialsProviderSecretManager.class)
                 .addBeanClass(MicroprofileConfigManager.class)
                 .addBeanClass(HttpClientProvider.class)
+                .addBeanClass(WorkflowRegistry.class)
                 .setUnremovable()
                 .build();
     }
