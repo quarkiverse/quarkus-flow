@@ -1,17 +1,11 @@
 package io.quarkiverse.flow.deployment;
 
-<<<<<<< HEAD
-import java.util.Collections;
-=======
 import static io.quarkiverse.flow.deployment.FlowLoggingUtils.logWorkflowList;
 
-import java.util.ArrayList;
->>>>>>> 2511cf7 (Wraping up main implementation)
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import io.smallrye.common.annotation.Identifier;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
@@ -55,6 +49,7 @@ import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowException;
+import io.smallrye.common.annotation.Identifier;
 
 class FlowProcessor {
 
@@ -168,7 +163,7 @@ class FlowProcessor {
 
             try (ClassCreator creator = ClassCreator.builder()
                     .className(flowSubclassIdentifier)
-                    .superClass(DotNames.FLOWABLE.toString())
+                    .superClass(DotNames.FLOW.toString())
                     .classOutput(gizmo)
                     .build()) {
 

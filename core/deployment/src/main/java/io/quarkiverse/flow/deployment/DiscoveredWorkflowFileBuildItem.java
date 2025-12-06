@@ -29,7 +29,8 @@ public final class DiscoveredWorkflowFileBuildItem extends MultiBuildItem {
         this.workflowPath = workflowPath;
 
         this.workflowDefinitionId = WorkflowDefinitionId.of(workflow);
-        this.regularIdentifier =  WorkflowNameUtils.yamlDescriptorIdentifier(workflowDefinitionId.namespace(), workflowDefinitionId.name());
+        this.regularIdentifier = WorkflowNameUtils.yamlDescriptorIdentifier(workflowDefinitionId.namespace(),
+                workflowDefinitionId.name());
     }
 
     public String location() {
