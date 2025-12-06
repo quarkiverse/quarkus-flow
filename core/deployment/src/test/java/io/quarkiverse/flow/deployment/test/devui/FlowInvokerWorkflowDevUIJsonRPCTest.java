@@ -1,8 +1,11 @@
 package io.quarkiverse.flow.deployment.test.devui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.Map;
+
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -13,6 +16,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.QuarkusDevModeTest;
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
 public class FlowInvokerWorkflowDevUIJsonRPCTest extends DevUIJsonRPCTest {
 
@@ -30,7 +34,7 @@ public class FlowInvokerWorkflowDevUIJsonRPCTest extends DevUIJsonRPCTest {
     @Test
     void shouldExecuteAgenticWorkflowViaBeanInvoker() throws Exception {
         JsonNode node = super.executeJsonRPCMethod("executeWorkflow", Map.of(
-                "workflowName", "agenticDevUI",
+                "id", WorkflowDefinitionId.of(new AgenticDevUIWorkflow().descriptor()),
                 "input", """
                         {
                           "var1": "topic-value",
@@ -39,10 +43,13 @@ public class FlowInvokerWorkflowDevUIJsonRPCTest extends DevUIJsonRPCTest {
                         }
                         """));
 
-        // Because the bean returns a plain String, WorkflowRPCService sets text/plain
-        assertEquals("text/plain", node.get("mimetype").asText());
-        assertEquals(
-                "v1=topic-value,v2=42,v3=true",
-                node.get("data").asText());
+        assertEquals(MediaType.APPLICATION_JSON, node.get("mimetype").asText());
+        JsonNode data = node.get("data");
+        assertNotNull(data);
+
+        // Payload returned by DevUIAgenticServiceBean.complex(...)
+        assertEquals("topic-value", data.get("var1").asText());
+        assertEquals(42, data.get("var2").asInt());
+        assertEquals(true, data.get("var3").asBoolean());
     }
 }

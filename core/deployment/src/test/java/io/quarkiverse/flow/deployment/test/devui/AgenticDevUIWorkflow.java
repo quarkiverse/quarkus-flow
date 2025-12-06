@@ -20,9 +20,7 @@ public class AgenticDevUIWorkflow extends Flow {
     public Workflow descriptor() {
         Workflow wf = FuncWorkflowBuilder
                 .workflow("devui-agentic")
-                .document(d -> d.name("agenticDevUI")
-                        .summary("Agentic Dev UI workflow backed by a CDI bean"))
-                .tasks(set("{}")) // irrelevant, not being called
+                .tasks(set("${ . }"))
                 .build();
 
         try {

@@ -21,31 +21,31 @@ public class FlowAgentsBuilder implements WorkflowAgentsBuilder {
 
     @Override
     public ParallelAgentService<UntypedAgent> parallelBuilder() {
-        throw new UnsupportedOperationException("parallelBuilder is not yet implemented");
+        return FlowParallelAgentService.builder();
     }
 
     @Override
     public <T> ParallelAgentService<T> parallelBuilder(Class<T> agentServiceClass) {
-        throw new UnsupportedOperationException("parallelBuilder is not yet implemented");
+        return FlowParallelAgentService.builder(agentServiceClass);
     }
 
     @Override
     public LoopAgentService<UntypedAgent> loopBuilder() {
-        throw new UnsupportedOperationException("loopBuilder is not yet implemented");
+        return FlowLoopAgentService.builder();
     }
 
     @Override
     public <T> LoopAgentService<T> loopBuilder(Class<T> agentServiceClass) {
-        throw new UnsupportedOperationException("loopBuilder is not yet implemented");
+        return FlowLoopAgentService.builder(agentServiceClass);
     }
 
     @Override
     public ConditionalAgentService<UntypedAgent> conditionalBuilder() {
-        throw new UnsupportedOperationException("conditionalBuilder is not yet implemented");
+        return FlowConditionalAgentService.builder();
     }
 
     @Override
     public <T> ConditionalAgentService<T> conditionalBuilder(Class<T> agentServiceClass) {
-        throw new UnsupportedOperationException("conditionalBuilder is not yet implemented");
+        return FlowConditionalAgentService.builder(agentServiceClass);
     }
 }

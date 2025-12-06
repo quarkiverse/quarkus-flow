@@ -49,6 +49,11 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -64,11 +69,8 @@
                             <goal>extension-descriptor</goal>
                         </goals>
                         <configuration>
-                            <conditionalDevDependencies>
-                                <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact>
-                            </conditionalDevDependencies>
                             <conditionalDependencies>
-                                <dependency>${project.groupId}:${project.artifactId}-messaging:${project.version}
+                                <dependency>${project.groupId}:quarkus-flow-messaging:${project.version}
                                 </dependency>
                             </conditionalDependencies>
                             <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}
@@ -95,22 +97,14 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>generate-codestart-jar</id>
-                        <phase>generate-resources</phase>
+                        <id>tests-jar</id>
                         <goals>
-                            <goal>jar</goal>
+                            <goal>test-jar</goal>
                         </goals>
-                        <configuration>
-                            <classesDirectory>${project.basedir}/src/main</classesDirectory>
-                            <includes>
-                                <include>codestarts/**</include>
-                            </includes>
-                            <classifier>codestarts</classifier>
-                            <skipIfEmpty>true</skipIfEmpty>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>

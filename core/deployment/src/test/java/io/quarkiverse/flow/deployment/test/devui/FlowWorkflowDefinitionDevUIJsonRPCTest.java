@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.QuarkusDevModeTest;
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
 public class FlowWorkflowDefinitionDevUIJsonRPCTest extends DevUIJsonRPCTest {
 
@@ -19,6 +20,8 @@ public class FlowWorkflowDefinitionDevUIJsonRPCTest extends DevUIJsonRPCTest {
     static final QuarkusDevModeTest devMode = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(GreetingResource.class, DevUIWorkflow.class));
+
+    private static final WorkflowDefinitionId workflowId = WorkflowDefinitionId.of(new DevUIWorkflow().descriptor());
 
     public FlowWorkflowDefinitionDevUIJsonRPCTest() {
         super("quarkus-flow");
@@ -32,20 +35,20 @@ public class FlowWorkflowDefinitionDevUIJsonRPCTest extends DevUIJsonRPCTest {
 
     @Test
     void shouldGenerateMermaidDiagram() throws Exception {
-        JsonNode node = super.executeJsonRPCMethod("generateMermaidDiagram", Map.of("workflowName", "helloQuarkus"));
+        JsonNode node = super.executeJsonRPCMethod("generateMermaidDiagram", Map.of("id", workflowId));
         Assertions.assertTrue(node.get("mermaid").asText().contains("flowchart TD"));
     }
 
     @Test
     void shouldGetWorkflowInfo() throws Exception {
         JsonNode node = super.executeJsonRPCMethod("getWorkflows");
-        Assertions.assertEquals("helloQuarkus", node.get(0).get("name").asText());
+        Assertions.assertEquals("helloQuarkus", node.get(0).get("id").get("name").asText());
     }
 
     @Test
     void shouldExecuteWorkflow() throws Exception {
         JsonNode node = super.executeJsonRPCMethod("executeWorkflow", Map.of(
-                "workflowName", "helloQuarkus"));
+                "id", workflowId));
 
         Assertions.assertEquals("application/json", node.get("mimetype").asText());
         Assertions.assertTrue(node.get("data").has("message"));

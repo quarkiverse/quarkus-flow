@@ -8,12 +8,12 @@ import java.util.function.Supplier;
 import jakarta.enterprise.inject.Any;
 
 import io.quarkiverse.flow.Flowable;
+import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.annotations.Recorder;
 import io.serverlessworkflow.api.WorkflowReader;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 
 /**
@@ -25,7 +25,6 @@ public class WorkflowDefinitionRecorder {
     public Supplier<WorkflowDefinition> workflowDefinitionSupplier(String flowDescriptorClassName) {
         return () -> {
             try {
-                final WorkflowApplication app = Arc.container().instance(WorkflowApplication.class).get();
                 final ClassLoader cl = Thread.currentThread().getContextClassLoader();
                 final Class<?> flowClass = Class.forName(flowDescriptorClassName, true, cl);
 
@@ -36,10 +35,9 @@ public class WorkflowDefinitionRecorder {
                                     + "' was discovered as Flowable but is not a CDI bean. "
                                     + "Annotate it with @ApplicationScoped (or another CDI scope).");
                 }
-                final Flowable flow = (Flowable) handle.get();
-                final Workflow wf = flow.descriptor();
 
-                return app.workflowDefinition(wf);
+                final WorkflowRegistry registry = Arc.container().instance(WorkflowRegistry.class).get();
+                return registry.register((Flowable) handle.get());
             } catch (RuntimeException | ClassNotFoundException e) {
                 throw new RuntimeException("Failed to create WorkflowDefinition for " + flowDescriptorClassName, e);
             }
@@ -48,10 +46,10 @@ public class WorkflowDefinitionRecorder {
 
     public Supplier<WorkflowDefinition> workflowDefinitionFromFileSupplier(String location) {
         return () -> {
-            final WorkflowApplication app = Arc.container().instance(WorkflowApplication.class).get();
+            final WorkflowRegistry registry = Arc.container().instance(WorkflowRegistry.class).get();
             try {
                 Workflow workflow = WorkflowReader.readWorkflow(Paths.get(location));
-                return app.workflowDefinition(workflow);
+                return registry.register(workflow);
             } catch (IOException e) {
                 throw new UncheckedIOException("Failed to create WorkflowDefinition for workflow at " + location, e);
             }

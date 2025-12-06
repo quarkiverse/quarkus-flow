@@ -5,9 +5,11 @@ import java.lang.reflect.Parameter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.MediaType;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +23,9 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.annotations.JsonRpcDescription;
+import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowDefinition;
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.serverlessworkflow.mermaid.Mermaid;
 import io.smallrye.common.annotation.Blocking;
@@ -29,7 +33,7 @@ import io.smallrye.common.annotation.Blocking;
 @ApplicationScoped
 public class WorkflowRPCService {
 
-    private static Logger LOG = LoggerFactory.getLogger(WorkflowRPCService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WorkflowRPCService.class);
     @Inject
     ObjectMapper objectMapper;
     @Inject
@@ -47,54 +51,45 @@ public class WorkflowRPCService {
     public List<WorkflowInfo> getWorkflows() {
         return registry.all().stream()
                 .map(w -> new WorkflowInfo(
-                        w.workflow().getDocument().getName(),
-                        w.workflow().getDocument().getSummary()))
+                        WorkflowDefinitionId.of(w),
+                        w.getDocument().getSummary()))
                 .toList();
     }
 
     @JsonRpcDescription("Generate a mermaid diagram from the workflow's definition")
     public MermaidDefinition generateMermaidDiagram(
-            @JsonRpcDescription("Workflow's name") String workflowName) {
-        if (Log.isDebugEnabled()) {
-            Log.debug("Generating diagram for workflow: " + workflowName);
-        }
-        WorkflowDefinition def = findWorkflowDefinitionByName(workflowName);
-        return new MermaidDefinition(new Mermaid().from(def.workflow()));
+            @JsonRpcDescription("Workflow's id") WorkflowDefinitionId id) {
+        LOG.info("Generating a mermaid diagram from the workflow's definition '{}'", id.name());
+        return new MermaidDefinition(new Mermaid().from(registry.lookupDescriptor(id)
+                .orElseThrow(() -> new IllegalStateException("Workflow with id '" + id + "' not found"))));
     }
 
     @Blocking
     @JsonRpcDescription("Execute a workflow given an input")
     public WorkflowOutput executeWorkflow(
-            @JsonRpcDescription("Workflow's name") String workflowName,
+            @JsonRpcDescription("Workflow's id") WorkflowDefinitionId id,
             @JsonRpcDescription("Workflow's input") String input) {
 
-        WorkflowDefinition def = findWorkflowDefinitionByName(workflowName);
+        Optional<WorkflowDefinition> def = registry.lookup(id);
         Object parsedInput = parseStringIfNeeded(input);
+        Object result;
 
-        Object result = executeWithInvokerIfPresent(def, parsedInput);
-
-        return new WorkflowOutput(
-                (result instanceof String) ? "text/plain" : "application/json",
-                result);
-    }
-
-    /**
-     * If the workflow has an attached bean invoker (e.g. LC4J agent interface),
-     * use that as the entrypoint; otherwise call the workflow engine directly.
-     */
-    private Object executeWithInvokerIfPresent(WorkflowDefinition def, Object parsedInput) {
-        var workflow = def.workflow();
-        var beanInvokerOpt = WorkflowInvocationMetadata.beanInvokerOf(workflow);
-
-        if (beanInvokerOpt.isEmpty()) {
-            WorkflowModel wm = def.instance(parsedInput)
+        if (def.isEmpty()) {
+            // Tries to execute via invoker
+            Workflow workflow = registry.lookupDescriptor(id)
+                    .orElseThrow(() -> new IllegalStateException("Workflow with id '" + id + "' not found"));
+            result = invokeBeanEntryPoint(WorkflowInvocationMetadata.beanInvokerOf(workflow)
+                    .orElseThrow(() -> new IllegalStateException("Invoker not found for workflow: " + workflow)), parsedInput);
+        } else {
+            WorkflowModel wm = def.get().instance(parsedInput)
                     .start()
                     .join();
-            return wm.asJavaObject();
+            result = wm.asJavaObject();
         }
 
-        WorkflowInvoker invoker = beanInvokerOpt.get();
-        return invokeBeanEntryPoint(invoker, parsedInput);
+        return new WorkflowOutput(
+                (result instanceof String) ? MediaType.TEXT_PLAIN : MediaType.APPLICATION_JSON,
+                result);
     }
 
     /**
@@ -179,14 +174,6 @@ public class WorkflowRPCService {
     }
 
     /**
-     * Finds {@link WorkflowDefinition} by the given workflow document name.
-     */
-    private WorkflowDefinition findWorkflowDefinitionByName(final String workflowName) {
-        return registry.lookupByDocumentName(workflowName)
-                .orElseThrow(() -> new IllegalStateException("Workflow with name '" + workflowName + "' not found"));
-    }
-
-    /**
      * Parses the input string as JSON if possible, otherwise returns the original string.
      */
     private Object parseStringIfNeeded(String str) {
@@ -201,7 +188,7 @@ public class WorkflowRPCService {
     public record MermaidDefinition(String mermaid) {
     }
 
-    public record WorkflowInfo(String name, String description) {
+    public record WorkflowInfo(WorkflowDefinitionId id, String description) {
     }
 
     public record WorkflowOutput(String mimetype, Object data) {

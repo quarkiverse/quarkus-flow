@@ -31,6 +31,26 @@
             <artifactId>quarkus-langchain4j-agentic-deployment</artifactId>
             <version>${io.quarkiverse.langchain4j.version}</version>
         </dependency>
+
+
+        <dependency>
+            <groupId>io.quarkiverse.langchain4j</groupId>
+            <artifactId>quarkus-langchain4j-ollama-deployment</artifactId>
+            <version>${io.quarkiverse.langchain4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-langchain4j</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

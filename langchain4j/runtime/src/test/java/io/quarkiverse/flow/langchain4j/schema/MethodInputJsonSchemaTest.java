@@ -3,6 +3,10 @@ package io.quarkiverse.flow.langchain4j.schema;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.lang.reflect.Method;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -21,8 +25,8 @@ import io.serverlessworkflow.impl.jackson.JsonUtils;
 
 class MethodInputJsonSchemaTest {
 
-    private static java.util.Set<String> toStringSet(ArrayNode arrayNode) {
-        java.util.Set<String> set = new java.util.HashSet<>();
+    private static Set<String> toStringSet(ArrayNode arrayNode) {
+        Set<String> set = new HashSet<>();
         for (JsonNode n : arrayNode) {
             set.add(n.asText());
         }
@@ -101,6 +105,141 @@ class MethodInputJsonSchemaTest {
     }
 
     @Test
+    void shouldHandleEnumParameterAsStringEnum() throws Exception {
+        Method setLevel = EnumAgent.class.getMethod("setLevel", TestLevel.class);
+
+        Workflow workflow = new Workflow().withDocument(new Document().withName("enum"));
+
+        MethodInputJsonSchema.applySchemaIfAbsent(workflow, setLevel);
+
+        SchemaInline inline = workflow.getInput().getSchema().getSchemaInline();
+        ObjectNode schema = (ObjectNode) inline.getDocument();
+        ObjectNode properties = (ObjectNode) schema.get("properties");
+
+        ObjectNode level = (ObjectNode) properties.get("level");
+        assertThat(level).isNotNull();
+        assertThat(level.get("type").asText()).isEqualTo("string");
+
+        ArrayNode enumNode = (ArrayNode) level.get("enum");
+        assertThat(enumNode).isNotNull();
+        assertThat(toStringSet(enumNode))
+                .containsExactlyInAnyOrder("LOW", "MEDIUM", "HIGH");
+    }
+
+    @Test
+    void shouldHandleMapCollectionsAndArrayTypes() throws Exception {
+        Method complex = MapAndCollectionsAgent.class.getMethod(
+                "complex", Map.class, List.class, int[].class);
+
+        Workflow workflow = new Workflow().withDocument(new Document().withName("collections"));
+
+        MethodInputJsonSchema.applySchemaIfAbsent(workflow, complex);
+
+        SchemaInline inline = workflow.getInput().getSchema().getSchemaInline();
+        ObjectNode schema = (ObjectNode) inline.getDocument();
+        ObjectNode properties = (ObjectNode) schema.get("properties");
+
+        // Map<String,Object> -> type: object + additionalProperties: { type: object }
+        ObjectNode config = (ObjectNode) properties.get("config");
+        assertThat(config.get("type").asText()).isEqualTo("object");
+        ObjectNode additionalProps = (ObjectNode) config.get("additionalProperties");
+        assertThat(additionalProps).isNotNull();
+        assertThat(additionalProps.get("type").asText()).isEqualTo("object");
+
+        // List<String> -> type: array, items: { type: object } (we don't inspect generics)
+        ObjectNode tags = (ObjectNode) properties.get("tags");
+        assertThat(tags.get("type").asText()).isEqualTo("array");
+        ObjectNode tagsItems = (ObjectNode) tags.get("items");
+        assertThat(tagsItems).isNotNull();
+        assertThat(tagsItems.get("type").asText()).isEqualTo("object");
+
+        // int[] -> type: array, items: { type: number }
+        ObjectNode scores = (ObjectNode) properties.get("scores");
+        assertThat(scores.get("type").asText()).isEqualTo("array");
+        ObjectNode scoresItems = (ObjectNode) scores.get("items");
+        assertThat(scoresItems).isNotNull();
+        assertThat(scoresItems.get("type").asText()).isEqualTo("number");
+    }
+
+    @Test
+    void shouldExpandSingleRecordParameterOneLevel() throws Exception {
+        Method handle = RecordAgent.class.getMethod("handle", SimpleRecord.class);
+
+        Workflow workflow = new Workflow().withDocument(new Document().withName("record"));
+
+        MethodInputJsonSchema.applySchemaIfAbsent(workflow, handle);
+
+        SchemaInline inline = workflow.getInput().getSchema().getSchemaInline();
+        ObjectNode schema = (ObjectNode) inline.getDocument();
+        ObjectNode properties = (ObjectNode) schema.get("properties");
+
+        ObjectNode payloadSchema = (ObjectNode) properties.get("payload");
+        assertThat(payloadSchema.get("type").asText()).isEqualTo("object");
+
+        ObjectNode payloadProps = (ObjectNode) payloadSchema.get("properties");
+        ArrayNode payloadRequired = (ArrayNode) payloadSchema.get("required");
+
+        assertThat(payloadProps.get("title").get("type").asText()).isEqualTo("string");
+        assertThat(payloadProps.get("count").get("type").asText()).isEqualTo("number");
+        assertThat(payloadProps.get("flag").get("type").asText()).isEqualTo("boolean");
+
+        assertThat(toStringSet(payloadRequired))
+                .containsExactlyInAnyOrder("title", "count", "flag");
+    }
+
+    @Test
+    void shouldExpandSinglePojoParameterOneLevel() throws Exception {
+        Method handle = PojoAgent.class.getMethod("handle", SimplePojo.class);
+
+        Workflow workflow = new Workflow().withDocument(new Document().withName("pojo"));
+
+        MethodInputJsonSchema.applySchemaIfAbsent(workflow, handle);
+
+        SchemaInline inline = workflow.getInput().getSchema().getSchemaInline();
+        ObjectNode schema = (ObjectNode) inline.getDocument();
+        ObjectNode properties = (ObjectNode) schema.get("properties");
+
+        ObjectNode payloadSchema = (ObjectNode) properties.get("payload");
+        assertThat(payloadSchema.get("type").asText()).isEqualTo("object");
+
+        ObjectNode payloadProps = (ObjectNode) payloadSchema.get("properties");
+        ArrayNode payloadRequired = (ArrayNode) payloadSchema.get("required");
+
+        assertThat(payloadProps.get("title").get("type").asText()).isEqualTo("string");
+        assertThat(payloadProps.get("count").get("type").asText()).isEqualTo("number");
+        assertThat(payloadProps.get("flag").get("type").asText()).isEqualTo("boolean");
+
+        // Static field should not appear
+        assertThat(payloadProps.get("IGNORED")).isNull();
+
+        assertThat(toStringSet(payloadRequired))
+                .containsExactlyInAnyOrder("title", "count", "flag");
+    }
+
+    @Test
+    void shouldNotRecurseIntoNestedPojoInsideRecord() throws Exception {
+        Method handle = NestedRecordAgent.class.getMethod("handle", WrapperRecord.class);
+
+        Workflow workflow = new Workflow().withDocument(new Document().withName("nested-record"));
+
+        MethodInputJsonSchema.applySchemaIfAbsent(workflow, handle);
+
+        SchemaInline inline = workflow.getInput().getSchema().getSchemaInline();
+        ObjectNode schema = (ObjectNode) inline.getDocument();
+        ObjectNode properties = (ObjectNode) schema.get("properties");
+
+        ObjectNode payloadSchema = (ObjectNode) properties.get("payload");
+        ObjectNode payloadProps = (ObjectNode) payloadSchema.get("properties");
+
+        ObjectNode innerSchema = (ObjectNode) payloadProps.get("inner");
+        assertThat(innerSchema).isNotNull();
+        assertThat(innerSchema.get("type").asText()).isEqualTo("object");
+
+        // No deep recursion: inner itself should not have "properties"
+        assertThat(innerSchema.get("properties")).isNull();
+    }
+
+    @Test
     void shouldNotOverrideExistingSchema() throws Exception {
         Method write = Agents.StoryCreatorWithConfigurableStyleEditor.class.getMethod(
                 "write", String.class, String.class, String.class);
@@ -136,9 +275,27 @@ class MethodInputJsonSchemaTest {
         assertThat(workflow.getInput()).isNull();
     }
 
-    /**
-     * Agent with mixed types to verify type mapping.
-     */
+    // -------------------------------------------------------------------------
+    // Helper types for the tests
+    // -------------------------------------------------------------------------
+
+    enum TestLevel {
+        LOW,
+        MEDIUM,
+        HIGH
+    }
+
+    interface EnumAgent {
+        void setLevel(@V("level") TestLevel level);
+    }
+
+    interface MapAndCollectionsAgent {
+        void complex(
+                @V("config") Map<String, Object> config,
+                @V("tags") java.util.List<String> tags,
+                @V("scores") int[] scores);
+    }
+
     interface MixedTypesAgent {
         void configure(
                 @V("name") String name,
@@ -146,10 +303,38 @@ class MethodInputJsonSchemaTest {
                 @V("enabled") boolean enabled);
     }
 
-    /**
-     * No-arg method: should NOT create a schema.
-     */
     interface NoArgAgent {
         String ping();
+    }
+
+    // Simple record to test one-level expansion
+    record SimpleRecord(String title, int count, boolean flag) {
+    }
+
+    interface RecordAgent {
+        void handle(@V("payload") SimpleRecord payload);
+    }
+
+    // Simple POJO to test one-level expansion
+    static class SimplePojo {
+        String title;
+        int count;
+        boolean flag;
+        static String IGNORED = "ignore-me";
+    }
+
+    interface PojoAgent {
+        void handle(@V("payload") SimplePojo payload);
+    }
+
+    // Nested record: we expand only the outer one, inner becomes plain "object"
+    record InnerRecord(String value) {
+    }
+
+    record WrapperRecord(InnerRecord inner) {
+    }
+
+    interface NestedRecordAgent {
+        void handle(@V("payload") WrapperRecord payload);
     }
 }
