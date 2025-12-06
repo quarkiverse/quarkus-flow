@@ -39,9 +39,9 @@ public interface InvestmentAnalystAgent {
      * Analyze the prompt and produce an investment memo.
      *
      * @param memoryId
-     *            Conversation / workflow memory id (provided by Quarkus Flow).
+     *        Conversation / workflow memory id (provided by Quarkus Flow).
      * @param prompt
-     *            Ticker, objective, horizon and raw market-data JSON.
+     *        Ticker, objective, horizon and raw market-data JSON.
      */
     @UserMessage("""
             Ticker: {prompt.ticker}
