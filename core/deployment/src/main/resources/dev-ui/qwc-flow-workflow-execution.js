@@ -24,7 +24,7 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
             display: flex;
             flex-direction: column;
         }
-        
+
         .fmt-combo {
             width: 200px;
             margin: 10px 0px;
@@ -43,13 +43,24 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
         }
 
         .workflow-name {
-            margin: 12px 0px;
+            margin: 12px 0px 4px 0px;
+        }
+
+        .workflow-meta {
+            font-size: var(--lumo-font-size-s);
+            color: var(--lumo-secondary-text-color);
+            margin-bottom: 12px;
         }
     `;
 
     static properties = {
-        workflow: { type: String },
+        // New: WorkflowDefinitionId object from backend:
+        // { namespace: string, name: string, version: string }
+        workflowId: { type: Object },
+        // Optional description from WorkflowInfo
+        description: { type: String },
         extensionName: { type: String },
+
         _inputSpec: { state: true },
         _output: { state: true },
         _input: { state: true },
@@ -59,6 +70,8 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
 
     constructor() {
         super();
+        this.workflowId = null;
+        this.description = '';
         this._inputSpec = null;
         this._input = '\n\n\n\n\n\n\n\n\n';
         this._output = '# Your workflow output will be displayed here\n\n\n\n\n\n\n\n\n\n';
@@ -67,9 +80,11 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
     }
 
     render() {
-        return html`<div class="workflow-execution">
+        return html`
+            <div class="workflow-execution">
                 ${this._renderForm()}
-        </div>`;
+            </div>
+        `;
     }
 
     connectedCallback() {
@@ -82,7 +97,7 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
     }
 
     hotReload() {
-        // no-op, it is necessary due to QwcHotReloadElement
+        // no-op, required by QwcHotReloadElement
     }
 
     _onInputFormatChange({ detail }) {
@@ -100,14 +115,28 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
     }
 
     _renderTopBar() {
+        const id = this.workflowId || {};
+        const name = id.name || '(unknown)';
+        const ns = id.namespace || '';
+        const version = id.version || '';
+
         return html`
-                    <div>
-                        <vaadin-button @click="${this._backAction}" class="backButton">
-                            <vaadin-icon icon="font-awesome-solid:caret-left" slot="prefix"></vaadin-icon>
-                            Back
-                        </vaadin-button>
-                        <h2 class="workflow-name">${this.workflow}</h2>
-                    </div>`;
+            <div>
+                <vaadin-button @click="${this._backAction}" class="backButton">
+                    <vaadin-icon icon="font-awesome-solid:caret-left" slot="prefix"></vaadin-icon>
+                    Back
+                </vaadin-button>
+                <h2 class="workflow-name">${name}</h2>
+                <div class="workflow-meta">
+                    ${ns ? html`<span><b>Namespace:</b> ${ns}</span>` : ''}
+                    ${version ? html`${ns ? ' · ' : ''}<span><b>Version:</b> ${version}</span>` : ''}
+                    ${this.description ? html`
+                        <br/>
+                        <span>${this.description}</span>
+                    ` : ''}
+                </div>
+            </div>
+        `;
     }
 
     _renderForm() {
@@ -117,33 +146,35 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
                 <master-content class="layout-container" style="heigh: 50%;">
                     <qui-badge level='info' small><span>Input</span></qui-badge>
                     <qui-themed-code-block
-                        id="code"
-                        class="code-block"
-                        value="${this._input}"
-                        content="${this._input}"
-                        editable
-                        showLineNumbers
-                        theme="${themeState.theme.name}">
+                            id="code"
+                            class="code-block"
+                            value="${this._input}"
+                            content="${this._input}"
+                            editable
+                            showLineNumbers
+                            theme="${themeState.theme.name}">
                     </qui-themed-code-block>
                 </master-content>
                 <detail-content class="layout-container" style="heigh: 50%;" >
                     <qui-badge level="info" small><span>Output</span></qui-badge>
                     <qui-themed-code-block
-                        class="code-block"
-                        mode="markdown"
-                        theme="${themeState.theme.name}"
-                        content="${this._output}">
+                            class="code-block"
+                            mode="markdown"
+                            theme="${themeState.theme.name}"
+                            content="${this._output}">
                     </qui-themed-code-block>
                 </detail-content>
             </vaadin-split-layout>
             <div class="button-container">
-                ${this._loading ?
-                html`<vaadin-progress-bar class="progress" indeterminate></vaadin-progress-bar>` :
-                html`<vaadin-button theme="primary success" @click=${() => this._executeWorkflow()}>
-                    <vaadin-icon icon="font-awesome-solid:play"></vaadin-icon>
-                    Start workflow
-                </vaadin-button>`}
-            </div>`;
+                ${this._loading
+                        ? html`<vaadin-progress-bar class="progress" indeterminate></vaadin-progress-bar>`
+                        : html`<vaadin-button theme="primary success" @click=${() => this._executeWorkflow()}>
+                            <vaadin-icon icon="font-awesome-solid:play"></vaadin-icon>
+                            Start workflow
+                        </vaadin-button>`
+                }
+            </div>
+        `;
     }
 
     _tryParse(value) {
@@ -156,33 +187,42 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
 
     _tryStringify(value) {
         try {
-            return JSON.stringify(value);
+            return JSON.stringify(value, null, 2);
         } catch (err) {
-            return null
+            return null;
         }
     }
+
     _executeWorkflow() {
-        const value = this.shadowRoot.getElementById('code').getAttribute('value');
-        let workflowInput = {
-            workflowName: this.workflow,
+        const codeBlock = this.shadowRoot.getElementById('code');
+        const value = codeBlock ? codeBlock.getAttribute('value') : '';
+
+        if (!this.workflowId) {
+            notifier.showErrorMessage('No workflow selected.');
+            return;
+        }
+
+        const payload = {
+            id: this.workflowId,
             input: value
         };
 
         this._loading = true;
 
-        this.jsonRpc.executeWorkflow(workflowInput).then(({ result }) => {
-            console.log('workflow result', result);
-            if (result.mimetype === 'text/plain') {
-                this._output = result.data;
-            } else {
-                const parsedOutput = this._tryStringify(result.data);
-                if (parsedOutput) {
-                    this._output = parsedOutput;
+        this.jsonRpc.executeWorkflow(payload)
+            .then(({ result }) => {
+                console.log('workflow result', result);
+                if (result.mimetype === 'text/plain') {
+                    this._output = result.data;
                 } else {
-                    this._output = result;
+                    const parsedOutput = this._tryStringify(result.data);
+                    if (parsedOutput) {
+                        this._output = parsedOutput;
+                    } else {
+                        this._output = String(result.data ?? '');
+                    }
                 }
-            }
-        })
+            })
             .catch(err => {
                 console.log('error executing workflow', err);
                 notifier.showErrorMessage('Error while executing workflow: ' + err.message);

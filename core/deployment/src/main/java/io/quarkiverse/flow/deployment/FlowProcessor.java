@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.deployment;
 
-import java.util.Collections;
+import static io.quarkiverse.flow.deployment.FlowLoggingUtils.logWorkflowList;
+
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -15,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.config.FlowDefinitionsConfig;
 import io.quarkiverse.flow.config.FlowTracingConfig;
+import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
 import io.quarkiverse.flow.providers.HttpClientProvider;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
@@ -74,12 +76,13 @@ class FlowProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem registerRuntimeProviders() {
+    AdditionalBeanBuildItem registerRuntimeServices() {
         return AdditionalBeanBuildItem.builder()
                 .addBeanClass(JQScopeSupplier.class)
                 .addBeanClass(CredentialsProviderSecretManager.class)
                 .addBeanClass(MicroprofileConfigManager.class)
                 .addBeanClass(HttpClientProvider.class)
+                .addBeanClass(WorkflowRegistry.class)
                 .setUnremovable()
                 .build();
     }
@@ -215,36 +218,11 @@ class FlowProcessor {
                 .map(set -> String.join(", ", set))
                 .distinct()
                 .collect(Collectors.toList());
-        logWorkflowList(allIdentifiers);
-    }
-
-    private void logWorkflowList(List<String> identifiers) {
-        if (identifiers.isEmpty()) {
-            LOG.info("Flow: No WorkflowDefinition beans were registered.");
-            return;
-        }
-
-        // sort for stable output
-        Collections.sort(identifiers);
-
-        final String header = "Workflow class (Qualifier)";
-        int w = header.length();
-        for (String s : identifiers)
-            w = Math.max(w, s.length());
-
-        String sep = "+" + "-".repeat(w + 2) + "+";
-        StringBuilder sb = new StringBuilder(64 + identifiers.size() * (w + 8));
-        sb.append('\n');
-        sb.append("Flow: Registered WorkflowDefinition beans\n");
-        sb.append(sep).append('\n');
-        sb.append(String.format("| %-" + w + "s |\n", header));
-        sb.append(sep).append('\n');
-        for (String s : identifiers) {
-            sb.append(String.format("| %-" + w + "s |\n", s));
-        }
-        sb.append(sep).append('\n');
-
-        LOG.info(sb.toString());
+        logWorkflowList(LOG,
+                allIdentifiers,
+                "Flow: No WorkflowDefinition beans were registered.",
+                "Flow: Registered WorkflowDefinition beans",
+                "Workflow class (Qualifier)");
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
