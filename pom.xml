@@ -169,6 +169,13 @@
                             <goal>sort</goal>
                         </goals>
                     </execution>
+                    <execution>
+                        <id>check-imports</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>

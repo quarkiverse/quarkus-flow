@@ -165,7 +165,7 @@
                     </execution>
                     <execution>
                         <id>copy-agentic-http-main-examples</id>
-                        <phase>generate-resources</phase>
+                        <phase>generate-sources</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
