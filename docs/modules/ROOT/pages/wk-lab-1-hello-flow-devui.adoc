@@ -71,6 +71,13 @@ Create a REST resource that injects the workflow and starts an instance:
 include::{examples-dir}org/acme/HelloResource.java[]
 ----
 
+We need also the Message class, a simple wrapper for a message.
+
+[source,java]
+----
+include::{examples-dir}org/acme/Message.java[]
+----
+
 Key points:
 
 * The resource injects the `HelloWorkflow` class directly.
