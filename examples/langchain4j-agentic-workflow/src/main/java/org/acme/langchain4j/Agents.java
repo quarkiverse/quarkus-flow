@@ -33,7 +33,10 @@ public final class Agents {
     // --- Domain types --------------------------------------------------------
 
     public enum Mood {
-        ROMANTIC, CHILL, PARTY, FAMILY
+        ROMANTIC,
+        CHILL,
+        PARTY,
+        FAMILY
     }
 
     // --- 1) Sequential workflow: story creator --------------------------------
