@@ -17,4 +17,8 @@ public interface Flowable {
         return WorkflowDefinitionId.of(this.descriptor());
     }
 
+    default String identifier() {
+        return this.getClass().getName();
+    }
+
 }

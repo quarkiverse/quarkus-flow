@@ -1,31 +1,29 @@
-package org.acme;
+package org.acme.langchain4j;
+
+import static java.util.Objects.requireNonNullElse;
 
 import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.agentic.declarative.Output;
 import dev.langchain4j.agentic.declarative.ParallelAgent;
 import dev.langchain4j.agentic.declarative.SequenceAgent;
 import dev.langchain4j.agentic.declarative.SubAgent;
-import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 import io.quarkiverse.langchain4j.RegisterAiService;
-
-import static java.util.Objects.requireNonNullElse;
 
 /**
  * Example LangChain4j agentic workflows backed by Quarkus Flow.
  * <p>
  * When the app boots, quarkus-langchain4j creates beans for these
  *
- * @RegisterAiService interfaces. The quarkus-flow-langchain4j
- * extension transparently builds WorkflowDefinitions for the
- * @SequenceAgent and @ParallelAgent methods and registers them
- * in the Quarkus Flow runtime.
- * <p>
- * You will see them under the Quarkus Flow Dev UI:
- * - document.name ~= "story-creator-with-configurable-style-editor"
- * - document.name ~= "evening-planner-agent"
+ * @RegisterAiService interfaces. The quarkus-flow-langchain4j extension transparently builds WorkflowDefinitions for
+ *                    the
+ *
+ * @SequenceAgent and @ParallelAgent methods and registers them in the Quarkus Flow runtime.
+ *                <p>
+ *                You will see them under the Quarkus Flow Dev UI: - document.name ~=
+ *                "story-creator-with-configurable-style-editor" - document.name ~= "evening-planner-agent"
  */
 public final class Agents {
 
@@ -35,7 +33,10 @@ public final class Agents {
     // --- Domain types --------------------------------------------------------
 
     public enum Mood {
-        ROMANTIC, CHILL, PARTY, FAMILY
+        ROMANTIC,
+        CHILL,
+        PARTY,
+        FAMILY
     }
 
     // --- 1) Sequential workflow: story creator --------------------------------
@@ -43,28 +44,19 @@ public final class Agents {
     /**
      * Top-level workflow interface that chains three sub-agents:
      * <p>
-     * 1. CreativeWriter  -> drafts the story
-     * 2. AudienceEditor  -> adapts to a given audience
-     * 3. StyleEditor     -> adapts the writing style
+     * 1. CreativeWriter -> drafts the story 2. AudienceEditor -> adapts to a given audience 3. StyleEditor -> adapts
+     * the writing style
      * <p>
-     * The Quarkus Flow integration builds a workflow whose input schema
-     * matches the method parameters (topic, style, audience). In Dev UI,
-     * you’ll see a workflow with a document name derived from this class.
+     * The Quarkus Flow integration builds a workflow whose input schema matches the method parameters (topic, style,
+     * audience). In Dev UI, you’ll see a workflow with a document name derived from this class.
      */
     @RegisterAiService
     public interface StoryCreatorWithConfigurableStyleEditor {
 
-        @SequenceAgent(
-                outputKey = "story",
-                subAgents = {
-                        @SubAgent(type = CreativeWriter.class, outputKey = "story"),
-                        @SubAgent(type = AudienceEditor.class, outputKey = "story"),
-                        @SubAgent(type = StyleEditor.class, outputKey = "story")
-                })
-        String write(
-                @V("topic") String topic,
-                @V("style") String style,
-                @V("audience") String audience);
+        @SequenceAgent(outputKey = "story", subAgents = { @SubAgent(type = CreativeWriter.class, outputKey = "story"),
+                @SubAgent(type = AudienceEditor.class, outputKey = "story"),
+                @SubAgent(type = StyleEditor.class, outputKey = "story") })
+        String write(@V("topic") String topic, @V("style") String style, @V("audience") String audience);
     }
 
     @RegisterAiService
@@ -77,7 +69,7 @@ public final class Agents {
                 """)
         @UserMessage("""
                 Topic: {topic}
-                
+
                 Write a short story about this topic.
                 """)
         String draft(@V("topic") String topic);
@@ -93,14 +85,12 @@ public final class Agents {
                 """)
         @UserMessage("""
                 Audience: {audience}
-                
+
                 Rewrite the story below so it is ideal for this audience.
                 Story:
                 {story}
                 """)
-        String adapt(
-                @V("story") String story,
-                @V("audience") String audience);
+        String adapt(@V("story") String story, @V("audience") String audience);
     }
 
     @RegisterAiService
@@ -114,14 +104,12 @@ public final class Agents {
                 """)
         @UserMessage("""
                 Style: {style}
-                
+
                 Rewrite the story below with this style.
                 Story:
                 {story}
                 """)
-        String restyle(
-                @V("story") String story,
-                @V("style") String style);
+        String restyle(@V("story") String story, @V("style") String style);
     }
 
     // --- 2) Parallel workflow: evening planner --------------------------------
@@ -129,50 +117,35 @@ public final class Agents {
     /**
      * Example of a parallel workflow that plans an evening.
      * <p>
-     * The @ParallelAgent method fans out to three sub-agents in parallel
-     * and then returns a single aggregated EveningPlan.
+     * The @ParallelAgent method fans out to three sub-agents in parallel and then returns a single aggregated
+     * EveningPlan.
      * <p>
-     * The Quarkus Flow integration builds a fork-join style workflow where
-     * each branch represents one of the sub-agents below.
+     * The Quarkus Flow integration builds a fork-join style workflow where each branch represents one of the sub-agents
+     * below.
      */
     @RegisterAiService
     public interface EveningPlannerAgent {
         /**
-         * LC4J post-processor that builds the final EveningPlan from the
-         * values written by the sub-agents + original inputs still in the scope.
+         * LC4J post-processor that builds the final EveningPlan from the values written by the sub-agents + original
+         * inputs still in the scope.
          */
         @Output
-        static EveningPlan toEveningPlan(
-                @V("city") String city,
-                @V("mood") Mood mood,
-                @V("dinner") String dinner,
-                @V("drinks") String drinks,
-                @V("activity") String activity) {
+        static EveningPlan toEveningPlan(@V("city") String city, @V("mood") Mood mood, @V("dinner") String dinner,
+                @V("drinks") String drinks, @V("activity") String activity) {
 
-            // You can add any safety / defaults here if you want
-            return new EveningPlan(
-                    requireNonNullElse(city, "unknown city"),
-                    mood != null ? mood : Mood.CHILL,
-                    requireNonNullElse(dinner, "surprise dinner"),
-                    requireNonNullElse(drinks, "surprise drinks"),
+            return new EveningPlan(requireNonNullElse(city, "unknown city"), mood != null ? mood : Mood.CHILL,
+                    requireNonNullElse(dinner, "surprise dinner"), requireNonNullElse(drinks, "surprise drinks"),
                     requireNonNullElse(activity, "surprise activity"));
         }
 
-        @ParallelAgent(
-                outputKey = "plan",
-                subAgents = {
-                        @SubAgent(type = DinnerAgent.class, outputKey = "dinner"),
-                        @SubAgent(type = DrinksAgent.class, outputKey = "drinks"),
-                        @SubAgent(type = ActivityAgent.class, outputKey = "activity")
-                })
-        ResultWithAgenticScope<EveningPlan> plan(
-                @V("city") String city,
-                @V("mood") Mood mood);
+        @ParallelAgent(outputKey = "plan", subAgents = { @SubAgent(type = DinnerAgent.class, outputKey = "dinner"),
+                @SubAgent(type = DrinksAgent.class, outputKey = "drinks"),
+                @SubAgent(type = ActivityAgent.class, outputKey = "activity") })
+        EveningPlan plan(@V("city") String city, @V("mood") Mood mood);
     }
 
-
     // Not sure why we need to force this to avoid quarkus-langchain4j complaining about outputKeys.
-    // TODO: open an  issue
+    // TODO: open an issue
     public interface DumbAgent {
         @Agent(outputKey = "city")
         String city();
@@ -201,12 +174,10 @@ public final class Agents {
         @UserMessage("""
                 City: {city}
                 Mood: {mood}
-                
+
                 Suggest where to have dinner (one place, one sentence).
                 """)
-        String suggestDinner(
-                @V("city") String city,
-                @V("mood") Mood mood);
+        String suggestDinner(@V("city") String city, @V("mood") Mood mood);
     }
 
     @RegisterAiService
@@ -219,12 +190,10 @@ public final class Agents {
         @UserMessage("""
                 City: {city}
                 Mood: {mood}
-                
+
                 Suggest where to have a drink (one place, one sentence).
                 """)
-        String suggestDrinks(
-                @V("city") String city,
-                @V("mood") Mood mood);
+        String suggestDrinks(@V("city") String city, @V("mood") Mood mood);
     }
 
     @RegisterAiService
@@ -237,14 +206,11 @@ public final class Agents {
         @UserMessage("""
                 City: {city}
                 Mood: {mood}
-                
+
                 Suggest one activity, after dinner and drinks, to finish the evening.
                 """)
-        String suggestActivity(
-                @V("city") String city,
-                @V("mood") Mood mood);
+        String suggestActivity(@V("city") String city, @V("mood") Mood mood);
     }
-
 
     public record EveningPlan(String city, Mood mood, String dinner, String drinks, String activity) {
     }

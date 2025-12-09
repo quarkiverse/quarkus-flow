@@ -13,10 +13,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.FlowMetadata;
 import io.quarkiverse.flow.Flowable;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.serverlessworkflow.api.types.Workflow;
+import io.serverlessworkflow.api.types.WorkflowMetadata;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
@@ -69,7 +71,7 @@ public class WorkflowRegistry {
 
     public WorkflowDefinition register(Flowable flowable) {
         LOG.debug("Registering workflow {}", flowable.descriptor().getDocument().getName());
-        final WorkflowDefinition definition = app.workflowDefinition(flowable.descriptor());
+        final WorkflowDefinition definition = app.workflowDefinition(addFlowableMetadata(flowable));
         workflows.put(WorkflowDefinitionId.of(definition.workflow()), definition.workflow());
         return definition;
     }
@@ -79,6 +81,16 @@ public class WorkflowRegistry {
         final WorkflowDefinition definition = app.workflowDefinition(workflow);
         workflows.put(WorkflowDefinitionId.of(definition.workflow()), definition.workflow());
         return definition;
+    }
+
+    private Workflow addFlowableMetadata(final Flowable flowable) {
+        final Workflow workflow = flowable.descriptor();
+        if (workflow.getDocument().getMetadata() == null) {
+            workflow.getDocument().setMetadata(new WorkflowMetadata());
+        }
+        workflow.getDocument().getMetadata().setAdditionalProperty(FlowMetadata.FLOW_IDENTIFIER_CLASS,
+                flowable.identifier());
+        return workflow;
     }
 
     public void cacheDescriptor(Workflow workflow) {

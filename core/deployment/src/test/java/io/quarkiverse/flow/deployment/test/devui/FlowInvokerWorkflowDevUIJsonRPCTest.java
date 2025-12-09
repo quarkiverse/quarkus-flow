@@ -1,7 +1,6 @@
 package io.quarkiverse.flow.deployment.test.devui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.Map;
 
@@ -43,13 +42,10 @@ public class FlowInvokerWorkflowDevUIJsonRPCTest extends DevUIJsonRPCTest {
                         }
                         """));
 
-        assertEquals(MediaType.APPLICATION_JSON, node.get("mimetype").asText());
-        JsonNode data = node.get("data");
-        assertNotNull(data);
+        assertEquals(MediaType.TEXT_PLAIN, node.get("mimetype").asText());
 
         // Payload returned by DevUIAgenticServiceBean.complex(...)
-        assertEquals("topic-value", data.get("var1").asText());
-        assertEquals(42, data.get("var2").asInt());
-        assertEquals(true, data.get("var3").asBoolean());
+        assertEquals("v1=topic-value,v2=42,v3=true", node.get("data").asText());
     }
+
 }

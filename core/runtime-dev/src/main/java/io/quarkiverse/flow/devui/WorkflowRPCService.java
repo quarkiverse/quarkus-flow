@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import io.quarkiverse.flow.internal.WorkflowInvocationMetadata;
 import io.quarkiverse.flow.internal.WorkflowInvoker;
@@ -23,6 +24,9 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.annotations.JsonRpcDescription;
+import io.serverlessworkflow.api.types.Input;
+import io.serverlessworkflow.api.types.SchemaInline;
+import io.serverlessworkflow.api.types.SchemaUnion;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
@@ -34,6 +38,8 @@ import io.smallrye.common.annotation.Blocking;
 public class WorkflowRPCService {
 
     private static final Logger LOG = LoggerFactory.getLogger(WorkflowRPCService.class);
+    private static final String RESULT_WITH_AGENTIC_SCOPE_CLASS = "dev.langchain4j.agentic.scope.ResultWithAgenticScope";
+
     @Inject
     ObjectMapper objectMapper;
     @Inject
@@ -70,18 +76,19 @@ public class WorkflowRPCService {
             @JsonRpcDescription("Workflow's id") WorkflowDefinitionId id,
             @JsonRpcDescription("Workflow's input") String input) {
 
-        Optional<WorkflowDefinition> def = registry.lookup(id);
+        Workflow workflow = registry.lookupDescriptor(id)
+                .orElseThrow(() -> new IllegalStateException("Workflow with id '" + id + "' not found"));
+        Optional<WorkflowInvoker> invoker = WorkflowInvocationMetadata.beanInvokerOf(workflow);
         Object parsedInput = parseStringIfNeeded(input);
         Object result;
 
-        if (def.isEmpty()) {
-            // Tries to execute via invoker
-            Workflow workflow = registry.lookupDescriptor(id)
-                    .orElseThrow(() -> new IllegalStateException("Workflow with id '" + id + "' not found"));
-            result = invokeBeanEntryPoint(WorkflowInvocationMetadata.beanInvokerOf(workflow)
-                    .orElseThrow(() -> new IllegalStateException("Invoker not found for workflow: " + workflow)), parsedInput);
+        if (invoker.isPresent()) {
+            result = invokeBeanEntryPoint(invoker.get(), parsedInput);
         } else {
-            WorkflowModel wm = def.get().instance(parsedInput)
+            Optional<WorkflowDefinition> def = registry.lookup(id);
+            WorkflowModel wm = def
+                    .orElseThrow(() -> new IllegalStateException("WorkflowDefinition not found for workflow " + id))
+                    .instance(parsedInput)
                     .start()
                     .join();
             result = wm.asJavaObject();
@@ -90,6 +97,54 @@ public class WorkflowRPCService {
         return new WorkflowOutput(
                 (result instanceof String) ? MediaType.TEXT_PLAIN : MediaType.APPLICATION_JSON,
                 result);
+    }
+
+    @JsonRpcDescription("Get the JSON Schema for the workflow input, if present")
+    public Map<String, Object> getInputSchema(
+            @JsonRpcDescription("Workflow's id") WorkflowDefinitionId id) {
+
+        Workflow wf = registry.lookupDescriptor(id)
+                .orElseGet(() -> registry.lookup(id)
+                        .map(WorkflowDefinition::workflow)
+                        .orElseThrow(() -> new IllegalStateException("Workflow with id '" + id + "' not found")));
+
+        Input input = wf.getInput();
+        if (input == null) {
+            return null;
+        }
+
+        SchemaUnion schemaUnion = input.getSchema();
+        if (schemaUnion == null) {
+            return null;
+        }
+
+        SchemaInline inline = schemaUnion.getSchemaInline();
+        if (inline == null) {
+            return null;
+        }
+
+        Object document = inline.getDocument();
+        if (document == null) {
+            return null;
+        }
+
+        if (document instanceof ObjectNode node) {
+            // Convert the JSON tree into a plain Map so the browser sees the real schema
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = objectMapper.convertValue(node, Map.class);
+            return map;
+        }
+
+        if (document instanceof Map<?, ?> map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> result = (Map<String, Object>) map;
+            return result;
+        }
+
+        // Fallback: try to convert any other type to a Map
+        @SuppressWarnings("unchecked")
+        Map<String, Object> map = objectMapper.convertValue(document, Map.class);
+        return map;
     }
 
     /**
@@ -117,13 +172,41 @@ public class WorkflowRPCService {
             Method method = resolveInvokerMethod(beanClass, invoker);
             Object[] args = resolveArgumentsForMethod(method, parsedInput);
 
-            return method.invoke(bean, args);
+            return sanitizeResultForDevUI(method.invoke(bean, args));
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException(
                     "Failed to invoke workflow via bean invoker: " + beanClassName + "#" + methodName, e);
         }
+    }
+
+    private Object sanitizeResultForDevUI(Object result) {
+        if (result == null) {
+            return null;
+        }
+
+        try {
+            Class<?> clazz = result.getClass();
+
+            // Handle ResultWithAgenticScope<R> reflectively
+            if (RESULT_WITH_AGENTIC_SCOPE_CLASS.equals(clazz.getName())) {
+                // Prefer record-style accessor `result()`
+                try {
+                    var m = clazz.getMethod("result");
+                    return m.invoke(result);
+                } catch (NoSuchMethodException e) {
+                    // Fallback: try JavaBean-style `getResult()`
+                    var m = clazz.getMethod("getResult");
+                    return m.invoke(result);
+                }
+            }
+
+        } catch (Exception e) {
+            LOG.debug("Unable to unwrap LC4J ResultWithAgenticScope for Dev UI, returning raw result", e);
+        }
+
+        return result;
     }
 
     private Method resolveInvokerMethod(Class<?> beanClass, WorkflowInvoker invoker) {

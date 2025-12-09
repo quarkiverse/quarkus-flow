@@ -18,7 +18,7 @@ public abstract class Flow implements Flowable {
     @PostConstruct
     public void init() {
         this.definition = Arc.container()
-                .select(WorkflowDefinition.class, Identifier.Literal.of(this.getClass().getName()))
+                .select(WorkflowDefinition.class, Identifier.Literal.of(this.identifier()))
                 .get();
     }
 

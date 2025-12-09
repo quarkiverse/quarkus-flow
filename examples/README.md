@@ -5,6 +5,7 @@ Directory of end-to-end use case examples.
 <!-- Please update this list when adding a new example / keep it in alphabetical order -->
 - [Agentic + HTTP](agentic-http/README.md): Example of a workflow enriching an agent prompt from a remote HTTP request.
 - [HTTP Basic Auth](http-basic-auth/README.md): Simple workflow exemplifying calling an HTTP service secured by Basic Auth.
+- [LangChain4j Agentic Workflow](langchain4j-agentic-workflow/README.md): Example of agentic workflows declared with LangChain4j annotations and executed as Quarkus Flow workflows with Dev UI support.
 - [Newsletter Drafter](newsletter-drafter/README.md): Human-in-the-loop Agentic Workflow example with LangChain4j.
 - [Petstore OpenAPI](petstore-openapi/README.md): The famous Petstore Demo calling HTTP services via an OpenAPI specification file descriptor.
 

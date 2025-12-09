@@ -32,6 +32,11 @@
             <version>${io.quarkiverse.langchain4j.version}</version>
         </dependency>
         <dependency>
+            <groupId>io.quarkiverse.langchain4j</groupId>
+            <artifactId>quarkus-langchain4j-agentic</artifactId>
+            <version>${io.quarkiverse.langchain4j.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.quarkiverse.antora</groupId>
             <artifactId>quarkus-antora</artifactId>
             <version>${quarkus-antora.version}</version>
@@ -164,7 +169,7 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>copy-agentic-http-main-examples</id>
+                        <id>copy-examples</id>
                         <phase>generate-sources</phase>
                         <goals>
                             <goal>copy-resources</goal>
@@ -175,6 +180,10 @@
                             <resources>
                                 <resource>
                                     <directory>${project.basedir}/../examples/agentic-http/src/main/java</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                                <resource>
+                                    <directory>${project.basedir}/../examples/langchain4j-agentic-workflow/src/main/java</directory>
                                     <filtering>false</filtering>
                                 </resource>
                             </resources>
