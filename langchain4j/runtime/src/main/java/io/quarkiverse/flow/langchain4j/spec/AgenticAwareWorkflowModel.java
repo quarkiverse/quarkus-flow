@@ -11,13 +11,14 @@ import dev.langchain4j.agentic.scope.AgenticScope;
 import io.serverlessworkflow.impl.AbstractWorkflowModel;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.serverlessworkflow.impl.jackson.JsonUtils;
+import io.serverlessworkflow.impl.model.jackson.JacksonModel;
 
 public class AgenticAwareWorkflowModel extends AbstractWorkflowModel {
 
     private final AgenticScope agenticScope;
-    private final WorkflowModel delegate;
+    private final JacksonModel delegate;
 
-    public AgenticAwareWorkflowModel(AgenticScope agenticScope, WorkflowModel delegate) {
+    public AgenticAwareWorkflowModel(AgenticScope agenticScope, JacksonModel delegate) {
         this.agenticScope = agenticScope;
         this.delegate = delegate;
     }
@@ -67,10 +68,7 @@ public class AgenticAwareWorkflowModel extends AbstractWorkflowModel {
 
     @Override
     public Optional<Map<String, Object>> asMap() {
-        if (agenticScope != null) {
-            return Optional.of(agenticScope.state());
-        }
-        return delegate.asMap();
+        return agenticScope != null ? Optional.of(agenticScope.state()) : delegate.asMap();
     }
 
     @Override

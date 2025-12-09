@@ -2,6 +2,7 @@ package io.quarkiverse.flow.langchain4j.spec;
 
 import dev.langchain4j.agentic.scope.AgenticScope;
 import io.serverlessworkflow.impl.WorkflowModel;
+import io.serverlessworkflow.impl.model.jackson.JacksonModel;
 import io.serverlessworkflow.impl.model.jackson.JacksonModelFactory;
 
 /**
@@ -16,13 +17,9 @@ public class AgenticAwareModelFactory extends JacksonModelFactory {
     @Override
     public WorkflowModel fromOther(Object obj) {
         // Only intercept AgenticScope; everything else uses the parent's behavior
-        if (obj instanceof AgenticScope scope) {
-            // Delegate model is built from the *state* (Map) of the scope
-            WorkflowModel delegateModel = super.from(scope.state());
-            return new AgenticAwareWorkflowModel(scope, delegateModel);
-        }
-
-        return super.fromOther(obj);
+        // Delegate model is built from the *state* (Map) of the scope
+        return obj instanceof AgenticScope scope ? new AgenticAwareWorkflowModel(scope, (JacksonModel) from(scope.state()))
+                : super.fromOther(obj);
     }
 
     @Override
