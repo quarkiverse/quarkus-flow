@@ -121,7 +121,6 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
             document.head.appendChild(script);
         }
         this.jsonRpc.getWorkflows().then(({ result }) => {
-            // result: [{ id: { namespace, name, version }, description }]
             this._workflows = result;
         });
     }

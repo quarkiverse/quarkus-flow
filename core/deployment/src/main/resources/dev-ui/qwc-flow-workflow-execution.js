@@ -443,9 +443,10 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
                 }
             })
             .catch(err => {
-                console.log('error executing workflow', err);
-                notifier.showErrorMessage('Error while executing workflow: ' + err.message);
-                this._output = '# Error\n\n' + err.message;
+                const { error } = err
+                console.log('error executing workflow', error);
+                notifier.showErrorMessage('Error while executing workflow: ' + error.message);
+                this._output = '# Error\n\n' + error.message;
             })
             .finally(() => {
                 this._loading = false;
