@@ -3,6 +3,7 @@ package io.quarkiverse.flow.deployment;
 import java.nio.file.Path;
 import java.util.Objects;
 
+import io.quarkiverse.flow.internal.WorkflowNameUtils;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
@@ -26,8 +27,10 @@ public final class DiscoveredWorkflowFileBuildItem extends MultiBuildItem {
      */
     public DiscoveredWorkflowFileBuildItem(Path workflowPath, Workflow workflow) {
         this.workflowPath = workflowPath;
+
         this.workflowDefinitionId = WorkflowDefinitionId.of(workflow);
-        this.regularIdentifier = workflowDefinitionId.namespace() + ":" + workflowDefinitionId.name();
+        this.regularIdentifier = WorkflowNameUtils.yamlDescriptorIdentifier(workflowDefinitionId.namespace(),
+                workflowDefinitionId.name());
     }
 
     public String location() {

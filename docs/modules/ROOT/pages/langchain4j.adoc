@@ -179,8 +179,45 @@ export narrow fields (`exportAs(...)`) and cache intermediate results in your wo
 if the provider keeps chat history, ensure you pass a stable `@MemoryId`
 (for example, your workflow instance id) or turn memory off for deterministic runs.
 
+[[langchain4j-agentic-api]]
+== Using the LangChain4j Agentic Workflow API (annotations)
+
+So far, we focused on workflows that you declare directly with the Quarkus Flow Java DSL.
+
+If you are already using the link:https://docs.langchain4j.dev/tutorials/agents[LangChain4j *Agentic Workflow API*] (from the `quarkus-langchain4j-agentic` extension), you can let Quarkus Flow *implement those agentic workflows for you* instead of writing `Flow` subclasses by hand.
+
+At a high level:
+
+* You define agent services with `@RegisterAiService` and a method annotated with
+`@SequenceAgent`, `@ParallelAgent`, and friends from the LangChain4j Agentic Workflow API.
+* Quarkus LangChain4j creates proxy beans for those services.
+* The `quarkus-flow-langchain4j` extension inspects those services at build time, builds
+a `WorkflowDefinition` that encodes the agentic pattern (sequence, parallel, nested, …),
+and registers it in the Quarkus Flow runtime.
+* Each agentic method appears as a *workflow* in the Quarkus Flow Dev UI, with:
+** A *workflow definition id* derived from the agent interface and method name.
+** An *input JSON Schema* derived from the method signature, used to auto-generate
+HTML forms for testing and debugging.
+** The usual Quarkus Flow goodies: telemetry, Dev UI, robustness, retries, etc.
+
+This gives you two complementary ways to express agentic logic:
+
+. **Flow Java DSL** – best when you want full access to all Quarkus Flow features
+(HTTP/OpenAPI tasks, messages, listen/emit, long-running instances, etc.).
+. **LangChain4j Agentic API** – best when you already have agentic workflows implemented
+via annotations and want Quarkus Flow to orchestrate them *without changing the agent
+code*.
+
+For a deeper explanation of this integration, see the concept page:
+xref:concepts-agentic-langchain4j.adoc[Agentic workflows with LangChain4j and Quarkus Flow].
+
+To get started with a hands-on example using `@SequenceAgent` and `@ParallelAgent`,
+follow the guide:
+xref:howto-langchain4j-agentic-workflows.adoc[Use the LangChain4j Agentic Workflow API with Quarkus Flow].
+
 == See also
 
+* xref:howto-langchain4j-agentic-workflows.adoc[] - use LangChain4j Agentic Workflow API implementation.
 * xref:dsl-cheatsheet.adoc[] — all task providers and transformations (`inputFrom`, `exportAs`, `outputAs`, …).
 * xref:specification.adoc[] — CNCF Workflow concepts behind `call`, events, conditions, and loops.
 * xref:messaging.adoc[] — emitting review requests and waiting for approvals via messaging.

@@ -16,6 +16,7 @@
     <modules>
         <module>core</module>
         <module>messaging</module>
+        <module>langchain4j</module>
     </modules>
 
     <scm>
@@ -166,6 +167,13 @@
                         <phase>process-sources</phase>
                         <goals>
                             <goal>sort</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>check-imports</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
                         </goals>
                     </execution>
                 </executions>

@@ -49,12 +49,12 @@ public class NewsletterAPIResource {
      * Starts the workflow to create a new newsletter draft.
      *
      * @param newsletter
-     *            input from the user
+     *        input from the user
      *
      * @return A workflow instance that will call the agents and produce a request for review event once it's done.
      *
      * @throws JsonProcessingException
-     *             in case of an error converting the object into a JSON string for the agent.
+     *         in case of an error converting the object into a JSON string for the agent.
      */
     @POST
     @Path("/newsletter")

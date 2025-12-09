@@ -1,0 +1,82 @@
+= Lab 4b – Agentic workflows via LangChain4j annotations
+:page-topic-type: tutorial
+include::includes/attributes.adoc[]
+
+In this optional lab, you will re-implement an agentic workflow using the
+LangChain4j Agentic Workflow API and let Quarkus Flow orchestrate it.
+
+You will:
+
+* Add the `quarkus-flow-langchain4j` and `quarkus-langchain4j-agentic` extensions.
+* Declare a sequential and a parallel workflow using annotations.
+* Run them from the Quarkus Flow Dev UI and compare with the Java DSL version.
+
+== 1. Starting point
+
+Use the solution from xref:wk-lab-4-agentic-langchain4j.adoc[] as your starting point.
+You should already have:
+
+* Quarkus Flow set up.
+* A LangChain4j model provider configured (for example OpenAI or Ollama).
+* At least one agent defined with `@RegisterAiService`.
+
+== 2. Add the agentic workflow dependencies
+
+In your `pom.xml`, add:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkiverse.flow</groupId>
+    <artifactId>quarkus-flow-langchain4j</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkiverse.langchain4j</groupId>
+    <artifactId>quarkus-langchain4j-agentic</artifactId>
+</dependency>
+----
+
+Rebuild the project (or restart dev mode) so Quarkus picks up the new extensions.
+
+== 3. Implement the annotated workflows
+
+Create `org.acme.Agents` with the story creator and evening planner examples from
+xref:howto-langchain4j-agentic-workflows.adoc[].
+
+Keep the Java DSL workflows from the previous lab so you can compare both approaches.
+
+== 4. Explore in the Quarkus Flow Dev UI
+
+Start or restart dev mode:
+
+[source,shell]
+----
+./mvnw quarkus:dev
+----
+
+Then:
+
+. Open the Dev UI → *Quarkus Flow*.
+. You should now see *additional* workflows:
+** `story-creator-with-configurable-style-editor`
+** `evening-planner-agent`
+. Click each workflow:
+** Use the auto-generated input forms to run a few experiments.
+** Go back and inspect the Mermaid diagram and compare it to the Java DSL version.
+
+Questions to discuss:
+
+* How similar are the topologies between the annotation-based and DSL-based workflows?
+* Which approach do you prefer for:
+** Quick experiments?
+** Long-running, production workflows?
+** Integrations with HTTP / messaging?
+
+== 5. Takeaways
+
+After this lab, you should be able to:
+
+* Decide when to declare agentic workflows with annotations vs the Flow DSL.
+* Recognize the benefits of using Quarkus Flow (Dev UI, telemetry, integration)
+on top of Quarkus LangChain4j’s Agentic Workflow API.
+* Confidently reuse existing LangChain4j agents as first-class workflows.

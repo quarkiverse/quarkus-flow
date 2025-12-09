@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import java.util.Locale;
 
 public enum Tone {
-    FRIENDLY, NEUTRAL, FORMAL, CAUTIOUS;
+    FRIENDLY,
+    NEUTRAL,
+    FORMAL,
+    CAUTIOUS;
 
     @Override
     public String toString() {

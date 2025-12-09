@@ -5,6 +5,7 @@
 
 * How-to Guides
 ** xref:langchain4j.adoc[Agentic workflows with LangChain4j]
+** xref:howto-langchain4j-agentic-workflows.adoc[Workflows as Annotations with LangChain4j Agentic]
 ** xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services]
 ** xref:http-client.adoc[Configure the HTTP client]
 ** xref:messaging.adoc[Use messaging and events]
@@ -17,6 +18,7 @@
 ** xref:concepts-architecture.adoc[Concepts & architecture]
 ** xref:specification.adoc[CNCF Workflow mapping and concepts]
 ** xref:data-flow.adoc[]
+** xref:concepts-agentic-langchain4j.adoc[]
 
 * Reference
 ** xref:dsl-cheatsheet.adoc[Java DSL cheatsheet]
@@ -28,5 +30,4 @@
 ** xref:wk-lab-2-http-openapi.adoc[Lab 2 – Call HTTP & OpenAPI services]
 ** xref:wk-lab-3-events-yaml.adoc[Lab 3 – Events with YAML workflows]
 ** xref:wk-lab-4-agentic-langchain4j.adoc[Lab 4 – Agentic workflows]
-
-// TODO: devui
+** xref:wk-lab-4b-agentic-langchain4j-annotations.adoc[]

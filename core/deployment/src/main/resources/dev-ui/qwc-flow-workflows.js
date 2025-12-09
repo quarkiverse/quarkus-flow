@@ -18,7 +18,7 @@ import { themeState } from 'theme-state';
 export class QwcFlow extends observeState(QwcHotReloadElement) {
     jsonRpc = new JsonRpc(this);
 
-    static styles = css`    
+    static styles = css`
         .workflows {
             padding: 8px;
         }
@@ -50,47 +50,64 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
 
     render() {
         if (this._selectedWorkflow != null) {
+            // Pass WorkflowDefinitionId as a *property*, not as a string attribute
             return html`
-                <qwc-flow-workflow-execution 
-                    extensionName="${this.jsonRpc.getExtensionName()}" 
-                    workflow="${this._selectedWorkflow.name}" 
-                    @flow-workflows-back=${this._showWorkflows}>
+                <qwc-flow-workflow-execution
+                        extensionName="${this.jsonRpc.getExtensionName()}"
+                        .workflowId=${this._selectedWorkflow.id}
+                        description="${this._selectedWorkflow.description ?? ''}"
+                        @flow-workflows-back=${this._showWorkflows}>
                 </qwc-flow-workflow-execution>
             `;
         } else {
             return html`
                 <div class="workflows">
                     <vaadin-grid
-                        .items=${this._workflows}
-                        theme="no-border"
-                        column-reordering-allowed
-                        multi-sort>
+                            .items=${this._workflows}
+                            theme="no-border"
+                            column-reordering-allowed
+                            multi-sort>
+                        <!-- Name is now id.name from WorkflowDefinitionId -->
                         <vaadin-grid-column
-                            path="name"
-                            header="Name"
-                            auto-width>
+                                path="id.name"
+                                header="Name"
+                                auto-width>
+                        </vaadin-grid-column>
+                        <!-- Optional: show namespace -->
+                        <vaadin-grid-column
+                                path="id.namespace"
+                                header="Namespace"
+                                auto-width>
+                        </vaadin-grid-column>
+                        <!-- Optional: show version -->
+                        <vaadin-grid-column
+                                path="id.version"
+                                header="Version"
+                                auto-width>
+                        </vaadin-grid-column>
+                        <!-- Description from WorkflowInfo -->
+                        <vaadin-grid-column
+                                path="description"
+                                header="Description">
                         </vaadin-grid-column>
                         <vaadin-grid-column
-                            header="Actions"
-                            auto-width
-                            ${columnBodyRenderer(workflow => html`
-                                <vaadin-button @click=${() => this._visualizeMermaid(workflow)}>
-                                    <vaadin-icon icon="font-awesome-solid:eye"></vaadin-icon>
-                                </vaadin-button>
-                                <vaadin-button @click=${() => this._executeWorkflow(workflow)}>
-                                    <vaadin-icon icon="font-awesome-solid:play"></vaadin-icon>
-                                </vaadin-button>
-                                `,
-                []
-            )}>
+                                header="Actions"
+                                auto-width
+                                ${columnBodyRenderer(workflow => html`
+                                    <vaadin-button @click=${() => this._visualizeMermaid(workflow)}>
+                                        <vaadin-icon icon="font-awesome-solid:eye"></vaadin-icon>
+                                    </vaadin-button>
+                                    <vaadin-button @click=${() => this._executeWorkflow(workflow)}>
+                                        <vaadin-icon icon="font-awesome-solid:play"></vaadin-icon>
+                                    </vaadin-button>
+                                `, [])}>
                         </vaadin-grid-column>
                     </vaadin-grid>
                     ${this._mermaidDialog()}
                 </div>
-        `;
+            `;
         }
     }
-
 
     hotReload() {
         // no-op, it is necessary due to QwcHotReloadElement
@@ -114,10 +131,7 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
 
     updated(changedProps) {
         super.updated?.(changedProps);
-        if (
-            this._currentMermaid &&
-            window.mermaid
-        ) {
+        if (this._currentMermaid && window.mermaid) {
             window.mermaid.init({
                 startOnLoad: false,
                 theme: themeState.theme.name === 'dark' ? 'dark' : 'default',
@@ -128,16 +142,15 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
                     htmlLabels: true,
                 },
                 themeCSS: ".label foreignObject { font-size: 14px; overflow: visible; width: auto; }"
-
             }, '.mermaid');
         }
     }
 
     _visualizeMermaid(workflow) {
+        // Backend expects: generateMermaidDiagram(WorkflowDefinitionId id)
         this.jsonRpc.generateMermaidDiagram({
-                workflowName: workflow.name
-            })
-            .then(({ result }) => {
+            id: workflow.id
+        }).then(({ result }) => {
             this._currentMermaid = result.mermaid.replace(/^---[\s\S]*?---\s*/, '');
             this._mermaidDialogOpened = true;
         });
@@ -146,12 +159,15 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
     _mermaidContent() {
         return unsafeHTML(`
              <pre class="mermaid mermaid-container" style="display: flex; flex-direction: column; align-items: center;">
-               ${(this._currentMermaid)}
+               ${this._currentMermaid}
             </pre>`);
     }
 
     _downloadDiagramAsPng() {
         let svgData = document.querySelector('pre.mermaid > svg');
+        if (!svgData) {
+            return;
+        }
         let img = new Image(svgData.width.baseVal.value, svgData.height.baseVal.value);
         img.src = `data:image/svg+xml;base64,${btoa(new XMLSerializer().serializeToString(svgData))}`;
         img.onload = function () {
@@ -172,23 +188,23 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
     _mermaidDialog() {
         return html`
             <vaadin-dialog
-                .opened=${this._mermaidDialogOpened}
-                @opened-changed=${e => (this._mermaidDialogOpened = e.detail.value)}
-                ${dialogRenderer(() => this._mermaidContent(), [])}
-                ${dialogFooterRenderer(() => html`
-                    <div class="buttonBar">
-                        <vaadin-button class="button" @click=${() => this._downloadDiagramAsPng()}>
-                            <vaadin-icon icon="font-awesome-solid:file-export"></vaadin-icon>
-                            Export
-                        </vaadin-button>
-                    </div>
-                `, [])}
-                .width=${'800px'}
-                .height=${'600px'}
-                resizable
-                draggable
-                header-title="Flow Diagram"
-                theme="${themeState.theme.name}">
+                    .opened=${this._mermaidDialogOpened}
+                    @opened-changed=${e => (this._mermaidDialogOpened = e.detail.value)}
+                    ${dialogRenderer(() => this._mermaidContent(), [])}
+                    ${dialogFooterRenderer(() => html`
+                        <div class="buttonBar">
+                            <vaadin-button class="button" @click=${() => this._downloadDiagramAsPng()}>
+                                <vaadin-icon icon="font-awesome-solid:file-export"></vaadin-icon>
+                                Export
+                            </vaadin-button>
+                        </div>
+                    `, [])}
+                    .width=${'800px'}
+                    .height=${'600px'}
+                    resizable
+                    draggable
+                    header-title="Flow Diagram"
+                    theme="${themeState.theme.name}">
             </vaadin-dialog>
         `;
     }
