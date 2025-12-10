@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.quarkiverse.flow</groupId>
         <artifactId>quarkus-flow-langchain4j-parent</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>0.4.0</version>
     </parent>
     <artifactId>quarkus-flow-langchain4j-deployment</artifactId>
     <name>Quarkus Flow :: LangChain4j :: Deployment</name>
