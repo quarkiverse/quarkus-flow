@@ -19,6 +19,11 @@ public class FlowDevUIProcessor {
                 .dynamicLabelJsonRPCMethodName(
                         "getNumbersOfWorkflows")
                 .icon("font-awesome-solid:diagram-project"));
+        cardPage.addLibraryVersion("io.serverlessworkflow", "serverlessworkflow-impl-core", "CNCF Workflow SDK",
+                "https://serverlessworkflow.io/");
+        cardPage.addLibraryVersion("io.cloudevents", "cloudevents-json-jackson", "CloudEvents SDK",
+                "https://cloudevents.github.io/sdk-java/");
+        cardPage.addLibraryVersion("net.thisptr", "jackson-jq", "Jackson JQ", "https://github.com/eiiches/jackson-jq");
         return cardPage;
     }
 
