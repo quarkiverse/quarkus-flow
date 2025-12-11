@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <name>Quarkus Flow :: Camel :: Parent</name>
+    <artifactId>quarkus-flow-camel-parent</artifactId>
+    <packaging>pom</packaging>
+
+    <properties>
+        <version.org.apache.camel.quarkus>3.30.0</version.org.apache.camel.quarkus>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.apache.camel.quarkus</groupId>
+                <artifactId>camel-quarkus-bom</artifactId>
+                <version>${version.org.apache.camel.quarkus}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <modules>
+        <module>deployment</module>
+        <module>runtime</module>
+        <module>camel-slack</module>
+    </modules>
+
+</project>

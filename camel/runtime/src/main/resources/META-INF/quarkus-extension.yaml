@@ -1,0 +1,17 @@
+name: Flow Camel
+description: |
+  Apache Camel support for Quarkus Flow.
+  Please see the main extension for more details.
+metadata:
+  keywords:
+    - workflow
+    - workflows
+    - cncf
+    - serverless
+    - cloudevents
+    - camel
+    - integration
+  guide: https://docs.quarkiverse.io/quarkus-flow/dev/
+  categories:
+    - "integration"
+  status: "experimental"
