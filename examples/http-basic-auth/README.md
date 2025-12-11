@@ -202,9 +202,13 @@ The public REST resource starts the workflow and returns the final workflow cont
 package org.acme.http;
 
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
+import io.smallrye.mutiny.Uni;
 
-import io.quarkiverse.flow.FlowInstance;
+package org.acme.example;
+
+import java.util.Map;
+
+import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -219,12 +223,8 @@ public class CustomerProfileResource {
     CustomerProfileFlow customerProfileFlow;
 
     @GET
-    public CompletionStage<Map<String, Object>> getProfileViaWorkflow() {
-        FlowInstance instance = customerProfileFlow.instance(Map.of());
-
-        return instance
-                .start()
-                .thenApply(result -> result.asMap().orElseThrow());
+    public Uni<Map<String, Object>> getProfileViaWorkflow() {
+        return customerProfileFlow.startInstance().onItem().transform(r -> r.asMap().orElseThrow());
     }
 }
 ```

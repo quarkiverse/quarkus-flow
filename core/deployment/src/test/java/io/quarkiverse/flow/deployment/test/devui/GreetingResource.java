@@ -17,7 +17,6 @@
 package io.quarkiverse.flow.deployment.test.devui;
 
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -25,6 +24,8 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.ResponseStatus;
+
+import io.smallrye.mutiny.Uni;
 
 @Path("/hello")
 @ApplicationScoped
@@ -35,7 +36,8 @@ public class GreetingResource {
 
     @GET
     @ResponseStatus(200)
-    public CompletionStage<Message> hello() {
-        return devUIWorkflow.instance(Map.of("name", "Quarkiverse")).start().thenApply(w -> w.as(Message.class).orElseThrow());
+    public Uni<Message> hello() {
+        return devUIWorkflow.startInstance(Map.of("name", "Quarkiverse")).onItem()
+                .transform(wf -> wf.as(Message.class).orElseThrow());
     }
 }

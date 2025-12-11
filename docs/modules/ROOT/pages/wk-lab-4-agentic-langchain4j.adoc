@@ -187,10 +187,10 @@ include::{examples-dir}org/acme/agentic/InvestmentMemoResource.java[tag=resource
 * It injects the `InvestmentMemoFlow` `Flow` subclass and starts an instance.
 * It returns the resulting `InvestmentMemo` to the caller as JSON.
 
-Because the method returns `CompletionStage<Response>` (or another reactive type),
+Because the method returns `Uni<Response>` (or another reactive type),
 any `WorkflowException` (e.g. HTTP 4xx/5xx from the market-data API) propagates
 directly and is mapped to a RFC 7807 / `WorkflowError` HTTP response. See
-xref:http-openapi-tasks.adoc#completionstage-vs-blocking-style[CompletionStage vs blocking style]
+xref:http-openapi-tasks.adoc#non-blocking-vs-blocking-style[Non-blocking vs blocking style]
 for details.
 
 === 5.2 Run from Flow Dev UI

@@ -116,7 +116,7 @@ This verifies *both*:
 == 3. Verify HTTP error mapping (`WorkflowException` → RFC 7807)
 
 Quarkus Flow registers a standard `ExceptionMapper<WorkflowException>`.
-Any JAX-RS resource that throws `WorkflowException` (directly, or via a non-blocked `CompletionStage`)
+Any JAX-RS resource that throws `WorkflowException` (directly, or via a non-blocked `Uni`/`CompletionStage`)
 will automatically be translated into an RFC 7807 / `WorkflowError` response.
 
 For workflows that use HTTP / OpenAPI tasks (for example, calling a secured endpoint), you can test the error mapping like this:
@@ -149,8 +149,8 @@ class CustomerProfileResourceTest {
 
 Tips:
 
-* Use the **reactive style** in your resource (`CompletionStage`), as recommended in
-xref:http-openapi-tasks.adoc#completionstage-vs-blocking-style[CompletionStage vs blocking style],
+* Use the **reactive style** in your resource (`Uni`/`CompletionStage`), as recommended in
+xref:http-openapi-tasks.adoc#non-blocking-vs-blocking-style[Non-blocking vs blocking style],
 so that `WorkflowException` propagates directly.
 * If you *do* block (`.get()`, `.join()`), remember that Java wraps exceptions in `ExecutionException` —
 unwrap and rethrow `WorkflowException` if you want the mapper to handle it.

@@ -1,7 +1,6 @@
 package org.acme;
 
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -9,6 +8,8 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.ResponseStatus;
+
+import io.smallrye.mutiny.Uni;
 
 @Path("/hello")
 @ApplicationScoped
@@ -19,9 +20,10 @@ public class HelloResource {
 
     @GET
     @ResponseStatus(200)
-    public CompletionStage<Message> hello() {
+    public Uni<Message> hello() {
         return hello
                 .startInstance(Map.of()) // convenience on Flow
-                .thenApply(w -> w.as(Message.class).orElseThrow());
+                .onItem()
+                .transform(w -> w.as(Message.class).orElseThrow());
     }
 }

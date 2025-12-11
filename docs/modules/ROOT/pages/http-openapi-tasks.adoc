@@ -272,22 +272,24 @@ Quarkus Flow provides an *exception mapper* that turns `WorkflowException` into 
 * status code is `error.status` (for example `401`), and
 * body is the `WorkflowError` serialized as JSON (Problem Details style).
 
-[[completionstage-vs-blocking-style]]
-=== 4.1 CompletionStage vs blocking style
+[[non-blocking-vs-blocking-style]]
+=== 4.1 Reactive vs blocking style
 
 How HTTP errors surface in your REST resources depends on how you call the workflow:
 
-* If you return a *`CompletionStage`* from your JAX-RS endpoint and call
-`instance(...).start()` without blocking, any `WorkflowException` will propagate
+* If you return a *`CompletionStage`/`io.smallrye.mutiny.Uni`* from your JAX-RS endpoint and call
+`instance(...).start()` or `startInstance(...)` without blocking, any `WorkflowException` will propagate
 directly and be handled by Quarkus Flow’s `ExceptionMapper<WorkflowException>`.
 The mapper turns it into an RFC 7807 / `WorkflowError` HTTP response.
-* If you choose the *blocking style* (`.start().get()`, `.join()`, …), Java wraps
-the underlying exception in `ExecutionException`. In that case you should either:
+* If you choose the *blocking style* (`.start().get()`, `.join()`, or `.await().indefinitely()`), Java wraps
+the underlying exception in `ExecutionException` or `CompletionException`. In that case you should either:
 **(a)** unwrap and rethrow the `WorkflowException`, or **(b)** prefer the
-`CompletionStage` style so the mapper can see the original exception.
+`Uni`/`CompletionStage` style so the mapper can see the original exception.
+* Additionally, If you are using `io.smallrye.mutiny.Uni`, you can handle errors with operators like `onFailure()` to handle the errors
+before they propagate to the JAX-RS layer.
 
 The mapper is not limited to HTTP/OpenAPI tasks: **any JAX-RS resource that throws
-`WorkflowException`** (directly, or via a non-blocked `CompletionStage`) will be
+`WorkflowException`** (directly, or via a non-blocked `Uni`/`CompletionStage`) will be
 handled by the same mapper and produce an RFC 7807 response.
 
 A recommended pattern for REST endpoints is:

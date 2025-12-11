@@ -1,6 +1,6 @@
 package io.quarkiverse.flow;
 
-import java.util.concurrent.CompletionStage;
+import java.util.Map;
 
 import jakarta.annotation.PostConstruct;
 
@@ -10,6 +10,7 @@ import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.smallrye.common.annotation.Identifier;
+import io.smallrye.mutiny.Uni;
 
 public abstract class Flow implements Flowable {
 
@@ -39,7 +40,11 @@ public abstract class Flow implements Flowable {
         return definition().instance(in);
     }
 
-    public CompletionStage<WorkflowModel> startInstance(Object in) {
-        return instance(in).start();
+    public Uni<WorkflowModel> startInstance(Object in) {
+        return Uni.createFrom().completionStage(instance(in).start());
+    }
+
+    public Uni<WorkflowModel> startInstance() {
+        return startInstance(Map.of());
     }
 }

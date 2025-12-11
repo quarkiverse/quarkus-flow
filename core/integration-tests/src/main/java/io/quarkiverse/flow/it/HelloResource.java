@@ -16,15 +16,14 @@
  */
 package io.quarkiverse.flow.it;
 
-import java.util.Map;
-import java.util.concurrent.CompletionStage;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.ResponseStatus;
+
+import io.smallrye.mutiny.Uni;
 
 @Path("/hello")
 @ApplicationScoped
@@ -33,9 +32,22 @@ public class HelloResource {
     @Inject
     HelloWorkflow helloWorldWorkflow;
 
+    @Inject
+    ProblematicWorkflow problematicWorkflow;
+
     @ResponseStatus(200)
     @GET
-    public CompletionStage<Message> hello() {
-        return helloWorldWorkflow.startInstance(Map.of()).thenApply(w -> w.as(Message.class).orElseThrow());
+    public Uni<Message> hello() {
+        return helloWorldWorkflow.startInstance()
+                .onItem()
+                .transform(wf -> wf.as(Message.class).orElseThrow());
+    }
+
+    @Path("/problem-details")
+    @GET
+    public Uni<Message> problemDetails() {
+        return problematicWorkflow.startInstance()
+                .onItem()
+                .transform(wf -> wf.as(Message.class).orElseThrow());
     }
 }

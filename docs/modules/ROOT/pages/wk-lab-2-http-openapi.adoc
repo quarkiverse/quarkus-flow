@@ -61,7 +61,7 @@ include::{examples-dir}org/acme/example/CustomerProfileResource.java[]
 
 Notice:
 
-* The method returns `CompletionStage<Response>` and calls `instance(...).start()`.
+* The method returns `Uni<Map<String, Object>>` and calls `onItem().transform(...)`.
 * If the HTTP call fails (for example, `401` or `404`), a `WorkflowException` is thrown.
 * Quarkus Flow’s `ExceptionMapper<WorkflowException>` returns a Problem Details JSON body
 based on the underlying `WorkflowError`.

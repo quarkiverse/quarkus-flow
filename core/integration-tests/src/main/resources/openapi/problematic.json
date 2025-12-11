@@ -1,0 +1,38 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Minimal API",
+        "version": "1.0.0",
+        "description": "A very minimal OpenAPI document"
+    },
+      "servers": [
+    {
+      "url": "https://petstore3.swagger.io/api/v3/"
+    }
+  ],
+    "paths": {
+        "/problematic": {
+            "get": {
+                "operationId": "getProblematic",
+                "summary": "There is no such endpoint in petstore application, it is intentional to test error handling",
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
