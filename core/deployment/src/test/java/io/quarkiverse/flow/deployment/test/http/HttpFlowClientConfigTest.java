@@ -1,9 +1,8 @@
 package io.quarkiverse.flow.deployment.test.http;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockserver.model.HttpRequest.request;
-import static org.mockserver.model.HttpResponse.response;
 
+import java.io.IOException;
 import java.util.Map;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -12,30 +11,31 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.mockserver.integration.ClientAndServer;
-import org.mockserver.model.HttpRequest;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.smallrye.common.annotation.Identifier;
+import mockwebserver3.MockResponse;
+import mockwebserver3.MockWebServer;
+import mockwebserver3.RecordedRequest;
+import okhttp3.Headers;
 
 public class HttpFlowClientConfigTest {
 
-    private static ClientAndServer mockServer;
+    private static MockWebServer mockServer;
 
     @BeforeAll
-    static void startMockServer() {
+    static void startMockServer() throws IOException {
         // Use a fixed port so we can wire it via overrideConfigKey
-        mockServer = ClientAndServer.startClientAndServer(1080);
+        mockServer = new MockWebServer();
+        mockServer.start(1080);
     }
 
     @AfterAll
     static void stopMockServer() {
-        if (mockServer != null) {
-            mockServer.stop();
-        }
+        mockServer.close();
     }
 
     @RegisterExtension
@@ -49,17 +49,10 @@ public class HttpFlowClientConfigTest {
             .overrideConfigKey("quarkus.flow.http.client.user-agent", "HttpFlowClientConfigTest");
 
     @Test
-    void http_client_uses_flow_http_config() {
-        mockServer
-                .when(
-                        request()
-                                .withMethod("POST")
-                                .withPath("/echo"))
-                .respond(
-                        response()
-                                .withHeader("Content-Type", "application/json")
-                                .withStatusCode(200)
-                                .withBody("{\"message\":\"ok\"}"));
+    void http_client_uses_flow_http_config() throws InterruptedException {
+        mockServer.enqueue(new MockResponse(200, Headers.of(Map.of("Content-Type", "application/json")), """
+                { "message": "ok" }
+                """));
 
         WorkflowDefinition definition = Arc.container()
                 .instance(WorkflowDefinition.class, Identifier.Literal.of(HttpRestFlow.class.getName()))
@@ -73,12 +66,11 @@ public class HttpFlowClientConfigTest {
         String out = model.as(String.class).orElseThrow();
         assertEquals("{\"message\":\"ok\"}", out);
 
-        HttpRequest[] recorded = mockServer.retrieveRecordedRequests(
-                request()
-                        .withMethod("POST")
-                        .withPath("/echo"));
+        RecordedRequest recordedRequest = mockServer.takeRequest();
+        assertEquals("POST", recordedRequest.getMethod());
+        assertEquals("/echo", recordedRequest.getUrl().uri().getPath());
 
-        assertEquals(1, recorded.length);
-        assertEquals("flow-default", recorded[0].getFirstHeader("X-Flow-Client"));
+        assertEquals(1, mockServer.getRequestCount());
+        assertEquals("flow-default", recordedRequest.getHeaders().get("X-Flow-Client"));
     }
 }
