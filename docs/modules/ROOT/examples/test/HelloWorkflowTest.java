@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.junit.QuarkusTest;
 import io.serverlessworkflow.impl.WorkflowModel;
 
-@QuarkusTest
+@QuarkusTest // <1>
 class HelloWorkflowTest {
 
     @Inject
@@ -24,7 +24,7 @@ class HelloWorkflowTest {
     @Test
     void should_produce_hello_message() throws Exception {
         WorkflowModel result = workflow.instance(Map.of())
-                .start()
+                .start() // <2>
                 .toCompletableFuture()
                 .get(5, TimeUnit.SECONDS);
 

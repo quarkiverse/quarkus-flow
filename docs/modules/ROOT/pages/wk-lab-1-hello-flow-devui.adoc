@@ -81,8 +81,9 @@ include::{examples-dir}org/acme/Message.java[]
 Key points:
 
 * The resource injects the `HelloWorkflow` class directly.
-* `startInstance()` starts the workflow and returns a `CompletionStage`.
-* The method returns `CompletionStage<String>` so the endpoint stays non-blocking.
+* `startInstance()` creates a `Uni<WorkflowModel>`.
+* `.onItem().transform(...)` observes the item emitted by `Uni<WorkflowModel>` and transforms it to `Uni<Message>`.
+* The method returns `Uni<Message>`, so the endpoint stays non-blocking.
 
 == 4. Run in dev mode
 
@@ -126,7 +127,7 @@ Even without a dedicated card, you can:
 == 6. What you learned
 
 * Quarkus Flow discovers `Flow` subclasses at build time and makes them injectable.
-* You can expose workflows through normal Quarkus REST endpoints using `CompletionStage`.
+* You can expose workflows through normal Quarkus REST endpoints using `Uni`.
 * Dev UI gives you a convenient front-end for iterating on workflows while in dev mode.
 
 Next: xref:wk-lab-2-http-openapi.adoc[Lab 2 – Call HTTP & OpenAPI services].

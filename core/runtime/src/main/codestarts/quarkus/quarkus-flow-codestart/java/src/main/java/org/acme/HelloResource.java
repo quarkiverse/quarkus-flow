@@ -6,8 +6,9 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import org.jboss.resteasy.reactive.ResponseStatus;
 
+import io.smallrye.mutiny.Uni;
+
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
 
 @Path("/hello-flow")
 @ApplicationScoped
@@ -18,10 +19,11 @@ public class HelloResource {
 
     @GET
     @ResponseStatus(200)
-    public CompletionStage<Message> hello() {
+    public Uni<Message> hello() {
         return hello
-                .startInstance(Map.of())                // convenience on Flow
-                .thenApply(w -> w.as(Message.class).orElseThrow());
+                .startInstance()                // convenience on Flow
+                .onItem()
+                .transform(w -> w.as(Message.class).orElseThrow());
     }
 
 }

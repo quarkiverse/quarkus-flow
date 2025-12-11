@@ -93,17 +93,16 @@ You can define a global namespace prefix for *Fully Qualified Class Name* identi
 
 A typical execution flow in this example looks like:
 
-1. `flow.instance(Map.of("name", finalName))` creates a new workflow instance with the initial data (`name`).
-2. `.start()` begins the workflow execution and returns a `CompletionStage<WorkflowModel>`.
-3. `.thenApply(result -> result.asText().orElseThrow())` transforms the `WorkflowModel` into a JSON `String` representation of the workflow data.
-4. The JAX-RS method returns a `CompletionStage<String>`, so the endpoint remains reactive/non-blocking.
+1. `flow.startInstance(Map.of("name", finalName))` creates a new `io.smallrye.mutiny.Uni<WorkflowModel>` instance with the initial data (`name`).
+2. `.onItem().transform(...)` observes and transform the item emitted by `Uni` and creates a new `Uni<String>` with the JSON representation of the workflow data.
+3. The JAX-RS method returns a `Uni<String>`, so the endpoint remains reactive/non-blocking.
 
 === 2.1 Blocking vs non-blocking REST endpoints
 
 The `EchoResource` above uses the *recommended non-blocking style* for Quarkus REST endpoints:
 
-* the method returns `CompletionStage<String>`
-* the workflow is started with `instance(...).start()` and the `CompletionStage` is propagated back to the caller
+* the method returns `Uni<String>`
+* the workflow is started with `startInstance(...)` and the `Uni` is propagated back to the caller
 
 This style integrates well with Quarkus’ reactive model and, when a workflow is invoked
 from a JAX-RS resource, lets any `WorkflowException` propagate directly to the HTTP layer.
@@ -113,14 +112,13 @@ automatically be translated into an RFC 7807 / `WorkflowError` HTTP response.
 
 If you prefer a *blocking* style in very simple scenarios (for example in a CLI or quick prototype), you can:
 
-* call `.start().join()` to wait for the result, and
-* return a `Response` or a plain DTO from your JAX-RS method.
+* call `.instance().start().join()` using a `CompletionStage` or `.await().indefinetely()` when using Mutiny to wait for the result, and return a `Response` or a plain DTO from your JAX-RS method.
 
-In that case, be aware that blocking on a `CompletionStage` may wrap underlying exceptions
-(for example in `ExecutionException`), and you might need to unwrap and rethrow `WorkflowException`
+In that case, be aware that blocking on a `CompletionStage`/`Uni` may wrap underlying exceptions
+(for example in `ExecutionException`, `CompletionException`), and you might need to unwrap and rethrow `WorkflowException`
 if you want the standard HTTP error mapping.
 For a deeper discussion and a full HTTP/OpenAPI example, see
-xref:http-openapi-tasks.adoc#completionstage-vs-blocking-style[CompletionStage vs blocking style].
+xref:http-openapi-tasks.adoc#non-blocking-vs-blocking-style[Non-blocking vs blocking style].
 
 == 3. Run the application
 
