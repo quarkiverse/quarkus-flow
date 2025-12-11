@@ -39,6 +39,7 @@
         <io.cloudevents.version>4.0.1</io.cloudevents.version>
         <quarkus-antora.version>3.25.0</quarkus-antora.version>
         <mockserver.version>5.15.0</mockserver.version>
+        <json-schema-validator.version>1.0.76</json-schema-validator.version>
     </properties>
 
     <dependencyManagement>
@@ -90,7 +91,11 @@
                 <artifactId>serverlessworkflow-impl-lifecycle-events</artifactId>
                 <version>${io.serverlessworkflow.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>io.serverlessworkflow</groupId>
+                <artifactId>serverlessworkflow-api</artifactId>
+                <version>${io.serverlessworkflow.version}</version>
+            </dependency>
             <dependency>
                 <groupId>io.quarkiverse.jackson-jq</groupId>
                 <artifactId>quarkus-jackson-jq</artifactId>
