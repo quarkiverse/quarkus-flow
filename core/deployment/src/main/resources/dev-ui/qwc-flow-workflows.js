@@ -2,7 +2,6 @@ import { QwcHotReloadElement, html, css } from 'qwc-hot-reload-element';
 import { observeState } from 'lit-element-state';
 import { JsonRpc } from 'jsonrpc';
 import { unsafeHTML } from "lit/directives/unsafe-html.js"
-import { devuiState } from 'devui-state';
 import '@vaadin/grid';
 import '@vaadin/button';
 import '@vaadin/icon';
@@ -10,7 +9,6 @@ import '@vaadin/dialog';
 import { dialogRenderer, dialogFooterRenderer } from '@vaadin/dialog/lit.js';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 
-import { notifier } from 'notifier';
 import './qwc-flow-workflow-execution.js';
 
 import { themeState } from 'theme-state';
@@ -158,8 +156,15 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
 
     _mermaidContent() {
         return unsafeHTML(`
+            ${!this._currentMermaid ? `
+            <span style="display:flex;align-items:center;gap:8px;color:var(--lumo-secondary-text-color);">
+                <vaadin-icon icon="font-awesome-solid:circle-info"></vaadin-icon>
+                <span style="margin:0;font-size:var(--lumo-font-size-xs);">
+                Diagram not available. Run the workflow once to generate it.
+                </span>
+            </span>` : ''}
              <pre class="mermaid mermaid-container" style="display: flex; flex-direction: column; align-items: center;">
-               ${this._currentMermaid}
+            ${this._currentMermaid}
             </pre>`);
     }
 
