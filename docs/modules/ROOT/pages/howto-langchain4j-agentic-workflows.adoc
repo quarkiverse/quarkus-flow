@@ -1,15 +1,20 @@
-= Use the LangChain4j Agentic Workflow API with Quarkus Flow
+= Generate Quarkus Flow workflows from LangChain4j Agentic annotations
 :description: Learn how to run your LangChain4j agentic workflows as Quarkus Flow workflows.
 :page-topic-type: howto
 include::includes/attributes.adoc[]
 
-In this guide, you will:
+This guide shows how to declare agentic workflow patterns using the LangChain4j Agentic Workflow API
+(`@SequenceAgent`, `@ParallelAgent`, …) and let Quarkus Flow generate and register them as first-class workflows.
 
-* Add the required dependencies for Quarkus Flow + LangChain4j agentic workflows.
-* Declare a sequential and a parallel agentic workflow using annotations.
-* Run them from the Quarkus Flow Dev UI with auto-generated input forms and traces.
+== Choose your approach
 
-This guide assumes you are already familiar with the basics of Quarkus LangChain4j.
+Quarkus Flow supports three complementary ways to use LangChain4j:
+
+. *Java DSL tasks* — call LangChain4j beans from Flow tasks via `agent(...)` or `function(...)`.
+See xref:langchain4j.adoc[].
+. *Annotations → generated workflows (this guide)* — declare patterns via annotations and let Quarkus Flow generate workflows.
+. *Hybrid* — call an annotated agentic workflow from a larger Java DSL workflow via `function(...)`.
+See <<hybrid>>.
 
 == 1. Add the dependencies
 
@@ -46,7 +51,7 @@ quarkus.langchain4j.ollama.base-url=http://localhost:11434
 quarkus.langchain4j.ollama.chat-model.model=llama3.2
 ----
 
-== 2. Define agentic workflows with annotations
+== 2. Declare agentic workflows with annotations
 
 Create a class (for example `org.acme.langchain4j.Agents`) and declare your agents and workflows:
 
@@ -73,24 +78,62 @@ Start your application in dev mode:
 Open the Dev UI in your browser (usually at `http://localhost:8080/q/dev`), then:
 
 . Navigate to the *Quarkus Flow* card.
-. You should see workflows whose names are derived from the agent service interfaces,
-such as:
-* `story-creator-with-configurable-style-editor`
-* `evening-planner-agent`
+. You should see workflows whose names are derived from the agent service interfaces.
 . Click the *play* icon of one of these workflows.
 
 For each workflow:
 
 * Quarkus Flow derives an input JSON Schema from the agent method parameters and
-auto-generates an HTML form (for example fields for `topic`, `style`, `audience` or
-`city`, `mood`).
+auto-generates an HTML form.
 * You can submit the form to run the workflow.
-* The output is displayed in the right panel (for example the generated story or the
-`EveningPlan` object).
+* The output is displayed in the bottom panel (for example a generated story or an `EveningPlan`).
 * You can switch to the *Mermaid* view to see the underlying workflow topology
 (sequence or fork-join).
 
-== 4. Compare with calling the agents directly
+[[hybrid]]
+== 4. Hybrid: call an annotated agentic workflow from a larger Flow
+
+A common pattern is to keep agentic topology in annotations, but still orchestrate a bigger workflow in Quarkus Flow.
+For example, you can:
+
+* Use `@SequenceAgent` / `@ParallelAgent` to define the internal agentic pattern.
+* Inject the generated agentic bean.
+* Call it from a Java DSL workflow using a `function(...)` task, then continue with non-AI tasks (HTTP, messaging, timers, HITL, …).
+
+Example:
+
+[source,java]
+----
+import org.acme.langchain4j.Agents;
+import io.serverlessworkflow.api.types.Workflow;
+import jakarta.inject.Inject;
+
+import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.emitJson;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.post;
+
+public class OrderWorkflow extends Flow {
+
+    @Inject
+    Agents.EveningPlannerAgent eveningPlanner; // annotated agentic method (e.g., @ParallelAgent)
+
+    @Override
+    public Workflow descriptor() {
+        return workflow()
+                .tasks(function("planEvening", eveningPlanner::plan, Agents.EveningPlan.class)
+                        .outputAs("$.plan"),
+                    post("notify", "https://example.org/notify"),
+                    emitJson("org.acme.plan.created", Agents.EveningPlan.class))
+               .build();
+    }
+}
+----
+
+This keeps LangChain4j’s semantics for the agentic pattern (including `AgenticScope` and `@Output` mappers),
+while letting Quarkus Flow orchestrate the broader business process.
+
+== 5. Compare: calling agents directly vs running generated workflows
 
 You can still inject and use the agents in your own code:
 
@@ -110,15 +153,15 @@ public void demo() {
 
 The important point:
 
-* When you call the agents directly, Quarkus LangChain4j manages the `AgenticScope`
+* When you call the agent method directly, Quarkus LangChain4j manages the `AgenticScope`
 and agent orchestration.
-* When you run the generated workflows from the Dev UI, Quarkus Flow executes the
-*same* agentic logic *via* the agent beans, but adds:
-** Workflow traces and telemetry.
-** Auto-generated forms from the input schema.
-** Mermaid diagrams and step-level troubleshooting.
+* When you run the generated workflow from the Dev UI, Quarkus Flow executes the same agentic logic
+via the agent bean, but adds:
+** Auto-generated forms from the derived input schema.
+** Mermaid diagrams and workflow topology visualization.
+** Workflow traces/telemetry and a workflow execution surface (instances, debugging, etc.).
 
-== 5. Why use Quarkus Flow on top of Quarkus LangChain4j?
+== 6. Why use Quarkus Flow on top of Quarkus LangChain4j?
 
 Using Quarkus Flow on top of Quarkus LangChain4j gives you:
 
@@ -126,11 +169,15 @@ Using Quarkus Flow on top of Quarkus LangChain4j gives you:
 ** Visual topology.
 ** Rich traces and logs.
 ** Instance-level inspection.
-* **Better testability**: you can exercise agentic workflows via the Dev UI using
-realistic inputs, including non-happy paths.
+* **Better experimentation/debugging** via Dev UI with realistic inputs (including non-happy paths).
 * **Easier integration** with the rest of your system:
-** Chain agentic workflows with HTTP, messaging, listen/emit steps, etc.
+** Chain agentic workflows with HTTP, messaging, listen/emit gates, etc.
 ** Use the same workflow engine for non-AI processes.
 
 In short: you keep the ergonomic LC4J agent APIs, and Quarkus Flow turns them into
 production-grade workflows with Dev UI, telemetry, and robustness.
+
+== See also
+
+* xref:langchain4j.adoc[] — orchestrate LangChain4j agents as Java DSL tasks.
+* xref:concepts-agentic-langchain4j.adoc[] — how the annotations integration works internally.

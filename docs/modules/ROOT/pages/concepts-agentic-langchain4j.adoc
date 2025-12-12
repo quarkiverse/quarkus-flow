@@ -26,21 +26,18 @@ for your agents.
 == 2. Where Quarkus Flow fits
 
 Quarkus Flow is a workflow engine and Dev UI powered by the CNCF Workflow Specification.
-It already lets you define workflows using:
+It lets you define workflows using:
 
 * YAML/JSON workflow definitions.
 * The Quarkus Flow Java DSL (for example `Flow`, `CallHTTP`, `Listen`, etc.).
-* The LangChain4j integration described in xref:langchain4j.adoc[].
+* LangChain4j tasks (`agent(...)` / `function(...)`) as described in xref:langchain4j.adoc[].
 
-The `quarkus-flow-langchain4j` module adds a fourth option:
+The `quarkus-flow-langchain4j` module also supports a fourth option:
 
 * Detect LangChain4j agentic workflows (`@SequenceAgent`, `@ParallelAgent`, …).
 * Automatically build `WorkflowDefinition` instances that mirror those agentic patterns.
 * Register them in the Workflow Registry so they appear alongside your other workflows
 in the Quarkus Flow Dev UI.
-
-You keep writing agents and agentic workflows *as usual* with Quarkus LangChain4j,
-and Quarkus Flow turns them into observable, testable workflows.
 
 == 3. From agentic annotations to WorkflowDefinition
 
@@ -57,9 +54,6 @@ structure encodes the agentic pattern:
 . Wires each sub-agent call as a *function task* that calls the underlying LC4J agent
 via the existing Quarkus LangChain4j integration.
 
-From the engine’s perspective, the workflow is just a normal Quarkus Flow workflow:
-it has tasks, transitions, input/output, and all the usual lifecycle hooks.
-
 == 4. AgenticScope and data model
 
 LangChain4j workflows use an `AgenticScope` object to hold both input parameters and
@@ -75,91 +69,33 @@ implementation that:
 ** Keeps the underlying `AgenticScope` object as the “raw” Java object for use
 by LangChain4j’s output mappers.
 
-As a result:
-
-* Quarkus Flow can log and trace the data in the scope.
-* The Dev UI can derive JSON schemas for the *public* parts of the scope (method
-parameters) and auto-generate input forms.
-* LangChain4j can still apply `@Output` mappers and other post-processing on the
-full `AgenticScope`.
-
-For example, you can define a parallel planner:
-
-[source,java]
-----
-@RegisterAiService
-public interface EveningPlannerAgent {
-
-    @Output
-    static EveningPlan toEveningPlan(
-            @V("city") String city,
-            @V("mood") Mood mood,
-            @V("dinner") String dinner,
-            @V("drinks") String drinks,
-            @V("activity") String activity) {
-
-        return new EveningPlan(
-                requireNonNullElse(city, "unknown city"),
-                mood != null ? mood : Mood.CHILL,
-                requireNonNullElse(dinner, "surprise dinner"),
-                requireNonNullElse(drinks, "surprise drinks"),
-                requireNonNullElse(activity, "surprise activity"));
-    }
-
-    @ParallelAgent(
-            outputKey = "plan",
-            subAgents = {
-                    @SubAgent(type = DinnerAgent.class, outputKey = "dinner"),
-                    @SubAgent(type = DrinksAgent.class, outputKey = "drinks"),
-                    @SubAgent(type = ActivityAgent.class, outputKey = "activity")
-            })
-    EveningPlan plan(
-            @V("city") String city,
-            @V("mood") Mood mood);
-}
-----
-
-Quarkus Flow executes the fork-join topology and LangChain4j’s `@Output` method turns
-the final `AgenticScope` into an `EveningPlan`.
-
 == 5. Execution model and Dev UI
 
 When you launch a workflow from the Quarkus Flow Dev UI, the engine decides how to
 execute it:
 
 * If the workflow has an associated *bean invoker* (for example, an agentic interface
-method), the Dev UI will execute the workflow *through that bean* to preserve the
+method), the Dev UI will execute the workflow through that bean to preserve the
 LangChain4j semantics (agent proxies, `AgenticScope`, output mappers, etc.).
 * Otherwise, the engine runs the workflow definition directly with whatever input
 you provide.
-
-For agentic workflows, this means:
-
-* You get **exactly the same behavior** whether you call the agent method in your own
-code or trigger the workflow from the Dev UI.
-* The Dev UI gives you:
-** Auto-generated forms from the agent method parameters.
-** Mermaid diagrams of the agentic workflow topology.
-** Textual traces and task-level telemetry from Quarkus Flow.
 
 == 6. When to use which approach
 
 You can choose between:
 
-* **Pure Quarkus LangChain4j agentic (no Flow)**
-– best when you only need agentic control flow within a single request/response,
-and you do not care about workflow-level tracing, retries, or Dev UI.
+* *Java DSL tasks (agent/function)* —
+best when you want full control over workflow structure and to mix AI with non-AI tasks.
 
-* **Quarkus Flow + LangChain4j Agentic API**
-– best when you want to *reuse* your agentic workflows but also need:
-** Rich observability and traces across agents and tools.
-** Dev UI execution, experimentation, and input forms.
-** Integration with other Quarkus Flow tasks (HTTP/OpenAPI, messages, timers, …).
-** Unified telemetry with other workflows in your application.
+* *Annotations → generated workflows* —
+best when you already use LangChain4j Agentic annotations and want those workflows to
+appear in Quarkus Flow with Dev UI, schemas, diagrams, traces, and robustness.
 
-* **Quarkus Flow DSL only**
-– best when you want full control over workflow structure, or when parts of your
-process are not agent-driven at all.
+* *Hybrid* —
+best when you want the annotation-defined agentic pattern, but also need a bigger
+business process around it (HTTP, messaging, timers, approvals, long-running instances).
+In this model, you call the annotated workflow from a Java DSL workflow via `function(...)`.
 
-You can freely mix these patterns in the same application; Quarkus Flow treats all of
-them as workflows and shows them side by side in the Dev UI.
+* *Pure Quarkus LangChain4j agentic (no Flow)* —
+best when you only need agentic control flow within a single request/response,
+and you do not care about workflow-level tracing or Dev UI.
