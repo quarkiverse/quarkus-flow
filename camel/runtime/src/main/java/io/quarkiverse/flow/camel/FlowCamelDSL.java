@@ -12,4 +12,8 @@ public final class FlowCamelDSL {
         return FuncDSL.function(fn, clazz);
     }
 
+    public static <T, R> FuncCallStep<T, R> camel(String taskName, CamelConnector<T, R> fn, Class<T> clazz) {
+        return FuncDSL.function(taskName, fn, clazz);
+    }
+
 }

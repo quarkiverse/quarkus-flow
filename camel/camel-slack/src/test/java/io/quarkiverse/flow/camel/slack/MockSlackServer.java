@@ -1,49 +1,56 @@
 package io.quarkiverse.flow.camel.slack;
 
-import static org.mockserver.model.HttpRequest.request;
-import static org.mockserver.model.HttpResponse.response;
-
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.mockserver.client.MockServerClient;
-import org.mockserver.integration.ClientAndServer;
-import org.mockserver.model.MediaType;
+import org.jetbrains.annotations.NotNull;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import okhttp3.mockwebserver.Dispatcher;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 
 public class MockSlackServer implements QuarkusTestResourceLifecycleManager {
 
-    private static ClientAndServer server;
+    private static MockWebServer server;
 
-    static MockServerClient client() {
-        return new MockServerClient("localhost", server.getLocalPort());
+    static MockWebServer getServer() {
+        return server;
     }
 
     @Override
     public Map<String, String> start() {
-        server = ClientAndServer.startClientAndServer(0);
+        server = new MockWebServer();
 
-        client().when(
-                request()
-                        .withMethod("POST")
-                        .withPath("/slack-webhook"))
-                .respond(
-                        response()
-                                .withStatusCode(200)
-                                .withContentType(MediaType.TEXT_PLAIN)
-                                .withBody("ok"));
+        server.setDispatcher(new Dispatcher() {
+            @Override
+            public @NotNull MockResponse dispatch(@NotNull RecordedRequest request) {
+                if ("/slack-webhook".equals(request.getPath())) {
+                    return new MockResponse()
+                            .setResponseCode(200)
+                            .setBody("ok")
+                            .addHeader("Content-Type", "text/plain");
+                }
+                return new MockResponse().setResponseCode(404);
+            }
+        });
 
         Map<String, String> props = new HashMap<>();
-        props.put("slack.webhook.team1",
-                "http://localhost:" + server.getLocalPort() + "/slack-webhook");
+        // This becomes: http://localhost:<port>/slack-webhook
+        props.put("slack.webhook.team1", server.url("/slack-webhook").toString());
         return props;
     }
 
     @Override
     public void stop() {
         if (server != null) {
-            server.stop();
+            try {
+                server.shutdown();
+            } catch (IOException e) {
+                // ignore
+            }
         }
     }
 }

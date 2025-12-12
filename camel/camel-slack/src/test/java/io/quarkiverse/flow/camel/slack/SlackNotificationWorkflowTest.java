@@ -1,10 +1,8 @@
 package io.quarkiverse.flow.camel.slack;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockserver.model.HttpRequest.request;
-import static org.mockserver.model.JsonBody.json;
-import static org.mockserver.verify.VerificationTimes.exactly;
 
+import java.io.IOException;
 import java.util.Map;
 
 import jakarta.inject.Inject;
@@ -13,11 +11,8 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import okhttp3.mockwebserver.RecordedRequest;
 
-/**
- * End-to-end test: starts a workflow that uses the Slack connector and verifies
- * that the Slack webhook is called on our MockServer.
- */
 @QuarkusTest
 @QuarkusTestResource(MockSlackServer.class)
 class SlackNotificationWorkflowTest {
@@ -26,24 +21,22 @@ class SlackNotificationWorkflowTest {
     SlackNotificationWorkflow workflow;
 
     @Test
-    void shouldSendSlackNotificationFromWorkflow() {
+    void shouldSendSlackNotificationFromWorkflow() throws InterruptedException, IOException {
         final String response = workflow.instance(Map.of("name", "Elisa"))
                 .start()
                 .join()
                 .asText()
                 .orElseThrow();
-        assertThat(response).isNotEmpty();
 
-        MockSlackServer.client().verify(
-                request()
-                        .withMethod("POST")
-                        .withPath("/slack-webhook")
-                        .withBody(json("""
-                                {
-                                  "text": "Hello Elisa",
-                                  "channel": "#alerts"
-                                }
-                                """.trim())),
-                exactly(1));
+        assertThat(response).isNotEmpty();
+        assertThat(response).isEqualTo("Hello Elisa");
+
+        RecordedRequest recordedRequest = MockSlackServer.getServer().takeRequest();
+        assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+        assertThat(recordedRequest.getPath()).isEqualTo("/slack-webhook");
+
+        String body = recordedRequest.getBody().readUtf8();
+        assertThat(body).contains("Hello Elisa");
+        assertThat(body).contains("#alerts");
     }
 }
