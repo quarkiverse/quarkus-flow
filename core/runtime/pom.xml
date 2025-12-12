@@ -11,12 +11,12 @@
     <name>Quarkus Flow :: Core :: Runtime</name>
 
     <dependencies>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
 
         <!-- CNCF Java SDK -->
+        <dependency>
+            <groupId>io.serverlessworkflow</groupId>
+            <artifactId>serverlessworkflow-api</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.serverlessworkflow</groupId>
             <artifactId>serverlessworkflow-impl-core</artifactId>
@@ -75,17 +75,12 @@
             <version>${project.version}</version>
             <optional>true</optional>
         </dependency>
+
         <!-- Required by serverlessworkflow-core-http HttpExecutor service module -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-client-jackson</artifactId>
         </dependency>
-
-        <dependency>
-            <groupId>io.serverlessworkflow</groupId>
-            <artifactId>serverlessworkflow-mermaid</artifactId>
-        </dependency>
-
     </dependencies>
 
     <build>
