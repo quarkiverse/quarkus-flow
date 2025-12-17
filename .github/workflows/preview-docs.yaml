@@ -18,14 +18,14 @@ jobs:
       pull-requests: write # Required to update PR status comment
     steps:
       - name: Download PR Artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: site
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event.workflow_run.id }}
 
       - name: Download PR ID Artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: pr-id
           github-token: ${{ secrets.GITHUB_TOKEN }}
