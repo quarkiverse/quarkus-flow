@@ -16,7 +16,7 @@
 
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
-        <quarkus.platform.version>3.30.4</quarkus.platform.version>
+        <quarkus.platform.version>3.30.5</quarkus.platform.version>
 
         <quarkus.flow.version>1.0.0-SNAPSHOT</quarkus.flow.version>
         <surefire-plugin.version>3.5.4</surefire-plugin.version>
