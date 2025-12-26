@@ -84,6 +84,7 @@ Key points:
 * `startInstance()` creates a `Uni<WorkflowModel>`.
 * `.onItem().transform(...)` observes the item emitted by `Uni<WorkflowModel>` and transforms it to `Uni<Message>`.
 * The method returns `Uni<Message>`, so the endpoint stays non-blocking.
+* Make sure the generated `GreetingResource` is removed or uses a different `@Path`, otherwise `/hello` will still return the default `"Hello from Quarkus REST"` response.
 
 == 4. Run in dev mode
 
