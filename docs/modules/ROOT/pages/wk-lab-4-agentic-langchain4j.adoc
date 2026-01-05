@@ -2,7 +2,7 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
-This guide shows how to orchestrate link:https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html[**LangChain4j**] agents
+This guide shows you how to orchestrate link:https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html[**LangChain4j**] agents
 *and* HTTP tasks in a single workflow.
 
 We’ll build a small **Investment Memo Agent** inspired by common enterprise patterns:
@@ -52,9 +52,29 @@ The agent receives:
 
 then returns a **typed memo** your workflow can pass around safely.
 
+=== 2.1 Define Investment Analyst agent data
+
+Create a Java Record that represents the investment memo:
+
 [source,java]
 ----
-include::{examples-dir}org/acme/agentic/InvestmentAnalystAgent.java[tag=agent]
+include::{examples-dir}org/acme/agentic/InvestmentMemo.java[]
+----
+
+Additionally, create a Java Record that represents the prompt:
+
+[source,java]
+----
+include::{examples-dir}/org/acme/agentic/InvestmentPrompt.java[]
+----
+
+=== 2.2 Define the Agent
+
+Create the Investment Analyst agent class:
+
+[source,java]
+----
+include::{examples-dir}org/acme/agentic/InvestmentAnalystAgent.java[]
 ----
 
 Key points:
@@ -71,28 +91,36 @@ of a raw `String`, which makes downstream tasks easier to test.
 TIP: Keep the system prompt short and explicit about the response JSON structure.
 Your workflow can then validate/map that DTO without extra parsing.
 
-== 3. Call a market-data HTTP API from the workflow
+== 3. Create a mock API to simulate market-data API
 
-We assume you have a simple REST endpoint that exposes market data:
+Create a JAX-RS resource called `MarketDataResource`:
 
-* URL: `http://localhost:8081/market-data/\{ticker}`
-* Returns JSON like:
-+
-[source,json]
+[source,java]
 ----
-{
-  "ticker": "CSU.TO",
-  "price": 3170.25,
-  "pe": 28.4,
-  "dividendYield": 0.003,
-  "currency": "CAD"
-}
+include::{examples-dir}/org/acme/agentic/MarketDataResource.java[]
 ----
 
+Additionally, create the `MarketDataSnapshot` DTO that represents the market data.
+
+[source,java]
+----
+include::{examples-dir}/org/acme/agentic/MarketDataSnapshot.java[]
+----
+
+[NOTE]
 You can call this service directly from the workflow using the HTTP Func DSL.
 Instead of just storing the HTTP response in the data tree, we use an
 `outputAs` filter to **build an `InvestmentPrompt`** that becomes the input
 for the agent.
+
+== 4. Compose HTTP + agent in a single Flow
+
+Now we can wire the HTTP step and the agent into a single `Flow` subclass.
+
+[source,java]
+----
+include::{examples-dir}org/acme/agentic/InvestmentMemoFlow.java[]
+----
 
 === How the `outputAs` filter works here
 
@@ -100,16 +128,7 @@ In this example we use the *typed* `outputAs` variant:
 
 [source,java]
 ----
-get("fetchMarketData", "http://localhost:8081/market-data/{ticker}")
-    .outputAs((result, wf, tf) -> {
-        final Map<String, Object> input = tf.input().asMap().orElseThrow();
-        final String response = tf.rawOutput().asText().orElseThrow();
-        return new InvestmentPrompt(
-                result.ticker(),
-                input.get("objective").toString(),
-                input.get("horizon").toString(),
-                response);
-    }, MarketDataSnapshot.class)
+include::{examples-dir}org/acme/agentic/InvestmentMemoFlow.java[tag=http-step]
 ----
 
 * `result` is the **typed HTTP output** (`MarketDataSnapshot`) – the deserialized response body.
@@ -131,14 +150,6 @@ use `outputAs` to map *arbitrary* inputs/outputs into a shape that the next step
 For HTTP timeouts, logging, proxy, and TLS options, see
 xref:http-client.adoc[Configure the HTTP client].
 
-== 4. Compose HTTP + agent in a single Flow
-
-Now we can wire the HTTP step and the agent into a single `Flow` subclass.
-
-[source,java]
-----
-include::{examples-dir}org/acme/agentic/InvestmentMemoFlow.java[tag=workflow]
-----
 
 What this workflow does:
 

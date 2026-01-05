@@ -16,11 +16,11 @@ If you don’t have a project yet, use the Quarkus CLI:
 [source,shell]
 ----
 quarkus create app org.acme:hello-flow \
-  --extension=resteasy-reactive-jackson
+  --extension=rest-jackson
 cd hello-flow
 ----
 
-Or add RESTEasy Reactive with JSON to an existing project.
+Or add https://quarkus.io/guides/rest[RESTEasy Reactive with Jackson] to an existing project.
 
 [NOTE]
 ====
@@ -84,7 +84,6 @@ Key points:
 * `startInstance()` creates a `Uni<WorkflowModel>`.
 * `.onItem().transform(...)` observes the item emitted by `Uni<WorkflowModel>` and transforms it to `Uni<Message>`.
 * The method returns `Uni<Message>`, so the endpoint stays non-blocking.
-* Make sure the generated `GreetingResource` is removed or uses a different `@Path`, otherwise `/hello` will still return the default `"Hello from Quarkus REST"` response.
 
 == 4. Run in dev mode
 
@@ -99,7 +98,7 @@ Test the endpoint:
 
 [source,shell]
 ----
-curl http://localhost:8080/hello
+curl http://localhost:8080/hello-flow
 ----
 
 You should see a JSON output similar to:
