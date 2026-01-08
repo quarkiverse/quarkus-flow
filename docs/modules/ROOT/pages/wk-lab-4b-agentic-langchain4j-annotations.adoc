@@ -80,3 +80,9 @@ After this lab, you should be able to:
 * Recognize the benefits of using Quarkus Flow (Dev UI, telemetry, integration)
 on top of Quarkus LangChain4j’s Agentic Workflow API.
 * Confidently reuse existing LangChain4j agents as first-class workflows.
+
+== 6. Congratulations
+
+Congratulations on completing all the labs!
+
+You've successfully implemented and explored main Quarkus Flow concepts covered. If you have some suggestions, improvements or issues, please let we know through link:https://github.com/quarkiverse/quarkus-flow/issues[GitHub issues].

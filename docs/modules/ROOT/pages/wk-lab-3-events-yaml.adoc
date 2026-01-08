@@ -96,7 +96,7 @@ set:
 quarkus.flow.definitions.dir=src/main/flow
 ----
 
-See xref:workflow-definitions.adoc[Workflow definitions from YAML files] for details.
+See xref:workflow-definitions.adoc[Workflow definitions from YAML files] for more details.
 
 == 4. Drive the workflow with messaging
 
