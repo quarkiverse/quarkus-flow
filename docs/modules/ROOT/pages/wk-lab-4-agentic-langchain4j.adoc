@@ -276,3 +276,11 @@ so other services can react to `memo.ready`.
 
 The key idea is always the same: **use workflows to coordinate tools and agents**,
 so your business logic stays testable, observable, and safe to evolve.
+
+== 8. What you learned
+
+* Quarkus Flow allows you to build agentic workflows using Quarkus LangChain4j
+* You can orchestrate AI agents and HTTP tasks in a single workflow
+* The DSL allows you to use the `outputAs` method to transforms an task output
+
+Next: xref:wk-lab-4b-agentic-langchain4j-annotations.adoc[Lab 4a – Agentic workflows via LangChain4j annotations].
