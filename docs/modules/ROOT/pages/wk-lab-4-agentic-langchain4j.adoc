@@ -107,7 +107,6 @@ Additionally, create the `MarketDataSnapshot` DTO that represents the market dat
 include::{examples-dir}/org/acme/agentic/MarketDataSnapshot.java[]
 ----
 
-[NOTE]
 You can call this service directly from the workflow using the HTTP Func DSL.
 Instead of just storing the HTTP response in the data tree, we use an
 `outputAs` filter to **build an `InvestmentPrompt`** that becomes the input
