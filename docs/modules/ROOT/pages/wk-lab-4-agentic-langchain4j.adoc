@@ -2,7 +2,7 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
-This guide shows you how to orchestrate link:https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html[**LangChain4j**] agents
+This guide shows how to orchestrate link:https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html[**LangChain4j**] agents
 *and* HTTP tasks in a single workflow.
 
 We’ll build a small **Investment Memo Agent** inspired by common enterprise patterns:
