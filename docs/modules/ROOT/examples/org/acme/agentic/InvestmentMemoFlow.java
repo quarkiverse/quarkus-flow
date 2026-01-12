@@ -34,7 +34,7 @@ public class InvestmentMemoFlow extends Flow {
         return workflow("investment-memo").tasks(
                 // 1) Fetch market data via HTTP and turn it into an InvestmentPrompt
                 // tag::http-step[]
-                get("fetchMarketData", "http://localhost:8081/market-data/{ticker}").outputAs((result, wf, tf) -> {
+                get("fetchMarketData", "http://localhost:8080/market-data/{ticker}").outputAs((result, wf, tf) -> {
                     // This is the original task input, as sent by the workflow user
                     // It has the user's objective and horizon
                     // It could be a record, but we use as a Map to exemplify how to handle this type of object in the

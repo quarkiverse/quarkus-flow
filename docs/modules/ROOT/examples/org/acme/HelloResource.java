@@ -11,7 +11,7 @@ import org.jboss.resteasy.reactive.ResponseStatus;
 
 import io.smallrye.mutiny.Uni;
 
-@Path("/hello")
+@Path("/hello-flow")
 @ApplicationScoped
 public class HelloResource {
 
