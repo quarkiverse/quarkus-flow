@@ -14,7 +14,6 @@ import dev.langchain4j.agentic.declarative.LoopCounter;
 import dev.langchain4j.agentic.declarative.Output;
 import dev.langchain4j.agentic.declarative.ParallelAgent;
 import dev.langchain4j.agentic.declarative.SequenceAgent;
-import dev.langchain4j.agentic.declarative.SubAgent;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
 import dev.langchain4j.service.UserMessage;
@@ -35,11 +34,9 @@ public class Agents {
     @RegisterAiService
     public interface StoryCreatorWithConfigurableStyleEditor {
         @SequenceAgent(outputKey = "story", subAgents = {
-                @SubAgent(type = CreativeWriter.class, outputKey = "story"),
-                @SubAgent(type = AudienceEditor.class, outputKey = "story"),
-                @SubAgent(type = StyleEditor.class, outputKey = "story")
+                CreativeWriter.class, AudienceEditor.class, StyleEditor.class
         })
-        @Agent("write")
+        @Agent(description = "write", outputKey = "story")
         String write(@V("topic") String topic, @V("style") String style, @V("audience") String audience);
     }
 
@@ -90,10 +87,7 @@ public class Agents {
             return moviesAndMeals;
         }
 
-        @ParallelAgent(outputKey = "plans", subAgents = {
-                @SubAgent(type = FoodExpert.class, outputKey = "meals"),
-                @SubAgent(type = MovieExpert.class, outputKey = "movies")
-        })
+        @ParallelAgent(outputKey = "plans", subAgents = { FoodExpert.class, MovieExpert.class })
         List<EveningPlan> plan(@V("mood") String mood);
     }
 
@@ -138,7 +132,7 @@ public class Agents {
                 The user request is {{request}}.
                 """)
         @Tool("A medical expert")
-        @Agent(description = "A medical expert")
+        @Agent(description = "A medical expert", outputKey = "response")
         String medical(@V("request") String request);
     }
 
@@ -149,7 +143,7 @@ public class Agents {
                 The user request is {{request}}.
                 """)
         @Tool("A legal expert")
-        @Agent(description = "A legal expert")
+        @Agent(description = "A legal expert", outputKey = "response")
         String legal(@V("request") String request);
     }
 
@@ -160,7 +154,7 @@ public class Agents {
                 The user request is {{request}}.
                 """)
         @Tool("A technical expert")
-        @Agent(description = "A technical expert")
+        @Agent(description = "A technical expert", outputKey = "response")
         String technical(@V("request") String request);
     }
 
@@ -182,19 +176,12 @@ public class Agents {
             return category == RequestCategory.TECHNICAL;
         }
 
-        @ConditionalAgent(outputKey = "response", subAgents = {
-                @SubAgent(type = MedicalExpert.class, outputKey = "response"),
-                @SubAgent(type = LegalExpert.class, outputKey = "response"),
-                @SubAgent(type = TechnicalExpert.class, outputKey = "response"),
-        })
+        @ConditionalAgent(outputKey = "response", subAgents = { MedicalExpert.class, LegalExpert.class, TechnicalExpert.class })
         String askExpert(@V("request") String request);
     }
 
     public interface ExpertRouterAgent {
-        @SequenceAgent(outputKey = "response", subAgents = {
-                @SubAgent(type = CategoryRouter.class, outputKey = "category"),
-                @SubAgent(type = ExpertsAgent.class, outputKey = "response")
-        })
+        @SequenceAgent(outputKey = "response", subAgents = { CategoryRouter.class, ExpertsAgent.class })
         ResultWithAgenticScope<String> ask(@V("request") String request);
     }
 
@@ -227,7 +214,7 @@ public class Agents {
 
                 The story is: "{{story}}"
                 """)
-        @Agent("Score a story based on how well it aligns with a given style")
+        @Agent(description = "Score a story based on how well it aligns with a given style", outputKey = "score")
         double scoreStyle(@V("story") String story, @V("style") String style);
     }
 
@@ -241,18 +228,13 @@ public class Agents {
         }
 
         @LoopAgent(description = "Review the given story to ensure it aligns with the specified style", outputKey = "story", maxIterations = 5, subAgents = {
-                @SubAgent(type = StyleScorer.class, outputKey = "score"),
-                @SubAgent(type = StyleEditor.class, outputKey = "story")
-        })
+                StyleScorer.class, StyleEditor.class })
         String write(@V("story") String story);
     }
 
     @RegisterAiService
     public interface StoryCreatorWithReviewWithCounter {
-        @SequenceAgent(outputKey = "story", subAgents = {
-                @SubAgent(type = CreativeWriter.class, outputKey = "story"),
-                @SubAgent(type = StyleReviewLoopAgentWithCounter.class, outputKey = "story")
-        })
+        @SequenceAgent(outputKey = "story", subAgents = { CreativeWriter.class, StyleReviewLoopAgentWithCounter.class })
         @Agent("write")
         ResultWithAgenticScope<String> write(@V("topic") String topic, @V("style") String style);
     }

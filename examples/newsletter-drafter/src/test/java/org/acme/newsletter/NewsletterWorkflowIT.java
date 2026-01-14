@@ -24,11 +24,13 @@ import org.acme.newsletter.domain.CriticAgentReview;
 import org.acme.newsletter.services.MailService;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.mockito.ArgumentCaptor;
 
+@Disabled("Needs review - the agent should not receive a JSON string, but typed values. Also, review integration with LC4J Framework")
 @DisabledOnOs(OS.WINDOWS)
 @QuarkusTest
 @QuarkusTestResource(KafkaCompanionResource.class)

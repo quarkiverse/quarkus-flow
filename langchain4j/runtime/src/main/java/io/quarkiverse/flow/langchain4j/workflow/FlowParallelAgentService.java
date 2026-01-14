@@ -4,6 +4,7 @@ import static dev.langchain4j.agentic.internal.AgentUtil.validateAgentClass;
 import static io.quarkiverse.flow.internal.WorkflowNameUtils.safeName;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
@@ -11,11 +12,12 @@ import java.util.function.Consumer;
 import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.agentic.internal.AgentExecutor;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
-import dev.langchain4j.agentic.workflow.ParallelAgentService;
+import dev.langchain4j.agentic.workflow.impl.ParallelAgentServiceImpl;
 import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
 
-public class FlowParallelAgentService<T> extends AbstractFlowAgentService<T, ParallelAgentService<T>>
-        implements ParallelAgentService<T> {
+public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> {
+
+    private final List<AgentExecutor> parallelAgents = new ArrayList<>();
 
     protected FlowParallelAgentService(Class<T> agentServiceClass, Method agenticMethod) {
         super(agentServiceClass, agenticMethod);
@@ -30,18 +32,34 @@ public class FlowParallelAgentService<T> extends AbstractFlowAgentService<T, Par
     }
 
     @Override
-    public ParallelAgentService<T> executor(Executor executor) {
-        // TODO: if we change the executor here, it will propagate to all workflows within the same application; WorkflowApplication is a singleton, managed bean on Quarkus Flow Runtime.
+    public FlowParallelAgentService<T> subAgents(List<AgentExecutor> agentExecutors) {
+        super.subAgents(agentExecutors);
+        this.parallelAgents.addAll(agentExecutors);
+        return this;
+    }
+
+    @Override
+    public FlowParallelAgentService<T> executor(Executor executor) {
         throw new UnsupportedOperationException(
                 "Changing the default WorkflowApplication executor is not supported at this time.");
     }
 
     @Override
-    protected Consumer<FuncDoTaskBuilder> doWorkflowTasks(List<AgentExecutor> agentExecutors) {
-        return tasks -> tasks.fork("parallel-agents-001",
-                fork -> agentExecutors.forEach(
-                        agentExecutor -> fork.branch(safeName(agentExecutor.agentInvoker().uniqueName()),
-                                agentExecutor::execute,
-                                DefaultAgenticScope.class)));
+    public T build() {
+        final FlowPlanner planner = new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition());
+        return build(() -> planner);
+    }
+
+    protected Consumer<FuncDoTaskBuilder> tasksDefinition() {
+        return tasks -> tasks.fork("parallel",
+                fork -> {
+                    int step = 0;
+                    for (AgentExecutor agentExecutor : parallelAgents) {
+                        final String branchName = safeName(agentExecutor.agentInvoker().agentId() + "-" + (step++));
+                        fork.branch(branchName,
+                                (DefaultAgenticScope scope) -> agentExecutor.syncExecute(scope, null),
+                                DefaultAgenticScope.class);
+                    }
+                });
     }
 }

@@ -1,9 +1,10 @@
 package io.quarkiverse.flow.langchain4j.workflow;
 
 import static dev.langchain4j.agentic.internal.AgentUtil.validateAgentClass;
-import static io.quarkiverse.flow.internal.WorkflowNameUtils.safeName;
+import static io.quarkiverse.flow.langchain4j.workflow.FlowAgentServiceUtil.agenticScopePassthrough;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
@@ -14,27 +15,31 @@ import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.agentic.internal.AgentExecutor;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
-import dev.langchain4j.agentic.workflow.LoopAgentService;
+import dev.langchain4j.agentic.workflow.impl.LoopAgentServiceImpl;
 import io.serverlessworkflow.api.types.func.LoopPredicateIndex;
 import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
 import io.serverlessworkflow.fluent.func.FuncTaskItemListBuilder;
 import io.serverlessworkflow.impl.TaskContext;
 
-public class FlowLoopAgentService<T> extends AbstractFlowAgentService<T, LoopAgentService<T>> implements LoopAgentService<T> {
+public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> {
 
     private static final String AT = "index";
     private static final String ITEM = "item";
     private static final String EXIT_PROP = "_exit";
 
+    /**
+     * For do..while semantics (check at end): continue while exit == false.
+     */
     private static final LoopPredicateIndex<AgenticScope, Object> EXIT_COND_END = (scope, item, idx) -> {
-        // The temp here improves readability and understanding.
         Boolean exit = scope.readState(EXIT_PROP, false);
-        return Boolean.FALSE.equals(exit); // continue while exit == false
+        return Boolean.FALSE.equals(exit);
     };
-
+    // Sub-agents used to synthesize the workflow
+    private final List<AgentExecutor> loopAgents = new ArrayList<>();
+    // We need our own copies (base fields are private)
     private int maxIterations = Integer.MAX_VALUE;
     private BiPredicate<AgenticScope, Integer> exitCondition = (scope, loopCounter) -> false;
-    private boolean checkExitConditionAtLoopEnd = false;
+    private boolean testExitAtLoopEnd = false;
 
     protected FlowLoopAgentService(Class<T> agentServiceClass, Method agenticMethod) {
         super(agentServiceClass, agenticMethod);
@@ -53,58 +58,80 @@ public class FlowLoopAgentService<T> extends AbstractFlowAgentService<T, LoopAge
      * Continue while exitCondition == false.
      */
     protected LoopPredicateIndex<AgenticScope, Object> continuePredicate() {
-        return (model, item, idx) -> !exitCondition.test(model, idx);
+        return (scope, item, idx) -> !exitCondition.test(scope, idx);
     }
 
     @Override
-    public LoopAgentService<T> maxIterations(int maxIterations) {
+    public FlowLoopAgentService<T> maxIterations(int maxIterations) {
+        super.maxIterations(maxIterations); // keep upstream behavior consistent
         this.maxIterations = maxIterations;
         return this;
     }
 
     @Override
-    public LoopAgentService<T> exitCondition(Predicate<AgenticScope> exitCondition) {
+    public FlowLoopAgentService<T> exitCondition(Predicate<AgenticScope> exitCondition) {
+        super.exitCondition(exitCondition);
         this.exitCondition = (scope, loopCounter) -> exitCondition.test(scope);
         return this;
     }
 
     @Override
-    public LoopAgentService<T> exitCondition(BiPredicate<AgenticScope, Integer> exitCondition) {
+    public FlowLoopAgentService<T> exitCondition(BiPredicate<AgenticScope, Integer> exitCondition) {
+        super.exitCondition(exitCondition);
         this.exitCondition = exitCondition;
         return this;
     }
 
     @Override
-    public LoopAgentService<T> testExitAtLoopEnd(boolean checkExitConditionAtLoopEnd) {
-        this.checkExitConditionAtLoopEnd = checkExitConditionAtLoopEnd;
+    public FlowLoopAgentService<T> testExitAtLoopEnd(boolean testExitAtLoopEnd) {
+        super.testExitAtLoopEnd(testExitAtLoopEnd);
+        this.testExitAtLoopEnd = testExitAtLoopEnd;
+        return this;
+    }
+
+    // Capture sub-agents so we can synthesize workflow tasks.
+    @Override
+    public FlowLoopAgentService<T> subAgents(List<AgentExecutor> agentExecutors) {
+        super.subAgents(agentExecutors);
+        this.loopAgents.addAll(agentExecutors);
         return this;
     }
 
     @Override
-    protected Consumer<FuncDoTaskBuilder> doWorkflowTasks(List<AgentExecutor> agentExecutors) {
-        return tasks -> tasks.forEach("loop-agent-001",
-                does -> does
-                        // tasks from
-                        .tasks(forDo -> agentExecutors
-                                .forEach(agentExecutor -> forDo.function(safeName(agentExecutor.agentInvoker().uniqueName()),
-                                        fn -> fn.function(agentExecutor::execute, DefaultAgenticScope.class)
-                                                .outputAs((scope, wf, tf) -> agenticScopePassthrough(tf.rawInput())))))
-                        // Special case when we check the condition at the end of the loop
-                        .tasks(checkExitConditionAtLoopEndFunction())
-                        .each(ITEM)
-                        .at(AT)
-                        .collection(ignored -> IntStream.range(0, maxIterations).boxed().toList())
-                        .whileC(checkExitConditionAtLoopEnd ? EXIT_COND_END : continuePredicate()));
+    public T build() {
+        final FlowPlanner planner = new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition());
+        return build(() -> planner);
+    }
+
+    protected Consumer<FuncDoTaskBuilder> tasksDefinition() {
+        return tasks -> {
+            // If we check exit at loop end, reset per workflow invocation (not per iteration!)
+            if (testExitAtLoopEnd) {
+                tasks.function("loop-reset-exit",
+                        fn -> fn.function((DefaultAgenticScope scope) -> {
+                            scope.writeState(EXIT_PROP, false);
+                            return scope;
+                        },
+                                DefaultAgenticScope.class).outputAs((out, wf, tf) -> agenticScopePassthrough(tf.rawInput())));
+            }
+
+            tasks.forEach("loop",
+                    does -> does
+                            .tasks(forDo -> FlowAgentServiceUtil.addSequentialAgentTasks(forDo, loopAgents))
+                            .tasks(checkExitConditionAtLoopEndFunction())
+                            .each(ITEM)
+                            .at(AT)
+                            .collection(ignored -> IntStream.range(0, maxIterations).boxed().toList())
+                            .whileC(testExitAtLoopEnd ? EXIT_COND_END : continuePredicate()));
+        };
     }
 
     protected Consumer<FuncTaskItemListBuilder> checkExitConditionAtLoopEndFunction() {
         return task -> {
-            if (checkExitConditionAtLoopEnd) {
+            if (testExitAtLoopEnd) {
                 task.function("check-exit-at-end", fn -> fn.function((scope, wf, tf) -> {
-                    // Since it's a do..while, we already passed the first iteration at this stage.
                     final Integer idx = (Integer) ((TaskContext) tf).variables().get(AT) + 1;
                     if (exitCondition.test(scope, idx)) {
-                        // writing is expensive (has locks), so we do it once.
                         scope.writeState(EXIT_PROP, true);
                     }
                     return scope;

@@ -10,7 +10,7 @@ import io.quarkiverse.flow.internal.WorkflowInvocationMetadata;
 import io.quarkiverse.flow.internal.WorkflowNameUtils;
 import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkiverse.flow.langchain4j.schema.MethodInputJsonSchema;
-import io.quarkiverse.flow.langchain4j.workflow.AbstractFlowAgentService;
+import io.quarkiverse.flow.langchain4j.workflow.FlowAgentServiceUtil;
 import io.quarkus.arc.Arc;
 import io.quarkus.runtime.annotations.Recorder;
 import io.serverlessworkflow.api.types.Document;
@@ -57,7 +57,7 @@ public class FlowLangChain4jWorkflowRecorder {
 
                 // Attach bean invoker metadata so DevUI can invoke via CDI bean
                 WorkflowInvocationMetadata.setBeanInvoker(wf, iface, method,
-                        AbstractFlowAgentService.INVOKER_KIND_AGENTIC_LC4J);
+                        FlowAgentServiceUtil.INVOKER_KIND_AGENTIC_LC4J);
 
                 registry.cacheDescriptor(wf);
 

@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import dev.langchain4j.agentic.internal.AgentUtil;
+import dev.langchain4j.agentic.planner.AgentArgument;
 import dev.langchain4j.service.V;
 import io.serverlessworkflow.api.types.Input;
 import io.serverlessworkflow.api.types.SchemaInline;
@@ -54,7 +55,7 @@ public final class MethodInputJsonSchema {
      * Root is always an object with properties matching parameter names.
      */
     private static ObjectNode generateSchemaNode(Method method) {
-        final List<AgentUtil.AgentArgument> args = AgentUtil.argumentsFromMethod(method);
+        final List<AgentArgument> args = AgentUtil.argumentsFromMethod(method);
 
         if (args.isEmpty()) {
             return null;
@@ -66,7 +67,7 @@ public final class MethodInputJsonSchema {
         ObjectNode properties = JsonUtils.object();
         ArrayNode requiredArray = JsonUtils.array();
 
-        for (AgentUtil.AgentArgument arg : args) {
+        for (AgentArgument arg : args) {
             String logicalName = arg.name();
 
             if (logicalName.equals(AgentUtil.MEMORY_ID_ARG_NAME)
@@ -75,9 +76,9 @@ public final class MethodInputJsonSchema {
                 continue;
             }
 
-            String jsonType = mapJavaTypeToJsonType(arg.type());
+            String jsonType = mapJavaTypeToJsonType(arg.rawType());
 
-            ObjectNode propNode = buildPropertySchema(arg.type(), true);
+            ObjectNode propNode = buildPropertySchema(arg.rawType(), true);
             propNode.put("type", jsonType);
 
             properties.set(logicalName, propNode);

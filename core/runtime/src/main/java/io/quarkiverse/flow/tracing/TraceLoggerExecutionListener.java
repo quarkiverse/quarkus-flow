@@ -115,7 +115,7 @@ public final class TraceLoggerExecutionListener implements WorkflowExecutionList
     @Override
     public void onWorkflowStarted(WorkflowStartedEvent ev) {
         withMdc(ev, "workflow.started", () -> log.info(
-                "Workflow name={} id={} started at {} input={}",
+                "Workflow name={} instanceId={} started at {} input={}",
                 ev.workflowContext().definition().workflow().getDocument().getName(),
                 ev.workflowContext().instanceData().id(), ev.eventDate(),
                 safe(ev.workflowContext().instanceData().input().asJavaObject())));
@@ -124,7 +124,7 @@ public final class TraceLoggerExecutionListener implements WorkflowExecutionList
     @Override
     public void onWorkflowResumed(WorkflowResumedEvent ev) {
         withMdc(ev, "workflow.resumed", () -> log.info(
-                "Workflow name={} id={} resumed at {}",
+                "Workflow name={} instanceId={} resumed at {}",
                 ev.workflowContext().definition().workflow().getDocument().getName(),
                 ev.workflowContext().instanceData().id(),
                 ev.eventDate()));
@@ -133,7 +133,7 @@ public final class TraceLoggerExecutionListener implements WorkflowExecutionList
     @Override
     public void onWorkflowSuspended(WorkflowSuspendedEvent ev) {
         withMdc(ev, "workflow.suspended", () -> log.info(
-                "Workflow name={} id={} suspended at {}",
+                "Workflow name={} instanceId={} suspended at {}",
                 ev.workflowContext().definition().workflow().getDocument().getName(),
                 ev.workflowContext().instanceData().id(), ev.eventDate()));
     }
@@ -141,7 +141,7 @@ public final class TraceLoggerExecutionListener implements WorkflowExecutionList
     @Override
     public void onWorkflowCompleted(WorkflowCompletedEvent ev) {
         withMdc(ev, "workflow.completed", () -> log.info(
-                "Workflow name={} id={} completed at {}",
+                "Workflow name={} instanceId={} completed at {}",
                 ev.workflowContext().definition().workflow().getDocument().getName(),
                 ev.workflowContext().instanceData().id(), ev.eventDate()));
     }
@@ -149,7 +149,7 @@ public final class TraceLoggerExecutionListener implements WorkflowExecutionList
     @Override
     public void onWorkflowFailed(WorkflowFailedEvent ev) {
         withMdc(ev, "workflow.failed", () -> log.info(
-                "Workflow name={} id={} failed at {} error={} cause={}",
+                "Workflow name={} instanceId={} failed at {} error={} cause={}",
                 ev.workflowContext().definition().workflow().getDocument().getName(),
                 ev.workflowContext().instanceData().id(), ev.eventDate(), ev.cause().getMessage(), safe(ev.cause())));
     }
@@ -157,7 +157,7 @@ public final class TraceLoggerExecutionListener implements WorkflowExecutionList
     @Override
     public void onWorkflowCancelled(WorkflowCancelledEvent ev) {
         withMdc(ev, "workflow.cancelled", () -> log.info(
-                "Workflow name={} id={} cancelled at {}",
+                "Workflow name={} instanceId={} cancelled at {}",
                 ev.workflowContext().definition().workflow().getDocument().getName(),
                 ev.workflowContext().instanceData().id(), ev.eventDate()));
     }
