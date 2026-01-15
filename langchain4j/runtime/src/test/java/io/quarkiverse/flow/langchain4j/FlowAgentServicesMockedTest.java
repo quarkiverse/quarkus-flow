@@ -2,6 +2,7 @@ package io.quarkiverse.flow.langchain4j;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -41,13 +42,13 @@ public class FlowAgentServicesMockedTest {
         AgentInvoker invoker1 = mock(AgentInvoker.class);
         AgentInvoker invoker2 = mock(AgentInvoker.class);
 
-        when(invoker1.uniqueName()).thenReturn("FirstAgent");
-        when(invoker2.uniqueName()).thenReturn("SecondAgent");
+        when(invoker1.agentId()).thenReturn("FirstAgent");
+        when(invoker2.agentId()).thenReturn("SecondAgent");
         when(exec1.agentInvoker()).thenReturn(invoker1);
         when(exec2.agentInvoker()).thenReturn(invoker2);
 
         // We'll accumulate "order" in scope.state("seqOrder") as a StringBuilder
-        when(exec1.execute(any())).thenAnswer(inv -> {
+        when(exec1.syncExecute(any(), isNull())).thenAnswer(inv -> {
             DefaultAgenticScope scope = inv.getArgument(0);
             StringBuilder sb = scope.readState("seqOrder", new StringBuilder());
             sb.append("1");
@@ -55,7 +56,7 @@ public class FlowAgentServicesMockedTest {
             return scope;
         });
 
-        when(exec2.execute(any())).thenAnswer(inv -> {
+        when(exec2.syncExecute(any(), isNull())).thenAnswer(inv -> {
             DefaultAgenticScope scope = inv.getArgument(0);
             StringBuilder sb = scope.readState("seqOrder", new StringBuilder());
             sb.append("2");
@@ -76,8 +77,8 @@ public class FlowAgentServicesMockedTest {
         AgenticScope scope = result.agenticScope();
 
         // Assert: both executors called once
-        verify(exec1, times(1)).execute(any());
-        verify(exec2, times(1)).execute(any());
+        verify(exec1, times(1)).syncExecute(any(), isNull());
+        verify(exec2, times(1)).syncExecute(any(), isNull());
 
         // And the custom state shows order "12"
         StringBuilder seqOrder = scope.readState("seqOrder", new StringBuilder());
@@ -95,26 +96,26 @@ public class FlowAgentServicesMockedTest {
         AgentInvoker invokerB = mock(AgentInvoker.class);
         AgentInvoker invokerC = mock(AgentInvoker.class);
 
-        when(invokerA.uniqueName()).thenReturn("A");
-        when(invokerB.uniqueName()).thenReturn("B");
-        when(invokerC.uniqueName()).thenReturn("C");
+        when(invokerA.agentId()).thenReturn("A");
+        when(invokerB.agentId()).thenReturn("B");
+        when(invokerC.agentId()).thenReturn("C");
 
         when(execA.agentInvoker()).thenReturn(invokerA);
         when(execB.agentInvoker()).thenReturn(invokerB);
         when(execC.agentInvoker()).thenReturn(invokerC);
 
         // Each executor just marks a flag in the scope
-        when(execA.execute(any())).thenAnswer(inv -> {
+        when(execA.syncExecute(any(), isNull())).thenAnswer(inv -> {
             DefaultAgenticScope scope = inv.getArgument(0);
             scope.writeState("calledA", true);
             return scope;
         });
-        when(execB.execute(any())).thenAnswer(inv -> {
+        when(execB.syncExecute(any(), isNull())).thenAnswer(inv -> {
             DefaultAgenticScope scope = inv.getArgument(0);
             scope.writeState("calledB", true);
             return scope;
         });
-        when(execC.execute(any())).thenAnswer(inv -> {
+        when(execC.syncExecute(any(), isNull())).thenAnswer(inv -> {
             DefaultAgenticScope scope = inv.getArgument(0);
             scope.writeState("calledC", true);
             return scope;
@@ -131,9 +132,9 @@ public class FlowAgentServicesMockedTest {
         AgenticScope scope = result.agenticScope();
 
         // Assert: each executor called at least once
-        verify(execA, atLeastOnce()).execute(any());
-        verify(execB, atLeastOnce()).execute(any());
-        verify(execC, atLeastOnce()).execute(any());
+        verify(execA, atLeastOnce()).syncExecute(any(), isNull());
+        verify(execB, atLeastOnce()).syncExecute(any(), isNull());
+        verify(execC, atLeastOnce()).syncExecute(any(), isNull());
 
         assertThat(scope.readState("calledA", false)).isTrue();
         assertThat(scope.readState("calledB", false)).isTrue();
@@ -149,13 +150,13 @@ public class FlowAgentServicesMockedTest {
         AgentInvoker invokerMed = mock(AgentInvoker.class);
         AgentInvoker invokerFin = mock(AgentInvoker.class);
 
-        when(invokerMed.uniqueName()).thenReturn("MedicalAgent");
-        when(invokerFin.uniqueName()).thenReturn("FinanceAgent");
+        when(invokerMed.agentId()).thenReturn("MedicalAgent");
+        when(invokerFin.agentId()).thenReturn("FinanceAgent");
         when(medicalExec.agentInvoker()).thenReturn(invokerMed);
         when(financeExec.agentInvoker()).thenReturn(invokerFin);
 
         // For logging / debugging, mark which branch ran
-        when(medicalExec.execute(any())).thenAnswer(inv -> {
+        when(medicalExec.syncExecute(any(), isNull())).thenAnswer(inv -> {
             DefaultAgenticScope scope = inv.getArgument(0);
             scope.writeState("branch", "medical");
             return scope;
@@ -178,8 +179,8 @@ public class FlowAgentServicesMockedTest {
         AgenticScope scope = result.agenticScope();
 
         // Assert: only medicalExec is invoked
-        verify(medicalExec, atLeastOnce()).execute(any());
-        verify(financeExec, never()).execute(any());
+        verify(medicalExec, atLeastOnce()).syncExecute(any(), isNull());
+        verify(financeExec, never()).syncExecute(any(), isNull());
 
         assertThat(scope.readState("branch", "")).isEqualTo("medical");
     }
@@ -189,13 +190,13 @@ public class FlowAgentServicesMockedTest {
         // Arrange
         AgentExecutor loopExec = mock(AgentExecutor.class);
         AgentInvoker invoker = mock(AgentInvoker.class);
-        when(invoker.uniqueName()).thenReturn("LoopAgent");
+        when(invoker.agentId()).thenReturn("LoopAgent");
         when(loopExec.agentInvoker()).thenReturn(invoker);
 
         AtomicInteger calls = new AtomicInteger();
 
         // Each execution increments "counter" in the scope
-        when(loopExec.execute(any())).thenAnswer(inv -> {
+        when(loopExec.syncExecute(any(), isNull())).thenAnswer(inv -> {
             DefaultAgenticScope scope = inv.getArgument(0);
             int c = scope.readState("counter", 0);
             c++;
@@ -230,7 +231,7 @@ public class FlowAgentServicesMockedTest {
         assertThat(counter).isBetween(1, 10);
         assertThat(calls.get()).isEqualTo(counter);
 
-        verify(loopExec, times(counter)).execute(any());
+        verify(loopExec, times(counter)).syncExecute(any(), isNull());
     }
 
     interface TestSequentialAgent {

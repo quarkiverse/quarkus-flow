@@ -21,7 +21,7 @@
         <failsafe-plugin.version>3.5.4</failsafe-plugin.version>
 
         <quarkus.flow.version>1.0.0-SNAPSHOT</quarkus.flow.version>
-        <io.quarkiverse.langchain4j.version>1.4.2</io.quarkiverse.langchain4j.version>
+        <io.quarkiverse.langchain4j.version>1.5.0</io.quarkiverse.langchain4j.version>
         <org.assertj.version>3.27.6</org.assertj.version>
     </properties>
 
@@ -75,7 +75,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.langchain4j</groupId>
-            <artifactId>quarkus-langchain4j-testing-scorer-junit5</artifactId>
+            <artifactId>quarkus-langchain4j-testing-evaluation-junit5</artifactId>
             <version>${io.quarkiverse.langchain4j.version}</version>
             <scope>test</scope>
         </dependency>

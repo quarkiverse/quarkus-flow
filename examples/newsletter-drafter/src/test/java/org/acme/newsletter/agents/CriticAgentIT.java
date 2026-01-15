@@ -1,25 +1,10 @@
 package org.acme.newsletter.agents;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.quarkiverse.langchain4j.scorer.junit5.AiScorer;
-import io.quarkiverse.langchain4j.scorer.junit5.SampleLocation;
-import io.quarkiverse.langchain4j.scorer.junit5.ScorerConfiguration;
-import io.quarkiverse.langchain4j.testing.scorer.EvaluationReport;
-import io.quarkiverse.langchain4j.testing.scorer.EvaluationSample;
-import io.quarkiverse.langchain4j.testing.scorer.EvaluationStrategy;
-import io.quarkiverse.langchain4j.testing.scorer.Parameters;
-import io.quarkiverse.langchain4j.testing.scorer.Samples;
-import io.quarkiverse.langchain4j.testing.scorer.Scorer;
-import io.quarkus.test.junit.QuarkusTest;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+
 import org.acme.newsletter.domain.CriticAgentReview;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -27,9 +12,22 @@ import org.junit.jupiter.api.condition.OS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.quarkiverse.langchain4j.testing.evaluation.Evaluation;
+import io.quarkiverse.langchain4j.testing.evaluation.EvaluationReport;
+import io.quarkiverse.langchain4j.testing.evaluation.EvaluationResult;
+import io.quarkiverse.langchain4j.testing.evaluation.EvaluationSample;
+import io.quarkiverse.langchain4j.testing.evaluation.EvaluationStrategy;
+import io.quarkiverse.langchain4j.testing.evaluation.Parameters;
+import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 @DisabledOnOs(OS.WINDOWS)
 @QuarkusTest
-@AiScorer
 public class CriticAgentIT {
 
     private static final Logger LOG = LoggerFactory.getLogger(CriticAgentIT.class);
@@ -42,11 +40,15 @@ public class CriticAgentIT {
     ObjectMapper mapper;
 
     @Test
-    void critic_checks_json_and_constraints(@ScorerConfiguration(concurrency = 2) Scorer scorer,
-            @SampleLocation("src/test/resources/samples/critic-agent.yaml") Samples<CriticAgentReview> samples) {
+    void critic_checks_json_and_constraints() {
         // Agent now returns CriticAgentReview, so the report is parameterized with CriticAgentReview
-        EvaluationReport<CriticAgentReview> report = scorer.evaluate(samples,
-                (Parameters p) -> agent.critique(UUID.randomUUID().toString(), toCriticJson(p)), strategy);
+        EvaluationReport<CriticAgentReview> report = Evaluation.<CriticAgentReview> builder()
+                .withSamples("src/test/resources/samples/critic-agent.yaml")
+                .withConcurrency(2)
+                .evaluate(params -> agent.critique(UUID.randomUUID().toString(), toCriticJson(params)))
+                .using(strategy)
+                .run();
+
         assertThat(report.score()).as("CriticAgent output didn’t satisfy JSON contract or constraint checks")
                 .isGreaterThanOrEqualTo(80.0);
     }
@@ -77,19 +79,19 @@ public class CriticAgentIT {
         }
 
         @Override
-        public boolean evaluate(EvaluationSample<CriticAgentReview> sample, CriticAgentReview output) {
+        public EvaluationResult evaluate(EvaluationSample<CriticAgentReview> sample, CriticAgentReview output) {
             try {
                 if (output == null)
-                    return false;
+                    return EvaluationResult.failed("Output is null");
 
                 // Basic contract checks
                 String verdict = safeLower(output.getVerdict());
                 if (!"approve".equals(verdict) && !"revise".equals(verdict))
-                    return false;
+                    return EvaluationResult.failed("Invalid verdict, should be approve or revise");
 
                 // Always require original draft echo
                 if (output.getOriginalDraft() == null || output.getOriginalDraft().isBlank())
-                    return false;
+                    return EvaluationResult.failed("Original Draft is null");
 
                 // Reasons / suggestions presence
                 boolean hasReason = output.getReasons() != null
@@ -98,9 +100,9 @@ public class CriticAgentIT {
                 // For REVISE: must have at least one reason and a non-empty revised draft
                 if ("revise".equals(verdict)) {
                     if (!hasReason)
-                        return false;
+                        return EvaluationResult.failed("Verdict revise should have a reason");
                     if (output.getRevisedDraft() == null || output.getRevisedDraft().isBlank())
-                        return false;
+                        return EvaluationResult.failed("Revised Draft is null");
                 }
 
                 // Scores sanity if present
@@ -110,7 +112,7 @@ public class CriticAgentIT {
                             output.getScores().getOverall() };
                     for (Integer v : vals) {
                         if (v != null && (v < 0 || v > 100))
-                            return false;
+                            return EvaluationResult.failed("Score out of bounds" + v);
                     }
                 }
 
@@ -138,12 +140,13 @@ public class CriticAgentIT {
 
                 if (expectVerdict != null && !expectVerdict.isBlank()) {
                     if (!verdict.equals(expectVerdict))
-                        return false;
+                        return EvaluationResult
+                                .failed("Verdict '" + verdict + "' didn't match expected verdict: '" + expectVerdict + "'");
                 }
 
                 if (expectRevised || "revise".equals(verdict)) {
                     if (output.getRevisedDraft() == null || output.getRevisedDraft().isBlank())
-                        return false;
+                        return EvaluationResult.failed("Revised Draft is null");
                 }
 
                 if (!expectFind.isEmpty()) {
@@ -162,14 +165,15 @@ public class CriticAgentIT {
                     String lower = haystack.toString().toLowerCase(Locale.ROOT);
                     for (String token : expectFind) {
                         if (!lower.contains(token))
-                            return false;
+                            return EvaluationResult
+                                    .failed("Expected strings not found in suggestions, reasons, or revised draft");
                     }
                 }
 
-                return true;
+                return EvaluationResult.fromBoolean(true);
             } catch (Exception e) {
                 LOG.error("Failed to evaluate CriticAgent response.", e);
-                return false;
+                return EvaluationResult.failed("Failed to evaluate CriticAgent response. " + e.getMessage());
             }
         }
     }

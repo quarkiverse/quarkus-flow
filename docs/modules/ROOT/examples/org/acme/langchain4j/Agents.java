@@ -6,7 +6,6 @@ import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.agentic.declarative.Output;
 import dev.langchain4j.agentic.declarative.ParallelAgent;
 import dev.langchain4j.agentic.declarative.SequenceAgent;
-import dev.langchain4j.agentic.declarative.SubAgent;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
@@ -19,7 +18,6 @@ import io.quarkiverse.langchain4j.RegisterAiService;
  *
  * @RegisterAiService interfaces. The quarkus-flow-langchain4j extension transparently builds WorkflowDefinitions for
  *                    the
- *
  * @SequenceAgent and @ParallelAgent methods and registers them in the Quarkus Flow runtime.
  *                <p>
  *                You will see them under the Quarkus Flow Dev UI: - document.name ~=
@@ -53,16 +51,14 @@ public final class Agents {
     @RegisterAiService
     public interface StoryCreatorWithConfigurableStyleEditor {
 
-        @SequenceAgent(outputKey = "story", subAgents = { @SubAgent(type = CreativeWriter.class, outputKey = "story"),
-                @SubAgent(type = AudienceEditor.class, outputKey = "story"),
-                @SubAgent(type = StyleEditor.class, outputKey = "story") })
+        @SequenceAgent(outputKey = "story", subAgents = { CreativeWriter.class, AudienceEditor.class, StyleEditor.class })
         String write(@V("topic") String topic, @V("style") String style, @V("audience") String audience);
     }
 
     @RegisterAiService
     public interface CreativeWriter {
 
-        @Agent(name = "Creative writer", description = "Draft a short story about a topic.")
+        @Agent(name = "Creative writer", description = "Draft a short story about a topic.", outputKey = "story")
         @SystemMessage("""
                 You are a creative fiction writer.
                 Write short, vivid stories, 4–6 sentences long.
@@ -78,7 +74,7 @@ public final class Agents {
     @RegisterAiService
     public interface AudienceEditor {
 
-        @Agent(name = "Audience editor", description = "Adapt story to a target audience.")
+        @Agent(name = "Audience editor", description = "Adapt story to a target audience.", outputKey = "story")
         @SystemMessage("""
                 You rewrite stories to better fit the target audience.
                 Keep structure similar but adjust language, tone, and difficulty.
@@ -96,7 +92,7 @@ public final class Agents {
     @RegisterAiService
     public interface StyleEditor {
 
-        @Agent(name = "Style editor", description = "Adapt story to a specific writing style.")
+        @Agent(name = "Style editor", description = "Adapt story to a specific writing style.", outputKey = "story")
         @SystemMessage("""
                 You rewrite stories in the requested writing style
                 (for example: fantasy, noir, comedy, sci-fi).
@@ -138,9 +134,7 @@ public final class Agents {
                     requireNonNullElse(activity, "surprise activity"));
         }
 
-        @ParallelAgent(outputKey = "plan", subAgents = { @SubAgent(type = DinnerAgent.class, outputKey = "dinner"),
-                @SubAgent(type = DrinksAgent.class, outputKey = "drinks"),
-                @SubAgent(type = ActivityAgent.class, outputKey = "activity") })
+        @ParallelAgent(outputKey = "plan", subAgents = { DinnerAgent.class, DrinksAgent.class, ActivityAgent.class })
         EveningPlan plan(@V("city") String city, @V("mood") Mood mood);
     }
 
@@ -166,7 +160,7 @@ public final class Agents {
     @RegisterAiService
     public interface DinnerAgent {
 
-        @Agent(name = "Dinner planner")
+        @Agent(name = "Dinner planner", outputKey = "dinner")
         @SystemMessage("""
                 You suggest a single, concrete dinner option in the given city
                 for a given mood. Be specific and short.
@@ -183,7 +177,7 @@ public final class Agents {
     @RegisterAiService
     public interface DrinksAgent {
 
-        @Agent(name = "Drinks planner")
+        @Agent(name = "Drinks planner", outputKey = "drinks")
         @SystemMessage("""
                 You suggest one place for drinks after dinner, matching the mood.
                 """)
@@ -199,7 +193,7 @@ public final class Agents {
     @RegisterAiService
     public interface ActivityAgent {
 
-        @Agent(name = "Activity planner")
+        @Agent(name = "Activity planner", outputKey = "activity")
         @SystemMessage("""
                 You suggest one short activity to wrap up the evening.
                 """)

@@ -1,35 +1,33 @@
 package org.acme.newsletter.agents;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.fasterxml.jackson.core.json.JsonReadFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.quarkiverse.langchain4j.scorer.junit5.AiScorer;
-import io.quarkiverse.langchain4j.scorer.junit5.SampleLocation;
-import io.quarkiverse.langchain4j.scorer.junit5.ScorerConfiguration;
-import io.quarkiverse.langchain4j.testing.scorer.EvaluationReport;
-import io.quarkiverse.langchain4j.testing.scorer.EvaluationSample;
-import io.quarkiverse.langchain4j.testing.scorer.EvaluationStrategy;
-import io.quarkiverse.langchain4j.testing.scorer.Parameters;
-import io.quarkiverse.langchain4j.testing.scorer.Samples;
-import io.quarkiverse.langchain4j.testing.scorer.Scorer;
-import io.quarkus.test.junit.QuarkusTest;
-import jakarta.annotation.PostConstruct;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 import java.util.Locale;
 import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.json.JsonReadFeature;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.quarkiverse.langchain4j.testing.evaluation.Evaluation;
+import io.quarkiverse.langchain4j.testing.evaluation.EvaluationReport;
+import io.quarkiverse.langchain4j.testing.evaluation.EvaluationResult;
+import io.quarkiverse.langchain4j.testing.evaluation.EvaluationSample;
+import io.quarkiverse.langchain4j.testing.evaluation.EvaluationStrategy;
+import io.quarkiverse.langchain4j.testing.evaluation.Parameters;
+import io.quarkus.test.junit.QuarkusTest;
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 @DisabledOnOs(OS.WINDOWS)
 @QuarkusTest
-@AiScorer
 public class DrafterAgentIT {
 
     private static final Logger LOG = LoggerFactory.getLogger(DrafterAgentIT.class.getName());
@@ -42,10 +40,14 @@ public class DrafterAgentIT {
     ObjectMapper mapper;
 
     @Test
-    void testDrafterAgent(@ScorerConfiguration(concurrency = 2) Scorer scorer,
-            @SampleLocation("src/test/resources/samples/drafter-agent.yaml") Samples<String> samples) {
-        final EvaluationReport<String> report = scorer.evaluate(samples,
-                (Parameters p) -> agent.draft(UUID.randomUUID().toString(), toDrafterJson(p)), strategy);
+    void testDrafterAgent() {
+        final EvaluationReport<String> report = Evaluation.<String> builder()
+                .withConcurrency(2)
+                .withSamples("src/test/resources/samples/drafter-agent.yaml")
+                .evaluate(params -> agent.draft(UUID.randomUUID().toString(), toDrafterJson(params)))
+                .using(strategy)
+                .run();
+
         assertThat(report.score()).as(() -> "AI output did not satisfy JSON contract or content checks.")
                 .isGreaterThanOrEqualTo(80.0);
     }
@@ -77,7 +79,7 @@ public class DrafterAgentIT {
         }
 
         @Override
-        public boolean evaluate(EvaluationSample<String> sample, String output) {
+        public EvaluationResult evaluate(EvaluationSample<String> sample, String output) {
             try {
                 LOG.info("Evaluating Drafter agent. Output is: \n {}", output);
 
@@ -89,13 +91,13 @@ public class DrafterAgentIT {
                 }
 
                 if (!node.isObject())
-                    return false;
+                    return EvaluationResult.fromBoolean(false);
                 if (!node.has("draft") || !node.get("draft").isTextual())
-                    return false;
+                    return EvaluationResult.fromBoolean(false);
 
                 String draft = node.get("draft").asText("");
                 if (draft.isBlank())
-                    return false;
+                    return EvaluationResult.fromBoolean(false);
 
                 String expected = sample.expectedOutput() == null ? "" : sample.expectedOutput();
                 String[] lines = expected.split("\\R+");
@@ -113,15 +115,15 @@ public class DrafterAgentIT {
                     for (String token : mustContain.split(",")) {
                         String t = token.trim().toLowerCase(Locale.ROOT);
                         if (!t.isEmpty() && !lower.contains(t)) {
-                            return false;
+                            return EvaluationResult.fromBoolean(false);
                         }
                     }
                 }
 
-                return true;
+                return EvaluationResult.fromBoolean(true);
             } catch (Exception e) {
                 LOG.error("Failed to evaluate Agent response.", e);
-                return false;
+                return EvaluationResult.fromBoolean(false);
             }
         }
     }
