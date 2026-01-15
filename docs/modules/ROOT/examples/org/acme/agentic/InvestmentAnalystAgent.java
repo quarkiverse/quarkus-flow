@@ -5,6 +5,7 @@ import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 import io.quarkiverse.langchain4j.RegisterAiService;
+import jakarta.enterprise.context.ApplicationScoped;
 
 // tag::agent[]
 
@@ -14,6 +15,7 @@ import io.quarkiverse.langchain4j.RegisterAiService;
  * It receives an {@link InvestmentPrompt} (ticker + JSON market snapshot) and returns an {@link InvestmentMemo} with a
  * short recommendation.
  */
+@ApplicationScoped
 @RegisterAiService
 @SystemMessage("""
         You are a careful, conservative investment analyst.
