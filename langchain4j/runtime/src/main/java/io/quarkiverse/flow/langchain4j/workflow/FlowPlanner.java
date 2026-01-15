@@ -23,7 +23,7 @@ public class FlowPlanner implements Planner, ChatMemoryAccessProvider {
     private final String description;
     private final Consumer<FuncDoTaskBuilder> tasks;
 
-    private volatile WorkflowDefinition definition;
+    private WorkflowDefinition definition;
 
     public FlowPlanner(Class<?> agentServiceClass, String description, Consumer<FuncDoTaskBuilder> tasks) {
         this.agentServiceClass = agentServiceClass;
@@ -61,13 +61,8 @@ public class FlowPlanner implements Planner, ChatMemoryAccessProvider {
 
     @Override
     public void init(InitPlanningContext initPlanningContext) {
-        // lazy
         if (definition == null) {
-            synchronized (this) {
-                if (definition == null) {
-                    definition = buildWorkflow(agentServiceClass, description, tasks);
-                }
-            }
+            definition = buildWorkflow(agentServiceClass, description, tasks);
         }
     }
 
