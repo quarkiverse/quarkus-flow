@@ -63,8 +63,8 @@ When enabled, correlation metadata attributes are automatically added to emitted
 
 The default correlation metadata includes:
 
- - `flowinstanceid` - the Workflow instance's ID
- - `flowtaskid` - the task position where the event was published
+ - `XFlowInstanceId` - the Workflow instance's ID
+ - `XFlowTaskId` - the task position where the event was published
 
 
 ifdef::add-copy-button-to-env-var[]

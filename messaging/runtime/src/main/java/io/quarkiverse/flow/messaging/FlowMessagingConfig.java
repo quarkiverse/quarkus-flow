@@ -19,8 +19,8 @@ public interface FlowMessagingConfig {
      * <p>
      * The default correlation metadata includes:
      * <ul>
-     * <li><code>flowinstanceid</code> - the Workflow instance's ID</li>
-     * <li><code>flowtaskid</code> - the task position where the event was published</li>
+     * <li><code>XFlowInstanceId</code> - the Workflow instance's ID</li>
+     * <li><code>XFlowTaskId</code> - the task position where the event was published</li>
      * </ul>
      */
     @WithDefault("true")
@@ -34,8 +34,8 @@ public interface FlowMessagingConfig {
      * Example configuration:
      *
      * <pre>
-     * quarkus.flow.messaging.metadata.task-id.key=taskposition
-     * quarkus.flow.messaging.metadata.instance-id.key=workflowinstanceid
+     * quarkus.flow.messaging.metadata.task-id.key=flowtooltaskid
+     * quarkus.flow.messaging.metadata.instance-id.key=flowtoolinstanceid
      * </pre>
      */
     MetadataConfig metadata();
