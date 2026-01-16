@@ -70,14 +70,14 @@ public class WorkflowRegistry {
     }
 
     public WorkflowDefinition register(Flowable flowable) {
-        LOG.debug("Registering workflow {}", flowable.descriptor().getDocument().getName());
+        LOG.info("Registering workflow {}", flowable.descriptor().getDocument().getName());
         final WorkflowDefinition definition = app.workflowDefinition(addFlowableMetadata(flowable));
         workflows.put(WorkflowDefinitionId.of(definition.workflow()), definition.workflow());
         return definition;
     }
 
     public WorkflowDefinition register(Workflow workflow) {
-        LOG.debug("Registering workflow {}", workflow.getDocument().getName());
+        LOG.info("Registering workflow {}", workflow.getDocument().getName());
         final WorkflowDefinition definition = app.workflowDefinition(workflow);
         workflows.put(WorkflowDefinitionId.of(definition.workflow()), definition.workflow());
         return definition;
@@ -106,6 +106,7 @@ public class WorkflowRegistry {
                 return;
             }
             var container = Arc.container();
+            LOG.info("Warming up workflow registry");
             for (InstanceHandle<WorkflowDefinition> handle : container.listAll(WorkflowDefinition.class)) {
                 try {
                     // This triggers the synthetic bean's supplier (WorkflowDefinitionRecorder)
@@ -113,11 +114,13 @@ public class WorkflowRegistry {
                     Workflow wf = def.workflow();
                     WorkflowDefinitionId id = WorkflowDefinitionId.of(wf);
                     workflows.putIfAbsent(id, wf);
+                    LOG.info("Warmed Workflow {} registered with id {}", wf, id);
                 } catch (Exception e) {
                     LOG.warn("Flow: Failed to warm up WorkflowDefinition from {}",
                             handle.getBean().getIdentifier(), e);
                 }
             }
+            warmedUp = true;
         }
     }
 
