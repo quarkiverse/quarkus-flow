@@ -1,7 +1,5 @@
 package io.quarkiverse.flow.messaging;
 
-import static io.quarkiverse.flow.messaging.FlowMessagingConfig.FLOW_MESSAGING_CONFIG_PREFIX;
-
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -9,11 +7,9 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
-@ConfigMapping(prefix = FLOW_MESSAGING_CONFIG_PREFIX)
+@ConfigMapping(prefix = "quarkus.flow.messaging")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface FlowMessagingConfig {
-
-    String FLOW_MESSAGING_CONFIG_PREFIX = "quarkus.flow.messaging";
 
     /**
      * Whether the emitters should propagate correlation metadata.
@@ -28,7 +24,7 @@ public interface FlowMessagingConfig {
      * </ul>
      */
     @WithDefault("true")
-    Optional<Boolean> enableCorrelationPropagation();
+    Optional<Boolean> enableMetadataCorrelation();
 
     /**
      * Configure the metadata used in correlation propagation.
@@ -38,8 +34,8 @@ public interface FlowMessagingConfig {
      * Example configuration:
      *
      * <pre>
-     * quarkus.flow.messaging.metadata.task-id.key=taskPosition
-     * quarkus.flow.messaging.metadata.instance-id.key=workflowInstanceId
+     * quarkus.flow.messaging.metadata.task-id.key=taskposition
+     * quarkus.flow.messaging.metadata.instance-id.key=workflowinstanceid
      * </pre>
      */
     MetadataConfig metadata();
@@ -48,18 +44,12 @@ public interface FlowMessagingConfig {
 
         /**
          * Configure the metadata Task ID used in correlation propagation.
-         * <p>
-         * This configures the key name for the task identifier in correlation metadata.
          */
-        @WithDefault("flowtaskid")
         MetadataItemConfig taskId();
 
         /**
          * Configure the metadata Workflow Instance ID used in correlation propagation.
-         * <p>
-         * This configures the key name for the workflow instance identifier in correlation metadata.
          */
-        @WithDefault("flowinstanceid")
         MetadataItemConfig instanceId();
 
     }
@@ -68,7 +58,9 @@ public interface FlowMessagingConfig {
         /**
          * The metadata's key name to be used in correlation propagation.
          * <p>
-         * This defines the actual key name that will be used in the emitted CloudEvents.
+         * This defines the actual
+         * <a href="https://github.com/cloudevents/spec/blob/v1.0/spec.md#extension-context-attributes">extension context
+         * attribute's</a> key name that will be used in the emitted CloudEvents.
          */
         Optional<String> key();
     }

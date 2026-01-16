@@ -49,9 +49,9 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |`+++false+++`
 
-a| [[quarkus-flow-messaging_quarkus-flow-messaging-enable-correlation-propagation]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-enable-correlation-propagation[`quarkus.flow.messaging.enable-correlation-propagation`]##
+a| [[quarkus-flow-messaging_quarkus-flow-messaging-enable-metadata-correlation]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-enable-metadata-correlation[`quarkus.flow.messaging.enable-metadata-correlation`]##
 ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.messaging.enable-correlation-propagation+++[]
+config_property_copy_button:+++quarkus.flow.messaging.enable-metadata-correlation+++[]
 endif::add-copy-button-to-config-props[]
 
 
@@ -68,10 +68,10 @@ The default correlation metadata includes:
 
 
 ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_MESSAGING_ENABLE_CORRELATION_PROPAGATION+++[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_MESSAGING_ENABLE_METADATA_CORRELATION+++[]
 endif::add-copy-button-to-env-var[]
 ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_MESSAGING_ENABLE_CORRELATION_PROPAGATION+++`
+Environment variable: `+++QUARKUS_FLOW_MESSAGING_ENABLE_METADATA_CORRELATION+++`
 endif::add-copy-button-to-env-var[]
 --
 |boolean
@@ -87,7 +87,7 @@ endif::add-copy-button-to-config-props[]
 --
 The metadata's key name to be used in correlation propagation.
 
-This defines the actual key name that will be used in the emitted CloudEvents.
+This defines the actual link:https://github.com/cloudevents/spec/blob/v1.0/spec.md#extension-context-attributes[extension context attribute's] key name that will be used in the emitted CloudEvents.
 
 
 ifdef::add-copy-button-to-env-var[]
@@ -110,7 +110,7 @@ endif::add-copy-button-to-config-props[]
 --
 The metadata's key name to be used in correlation propagation.
 
-This defines the actual key name that will be used in the emitted CloudEvents.
+This defines the actual link:https://github.com/cloudevents/spec/blob/v1.0/spec.md#extension-context-attributes[extension context attribute's] key name that will be used in the emitted CloudEvents.
 
 
 ifdef::add-copy-button-to-env-var[]
