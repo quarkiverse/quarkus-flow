@@ -5,6 +5,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import dev.langchain4j.agentic.planner.Action;
 import dev.langchain4j.agentic.planner.AgentInstance;
 import dev.langchain4j.agentic.planner.InitPlanningContext;
@@ -21,6 +24,8 @@ import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
 public class FlowPlanner implements Planner {
 
+    private static final Logger LOG = LoggerFactory.getLogger(FlowPlanner.class);
+
     private final Class<?> agentServiceClass;
     private final String description;
     private final BiFunction<FlowPlanner, InitPlanningContext, Consumer<FuncDoTaskBuilder>> tasks;
@@ -35,7 +40,8 @@ public class FlowPlanner implements Planner {
         this(agentServiceClass, description, (flowPlanner, initPlanningContext) -> tasks);
     }
 
-    public FlowPlanner(Class<?> agentServiceClass, String description, BiFunction<FlowPlanner, InitPlanningContext, Consumer<FuncDoTaskBuilder>> tasks) {
+    public FlowPlanner(Class<?> agentServiceClass, String description,
+            BiFunction<FlowPlanner, InitPlanningContext, Consumer<FuncDoTaskBuilder>> tasks) {
         this.agentServiceClass = agentServiceClass;
         this.description = description;
         this.tasks = tasks;
@@ -52,13 +58,13 @@ public class FlowPlanner implements Planner {
                 .version(id.version())
                 .summary(description));
         builder.tasks(tasks.apply(this, initPlanningContext))
-                .tasks(tasks  -> tasks.function("terminate",
+                .tasks(tasks -> tasks.function("terminate",
                         fn -> fn.function(
-                                        (DefaultAgenticScope scope) -> {
-                                            executeAgents(null);
-                                            return null;
-                                        },
-                                        DefaultAgenticScope.class)
+                                (DefaultAgenticScope scope) -> {
+                                    executeAgents(null);
+                                    return null;
+                                },
+                                DefaultAgenticScope.class)
                                 .outputAs((out, wf, tf) -> null)));
 
         final Workflow topologyWorkflow = builder.build();
@@ -73,6 +79,7 @@ public class FlowPlanner implements Planner {
                 })
                 .orElse(topologyWorkflow);
 
+        LOG.info("Building LC4J Workflow {}", workflowToRegister.getDocument().getName());
         return registry.register(workflowToRegister);
     }
 
@@ -85,11 +92,15 @@ public class FlowPlanner implements Planner {
     public Action firstAction(PlanningContext planningContext) {
         nextAgentFuture = new CompletableFuture<>();
 
-//        definition.instance(planningContext.agenticScope()).start();
+        //        definition.instance(planningContext.agenticScope()).start();
 
         CompletableFuture.supplyAsync(() -> definition.instance(planningContext.agenticScope()).start().join());
 
-        return call(nextAgentFuture.join());
+        final List<AgentInstance> agents = nextAgentFuture.join();
+        if (agents == null || agents.isEmpty()) {
+            return done();
+        }
+        return call(agents);
     }
 
     public CompletableFuture<Void> executeAgents(List<AgentInstance> agents) {

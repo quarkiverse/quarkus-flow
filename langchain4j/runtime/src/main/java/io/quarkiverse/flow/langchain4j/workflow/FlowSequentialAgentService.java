@@ -12,7 +12,7 @@ import dev.langchain4j.agentic.planner.InitPlanningContext;
 import dev.langchain4j.agentic.workflow.impl.SequentialAgentServiceImpl;
 import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
 
-public class FlowSequentialAgentService<T> extends SequentialAgentServiceImpl<T> {
+public class FlowSequentialAgentService<T> extends SequentialAgentServiceImpl<T> implements FlowAgentService {
 
     protected FlowSequentialAgentService(Class<T> agentServiceClass, Method agenticMethod) {
         super(agentServiceClass, agenticMethod);
@@ -33,7 +33,8 @@ public class FlowSequentialAgentService<T> extends SequentialAgentServiceImpl<T>
         return build(() -> planner);
     }
 
-    protected BiFunction<FlowPlanner, InitPlanningContext, Consumer<FuncDoTaskBuilder>> tasksDefinition() {
-        return (flowPlanner, initPlanningContext) ->tasks -> FlowAgentServiceUtil.addAgentTasks(tasks, flowPlanner, initPlanningContext.subagents());
+    public BiFunction<FlowPlanner, InitPlanningContext, Consumer<FuncDoTaskBuilder>> tasksDefinition() {
+        return (flowPlanner, initPlanningContext) -> tasks -> FlowAgentServiceUtil.addAgentTasks(tasks, flowPlanner,
+                initPlanningContext.subagents());
     }
 }
