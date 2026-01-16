@@ -27,7 +27,7 @@ public interface FlowMessagingConfig {
     Optional<Boolean> enableMetadataCorrelation();
 
     /**
-     * Configure the metadata used in correlation propagation.
+     * Configure the metadata key used in correlation propagation.
      * <p>
      * Allows customization of the metadata keys used for correlation information.
      * <p>
