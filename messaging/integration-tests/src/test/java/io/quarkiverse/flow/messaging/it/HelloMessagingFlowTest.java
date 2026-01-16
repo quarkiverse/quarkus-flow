@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -25,6 +27,8 @@ import io.cloudevents.core.provider.EventFormatProvider;
 import io.cloudevents.jackson.JsonFormat;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.QuarkusTestProfile;
+import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.kafka.InjectKafkaCompanion;
 import io.quarkus.test.kafka.KafkaCompanionResource;
 import io.smallrye.reactive.messaging.kafka.companion.ConsumerTask;
@@ -33,6 +37,7 @@ import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
 @DisabledOnOs(OS.WINDOWS)
 @QuarkusTest
 @QuarkusTestResource(KafkaCompanionResource.class)
+@TestProfile(HelloMessagingFlowTest.ConfigureMetadata.class)
 public class HelloMessagingFlowTest {
 
     private static final JsonFormat CE_JSON = (JsonFormat) EventFormatProvider.getInstance()
@@ -85,7 +90,22 @@ public class HelloMessagingFlowTest {
         assertTrue(new String(ce.getData().toBytes()).contains("\"Hello Elisa!\""),
                 "Unexpected CE data: " + new String(ce.getData().toBytes()));
 
+        assertTrue(ce.getExtensionNames().containsAll(List.of("custominstanceid", "customtaskid")));
+
         // Tidy up
         out.close();
+    }
+
+    public static class ConfigureMetadata implements QuarkusTestProfile {
+
+        public ConfigureMetadata() {
+        }
+
+        @Override
+        public Map<String, String> getConfigOverrides() {
+            return Map.of(
+                    "quarkus.flow.messaging.metadata.instance-id.key", "custominstanceid",
+                    "quarkus.flow.messaging.metadata.task-id.key", "customtaskid");
+        }
     }
 }
