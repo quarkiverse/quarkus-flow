@@ -4,7 +4,6 @@ import static io.quarkiverse.flow.providers.MetadataPropagationRequestDecorator.
 import static io.quarkiverse.flow.providers.MetadataPropagationRequestDecorator.X_FLOW_TASK_ID;
 import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.get;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.http;
 
 import java.io.IOException;
 import java.io.InputStream;
