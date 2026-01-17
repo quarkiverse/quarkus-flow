@@ -1235,6 +1235,32 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |
 
+a| [[quarkus-flow_quarkus-flow-http-client-enable-metadata-propagation]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-enable-metadata-propagation[`quarkus.flow.http.client.enable-metadata-propagation`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.enable-metadata-propagation+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether the HTTP Client should propagate through HTTP headers the correlation metadata.
+
+The correlation metadata are:
+
+ - `X-Flow-Instance-Id` the instance ID see `WorkflowInstance++#++id()`
+ - `X-Flow-Task-Id` the task's position that where the request was made, see `TaskContext++#++position()`
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_ENABLE_METADATA_PROPAGATION+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_ENABLE_METADATA_PROPAGATION+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
 a| [[quarkus-flow_quarkus-flow-secrets-credentials-provider-name]] [.property-path]##link:#quarkus-flow_quarkus-flow-secrets-credentials-provider-name[`quarkus.flow.secrets.credentials-provider-name`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.secrets.credentials-provider-name+++[]
@@ -2432,7 +2458,7 @@ Client name to use for all HTTP/OpenAPI tasks in this workflow when there is no 
 Property:
 
 ```
-quarkus.flow.http.client.workflow.<workflowId>.name=<clientName>
+quarkus.flow.http.client.workflow.<workflowName>.name=<clientName>
 ```
 
 
@@ -2459,7 +2485,7 @@ Client name to use for this specific task.
 Property:
 
 ```
-quarkus.flow.http.client.workflow.<workflowId>.task.<taskName>.name=<clientName>
+quarkus.flow.http.client.workflow.<workflowName>.task.<taskName>.name=<clientName>
 ```
 
 

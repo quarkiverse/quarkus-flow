@@ -5,7 +5,10 @@ import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.serverlessworkflow.impl.TaskContext;
+import io.serverlessworkflow.impl.WorkflowInstance;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 /**
  * HTTP/OpenAPI client configuration for Quarkus Flow.
@@ -71,8 +74,8 @@ public interface FlowHttpConfig extends HttpClientConfig {
      * Each entry is keyed by the workflow id and maps to:
      *
      * <pre>
-     * quarkus.flow.http.client.workflow.&lt;workflowId&gt;.name=&lt;clientName&gt;
-     * quarkus.flow.http.client.workflow.&lt;workflowId&gt;.task.&lt;taskName&gt;.name=&lt;clientName&gt;
+     * quarkus.flow.http.client.workflow.&lt;workflowName&gt;.name=&lt;clientName&gt;
+     * quarkus.flow.http.client.workflow.&lt;workflowName&gt;.task.&lt;taskName&gt;.name=&lt;clientName&gt;
      * </pre>
      *
      * @return the map of workflow routing configurations
@@ -94,7 +97,7 @@ public interface FlowHttpConfig extends HttpClientConfig {
          * Property:
          *
          * <pre>
-         * quarkus.flow.http.client.workflow.&lt;workflowId&gt;.name=&lt;clientName&gt;
+         * quarkus.flow.http.client.workflow.&lt;workflowName&gt;.name=&lt;clientName&gt;
          * </pre>
          *
          * @return the client name for this workflow, if configured
@@ -107,7 +110,7 @@ public interface FlowHttpConfig extends HttpClientConfig {
          * Each entry is keyed by the task name and maps to:
          *
          * <pre>
-         * quarkus.flow.http.client.workflow.&lt;workflowId&gt;.task.&lt;taskName&gt;.name=&lt;clientName&gt;
+         * quarkus.flow.http.client.workflow.&lt;workflowName&gt;.task.&lt;taskName&gt;.name=&lt;clientName&gt;
          * </pre>
          *
          * @return the map of per-task routing configurations
@@ -129,11 +132,25 @@ public interface FlowHttpConfig extends HttpClientConfig {
          * Property:
          *
          * <pre>
-         * quarkus.flow.http.client.workflow.&lt;workflowId&gt;.task.&lt;taskName&gt;.name=&lt;clientName&gt;
+         * quarkus.flow.http.client.workflow.&lt;workflowName&gt;.task.&lt;taskName&gt;.name=&lt;clientName&gt;
          * </pre>
          *
          * @return the client name for this task, if configured
          */
         Optional<String> name();
     }
+
+    /**
+     * Whether the HTTP Client should propagate through HTTP headers the correlation metadata.
+     * <p>
+     * The correlation metadata are:
+     * <ul>
+     * <li><code>X-Flow-Instance-Id</code> the instance ID see {@link WorkflowInstance#id()}</li>
+     * <li><code>X-Flow-Task-Id</code> the task's position that where the request was made, see
+     * {@link TaskContext#position()}</li>
+     * </ul>
+     */
+    @WithDefault("true")
+    Optional<Boolean> enableMetadataPropagation();
+
 }
