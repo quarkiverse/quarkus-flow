@@ -1,5 +1,7 @@
 package org.acme.langchain4j;
 
+import static java.util.Objects.requireNonNullElse;
+
 import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.agentic.declarative.Output;
 import dev.langchain4j.agentic.declarative.ParallelAgent;
@@ -9,8 +11,6 @@ import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 import io.quarkiverse.langchain4j.RegisterAiService;
 
-import static java.util.Objects.requireNonNullElse;
-
 /**
  * Example LangChain4j agentic workflows backed by Quarkus Flow.
  * <p>
@@ -18,6 +18,7 @@ import static java.util.Objects.requireNonNullElse;
  *
  * @RegisterAiService interfaces. The quarkus-flow-langchain4j extension transparently builds WorkflowDefinitions for
  *                    the
+ *
  * @SequenceAgent and @ParallelAgent methods and registers them in the Quarkus Flow runtime.
  *                <p>
  *                You will see them under the Quarkus Flow Dev UI: - document.name ~=
@@ -51,7 +52,8 @@ public final class Agents {
     @RegisterAiService
     public interface StoryCreatorWithConfigurableStyleEditor {
 
-        @SequenceAgent(outputKey = "story", subAgents = { CreativeWriter.class, AudienceEditor.class, StyleEditor.class })
+        @SequenceAgent(outputKey = "story", subAgents = { CreativeWriter.class, AudienceEditor.class,
+                StyleEditor.class })
         String write(@V("topic") String topic, @V("style") String style, @V("audience") String audience);
     }
 

@@ -1,0 +1,12 @@
+document:
+  dsl: '1.0.1'
+  namespace: flow
+  name: quarkus-flow
+  version: '0.1.0'
+do:
+  - getQuarkusFlowContributors:
+      call: openapi
+      with:
+        document:
+          endpoint: '${ .mockServerUrl }'
+        operationId: getQuarkusFlowContributors

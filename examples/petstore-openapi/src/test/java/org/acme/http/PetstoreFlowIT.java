@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.util.Map;
-
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 

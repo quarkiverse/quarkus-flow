@@ -18,6 +18,7 @@ import io.quarkiverse.langchain4j.RegisterAiService;
  *
  * @RegisterAiService interfaces. The quarkus-flow-langchain4j extension transparently builds WorkflowDefinitions for
  *                    the
+ *
  * @SequenceAgent and @ParallelAgent methods and registers them in the Quarkus Flow runtime.
  *                <p>
  *                You will see them under the Quarkus Flow Dev UI: - document.name ~=
@@ -51,7 +52,8 @@ public final class Agents {
     @RegisterAiService
     public interface StoryCreatorWithConfigurableStyleEditor {
 
-        @SequenceAgent(outputKey = "story", subAgents = { CreativeWriter.class, AudienceEditor.class, StyleEditor.class })
+        @SequenceAgent(outputKey = "story", subAgents = { CreativeWriter.class, AudienceEditor.class,
+                StyleEditor.class })
         String write(@V("topic") String topic, @V("style") String style, @V("audience") String audience);
     }
 

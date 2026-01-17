@@ -36,6 +36,10 @@ public abstract class Flow implements Flowable {
         return definition;
     }
 
+    public WorkflowInstance instance() {
+        return definition().instance(Map.of());
+    }
+
     public WorkflowInstance instance(Object in) {
         return definition().instance(in);
     }

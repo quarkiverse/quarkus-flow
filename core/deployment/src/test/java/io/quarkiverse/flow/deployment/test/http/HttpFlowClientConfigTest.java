@@ -1,6 +1,9 @@
 package io.quarkiverse.flow.deployment.test.http;
 
+import static io.quarkiverse.flow.providers.MetadataPropagationRequestDecorator.X_FLOW_INSTANCE_ID;
+import static io.quarkiverse.flow.providers.MetadataPropagationRequestDecorator.X_FLOW_TASK_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.IOException;
 import java.util.Map;
@@ -15,6 +18,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 import io.serverlessworkflow.impl.WorkflowDefinition;
+import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.smallrye.common.annotation.Identifier;
 import mockwebserver3.MockResponse;
@@ -58,10 +62,10 @@ public class HttpFlowClientConfigTest {
                 .instance(WorkflowDefinition.class, Identifier.Literal.of(HttpRestFlow.class.getName()))
                 .get();
 
-        WorkflowModel model = definition
-                .instance(Map.of("message", "world"))
-                .start()
-                .join();
+        WorkflowInstance instance = definition
+                .instance(Map.of("message", "world"));
+
+        WorkflowModel model = instance.start().join();
 
         String out = model.as(String.class).orElseThrow();
         assertEquals("{\"message\":\"ok\"}", out);
@@ -72,5 +76,12 @@ public class HttpFlowClientConfigTest {
 
         assertEquals(1, mockServer.getRequestCount());
         assertEquals("flow-default", recordedRequest.getHeaders().get("X-Flow-Client"));
+
+        String xFlowInstanceId = recordedRequest.getHeaders().get(X_FLOW_INSTANCE_ID);
+        assertEquals(instance.id(), xFlowInstanceId);
+
+        String xFlowTaskId = recordedRequest.getHeaders().get(X_FLOW_TASK_ID);
+        assertNotNull(xFlowTaskId);
+
     }
 }

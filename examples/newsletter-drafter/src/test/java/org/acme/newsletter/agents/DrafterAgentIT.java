@@ -1,13 +1,6 @@
 package org.acme.newsletter.agents;
 
-import java.util.Locale;
-import java.util.UUID;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -23,8 +16,13 @@ import io.quarkus.test.junit.QuarkusTest;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.Locale;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @DisabledOnOs(OS.WINDOWS)
 @QuarkusTest
@@ -41,11 +39,9 @@ public class DrafterAgentIT {
 
     @Test
     void testDrafterAgent() {
-        final EvaluationReport<String> report = Evaluation.<String> builder()
-                .withConcurrency(2)
+        final EvaluationReport<String> report = Evaluation.<String> builder().withConcurrency(2)
                 .withSamples("src/test/resources/samples/drafter-agent.yaml")
-                .evaluate(params -> agent.draft(UUID.randomUUID().toString(), toDrafterJson(params)))
-                .using(strategy)
+                .evaluate(params -> agent.draft(UUID.randomUUID().toString(), toDrafterJson(params))).using(strategy)
                 .run();
 
         assertThat(report.score()).as(() -> "AI output did not satisfy JSON contract or content checks.")
