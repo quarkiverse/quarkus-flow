@@ -1,16 +1,6 @@
 package org.acme.newsletter.agents;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
-
-import org.acme.newsletter.domain.CriticAgentReview;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -23,8 +13,16 @@ import io.quarkiverse.langchain4j.testing.evaluation.Parameters;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+import org.acme.newsletter.domain.CriticAgentReview;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @DisabledOnOs(OS.WINDOWS)
 @QuarkusTest
@@ -43,10 +41,8 @@ public class CriticAgentIT {
     void critic_checks_json_and_constraints() {
         // Agent now returns CriticAgentReview, so the report is parameterized with CriticAgentReview
         EvaluationReport<CriticAgentReview> report = Evaluation.<CriticAgentReview> builder()
-                .withSamples("src/test/resources/samples/critic-agent.yaml")
-                .withConcurrency(2)
-                .evaluate(params -> agent.critique(UUID.randomUUID().toString(), toCriticJson(params)))
-                .using(strategy)
+                .withSamples("src/test/resources/samples/critic-agent.yaml").withConcurrency(2)
+                .evaluate(params -> agent.critique(UUID.randomUUID().toString(), toCriticJson(params))).using(strategy)
                 .run();
 
         assertThat(report.score()).as("CriticAgent output didn’t satisfy JSON contract or constraint checks")
@@ -140,8 +136,8 @@ public class CriticAgentIT {
 
                 if (expectVerdict != null && !expectVerdict.isBlank()) {
                     if (!verdict.equals(expectVerdict))
-                        return EvaluationResult
-                                .failed("Verdict '" + verdict + "' didn't match expected verdict: '" + expectVerdict + "'");
+                        return EvaluationResult.failed(
+                                "Verdict '" + verdict + "' didn't match expected verdict: '" + expectVerdict + "'");
                 }
 
                 if (expectRevised || "revise".equals(verdict)) {

@@ -336,7 +336,23 @@ quarkus.flow.http.client.verify-host=false
 WARNING: Only enable `trust-all` or disable `verify-host` in controlled environments
 (for example, local development). In production these settings significantly reduce TLS security.
 
-== 12. Putting it all together
+== 12. Correlation headers
+
+For idempotency and traceability purposes, Quarkus Flow by default attaches correlation metadata HTTP headers for all HTTP/OpenAPI outgoing calls.
+
+The metadata HTTP headers are:
+
+* `X-Flow-Instance-Id` - contains the `WorkflowInstance` id
+* `X-Flow-Task-Id` - contains the current position (link:https://datatracker.ietf.org/doc/html/rfc6901[JSON Pointer]) of the Workflow's task responsible for sending the HTTP request. For more information about this field see link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#task-descriptor[the Task Descriptor section on the specification docs].
+
+These headers enable end-to-end traceability and idempotency handling throughout the workflow execution.
+
+You can disable the automatic correlation header injection by setting the `quarkus.flow.http.client.enable-metadata-propagation` configuration property to `false`.
+
+[NOTE]
+The `quarkus.flow.http.client.enable-metadata-propagation` is a global-level HTTP client property. You cannot enable or disable correlation headers on a per-workflow or per-task basis.
+
+== 13. Putting it all together
 
 Example: a typical setup using both default and named clients:
 

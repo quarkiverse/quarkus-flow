@@ -1,11 +1,12 @@
 package org.acme.agentic;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
 import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 import io.quarkiverse.langchain4j.RegisterAiService;
-import jakarta.enterprise.context.ApplicationScoped;
 
 // tag::agent[]
 
