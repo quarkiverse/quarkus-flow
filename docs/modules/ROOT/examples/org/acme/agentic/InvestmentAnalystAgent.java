@@ -1,5 +1,7 @@
 package org.acme.agentic;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
 import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
@@ -14,6 +16,7 @@ import io.quarkiverse.langchain4j.RegisterAiService;
  * It receives an {@link InvestmentPrompt} (ticker + JSON market snapshot) and returns an {@link InvestmentMemo} with a
  * short recommendation.
  */
+@ApplicationScoped
 @RegisterAiService
 @SystemMessage("""
         You are a careful, conservative investment analyst.
