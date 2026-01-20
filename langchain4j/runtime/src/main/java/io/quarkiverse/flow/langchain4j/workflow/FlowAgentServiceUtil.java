@@ -3,8 +3,10 @@ package io.quarkiverse.flow.langchain4j.workflow;
 import static io.quarkiverse.flow.internal.WorkflowNameUtils.safeName;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import dev.langchain4j.agentic.internal.AgentExecutor;
+import dev.langchain4j.agentic.planner.AgentInstance;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import io.serverlessworkflow.fluent.func.spi.FuncDoFluent;
@@ -45,4 +47,18 @@ public final class FlowAgentServiceUtil {
         }
     }
 
+    static void addAgentTasks(FuncDoFluent<?> tasks, FlowPlanner planner, List<AgentInstance> agents) {
+        for (int i = 0; i < agents.size(); i++) {
+            AgentInstance agent = agents.get(i);
+            String stepName = safeName(agent.agentId() + "-" + i);
+            tasks.function(stepName,
+                    fn -> fn.function(
+                            (DefaultAgenticScope scope) -> {
+                                CompletableFuture<Void> nextActionFuture = planner.executeAgents(List.of(agent));
+                                return nextActionFuture.join();
+                            },
+                            DefaultAgenticScope.class)
+                            .outputAs((out, wf, tf) -> agenticScopePassthrough(tf.rawInput())));
+        }
+    }
 }

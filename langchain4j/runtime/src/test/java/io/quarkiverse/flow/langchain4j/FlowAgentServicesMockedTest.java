@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
+import dev.langchain4j.agentic.AgenticServices;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -36,49 +37,29 @@ public class FlowAgentServicesMockedTest {
 
     @Test
     void sequentialAgentInvokesExecutorsInOrder() {
-        // Arrange
-        AgentExecutor exec1 = mock(AgentExecutor.class);
-        AgentExecutor exec2 = mock(AgentExecutor.class);
-        AgentInvoker invoker1 = mock(AgentInvoker.class);
-        AgentInvoker invoker2 = mock(AgentInvoker.class);
+        var agent1 = AgenticServices.agentAction( scope -> {
+                    StringBuilder sb = scope.readState("seqOrder", new StringBuilder());
+                    sb.append("1");
+                    scope.writeState("seqOrder", sb);
+                });
 
-        when(invoker1.agentId()).thenReturn("FirstAgent");
-        when(invoker2.agentId()).thenReturn("SecondAgent");
-        when(exec1.agentInvoker()).thenReturn(invoker1);
-        when(exec2.agentInvoker()).thenReturn(invoker2);
-
-        // We'll accumulate "order" in scope.state("seqOrder") as a StringBuilder
-        when(exec1.syncExecute(any(), isNull())).thenAnswer(inv -> {
-            DefaultAgenticScope scope = inv.getArgument(0);
-            StringBuilder sb = scope.readState("seqOrder", new StringBuilder());
-            sb.append("1");
-            scope.writeState("seqOrder", sb);
-            return scope;
-        });
-
-        when(exec2.syncExecute(any(), isNull())).thenAnswer(inv -> {
-            DefaultAgenticScope scope = inv.getArgument(0);
-            StringBuilder sb = scope.readState("seqOrder", new StringBuilder());
-            sb.append("2");
-            scope.writeState("seqOrder", sb);
-            return scope;
-        });
+        var agent2 = AgenticServices.agentAction( scope -> {
+                    StringBuilder sb = scope.readState("seqOrder", new StringBuilder());
+                    sb.append("2");
+                    scope.writeState("seqOrder", sb);
+                });
 
         // Build our Flow-backed LC4J service
         FlowSequentialAgentService<TestSequentialAgent> service = FlowSequentialAgentService.builder(TestSequentialAgent.class);
 
         // Register sub-agents (executors)
-        service.subAgents(List.of(exec1, exec2));
+        service.subAgents(agent1, agent2);
 
         TestSequentialAgent agent = service.build();
 
         // Act
         ResultWithAgenticScope<String> result = agent.run("hello");
         AgenticScope scope = result.agenticScope();
-
-        // Assert: both executors called once
-        verify(exec1, times(1)).syncExecute(any(), isNull());
-        verify(exec2, times(1)).syncExecute(any(), isNull());
 
         // And the custom state shows order "12"
         StringBuilder seqOrder = scope.readState("seqOrder", new StringBuilder());
