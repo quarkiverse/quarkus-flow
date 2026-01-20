@@ -5,11 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
+import dev.langchain4j.agentic.AgenticServices;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
 import dev.langchain4j.service.V;
@@ -25,17 +25,17 @@ public class FlowAgentServicesMockedTest {
 
     @Test
     void sequentialAgentInvokesExecutorsInOrder() {
-        var agent1 = AgenticServices.agentAction(scope -> {
-            StringBuilder sb = scope.readState("seqOrder", new StringBuilder());
-            sb.append("1");
-            scope.writeState("seqOrder", sb);
-        });
+        var agent1 = AgenticServices.agentAction( scope -> {
+                    StringBuilder sb = scope.readState("seqOrder", new StringBuilder());
+                    sb.append("1");
+                    scope.writeState("seqOrder", sb);
+                });
 
-        var agent2 = AgenticServices.agentAction(scope -> {
-            StringBuilder sb = scope.readState("seqOrder", new StringBuilder());
-            sb.append("2");
-            scope.writeState("seqOrder", sb);
-        });
+        var agent2 = AgenticServices.agentAction( scope -> {
+                    StringBuilder sb = scope.readState("seqOrder", new StringBuilder());
+                    sb.append("2");
+                    scope.writeState("seqOrder", sb);
+                });
 
         // Build our Flow-backed LC4J service
         FlowSequentialAgentService<TestSequentialAgent> service = FlowSequentialAgentService.builder(TestSequentialAgent.class);

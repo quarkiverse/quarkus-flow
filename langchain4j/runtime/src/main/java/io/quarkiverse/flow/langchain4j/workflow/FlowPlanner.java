@@ -1,14 +1,16 @@
 package io.quarkiverse.flow.langchain4j.workflow;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import dev.langchain4j.agentic.planner.Action;
-import dev.langchain4j.agentic.planner.ChatMemoryAccessProvider;
+import dev.langchain4j.agentic.planner.AgentInstance;
 import dev.langchain4j.agentic.planner.InitPlanningContext;
 import dev.langchain4j.agentic.planner.Planner;
 import dev.langchain4j.agentic.planner.PlanningContext;
-import dev.langchain4j.agentic.scope.AgenticScope;
-import dev.langchain4j.service.memory.ChatMemoryAccess;
+import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import io.quarkiverse.flow.internal.WorkflowNameUtils;
 import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.serverlessworkflow.api.types.Workflow;
@@ -17,22 +19,29 @@ import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
-public class FlowPlanner implements Planner, ChatMemoryAccessProvider {
+public class FlowPlanner implements Planner {
 
     private final Class<?> agentServiceClass;
     private final String description;
-    private final Consumer<FuncDoTaskBuilder> tasks;
+    private final BiFunction<FlowPlanner, InitPlanningContext, Consumer<FuncDoTaskBuilder>> tasks;
+
+    private CompletableFuture<List<AgentInstance>> nextAgentFuture;
+    private CompletableFuture<Void> nextActionFuture;
 
     private WorkflowDefinition definition;
 
+    // This constructor is only used to make the compiler happy but should be removed when all workflows will be migrated to the lockstep solution
     public FlowPlanner(Class<?> agentServiceClass, String description, Consumer<FuncDoTaskBuilder> tasks) {
+        this(agentServiceClass, description, (flowPlanner, initPlanningContext) -> tasks);
+    }
+
+    public FlowPlanner(Class<?> agentServiceClass, String description, BiFunction<FlowPlanner, InitPlanningContext, Consumer<FuncDoTaskBuilder>> tasks) {
         this.agentServiceClass = agentServiceClass;
         this.description = description;
         this.tasks = tasks;
     }
 
-    private static WorkflowDefinition buildWorkflow(Class<?> agentServiceClass, String description,
-            Consumer<FuncDoTaskBuilder> tasks) {
+    private WorkflowDefinition buildWorkflow(InitPlanningContext initPlanningContext) {
         final WorkflowDefinitionId id = WorkflowNameUtils.newId(agentServiceClass);
         final WorkflowRegistry registry = WorkflowRegistry.current();
 
@@ -42,7 +51,15 @@ public class FlowPlanner implements Planner, ChatMemoryAccessProvider {
                 .namespace(id.namespace())
                 .version(id.version())
                 .summary(description));
-        builder.tasks(tasks);
+        builder.tasks(tasks.apply(this, initPlanningContext))
+                .tasks(tasks  -> tasks.function("terminate",
+                        fn -> fn.function(
+                                        (DefaultAgenticScope scope) -> {
+                                            executeAgents(null);
+                                            return null;
+                                        },
+                                        DefaultAgenticScope.class)
+                                .outputAs((out, wf, tf) -> null)));
 
         final Workflow topologyWorkflow = builder.build();
         Workflow workflowToRegister = registry.lookupDescriptor(id)
@@ -61,39 +78,31 @@ public class FlowPlanner implements Planner, ChatMemoryAccessProvider {
 
     @Override
     public void init(InitPlanningContext initPlanningContext) {
-        if (definition == null) {
-            definition = buildWorkflow(agentServiceClass, description, tasks);
-        }
+        definition = buildWorkflow(initPlanningContext);
     }
 
     @Override
     public Action firstAction(PlanningContext planningContext) {
-        // guardrail
-        WorkflowDefinition def = definition;
-        if (def == null) {
-            def = buildWorkflow(agentServiceClass, description, tasks);
-            definition = def;
-        }
+        nextAgentFuture = new CompletableFuture<>();
 
-        // All sequencing/parallelism/conditions are encoded in the workflow definition
-        // TODO: should we return the workflow output as an DoneWithResult action?
-        def.instance(planningContext.agenticScope()).start().join();
+//        definition.instance(planningContext.agenticScope()).start();
 
-        // We've executed the workflow definition to this point, the lc4j agentic engine can
-        // skip their agents call to this point and just wrap up and return the result.
-        return done();
+        CompletableFuture.supplyAsync(() -> definition.instance(planningContext.agenticScope()).start().join());
+
+        return call(nextAgentFuture.join());
+    }
+
+    public CompletableFuture<Void> executeAgents(List<AgentInstance> agents) {
+        nextAgentFuture.complete(agents);
+        nextActionFuture = new CompletableFuture<>();
+        return nextActionFuture;
     }
 
     @Override
     public Action nextAction(PlanningContext planningContext) {
-        return done();
-    }
-
-    @Override
-    public ChatMemoryAccess chatMemoryAccess(AgenticScope agenticScope) {
-        // TODO: should the planner also have the ChatMemoryAccess responsibility? If so, how can we create this object from here?
-        throw new UnsupportedOperationException(
-                "ChatMemoryAccess is not supported by Quarkus Flow agentic integration. " +
-                        "If you are using supervisor/memory features, use a LangChain4j Agentic planner implementation instead.");
+        nextAgentFuture = new CompletableFuture<>();
+        nextActionFuture.complete(null);
+        List<AgentInstance> nextAgents = nextAgentFuture.join();
+        return nextAgents == null ? done() : call(nextAgents);
     }
 }
