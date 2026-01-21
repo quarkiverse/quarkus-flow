@@ -49,5 +49,79 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |`+++false+++`
 
+a| [[quarkus-flow-messaging_quarkus-flow-messaging-enable-metadata-correlation]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-enable-metadata-correlation[`quarkus.flow.messaging.enable-metadata-correlation`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.messaging.enable-metadata-correlation+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether the emitters should propagate correlation metadata.
+
+When enabled, correlation metadata attributes are automatically added to emitted CloudEvents to enable traceability and correlation across workflow instances and tasks.
+
+The default correlation metadata includes:
+
+ - `XFlowInstanceId` the instance ID see `WorkflowInstance++#++id()`
+ - `XFlowTaskId` the task's position that where the request was made, see `io.serverlessworkflow.impl.TaskContext++#++position()`
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_MESSAGING_ENABLE_METADATA_CORRELATION+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_MESSAGING_ENABLE_METADATA_CORRELATION+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a| [[quarkus-flow-messaging_quarkus-flow-messaging-metadata-task-id-key]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-metadata-task-id-key[`quarkus.flow.messaging.metadata.task-id.key`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.messaging.metadata.task-id.key+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The metadata's key name to be used in correlation propagation.
+
+This defines the actual link:https://github.com/cloudevents/spec/blob/v1.0/spec.md#extension-context-attributes[extension context attribute's] key name that will be used in the emitted CloudEvents.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_MESSAGING_METADATA_TASK_ID_KEY+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_MESSAGING_METADATA_TASK_ID_KEY+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow-messaging_quarkus-flow-messaging-metadata-instance-id-key]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-metadata-instance-id-key[`quarkus.flow.messaging.metadata.instance-id.key`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.messaging.metadata.instance-id.key+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The metadata's key name to be used in correlation propagation.
+
+This defines the actual link:https://github.com/cloudevents/spec/blob/v1.0/spec.md#extension-context-attributes[extension context attribute's] key name that will be used in the emitted CloudEvents.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_MESSAGING_METADATA_INSTANCE_ID_KEY+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_MESSAGING_METADATA_INSTANCE_ID_KEY+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
 |===
 

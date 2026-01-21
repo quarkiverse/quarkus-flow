@@ -147,6 +147,19 @@ referenced by your workflow tasks.
 * On the Reactive Messaging side, you configure `byte[]` serializers/deserializers (as shown in the Kafka example);
 the bridge takes care of turning those bytes into CloudEvents.
 
+== 7. Correlation through Extension Context Attributes
+
+For idempotency and traceability purposes, Quarkus Flow by default attaches correlation metadata for all emitted events.
+
+The metadata are added into the link:https://github.com/cloudevents/spec/blob/v1.0/spec.md#extension-context-attributes[CloudEvent Extension Context Attribute].
+
+* `XFlowInstanceId` - contains the `WorkflowInstance` id
+* `XFlowTaskId` - contains the current position (link:https://datatracker.ietf.org/doc/html/rfc6901[JSON Pointer]) of the Workflow's task responsible for sending the HTTP request. For more information about this field see link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#task-descriptor[the Task Descriptor section on the specification docs].
+
+You can change the key through `quarkus.flow.messaging.metadata.instance-id.key` and `quarkus.flow.messaging.metadata.task-id.key` properties.
+
+These metadata enable end-to-end traceability and idempotency handling throughout the workflow execution. You can disable the automatic correlation header injection by setting the `quarkus.flow.messaging.enable-metadata-propagation` configuration property to `false`.
+
 == See also
 
 * xref:dsl-cheatsheet.adoc[] — Emit/Listen patterns in the Java DSL.
