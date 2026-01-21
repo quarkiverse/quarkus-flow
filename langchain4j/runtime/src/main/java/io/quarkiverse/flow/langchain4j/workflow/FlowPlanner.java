@@ -57,15 +57,7 @@ public class FlowPlanner implements Planner {
                 .namespace(id.namespace())
                 .version(id.version())
                 .summary(description));
-        builder.tasks(tasks.apply(this, initPlanningContext))
-                .tasks(tasks -> tasks.function("terminate",
-                        fn -> fn.function(
-                                (DefaultAgenticScope scope) -> {
-                                    executeAgents(null);
-                                    return null;
-                                },
-                                DefaultAgenticScope.class)
-                                .outputAs((out, wf, tf) -> null)));
+        builder.tasks(tasks.apply(this, initPlanningContext));
 
         final Workflow topologyWorkflow = builder.build();
         Workflow workflowToRegister = registry.lookupDescriptor(id)
@@ -94,7 +86,8 @@ public class FlowPlanner implements Planner {
 
         //        definition.instance(planningContext.agenticScope()).start();
 
-        CompletableFuture.supplyAsync(() -> definition.instance(planningContext.agenticScope()).start().join());
+        CompletableFuture.supplyAsync(() -> definition.instance(planningContext.agenticScope()).start().join())
+                .thenRun(() -> executeAgents(null));
 
         final List<AgentInstance> agents = nextAgentFuture.join();
         if (agents == null || agents.isEmpty()) {
