@@ -35,11 +35,6 @@ public class FlowPlanner implements Planner {
 
     private WorkflowDefinition definition;
 
-    // This constructor is only used to make the compiler happy but should be removed when all workflows will be migrated to the lockstep solution
-    public FlowPlanner(Class<?> agentServiceClass, String description, Consumer<FuncDoTaskBuilder> tasks) {
-        this(agentServiceClass, description, (flowPlanner, initPlanningContext) -> tasks);
-    }
-
     public FlowPlanner(Class<?> agentServiceClass, String description,
             BiFunction<FlowPlanner, InitPlanningContext, Consumer<FuncDoTaskBuilder>> tasks) {
         this.agentServiceClass = agentServiceClass;
@@ -83,9 +78,6 @@ public class FlowPlanner implements Planner {
     @Override
     public Action firstAction(PlanningContext planningContext) {
         nextAgentFuture = new CompletableFuture<>();
-
-        //        definition.instance(planningContext.agenticScope()).start();
-
         CompletableFuture.supplyAsync(() -> definition.instance(planningContext.agenticScope()).start().join())
                 .thenRun(() -> executeAgents(null));
 
