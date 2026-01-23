@@ -21,6 +21,7 @@
 ** xref:specification.adoc[CNCF Workflow mapping and concepts]
 ** xref:data-flow.adoc[]
 ** xref:concepts-agentic-langchain4j.adoc[]
+** xref:metrics-prometheus.adoc[]
 
 * Reference
 ** xref:dsl-cheatsheet.adoc[Java DSL cheatsheet]

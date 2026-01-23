@@ -11,6 +11,7 @@ import jakarta.enterprise.util.TypeLiteral;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.quarkiverse.flow.metrics.MicrometerExecutionListener;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
 import io.quarkiverse.flow.providers.HttpClientProvider;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
@@ -18,6 +19,7 @@ import io.quarkiverse.flow.tracing.TraceLoggerExecutionListener;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableInstance;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.serverlessworkflow.impl.WorkflowApplication;
@@ -37,6 +39,12 @@ public class WorkflowApplicationRecorder {
             final ArcContainer container = Arc.container();
             final WorkflowApplication.Builder builder = WorkflowApplication.builder()
                     .withExpressionFactory(new JQExpressionFactory(container.instance(JQScopeSupplier.class).get()));
+
+            InstanceHandle<MicrometerExecutionListener> instance = container
+                    .instance(MicrometerExecutionListener.class);
+            if (instance.isAvailable()) {
+                builder.withListener(instance.get());
+            }
 
             if (tracingEnabled) {
                 LOG.info("Flow: Tracing enabled");

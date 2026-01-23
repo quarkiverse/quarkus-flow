@@ -1,0 +1,14 @@
+document:
+  dsl: '1.0.0-alpha5'
+  namespace: test
+  name: emit-event
+  version: '0.1.0'
+do:
+  - emitEvent:
+      emit:
+        event:
+          with:
+            source: https://org.acme.quarkus.flow.io
+            type: org.acme.message.received.v1.Message
+            data:
+              message: ${.message}

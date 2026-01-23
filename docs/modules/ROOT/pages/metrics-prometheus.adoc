@@ -1,0 +1,127 @@
+= Observability with Prometheus and Micrometer
+
+Quarkus Flow integrates with the Micrometer Prometheus Registry to provide observability for workflow executions,
+exposing metrics for execution counts, durations, and runtime state that can be easily visualized and alerted on using Prometheus and Grafana.
+
+== Configuring the Observability
+
+Quarkus Flow provides an easy, out-of-the-box observability setup.
+To enable it, simply add the following dependency to your project:
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
+</dependency>
+----
+
+Once the dependency is included, metrics are automatically exposed through the Prometheus endpoint without any additional configuration.
+
+[NOTE]
+====
+You can disable workflow metrics removing the `io.quarkus:quarkus-micrometer-registry-prometheus` or through `application.properties`
+setting the `quarkus.flow.metrics.enabled` to `true`.
+====
+
+== Counting workflow events
+
+You can use workflow metrics to answer questions such as:
+
+* How many workflows have started?
+* How many workflows have completed successfully?
+* How many workflows have failed?
+* How many task executions have occurred?
+
+Below is the full list of metrics emitted by Quarkus Flow that help you monitor workflow execution events.
+
+[options="header"]
+|===
+| Metric name | Description | Type | Tags | Prometheus Example
+
+| `quarkus_flow_workflows_started_total`
+| Workflow Started Total
+| Counter
+| `workflow`
+| `quarkus_flow_workflows_started_total{workflow="simple-workflow",} 1.0`
+
+| `quarkus_flow_workflows_completed_total`
+| Workflow Completed Total
+| Counter
+| `workflow`
+| `quarkus_flow_workflows_completed_total{workflow="simple-workflow",} 1.0`
+
+| `quarkus_flow_workflows_failed_total`
+| Workflow Failed Total
+| Counter
+| `workflow` and `errorType`
+| `quarkus_flow_workflows_failed_total{errorType="FAULTED",workflow="faulted-workflow",} 5.0`
+
+| `quarkus_flow_task_executions_total`
+| Task Execution Total
+| Counter
+| `workflow`, `task` and `outcome`
+| `quarkus_flow_task_executions_total{task="callHttp",workflow="simple-workflow",} 1.0`
+
+// TODO
+// | `quarkus_flow_task_retries_total`
+// | Task Retries Total
+// | Counter
+// | `workflow`, `task`
+// |
+|===
+
+== What is happening now?
+
+Quarkus Flow also exposes gauge metrics that describe the current state of workflow executions.
+These metrics allow you to answer questions such as:
+
+* How many workflows are currently running?
+* How many workflows are currently in an error state?
+
+Below is the full list of metrics emitted by Quarkus Flow that help you monitor workflow execution events.
+
+[options="header"]
+|===
+| Metric name | Description | Type | Tags | Prometheus Example
+
+| `quarkus_flow_instances_active`
+| Workflow Instances Active
+| Gauge
+| `workflow`
+| `quarkus_flow_instances_active{workflow="simple-workflow",} 1.0`
+
+| `quarkus_flow_instances_in_error`
+| Workflow Instances In Error
+| Gauge
+| `workflow`
+| `quarkus_flow_instances_in_error{workflow="faulted-workflow",} 5.0`
+// TODO
+// Add other Gauges (waiting)
+`
+|===
+
+=== Best Practices
+
+**Name your tasks**
+
+If a task does not have an explicit name, Serverless Workflow automatically assigns a UUID as the task name.
+That UUID is then used as the task label in your metrics, which makes monitoring and aggregation difficult.
+
+To ensure meaningful and usable metrics, always provide a descriptive task name for each task.
+
+**Make task names unique**
+
+The CNCF Workflow specification does not require task names to be unique within a workflow.
+When multiple tasks share the same name, their metrics are aggregated under the same label, making it hard to distinguish different steps.
+
+Quarkus Flow uses (for task metrics) the combination of workflow name (`workflow`) + task name (`task`) as labels in the exported metrics, so using unique task names improves filtering and visualization.
+
+== Observability DevServices
+
+Quarkus provides the https://quarkus.io/guides/observability-devservices-lgtm[Observability DevServices] extension, which automatically starts a set of observability tools (Loki, Grafana, Tempo, Mimir, Prometheus and a OTEL Collector) during development.
+These tools help you inspect and monitor your application without requiring any external setup.
+
+When using Quarkus Flow, a Grafana dashboard named “Quarkus Flow” is created automatically, giving you a ready-to-use view of workflow metrics.
+
+image::quarkus-flow-dashboard.png[]

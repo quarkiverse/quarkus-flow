@@ -1,0 +1,27 @@
+document:
+  dsl: '1.0.3'
+  namespace: test
+  name: retryable-example
+  version: '0.1.0'
+do:
+  - tryGetPet:
+      try:
+        - getPet:
+            call: http
+            with:
+              method: get
+              endpoint: http://localhost:8080/try-workflows/pets
+              redirect: true
+      catch:
+        errors:
+          with:
+            type: https://serverlessworkflow.io/spec/1.0.0/errors/communication
+            status: 500
+        retry:
+          delay:
+            milliseconds: 2000
+          backoff:
+            constant: { }
+          limit:
+            attempt:
+              count: 1
