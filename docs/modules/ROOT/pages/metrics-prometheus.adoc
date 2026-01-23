@@ -1,12 +1,13 @@
 = Observability with Prometheus and Micrometer
 
-Quarkus Flow integrates with the Micrometer Prometheus Registry to provide observability for workflow executions,
-exposing metrics for execution counts, durations, and runtime state that can be easily visualized and alerted on using Prometheus and Grafana.
+Quarkus Flow integrates with the Micrometer Prometheus Registry to provide observability for workflow executions.
+It exposes metrics for execution counts, durations, and runtime states, which can be easily visualized and used for alerting with Prometheus and Grafana.
 
-== Configuring the Observability
+== Configuring Observability
 
-Quarkus Flow provides an easy, out-of-the-box observability setup.
-To enable it, simply add the following dependency to your project:
+Quarkus Flow provides an out-of-the-box observability setup.
+
+To enable it, add the following dependency to your project:
 
 [source,xml]
 ----
@@ -16,112 +17,182 @@ To enable it, simply add the following dependency to your project:
 </dependency>
 ----
 
-Once the dependency is included, metrics are automatically exposed through the Prometheus endpoint without any additional configuration.
+Once the dependency is added, workflow metrics are automatically exposed through the Prometheus endpoint.
+No additional configuration is required.
 
 [NOTE]
 ====
-You can disable workflow metrics removing the `io.quarkus:quarkus-micrometer-registry-prometheus` or through `application.properties`
-setting the `quarkus.flow.metrics.enabled` to `true`.
+You can disable workflow metrics either by removing the `io.quarkus:quarkus-micrometer-registry-prometheus` dependency
+or by setting `quarkus.flow.metrics.enabled=false` in `application.properties`.
+====
+
+[NOTE]
+====
+Metric names are aligned with the workflow state phases defined in the CNCF Serverless Workflow specification:
+https://github.com/serverlessworkflow/specification/blob/main/dsl.md#status-phases
 ====
 
 == Counting workflow events
 
-You can use workflow metrics to answer questions such as:
+Workflow metrics allow you to answer questions such as:
 
 * How many workflows have started?
 * How many workflows have completed successfully?
-* How many workflows have failed?
+* How many workflows have failed or been cancelled?
 * How many task executions have occurred?
 
-Below is the full list of metrics emitted by Quarkus Flow that help you monitor workflow execution events.
+Below is the complete list of counter metrics emitted by Quarkus Flow to track workflow and task execution events.
 
 [options="header"]
 |===
-| Metric name | Description | Type | Tags | Prometheus Example
+| Metric name | Description | Type | Tags | Prometheus example
 
-| `quarkus_flow_workflows_started_total`
-| Workflow Started Total
+| `quarkus_flow_workflow_started_total`
+| Total number of workflows started
 | Counter
 | `workflow`
-| `quarkus_flow_workflows_started_total{workflow="simple-workflow",} 1.0`
+| `quarkus_flow_workflow_started_total{workflow="simple-workflow"} 3`
 
-| `quarkus_flow_workflows_completed_total`
-| Workflow Completed Total
+| `quarkus_flow_workflow_completed_total`
+| Total number of workflows completed
 | Counter
 | `workflow`
-| `quarkus_flow_workflows_completed_total{workflow="simple-workflow",} 1.0`
+| `quarkus_flow_workflow_completed_total{workflow="simple-workflow"} 3`
 
-| `quarkus_flow_workflows_failed_total`
-| Workflow Failed Total
+| `quarkus_flow_workflow_faulted_total`
+| Total number of workflows faulted
 | Counter
-| `workflow` and `errorType`
-| `quarkus_flow_workflows_failed_total{errorType="FAULTED",workflow="faulted-workflow",} 5.0`
+| `workflow`, `errorType`
+| `quarkus_flow_workflow_faulted_total{workflow="faulted-workflow",errorType="FAULTED"} 4`
 
-| `quarkus_flow_task_executions_total`
-| Task Execution Total
+| `quarkus_flow_workflow_cancelled_total`
+| Total number of workflows cancelled
 | Counter
-| `workflow`, `task` and `outcome`
-| `quarkus_flow_task_executions_total{task="callHttp",workflow="simple-workflow",} 1.0`
+| `workflow`
+| `quarkus_flow_workflow_cancelled_total{workflow="simple-workflow"} 1`
 
-// TODO
-// | `quarkus_flow_task_retries_total`
-// | Task Retries Total
-// | Counter
-// | `workflow`, `task`
-// |
+| `quarkus_flow_task_started_total`
+| Total number of tasks started
+| Counter
+| `workflow`, `task`
+| `quarkus_flow_task_started_total{workflow="simple-workflow",task="getPet"} 6`
+
+| `quarkus_flow_task_completed_total`
+| Total number of tasks completed
+| Counter
+| `workflow`, `task`
+| `quarkus_flow_task_completed_total{workflow="simple-workflow",task="getPet"} 6`
+
+| `quarkus_flow_task_retries_total`
+| Total number of task retries
+| Counter
+| `workflow`, `task`
+| `quarkus_flow_task_retries_total{workflow="retryable-example",task="getPet"} 3`
+
+| `quarkus_flow_task_failed_total`
+| Total number of tasks failed
+| Counter
+| `workflow`, `task`
+| `quarkus_flow_task_failed_total{workflow="retryable-example",task="tryGetPet"} 1`
 |===
 
 == What is happening now?
 
-Quarkus Flow also exposes gauge metrics that describe the current state of workflow executions.
-These metrics allow you to answer questions such as:
+Quarkus Flow also exposes gauge metrics that represent the *current state* of workflow executions.
+These metrics answer questions such as:
 
 * How many workflows are currently running?
-* How many workflows are currently in an error state?
+* How many workflows are waiting for an event or timer?
+* How many workflows are suspended?
 
-Below is the full list of metrics emitted by Quarkus Flow that help you monitor workflow execution events.
+Below is the list of gauge metrics emitted by Quarkus Flow.
 
 [options="header"]
 |===
-| Metric name | Description | Type | Tags | Prometheus Example
+| Metric name | Description | Type | Tags | Prometheus example
 
-| `quarkus_flow_instances_active`
-| Workflow Instances Active
+| `quarkus_flow_instance_running`
+| Number of workflow instances currently running
 | Gauge
 | `workflow`
-| `quarkus_flow_instances_active{workflow="simple-workflow",} 1.0`
+| `quarkus_flow_instance_running{workflow="retryable-example"} 1`
 
-| `quarkus_flow_instances_in_error`
-| Workflow Instances In Error
+| `quarkus_flow_instance_waiting`
+| Number of workflow instances currently waiting
 | Gauge
 | `workflow`
-| `quarkus_flow_instances_in_error{workflow="faulted-workflow",} 5.0`
-// TODO
-// Add other Gauges (waiting)
-`
+| `quarkus_flow_instance_waiting{workflow="retryable-example"} 0`
+
+| `quarkus_flow_instance_suspended`
+| Number of workflow instances currently suspended
+| Gauge
+| `workflow`
+| `quarkus_flow_instance_suspended{workflow="retryable-example"} 0`
 |===
 
-=== Best Practices
+== How long did a workflow or task take to complete?
 
-**Name your tasks**
+Workflow and task durations are exported using Micrometer *Timers*.
+
+Example configuration in `application.properties`:
+
+[source,properties]
+----
+quarkus.flow.metrics.durations.enabled=true
+quarkus.flow.metrics.durations.percentiles=0.5,0.95,0.99
+----
+
+With this configuration:
+
+* Client-side percentiles are exported as `quantile` time series
+* Histogram buckets are exported as `_bucket` metrics
+
+Example output from `/q/metrics`:
+
+[source,text]
+----
+# TYPE quarkus_flow_workflow_duration_seconds histogram
+
+# Client-side percentiles
+quarkus_flow_workflow_duration_seconds{workflow="wait-event",quantile="0.5"} 14.49
+quarkus_flow_workflow_duration_seconds{workflow="wait-event",quantile="0.95"} 14.49
+quarkus_flow_workflow_duration_seconds{workflow="wait-event",quantile="0.99"} 14.49
+
+# Histogram buckets
+quarkus_flow_workflow_duration_seconds_bucket{workflow="wait-event",le="0.001"} 0
+quarkus_flow_workflow_duration_seconds_bucket{workflow="wait-event",le="0.002"} 0
+----
+
+=== Best practices
+
+==== Name your tasks
 
 If a task does not have an explicit name, Serverless Workflow automatically assigns a UUID as the task name.
-That UUID is then used as the task label in your metrics, which makes monitoring and aggregation difficult.
+That UUID is then used as the `task` label in metrics, making monitoring and aggregation difficult.
 
-To ensure meaningful and usable metrics, always provide a descriptive task name for each task.
+Always provide descriptive task names to ensure meaningful metrics.
 
-**Make task names unique**
+==== Make task names unique
 
-The CNCF Workflow specification does not require task names to be unique within a workflow.
-When multiple tasks share the same name, their metrics are aggregated under the same label, making it hard to distinguish different steps.
+The CNCF Serverless Workflow specification does not require task names to be unique within a workflow.
+When multiple tasks share the same name, their metrics are aggregated under the same label.
 
-Quarkus Flow uses (for task metrics) the combination of workflow name (`workflow`) + task name (`task`) as labels in the exported metrics, so using unique task names improves filtering and visualization.
+Quarkus Flow uses the combination of workflow name (`workflow`) and task name (`task`) as metric labels.
+Using unique task names improves filtering, aggregation, and dashboard visualization.
 
 == Observability DevServices
 
-Quarkus provides the https://quarkus.io/guides/observability-devservices-lgtm[Observability DevServices] extension, which automatically starts a set of observability tools (Loki, Grafana, Tempo, Mimir, Prometheus and a OTEL Collector) during development.
-These tools help you inspect and monitor your application without requiring any external setup.
+Quarkus provides the https://quarkus.io/guides/observability-devservices-lgtm[Observability DevServices] extension,
+which automatically starts a complete observability stack during development, including:
 
-When using Quarkus Flow, a Grafana dashboard named “Quarkus Flow” is created automatically, giving you a ready-to-use view of workflow metrics.
+* Prometheus
+* Grafana
+* Loki
+* Tempo
+* Mimir
+* OpenTelemetry Collector
 
-image::quarkus-flow-dashboard.png[]
+When using Quarkus Flow, a Grafana dashboard named *Quarkus Flow* is created automatically,
+providing a ready-to-use visualization of workflow metrics.
+
+image::quarkus-flow-dashboard.jpg[]
