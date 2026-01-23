@@ -20,9 +20,11 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.serverlessworkflow.impl.WorkflowApplication;
+import io.serverlessworkflow.impl.WorkflowApplication.Builder;
 import io.serverlessworkflow.impl.config.ConfigManager;
 import io.serverlessworkflow.impl.config.SecretManager;
 import io.serverlessworkflow.impl.events.EventConsumer;
@@ -34,31 +36,33 @@ import io.serverlessworkflow.impl.expressions.jq.JQExpressionFactory;
 public class WorkflowApplicationRecorder {
     private static final Logger LOG = LoggerFactory.getLogger(WorkflowApplicationRecorder.class);
 
-    public Supplier<WorkflowApplication> workflowAppSupplier(ShutdownContext shutdownContext, boolean tracingEnabled) {
+    public RuntimeValue<WorkflowApplication.Builder> workflowAppBuilderSupplier(boolean tracingEnabled) {
+        WorkflowApplication.Builder builder = WorkflowApplication.builder();
+        if (tracingEnabled) {
+            LOG.info("Flow: Tracing enabled");
+            builder.withListener(new TraceLoggerExecutionListener());
+        }
+        return new RuntimeValue<>(builder);
+    }
+
+    public Supplier<WorkflowApplication> workflowAppSupplier(RuntimeValue<Builder> builderWrapper,
+            ShutdownContext shutdownContext) {
         return () -> {
             final ArcContainer container = Arc.container();
-            final WorkflowApplication.Builder builder = WorkflowApplication.builder()
-                    .withExpressionFactory(new JQExpressionFactory(container.instance(JQScopeSupplier.class).get()));
+            final Builder builder = builderWrapper.getValue();
+            builder.withExpressionFactory(new JQExpressionFactory(container.instance(JQScopeSupplier.class).get()));
 
             InstanceHandle<MicrometerExecutionListener> instance = container
                     .instance(MicrometerExecutionListener.class);
             if (instance.isAvailable()) {
                 builder.withListener(instance.get());
             }
-
-            if (tracingEnabled) {
-                LOG.info("Flow: Tracing enabled");
-                builder.withListener(new TraceLoggerExecutionListener());
-            }
-
             this.injectEventConsumers(container, builder);
             this.injectEventPublishers(container, builder);
             this.injectSecretManager(container, builder);
             this.injectConfigManager(container, builder);
             this.injectHttpClientProvider(container, builder);
-
             WorkflowApplication app = builder.build();
-
             shutdownContext.addShutdownTask(app::close);
             return app;
         };

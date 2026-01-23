@@ -1,0 +1,17 @@
+name: Flow Redis
+description: |
+  Redis persitence plugin
+metadata:
+  keywords:
+    - workflow
+    - workflows
+    - cncf
+    - serverless
+    - cloudevents
+    - redis
+    - persistence
+  guide: https://docs.quarkiverse.io/quarkus-flow/dev/
+  categories:
+    - "integration"
+    - "persistence"
+  status: "preview"

@@ -1,0 +1,12 @@
+= Use Redis persistence
+:page-role: howto
+include::includes/attributes.adoc[]
+
+*Quarkus Flow Redis* provides workflow restoration capabilities by storing workflow instance state using Redis
+
+== Prerequisites
+
+* A Quarkus application with xref:getting-started.adoc[Quarkus Flow set up].
+* Quarkus Redis dependency on the classpath 
+
+== See also
