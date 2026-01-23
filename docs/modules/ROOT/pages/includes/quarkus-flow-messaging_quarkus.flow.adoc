@@ -63,7 +63,7 @@ When enabled, correlation metadata attributes are automatically added to emitted
 
 The default correlation metadata includes:
 
- - `XFlowInstanceId` the instance ID see `WorkflowInstance++#++id()`
+ - `XFlowInstanceId` the instance ID, see `WorkflowInstance++#++id()`
  - `XFlowTaskId` the task's position that where the request was made, see `io.serverlessworkflow.impl.TaskContext++#++position()`
 
 

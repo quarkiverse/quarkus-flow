@@ -174,7 +174,6 @@ public class MicrometerExecutionListener implements WorkflowExecutionListener {
 
     private void incrementChangeableState(WorkflowInstanceCounters counters, WorkflowStatus status) {
         switch (status) {
-            case PENDING -> counters.pending.incrementAndGet();
             case RUNNING -> counters.running.incrementAndGet();
             case WAITING -> counters.waiting.incrementAndGet();
             case SUSPENDED -> counters.suspended.incrementAndGet();
@@ -183,7 +182,6 @@ public class MicrometerExecutionListener implements WorkflowExecutionListener {
 
     private void decrementChangeableState(WorkflowInstanceCounters counters, WorkflowStatus status) {
         switch (status) {
-            case PENDING -> safeDecrement(counters.pending);
             case RUNNING -> safeDecrement(counters.running);
             case WAITING -> safeDecrement(counters.waiting);
             case SUSPENDED -> safeDecrement(counters.suspended);
@@ -227,12 +225,6 @@ public class MicrometerExecutionListener implements WorkflowExecutionListener {
                     .description("Workflow Instances Currently Waiting: The workflow/task execution is temporarily paused, " +
                             "awaiting either inbound event(s) or a specified time interval as defined by a wait task.")
                     .tag("workflow", workflowMetadata.name())
-                    .register(meterRegistry);
-
-            Gauge.builder(FlowMetrics.INSTANCES_PENDING.prefixedWith(prefix), counters.pending, AtomicLong::get)
-                    .description(
-                            "Workflow Instances Currently Pending: The workflow/task has been initiated and is pending execution.")
-                    .tag("workflow", workflowName.name())
                     .register(meterRegistry);
 
             Gauge.builder(FlowMetrics.INSTANCES_SUSPENDED.prefixedWith(prefix), counters.suspended, AtomicLong::get)

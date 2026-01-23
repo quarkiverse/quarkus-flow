@@ -15,7 +15,6 @@ public enum FlowMetrics {
     EVENT_RESUME_LATENCY("event.resume.latency"),
     INSTANCES_RUNNING("instance.running"),
     INSTANCES_WAITING("instance.waiting"),
-    INSTANCES_PENDING("instance.pending"),
     INSTANCES_SUSPENDED("instance.suspended");
 
     private final String metricName;
