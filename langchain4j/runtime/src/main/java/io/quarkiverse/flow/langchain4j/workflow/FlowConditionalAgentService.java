@@ -24,7 +24,7 @@ import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
 
 public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<T> implements FlowAgentService {
 
-    private final Map<String, Predicate<AgenticScope>> conditions = new HashMap<>();
+    private final Map<Integer, Predicate<AgenticScope>> conditions = new HashMap<>();
 
     protected FlowConditionalAgentService(Class<T> agentServiceClass, Method agenticMethod) {
         super(agentServiceClass, agenticMethod);
@@ -42,7 +42,7 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
     public FlowConditionalAgentService<T> subAgents(Predicate<AgenticScope> condition, List<AgentExecutor> agentExecutors) {
         super.subAgents(condition, agentExecutors);
         for (AgentExecutor agentExecutor : agentExecutors) {
-            this.conditions.compute(agentExecutor.agentId(),(k, v) -> (v == null) ? condition : v.or(condition));
+            this.conditions.compute(agentExecutor.hashCode(), (k, v) -> (v == null) ? condition : v.or(condition));
         }
         return this;
     }
@@ -50,7 +50,7 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
     @Override
     public FlowConditionalAgentService<T> subAgent(Predicate<AgenticScope> condition, AgentExecutor agentExecutor) {
         super.subAgent(condition, agentExecutor);
-        this.conditions.compute(agentExecutor.agentId(),(k, v) -> (v == null) ? condition : v.or(condition));
+        this.conditions.compute(agentExecutor.hashCode(), (k, v) -> (v == null) ? condition : v.or(condition));
         return this;
     }
 
@@ -72,7 +72,7 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
                                     return nextActionFuture.join();
                                 },
                                 DefaultAgenticScope.class)
-                                .when(this.conditions.get(agent.agentId()), AgenticScope.class)
+                                .when(this.conditions.get(agent.hashCode()), AgenticScope.class)
                                 .outputAs((out, wf, tf) -> agenticScopePassthrough(tf.rawInput())));
             }
         };
