@@ -97,6 +97,102 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |
 
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-metrics-enabled]] [.property-path]##link:#quarkus-flow_quarkus-flow-metrics-enabled[`quarkus.flow.metrics.enabled`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.metrics.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enables or disables metrics collection for Quarkus Flow.
+
+When set to `false`, no metrics are published.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_METRICS_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_METRICS_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-metrics-prefix]] [.property-path]##link:#quarkus-flow_quarkus-flow-metrics-prefix[`quarkus.flow.metrics.prefix`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.metrics.prefix+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Prefix applied to all exported metric names.
+
+This allows distinguishing Quarkus Flow metrics from other application or framework metrics.
+
+Please, configure a prefix separating words by (`.`) dot character.
+
+link:https://quarkus.io/guides/telemetry-micrometer#naming-conventions[Naming conventions].
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_METRICS_PREFIX+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_METRICS_PREFIX+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|`+++quarkus.flow+++`
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-metrics-durations-enabled]] [.property-path]##link:#quarkus-flow_quarkus-flow-metrics-durations-enabled[`quarkus.flow.metrics.durations.enabled`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.metrics.durations.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enables or disables duration metrics.
+
+When disabled, no timing metrics (such as workflow or task execution durations) are published.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_METRICS_DURATIONS_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_METRICS_DURATIONS_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-metrics-durations-percentiles]] [.property-path]##link:#quarkus-flow_quarkus-flow-metrics-durations-percentiles[`quarkus.flow.metrics.durations.percentiles`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.metrics.durations.percentiles+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Percentiles to be calculated for duration metrics.
+
+Values must be in the range `(0, 1)`, for example: `0.5`, `0.95`, `0.99`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_METRICS_DURATIONS_PERCENTILES+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_METRICS_DURATIONS_PERCENTILES+++`
+endif::add-copy-button-to-env-var[]
+--
+|list of string
+|
+
 a| [[quarkus-flow_quarkus-flow-http-client-connect-timeout]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-connect-timeout[`quarkus.flow.http.client.connect-timeout`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.http.client.connect-timeout+++[]

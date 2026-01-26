@@ -2,12 +2,15 @@ package io.quarkiverse.flow.deployment;
 
 import static io.quarkiverse.flow.deployment.FlowLoggingUtils.logWorkflowList;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import jakarta.ws.rs.Priorities;
 
 import org.objectweb.asm.Opcodes;
@@ -15,8 +18,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.config.FlowDefinitionsConfig;
+import io.quarkiverse.flow.config.FlowMetricsConfig;
 import io.quarkiverse.flow.config.FlowTracingConfig;
 import io.quarkiverse.flow.internal.WorkflowRegistry;
+import io.quarkiverse.flow.metrics.MicrometerExecutionListener;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
 import io.quarkiverse.flow.providers.HttpClientProvider;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
@@ -25,6 +30,7 @@ import io.quarkiverse.flow.providers.WorkflowExceptionMapper;
 import io.quarkiverse.flow.recorders.SDKRecorder;
 import io.quarkiverse.flow.recorders.WorkflowApplicationRecorder;
 import io.quarkiverse.flow.recorders.WorkflowDefinitionRecorder;
+import io.quarkiverse.flow.recorders.WorkflowMicrometerRecorder;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
@@ -40,15 +46,20 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
+import io.quarkus.runtime.metrics.MetricsFactory;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowException;
+import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener;
 import io.smallrye.common.annotation.Identifier;
 
 class FlowProcessor {
@@ -241,4 +252,37 @@ class FlowProcessor {
                     .build());
         }
     }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void configureRegistryPrometheusIntegration(WorkflowMicrometerRecorder recorder, FlowMetricsConfig metricsConfig,
+            Optional<MetricsCapabilityBuildItem> metricsCapability,
+            BuildProducer<SyntheticBeanBuildItem> beans,
+            BuildProducer<RemovedResourceBuildItem> removeResource,
+            LaunchModeBuildItem launchModeBuildItem) {
+
+        if (!launchModeBuildItem.getLaunchMode().isDevOrTest()) {
+            removeResource.produce(new RemovedResourceBuildItem(
+                    ArtifactKey.fromString("io.quarkiverse.flow:quarkus-flow"),
+                    Collections.singleton("META-INF/grafana/grafana-dashboard-quarkus-flow.json")));
+        }
+
+        if (!metricsConfig.enabled()) {
+            return;
+        }
+
+        metricsCapability.map(capability -> capability.metricsSupported(MetricsFactory.MICROMETER))
+                .ifPresent(micrometerIsSupported -> {
+                    if (micrometerIsSupported) {
+                        beans.produce(SyntheticBeanBuildItem.configure(MicrometerExecutionListener.class)
+                                .setRuntimeInit()
+                                .unremovable()
+                                .scope(Singleton.class)
+                                .types(WorkflowExecutionListener.class)
+                                .supplier(recorder.supplyMicrometerExecutionListener(metricsConfig))
+                                .done());
+                    }
+                });
+    }
+
 }
