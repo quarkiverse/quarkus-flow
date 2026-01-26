@@ -66,8 +66,12 @@ public class WorkflowRPCService {
     public MermaidDefinition generateMermaidDiagram(
             @JsonRpcDescription("Workflow's id") WorkflowDefinitionId id) {
         LOG.info("Generating a mermaid diagram from the workflow's definition '{}'", id.name());
-        return new MermaidDefinition(new Mermaid().from(registry.lookupDescriptor(id)
+        final MermaidDefinition mermaidDefinition = new MermaidDefinition(new Mermaid().from(registry.lookupDescriptor(id)
                 .orElseThrow(() -> new IllegalStateException("Workflow with id '" + id + "' not found"))));
+        if (mermaidDefinition.mermaid.isEmpty()) {
+            LOG.warn("Workflow with id '{}' has no diagram available or failed to generate it", id.name());
+        }
+        return mermaidDefinition;
     }
 
     @Blocking
