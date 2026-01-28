@@ -85,6 +85,11 @@
             <artifactId>micrometer-core</artifactId>
             <scope>provided</scope>
         </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-proxy-registry</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
