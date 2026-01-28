@@ -18,6 +18,7 @@
         <module>messaging</module>
         <module>langchain4j</module>
         <module>persistence</module>
+        <module>durable-kubernetes</module>
     </modules>
 
     <scm>
