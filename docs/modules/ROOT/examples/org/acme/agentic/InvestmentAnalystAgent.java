@@ -1,11 +1,12 @@
 package org.acme.agentic;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
 import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 import io.quarkiverse.langchain4j.RegisterAiService;
-import jakarta.enterprise.context.ApplicationScoped;
 
 // tag::agent[]
 
@@ -40,10 +41,8 @@ public interface InvestmentAnalystAgent {
     /**
      * Analyze the prompt and produce an investment memo.
      *
-     * @param memoryId
-     *        Conversation / workflow memory id (provided by Quarkus Flow).
-     * @param prompt
-     *        Ticker, objective, horizon and raw market-data JSON.
+     * @param memoryId Conversation / workflow memory id (provided by Quarkus Flow).
+     * @param prompt Ticker, objective, horizon and raw market-data JSON.
      */
     @UserMessage("""
             Ticker: {prompt.ticker}

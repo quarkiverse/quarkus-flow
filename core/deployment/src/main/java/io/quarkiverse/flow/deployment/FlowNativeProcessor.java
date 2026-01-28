@@ -1,5 +1,6 @@
 package io.quarkiverse.flow.deployment;
 
+import io.quarkiverse.flow.providers.MetadataPropagationRequestDecorator;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -9,6 +10,7 @@ import io.serverlessworkflow.impl.events.EventPublisher;
 import io.serverlessworkflow.impl.events.InMemoryEvents;
 import io.serverlessworkflow.impl.executors.TaskExecutorFactory;
 import io.serverlessworkflow.impl.executors.func.JavaTaskExecutorFactory;
+import io.serverlessworkflow.impl.executors.http.HttpRequestDecorator;
 import io.serverlessworkflow.impl.expressions.ExpressionFactory;
 import io.serverlessworkflow.impl.expressions.func.JavaExpressionFactory;
 import io.serverlessworkflow.impl.expressions.jq.JQExpressionFactory;
@@ -37,6 +39,8 @@ final class FlowNativeProcessor {
                 InMemoryEvents.class.getName()));
         sp.produce(new ServiceProviderBuildItem(WorkflowModelFactory.class.getName(),
                 JacksonModelFactory.class.getName()));
+        sp.produce(new ServiceProviderBuildItem(HttpRequestDecorator.class.getName(),
+                MetadataPropagationRequestDecorator.class.getName()));
     }
 
 }

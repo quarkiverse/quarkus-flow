@@ -5,12 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.util.Map;
-
-//import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import io.quarkus.test.common.QuarkusTestResource;
 
-//@Disabled("Should not run on CI since it depends on Petstore API reliability. Here just for demonstration.")
 @QuarkusTest
 @QuarkusTestResource(PetstoreMockResource.class)
 class PetstoreFlowIT {

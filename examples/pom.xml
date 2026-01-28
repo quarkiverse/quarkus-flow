@@ -21,6 +21,7 @@
         <module>petstore-openapi</module>
         <module>http-basic-auth</module>
         <module>langchain4j-agentic-workflow</module>
+        <module>micrometer-prometheus</module>
     </modules>
 
     <build>

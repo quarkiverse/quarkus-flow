@@ -1,0 +1,40 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Quarkus Flow Contributors API",
+    "version": "1.0.0",
+    "description": "A very minimal OpenAPI document"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:{{mockServerPort}}"
+    }
+  ],
+  "paths": {
+    "/quarkiverse/quarkus-flow/contributors": {
+      "get": {
+        "operationId": "getQuarkusFlowContributors",
+        "summary": "Get SDK Java",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "properties": {
+                      "profile": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "type": "array"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

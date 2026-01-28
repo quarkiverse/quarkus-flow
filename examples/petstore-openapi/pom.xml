@@ -16,13 +16,13 @@
 
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
-        <quarkus.platform.version>3.30.6</quarkus.platform.version>
+        <quarkus.platform.version>3.30.8</quarkus.platform.version>
 
         <quarkus.flow.version>1.0.0-SNAPSHOT</quarkus.flow.version>
         <surefire-plugin.version>3.5.4</surefire-plugin.version>
         <failsafe-plugin.version>3.5.4</failsafe-plugin.version>
 
-        <version.assertj>3.27.6</version.assertj>
+        <version.assertj>3.27.7</version.assertj>
 
         <skipITs>true</skipITs>
     </properties>
