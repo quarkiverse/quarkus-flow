@@ -386,139 +386,31 @@ public interface HttpClientConfig {
     // -------------------------------------------------------------------------
 
     /**
-     * HTTP proxy host.
-     * <p>
-     * When set together with {@link #proxyPort()}, requests are sent through the
-     * given HTTP proxy.
+     * The name of the proxy configuration to use for configuring <b>HTTP</b> proxy.
      * <p>
      * Default client:
      *
      * <pre>
-     * quarkus.flow.http.client.proxy-host=proxy.mycorp.local
+     * quarkus flow.http.client.proxy-configuration-name=proxy-cfg
      * </pre>
      * <p>
      * Named client:
      *
      * <pre>
-     * quarkus.flow.http.client.named.&lt;name&gt;.proxy-host=proxy.mycorp.local
+     * quarkus.flow.http.client.named.&lt;name&gt;.proxy-configuration-name=proxy-cfg
      * </pre>
-     * <p>
-     * Internally mapped to {@code ClientBuilderImpl.proxy(host, port)}.
      *
-     * @return the proxy host, if configured
+     * There are some rules for using proxy configuration:
+     * <ul>
+     * <li>If not set and the default proxy configuration is configured ({@code quarkus.proxy.*}) then that will be used.</li>
+     * <li>If the proxy configuration name is set, the configuration from {@code quarkus.proxy.<name>.*} will be used.</li>
+     * <li>If the proxy configuration name is set, but no proxy configuration is found with that name, then an error will be
+     * thrown at runtime.</li>
+     * </ul>
+     * <p>
+     * Use the value {@code none} to disable using the default configuration defined via {@code quarkus.proxy.*}.
      */
-    Optional<String> proxyHost();
-
-    /**
-     * HTTP proxy port.
-     * <p>
-     * Only used when {@link #proxyHost()} is also set.
-     * <p>
-     * Default client:
-     *
-     * <pre>
-     * quarkus.flow.http.client.proxy-port=8080
-     * </pre>
-     * <p>
-     * Named client:
-     *
-     * <pre>
-     * quarkus.flow.http.client.named.&lt;name&gt;.proxy-port=8080
-     * </pre>
-     * <p>
-     * Internally mapped to {@code ClientBuilderImpl.proxy(host, port)}.
-     *
-     * @return the proxy port, if configured
-     */
-    Optional<Integer> proxyPort();
-
-    /**
-     * Username for authenticating with the HTTP proxy.
-     * <p>
-     * Default client:
-     *
-     * <pre>
-     * quarkus.flow.http.client.proxy-user=svc-flow
-     * </pre>
-     * <p>
-     * Named client:
-     *
-     * <pre>
-     * quarkus.flow.http.client.named.&lt;name&gt;.proxy-user=svc-flow
-     * </pre>
-     * <p>
-     * Internally mapped to {@code ClientBuilderImpl.proxyUser(user)}.
-     *
-     * @return the proxy username, if configured
-     */
-    Optional<String> proxyUser();
-
-    /**
-     * Password for authenticating with the HTTP proxy.
-     * <p>
-     * Default client:
-     *
-     * <pre>
-     * quarkus.flow.http.client.proxy-password=secret
-     * </pre>
-     * <p>
-     * Named client:
-     *
-     * <pre>
-     * quarkus.flow.http.client.named.&lt;name&gt;.proxy-password=secret
-     * </pre>
-     * <p>
-     * Internally mapped to {@code ClientBuilderImpl.proxyPassword(password)}.
-     *
-     * @return the proxy password, if configured
-     */
-    Optional<String> proxyPassword();
-
-    /**
-     * Hosts that should bypass the HTTP proxy.
-     * <p>
-     * The value is a {@code |}-separated pattern list, similar to the standard
-     * {@code http.nonProxyHosts} format:
-     *
-     * <pre>
-     * quarkus.flow.http.client.non-proxy-hosts=localhost|127.*|[::1]
-     * </pre>
-     * <p>
-     * Named client:
-     *
-     * <pre>
-     * quarkus.flow.http.client.named.&lt;name&gt;.non-proxy-hosts=localhost|127.*
-     * </pre>
-     * <p>
-     * Internally mapped to {@code ClientBuilderImpl.nonProxyHosts(hostsPattern)}.
-     *
-     * @return the non-proxy hosts pattern, if configured
-     */
-    Optional<String> nonProxyHosts();
-
-    /**
-     * Proxy connect timeout in milliseconds.
-     * <p>
-     * Controls how long the client will wait when establishing a connection
-     * to the configured HTTP proxy.
-     * <p>
-     * Default client:
-     *
-     * <pre>
-     * quarkus.flow.http.client.proxy-connect-timeout=3000
-     * </pre>
-     * <p>
-     * Named client:
-     *
-     * <pre>
-     * quarkus.flow.http.client.named.&lt;name&gt;.proxy-connect-timeout=3000
-     * </pre>
-     * <p>
-     * Internally mapped to {@code ClientBuilderImpl.proxyConnectTimeout(Duration)}.
-     *
-     * @return the proxy connect timeout in milliseconds, if configured
-     */
-    Optional<Long> proxyConnectTimeout();
+    Optional<String> proxyConfigurationName();
 
     // -------------------------------------------------------------------------
     // Behaviour / HTTP-level options

@@ -246,36 +246,60 @@ by the server.
 
 == 8. Proxy support
 
-Proxy support is exposed as a thin layer over the RESTEasy Reactive `ClientBuilderImpl` API.
-All properties follow the usual `quarkus.flow.http.client` naming:
+Quarkus Flow provides proxy support through integration with the
+https://quarkus.io/guides/proxy-registry[Quarkus Proxy Registry].
+The Proxy Registry supplies a centralized and secure way to configure HTTP proxies across the Quarkus Platform,
+including support for https://quarkus.io/guides/credentials-provider[Credentials Providers].
+
+With this integration, Quarkus Flow HTTP clients can reference a proxy configuration by name,
+without directly embedding proxy details or credentials in application code.
+
+=== 8.1 Configuring a default proxy
+
+To use a proxy with the default Flow HTTP client, configure the Proxy Registry
+and reference it using the `proxy-configuration-name` property.
 
 [source,properties]
 ----
-# Default client proxy (host/port)
-quarkus.flow.http.client.proxy-host=proxy.mycorp.internal
-quarkus.flow.http.client.proxy-port=3128
+# Proxy Registry configuration
+quarkus.proxy.registry.host=proxy.mycorp.internal
+quarkus.proxy.registry.port=3128
 
-# Optional credentials
-quarkus.flow.http.client.proxy-user=api-user
-quarkus.flow.http.client.proxy-password=change-me
+# Optional proxy settings
+quarkus.proxy.registry.username=api-user
+quarkus.proxy.registry.password=change-me
+quarkus.proxy.registry.non-proxy-hosts=localhost,*.svc.cluster.local
+quarkus.proxy.registry.proxy-connect-timeout=5000
 
-# Pipe-separated non-proxy hosts pattern (mirrors Java proxy syntax)
-quarkus.flow.http.client.non-proxy-hosts=localhost|127.*|[::1]|*.svc.cluster.local
-
-# Connect timeout (milliseconds) for proxy handshake
-quarkus.flow.http.client.proxy-connect-timeout=5000
+# Flow HTTP client proxy configuration
+quarkus.flow.http.client.proxy-configuration-name=none # <1>
 ----
 
-Named clients use the same pattern:
+<1> Uses the default proxy configuration from the Proxy Registry.
+
+=== 8.2 Configuring a proxy for a named HTTP client
+
+Named Flow HTTP clients can reference a specific proxy configuration by name.
+This allows different clients to use different proxies if required.
 
 [source,properties]
 ----
-quarkus.flow.http.client.named.secureA.proxy-host=proxy.mycorp.internal
-quarkus.flow.http.client.named.secureA.proxy-port=3128
+# Named proxy configuration
+quarkus.proxy.my-proxy.registry.host=proxy.mycorp.internal
+quarkus.proxy.my-proxy.registry.port=3128
+
+# Named Flow HTTP client using the named proxy
+quarkus.flow.http.client.named.secureA.proxy-configuration-name=my-proxy # <1>
 ----
 
-If `proxy-host` is not set, the client falls back to standard JVM system properties
-(`http(s).proxyHost`, etc.), consistent with the underlying Vert.x behavior.
+<1> Uses the `my-proxy` configuration from the Proxy Registry.
+
+[NOTE]
+====
+For advanced Proxy Registry configuration, including the use of
+https://quarkus.io/guides/credentials-provider[Credentials Providers],
+refer to the https://quarkus.io/guides/proxy-registry[Quarkus Proxy Registry documentation].
+====
 
 == 9. Redirects, compression and chunk size
 
