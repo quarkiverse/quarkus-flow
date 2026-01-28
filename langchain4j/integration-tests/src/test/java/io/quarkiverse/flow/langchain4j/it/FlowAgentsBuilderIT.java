@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.langchain4j;
+package io.quarkiverse.flow.langchain4j.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
