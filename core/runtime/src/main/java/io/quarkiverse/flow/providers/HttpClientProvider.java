@@ -14,7 +14,6 @@ import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.STATIC_HEADERS;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.USER_AGENT;
 
-import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -35,6 +34,9 @@ import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.config.FlowHttpConfig;
 import io.quarkiverse.flow.config.HttpClientConfig;
+import io.quarkus.arc.Arc;
+import io.quarkus.proxy.ProxyConfiguration;
+import io.quarkus.proxy.ProxyConfigurationRegistry;
 
 /**
  * Registry of JAX-RS {@link Client} instances used by Quarkus Flow HTTP/OpenAPI tasks.
@@ -187,14 +189,19 @@ public class HttpClientProvider {
             httpCfg.loggingScope().ifPresent(quarkus::loggingScope);
             httpCfg.loggingBodyLimit().ifPresent(quarkus::loggingBodySize);
 
-            httpCfg.proxyHost().ifPresent(host -> {
-                int port = httpCfg.proxyPort().orElse(80);
-                quarkus.proxy(host, port);
-            });
-            httpCfg.proxyUser().ifPresent(quarkus::proxyUser);
-            httpCfg.proxyPassword().ifPresent(quarkus::proxyPassword);
-            httpCfg.nonProxyHosts().ifPresent(quarkus::nonProxyHosts);
-            httpCfg.proxyConnectTimeout().ifPresent(ms -> quarkus.proxyConnectTimeout(Duration.ofMillis(ms)));
+            ProxyConfigurationRegistry proxyConfigurationRegistry = Arc.container().select(ProxyConfigurationRegistry.class)
+                    .get();
+
+            Optional<ProxyConfiguration> proxy = proxyConfigurationRegistry.get(httpCfg.proxyConfigurationName());
+            proxy.map(ProxyConfiguration::assertHttpType)
+                    .ifPresent(proxyConfiguration -> {
+                        quarkus.proxy(proxyConfiguration.host(), proxyConfiguration.port());
+                        proxyConfiguration.username().ifPresent(quarkus::proxyUser);
+                        proxyConfiguration.password().ifPresent(quarkus::proxyPassword);
+                        proxyConfiguration.nonProxyHosts()
+                                .ifPresent(nonProxyHosts -> quarkus.nonProxyHosts(String.join(",", nonProxyHosts)));
+                        proxyConfiguration.proxyConnectTimeout().ifPresent(quarkus::proxyConnectTimeout);
+                    });
 
             httpCfg.followRedirects().ifPresent(quarkus::followRedirects);
             httpCfg.enableCompression().ifPresent(quarkus::enableCompression);

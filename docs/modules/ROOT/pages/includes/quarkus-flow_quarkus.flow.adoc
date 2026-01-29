@@ -804,22 +804,20 @@ endif::add-copy-button-to-env-var[]
 |string
 |
 
-a| [[quarkus-flow_quarkus-flow-http-client-proxy-host]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-proxy-host[`quarkus.flow.http.client.proxy-host`]##
+a| [[quarkus-flow_quarkus-flow-http-client-proxy-configuration-name]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-proxy-configuration-name[`quarkus.flow.http.client.proxy-configuration-name`]##
 ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.http.client.proxy-host+++[]
+config_property_copy_button:+++quarkus.flow.http.client.proxy-configuration-name+++[]
 endif::add-copy-button-to-config-props[]
 
 
 [.description]
 --
-HTTP proxy host.
-
-When set together with `proxy-port()`, requests are sent through the given HTTP proxy.
+The name of the proxy configuration to use for configuring *HTTP* proxy.
 
 Default client:
 
 ```
-quarkus.flow.http.client.proxy-host=proxy.mycorp.local
+quarkus.flow.http.client.proxy-configuration-name=proxy-cfg
 ```
 
 
@@ -827,221 +825,28 @@ quarkus.flow.http.client.proxy-host=proxy.mycorp.local
 Named client:
 
 ```
-quarkus.flow.http.client.named.<name>.proxy-host=proxy.mycorp.local
+quarkus.flow.http.client.named.<name>.proxy-configuration-name=proxy-cfg
 ```
 
+There are some rules for using proxy configuration:
+
+ - If not set and the default proxy configuration is configured (`quarkus.proxy.++*++`) then that will be used.
+ - If the proxy configuration name is set, the configuration from `quarkus.proxy.<name>.++*++` will be used.
+ - If the proxy configuration name is set, but no proxy configuration is found with that name, then an error will be thrown at runtime.
 
 
-Internally mapped to `ClientBuilderImpl.proxy(host, port)`.
+
+Use the value `none` to disable using the default configuration defined via `quarkus.proxy.++*++`.
 
 
 ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_HOST+++[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_CONFIGURATION_NAME+++[]
 endif::add-copy-button-to-env-var[]
 ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_HOST+++`
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_CONFIGURATION_NAME+++`
 endif::add-copy-button-to-env-var[]
 --
 |string
-|
-
-a| [[quarkus-flow_quarkus-flow-http-client-proxy-port]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-proxy-port[`quarkus.flow.http.client.proxy-port`]##
-ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.http.client.proxy-port+++[]
-endif::add-copy-button-to-config-props[]
-
-
-[.description]
---
-HTTP proxy port.
-
-Only used when `proxy-host()` is also set.
-
-Default client:
-
-```
-quarkus.flow.http.client.proxy-port=8080
-```
-
-
-
-Named client:
-
-```
-quarkus.flow.http.client.named.<name>.proxy-port=8080
-```
-
-
-
-Internally mapped to `ClientBuilderImpl.proxy(host, port)`.
-
-
-ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_PORT+++[]
-endif::add-copy-button-to-env-var[]
-ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_PORT+++`
-endif::add-copy-button-to-env-var[]
---
-|int
-|
-
-a| [[quarkus-flow_quarkus-flow-http-client-proxy-user]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-proxy-user[`quarkus.flow.http.client.proxy-user`]##
-ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.http.client.proxy-user+++[]
-endif::add-copy-button-to-config-props[]
-
-
-[.description]
---
-Username for authenticating with the HTTP proxy.
-
-Default client:
-
-```
-quarkus.flow.http.client.proxy-user=svc-flow
-```
-
-
-
-Named client:
-
-```
-quarkus.flow.http.client.named.<name>.proxy-user=svc-flow
-```
-
-
-
-Internally mapped to `ClientBuilderImpl.proxyUser(user)`.
-
-
-ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_USER+++[]
-endif::add-copy-button-to-env-var[]
-ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_USER+++`
-endif::add-copy-button-to-env-var[]
---
-|string
-|
-
-a| [[quarkus-flow_quarkus-flow-http-client-proxy-password]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-proxy-password[`quarkus.flow.http.client.proxy-password`]##
-ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.http.client.proxy-password+++[]
-endif::add-copy-button-to-config-props[]
-
-
-[.description]
---
-Password for authenticating with the HTTP proxy.
-
-Default client:
-
-```
-quarkus.flow.http.client.proxy-password=secret
-```
-
-
-
-Named client:
-
-```
-quarkus.flow.http.client.named.<name>.proxy-password=secret
-```
-
-
-
-Internally mapped to `ClientBuilderImpl.proxyPassword(password)`.
-
-
-ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_PASSWORD+++[]
-endif::add-copy-button-to-env-var[]
-ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_PASSWORD+++`
-endif::add-copy-button-to-env-var[]
---
-|string
-|
-
-a| [[quarkus-flow_quarkus-flow-http-client-non-proxy-hosts]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-non-proxy-hosts[`quarkus.flow.http.client.non-proxy-hosts`]##
-ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.http.client.non-proxy-hosts+++[]
-endif::add-copy-button-to-config-props[]
-
-
-[.description]
---
-Hosts that should bypass the HTTP proxy.
-
-The value is a `++\|++`-separated pattern list, similar to the standard `http.nonProxyHosts` format:
-
-```
-quarkus.flow.http.client.non-proxy-hosts=localhost\|127.*\|[::1]
-```
-
-
-
-Named client:
-
-```
-quarkus.flow.http.client.named.<name>.non-proxy-hosts=localhost\|127.*
-```
-
-
-
-Internally mapped to `ClientBuilderImpl.nonProxyHosts(hostsPattern)`.
-
-
-ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NON_PROXY_HOSTS+++[]
-endif::add-copy-button-to-env-var[]
-ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NON_PROXY_HOSTS+++`
-endif::add-copy-button-to-env-var[]
---
-|string
-|
-
-a| [[quarkus-flow_quarkus-flow-http-client-proxy-connect-timeout]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-proxy-connect-timeout[`quarkus.flow.http.client.proxy-connect-timeout`]##
-ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.http.client.proxy-connect-timeout+++[]
-endif::add-copy-button-to-config-props[]
-
-
-[.description]
---
-Proxy connect timeout in milliseconds.
-
-Controls how long the client will wait when establishing a connection to the configured HTTP proxy.
-
-Default client:
-
-```
-quarkus.flow.http.client.proxy-connect-timeout=3000
-```
-
-
-
-Named client:
-
-```
-quarkus.flow.http.client.named.<name>.proxy-connect-timeout=3000
-```
-
-
-
-Internally mapped to `ClientBuilderImpl.proxyConnectTimeout(Duration)`.
-
-
-ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_CONNECT_TIMEOUT+++[]
-endif::add-copy-button-to-env-var[]
-ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_PROXY_CONNECT_TIMEOUT+++`
-endif::add-copy-button-to-env-var[]
---
-|long
 |
 
 a| [[quarkus-flow_quarkus-flow-http-client-follow-redirects]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-follow-redirects[`quarkus.flow.http.client.follow-redirects`]##
@@ -2014,22 +1819,20 @@ endif::add-copy-button-to-env-var[]
 |string
 |
 
-a| [[quarkus-flow_quarkus-flow-http-client-named-named-proxy-host]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-proxy-host[`quarkus.flow.http.client.named."named".proxy-host`]##
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-proxy-configuration-name]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-proxy-configuration-name[`quarkus.flow.http.client.named."named".proxy-configuration-name`]##
 ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.http.client.named."named".proxy-host+++[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".proxy-configuration-name+++[]
 endif::add-copy-button-to-config-props[]
 
 
 [.description]
 --
-HTTP proxy host.
-
-When set together with `proxy-port()`, requests are sent through the given HTTP proxy.
+The name of the proxy configuration to use for configuring *HTTP* proxy.
 
 Default client:
 
 ```
-quarkus.flow.http.client.proxy-host=proxy.mycorp.local
+quarkus flow.http.client.proxy-configuration-name=proxy-cfg
 ```
 
 
@@ -2037,221 +1840,28 @@ quarkus.flow.http.client.proxy-host=proxy.mycorp.local
 Named client:
 
 ```
-quarkus.flow.http.client.named.<name>.proxy-host=proxy.mycorp.local
+quarkus.flow.http.client.named.<name>.proxy-configuration-name=proxy-cfg
 ```
 
+There are some rules for using proxy configuration:
+
+ - If not set and the default proxy configuration is configured (`quarkus.proxy.++*++`) then that will be used.
+ - If the proxy configuration name is set, the configuration from `quarkus.proxy.<name>.++*++` will be used.
+ - If the proxy configuration name is set, but no proxy configuration is found with that name, then an error will be thrown at runtime.
 
 
-Internally mapped to `ClientBuilderImpl.proxy(host, port)`.
+
+Use the value `none` to disable using the default configuration defined via `quarkus.proxy.++*++`.
 
 
 ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_HOST+++[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_CONFIGURATION_NAME+++[]
 endif::add-copy-button-to-env-var[]
 ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_HOST+++`
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_CONFIGURATION_NAME+++`
 endif::add-copy-button-to-env-var[]
 --
 |string
-|
-
-a| [[quarkus-flow_quarkus-flow-http-client-named-named-proxy-port]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-proxy-port[`quarkus.flow.http.client.named."named".proxy-port`]##
-ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.http.client.named."named".proxy-port+++[]
-endif::add-copy-button-to-config-props[]
-
-
-[.description]
---
-HTTP proxy port.
-
-Only used when `proxy-host()` is also set.
-
-Default client:
-
-```
-quarkus.flow.http.client.proxy-port=8080
-```
-
-
-
-Named client:
-
-```
-quarkus.flow.http.client.named.<name>.proxy-port=8080
-```
-
-
-
-Internally mapped to `ClientBuilderImpl.proxy(host, port)`.
-
-
-ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_PORT+++[]
-endif::add-copy-button-to-env-var[]
-ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_PORT+++`
-endif::add-copy-button-to-env-var[]
---
-|int
-|
-
-a| [[quarkus-flow_quarkus-flow-http-client-named-named-proxy-user]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-proxy-user[`quarkus.flow.http.client.named."named".proxy-user`]##
-ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.http.client.named."named".proxy-user+++[]
-endif::add-copy-button-to-config-props[]
-
-
-[.description]
---
-Username for authenticating with the HTTP proxy.
-
-Default client:
-
-```
-quarkus.flow.http.client.proxy-user=svc-flow
-```
-
-
-
-Named client:
-
-```
-quarkus.flow.http.client.named.<name>.proxy-user=svc-flow
-```
-
-
-
-Internally mapped to `ClientBuilderImpl.proxyUser(user)`.
-
-
-ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_USER+++[]
-endif::add-copy-button-to-env-var[]
-ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_USER+++`
-endif::add-copy-button-to-env-var[]
---
-|string
-|
-
-a| [[quarkus-flow_quarkus-flow-http-client-named-named-proxy-password]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-proxy-password[`quarkus.flow.http.client.named."named".proxy-password`]##
-ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.http.client.named."named".proxy-password+++[]
-endif::add-copy-button-to-config-props[]
-
-
-[.description]
---
-Password for authenticating with the HTTP proxy.
-
-Default client:
-
-```
-quarkus.flow.http.client.proxy-password=secret
-```
-
-
-
-Named client:
-
-```
-quarkus.flow.http.client.named.<name>.proxy-password=secret
-```
-
-
-
-Internally mapped to `ClientBuilderImpl.proxyPassword(password)`.
-
-
-ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_PASSWORD+++[]
-endif::add-copy-button-to-env-var[]
-ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_PASSWORD+++`
-endif::add-copy-button-to-env-var[]
---
-|string
-|
-
-a| [[quarkus-flow_quarkus-flow-http-client-named-named-non-proxy-hosts]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-non-proxy-hosts[`quarkus.flow.http.client.named."named".non-proxy-hosts`]##
-ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.http.client.named."named".non-proxy-hosts+++[]
-endif::add-copy-button-to-config-props[]
-
-
-[.description]
---
-Hosts that should bypass the HTTP proxy.
-
-The value is a `++\|++`-separated pattern list, similar to the standard `http.nonProxyHosts` format:
-
-```
-quarkus.flow.http.client.non-proxy-hosts=localhost\|127.*\|[::1]
-```
-
-
-
-Named client:
-
-```
-quarkus.flow.http.client.named.<name>.non-proxy-hosts=localhost\|127.*
-```
-
-
-
-Internally mapped to `ClientBuilderImpl.nonProxyHosts(hostsPattern)`.
-
-
-ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__NON_PROXY_HOSTS+++[]
-endif::add-copy-button-to-env-var[]
-ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__NON_PROXY_HOSTS+++`
-endif::add-copy-button-to-env-var[]
---
-|string
-|
-
-a| [[quarkus-flow_quarkus-flow-http-client-named-named-proxy-connect-timeout]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-proxy-connect-timeout[`quarkus.flow.http.client.named."named".proxy-connect-timeout`]##
-ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.http.client.named."named".proxy-connect-timeout+++[]
-endif::add-copy-button-to-config-props[]
-
-
-[.description]
---
-Proxy connect timeout in milliseconds.
-
-Controls how long the client will wait when establishing a connection to the configured HTTP proxy.
-
-Default client:
-
-```
-quarkus.flow.http.client.proxy-connect-timeout=3000
-```
-
-
-
-Named client:
-
-```
-quarkus.flow.http.client.named.<name>.proxy-connect-timeout=3000
-```
-
-
-
-Internally mapped to `ClientBuilderImpl.proxyConnectTimeout(Duration)`.
-
-
-ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_CONNECT_TIMEOUT+++[]
-endif::add-copy-button-to-env-var[]
-ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__PROXY_CONNECT_TIMEOUT+++`
-endif::add-copy-button-to-env-var[]
---
-|long
 |
 
 a| [[quarkus-flow_quarkus-flow-http-client-named-named-follow-redirects]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-follow-redirects[`quarkus.flow.http.client.named."named".follow-redirects`]##
