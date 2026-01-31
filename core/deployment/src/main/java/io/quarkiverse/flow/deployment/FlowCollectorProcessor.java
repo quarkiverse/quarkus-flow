@@ -22,6 +22,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.serverlessworkflow.api.WorkflowReader;
 import io.serverlessworkflow.api.types.Workflow;
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
 /**
  * Processor responsible for reading Workflow definitions and producing necessary build items.
@@ -76,8 +77,10 @@ public class FlowCollectorProcessor {
                 DiscoveredWorkflowFileBuildItem buildItem = new DiscoveredWorkflowFileBuildItem(file,
                         workflow);
                 if (!workflowsSet.add(buildItem)) {
-                    LOG.warn("Duplicate workflow detected: namespace='{}', name='{}'. The file at '{}' will be ignored.",
-                            buildItem.namespace(), buildItem.name(), file.toAbsolutePath());
+                    WorkflowDefinitionId id = buildItem.workflowDefinitionId();
+                    throw new IllegalStateException(String.format(
+                            "Duplicate workflow detected: namespace='%s', name='%s' and version='%s'",
+                            id.namespace(), id.name(), id.version()));
                 }
             } catch (IOException e) {
                 LOG.error("Failed to parse workflow file at path: {}", file, e);

@@ -6,7 +6,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class FlowWorkflowFromFileTest {
+public class WorkflowFromSpecWithDuplicationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
@@ -40,6 +40,6 @@ public class FlowWorkflowFromFileTest {
     void shouldWarnDuplicateWorkflows() {
         unitTest.assertLogRecords(logs -> logs.stream()
                 .anyMatch(logRecord -> logRecord.getMessage()
-                        .contains("Duplicate workflow detected: namespace='default', name='call-http'")));
+                        .contains("Duplicate workflow detected: namespace='default', name='call-http' and version = '1.0.0'")));
     }
 }
