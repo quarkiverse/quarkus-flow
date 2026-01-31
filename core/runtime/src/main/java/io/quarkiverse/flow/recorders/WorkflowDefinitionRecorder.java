@@ -37,6 +37,7 @@ public class WorkflowDefinitionRecorder {
                 }
 
                 final WorkflowRegistry registry = Arc.container().instance(WorkflowRegistry.class).get();
+
                 return registry.register((Flowable) handle.get());
             } catch (RuntimeException | ClassNotFoundException e) {
                 throw new RuntimeException("Failed to create WorkflowDefinition for " + flowDescriptorClassName, e);

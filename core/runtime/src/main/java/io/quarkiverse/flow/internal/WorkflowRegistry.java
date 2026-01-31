@@ -72,14 +72,27 @@ public class WorkflowRegistry {
     public WorkflowDefinition register(Flowable flowable) {
         LOG.debug("Registering workflow {}", flowable.descriptor().getDocument().getName());
         final WorkflowDefinition definition = app.workflowDefinition(addFlowableMetadata(flowable));
-        workflows.put(WorkflowDefinitionId.of(definition.workflow()), definition.workflow());
-        return definition;
+        WorkflowDefinitionId id = WorkflowDefinitionId.of(definition.workflow());
+        Workflow previous = workflows.putIfAbsent(id, definition.workflow());
+        if (previous != null) {
+            LOG.warn("Duplicate workflow detected (namespace='{}', name='{}', version='{}'). " +
+                    "Please remove the duplicate definition to prevent execution collisions or " +
+                    "unexpected behavior during runtime.", id.namespace(), id.name(), id.version());
+        }
+
+        return app.workflowDefinition(addFlowableMetadata(flowable));
     }
 
     public WorkflowDefinition register(Workflow workflow) {
         LOG.debug("Registering workflow {}", workflow.getDocument().getName());
         final WorkflowDefinition definition = app.workflowDefinition(workflow);
-        workflows.put(WorkflowDefinitionId.of(definition.workflow()), definition.workflow());
+        WorkflowDefinitionId id = WorkflowDefinitionId.of(definition.workflow());
+        Workflow previous = workflows.putIfAbsent(id, definition.workflow());
+        if (previous != null) {
+            LOG.warn("Duplicate workflow detected (namespace='{}', name='{}', version='{}'). " +
+                    "Please remove the duplicate definition to prevent execution collisions or " +
+                    "unexpected behavior during runtime.", id.namespace(), id.name(), id.version());
+        }
         return definition;
     }
 

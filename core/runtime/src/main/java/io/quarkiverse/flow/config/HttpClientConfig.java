@@ -391,7 +391,7 @@ public interface HttpClientConfig {
      * Default client:
      *
      * <pre>
-     * quarkus flow.http.client.proxy-configuration-name=proxy-cfg
+     * quarkus.flow.http.client.proxy-configuration-name=proxy-cfg
      * </pre>
      * <p>
      * Named client:
