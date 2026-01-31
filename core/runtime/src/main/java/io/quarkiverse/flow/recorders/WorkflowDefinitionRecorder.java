@@ -3,8 +3,6 @@ package io.quarkiverse.flow.recorders;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Paths;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Any;
@@ -17,14 +15,12 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.serverlessworkflow.api.WorkflowReader;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowDefinition;
-import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
 /**
  * Registries all Workflow definitions found in the classpath built via the Java DSL.
  */
 @Recorder
 public class WorkflowDefinitionRecorder {
-    private static final Set<WorkflowDefinitionId> registeredIdentifiers = new HashSet<>();
 
     public Supplier<WorkflowDefinition> workflowDefinitionSupplier(String flowDescriptorClassName) {
         return () -> {
@@ -41,6 +37,7 @@ public class WorkflowDefinitionRecorder {
                 }
 
                 final WorkflowRegistry registry = Arc.container().instance(WorkflowRegistry.class).get();
+
                 return registry.register((Flowable) handle.get());
             } catch (RuntimeException | ClassNotFoundException e) {
                 throw new RuntimeException("Failed to create WorkflowDefinition for " + flowDescriptorClassName, e);
@@ -60,11 +57,4 @@ public class WorkflowDefinitionRecorder {
         };
     }
 
-    public void checkUniqueWorkflowIdentifier(WorkflowDefinitionId id) {
-        if (!registeredIdentifiers.add(id)) {
-            throw new IllegalStateException(
-                    "Multiple Workflows with the same identifier (namespace, name, and version) are not allowed: " +
-                            String.format("%s:%s:%s", id.namespace(), id.name(), id.version()));
-        }
-    }
 }

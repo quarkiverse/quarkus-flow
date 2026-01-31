@@ -68,6 +68,8 @@ class FlowProcessor {
 
     private static final String FEATURE = "flow";
 
+    FlowDefinitionsConfig flowDefinitionsConfig;
+
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FEATURE);
@@ -125,49 +127,47 @@ class FlowProcessor {
 
         workflows.ifPresent(w -> {
             for (DiscoveredFlowBuildItem it : w.allFromSource()) {
-                beans.produce(SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
-                        .scope(ApplicationScoped.class)
-                        .unremovable()
-                        .setRuntimeInit()
-                        .addQualifier().annotation(DotNames.IDENTIFIER).addValue("value", it.getClassName()).done()
-                        .supplier(recorder.workflowDefinitionSupplier(it.getClassName()))
-                        .done());
-                identifiers.produce(new FlowIdentifierBuildItem(Set.of(it.getClassName())));
+                produceSyntheticWorkflowDefinitionBean(recorder, beans, identifiers, it);
+            }
+
+            for (DiscoveredWorkflowFileBuildItem workflow : w.allFromSpec()) {
+                produceSyntheticWorkflowDefinitionBean(recorder, beans, identifiers, workflow);
             }
         });
-
     }
 
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void produceWorkflowDefinitionsFromFile(
-            Optional<DiscoveredWorkflowsBuildItem> workflows,
-            BuildProducer<SyntheticBeanBuildItem> beans,
-            BuildProducer<FlowIdentifierBuildItem> identifiers,
-            WorkflowDefinitionRecorder recorder,
-            FlowDefinitionsConfig config) {
+    private void produceSyntheticWorkflowDefinitionBean(WorkflowDefinitionRecorder recorder,
+            BuildProducer<SyntheticBeanBuildItem> beans, BuildProducer<FlowIdentifierBuildItem> identifiers,
+            DiscoveredFlowBuildItem it) {
+        beans.produce(SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
+                .scope(ApplicationScoped.class)
+                .unremovable()
+                .setRuntimeInit()
+                .addQualifier().annotation(DotNames.IDENTIFIER).addValue("value", it.getClassName()).done()
+                .supplier(recorder.workflowDefinitionSupplier(it.getClassName()))
+                .done());
+        identifiers.produce(new FlowIdentifierBuildItem(Set.of(it.getClassName())));
+    }
 
-        workflows.ifPresent(w -> {
-            for (DiscoveredWorkflowFileBuildItem workflow : w.allFromSpec()) {
+    private void produceSyntheticWorkflowDefinitionBean(WorkflowDefinitionRecorder recorder,
+            BuildProducer<SyntheticBeanBuildItem> beans, BuildProducer<FlowIdentifierBuildItem> identifiers,
+            DiscoveredWorkflowFileBuildItem workflow) {
+        String flowSubclassIdentifier = WorkflowNamingConverter.generateFlowClassIdentifier(
+                workflow.namespace(), workflow.name(), this.flowDefinitionsConfig.namespace().prefix());
 
-                String flowSubclassIdentifier = WorkflowNamingConverter.generateFlowClassIdentifier(
-                        workflow.namespace(), workflow.name(), config.namespace().prefix());
+        beans.produce(SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
+                .scope(ApplicationScoped.class)
+                .unremovable()
+                .setRuntimeInit()
+                .addQualifier().annotation(DotNames.IDENTIFIER)
+                .addValue("value", workflow.regularIdentifier()).done()
+                .addQualifier().annotation(DotNames.IDENTIFIER)
+                .addValue("value", flowSubclassIdentifier).done()
+                .supplier(recorder.workflowDefinitionFromFileSupplier(workflow.location()))
+                .done());
 
-                beans.produce(SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
-                        .scope(ApplicationScoped.class)
-                        .unremovable()
-                        .setRuntimeInit()
-                        .addQualifier().annotation(DotNames.IDENTIFIER)
-                        .addValue("value", workflow.regularIdentifier()).done()
-                        .addQualifier().annotation(DotNames.IDENTIFIER)
-                        .addValue("value", flowSubclassIdentifier).done()
-                        .supplier(recorder.workflowDefinitionFromFileSupplier(workflow.location()))
-                        .done());
-
-                identifiers.produce(new FlowIdentifierBuildItem(
-                        Set.of(flowSubclassIdentifier, workflow.regularIdentifier())));
-            }
-        });
+        identifiers.produce(new FlowIdentifierBuildItem(
+                Set.of(flowSubclassIdentifier, workflow.regularIdentifier())));
     }
 
     @BuildStep
@@ -293,18 +293,6 @@ class FlowProcessor {
                                 .done());
                     }
                 });
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void validateUniqueWorkflowIdentifier(WorkflowDefinitionRecorder recorder,
-            Optional<DiscoveredWorkflowsBuildItem> workflows) {
-
-        workflows.ifPresent(w -> {
-            for (DiscoveredWorkflowFileBuildItem item : w.allFromSpec()) {
-                recorder.checkUniqueWorkflowIdentifier(item.workflowDefinitionId());
-            }
-        });
     }
 
 }
