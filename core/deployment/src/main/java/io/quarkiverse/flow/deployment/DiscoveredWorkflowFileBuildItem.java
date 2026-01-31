@@ -49,6 +49,10 @@ public final class DiscoveredWorkflowFileBuildItem extends MultiBuildItem {
         return regularIdentifier;
     }
 
+    public WorkflowDefinitionId workflowDefinitionId() {
+        return workflowDefinitionId;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass())
