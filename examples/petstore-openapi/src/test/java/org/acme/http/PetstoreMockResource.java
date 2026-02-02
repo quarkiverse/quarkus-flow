@@ -15,7 +15,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 public class PetstoreMockResource implements QuarkusTestResourceLifecycleManager {
 
     // IMPORTANT: Quarkus tests load resources from the test classpath (target/test-classes)
-    private static final Path OPENAPI_TEST_PATH = Path.of("target/test-classes/openapi/petstore.json");
+    private static final Path OPENAPI_TEST_PATH = Path.of("target/classes/openapi/petstore.json");
 
     private WireMockServer wireMock;
     private String originalOpenApi;
