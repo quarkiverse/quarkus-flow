@@ -8,7 +8,7 @@
     </parent>
 
     <artifactId>quarkus-flow-persistence-common-deployment</artifactId>
-    <name>Quarkus Flow :: Persistence :: Persistence:: Common:: Deployment</name>
+    <name>Quarkus Flow :: Persistence :: Common :: Deployment</name>
 
     <dependencies>
         <dependency>
