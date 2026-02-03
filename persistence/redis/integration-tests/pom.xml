@@ -11,7 +11,7 @@
     </properties>
 
     <artifactId>quarkus-flow-redis-integration-tests</artifactId>
-    <name>Quarkus Flow :: Persistence :: Redis:: Integration Tests</name>
+    <name>Quarkus Flow :: Persistence :: Redis :: Integration Tests</name>
 
     <dependencies>
         <dependency>

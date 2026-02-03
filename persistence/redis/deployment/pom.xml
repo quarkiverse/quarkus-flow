@@ -8,7 +8,7 @@
     </parent>
 
     <artifactId>quarkus-flow-redis-deployment</artifactId>
-    <name>Quarkus Flow :: Persistence :: Redis:: Deployment</name>
+    <name>Quarkus Flow :: Persistence :: Redis :: Deployment</name>
 
     <dependencies>
         <dependency>

@@ -8,7 +8,7 @@
     </parent>
 
     <artifactId>quarkus-flow-persistence-common</artifactId>
-    <name>Quarkus Flow :: Persistence :: Common:: Runtime</name>
+    <name>Quarkus Flow :: Persistence :: Common :: Runtime</name>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

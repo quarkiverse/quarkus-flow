@@ -8,7 +8,7 @@
     </parent>
 
     <artifactId>quarkus-flow-redis</artifactId>
-    <name>Quarkus Flow :: Persistence :: Redis:: Runtime</name>
+    <name>Quarkus Flow :: Persistence :: Redis :: Runtime</name>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
