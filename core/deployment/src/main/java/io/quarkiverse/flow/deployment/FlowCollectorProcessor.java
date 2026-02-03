@@ -77,8 +77,7 @@ public class FlowCollectorProcessor {
                 if (!workflowsSet.add(buildItem)) {
                     WorkflowDefinitionId id = buildItem.workflowDefinitionId();
                     throw new IllegalStateException(String.format(
-                            "Duplicate workflow detected: namespace='%s', name='%s' and version='%s'",
-                            id.namespace(), id.name(), id.version()));
+                            "Duplicate workflow detected %s", id));
                 }
             } catch (IOException e) {
                 LOG.error("Failed to parse workflow file at path: {}", file, e);
