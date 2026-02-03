@@ -23,7 +23,7 @@
         <failsafe-plugin.version>3.5.4</failsafe-plugin.version>
 
         <version.assertj>3.27.7</version.assertj>
-        <version.wiremock-jre8-standalone>2.35.1</version.wiremock-jre8-standalone>
+        <version.wiremock-jre8-standalone>2.35.2</version.wiremock-jre8-standalone>
 
         <skipITs>true</skipITs>
     </properties>
