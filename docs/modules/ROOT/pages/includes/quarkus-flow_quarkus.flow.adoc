@@ -1832,7 +1832,7 @@ The name of the proxy configuration to use for configuring *HTTP* proxy.
 Default client:
 
 ```
-quarkus flow.http.client.proxy-configuration-name=proxy-cfg
+quarkus.flow.http.client.proxy-configuration-name=proxy-cfg
 ```
 
 
