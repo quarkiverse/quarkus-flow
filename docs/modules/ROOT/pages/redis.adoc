@@ -5,7 +5,7 @@ include::includes/attributes.adoc[]
 *Quarkus Flow Redis* provides workflow restoration capabilities by storing workflow instance state using Redis datastore
 
 When active, every time a task is completed the workflow status is written into Redis database. 
-When after a server shutdown, the same application(as idenfied by its application id) is restored in a different Java Virtual machine, all running workflow instances resume execution at the latest recorded point. 
+When after a server shutdown, the same application(as identified by its application id) is restored in a different Java Virtual machine, all running workflow instances resume execution at the latest recorded point. 
 
 Automatic restoration can be disabled by setting `quarkus.flow.persistence.autoRestore` to false)
 

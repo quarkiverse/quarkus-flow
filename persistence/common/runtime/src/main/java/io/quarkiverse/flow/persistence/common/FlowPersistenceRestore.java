@@ -10,7 +10,7 @@ import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.persistence.PersistenceInstanceHandlers;
 
 @Startup
-@IfBuildProperty(name = "quarkus.flow.persistence.autoRestore", enableIfMissing = true, stringValue = "true")
+@IfBuildProperty(name = FlowPersistenceConfig.PREFIX + ".autoRestore", enableIfMissing = true, stringValue = "true")
 public class FlowPersistenceRestore {
     @Inject
     PersistenceInstanceHandlers handlers;
@@ -19,7 +19,7 @@ public class FlowPersistenceRestore {
 
     @PostConstruct
     void restoreInstances() {
-        application.workflowDefinitions().values()
-                .forEach(def -> handlers.reader().scanAll(def).forEach(WorkflowInstance::start));
+        application.executorService().submit(() -> application.workflowDefinitions().values()
+                .forEach(def -> handlers.reader().scanAll(def).forEach(WorkflowInstance::start)));
     }
 }
