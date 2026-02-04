@@ -17,6 +17,7 @@
         <module>core</module>
         <module>messaging</module>
         <module>langchain4j</module>
+        <module>persistence</module>
     </modules>
 
     <scm>

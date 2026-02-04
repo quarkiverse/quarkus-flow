@@ -1,0 +1,34 @@
+= Use Redis persistence
+:page-role: howto
+include::includes/attributes.adoc[]
+
+*Quarkus Flow Redis* provides workflow restoration capabilities by storing workflow instance state using Redis datastore
+
+When active, every time a task is completed the workflow status is written into Redis database. 
+When after a server shutdown, the same application (as identified by its application id) is restored in a different Java Virtual machine, all running workflow instances resume execution at the latest recorded point. 
+
+Automatic restoration can be disabled by setting `quarkus.flow.persistence.autoRestore` to false.
+
+== Setup
+
+Setup a Quarkus application with xref:getting-started.adoc[Quarkus Flow set up].
+
+Add Quarkus Redis dependency to your `pom.xml`
+
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-flow-redis</artifactId>
+</dependency>
+----
+
+Add `quarkus.redis.hosts` property to application.properties.
+
+For example
+----
+quarkus.redis.hosts=redis://localhost:6379
+----
+
+== See also
+- link:https://quarkus.io/guides/redis[Using the Quarkus Redis Client]
+- link:https://github.com/serverlessworkflow/sdk-java/tree/main/impl/persistence[Serverless Workflow Java SDK Persistence]

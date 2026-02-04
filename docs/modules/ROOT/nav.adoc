@@ -10,6 +10,7 @@
 ** xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services]
 ** xref:http-client.adoc[Configure the HTTP client]
 ** xref:messaging.adoc[Use messaging and events]
+** xref:redis.adoc[Use Redis persistence]
 ** xref:tracing.adoc[Enable tracing]
 ** xref:secrets.adoc[Resolve secrets securely]
 ** xref:workflow-definitions.adoc[Workflow definitions from YAML files]

@@ -201,23 +201,26 @@ class FlowProcessor {
         }
     }
 
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    WorkflowApplicationBuilderBuildItem produceApplicationBuilder(WorkflowApplicationRecorder recorder, FlowTracingConfig cfg,
+            LaunchModeBuildItem launchMode) {
+        return new WorkflowApplicationBuilderBuildItem(
+                recorder.workflowAppBuilderSupplier(cfg.enabled().orElse(launchMode.getLaunchMode().isDevOrTest())));
+    }
+
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void registerWorkflowApp(WorkflowApplicationRecorder recorder,
             ShutdownContextBuildItem shutdown,
-            FlowTracingConfig cfg,
-            LaunchModeBuildItem launchMode,
+            WorkflowApplicationBuilderBuildItem appBuilder,
             BuildProducer<SyntheticBeanBuildItem> beans) {
-
-        boolean tracingEnabled = cfg.enabled().orElse(launchMode.getLaunchMode().isDevOrTest());
-
         beans.produce(SyntheticBeanBuildItem.configure(WorkflowApplication.class)
                 .scope(ApplicationScoped.class)
                 .unremovable()
                 .setRuntimeInit()
-                .supplier(recorder.workflowAppSupplier(shutdown, tracingEnabled))
+                .supplier(recorder.workflowAppSupplier(appBuilder.builder(), shutdown))
                 .done());
-
         LOG.info("Flow: Registering Workflow Application bean: {}", WorkflowApplication.class.getName());
     }
 
