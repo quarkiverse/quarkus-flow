@@ -21,6 +21,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.serverlessworkflow.api.WorkflowReader;
 import io.serverlessworkflow.api.types.Workflow;
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
 /**
  * Processor responsible for reading Workflow definitions and producing necessary build items.
@@ -52,9 +53,9 @@ public class FlowCollectorProcessor {
         return outputDir;
     }
 
-    private static Set<DiscoveredWorkflowFileBuildItem> collectUniqueWorkflowFileData(
+    private static Set<DiscoveredWorkflowBuildItem> collectUniqueWorkflowFileData(
             Path flowDir) {
-        Set<DiscoveredWorkflowFileBuildItem> items = new HashSet<>();
+        Set<DiscoveredWorkflowBuildItem> items = new HashSet<>();
 
         try (var stream = Files.walk(flowDir)) {
             stream.filter(file -> Files.isRegularFile(file) && SUPPORTED_WORKFLOW_FILE_EXTENSIONS.stream()
@@ -68,15 +69,15 @@ public class FlowCollectorProcessor {
         return items;
     }
 
-    private static Consumer<Path> consumeWorkflowFile(Set<DiscoveredWorkflowFileBuildItem> workflowsSet) {
+    private static Consumer<Path> consumeWorkflowFile(Set<DiscoveredWorkflowBuildItem> workflowsSet) {
         return file -> {
             try {
                 Workflow workflow = WorkflowReader.readWorkflow(file);
-                DiscoveredWorkflowFileBuildItem buildItem = new DiscoveredWorkflowFileBuildItem(file,
-                        workflow);
+                DiscoveredWorkflowBuildItem buildItem = DiscoveredWorkflowBuildItem.isFromSpec(file, workflow);
                 if (!workflowsSet.add(buildItem)) {
-                    LOG.warn("Duplicate workflow detected: namespace='{}', name='{}'. The file at '{}' will be ignored.",
-                            buildItem.namespace(), buildItem.name(), file.toAbsolutePath());
+                    WorkflowDefinitionId id = buildItem.workflowDefinitionId();
+                    throw new IllegalStateException(String.format(
+                            "Duplicate workflow detected %s", id));
                 }
             } catch (IOException e) {
                 LOG.error("Failed to parse workflow file at path: {}", file, e);
@@ -89,12 +90,12 @@ public class FlowCollectorProcessor {
      * Collect all beans that implement the {@link io.quarkiverse.flow.Flowable } interface.
      */
     @BuildStep
-    void collectFlows(CombinedIndexBuildItem index, BuildProducer<DiscoveredFlowBuildItem> wf) {
+    void collectFlows(CombinedIndexBuildItem index, BuildProducer<DiscoveredWorkflowBuildItem> wf) {
         for (ClassInfo flow : index.getIndex().getAllKnownImplementations(DotNames.FLOWABLE)) {
             if (flow.isInterface() || Modifier.isAbstract(flow.flags())) {
                 continue;
             }
-            wf.produce(new DiscoveredFlowBuildItem(flow.name().toString()));
+            wf.produce(DiscoveredWorkflowBuildItem.isFromSource(flow.name().toString()));
         }
     }
 
@@ -105,7 +106,7 @@ public class FlowCollectorProcessor {
     @BuildStep
     public void collectUniqueWorkflowFileData(OutputTargetBuildItem outputTarget,
             FlowDefinitionsConfig flowDefinitionsConfig,
-            BuildProducer<DiscoveredWorkflowFileBuildItem> workflows) {
+            BuildProducer<DiscoveredWorkflowBuildItem> workflows) {
 
         final Path configuredPath = Paths.get(flowDefinitionsConfig.dir().orElse(FlowDefinitionsConfig.DEFAULT_FLOW_DIR));
         final Path flowResourcesPath = configuredPath.isAbsolute()
@@ -113,7 +114,7 @@ public class FlowCollectorProcessor {
                 : findModuleRootFromTarget(outputTarget.getOutputDirectory()).resolve(configuredPath).normalize();
 
         if (Files.exists(flowResourcesPath)) {
-            Set<DiscoveredWorkflowFileBuildItem> uniqueBuildItems = collectUniqueWorkflowFileData(flowResourcesPath);
+            Set<DiscoveredWorkflowBuildItem> uniqueBuildItems = collectUniqueWorkflowFileData(flowResourcesPath);
             uniqueBuildItems.forEach(workflows::produce);
         }
     }

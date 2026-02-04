@@ -68,6 +68,8 @@ class FlowProcessor {
 
     private static final String FEATURE = "flow";
 
+    FlowDefinitionsConfig flowDefinitionsConfig;
+
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FEATURE);
@@ -75,15 +77,20 @@ class FlowProcessor {
 
     @BuildStep
     void keepAndReflectFlowDescriptors(
-            List<DiscoveredFlowBuildItem> discoveredFlows,
+            List<DiscoveredWorkflowBuildItem> discoveredWorkflows,
             BuildProducer<UnremovableBeanBuildItem> keep) {
 
-        List<String> flows = discoveredFlows.stream()
-                .map(DiscoveredFlowBuildItem::getClassName)
+        if (discoveredWorkflows.isEmpty()) {
+            return;
+        }
+
+        List<String> workflowClassNames = discoveredWorkflows.stream().filter(DiscoveredWorkflowBuildItem::isFromSource)
+                .map(DiscoveredWorkflowBuildItem::className)
                 .distinct()
                 .toList();
+
         // Keep producers from being removed
-        keep.produce(UnremovableBeanBuildItem.beanClassNames(flows.toArray(String[]::new)));
+        keep.produce(UnremovableBeanBuildItem.beanClassNames(workflowClassNames.toArray(String[]::new)));
     }
 
     @BuildStep
@@ -119,56 +126,67 @@ class FlowProcessor {
     void produceWorkflowDefinitions(WorkflowDefinitionRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> beans,
             BuildProducer<FlowIdentifierBuildItem> identifiers,
-            List<DiscoveredFlowBuildItem> discoveredFlows) {
+            List<DiscoveredWorkflowBuildItem> discoveredWorkflows) {
 
-        for (DiscoveredFlowBuildItem it : discoveredFlows) {
-            beans.produce(SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
-                    .scope(ApplicationScoped.class)
-                    .unremovable()
-                    .setRuntimeInit()
-                    .addQualifier().annotation(DotNames.IDENTIFIER).addValue("value", it.getClassName()).done()
-                    .supplier(recorder.workflowDefinitionSupplier(it.getClassName()))
-                    .done());
-            identifiers.produce(new FlowIdentifierBuildItem(Set.of(it.getClassName())));
+        List<DiscoveredWorkflowBuildItem> fromSource = discoveredWorkflows.stream()
+                .filter(DiscoveredWorkflowBuildItem::isFromSource)
+                .toList();
+        for (DiscoveredWorkflowBuildItem d : fromSource) {
+            produceWorkflowBeanFromSource(recorder, beans, identifiers, d);
+        }
+
+        List<DiscoveredWorkflowBuildItem> fromSpec = discoveredWorkflows.stream()
+                .filter(DiscoveredWorkflowBuildItem::isFromSpec)
+                .toList();
+        for (DiscoveredWorkflowBuildItem d : fromSpec) {
+            produceWorkflowBeanFromSpec(recorder, beans, identifiers, d);
         }
     }
 
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void produceWorkflowDefinitionsFromFile(
-            List<DiscoveredWorkflowFileBuildItem> workflows,
-            BuildProducer<SyntheticBeanBuildItem> beans,
-            BuildProducer<FlowIdentifierBuildItem> identifiers,
-            WorkflowDefinitionRecorder recorder,
-            FlowDefinitionsConfig config) {
-        for (DiscoveredWorkflowFileBuildItem workflow : workflows) {
+    private void produceWorkflowBeanFromSource(WorkflowDefinitionRecorder recorder,
+            BuildProducer<SyntheticBeanBuildItem> beans, BuildProducer<FlowIdentifierBuildItem> identifiers,
+            DiscoveredWorkflowBuildItem it) {
+        beans.produce(SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
+                .scope(ApplicationScoped.class)
+                .unremovable()
+                .setRuntimeInit()
+                .addQualifier().annotation(DotNames.IDENTIFIER).addValue("value", it.className()).done()
+                .supplier(recorder.workflowDefinitionSupplier(it.className()))
+                .done());
+        identifiers.produce(new FlowIdentifierBuildItem(Set.of(it.className())));
+    }
 
-            String flowSubclassIdentifier = WorkflowNamingConverter.generateFlowClassIdentifier(
-                    workflow.namespace(), workflow.name(), config.namespace().prefix());
+    private void produceWorkflowBeanFromSpec(WorkflowDefinitionRecorder recorder,
+            BuildProducer<SyntheticBeanBuildItem> beans, BuildProducer<FlowIdentifierBuildItem> identifiers,
+            DiscoveredWorkflowBuildItem workflow) {
+        String flowSubclassIdentifier = WorkflowNamingConverter.generateFlowClassIdentifier(
+                workflow.namespace(), workflow.name(), this.flowDefinitionsConfig.namespace().prefix());
 
-            beans.produce(SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
-                    .scope(ApplicationScoped.class)
-                    .unremovable()
-                    .setRuntimeInit()
-                    .addQualifier().annotation(DotNames.IDENTIFIER)
-                    .addValue("value", workflow.regularIdentifier()).done()
-                    .addQualifier().annotation(DotNames.IDENTIFIER)
-                    .addValue("value", flowSubclassIdentifier).done()
-                    .supplier(recorder.workflowDefinitionFromFileSupplier(workflow.location()))
-                    .done());
+        beans.produce(SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
+                .scope(ApplicationScoped.class)
+                .unremovable()
+                .setRuntimeInit()
+                .addQualifier().annotation(DotNames.IDENTIFIER)
+                .addValue("value", workflow.regularIdentifier()).done()
+                .addQualifier().annotation(DotNames.IDENTIFIER)
+                .addValue("value", flowSubclassIdentifier).done()
+                .supplier(recorder.workflowDefinitionFromFileSupplier(workflow.location()))
+                .done());
 
-            identifiers.produce(new FlowIdentifierBuildItem(
-                    Set.of(flowSubclassIdentifier, workflow.regularIdentifier())));
-        }
+        identifiers.produce(new FlowIdentifierBuildItem(
+                Set.of(flowSubclassIdentifier, workflow.regularIdentifier())));
     }
 
     @BuildStep
-    void produceGeneratedFlows(List<DiscoveredWorkflowFileBuildItem> workflows,
+    void produceGeneratedFlows(List<DiscoveredWorkflowBuildItem> workflows,
             BuildProducer<GeneratedBeanBuildItem> classes,
             FlowDefinitionsConfig definitionsConfig) {
 
+        List<DiscoveredWorkflowBuildItem> fromSpec = workflows.stream().filter(DiscoveredWorkflowBuildItem::isFromSpec)
+                .toList();
+
         GeneratedBeanGizmoAdaptor gizmo = new GeneratedBeanGizmoAdaptor(classes);
-        for (DiscoveredWorkflowFileBuildItem workflow : workflows) {
+        for (DiscoveredWorkflowBuildItem workflow : fromSpec) {
             String flowSubclassIdentifier = WorkflowNamingConverter.generateFlowClassIdentifier(
                     workflow.namespace(), workflow.name(), definitionsConfig.namespace().prefix());
 
@@ -199,6 +217,7 @@ class FlowProcessor {
                                 method.readInstanceField(fieldCreator.getFieldDescriptor(), method.getThis())));
             }
         }
+
     }
 
     @BuildStep
@@ -246,11 +265,16 @@ class FlowProcessor {
     }
 
     @BuildStep(onlyIf = { IsDevelopment.class })
-    public void watchChanges(List<DiscoveredWorkflowFileBuildItem> workflows,
+    public void watchChanges(List<DiscoveredWorkflowBuildItem> workflows,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) {
-        for (DiscoveredWorkflowFileBuildItem workflow : workflows) {
+
+        List<String> specLocations = workflows.stream().filter(DiscoveredWorkflowBuildItem::isFromSpec)
+                .map(DiscoveredWorkflowBuildItem::location)
+                .toList();
+
+        for (String location : specLocations) {
             watchedFiles.produce(HotDeploymentWatchedFileBuildItem.builder()
-                    .setLocation(workflow.location())
+                    .setLocation(location)
                     .setRestartNeeded(true)
                     .build());
         }
