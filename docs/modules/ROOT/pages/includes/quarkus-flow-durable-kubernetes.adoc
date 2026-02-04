@@ -1,0 +1,137 @@
+[.configuration-legend]
+icon:lock[title=Fixed at build time] Configuration property fixed at build time - All other configuration properties are overridable at runtime
+[.configuration-reference.searchable, cols="80,.^10,.^10"]
+|===
+
+h|[.header-title]##Configuration property##
+h|Type
+h|Default
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-controllers-pool-name]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-controllers-pool-name[`quarkus.flow.durable.kube.controllers.pool-name`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.durable.kube.controllers.pool-name+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The required group name used to create the Lease objects coordination on the cluster. It's used to name and label every object created by the pool.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DURABLE_KUBE_CONTROLLERS_POOL_NAME+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_DURABLE_KUBE_CONTROLLERS_POOL_NAME+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|required icon:exclamation-circle[title=Configuration property is required]
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-controllers-leader-scheduler-interval]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-controllers-leader-scheduler-interval[`quarkus.flow.durable.kube.controllers.leader.scheduler-interval`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.durable.kube.controllers.leader.scheduler-interval+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Interval of the pool leader reconcile cycle set on ISO-8601 format. This interval marks how much time the internal leader controller must reconcile the lease objects.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DURABLE_KUBE_CONTROLLERS_LEADER_SCHEDULER_INTERVAL+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_DURABLE_KUBE_CONTROLLERS_LEADER_SCHEDULER_INTERVAL+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|`+++30s+++`
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-controllers-leader-scheduler-initial-delay]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-controllers-leader-scheduler-initial-delay[`quarkus.flow.durable.kube.controllers.leader.scheduler-initial-delay`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.durable.kube.controllers.leader.scheduler-initial-delay+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Unless strictly necessary, don't set this property. It governs the initial time in seconds for the scheduler to start running the internal reconciler. It defaults to "random" to avoid pilling up API requests to the Kubernetes server.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DURABLE_KUBE_CONTROLLERS_LEADER_SCHEDULER_INITIAL_DELAY+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_DURABLE_KUBE_CONTROLLERS_LEADER_SCHEDULER_INITIAL_DELAY+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|`+++random+++`
+
+a| [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-pool-members-lease-duration]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-pool-members-lease-duration[`quarkus.flow.durable.kube.pool.members.lease-duration`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.durable.kube.pool.members.lease-duration+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Duration, in seconds, for the Lease object to wait to renew the lock
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DURABLE_KUBE_POOL_MEMBERS_LEASE_DURATION+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_DURABLE_KUBE_POOL_MEMBERS_LEASE_DURATION+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++30+++`
+
+a| [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-pool-leader-lease-duration]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-pool-leader-lease-duration[`quarkus.flow.durable.kube.pool.leader.lease-duration`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.durable.kube.pool.leader.lease-duration+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Duration, in seconds, for the Lease object to wait to renew the lock
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DURABLE_KUBE_POOL_LEADER_LEASE_DURATION+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_DURABLE_KUBE_POOL_LEADER_LEASE_DURATION+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++30+++`
+
+a| [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-pool-leader-lease-enabled]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-pool-leader-lease-enabled[`quarkus.flow.durable.kube.pool.leader.lease-enabled`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.durable.kube.pool.leader.lease-enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether to remove this application from trying to become a pool leader
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DURABLE_KUBE_POOL_LEADER_LEASE_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_DURABLE_KUBE_POOL_LEADER_LEASE_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+|===
+
