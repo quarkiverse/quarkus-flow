@@ -2,6 +2,8 @@ package io.quarkiverse.flow.recorders;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -13,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.metrics.MicrometerExecutionListener;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
+import io.quarkiverse.flow.providers.FaultToleranceProvider;
 import io.quarkiverse.flow.providers.HttpClientProvider;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
 import io.quarkiverse.flow.tracing.TraceLoggerExecutionListener;
@@ -23,14 +26,21 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.serverlessworkflow.api.types.CallHTTP;
+import io.serverlessworkflow.api.types.CallOpenAPI;
+import io.serverlessworkflow.api.types.TaskBase;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowApplication.Builder;
+import io.serverlessworkflow.impl.WorkflowModel;
 import io.serverlessworkflow.impl.config.ConfigManager;
 import io.serverlessworkflow.impl.config.SecretManager;
 import io.serverlessworkflow.impl.events.EventConsumer;
 import io.serverlessworkflow.impl.events.EventPublisher;
+import io.serverlessworkflow.impl.executors.CallableTask;
+import io.serverlessworkflow.impl.executors.CallableTaskProxyBuilder;
 import io.serverlessworkflow.impl.executors.http.HttpClientResolver;
 import io.serverlessworkflow.impl.expressions.jq.JQExpressionFactory;
+import io.smallrye.faulttolerance.api.TypedGuard;
 
 @Recorder
 public class WorkflowApplicationRecorder {
@@ -52,16 +62,14 @@ public class WorkflowApplicationRecorder {
             final Builder builder = builderWrapper.getValue();
             builder.withExpressionFactory(new JQExpressionFactory(container.instance(JQScopeSupplier.class).get()));
 
-            InstanceHandle<MicrometerExecutionListener> instance = container
-                    .instance(MicrometerExecutionListener.class);
-            if (instance.isAvailable()) {
-                builder.withListener(instance.get());
-            }
             this.injectEventConsumers(container, builder);
             this.injectEventPublishers(container, builder);
             this.injectSecretManager(container, builder);
             this.injectConfigManager(container, builder);
             this.injectHttpClientProvider(container, builder);
+            this.injectMicrometerListener(container, builder);
+            this.injectFaultTolerance(container, builder);
+
             WorkflowApplication app = builder.build();
             shutdownContext.addShutdownTask(app::close);
             return app;
@@ -147,6 +155,43 @@ public class WorkflowApplicationRecorder {
             final String taskName = taskContextData.taskName();
             return httpClientProvider.clientFor(workflowName, taskName);
         }));
+    }
+
+    private void injectMicrometerListener(ArcContainer container, Builder builder) {
+        InstanceHandle<MicrometerExecutionListener> instance = container
+                .instance(MicrometerExecutionListener.class);
+        if (instance.isAvailable()) {
+            builder.withListener(instance.get());
+        }
+    }
+
+    private void injectFaultTolerance(ArcContainer container, Builder builder) {
+        FaultToleranceProvider faultToleranceProvider = container.instance(FaultToleranceProvider.class).get();
+        LOG.info("Flow: Bound FaultToleranceProvider bean: {}", faultToleranceProvider.getClass().getName());
+        builder.withCallableProxy(new CallableTaskProxyBuilder() {
+            @Override
+            public CallableTask build(CallableTask delegate) {
+                return (workflowContext, taskContext, input) -> {
+                    String workflowName = workflowContext.definition().workflow().getDocument().getName();
+                    String taskName = taskContext.taskName();
+                    TypedGuard<CompletionStage<WorkflowModel>> guard = faultToleranceProvider.guardFor(workflowName,
+                            taskName);
+
+                    return guard.get(() -> CompletableFuture
+                            .runAsync(() -> {
+                                // no-op
+                            })
+                            .thenCompose(v -> delegate.apply(workflowContext, taskContext, input)))
+                            .toCompletableFuture();
+                };
+            }
+
+            @Override
+            public boolean accept(TaskBase taskBase) {
+                return taskBase instanceof CallHTTP || taskBase instanceof CallOpenAPI;
+            }
+        });
+
     }
 
 }

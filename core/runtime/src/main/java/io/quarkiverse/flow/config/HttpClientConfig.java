@@ -1,9 +1,11 @@
 package io.quarkiverse.flow.config;
 
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
 
+import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 
 /**
@@ -591,4 +593,42 @@ public interface HttpClientConfig {
      * @return {@code true} if hostname verification is enabled, if configured
      */
     Optional<Boolean> verifyHost();
+
+    /**
+     * Whether Fault Tolerance Retry is enabled.
+     * <p>
+     * Default client:
+     *
+     * <pre>
+     * quarkus.flow.http.client.retry-enabled=true
+     * </pre>
+     * <p>
+     * Named client:
+     *
+     * <pre>
+     * quarkus.flow.http.client.named.&lt;name&gt;.retry-enabled=true
+     * </pre>
+     */
+    @WithDefault("true")
+    Optional<Boolean> retryEnabled();
+
+    /**
+     * Sets the maximum number of retries. The maximum number of retries, must be &gt;= -1.
+     * <p<
+     * The value -1 means retry forever.
+     * <p>
+     * Default client:
+     *
+     * <pre>
+     * quarkus.flow.http.client.max-retries=3
+     * </pre>
+     * <p>
+     * Named client:
+     *
+     * <pre>
+     * quarkus.flow.http.client.named.&lt;name&gt;.max-retries=3
+     * </pre>
+     */
+    @WithDefault("3")
+    OptionalInt maxRetries();
 }
