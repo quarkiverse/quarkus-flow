@@ -1,5 +1,6 @@
 package io.quarkiverse.flow.providers;
 
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -72,7 +73,8 @@ public class FaultToleranceProvider {
         if (httpClientConfig.retryEnabled().get()) {
             builder.withRetry()
                     .maxRetries(httpClientConfig.maxRetries().getAsInt())
-                    .done();
+                    .delay(httpClientConfig.delay().toMillis(), ChronoUnit.MILLIS)
+                    .jitter(httpClientConfig.jitter().toMillis(), ChronoUnit.MILLIS);
         }
 
         return builder.build();

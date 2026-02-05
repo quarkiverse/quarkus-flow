@@ -60,8 +60,8 @@ public class WorkflowApplicationRecorder {
         return () -> {
             final ArcContainer container = Arc.container();
             final Builder builder = builderWrapper.getValue();
-            builder.withExpressionFactory(new JQExpressionFactory(container.instance(JQScopeSupplier.class).get()));
 
+            this.injectJQExpressionFactory(builder, container);
             this.injectEventConsumers(container, builder);
             this.injectEventPublishers(container, builder);
             this.injectSecretManager(container, builder);
@@ -165,6 +165,10 @@ public class WorkflowApplicationRecorder {
         }
     }
 
+    private void injectJQExpressionFactory(Builder builder, ArcContainer container) {
+        builder.withExpressionFactory(new JQExpressionFactory(container.instance(JQScopeSupplier.class).get()));
+    }
+
     private void injectFaultTolerance(ArcContainer container, Builder builder) {
         FaultToleranceProvider faultToleranceProvider = container.instance(FaultToleranceProvider.class).get();
         LOG.info("Flow: Bound FaultToleranceProvider bean: {}", faultToleranceProvider.getClass().getName());
@@ -191,7 +195,5 @@ public class WorkflowApplicationRecorder {
                 return taskBase instanceof CallHTTP || taskBase instanceof CallOpenAPI;
             }
         });
-
     }
-
 }
