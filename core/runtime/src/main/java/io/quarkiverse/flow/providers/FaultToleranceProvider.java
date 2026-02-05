@@ -7,9 +7,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.util.TypeLiteral;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.quarkiverse.flow.config.FlowHttpConfig;
 import io.quarkiverse.flow.config.HttpClientConfig;
 import io.quarkus.logging.Log;
@@ -18,8 +15,6 @@ import io.smallrye.faulttolerance.api.TypedGuard;
 
 @ApplicationScoped
 public class FaultToleranceProvider {
-
-    private static final Logger LOG = LoggerFactory.getLogger(FaultToleranceProvider.class);
 
     private final FlowHttpConfig config;
     private final RoutingNameResolver routingNameResolver;
@@ -47,7 +42,7 @@ public class FaultToleranceProvider {
         }
         synchronized (this) {
             if (defaultGuard == null) {
-                Log.debug("Creating default HttpClient");
+                Log.debug("Creating default TypedGuard");
                 defaultGuard = buildGuard(config);
             }
             return defaultGuard;
@@ -61,10 +56,10 @@ public class FaultToleranceProvider {
     private TypedGuard<CompletionStage<WorkflowModel>> buildNamedGuard(String name) {
         HttpClientConfig namedConfig = config.named().get(name);
         if (namedConfig == null) {
-            Log.debugf("Using default HTTP client for '%s'", name);
+            Log.debugf("Using default TypedGuard for '%s'", name);
             return getOrCreateDefaultGuard();
         }
-        Log.debugf("Creating named HttpClient '%s'", name);
+        Log.debugf("Creating named TypedGuard '%s'", name);
         return buildGuard(namedConfig);
     }
 
