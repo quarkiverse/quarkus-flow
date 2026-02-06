@@ -48,12 +48,8 @@ jobs:
       - name: Validate generated documentation
         run: |
           STATUS=$(git status --porcelain docs/modules/ROOT/pages/includes/)
-          RED='\033[0;31m'
-          GREEN='\033[0;32m'
-          NC='\033[0m'
-          
           if [ -n "$STATUS" ]; then
-            echo -e "${RED}Generated documentation is not up to date.${NC}"
+            echo -e "Generated documentation is not up to date."
             echo ""
             echo "The following generated files were changed or added and must be committed:"
             echo ""
@@ -64,7 +60,7 @@ jobs:
             echo "  2. Commit the generated documentation files"
             exit 1
           else
-            echo -e "${GREEN}Generated documentation is up to date.${NC}"
+            echo -e "Generated documentation is up to date."
           fi
 
 
