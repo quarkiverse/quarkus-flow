@@ -11,6 +11,7 @@
 ** xref:http-client.adoc[Configure the HTTP client]
 ** xref:messaging.adoc[Use messaging and events]
 ** xref:redis.adoc[Use Redis persistence]
+** xref:mvstore.adoc[Use MVStore persistence]
 ** xref:tracing.adoc[Enable tracing]
 ** xref:secrets.adoc[Resolve secrets securely]
 ** xref:workflow-definitions.adoc[Workflow definitions from YAML files]
