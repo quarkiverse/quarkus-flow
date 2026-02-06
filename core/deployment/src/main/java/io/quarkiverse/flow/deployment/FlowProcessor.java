@@ -23,6 +23,7 @@ import io.quarkiverse.flow.config.FlowTracingConfig;
 import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkiverse.flow.metrics.MicrometerExecutionListener;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
+import io.quarkiverse.flow.providers.FaultToleranceProvider;
 import io.quarkiverse.flow.providers.HttpClientProvider;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
 import io.quarkiverse.flow.providers.MicroprofileConfigManager;
@@ -100,6 +101,7 @@ class FlowProcessor {
                 .addBeanClass(CredentialsProviderSecretManager.class)
                 .addBeanClass(MicroprofileConfigManager.class)
                 .addBeanClass(HttpClientProvider.class)
+                .addBeanClass(FaultToleranceProvider.class)
                 .addBeanClass(WorkflowRegistry.class)
                 .setUnremovable()
                 .build();

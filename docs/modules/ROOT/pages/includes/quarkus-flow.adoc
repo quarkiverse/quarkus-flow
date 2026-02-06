@@ -1136,6 +1136,168 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |
 
+a| [[quarkus-flow_quarkus-flow-http-client-max-retries]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-max-retries[`quarkus.flow.http.client.max-retries`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.max-retries+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the maximum number of retries for a task execution.
+
+The value must be greater than or equal to `-1`.
+
+ - `-1`: retries indefinitely
+ - `0`: no retries (the task is executed only once)
+ - `N > 0`: the task is executed `N {plus} 1` times (1 initial execution plus `N` retries)
+
+
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.max-retries=3
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.max-retries=3
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_MAX_RETRIES+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_MAX_RETRIES+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++3+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-retry-enabled]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-retry-enabled[`quarkus.flow.http.client.retry-enabled`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.retry-enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enables or disables Fault Tolerance retry support.
+
+When enabled, failed task executions may be retried according to the configured retry policy.
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.retry-enabled=true
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.retry-enabled=true
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_RETRY_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_RETRY_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-delay]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-delay[`quarkus.flow.http.client.delay`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.delay+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the delay between retry attempts.
+
+The delay is applied *only after a failed execution* and *before a retry attempt* is performed.
+
+The initial execution is not delayed. The delay applies only to subsequent retry attempts.
+
+A value of `0` disables the delay, causing retries to be executed immediately.
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.delay = 0
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.delay=0
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_DELAY+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_DELAY+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
+|`+++0S+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-jitter]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-jitter[`quarkus.flow.http.client.jitter`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.jitter+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the jitter bound applied to the delay between retry attempts.
+
+A random value in the range from `-jitter` to `{plus}jitter` is added to the configured retry delay. This helps to avoid retry bursts when multiple tasks fail simultaneously.
+
+The jitter is applied only to retry attempts. The initial execution is not affected.
+
+A value of `0` disables jitter, causing the retry delay to be applied without any random variation.
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.jitter=200ms
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.jitter=200ms
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_JITTER+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_JITTER+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
+|`+++200MS+++`
+
 a| [[quarkus-flow_quarkus-flow-http-client-enable-metadata-propagation]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-enable-metadata-propagation[`quarkus.flow.http.client.enable-metadata-propagation`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.http.client.enable-metadata-propagation+++[]
@@ -2151,6 +2313,168 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |
 
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-max-retries]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-max-retries[`quarkus.flow.http.client.named."named".max-retries`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".max-retries+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the maximum number of retries for a task execution.
+
+The value must be greater than or equal to `-1`.
+
+ - `-1`: retries indefinitely
+ - `0`: no retries (the task is executed only once)
+ - `N > 0`: the task is executed `N {plus} 1` times (1 initial execution plus `N` retries)
+
+
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.max-retries=3
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.max-retries=3
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__MAX_RETRIES+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__MAX_RETRIES+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++3+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-retry-enabled]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-retry-enabled[`quarkus.flow.http.client.named."named".retry-enabled`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".retry-enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enables or disables Fault Tolerance retry support.
+
+When enabled, failed task executions may be retried according to the configured retry policy.
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.retry-enabled=true
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.retry-enabled=true
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RETRY_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RETRY_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-delay]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-delay[`quarkus.flow.http.client.named."named".delay`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".delay+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the delay between retry attempts.
+
+The delay is applied *only after a failed execution* and *before a retry attempt* is performed.
+
+The initial execution is not delayed. The delay applies only to subsequent retry attempts.
+
+A value of `0` disables the delay, causing retries to be executed immediately.
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.delay = 0
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.delay=0
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__DELAY+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__DELAY+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
+|`+++0S+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-jitter]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-jitter[`quarkus.flow.http.client.named."named".jitter`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".jitter+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the jitter bound applied to the delay between retry attempts.
+
+A random value in the range from `-jitter` to `{plus}jitter` is added to the configured retry delay. This helps to avoid retry bursts when multiple tasks fail simultaneously.
+
+The jitter is applied only to retry attempts. The initial execution is not affected.
+
+A value of `0` disables jitter, causing the retry delay to be applied without any random variation.
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.jitter=200ms
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.jitter=200ms
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__JITTER+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__JITTER+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
+|`+++200MS+++`
+
 a| [[quarkus-flow_quarkus-flow-http-client-workflow-workflow-name]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-workflow-workflow-name[`quarkus.flow.http.client.workflow."workflow".name`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.http.client.workflow."workflow".name+++[]
@@ -2207,3 +2531,22 @@ endif::add-copy-button-to-env-var[]
 
 |===
 
+ifndef::no-duration-note[]
+[NOTE]
+[id=duration-note-anchor-quarkus-flow_quarkus-flow]
+.About the Duration format
+====
+To write duration values, use the standard `java.time.Duration` format.
+See the link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#parse(java.lang.CharSequence)[Duration#parse() Java API documentation] for more information.
+
+You can also use a simplified format, starting with a number:
+
+* If the value is only a number, it represents time in seconds.
+* If the value is a number followed by `ms`, it represents time in milliseconds.
+
+In other cases, the simplified format is translated to the `java.time.Duration` format for parsing:
+
+* If the value is a number followed by `h`, `m`, or `s`, it is prefixed with `PT`.
+* If the value is a number followed by `d`, it is prefixed with `P`.
+====
+endif::no-duration-note[]

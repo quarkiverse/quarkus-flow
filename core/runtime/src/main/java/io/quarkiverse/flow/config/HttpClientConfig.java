@@ -1,9 +1,12 @@
 package io.quarkiverse.flow.config;
 
+import java.time.Duration;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
 
+import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 
 /**
@@ -591,4 +594,114 @@ public interface HttpClientConfig {
      * @return {@code true} if hostname verification is enabled, if configured
      */
     Optional<Boolean> verifyHost();
+
+    /**
+     * Defines the maximum number of retries for a task execution.
+     * <p>
+     * The value must be greater than or equal to {@code -1}.
+     * <ul>
+     * <li>{@code -1}: retries indefinitely</li>
+     * <li>{@code 0}: no retries (the task is executed only once)</li>
+     * <li>{@code N > 0}: the task is executed {@code N + 1} times
+     * (1 initial execution plus {@code N} retries)</li>
+     * </ul>
+     *
+     * <p>
+     * <strong>Default client configuration:</strong>
+     *
+     * <pre>
+     * quarkus.flow.http.client.max-retries=3
+     * </pre>
+     *
+     * <p>
+     * <strong>Named client configuration:</strong>
+     *
+     * <pre>
+     * quarkus.flow.http.client.named.&lt;name&gt;.max-retries=3
+     * </pre>
+     */
+    @WithDefault("3")
+    OptionalInt maxRetries();
+
+    /**
+     * Enables or disables Fault Tolerance retry support.
+     * <p>
+     * When enabled, failed task executions may be retried according to the
+     * configured retry policy.
+     *
+     * <p>
+     * <strong>Default client configuration:</strong>
+     *
+     * <pre>
+     * quarkus.flow.http.client.retry-enabled=true
+     * </pre>
+     *
+     * <p>
+     * <strong>Named client configuration:</strong>
+     *
+     * <pre>
+     * quarkus.flow.http.client.named.&lt;name&gt;.retry-enabled=true
+     * </pre>
+     */
+    @WithDefault("true")
+    Optional<Boolean> retryEnabled();
+
+    /**
+     * Defines the delay between retry attempts.
+     * <p>
+     * The delay is applied <strong>only after a failed execution</strong> and
+     * <strong>before a retry attempt</strong> is performed.
+     * <p>
+     * The initial execution is not delayed. The delay applies only to subsequent
+     * retry attempts.
+     * <p>
+     * A value of {@code 0} disables the delay, causing retries to be executed
+     * immediately.
+     *
+     * <p>
+     * <strong>Default client configuration:</strong>
+     *
+     * <pre>
+     * quarkus.flow.http.client.delay = 0
+     * </pre>
+     *
+     * <p>
+     * <strong>Named client configuration:</strong>
+     *
+     * <pre>
+     * quarkus.flow.http.client.named.&lt;name&gt;.delay=0
+     * </pre>
+     */
+    @WithDefault("0")
+    Duration delay();
+
+    /**
+     * Defines the jitter bound applied to the delay between retry attempts.
+     * <p>
+     * A random value in the range from {@code -jitter} to {@code +jitter} is added
+     * to the configured retry delay. This helps to avoid retry bursts when multiple
+     * tasks fail simultaneously.
+     * <p>
+     * The jitter is applied only to retry attempts. The initial execution is not
+     * affected.
+     * <p>
+     * A value of {@code 0} disables jitter, causing the retry delay to be applied
+     * without any random variation.
+     *
+     * <p>
+     * <strong>Default client configuration:</strong>
+     *
+     * <pre>
+     * quarkus.flow.http.client.jitter=200ms
+     * </pre>
+     *
+     * <p>
+     * <strong>Named client configuration:</strong>
+     *
+     * <pre>
+     * quarkus.flow.http.client.named.&lt;name&gt;.jitter=200ms
+     * </pre>
+     */
+    @WithDefault("200ms")
+    Duration jitter();
 }
