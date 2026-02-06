@@ -2,9 +2,9 @@ package io.quarkiverse.flow.persistence.redis;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import io.quarkus.redis.datasource.ReactiveRedisDataSource;
-import io.quarkus.redis.datasource.hash.ReactiveHashCommands;
-import io.quarkus.redis.datasource.keys.ReactiveKeyCommands;
+import io.quarkus.redis.datasource.RedisDataSource;
+import io.quarkus.redis.datasource.hash.HashCommands;
+import io.quarkus.redis.datasource.keys.KeyCommands;
 import io.serverlessworkflow.impl.marshaller.WorkflowBufferFactory;
 import io.serverlessworkflow.impl.persistence.PersistenceInstanceStore;
 import io.serverlessworkflow.impl.persistence.PersistenceInstanceTransaction;
@@ -12,12 +12,12 @@ import io.serverlessworkflow.impl.persistence.PersistenceInstanceTransaction;
 @ApplicationScoped
 public class RedisInstanceStore implements PersistenceInstanceStore {
 
-    private final ReactiveRedisDataSource ds;
+    private final RedisDataSource ds;
     private final WorkflowBufferFactory factory;
-    private final ReactiveKeyCommands<String> keyCommands;
-    private final ReactiveHashCommands<String, String, byte[]> hashCommands;
+    private final KeyCommands<String> keyCommands;
+    private final HashCommands<String, String, byte[]> hashCommands;
 
-    public RedisInstanceStore(ReactiveRedisDataSource ds, WorkflowBufferFactory factory) {
+    public RedisInstanceStore(RedisDataSource ds, WorkflowBufferFactory factory) {
         this.ds = ds;
         this.factory = factory;
         this.keyCommands = ds.key(String.class);
@@ -28,5 +28,4 @@ public class RedisInstanceStore implements PersistenceInstanceStore {
     public PersistenceInstanceTransaction begin() {
         return new RedisInstanceTransaction(ds, keyCommands, hashCommands, factory);
     }
-
 }

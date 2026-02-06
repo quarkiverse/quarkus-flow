@@ -6,19 +6,19 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
-import io.quarkus.redis.datasource.ReactiveRedisDataSource;
-import io.quarkus.redis.datasource.hash.ReactiveHashCommands;
-import io.quarkus.redis.datasource.hash.ReactiveTransactionalHashCommands;
+import io.quarkus.redis.datasource.RedisDataSource;
+import io.quarkus.redis.datasource.hash.HashCommands;
+import io.quarkus.redis.datasource.hash.TransactionalHashCommands;
+import io.quarkus.redis.datasource.keys.KeyCommands;
 import io.quarkus.redis.datasource.keys.KeyScanArgs;
-import io.quarkus.redis.datasource.keys.ReactiveKeyCommands;
-import io.quarkus.redis.datasource.keys.ReactiveKeyScanCursor;
-import io.quarkus.redis.datasource.keys.ReactiveTransactionalKeyCommands;
-import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
+import io.quarkus.redis.datasource.keys.KeyScanCursor;
+import io.quarkus.redis.datasource.keys.TransactionalKeyCommands;
+import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 import io.serverlessworkflow.impl.TaskContext;
 import io.serverlessworkflow.impl.TaskContextData;
 import io.serverlessworkflow.impl.WorkflowContextData;
@@ -35,7 +35,6 @@ import io.serverlessworkflow.impl.persistence.PersistenceInstanceTransaction;
 import io.serverlessworkflow.impl.persistence.PersistenceTaskInfo;
 import io.serverlessworkflow.impl.persistence.PersistenceWorkflowInfo;
 import io.serverlessworkflow.impl.persistence.RetriedTaskInfo;
-import io.smallrye.mutiny.Uni;
 
 public class RedisInstanceTransaction implements PersistenceInstanceTransaction {
 
@@ -49,18 +48,18 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     private final static String NEXT = "next";
     private final static String SEPARATOR = ":";
 
-    private final ReactiveRedisDataSource ds;
+    private final RedisDataSource ds;
     private final WorkflowBufferFactory factory;
-    private final ReactiveKeyCommands<String> keyCommands;
-    private final ReactiveHashCommands<String, String, byte[]> hashCommands;
+    private final KeyCommands<String> keyCommands;
+    private final HashCommands<String, String, byte[]> hashCommands;
 
-    private final List<Function<ReactiveTransactionalRedisDataSource, Uni<Void>>> operations;
+    private final List<Consumer<TransactionalRedisDataSource>> operations;
 
-    private ReactiveTransactionalHashCommands<String, String, byte[]> txHashCommands;
-    private ReactiveTransactionalKeyCommands<String> txKeyCommands;
+    private TransactionalHashCommands<String, String, byte[]> txHashCommands;
+    private TransactionalKeyCommands<String> txKeyCommands;
 
-    public RedisInstanceTransaction(ReactiveRedisDataSource ds, ReactiveKeyCommands<String> keyCommands,
-            ReactiveHashCommands<String, String, byte[]> hashCommands,
+    public RedisInstanceTransaction(RedisDataSource ds, KeyCommands<String> keyCommands,
+            HashCommands<String, String, byte[]> hashCommands,
             WorkflowBufferFactory factory) {
         this.ds = ds;
         this.keyCommands = keyCommands;
@@ -72,7 +71,9 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     @Override
     public void commit(WorkflowDefinitionData definition) {
         if (!operations.isEmpty()) {
-            ds.withTransaction(this::join).await().indefinitely();
+            ds.withTransaction(tx -> {
+                operations.forEach(x -> x.accept(tx));
+            });
         }
     }
 
@@ -136,7 +137,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
 
     @Override
     public Stream<PersistenceWorkflowInfo> scanAll(String applicationId, WorkflowDefinition definition) {
-        ReactiveKeyScanCursor<String> cursor = keyCommands
+        KeyScanCursor<String> cursor = keyCommands
                 .scan(new KeyScanArgs().match(prefixId(applicationId, definition) + "*"));
         if (!cursor.hasNext()) {
             return Stream.empty();
@@ -148,16 +149,16 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     private class PersistenceWorkflowInfoGenerator
             implements UnaryOperator<PersistenceWorkflowInfo>, Predicate<PersistenceWorkflowInfo> {
 
-        private final ReactiveKeyScanCursor<String> cursor;
+        private final KeyScanCursor<String> cursor;
         private Iterator<String> keys;
 
-        public PersistenceWorkflowInfoGenerator(ReactiveKeyScanCursor<String> cursor) {
+        public PersistenceWorkflowInfoGenerator(KeyScanCursor<String> cursor) {
             this.cursor = cursor;
             keys();
         }
 
         private void keys() {
-            this.keys = cursor.next().await().indefinitely().iterator();
+            this.keys = cursor.next().iterator();
         }
 
         public PersistenceWorkflowInfo next() {
@@ -184,7 +185,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     }
 
     private PersistenceWorkflowInfo readPersistenceInfo(String key, String instanceId) {
-        Map<String, byte[]> instanceData = hashCommands.hgetall(key).await().indefinitely();
+        Map<String, byte[]> instanceData = hashCommands.hgetall(key);
         return instanceData.isEmpty() ? null
                 : new PersistenceWorkflowInfo(instanceId, MarshallingUtils.readInstant(factory,
                         instanceData.get(DATE)), MarshallingUtils.readModel(factory, instanceData.get(INPUT)),
@@ -195,16 +196,16 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
 
     private Map<String, PersistenceTaskInfo> readTasksInfo(String instanceId) {
         // scan key:* for task keys and then hgetall for each one of them
-        ReactiveKeyScanCursor<String> cursor = keyCommands.scan(new KeyScanArgs().match(taskPrefix(instanceId) + "*"));
+        KeyScanCursor<String> cursor = keyCommands.scan(new KeyScanArgs().match(taskPrefix(instanceId) + "*"));
         Map<String, PersistenceTaskInfo> result = new HashMap<>();
         while (cursor.hasNext()) {
-            cursor.next().await().indefinitely().forEach(s -> result.put(lastChunk(s), readTaskInfo(s)));
+            cursor.next().forEach(s -> result.put(lastChunk(s), readTaskInfo(s)));
         }
         return result;
     }
 
     private PersistenceTaskInfo readTaskInfo(String key) {
-        Map<String, byte[]> data = hashCommands.hgetall(key).await().indefinitely();
+        Map<String, byte[]> data = hashCommands.hgetall(key);
         TaskStatus status = MarshallingUtils.readEnum(factory, data.get(STATUS), TaskStatus.class);
         if (status == TaskStatus.COMPLETED) {
             return new CompletedTaskInfo(MarshallingUtils.readInstant(factory, data.get(DATE)),
@@ -225,14 +226,14 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
         return Optional.ofNullable(readPersistenceInfo(key(definition, instanceId), instanceId));
     }
 
-    private ReactiveTransactionalHashCommands<String, String, byte[]> hashCommands(ReactiveTransactionalRedisDataSource tx) {
+    private TransactionalHashCommands<String, String, byte[]> hashCommands(TransactionalRedisDataSource tx) {
         if (txHashCommands == null) {
             txHashCommands = tx.hash(byte[].class);
         }
         return txHashCommands;
     }
 
-    private ReactiveTransactionalKeyCommands<String> keyCommands(ReactiveTransactionalRedisDataSource tx) {
+    private TransactionalKeyCommands<String> keyCommands(TransactionalRedisDataSource tx) {
         if (txKeyCommands == null) {
             txKeyCommands = tx.key(String.class);
         }
@@ -258,15 +259,5 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
 
     private String taskPrefix(String instanceId) {
         return instanceId + SEPARATOR;
-    }
-
-    private Uni<Void> join(ReactiveTransactionalRedisDataSource tx) {
-        var iter = operations.iterator();
-        Uni<Void> result = iter.next().apply(tx);
-        while (iter.hasNext()) {
-            var item = iter.next();
-            result = result.chain(() -> item.apply(tx));
-        }
-        return result;
     }
 }
