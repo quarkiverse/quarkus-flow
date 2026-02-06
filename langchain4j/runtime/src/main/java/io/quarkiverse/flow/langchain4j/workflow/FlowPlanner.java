@@ -76,7 +76,6 @@ public class FlowPlanner implements Planner, ChatMemoryAccessProvider {
         }
 
         // All sequencing/parallelism/conditions are encoded in the workflow definition
-        // TODO: should we return the workflow output as an DoneWithResult action?
         def.instance(planningContext.agenticScope()).start().join();
 
         // We've executed the workflow definition to this point, the lc4j agentic engine can
