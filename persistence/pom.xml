@@ -11,5 +11,6 @@
   <modules>
    <module>redis</module>
    <module>common</module>
+   <module>mvstore</module>
   </modules>
 </project>

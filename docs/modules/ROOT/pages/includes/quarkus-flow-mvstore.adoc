@@ -1,0 +1,32 @@
+[.configuration-legend]
+icon:lock[title=Fixed at build time] Configuration property fixed at build time - All other configuration properties are overridable at runtime
+[.configuration-reference.searchable, cols="80,.^10,.^10"]
+|===
+
+h|[.header-title]##Configuration property##
+h|Type
+h|Default
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow-mvstore_quarkus-flow-persistence-mvstore-db-path]] [.property-path]##link:#quarkus-flow-mvstore_quarkus-flow-persistence-mvstore-db-path[`quarkus.flow.persistence.mvstore.db-path`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.persistence.mvstore.db-path+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Path of the file holding MVStore data in the file system
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_PERSISTENCE_MVSTORE_DB_PATH+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_PERSISTENCE_MVSTORE_DB_PATH+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|required icon:exclamation-circle[title=Configuration property is required]
+
+|===
+
