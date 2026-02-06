@@ -201,7 +201,7 @@ public class LeaseServiceTest {
         assertTrue(updatedOpt.isPresent());
 
         var updated = client.leases().inNamespace("default").withName(leaseName).get();
-        assertEquals(config.pool().members().leaseDuration(), updated.getSpec().getLeaseDurationSeconds());
+        assertEquals(config.pool().member().leaseDuration(), updated.getSpec().getLeaseDurationSeconds());
 
         // base labels enforced + pool/is-leader labels enforced + existing labels preserved
         Map<String, String> labels = updated.getMetadata().getLabels();

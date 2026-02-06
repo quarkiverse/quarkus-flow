@@ -36,6 +36,8 @@ import io.fabric8.kubernetes.client.KubernetesClientException;
 @ApplicationScoped
 public class LeaseService {
 
+    public static final String POOL_IS_LEADER_KEY = "io.quarkiverse.flow.durable.k8s/is-leader";
+    public static final String POOL_NAME_LABEL_KEY = "io.quarkiverse.flow.durable.k8s/pool";
     private static final Logger LOG = LoggerFactory.getLogger(LeaseService.class);
     private static final String REPLICASET_KIND = "ReplicaSet";
     private static final String DEPLOYMENT_KIND = "Deployment";
@@ -43,9 +45,6 @@ public class LeaseService {
     private static final Map<String, String> BASE_LABELS = Map.of(
             "app.kubernetes.io/managed-by", "quarkus-flow",
             "app.kubernetes.io/component", "durable");
-    public static final String POOL_IS_LEADER_KEY = "io.quarkiverse.flow.durable.k8s/is-leader";
-    public static final String POOL_NAME_LABEL_KEY = "io.quarkiverse.flow.durable.k8s/pool";
-
     @Inject
     KubernetesClient client;
 
@@ -57,21 +56,19 @@ public class LeaseService {
 
     private volatile String cachedDeploymentName;
 
-    public Optional<Lease>
-
-            createOrUpdateMemberLease(String name) {
-        return createOrUpdateMemberLease(name, Map.of(POOL_IS_LEADER_KEY, "false"), config.pool().members().leaseDuration());
+    public Optional<Lease> createOrUpdateMemberLease(String name) {
+        return createOrUpdateLease(name, Map.of(POOL_IS_LEADER_KEY, "false"), config.pool().member().leaseDuration());
     }
 
     private Optional<Lease> createOrUpdateLeaderLease(String name) {
-        return createOrUpdateMemberLease(name, Map.of(POOL_IS_LEADER_KEY, "true"), config.pool().leader().leaseDuration());
+        return createOrUpdateLease(name, Map.of(POOL_IS_LEADER_KEY, "true"), config.pool().leader().leaseDuration());
     }
 
     /**
      * Create or update a given Lease in the current namespace.
      * Guarantees that all labels and LeaseDurationInSeconds are set accordingly to the configuration.
      */
-    private Optional<Lease> createOrUpdateMemberLease(String name, Map<String, String> labels, Integer leaseDuration) {
+    private Optional<Lease> createOrUpdateLease(String name, Map<String, String> labels, Integer leaseDuration) {
         final Optional<Deployment> owner = resolveCurrentDeployment();
         if (owner.isEmpty())
             return Optional.empty();
@@ -114,6 +111,22 @@ public class LeaseService {
         }
 
         return Optional.of(updateManagedFields(existing, labels, leaseDuration));
+    }
+
+    /**
+     * Renews the given lease.
+     *
+     * @param leaseName the Lease name
+     * @param holderIdentity usually the podId {@link KubeInfoStrategy#podName()}
+     * @return an optional including the lease
+     */
+    public Optional<Lease> renewLease(String leaseName, String holderIdentity) {
+        final String ns = kubeInfo.namespace();
+        final Lease lease = client.leases().inNamespace(ns).withName(leaseName).get();
+        if (lease == null) {
+            return Optional.empty();
+        }
+        return renewLease(lease, holderIdentity);
     }
 
     private Optional<Lease> renewLease(Lease lease, String holderIdentity) {
@@ -161,9 +174,9 @@ public class LeaseService {
      */
     public boolean tryAcquireLeaderLease(String holderIdentity, String poolLeaderLeaseName) {
         Lease lease = client.leases().inNamespace(kubeInfo.namespace()).withName(poolLeaderLeaseName).get();
-        if (lease == null) {
+        if (lease == null)
             lease = createOrUpdateLeaderLease(poolLeaderLeaseName).orElse(null);
-        }
+
         if (lease == null)
             return false;
 

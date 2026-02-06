@@ -19,12 +19,17 @@ public interface ControllersConfig {
     /**
      * Pool Leader Controller configuration. Configure specific parameters for the reconciliation loop.
      */
-    LeaderConfig leader();
+    SchedulerConfig leader();
 
-    interface LeaderConfig {
+    /**
+     * Pool Member Controller configuration. Configure specific parameters for the internal lease renew scheduler.
+     */
+    SchedulerConfig member();
+
+    interface SchedulerConfig {
         /**
-         * Interval of the pool leader reconcile cycle set on ISO-8601 format.
-         * This interval marks how much time the internal leader controller must reconcile the lease objects.
+         * Interval of the controller reconcile cycle set on ISO-8601 format.
+         * This interval marks how much time the internal controller must run.
          *
          * @see <a href="https://quarkus.io/guides/scheduler-reference#intervals">Quarkus Scheduler Guide</a>
          */
@@ -33,8 +38,7 @@ public interface ControllersConfig {
 
         /**
          * Unless strictly necessary, don't set this property. It governs the initial time in seconds for the scheduler to
-         * start
-         * running the internal reconciler.
+         * start running.
          * It defaults to "random" to avoid pilling up API requests to the Kubernetes server.
          */
         @WithDefault(SCHEDULER_INITIAL_DELAY_DEFAULT)

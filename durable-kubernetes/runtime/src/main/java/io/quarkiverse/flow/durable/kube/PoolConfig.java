@@ -12,12 +12,12 @@ public interface PoolConfig {
     /**
      * Specific pool member configuration.
      */
-    PoolMemberLeaseConfig members();
+    LeaseConfig member();
 
     /**
      * Specific pool leader configuration.
      */
-    PoolLeaderLeaseConfig leader();
+    LeaseConfig leader();
 
     interface LeaseConfig {
         /**
@@ -25,15 +25,9 @@ public interface PoolConfig {
          */
         @WithDefault("30")
         Integer leaseDuration();
-    }
 
-    interface PoolMemberLeaseConfig extends LeaseConfig {
-
-    }
-
-    interface PoolLeaderLeaseConfig extends LeaseConfig {
         /**
-         * Whether to remove this application from trying to become a pool leader
+         * Whether to remove this application from trying to renew the lease
          */
         @WithDefault("true")
         Boolean leaseEnabled();
