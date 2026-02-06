@@ -18,7 +18,16 @@ public interface Flowable {
     }
 
     default String identifier() {
-        return this.getClass().getName();
+        Class<? extends Flowable> clazz = this.getClass();
+        String className = clazz.getName();
+        if (className.endsWith("_Subclass") || className.endsWith("_ClientProxy")) {
+            Class<?> superclass = clazz.getSuperclass();
+            if (superclass != null && superclass != Object.class && Flowable.class.isAssignableFrom(superclass)) {
+                return superclass.getName();
+            }
+        }
+
+        return className;
     }
 
 }
