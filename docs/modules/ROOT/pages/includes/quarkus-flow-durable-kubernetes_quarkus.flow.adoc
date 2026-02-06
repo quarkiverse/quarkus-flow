@@ -36,7 +36,7 @@ endif::add-copy-button-to-config-props[]
 
 [.description]
 --
-Interval of the pool leader reconcile cycle set on ISO-8601 format. This interval marks how much time the internal leader controller must reconcile the lease objects.
+Interval of the controller reconcile cycle set on ISO-8601 format. This interval marks how much time the internal controller must run.
 
 
 ifdef::add-copy-button-to-env-var[]
@@ -57,7 +57,7 @@ endif::add-copy-button-to-config-props[]
 
 [.description]
 --
-Unless strictly necessary, don't set this property. It governs the initial time in seconds for the scheduler to start running the internal reconciler. It defaults to "random" to avoid pilling up API requests to the Kubernetes server.
+Unless strictly necessary, don't set this property. It governs the initial time in seconds for the scheduler to start running. It defaults to "random" to avoid pilling up API requests to the Kubernetes server.
 
 
 ifdef::add-copy-button-to-env-var[]
@@ -70,9 +70,51 @@ endif::add-copy-button-to-env-var[]
 |string
 |`+++random+++`
 
-a| [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-pool-members-lease-duration]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-pool-members-lease-duration[`quarkus.flow.durable.kube.pool.members.lease-duration`]##
+a|icon:lock[title=Fixed at build time] [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-controllers-member-scheduler-interval]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-controllers-member-scheduler-interval[`quarkus.flow.durable.kube.controllers.member.scheduler-interval`]##
 ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.durable.kube.pool.members.lease-duration+++[]
+config_property_copy_button:+++quarkus.flow.durable.kube.controllers.member.scheduler-interval+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Interval of the controller reconcile cycle set on ISO-8601 format. This interval marks how much time the internal controller must run.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DURABLE_KUBE_CONTROLLERS_MEMBER_SCHEDULER_INTERVAL+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_DURABLE_KUBE_CONTROLLERS_MEMBER_SCHEDULER_INTERVAL+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|`+++30s+++`
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-controllers-member-scheduler-initial-delay]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-controllers-member-scheduler-initial-delay[`quarkus.flow.durable.kube.controllers.member.scheduler-initial-delay`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.durable.kube.controllers.member.scheduler-initial-delay+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Unless strictly necessary, don't set this property. It governs the initial time in seconds for the scheduler to start running. It defaults to "random" to avoid pilling up API requests to the Kubernetes server.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DURABLE_KUBE_CONTROLLERS_MEMBER_SCHEDULER_INITIAL_DELAY+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_DURABLE_KUBE_CONTROLLERS_MEMBER_SCHEDULER_INITIAL_DELAY+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|`+++random+++`
+
+a| [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-pool-member-lease-duration]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-pool-member-lease-duration[`quarkus.flow.durable.kube.pool.member.lease-duration`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.durable.kube.pool.member.lease-duration+++[]
 endif::add-copy-button-to-config-props[]
 
 
@@ -82,14 +124,35 @@ Duration, in seconds, for the Lease object to wait to renew the lock
 
 
 ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DURABLE_KUBE_POOL_MEMBERS_LEASE_DURATION+++[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DURABLE_KUBE_POOL_MEMBER_LEASE_DURATION+++[]
 endif::add-copy-button-to-env-var[]
 ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_DURABLE_KUBE_POOL_MEMBERS_LEASE_DURATION+++`
+Environment variable: `+++QUARKUS_FLOW_DURABLE_KUBE_POOL_MEMBER_LEASE_DURATION+++`
 endif::add-copy-button-to-env-var[]
 --
 |int
 |`+++30+++`
+
+a| [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-pool-member-lease-enabled]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-pool-member-lease-enabled[`quarkus.flow.durable.kube.pool.member.lease-enabled`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.durable.kube.pool.member.lease-enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether to remove this application from trying to renew the lease
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DURABLE_KUBE_POOL_MEMBER_LEASE_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_DURABLE_KUBE_POOL_MEMBER_LEASE_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
 
 a| [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-pool-leader-lease-duration]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-pool-leader-lease-duration[`quarkus.flow.durable.kube.pool.leader.lease-duration`]##
 ifdef::add-copy-button-to-config-props[]
@@ -120,7 +183,7 @@ endif::add-copy-button-to-config-props[]
 
 [.description]
 --
-Whether to remove this application from trying to become a pool leader
+Whether to remove this application from trying to renew the lease
 
 
 ifdef::add-copy-button-to-env-var[]
