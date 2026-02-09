@@ -74,12 +74,17 @@ public abstract class PoolController implements Runnable {
             if (lease != null) {
                 if (leaseService.releaseLease(podName, lease)) {
                     LOG.debug("Lease {} has been released from pod {}", lease, podName);
+                    this.afterRelease(true);
                 }
             }
         } catch (Exception e) {
             LOG.debug("Skipping lease {} release during shutdown: ", leaseName(), e);
         }
+        this.afterRelease(false);
+    }
 
+    protected void afterRelease(boolean released) {
+        // hook for child classes
     }
 
     protected abstract String scheduledExecutorName();
