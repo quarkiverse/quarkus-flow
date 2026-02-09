@@ -2,7 +2,9 @@ package io.quarkiverse.flow.durable.kube.deployment;
 
 import io.quarkiverse.flow.durable.kube.Fabric8KubeInfoStrategy;
 import io.quarkiverse.flow.durable.kube.FlowDurableKubeSettings;
+import io.quarkiverse.flow.durable.kube.InjectLeaseWorkflowApplicationBuilderCustomizer;
 import io.quarkiverse.flow.durable.kube.LeaseService;
+import io.quarkiverse.flow.durable.kube.MemberLeaseCoordinator;
 import io.quarkiverse.flow.durable.kube.PoolLeaderController;
 import io.quarkiverse.flow.durable.kube.PoolMemberController;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -26,7 +28,9 @@ class FlowDurableKubernetesProcessor {
                         PoolMemberController.class,
                         LeaseService.class,
                         Fabric8KubeInfoStrategy.class,
-                        FlowDurableKubeSettings.class)
+                        FlowDurableKubeSettings.class,
+                        MemberLeaseCoordinator.class,
+                        InjectLeaseWorkflowApplicationBuilderCustomizer.class)
                 .setUnremovable()
                 .build();
     }

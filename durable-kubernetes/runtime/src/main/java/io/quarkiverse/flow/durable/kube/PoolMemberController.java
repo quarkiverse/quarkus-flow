@@ -4,6 +4,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -15,7 +16,7 @@ import io.quarkus.runtime.Startup;
 
 @Singleton
 @Startup
-public class PoolMemberController extends PoolController implements Runnable {
+public class PoolMemberController extends PoolController {
 
     private static final String POOL_MEMBER_SCHEDULER_FMT = "flow-pool-member-scheduler-%s-%s";
 
@@ -26,6 +27,9 @@ public class PoolMemberController extends PoolController implements Runnable {
 
     @Inject
     FlowDurableKubeSettings settings;
+
+    @Inject
+    Event<MemberLeaseEvent> leaseEvents;
 
     @Override
     public void run() {
@@ -54,6 +58,11 @@ public class PoolMemberController extends PoolController implements Runnable {
             Optional<Lease> lease = leaseService.tryAcquireMemberLease(kubeInfo.podName(), settings.controllers().poolName());
             if (lease.isPresent()) {
                 leaseName.set(lease.get().getMetadata().getName());
+                leaseEvents.fire(new MemberLeaseEvent(
+                        MemberLeaseEvent.Type.ACQUIRED,
+                        settings.controllers().poolName(),
+                        kubeInfo.podName(),
+                        lease.get().getMetadata().getName()));
                 return true;
             }
             return false;
@@ -63,9 +72,25 @@ public class PoolMemberController extends PoolController implements Runnable {
         // if we return false, on next scheduler run it will try getting a new lease
         if (lease.isEmpty()) {
             leaseName.set(null);
+            leaseEvents.fire(new MemberLeaseEvent(
+                    MemberLeaseEvent.Type.LOST,
+                    settings.controllers().poolName(),
+                    kubeInfo.podName(),
+                    current));
             return false;
         }
         return true;
+    }
+
+    @Override
+    protected void afterRelease(boolean released) {
+        if (released) {
+            leaseEvents.fire(new MemberLeaseEvent(
+                    MemberLeaseEvent.Type.RELEASED,
+                    settings.controllers().poolName(),
+                    kubeInfo.podName(),
+                    leaseName.get()));
+        }
     }
 
     public boolean hasLease() {
