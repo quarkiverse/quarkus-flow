@@ -62,6 +62,12 @@ public class WorkflowApplicationRecorder {
             this.injectSecretManager(container, builder);
             this.injectConfigManager(container, builder);
             this.injectHttpClientProvider(container, builder);
+
+            // customize
+            container.select(WorkflowApplicationBuilderCustomizer.class, Any.Literal.INSTANCE)
+                    .stream()
+                    .forEachOrdered(customizer -> customizer.customize(builder));
+
             WorkflowApplication app = builder.build();
             shutdownContext.addShutdownTask(app::close);
             return app;
