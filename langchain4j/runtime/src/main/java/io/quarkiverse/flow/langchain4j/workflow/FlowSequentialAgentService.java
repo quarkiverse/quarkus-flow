@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import dev.langchain4j.agentic.UntypedAgent;
+import dev.langchain4j.agentic.declarative.SequenceAgent;
 import dev.langchain4j.agentic.internal.AgentExecutor;
 import dev.langchain4j.agentic.workflow.impl.SequentialAgentServiceImpl;
 import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
@@ -25,7 +26,8 @@ public class FlowSequentialAgentService<T> extends SequentialAgentServiceImpl<T>
     }
 
     public static <T> FlowSequentialAgentService<T> builder(Class<T> agentServiceClass) {
-        return new FlowSequentialAgentService<>(agentServiceClass, validateAgentClass(agentServiceClass, false));
+        return new FlowSequentialAgentService<>(agentServiceClass,
+                validateAgentClass(agentServiceClass, false, SequenceAgent.class));
     }
 
     @Override

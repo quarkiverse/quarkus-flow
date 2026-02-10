@@ -10,6 +10,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 import dev.langchain4j.agentic.UntypedAgent;
+import dev.langchain4j.agentic.declarative.ParallelAgent;
 import dev.langchain4j.agentic.internal.AgentExecutor;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import dev.langchain4j.agentic.workflow.impl.ParallelAgentServiceImpl;
@@ -28,7 +29,8 @@ public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> {
     }
 
     public static <T> FlowParallelAgentService<T> builder(Class<T> agentServiceClass) {
-        return new FlowParallelAgentService<>(agentServiceClass, validateAgentClass(agentServiceClass, false));
+        return new FlowParallelAgentService<>(agentServiceClass,
+                validateAgentClass(agentServiceClass, false, ParallelAgent.class));
     }
 
     @Override

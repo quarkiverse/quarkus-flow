@@ -61,10 +61,9 @@ public class FlowLangChain4jWorkflowRecorder {
 
                 registry.cacheDescriptor(wf);
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Registered placeholder LC4J workflow {} for {}#{}", id.name(), iface.getName(),
-                            method.getName());
-                }
+                LOG.info("Registered placeholder LC4J workflow {} for {}#{}", id.name(), iface.getName(),
+                        method.getName());
+
             } catch (ClassNotFoundException e) {
                 LOG.warn("Failed to load agent interface '{}' for LC4J workflow registration", d.ifaceName(), e);
             } catch (RuntimeException e) {

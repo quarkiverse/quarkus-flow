@@ -227,7 +227,7 @@ public class Agents {
             return score >= 0.8;
         }
 
-        @LoopAgent(description = "Review the given story to ensure it aligns with the specified style", outputKey = "story", maxIterations = 5, subAgents = {
+        @LoopAgent(description = "Review the given story to ensure it aligns with the specified style", outputKey = "story", maxIterations = 2, subAgents = {
                 StyleScorer.class, StyleEditor.class })
         String write(@V("story") String story);
     }
