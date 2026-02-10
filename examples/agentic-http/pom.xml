@@ -18,7 +18,7 @@
         <surefire-plugin.version>3.5.4</surefire-plugin.version>
 
         <quarkus.flow.version>1.0.0-SNAPSHOT</quarkus.flow.version>
-        <io.quarkiverse.langchain4j.version>1.6.0</io.quarkiverse.langchain4j.version>
+        <io.quarkiverse.langchain4j.version>1.7.0</io.quarkiverse.langchain4j.version>
     </properties>
 
     <dependencyManagement>
@@ -58,7 +58,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-mockito</artifactId>
+            <artifactId>quarkus-junit-mockito</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -68,7 +68,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5</artifactId>
+            <artifactId>quarkus-junit</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
