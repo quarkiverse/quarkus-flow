@@ -7,7 +7,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.quarkus.arc.DefaultBean;
 
+@DefaultBean
 @ApplicationScoped
 public class Fabric8KubeInfoStrategy implements KubeInfoStrategy {
 
@@ -21,8 +23,8 @@ public class Fabric8KubeInfoStrategy implements KubeInfoStrategy {
     @Inject
     KubernetesClient client;
 
-    private volatile String cachedNamespace;
-    private volatile String cachedPodName;
+    volatile String cachedNamespace;
+    volatile String cachedPodName;
 
     private static String readNamespaceFromServiceAccount() {
         try {
@@ -37,63 +39,60 @@ public class Fabric8KubeInfoStrategy implements KubeInfoStrategy {
 
     @Override
     public String namespace() {
-        String namespace = cachedNamespace;
-        if (namespace != null && !namespace.isBlank()) {
-            return namespace;
+        String ns = cachedNamespace;
+        if (ns != null && !ns.isBlank())
+            return ns;
+
+        ns = resolveNamespaceOrNull();
+        if (ns == null) {
+            throw new IllegalStateException("Impossible to get current namespace. Please set " + NAMESPACE_ENV_VAR
+                    + " on the current deployment via Downward API, ensure the service account namespace file is mounted, "
+                    + "or configure the Kubernetes client namespace explicitly.");
         }
-
-        namespace = resolveNamespace();
-        cachedNamespace = namespace;
-        return namespace;
-    }
-
-    private String resolveNamespace() {
-        String namespace = System.getenv(NAMESPACE_ENV_VAR);
-        if (namespace != null && !namespace.isBlank()) {
-            return namespace;
-        }
-
-        namespace = readNamespaceFromServiceAccount();
-        if (namespace != null && !namespace.isBlank()) {
-            return namespace;
-        }
-
-        namespace = client.getNamespace();
-        if (namespace != null && !namespace.isBlank()) {
-            return namespace;
-        }
-
-        throw new IllegalStateException(
-                "Impossible to get current namespace. Please set " + NAMESPACE_ENV_VAR
-                        + " on the current deployment via Downward API, ensure the service account namespace file is mounted, "
-                        + "or configure the Kubernetes client namespace explicitly.");
+        cachedNamespace = ns;
+        return ns;
     }
 
     @Override
     public String podName() {
-        String podName = cachedPodName;
-        if (podName != null && !podName.isBlank()) {
-            return podName;
-        }
+        String p = cachedPodName;
+        if (p != null && !p.isBlank())
+            return p;
 
-        podName = resolvePodName();
-        cachedPodName = podName;
-        return podName;
+        p = resolvePodNameOrNull();
+        if (p == null) {
+            throw new IllegalStateException("Impossible to get current pod name. Please set " + POD_NAME_ENV_VAR
+                    + " on the current deployment via Downward API or check if " + HOSTNAME_ENV_VAR
+                    + " is set and available.");
+        }
+        cachedPodName = p;
+        return p;
     }
 
-    private String resolvePodName() {
+    protected String resolveNamespaceOrNull() {
+        String namespace = System.getenv(NAMESPACE_ENV_VAR);
+        if (namespace != null && !namespace.isBlank())
+            return namespace;
+
+        namespace = readNamespaceFromServiceAccount();
+        if (namespace != null && !namespace.isBlank())
+            return namespace;
+
+        namespace = client.getNamespace();
+        if (namespace != null && !namespace.isBlank())
+            return namespace;
+
+        return null;
+    }
+
+    protected String resolvePodNameOrNull() {
         String podName = System.getenv(POD_NAME_ENV_VAR);
         if (podName == null || podName.isBlank()) {
             podName = System.getenv(HOSTNAME_ENV_VAR);
         }
-
         if (podName == null || podName.isBlank()) {
-            throw new IllegalStateException(
-                    "Impossible to get current pod name. Please set " + POD_NAME_ENV_VAR
-                            + " on the current deployment via Downward API or check if " + HOSTNAME_ENV_VAR
-                            + " is set and available.");
+            return null;
         }
-
         return podName;
     }
 }
