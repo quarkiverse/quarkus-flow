@@ -1,0 +1,17 @@
+name: Flow MVStore
+description: |
+  MVStore persitence plugin
+metadata:
+  keywords:
+    - workflow
+    - workflows
+    - cncf
+    - serverless
+    - cloudevents
+    - mvstore
+    - persistence
+  guide: https://docs.quarkiverse.io/quarkus-flow/dev/
+  categories:
+    - "integration"
+    - "persistence"
+  status: "preview"
