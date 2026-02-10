@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: durable-flow-demo
+  labels:
+    app: durable-flow-demo
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: durable-flow-demo
+  template:
+    metadata:
+      labels:
+        app: durable-flow-demo
+    spec:
+      serviceAccountName: durable-flow-demo
+      containers:
+        - name: app
+          image: quarkus-durable-flow-demo:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            # Downward API (handy for your KubeInfoStrategy and logs)
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+
+            # If your durable-kube config uses Quarkus config mapping,
+            # you can set env vars here too (replace with real keys):
+            # - name: QUARKUS_FLOW_DURABLE_KUBE_POOL_NAME
+            #   value: "mypool"
+
+          readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10

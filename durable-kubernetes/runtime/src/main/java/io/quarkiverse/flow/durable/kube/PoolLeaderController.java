@@ -63,10 +63,11 @@ public class PoolLeaderController extends PoolController {
         final String poolLeaderName = leaseName();
 
         if (!leaseService.tryAcquireLeaderLease(kubeInfo.podName(), poolLeaderName)) {
+            LOG.debug("Failed to acquire leader lease for pool {} on pod {}", poolLeaderName, kubeInfo.podName());
             return false;
         }
 
-        LOG.debug("Pool leader reconciliation running on pool '{}'", poolLeaderName);
+        LOG.debug("Pool leader reconciliation running for lease '{}'", poolLeaderName);
 
         final Optional<Integer> replicas = leaseService.desiredReplicas();
         if (replicas.isPresent()) {
