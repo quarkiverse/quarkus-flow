@@ -16,8 +16,7 @@ public class DemoWorkflow extends Flow {
                 .tasks(
                         set("{ message: \"hello from quarkus-flow\" }"),
                         set(". + { step2: \"second task\" }"),
-                        set(". + { step3: \"third task\" }")
-                )
+                        set(". + { step3: \"third task\" }"))
                 .build();
     }
 }
