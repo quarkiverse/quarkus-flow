@@ -158,5 +158,31 @@
                 <module>examples</module>
             </modules>
         </profile>
+        <profile>
+            <id>code-coverage</id>
+
+            <dependencies>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-jacoco</artifactId>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <quarkus.jacoco.data-file>${maven.multiModuleProjectDirectory}/target/jacoco-quarkus.exec</quarkus.jacoco.data-file>
+                                <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>
+                                <quarkus.jacoco.report-location>${maven.multiModuleProjectDirectory}/target/jacoco-report</quarkus.jacoco.report-location>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>
