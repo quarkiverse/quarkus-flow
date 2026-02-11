@@ -84,7 +84,7 @@ class FlowProcessor {
             return;
         }
 
-        List<String> workflowClassNames = discoveredWorkflows.stream().filter(DiscoveredWorkflowBuildItem::isFromSource)
+        List<String> workflowClassNames = discoveredWorkflows.stream().filter(DiscoveredWorkflowBuildItem::fromSource)
                 .map(DiscoveredWorkflowBuildItem::className)
                 .distinct()
                 .toList();
@@ -129,14 +129,14 @@ class FlowProcessor {
             List<DiscoveredWorkflowBuildItem> discoveredWorkflows) {
 
         List<DiscoveredWorkflowBuildItem> fromSource = discoveredWorkflows.stream()
-                .filter(DiscoveredWorkflowBuildItem::isFromSource)
+                .filter(DiscoveredWorkflowBuildItem::fromSource)
                 .toList();
         for (DiscoveredWorkflowBuildItem d : fromSource) {
             produceWorkflowBeanFromSource(recorder, beans, identifiers, d);
         }
 
         List<DiscoveredWorkflowBuildItem> fromSpec = discoveredWorkflows.stream()
-                .filter(DiscoveredWorkflowBuildItem::isFromSpec)
+                .filter(DiscoveredWorkflowBuildItem::fromSpec)
                 .toList();
         for (DiscoveredWorkflowBuildItem d : fromSpec) {
             produceWorkflowBeanFromSpec(recorder, beans, identifiers, d);
@@ -182,7 +182,7 @@ class FlowProcessor {
             BuildProducer<GeneratedBeanBuildItem> classes,
             FlowDefinitionsConfig definitionsConfig) {
 
-        List<DiscoveredWorkflowBuildItem> fromSpec = workflows.stream().filter(DiscoveredWorkflowBuildItem::isFromSpec)
+        List<DiscoveredWorkflowBuildItem> fromSpec = workflows.stream().filter(DiscoveredWorkflowBuildItem::fromSpec)
                 .toList();
 
         GeneratedBeanGizmoAdaptor gizmo = new GeneratedBeanGizmoAdaptor(classes);
@@ -268,7 +268,7 @@ class FlowProcessor {
     public void watchChanges(List<DiscoveredWorkflowBuildItem> workflows,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) {
 
-        List<String> specLocations = workflows.stream().filter(DiscoveredWorkflowBuildItem::isFromSpec)
+        List<String> specLocations = workflows.stream().filter(DiscoveredWorkflowBuildItem::fromSpec)
                 .map(DiscoveredWorkflowBuildItem::location)
                 .toList();
 

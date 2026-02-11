@@ -73,7 +73,7 @@ public class FlowCollectorProcessor {
         return file -> {
             try {
                 Workflow workflow = WorkflowReader.readWorkflow(file);
-                DiscoveredWorkflowBuildItem buildItem = DiscoveredWorkflowBuildItem.isFromSpec(file, workflow);
+                DiscoveredWorkflowBuildItem buildItem = DiscoveredWorkflowBuildItem.fromSpec(file, workflow);
                 if (!workflowsSet.add(buildItem)) {
                     WorkflowDefinitionId id = buildItem.workflowDefinitionId();
                     throw new IllegalStateException(String.format(
@@ -95,7 +95,7 @@ public class FlowCollectorProcessor {
             if (flow.isInterface() || Modifier.isAbstract(flow.flags())) {
                 continue;
             }
-            wf.produce(DiscoveredWorkflowBuildItem.isFromSource(flow.name().toString()));
+            wf.produce(DiscoveredWorkflowBuildItem.fromSource(flow.name().toString()));
         }
     }
 

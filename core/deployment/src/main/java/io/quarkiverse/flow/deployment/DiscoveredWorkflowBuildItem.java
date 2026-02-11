@@ -51,7 +51,7 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
      * @param workflow the parsed workflow model
      * @return a new {@link DiscoveredWorkflowBuildItem}
      */
-    public static DiscoveredWorkflowBuildItem isFromSpec(Path workflowPath, Workflow workflow) {
+    public static DiscoveredWorkflowBuildItem fromSpec(Path workflowPath, Workflow workflow) {
         return new DiscoveredWorkflowBuildItem(workflowPath, workflow);
     }
 
@@ -61,7 +61,7 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
      * @param className the fully qualified name of the workflow class
      * @return a new {@link DiscoveredWorkflowBuildItem}
      */
-    public static DiscoveredWorkflowBuildItem isFromSource(String className) {
+    public static DiscoveredWorkflowBuildItem fromSource(String className) {
         return new DiscoveredWorkflowBuildItem(className);
     }
 
@@ -102,14 +102,14 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
     /**
      * @return {@code true} if the workflow was discovered from source code
      */
-    public boolean isFromSource() {
+    public boolean fromSource() {
         return From.SOURCE == this.from;
     }
 
     /**
      * @return {@code true} if the workflow was discovered from a specification file
      */
-    public boolean isFromSpec() {
+    public boolean fromSpec() {
         return From.SPEC == this.from;
     }
 }

@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import dev.langchain4j.agentic.UntypedAgent;
+import dev.langchain4j.agentic.declarative.ConditionalAgent;
 import dev.langchain4j.agentic.internal.AgentExecutor;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
@@ -19,7 +20,7 @@ import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
 
 public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<T> {
 
-    private final List<ConditionalAgent> conditionalAgents = new ArrayList<>();
+    private final List<ConditionalAgent> flowConditionalAgents = new ArrayList<>();
 
     protected FlowConditionalAgentService(Class<T> agentServiceClass, Method agenticMethod) {
         super(agentServiceClass, agenticMethod);
@@ -30,20 +31,15 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
     }
 
     public static <T> FlowConditionalAgentService<T> builder(Class<T> agentServiceClass) {
-        return new FlowConditionalAgentService<>(agentServiceClass, validateAgentClass(agentServiceClass, false));
+        return new FlowConditionalAgentService<>(agentServiceClass,
+                validateAgentClass(agentServiceClass, false, dev.langchain4j.agentic.declarative.ConditionalAgent.class));
     }
 
     @Override
-    public FlowConditionalAgentService<T> subAgents(Predicate<AgenticScope> condition, List<AgentExecutor> agentExecutors) {
-        super.subAgents(condition, agentExecutors);
-        this.conditionalAgents.add(new ConditionalAgent(condition, agentExecutors));
-        return this;
-    }
-
-    @Override
-    public FlowConditionalAgentService<T> subAgent(Predicate<AgenticScope> condition, AgentExecutor agentExecutor) {
-        super.subAgent(condition, agentExecutor);
-        this.conditionalAgents.add(new ConditionalAgent(condition, List.of(agentExecutor)));
+    public FlowConditionalAgentService<T> subAgents(String conditionDescription, Predicate<AgenticScope> condition,
+            List<AgentExecutor> agentExecutors) {
+        super.subAgents(conditionDescription, condition, agentExecutors);
+        this.flowConditionalAgents.add(new ConditionalAgent(condition, List.copyOf(agentExecutors)));
         return this;
     }
 
@@ -56,7 +52,7 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
     protected Consumer<FuncDoTaskBuilder> tasksDefinition() {
         return tasks -> {
             int step = 0;
-            for (ConditionalAgent c : conditionalAgents) {
+            for (ConditionalAgent c : flowConditionalAgents) {
                 for (AgentExecutor agentExecutor : c.agentExecutors) {
                     final String stepName = safeName(agentExecutor.agentInvoker().agentId() + "-" + (step++));
                     tasks.function(stepName,
