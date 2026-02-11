@@ -33,7 +33,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.version>3.31.2</quarkus.version>
-        <io.serverlessworkflow.version>7.12.0.Final</io.serverlessworkflow.version>
+        <io.serverlessworkflow.version>7.12.1.Final</io.serverlessworkflow.version>
         <io.quarkiverse.jackson-jq.version>2.4.0</io.quarkiverse.jackson-jq.version>
         <io.quarkiverse.langchain4j.version>1.7.0</io.quarkiverse.langchain4j.version>
         <org.assertj.version>3.27.7</org.assertj.version>
