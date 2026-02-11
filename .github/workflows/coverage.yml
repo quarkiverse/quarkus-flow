@@ -25,11 +25,11 @@ jobs:
         run: mvn -B clean install -Dno-format -Dquarkus.langchain4j.ollama.devservices.enabled=false -Pcode-coverage
 
       - name: Add Coverage Comment
-        uses: madrapps/jacoco-report@v1.7.1
+        uses: madrapps/jacoco-report@v1.7.2
         with:
           # Path to the aggregated XML report in the root target
           paths: |
-            ${{ github.workspace }}/target/jacoco-report/jacoco.xml
+            ${{ github.workspace }}/**/target/jacoco-report/jacoco.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           min-coverage-overall: 40
           min-coverage-changed-files: 40
