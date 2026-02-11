@@ -42,8 +42,13 @@ public final class WorkflowNameUtils {
             return defaultValue;
         }
 
-        String sanitizedName = name.trim().replaceAll("([A-Z])([A-Z][a-z])", "$1-$2").replaceAll("([a-z0-9])([A-Z])", "$1-$2")
-                .replaceAll("[^A-Za-z0-9-]", "-").toLowerCase().replaceAll("-+", "-").replaceAll("^-+", "")
+        String sanitizedName = name.trim()
+                .replaceAll("([A-Z])([A-Z][a-z])", "$1-$2")
+                .replaceAll("([a-z0-9])([A-Z])", "$1-$2")
+                .replaceAll("[^A-Za-z0-9-]", "-")
+                .toLowerCase()
+                .replaceAll("-+", "-")
+                .replaceAll("^-+", "")
                 .replaceAll("-+$", "");
 
         // Fallback if everything got stripped
