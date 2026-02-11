@@ -1,0 +1,28 @@
+= Scheduler
+:page-role: howto
+include::includes/attributes.adoc[]
+
+Serverless Workflow SDK reference implementation provides a full implementation of the scheduling functionality defined on the CNFC specification. Besides this, Quarkus Flow provide an additional implementation based on Quarkus Scheduler. 
+
+The default implementation uses a ScheduledExecutorService instance for `every` and `after` and link:https://github.com/jmrozanec/cron-utils[cron-utils] lightweight library for `cron`
+
+In case users want to replace default implementation by the Quarkus base one, they should add following dependency in their `pom.xml` file
+
+----
+<dependency>
+  <groupId>io.quarkiverse.flow</groupId>
+  <artifactId>quarkus-flow-scheduler</artifactId>
+</dependency>
+----
+
+== Setup
+
+Once you are using the Quarkus scheduler you have access to the set of link:https://quarkus.io/guides/scheduler-reference#configuration-reference[properties] defined for this Quarkus component.
+By default, in order to be compliant with the CNFC spec, `quarkus.scheduler.cron-type` is set to `unix`
+
+== See also
+- link:https://github.com/serverlessworkflow/sdk-java/tree/main/impl[Serverless Workflow SDK Reference implementation] 
+- link:https://quarkus.io/guides/scheduler-reference[Quarkus scheduler reference guide]
+- link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#scheduling[CNFC specification scheduling section]
+- link:https://github.com/serverlessworkflow/specification/blob/main/examples/schedule-cron.yaml[CNFC specification cron example]
+
