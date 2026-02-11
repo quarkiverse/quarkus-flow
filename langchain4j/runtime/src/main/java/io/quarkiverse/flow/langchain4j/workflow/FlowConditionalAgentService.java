@@ -5,7 +5,7 @@ import static io.quarkiverse.flow.internal.WorkflowNameUtils.safeName;
 import static io.quarkiverse.flow.langchain4j.workflow.FlowAgentServiceUtil.agenticScopePassthrough;
 
 import java.lang.reflect.Method;
-import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -14,7 +14,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import dev.langchain4j.agentic.UntypedAgent;
-import dev.langchain4j.agentic.declarative.ConditionalAgent;
 import dev.langchain4j.agentic.internal.AgentExecutor;
 import dev.langchain4j.agentic.planner.AgentInstance;
 import dev.langchain4j.agentic.planner.InitPlanningContext;
@@ -25,7 +24,7 @@ import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
 
 public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<T> implements FlowAgentService {
 
-    private final Map<String, Predicate<AgenticScope>> conditions = new HashMap<>();
+    private final Map<AgentInstance, Predicate<AgenticScope>> conditions = new IdentityHashMap<>();
 
     protected FlowConditionalAgentService(Class<T> agentServiceClass, Method agenticMethod) {
         super(agentServiceClass, agenticMethod);
@@ -41,18 +40,20 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
     }
 
     @Override
-    public FlowConditionalAgentService<T> subAgents(Predicate<AgenticScope> condition, List<AgentExecutor> agentExecutors) {
-        super.subAgents(condition, agentExecutors);
+    public FlowConditionalAgentService<T> subAgents(String conditionDescription, Predicate<AgenticScope> condition,
+            List<AgentExecutor> agentExecutors) {
+        super.subAgents(conditionDescription, condition, agentExecutors);
         for (AgentExecutor agentExecutor : agentExecutors) {
-            this.conditions.compute(agentExecutor.agentId(), (k, v) -> (v == null) ? condition : v.or(condition));
+            this.conditions.compute(agentExecutor, (k, v) -> (v == null) ? condition : v.or(condition));
         }
         return this;
     }
 
     @Override
-    public FlowConditionalAgentService<T> subAgent(Predicate<AgenticScope> condition, AgentExecutor agentExecutor) {
-        super.subAgent(condition, agentExecutor);
-        this.conditions.compute(agentExecutor.agentId(), (k, v) -> (v == null) ? condition : v.or(condition));
+    public FlowConditionalAgentService<T> subAgent(String conditionDescription, Predicate<AgenticScope> condition,
+            AgentExecutor agentExecutor) {
+        super.subAgent(conditionDescription, condition, agentExecutor);
+        this.conditions.compute(agentExecutor, (k, v) -> (v == null) ? condition : v.or(condition));
         return this;
     }
 
@@ -74,7 +75,7 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
                                     return nextActionFuture.join();
                                 },
                                 DefaultAgenticScope.class)
-                                .when(this.conditions.get(agent.agentId()), AgenticScope.class)
+                                .when(this.conditions.get(agent), AgenticScope.class)
                                 .outputAs((out, wf, tf) -> agenticScopePassthrough(tf.rawInput())));
             }
         };
