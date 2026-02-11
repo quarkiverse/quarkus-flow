@@ -1,0 +1,16 @@
+name: Flow Scheduler
+description: |
+  Flow scheduler implemetation relying on quarkus scheduler
+metadata:
+  keywords:
+    - workflow
+    - workflows
+    - cncf
+    - serverless
+    - cloudevents
+    - scheduler
+  guide: https://docs.quarkiverse.io/quarkus-flow/dev/
+  categories:
+    - "integration"
+    - "scheduler"
+  status: "preview"
