@@ -5,12 +5,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
-import dev.langchain4j.agentic.AgenticServices;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
 import dev.langchain4j.service.V;
@@ -55,7 +55,7 @@ public class FlowAgentServicesMockedTest {
         assertThat(seqOrder.toString()).isEqualTo("12");
     }
 
-    @Disabled("Probably a problem in the internal runtime executor since now we are dealing with threads within the engine and not synced with Planner")
+//    @Disabled("Probably a problem in the internal runtime executor since now we are dealing with threads within the engine and not synced with Planner")
     @Test
     void parallelAgentInvokesAllBranches() {
         var agent1 = AgenticServices.agentAction(scope -> scope.writeState("calledA", true));

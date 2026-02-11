@@ -13,7 +13,6 @@ import dev.langchain4j.agentic.planner.AgentInstance;
 import dev.langchain4j.agentic.planner.InitPlanningContext;
 import dev.langchain4j.agentic.planner.Planner;
 import dev.langchain4j.agentic.planner.PlanningContext;
-import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import io.quarkiverse.flow.internal.WorkflowNameUtils;
 import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.serverlessworkflow.api.types.Workflow;

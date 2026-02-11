@@ -44,7 +44,7 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
     public FlowConditionalAgentService<T> subAgents(Predicate<AgenticScope> condition, List<AgentExecutor> agentExecutors) {
         super.subAgents(condition, agentExecutors);
         for (AgentExecutor agentExecutor : agentExecutors) {
-            this.conditions.compute(agentExecutor.agentId(),(k, v) -> (v == null) ? condition : v.or(condition));
+            this.conditions.compute(agentExecutor.agentId(), (k, v) -> (v == null) ? condition : v.or(condition));
         }
         return this;
     }
@@ -52,7 +52,7 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
     @Override
     public FlowConditionalAgentService<T> subAgent(Predicate<AgenticScope> condition, AgentExecutor agentExecutor) {
         super.subAgent(condition, agentExecutor);
-        this.conditions.compute(agentExecutor.agentId(),(k, v) -> (v == null) ? condition : v.or(condition));
+        this.conditions.compute(agentExecutor.agentId(), (k, v) -> (v == null) ? condition : v.or(condition));
         return this;
     }
 
