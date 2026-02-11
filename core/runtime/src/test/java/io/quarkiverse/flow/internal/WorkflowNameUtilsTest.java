@@ -23,6 +23,8 @@ public class WorkflowNameUtilsTest {
                 arguments("MySimpleWorkflow", "my-simple-workflow"),
                 // Validate handling of names with numbers
                 arguments("WorkflowWith123Numbers", "workflow-with123-numbers"),
+                // Validate handling of name only with number
+                arguments("1234", "1234"),
                 // Validate handling of names already in kebab case
                 arguments("Already-Kebab-Case", "already-kebab-case"),
                 // Validate handling of names starting with digits
@@ -34,7 +36,9 @@ public class WorkflowNameUtilsTest {
                 // Validate handling of names with leading and trailing dashes
                 arguments("---leading-trailing---", "leading-trailing"),
                 // Validate handling of names with spaces
-                arguments("  spaces  ", "spaces"));
+                arguments("  spaces  ", "spaces"),
+                // Validate handling of names with only special characters - should return default value "wf"
+                arguments("--:*%*:--", "wf"));
     }
 
     @ParameterizedTest(name = "{index} => input=''{0}'', expected=''{1}''")
@@ -58,7 +62,7 @@ public class WorkflowNameUtilsTest {
     @DisplayName("Should throw exception for invalid null or blank inputs")
     void testInvalidInputs() {
         assertThatThrownBy(() -> WorkflowNameUtils.safeName(null, null))
-                .isInstanceOf(IllegalArgumentException.class); //
+                .isInstanceOf(IllegalArgumentException.class);
 
         assertThatThrownBy(() -> WorkflowNameUtils.safeName("   ", ""))
                 .isInstanceOf(IllegalArgumentException.class);
