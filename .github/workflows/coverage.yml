@@ -1,0 +1,37 @@
+name: "Test Coverage Report"
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-report:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write # Required to post comments
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build with Maven
+        run: mvn -B clean install -Dno-format -Dquarkus.langchain4j.ollama.devservices.enabled=false -Pcode-coverage
+
+      - name: Add Coverage Comment
+        uses: madrapps/jacoco-report@v1.7.2
+        with:
+          # Path to the aggregated XML report in the root target
+          paths: |
+            ${{ github.workspace }}/**/target/jacoco-report/jacoco.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 40
+          min-coverage-changed-files: 40
+          title: "📊 Quarkus Flow Coverage Report"
+          update-comment: true
