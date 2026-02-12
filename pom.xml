@@ -41,6 +41,7 @@
         <quarkus-antora.version>3.25.0</quarkus-antora.version>
         <mockserver.version>5.15.0</mockserver.version>
         <mockwebserver.version>5.3.2</mockwebserver.version>
+        <version.org.jacoco>0.8.12</version.org.jacoco>
     </properties>
 
     <dependencyManagement>
@@ -171,6 +172,23 @@
 
             <build>
                 <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>${version.org.jacoco}</version>
+                        <executions>
+                            <execution>
+                                <id>prepare-agent</id>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                                <configuration>
+                                    <destFile>${maven.multiModuleProjectDirectory}/target/jacoco-quarkus.exec</destFile>
+                                    <append>true</append>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
                     <plugin>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
