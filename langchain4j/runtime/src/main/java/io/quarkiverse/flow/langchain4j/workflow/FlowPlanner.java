@@ -1,9 +1,13 @@
 package io.quarkiverse.flow.langchain4j.workflow;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
@@ -32,14 +36,16 @@ public class FlowPlanner implements Planner {
     private final BiFunction<FlowPlanner, InitPlanningContext, Consumer<FuncDoTaskBuilder>> tasks;
 
     private final BlockingQueue<AgentExchange> agentExchangeQueue = new LinkedBlockingQueue<>();
-    private AgentExchange currentExchange;
+    private final Map<String, AgentExchange> currentExchanges = new ConcurrentHashMap<>();
+
+    private AtomicInteger parallelAgents = new AtomicInteger(0);
 
     private WorkflowDefinition definition;
 
     /**
      * Encapsulates the bidirectional exchange between workflow execution and planner actions.
      */
-    private record AgentExchange(List<AgentInstance> agents, CompletableFuture<Void> continuation) {
+    private record AgentExchange(AgentInstance agent, CompletableFuture<Void> continuation) {
     }
 
     public FlowPlanner(Class<?> agentServiceClass, String description,
@@ -86,33 +92,50 @@ public class FlowPlanner implements Planner {
     public Action firstAction(PlanningContext planningContext) {
         // Start workflow execution in background
         CompletableFuture.supplyAsync(() -> definition.instance(planningContext.agenticScope()).start().join())
-                .thenRun(() -> executeAgents(null));
+                .thenRun(() -> executeAgent(null));
 
-        // Wait for the first agent exchange from the workflow
+        return internalNextAction();
+    }
+
+    @Override
+    public Action nextAction(PlanningContext planningContext) {
+        currentExchanges.remove(planningContext.previousAgentInvocation().agentId()).continuation.complete(null);
+        return internalNextAction();
+    }
+
+    private Action internalNextAction() {
+        if (parallelAgents.decrementAndGet() > 0) {
+            return done();
+        }
+
+        List<AgentInstance> agents = new ArrayList<>();
         try {
-            currentExchange = agentExchangeQueue.take();
-            final List<AgentInstance> agents = currentExchange.agents;
-            if (agents == null || agents.isEmpty()) {
-                return done();
+            do {
+                AgentExchange currentExchange = agentExchangeQueue.take();
+                if (currentExchange.agent == null) {
+                    LOG.info("Workflow terminated");
+                    break;
+                }
+                currentExchanges.put(currentExchange.agent.agentId(), currentExchange);
+                agents.add(currentExchange.agent);
+            } while (!agentExchangeQueue.isEmpty());
+
+            if (agents.size() > 1) {
+                parallelAgents.set(agents.size());
             }
-            return call(agents);
+
+            LOG.info("Executing {} agent(s)", agents.size());
+            return agents.isEmpty() ? done() : call(agents);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            LOG.error("Interrupted while waiting for first agent exchange", e);
+            LOG.error("Interrupted while waiting for agent exchange", e);
             return done();
         }
     }
 
-    /**
-     * Called from workflow tasks to provide the next set of agents to execute.
-     * Returns a CompletableFuture that will be completed when the workflow should continue.
-     *
-     * @param agents the agents to execute next (null if workflow is done)
-     * @return a future that completes when the planner has processed the agents
-     */
-    public CompletableFuture<Void> executeAgents(List<AgentInstance> agents) {
+    public CompletableFuture<Void> executeAgent(AgentInstance agent) {
         CompletableFuture<Void> continuation = new CompletableFuture<>();
-        AgentExchange exchange = new AgentExchange(agents, continuation);
+        AgentExchange exchange = new AgentExchange(agent, continuation);
 
         try {
             agentExchangeQueue.put(exchange);
@@ -123,25 +146,5 @@ public class FlowPlanner implements Planner {
         }
 
         return continuation;
-    }
-
-    @Override
-    public Action nextAction(PlanningContext planningContext) {
-        currentExchange.continuation.complete(null);
-
-        try {
-            currentExchange = agentExchangeQueue.take();
-            // Complete the continuation to let the workflow proceed
-
-            final List<AgentInstance> agents = currentExchange.agents;
-            if (agents == null || agents.isEmpty()) {
-                return done();
-            }
-            return call(agents);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            LOG.error("Interrupted while waiting for next agent exchange", e);
-            return done();
-        }
     }
 }

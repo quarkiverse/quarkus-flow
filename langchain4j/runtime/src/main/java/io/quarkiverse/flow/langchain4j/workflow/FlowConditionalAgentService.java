@@ -71,7 +71,7 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
                 tasks.function(stepName,
                         fn -> fn.function(
                                 (DefaultAgenticScope scope) -> {
-                                    CompletableFuture<Void> nextActionFuture = planner.executeAgents(List.of(agent));
+                                    CompletableFuture<Void> nextActionFuture = planner.executeAgent(agent);
                                     return nextActionFuture.join();
                                 },
                                 DefaultAgenticScope.class)

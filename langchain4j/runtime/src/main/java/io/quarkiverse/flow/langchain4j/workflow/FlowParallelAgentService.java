@@ -4,7 +4,6 @@ import static dev.langchain4j.agentic.internal.AgentUtil.validateAgentClass;
 import static io.quarkiverse.flow.internal.WorkflowNameUtils.safeName;
 
 import java.lang.reflect.Method;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
@@ -17,8 +16,12 @@ import dev.langchain4j.agentic.planner.InitPlanningContext;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import dev.langchain4j.agentic.workflow.impl.ParallelAgentServiceImpl;
 import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> implements FlowAgentService {
+
+    private static final Logger LOG = LoggerFactory.getLogger(FlowParallelAgentService.class);
 
     protected FlowParallelAgentService(Class<T> agentServiceClass, Method agenticMethod) {
         super(agentServiceClass, agenticMethod);
@@ -54,8 +57,11 @@ public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> imp
                         final String branchName = safeName(agent.agentId() + "-" + (step++));
                         fork.branch(branchName,
                                 (DefaultAgenticScope scope) -> {
-                                    CompletableFuture<Void> nextActionFuture = planner.executeAgents(List.of(agent));
-                                    return nextActionFuture.join();
+                                    CompletableFuture<Void> nextActionFuture = planner.executeAgent(agent);
+                                    LOG.info("Parallel execution of agent {} in branch {} started", agent.agentId(), branchName);
+                                    nextActionFuture.join();
+                                    LOG.info("Parallel execution of agent {} in branch {} terminated", agent.agentId(), branchName);
+                                    return null;
                                 },
                                 DefaultAgenticScope.class);
                     }
