@@ -9,6 +9,9 @@ import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.agentic.declarative.ParallelAgent;
 import dev.langchain4j.agentic.planner.AgentInstance;
@@ -16,8 +19,6 @@ import dev.langchain4j.agentic.planner.InitPlanningContext;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import dev.langchain4j.agentic.workflow.impl.ParallelAgentServiceImpl;
 import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> implements FlowAgentService {
 
@@ -58,9 +59,11 @@ public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> imp
                         fork.branch(branchName,
                                 (DefaultAgenticScope scope) -> {
                                     CompletableFuture<Void> nextActionFuture = planner.executeAgent(agent);
-                                    LOG.info("Parallel execution of agent {} in branch {} started", agent.agentId(), branchName);
+                                    LOG.info("Parallel execution of agent {} in branch {} started", agent.agentId(),
+                                            branchName);
                                     nextActionFuture.join();
-                                    LOG.info("Parallel execution of agent {} in branch {} terminated", agent.agentId(), branchName);
+                                    LOG.info("Parallel execution of agent {} in branch {} terminated", agent.agentId(),
+                                            branchName);
                                     return null;
                                 },
                                 DefaultAgenticScope.class);
