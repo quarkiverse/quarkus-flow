@@ -1,5 +1,8 @@
 package io.quarkiverse.flow;
 
+import io.quarkus.arc.ClientProxy;
+import io.quarkus.arc.InterceptionProxySubclass;
+import io.quarkus.arc.Subclass;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
@@ -18,7 +21,15 @@ public interface Flowable {
     }
 
     default String identifier() {
-        return this.getClass().getName();
+        if (this instanceof ClientProxy proxy) {
+            return proxy.getClass().getSuperclass().getName();
+        } else if (this instanceof InterceptionProxySubclass proxy) {
+            return proxy.getClass().getSuperclass().getName();
+        } else if (this instanceof Subclass subclass) {
+            return subclass.getClass().getSuperclass().getName();
+        } else {
+            return this.getClass().getName();
+        }
     }
 
 }
