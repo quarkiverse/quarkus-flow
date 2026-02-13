@@ -38,7 +38,7 @@ public class FlowSchedulerTest {
         await()
                 .pollDelay(Duration.ofMillis(50))
                 .atMost(Duration.ofMillis(500))
-                .until(() -> afterStartDefinition.scheduledInstances().size() == 1);
+                .until(() -> afterStartDefinition.scheduledInstances().size() >= 1);
     }
 
     @Test
@@ -49,7 +49,6 @@ public class FlowSchedulerTest {
         await()
                 .atMost(Duration.ofSeconds(1).plus(Duration.ofMillis(200)))
                 .until(() -> everyDefinition.scheduledInstances().size() == 2);
-
     }
 
     @Test

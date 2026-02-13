@@ -9,7 +9,6 @@ import jakarta.enterprise.inject.Any;
 import jakarta.inject.Inject;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.Unremovable;
 import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.Scheduler;
 import io.quarkus.scheduler.Scheduler.JobDefinition;
@@ -19,7 +18,6 @@ import io.serverlessworkflow.impl.scheduler.ExecutorServiceWorkflowScheduler;
 import io.serverlessworkflow.impl.scheduler.ScheduledInstanceRunnable;
 
 @ApplicationScoped
-@Unremovable
 public class FlowScheduler extends ExecutorServiceWorkflowScheduler {
 
     @Inject
