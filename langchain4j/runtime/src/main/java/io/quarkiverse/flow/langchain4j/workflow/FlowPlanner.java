@@ -38,7 +38,7 @@ public class FlowPlanner implements Planner {
     private final BlockingQueue<AgentExchange> agentExchangeQueue = new LinkedBlockingQueue<>();
     private final Map<String, AgentExchange> currentExchanges = new ConcurrentHashMap<>();
 
-    private AtomicInteger parallelAgents = new AtomicInteger(0);
+    private final AtomicInteger parallelAgents = new AtomicInteger(0);
 
     private WorkflowDefinition definition;
 
