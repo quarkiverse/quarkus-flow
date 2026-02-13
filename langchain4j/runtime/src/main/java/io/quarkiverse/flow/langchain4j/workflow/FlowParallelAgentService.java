@@ -46,7 +46,7 @@ public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> imp
     @Override
     public T build() {
         final FlowPlanner planner = new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition());
-        return build(() -> planner);
+return build(() -> new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition()));
     }
 
     @Override
