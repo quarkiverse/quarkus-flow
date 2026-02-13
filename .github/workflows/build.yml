@@ -44,7 +44,7 @@ jobs:
 
       - name: Build with Maven (Windows, skip ITs)
         if: matrix.os == 'windows-latest'
-        run: mvn -B clean install -Dno-format -DskipITs=true
+        run: mvn -B clean install -Dno-format -DskipITs=true -Dquarkus.devservices.enabled=false
 
       - name: Build with Maven (Native, Mandrel on JDK 25 only)
         if: matrix.os == 'ubuntu-latest' && matrix.java-version == 25
