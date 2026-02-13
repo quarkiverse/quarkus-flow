@@ -59,8 +59,7 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
 
     @Override
     public T build() {
-        final FlowPlanner planner = new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition());
-return build(() -> new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition()););
+        return build(() -> new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition()));
     }
 
     public BiFunction<FlowPlanner, InitPlanningContext, Consumer<FuncDoTaskBuilder>> tasksDefinition() {

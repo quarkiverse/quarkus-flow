@@ -29,7 +29,7 @@ public class FlowSequentialAgentService<T> extends SequentialAgentServiceImpl<T>
 
     @Override
     public T build() {
-return build(() -> new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition()));
+        return build(() -> new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition()));
     }
 
     public BiFunction<FlowPlanner, InitPlanningContext, Consumer<FuncDoTaskBuilder>> tasksDefinition() {

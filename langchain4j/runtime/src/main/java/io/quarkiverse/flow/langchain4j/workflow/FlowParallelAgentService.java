@@ -45,8 +45,7 @@ public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> imp
 
     @Override
     public T build() {
-        final FlowPlanner planner = new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition());
-return build(() -> new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition()));
+        return build(() -> new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition()));
     }
 
     @Override
@@ -59,10 +58,10 @@ return build(() -> new FlowPlanner(this.agentServiceClass, this.description, thi
                         fork.branch(branchName,
                                 (DefaultAgenticScope scope) -> {
                                     CompletableFuture<Void> nextActionFuture = planner.executeAgent(agent);
-                                    LOG.info("Parallel execution of agent {} in branch {} started", agent.agentId(),
+                                    LOG.debug("Parallel execution of agent {} in branch {} started", agent.agentId(),
                                             branchName);
                                     nextActionFuture.join();
-                                    LOG.info("Parallel execution of agent {} in branch {} terminated", agent.agentId(),
+                                    LOG.debug("Parallel execution of agent {} in branch {} terminated", agent.agentId(),
                                             branchName);
                                     return null;
                                 },

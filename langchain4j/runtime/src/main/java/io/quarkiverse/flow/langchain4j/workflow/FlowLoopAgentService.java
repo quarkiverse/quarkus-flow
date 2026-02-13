@@ -81,7 +81,7 @@ public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> implements 
 
     @Override
     public T build() {
-return build(() -> new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition()));
+        return build(() -> new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition()));
     }
 
     @Override
