@@ -17,6 +17,9 @@ import java.util.concurrent.TimeoutException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.util.TypeLiteral;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import io.quarkiverse.flow.config.FlowHttpConfig;
@@ -24,13 +27,13 @@ import io.quarkiverse.flow.config.FlowMetricsConfig;
 import io.quarkiverse.flow.config.HttpClientConfig;
 import io.quarkiverse.flow.metrics.FlowMetrics;
 import io.quarkus.arc.Arc;
-import io.quarkus.logging.Log;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.smallrye.common.annotation.Identifier;
 import io.smallrye.faulttolerance.api.TypedGuard;
 
 @ApplicationScoped
 public class FaultToleranceProvider {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FaultToleranceProvider.class);
 
     private final FlowHttpConfig flowHttpConfig;
     private final RoutingNameResolver routingNameResolver;
@@ -69,7 +72,7 @@ public class FaultToleranceProvider {
         }
         synchronized (this) {
             if (defaultGuard == null) {
-                Log.debug("Creating default TypedGuard");
+                LOGGER.debug("Creating default TypedGuard");
                 defaultGuard = buildGuard(flowHttpConfig, ctx);
             }
             return defaultGuard;
@@ -83,10 +86,10 @@ public class FaultToleranceProvider {
     private TypedGuard<CompletionStage<WorkflowModel>> buildNamedGuard(String name, WorkflowTaskContext metadata) {
         HttpClientConfig namedConfig = flowHttpConfig.named().get(name);
         if (namedConfig == null) {
-            Log.debugf("Using default TypedGuard for '%s'", name);
+            LOGGER.debug("Using default TypedGuard for '{}'", name);
             return getOrCreateDefaultGuard(metadata);
         }
-        Log.debugf("Creating named TypedGuard '%s'", name);
+        LOGGER.debug("Creating named TypedGuard '{}'", name);
         return buildGuard(namedConfig, metadata);
     }
 
