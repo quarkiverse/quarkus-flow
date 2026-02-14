@@ -1,5 +1,7 @@
 package org.acme.flow.durable.kube;
 
+import java.util.Map;
+
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
@@ -14,7 +16,7 @@ public class DemoWorkflow extends Flow {
     public Workflow descriptor() {
         return FuncWorkflowBuilder.workflow("lease-demo")
                 .tasks(
-                        set("{ message: \"hello from quarkus-flow\" }"),
+                        set(Map.of("message", "Hello from Quarkus Flow")),
                         set(". + { step2: \"second task\" }"),
                         set(". + { step3: \"third task\" }"))
                 .build();
