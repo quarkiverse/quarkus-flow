@@ -22,6 +22,7 @@
         <module>http-basic-auth</module>
         <module>langchain4j-agentic-workflow</module>
         <module>micrometer-prometheus</module>
+        <module>durable-workflows-k8s</module>
     </modules>
 
     <build>
