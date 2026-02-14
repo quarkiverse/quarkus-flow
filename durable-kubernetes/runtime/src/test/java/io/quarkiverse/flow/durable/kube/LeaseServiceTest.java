@@ -41,7 +41,10 @@ public class LeaseServiceTest {
     KubeInfoStrategy kubeInfo;
 
     @Inject
-    FlowDurableKubeSettings config;
+    PoolConfig poolConfig;
+
+    @Inject
+    LeaseGroupConfig leaseConfig;
 
     @BeforeEach
     void setup() {
@@ -131,7 +134,7 @@ public class LeaseServiceTest {
         var labels = lease.getMetadata().getLabels();
         assertEquals("quarkus-flow", labels.get("app.kubernetes.io/managed-by"));
         assertEquals("durable", labels.get("app.kubernetes.io/component"));
-        assertEquals(config.controllers().poolName(), labels.get("io.quarkiverse.flow.durable.k8s/pool"));
+        assertEquals(poolConfig.name(), labels.get("io.quarkiverse.flow.durable.k8s/pool"));
 
         // spec TTL set
         assertNotNull(lease.getSpec());
@@ -159,7 +162,7 @@ public class LeaseServiceTest {
                 .withLabels(Map.of(
                         "app.kubernetes.io/managed-by", "quarkus-flow",
                         "app.kubernetes.io/component", "durable",
-                        "io.quarkiverse.flow.durable.k8s/pool", config.controllers().poolName(),
+                        "io.quarkiverse.flow.durable.k8s/pool", poolConfig.name(),
                         "io.quarkiverse.flow.durable.k8s/is-leader", "false"))
                 .endMetadata()
                 .withNewSpec()
@@ -171,7 +174,7 @@ public class LeaseServiceTest {
 
         client.leases().inNamespace("default").resource(expired).create();
 
-        Lease acquired = leaseService.tryAcquireMemberLease("pod-1", config.controllers().poolName())
+        Lease acquired = leaseService.tryAcquireMemberLease("pod-1", poolConfig.name())
                 .orElseThrow();
 
         assertEquals("pod-1", acquired.getSpec().getHolderIdentity());
@@ -180,7 +183,7 @@ public class LeaseServiceTest {
 
     @Test
     void existingLease_isUpdated_whenManagedFieldsDiffer() {
-        String pool = config.controllers().poolName();
+        String pool = poolConfig.name();
         String leaseName = "flow-pool-member-" + pool + "-00";
 
         client.leases().inNamespace("default").resource(new LeaseBuilder()
@@ -201,7 +204,7 @@ public class LeaseServiceTest {
         assertTrue(updatedOpt.isPresent());
 
         var updated = client.leases().inNamespace("default").withName(leaseName).get();
-        assertEquals(config.pool().member().leaseDuration(), updated.getSpec().getLeaseDurationSeconds());
+        assertEquals(leaseConfig.member().duration(), updated.getSpec().getLeaseDurationSeconds());
 
         // base labels enforced + pool/is-leader labels enforced + existing labels preserved
         Map<String, String> labels = updated.getMetadata().getLabels();

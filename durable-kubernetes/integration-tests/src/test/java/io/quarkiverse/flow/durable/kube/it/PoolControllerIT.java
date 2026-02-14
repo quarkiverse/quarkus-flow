@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -35,12 +36,12 @@ public class PoolControllerIT {
         String pod = kubeInfo.podName();
 
         // Leader lease should exist and be held by this pod
-        Lease leader = awaitLeaseHeldBy(ns, "flow-pool-leader-mypool", pod, Duration.ofSeconds(30));
+        Lease leader = awaitLeaseHeldBy(ns, pod, Duration.ofSeconds(30));
         assertNotNull(leader.getSpec());
         assertEquals(pod, leader.getSpec().getHolderIdentity());
 
         // Member leases should exist (fixtures replicas=3)
-        List<Lease> members = awaitMemberLeases(ns, "mypool", 3, Duration.ofSeconds(30));
+        List<Lease> members = awaitMemberLeases(ns, Duration.ofSeconds(30));
 
         // Verify expected member names exist (exact set)
         Set<String> names = members.stream()
@@ -76,16 +77,16 @@ public class PoolControllerIT {
         String pod = kubeInfo.podName();
 
         // leader held
-        Lease leader = awaitLeaseHeldBy(ns, "flow-pool-leader-mypool", pod, Duration.ofSeconds(30));
+        Lease leader = awaitLeaseHeldBy(ns, pod, Duration.ofSeconds(30));
         assertNotNull(leader.getSpec());
         assertEquals(pod, leader.getSpec().getHolderIdentity());
 
         // member leases exist
-        List<Lease> members = awaitMemberLeases(ns, "mypool", 3, Duration.ofSeconds(30));
+        List<Lease> members = awaitMemberLeases(ns, Duration.ofSeconds(30));
         assertTrue(members.size() >= 3);
 
         // leader is also a member: at least one member lease must be held by the same pod
-        Lease myMemberLease = awaitAnyMemberLeaseHeldBy(ns, "mypool", pod, Duration.ofSeconds(30));
+        Lease myMemberLease = awaitAnyMemberLeaseHeldBy(ns, pod, Duration.ofSeconds(30));
         assertNotNull(myMemberLease, "expected at least one member lease held by leader pod");
         assertEquals(pod, myMemberLease.getSpec().getHolderIdentity());
 
@@ -93,7 +94,7 @@ public class PoolControllerIT {
         assertEquals("false", myMemberLease.getMetadata().getLabels().get(LeaseService.POOL_IS_LEADER_KEY));
     }
 
-    private Lease awaitAnyMemberLeaseHeldBy(String ns, String poolName, String podName, Duration timeout) {
+    private Lease awaitAnyMemberLeaseHeldBy(String ns, String podName, Duration timeout) {
         return await()
                 .atMost(timeout)
                 .pollInterval(Duration.ofMillis(250))
@@ -101,7 +102,7 @@ public class PoolControllerIT {
                 .until(
                         () -> {
                             List<Lease> leases = client.leases().inNamespace(ns)
-                                    .withLabel(LeaseService.POOL_NAME_LABEL_KEY, poolName)
+                                    .withLabel(LeaseService.POOL_NAME_LABEL_KEY, "mypool")
                                     .withLabel(LeaseService.POOL_IS_LEADER_KEY, "false")
                                     .list()
                                     .getItems();
@@ -115,32 +116,32 @@ public class PoolControllerIT {
                                     .findFirst()
                                     .orElse(null);
                         },
-                        l -> l != null);
+                        Objects::nonNull);
     }
 
-    private Lease awaitLeaseHeldBy(String ns, String name, String holderIdentity, Duration timeout) {
+    private Lease awaitLeaseHeldBy(String ns, String holderIdentity, Duration timeout) {
         return await()
                 .atMost(timeout)
                 .pollInterval(Duration.ofMillis(250))
                 .ignoreExceptions()
                 .until(
-                        () -> client.leases().inNamespace(ns).withName(name).get(),
+                        () -> client.leases().inNamespace(ns).withName("flow-pool-leader-mypool").get(),
                         lease -> lease != null
                                 && lease.getSpec() != null
                                 && holderIdentity.equals(lease.getSpec().getHolderIdentity()));
     }
 
-    private List<Lease> awaitMemberLeases(String ns, String poolName, int expectedCount, Duration timeout) {
+    private List<Lease> awaitMemberLeases(String ns, Duration timeout) {
         return await()
                 .atMost(timeout)
                 .pollInterval(Duration.ofMillis(250))
                 .ignoreExceptions()
                 .until(
                         () -> client.leases().inNamespace(ns)
-                                .withLabel(LeaseService.POOL_NAME_LABEL_KEY, poolName)
+                                .withLabel(LeaseService.POOL_NAME_LABEL_KEY, "mypool")
                                 .withLabel(LeaseService.POOL_IS_LEADER_KEY, "false")
                                 .list()
                                 .getItems(),
-                        leases -> leases != null && leases.size() >= expectedCount);
+                        leases -> leases != null && leases.size() >= 3);
     }
 }

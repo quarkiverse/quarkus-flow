@@ -18,8 +18,9 @@ public class InjectLeaseWorkflowApplicationBuilderCustomizer implements Workflow
 
     @Inject
     MemberLeaseCoordinator memberLeaseCoordinator;
+
     @Inject
-    FlowDurableKubeSettings settings;
+    LeaseGroupConfig leaseConfig;
 
     @Override
     public int priority() {
@@ -28,7 +29,7 @@ public class InjectLeaseWorkflowApplicationBuilderCustomizer implements Workflow
 
     @Override
     public void customize(WorkflowApplication.Builder builder) {
-        if (!settings.pool().member().leaseEnabled()) {
+        if (!leaseConfig.member().enabled()) {
             return;
         }
         LOG.info("Flow: Binding Kubernetes Lease to Workflow Application ID");

@@ -4,8 +4,9 @@ import io.quarkiverse.flow.durable.kube.DeploymentPoolTopologyResolver;
 import io.quarkiverse.flow.durable.kube.DevModeKubeInfoStrategy;
 import io.quarkiverse.flow.durable.kube.DevPoolTopologyResolver;
 import io.quarkiverse.flow.durable.kube.Fabric8KubeInfoStrategy;
-import io.quarkiverse.flow.durable.kube.FlowDurableKubeSettings;
+import io.quarkiverse.flow.durable.kube.FlowDurableKubeConfig;
 import io.quarkiverse.flow.durable.kube.InjectLeaseWorkflowApplicationBuilderCustomizer;
+import io.quarkiverse.flow.durable.kube.LeaseAcquisitionHealthCheck;
 import io.quarkiverse.flow.durable.kube.LeaseService;
 import io.quarkiverse.flow.durable.kube.MemberLeaseCoordinator;
 import io.quarkiverse.flow.durable.kube.PoolLeaderController;
@@ -14,6 +15,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.scheduler.deployment.ForceStartSchedulerBuildItem;
 
 class FlowDurableKubernetesProcessor {
 
@@ -24,6 +26,16 @@ class FlowDurableKubernetesProcessor {
         return new FeatureBuildItem(FEATURE);
     }
 
+    /**
+     * Forces the internal Quarkus Scheduler to run since our module creates schedulers programmatically.
+     *
+     * @see <a href="https://quarkus.io/guides/all-builditems#scheduler">Build Items - Scheduler</a>
+     */
+    @BuildStep
+    ForceStartSchedulerBuildItem forceStartSchedulerBuildItem() {
+        return new ForceStartSchedulerBuildItem();
+    }
+
     @BuildStep
     AdditionalBeanBuildItem durableKubeBeans() {
         return AdditionalBeanBuildItem.builder()
@@ -32,10 +44,11 @@ class FlowDurableKubernetesProcessor {
                         PoolMemberController.class,
                         LeaseService.class,
                         Fabric8KubeInfoStrategy.class,
-                        FlowDurableKubeSettings.class,
+                        FlowDurableKubeConfig.class,
                         MemberLeaseCoordinator.class,
                         InjectLeaseWorkflowApplicationBuilderCustomizer.class,
-                        DeploymentPoolTopologyResolver.class)
+                        DeploymentPoolTopologyResolver.class,
+                        LeaseAcquisitionHealthCheck.class)
                 .setUnremovable()
                 .build();
     }

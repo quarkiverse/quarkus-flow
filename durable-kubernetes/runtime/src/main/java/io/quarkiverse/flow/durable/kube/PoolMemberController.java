@@ -26,7 +26,13 @@ public class PoolMemberController extends PoolController {
     private final AtomicReference<String> leaseName = new AtomicReference<>();
 
     @Inject
-    FlowDurableKubeSettings settings;
+    PoolConfig poolConfig;
+
+    @Inject
+    LeaseGroupConfig leaseConfig;
+
+    @Inject
+    SchedulerGroupConfig schedulerConfig;
 
     @Inject
     Event<MemberLeaseEvent> leaseEvents;
@@ -34,7 +40,7 @@ public class PoolMemberController extends PoolController {
     @Override
     public void run() {
         LOG.debug("Attempt to run pool member controller scheduler");
-        if (!settings.pool().member().leaseEnabled())
+        if (!leaseConfig.member().enabled())
             return;
 
         if (!running.compareAndSet(false, true))
@@ -55,12 +61,12 @@ public class PoolMemberController extends PoolController {
     boolean acquireLease() {
         String current = leaseName.get();
         if (current == null) {
-            Optional<Lease> lease = leaseService.tryAcquireMemberLease(kubeInfo.podName(), settings.controllers().poolName());
+            Optional<Lease> lease = leaseService.tryAcquireMemberLease(kubeInfo.podName(), poolConfig.name());
             if (lease.isPresent()) {
                 leaseName.set(lease.get().getMetadata().getName());
                 leaseEvents.fire(new MemberLeaseEvent(
                         MemberLeaseEvent.Type.ACQUIRED,
-                        settings.controllers().poolName(),
+                        poolConfig.name(),
                         kubeInfo.podName(),
                         lease.get().getMetadata().getName()));
                 return true;
@@ -68,13 +74,13 @@ public class PoolMemberController extends PoolController {
             return false;
         }
 
-        Optional<Lease> lease = leaseService.renewLease(current, settings.controllers().poolName());
+        Optional<Lease> lease = leaseService.renewLease(current, kubeInfo.podName());
         // if we return false, on next scheduler run it will try getting a new lease
         if (lease.isEmpty()) {
             leaseName.set(null);
             leaseEvents.fire(new MemberLeaseEvent(
                     MemberLeaseEvent.Type.LOST,
-                    settings.controllers().poolName(),
+                    poolConfig.name(),
                     kubeInfo.podName(),
                     current));
             return false;
@@ -87,7 +93,7 @@ public class PoolMemberController extends PoolController {
         if (released) {
             leaseEvents.fire(new MemberLeaseEvent(
                     MemberLeaseEvent.Type.RELEASED,
-                    settings.controllers().poolName(),
+                    poolConfig.name(),
                     kubeInfo.podName(),
                     leaseName.get()));
         }
@@ -104,16 +110,16 @@ public class PoolMemberController extends PoolController {
 
     @Override
     protected String scheduledExecutorName() {
-        return String.format(POOL_MEMBER_SCHEDULER_FMT, settings.controllers().poolName(), kubeInfo.podName());
+        return String.format(POOL_MEMBER_SCHEDULER_FMT, poolConfig.name(), kubeInfo.podName());
     }
 
     @Override
-    protected ControllersConfig.SchedulerConfig schedulerConfig() {
-        return settings.controllers().member();
+    protected SchedulerGroupConfig.SchedulerConfig schedulerConfig() {
+        return schedulerConfig.member();
     }
 
     @Override
-    protected PoolConfig.LeaseConfig leaseConfig() {
-        return settings.pool().member();
+    protected LeaseGroupConfig.LeaseConfig leaseConfig() {
+        return leaseConfig.member();
     }
 }
