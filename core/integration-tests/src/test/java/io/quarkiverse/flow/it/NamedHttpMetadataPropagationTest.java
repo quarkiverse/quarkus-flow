@@ -1,5 +1,6 @@
 package io.quarkiverse.flow.it;
 
+import static io.quarkiverse.flow.it.HttpPortUtils.generateRandomPort;
 import static io.quarkiverse.flow.providers.MetadataPropagationRequestDecorator.X_FLOW_INSTANCE_ID;
 import static io.quarkiverse.flow.providers.MetadataPropagationRequestDecorator.X_FLOW_TASK_ID;
 import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
@@ -8,7 +9,6 @@ import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.get;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
@@ -217,29 +217,6 @@ public class NamedHttpMetadataPropagationTest {
         public Map<String, String> getConfigOverrides() {
             return Map.of(
                     "quarkus.flow.http.client.workflow.sdk-java-repository.name", "sdk-java-contributors");
-        }
-    }
-
-    public static int generateRandomPort() throws IOException {
-        return findRandomPort();
-    }
-
-    private static int findRandomPort() throws IOException {
-        for (int i = 0; i < 100; i++) {
-            int port = 1024 + (int) (Math.random() * 64512); // 1024 to 65535
-            if (isPortAvailable(port)) {
-                return port;
-            }
-        }
-        throw new IOException("No available port found");
-    }
-
-    private static boolean isPortAvailable(int port) {
-        try (ServerSocket socket = new ServerSocket(port)) {
-            socket.setReuseAddress(true);
-            return true;
-        } catch (IOException e) {
-            return false;
         }
     }
 }
