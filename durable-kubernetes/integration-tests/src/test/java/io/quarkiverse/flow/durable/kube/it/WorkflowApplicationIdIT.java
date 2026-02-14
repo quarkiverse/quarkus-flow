@@ -18,15 +18,16 @@ public class WorkflowApplicationIdIT {
 
     @Inject
     WorkflowApplication app;
+
     @Inject
     MemberLeaseCoordinator memberLeaseCoordinator;
 
     @Test
     void workflowApplicationIdMatchesLease() {
-        // This will block until the controller fires ACQUIRED (through your event -> coordinator gate)
+        // This will block until the controller fires ACQUIRED
         String lease = memberLeaseCoordinator.awaitLease(Duration.ofSeconds(30));
 
-        // Force app initialization (injecting usually already does, but calling a method makes it obvious)
+        // Force app initialization
         assertNotNull(app);
 
         // Replace with the actual getter name:
