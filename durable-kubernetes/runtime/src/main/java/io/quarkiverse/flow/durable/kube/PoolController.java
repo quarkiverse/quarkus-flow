@@ -21,14 +21,16 @@ public abstract class PoolController implements Runnable {
 
     @Inject
     Scheduler scheduler;
+
     @Inject
     LeaseService leaseService;
+
     @Inject
     KubeInfoStrategy kubeInfo;
 
     protected String computeSchedulerDelay() {
-        String schedulerInitialDelay = schedulerConfig().schedulerInitialDelay();
-        if (ControllersConfig.SCHEDULER_INITIAL_DELAY_DEFAULT.equals(schedulerInitialDelay)) {
+        String schedulerInitialDelay = schedulerConfig().initialDelay();
+        if (SchedulerGroupConfig.SCHEDULER_INITIAL_DELAY_DEFAULT.equals(schedulerInitialDelay)) {
             schedulerInitialDelay = String.format("%ds", ThreadLocalRandom.current().nextInt(5, 11));
         } else {
             schedulerInitialDelay = String.format("%ss", schedulerInitialDelay);
@@ -38,12 +40,12 @@ public abstract class PoolController implements Runnable {
 
     @PostConstruct
     void init() {
-        if (!leaseConfig().leaseEnabled()) {
+        if (!leaseConfig().enabled()) {
             return;
         }
         String scheduledExecutorName = scheduledExecutorName();
         LOG.info("Flow: Initializing pool controller '{}' scheduler", scheduledExecutorName);
-        if (!leaseConfig().leaseEnabled()) {
+        if (!leaseConfig().enabled()) {
             LOG.info("Flow: Lease Scheduler '{}' disabled", scheduledExecutorName);
             return;
         }
@@ -53,7 +55,7 @@ public abstract class PoolController implements Runnable {
         LOG.debug("Setting delayed controller '{}' executor to {}", scheduledExecutorName, delayed);
 
         scheduler.newJob(scheduledExecutorName)
-                .setInterval(schedulerConfig().schedulerInterval())
+                .setInterval(schedulerConfig().interval())
                 .setConcurrentExecution(Scheduled.ConcurrentExecution.SKIP)
                 .setDelayed(delayed) // in a cluster, where all pods can start at once, we avoid pilling up requests to get the leader lease
                 .setTask(executionContext -> executorService.execute(this))
@@ -91,8 +93,8 @@ public abstract class PoolController implements Runnable {
 
     protected abstract String leaseName();
 
-    protected abstract ControllersConfig.SchedulerConfig schedulerConfig();
+    protected abstract SchedulerGroupConfig.SchedulerConfig schedulerConfig();
 
-    protected abstract PoolConfig.LeaseConfig leaseConfig();
+    protected abstract LeaseGroupConfig.LeaseConfig leaseConfig();
 
 }

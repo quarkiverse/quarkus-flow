@@ -46,17 +46,20 @@ public class LeaseService {
     KubeInfoStrategy kubeInfo;
 
     @Inject
-    FlowDurableKubeSettings config;
+    LeaseGroupConfig leaseConfig;
+
+    @Inject
+    PoolConfig poolConfig;
 
     @Inject
     PoolTopologyResolver poolTopologyResolver;
 
     public Optional<Lease> createOrUpdateMemberLease(String name) {
-        return createOrUpdateLease(name, Map.of(POOL_IS_LEADER_KEY, "false"), config.pool().member().leaseDuration());
+        return createOrUpdateLease(name, Map.of(POOL_IS_LEADER_KEY, "false"), leaseConfig.member().duration());
     }
 
     private Optional<Lease> createOrUpdateLeaderLease(String name) {
-        return createOrUpdateLease(name, Map.of(POOL_IS_LEADER_KEY, "true"), config.pool().leader().leaseDuration());
+        return createOrUpdateLease(name, Map.of(POOL_IS_LEADER_KEY, "true"), leaseConfig.leader().duration());
     }
 
     /**
@@ -143,8 +146,8 @@ public class LeaseService {
 
         try {
             final Lease renewedLease = client.leases().inNamespace(ns).resource(lease).update();
-            LOG.debug("Renewed lease {} on namespace {} at {}", renewedLease.getMetadata().getName(), ns,
-                    renewedLease.getSpec().getRenewTime());
+            LOG.debug("Renewed lease {} on namespace {} at {} for pod {}", renewedLease.getMetadata().getName(), ns,
+                    renewedLease.getSpec().getRenewTime(), renewedLease.getSpec().getHolderIdentity());
             return Optional.of(renewedLease);
         } catch (KubernetesClientException ex) {
             if (ex.getStatus().getCode() == 409) {
@@ -260,7 +263,7 @@ public class LeaseService {
         if (labels != null) {
             out.putAll(labels);
         }
-        out.put(POOL_NAME_LABEL_KEY, config.controllers().poolName());
+        out.put(POOL_NAME_LABEL_KEY, poolConfig.name());
         return out;
     }
 

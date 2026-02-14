@@ -29,10 +29,16 @@ public class PoolLeaderController extends PoolController {
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     @Inject
-    FlowDurableKubeSettings settings;
+    FlowDurableKubeConfig settings;
+
+    @Inject
+    LeaseGroupConfig leaseConfig;
 
     @Inject
     PoolConfig poolConfig;
+
+    @Inject
+    SchedulerGroupConfig schedulerConfig;
 
     @Inject
     KubeInfoStrategy kubeInfo;
@@ -40,7 +46,7 @@ public class PoolLeaderController extends PoolController {
     @Override
     public void run() {
         LOG.debug("Attempt to run pool leader controller scheduler");
-        if (!settings.pool().leader().leaseEnabled())
+        if (!leaseConfig.leader().enabled())
             return;
 
         if (!running.compareAndSet(false, true))
@@ -71,7 +77,7 @@ public class PoolLeaderController extends PoolController {
 
         final Optional<Integer> replicas = leaseService.desiredReplicas();
         if (replicas.isPresent()) {
-            final String poolName = settings.controllers().poolName();
+            final String poolName = poolConfig.name();
             for (int i = 0; i < replicas.get(); i++) {
                 final String poolMemberName = String.format(POOL_MEMBER_NAME_FMT, poolName, i);
                 final Optional<Lease> leaseMember = leaseService.createOrUpdateMemberLease(poolMemberName);
@@ -88,21 +94,21 @@ public class PoolLeaderController extends PoolController {
 
     @Override
     protected String scheduledExecutorName() {
-        return String.format(POOL_LEADER_SCHEDULER_FMT, settings.controllers().poolName());
+        return String.format(POOL_LEADER_SCHEDULER_FMT, poolConfig.name());
     }
 
     @Override
     protected String leaseName() {
-        return String.format(POOL_LEADER_NAME_FMT, settings.controllers().poolName());
+        return String.format(POOL_LEADER_NAME_FMT, poolConfig.name());
     }
 
     @Override
-    protected ControllersConfig.SchedulerConfig schedulerConfig() {
-        return settings.controllers().leader();
+    protected SchedulerGroupConfig.SchedulerConfig schedulerConfig() {
+        return schedulerConfig.leader();
     }
 
     @Override
-    protected PoolConfig.LeaseConfig leaseConfig() {
-        return poolConfig.leader();
+    protected LeaseGroupConfig.LeaseConfig leaseConfig() {
+        return leaseConfig.leader();
     }
 }
