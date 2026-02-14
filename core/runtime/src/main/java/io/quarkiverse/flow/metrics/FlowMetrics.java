@@ -14,7 +14,9 @@ public enum FlowMetrics {
     TASK_DURATION("task.duration"),
     INSTANCES_RUNNING("instance.running"),
     INSTANCES_WAITING("instance.waiting"),
-    INSTANCES_SUSPENDED("instance.suspended");
+    INSTANCES_SUSPENDED("instance.suspended"),
+    FAULT_TOLERANCE_TASK_RETRY("fault.tolerance.task.retry"),
+    FAULT_TOLERANCE_TASK_FAILURE("fault.tolerance.task.failure");
 
     private final String metricName;
 

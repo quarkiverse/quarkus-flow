@@ -23,6 +23,7 @@ import io.quarkiverse.flow.config.FlowTracingConfig;
 import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkiverse.flow.metrics.MicrometerExecutionListener;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
+import io.quarkiverse.flow.providers.FaultToleranceProvider;
 import io.quarkiverse.flow.providers.HttpClientProvider;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
 import io.quarkiverse.flow.providers.MicroprofileConfigManager;
@@ -100,6 +101,7 @@ class FlowProcessor {
                 .addBeanClass(CredentialsProviderSecretManager.class)
                 .addBeanClass(MicroprofileConfigManager.class)
                 .addBeanClass(HttpClientProvider.class)
+                .addBeanClass(FaultToleranceProvider.class)
                 .addBeanClass(WorkflowRegistry.class)
                 .setUnremovable()
                 .build();
@@ -233,12 +235,17 @@ class FlowProcessor {
     void registerWorkflowApp(WorkflowApplicationRecorder recorder,
             ShutdownContextBuildItem shutdown,
             WorkflowApplicationBuilderBuildItem appBuilder,
+            Optional<MetricsCapabilityBuildItem> metricsCapability,
             BuildProducer<SyntheticBeanBuildItem> beans) {
+
+        boolean isMicrometerSupported = metricsCapability
+                .map(capability -> capability.metricsSupported(MetricsFactory.MICROMETER)).orElse(false);
+
         beans.produce(SyntheticBeanBuildItem.configure(WorkflowApplication.class)
                 .scope(ApplicationScoped.class)
                 .unremovable()
                 .setRuntimeInit()
-                .supplier(recorder.workflowAppSupplier(appBuilder.builder(), shutdown))
+                .supplier(recorder.workflowAppSupplier(appBuilder.builder(), shutdown, isMicrometerSupported))
                 .done());
         LOG.info("Flow: Registering Workflow Application bean: {}", WorkflowApplication.class.getName());
     }
@@ -299,8 +306,8 @@ class FlowProcessor {
         }
 
         metricsCapability.map(capability -> capability.metricsSupported(MetricsFactory.MICROMETER))
-                .ifPresent(micrometerIsSupported -> {
-                    if (micrometerIsSupported) {
+                .ifPresent(isMicrometerSupported -> {
+                    if (isMicrometerSupported) {
                         beans.produce(SyntheticBeanBuildItem.configure(MicrometerExecutionListener.class)
                                 .setRuntimeInit()
                                 .unremovable()

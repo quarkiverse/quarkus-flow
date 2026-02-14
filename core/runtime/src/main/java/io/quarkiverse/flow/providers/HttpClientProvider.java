@@ -81,6 +81,7 @@ public class HttpClientProvider {
      * Cached named clients, keyed by logical client name (e.g. "secureA").
      */
     private final Map<String, Client> namedClients = new ConcurrentHashMap<>();
+    private final RoutingNameResolver routingNameResolver;
     /**
      * Cached default client (using {@link FlowHttpConfig} as {@link HttpClientConfig}).
      */
@@ -89,6 +90,7 @@ public class HttpClientProvider {
     @Inject
     public HttpClientProvider(FlowHttpConfig config) {
         this.config = config;
+        this.routingNameResolver = new RoutingNameResolver(config);
     }
 
     /**
@@ -119,34 +121,11 @@ public class HttpClientProvider {
      * @return a cached {@link Client} instance
      */
     public Client clientFor(String workflowId, String taskId) {
-        final String clientName = resolveClientName(workflowId, taskId);
+        final String clientName = routingNameResolver.resolveName(workflowId, taskId);
         if (clientName == null) {
             return getOrCreateDefaultClient();
         }
         return getOrCreateNamedClient(clientName);
-    }
-
-    /**
-     * Resolve the logical client name for a given workflow + task,
-     * based on the routing section of {@link FlowHttpConfig}.
-     */
-    private String resolveClientName(String workflowId, String taskId) {
-        final FlowHttpConfig.WorkflowRoutingConfig wfCfg = config.workflow().get(workflowId);
-        if (wfCfg == null) {
-            return null;
-        }
-
-        if (taskId != null && !taskId.isBlank()) {
-            final FlowHttpConfig.TaskRoutingConfig taskCfg = wfCfg.task().get(taskId);
-            if (taskCfg != null) {
-                Optional<String> taskClient = taskCfg.name();
-                if (taskClient.isPresent() && !taskClient.get().isBlank()) {
-                    return taskClient.get();
-                }
-            }
-        }
-
-        return wfCfg.name().orElse(null);
     }
 
     /**

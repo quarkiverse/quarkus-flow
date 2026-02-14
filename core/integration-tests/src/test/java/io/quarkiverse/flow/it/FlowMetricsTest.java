@@ -20,6 +20,7 @@ public class FlowMetricsTest {
     public static final String WORKFLOW_FAULTED_TOTAL = "quarkus.flow.workflow.faulted.total";
     public static final String WORKFLOW_TASK_COMPLETED_TOTAL = "quarkus.flow.task.completed.total";
     public static final String WORKFLOW_TASK_FAILED_TOTAL = "quarkus.flow.task.failed.total";
+    public static final String WORKFLOW_FAULT_TOLERANCE_RETRY_TOTAL = "quarkus.flow.fault.tolerance.task.retry";
 
     @Inject
     MeterRegistry registry;
@@ -88,7 +89,10 @@ public class FlowMetricsTest {
                 .as("Task failed counter incremented")
                 .isEqualTo(1.0);
 
+        softly.assertThat(registry.counter(WORKFLOW_FAULT_TOLERANCE_RETRY_TOTAL).count())
+                .as("Task Fault Tolerance counter incremented")
+                .isEqualTo(1.0);
+
         softly.assertAll();
     }
-
 }

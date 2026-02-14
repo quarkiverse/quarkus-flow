@@ -68,12 +68,15 @@
             <artifactId>quarkus-jackson-jq</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-proxy-registry</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow-messaging</artifactId>
             <version>${project.version}</version>
             <optional>true</optional>
         </dependency>
-
         <!-- Required by serverlessworkflow-core-http HttpExecutor service module -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -83,12 +86,11 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-proxy-registry</artifactId>
+            <groupId>io.smallrye</groupId>
+            <artifactId>smallrye-fault-tolerance-standalone</artifactId>
         </dependency>
     </dependencies>
 
