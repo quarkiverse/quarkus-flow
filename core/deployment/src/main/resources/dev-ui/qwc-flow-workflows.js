@@ -93,7 +93,7 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
                                 header="Actions"
                                 auto-width
                                 ${columnBodyRenderer(workflow => html`
-                                    <vaadin-button @click=${() => this._visualizeMermaid(workflow)}>
+                                    <vaadin-button @click=${() => this._visualizeMermaid(workflow)} id="see-${workflow.id.namespace}:${workflow.id.name}:${workflow.id.version}">
                                         <vaadin-icon icon="font-awesome-solid:eye"></vaadin-icon>
                                     </vaadin-button>
                                     <vaadin-button @click=${() => this._executeWorkflow(workflow)}>
