@@ -30,6 +30,10 @@
             <artifactId>quarkus-jackson-deployment</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.serverlessworkflow</groupId>
+            <artifactId>serverlessworkflow-experimental-lambda</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-client-jackson-deployment</artifactId>
         </dependency>
