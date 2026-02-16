@@ -8,6 +8,7 @@ import '@vaadin/icon';
 import '@vaadin/dialog';
 import { dialogRenderer, dialogFooterRenderer } from '@vaadin/dialog/lit.js';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
+import { devuiState } from 'devui-state';
 
 import './qwc-flow-workflow-execution.js';
 
