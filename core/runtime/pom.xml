@@ -57,6 +57,10 @@
             <groupId>io.serverlessworkflow</groupId>
             <artifactId>serverlessworkflow-impl-jackson-jwt</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.serverlessworkflow</groupId>
+            <artifactId>serverlessworkflow-persistence-api</artifactId>
+        </dependency>
 
         <!-- Quarkus -->
         <dependency>

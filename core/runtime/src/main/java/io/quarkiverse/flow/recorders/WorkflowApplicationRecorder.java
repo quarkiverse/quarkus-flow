@@ -31,6 +31,8 @@ import io.serverlessworkflow.impl.events.EventConsumer;
 import io.serverlessworkflow.impl.events.EventPublisher;
 import io.serverlessworkflow.impl.executors.http.HttpClientResolver;
 import io.serverlessworkflow.impl.expressions.jq.JQExpressionFactory;
+import io.serverlessworkflow.impl.persistence.PersistenceApplicationBuilder;
+import io.serverlessworkflow.impl.persistence.PersistenceInstanceHandlers;
 
 @Recorder
 public class WorkflowApplicationRecorder {
@@ -62,10 +64,25 @@ public class WorkflowApplicationRecorder {
             this.injectSecretManager(container, builder);
             this.injectConfigManager(container, builder);
             this.injectHttpClientProvider(container, builder);
-            WorkflowApplication app = builder.build();
+
+            WorkflowApplication app = applyPersistenceHandlerIfNecessary(builder);
+
             shutdownContext.addShutdownTask(app::close);
             return app;
         };
+    }
+
+    private static WorkflowApplication applyPersistenceHandlerIfNecessary(Builder builder) {
+        InjectableInstance<PersistenceInstanceHandlers> persistenceHandlers = Arc.container()
+                .select(PersistenceInstanceHandlers.class, Any.Literal.INSTANCE);
+
+        if (persistenceHandlers.isUnsatisfied()) {
+            LOG.info("Persistence handler is unsatisfied");
+        } else {
+            LOG.info("Persistence handler satisfied: {}", persistenceHandlers.get().toString());
+        }
+        return persistenceHandlers.isUnsatisfied() ? builder.build()
+                : PersistenceApplicationBuilder.builder(builder, persistenceHandlers.get().writer()).build();
     }
 
     private void injectEventConsumers(final ArcContainer container, final WorkflowApplication.Builder builder) {
