@@ -7,6 +7,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.serverlessworkflow.impl.WorkflowModelFactory;
+import io.serverlessworkflow.impl.auth.JWTConverter;
 import io.serverlessworkflow.impl.events.EventConsumer;
 import io.serverlessworkflow.impl.events.EventPublisher;
 import io.serverlessworkflow.impl.events.InMemoryEvents;
@@ -14,6 +15,7 @@ import io.serverlessworkflow.impl.executors.TaskExecutorFactory;
 import io.serverlessworkflow.impl.executors.func.DataTypeConverter;
 import io.serverlessworkflow.impl.executors.func.JavaTaskExecutorFactory;
 import io.serverlessworkflow.impl.executors.http.HttpRequestDecorator;
+import io.serverlessworkflow.impl.executors.http.oauth.jackson.JacksonJWTConverter;
 import io.serverlessworkflow.impl.expressions.ExpressionFactory;
 import io.serverlessworkflow.impl.expressions.func.JavaExpressionFactory;
 import io.serverlessworkflow.impl.expressions.jq.JQExpressionFactory;
@@ -44,6 +46,7 @@ final class FlowNativeProcessor {
                 JacksonModelFactory.class.getName()));
         sp.produce(new ServiceProviderBuildItem(HttpRequestDecorator.class.getName(),
                 MetadataPropagationRequestDecorator.class.getName()));
+        sp.produce(new ServiceProviderBuildItem(JWTConverter.class.getName(), JacksonJWTConverter.class.getName()));
         sp.produce(new ServiceProviderBuildItem(DataTypeConverter.class.getName(),
                 Uni2CompletableFuture.class.getName(), Multi2CompletableFuture.class.getName()));
     }

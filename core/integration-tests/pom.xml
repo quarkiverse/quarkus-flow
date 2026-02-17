@@ -12,6 +12,7 @@
 
     <properties>
         <skipITs>true</skipITs>
+        <version.wiremock-jre8-standalone>2.35.2</version.wiremock-jre8-standalone>
     </properties>
 
     <dependencies>
@@ -36,6 +37,14 @@
             <groupId>io.quarkiverse.langchain4j</groupId>
             <artifactId>quarkus-langchain4j-ollama</artifactId>
             <version>${io.quarkiverse.langchain4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-jwt-build</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-jwt</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -66,6 +75,12 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.tomakehurst</groupId>
+            <artifactId>wiremock-jre8-standalone</artifactId>
+            <version>${version.wiremock-jre8-standalone}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
