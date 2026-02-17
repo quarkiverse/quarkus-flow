@@ -43,7 +43,7 @@ public class WorkflowMermaidIT {
 
     @Test
     @DisplayName("Should generate the diagram as expected")
-    void should_generate_mermaid_svg() {
+    void shouldGenerateMermaidSvg() {
         final Map<String, String> env = new HashMap<>(System.getenv());
         env.put("DEBUG", "pw:api");
 
