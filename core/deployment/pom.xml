@@ -92,6 +92,12 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-proxy-registry</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.playwright</groupId>
+            <artifactId>quarkus-playwright</artifactId>
+            <version>${io.quarkiverse.playwright}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

@@ -10,7 +10,7 @@ import io.serverlessworkflow.fluent.spec.WorkflowBuilder;
 public class HelloWorldWorkflow extends Flow {
     public Workflow descriptor() {
         return WorkflowBuilder
-                .workflow()
+                .workflow("hello-world", "devui", "v1")
                 .tasks(t -> t.set("${ .message }"))
                 .build();
     }
