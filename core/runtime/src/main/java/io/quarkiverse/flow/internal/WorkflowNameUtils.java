@@ -54,21 +54,17 @@ public final class WorkflowNameUtils {
         // Fallback if everything got stripped
         if (sanitizedName.isEmpty()) {
             // won't return here since we don't know if defaultValue is safe or not.
-            sanitizedName = (WorkflowUtils.isValid(defaultValue)) ? "wf-" + safeName(defaultValue, "wf") : "wf";
+           sanitizedName = (WorkflowUtils.isValid(defaultValue)) ? safeName(defaultValue, "wf") : "wf";
         }
 
-        if (sanitizedName.length() > MAX_LENGTH) {
-            sanitizedName = sanitizedName.substring(0, MAX_LENGTH).replaceAll("-+$", "");
-            if (sanitizedName.isEmpty()) {
-                sanitizedName = defaultValue;
-            }
-        }
-
+        // Ensure leading character is Alphanumeric
         if (!Character.isLetterOrDigit(sanitizedName.charAt(0))) {
             sanitizedName = "wf-" + sanitizedName;
-            if (sanitizedName.length() > MAX_LENGTH) {
-                sanitizedName = sanitizedName.substring(0, MAX_LENGTH).replaceAll("-+$", "");
-            }
+        }
+
+        // Truncate to MAX_LENGTH
+        if (sanitizedName.length() > MAX_LENGTH) {
+            sanitizedName = sanitizedName.substring(0, MAX_LENGTH).replaceAll("-+$", "");
         }
 
         return sanitizedName;
