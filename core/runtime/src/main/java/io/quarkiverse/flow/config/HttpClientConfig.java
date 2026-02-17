@@ -1,9 +1,14 @@
 package io.quarkiverse.flow.config;
 
+import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
 
+import io.quarkus.runtime.annotations.ConfigGroup;
+import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 
 /**
@@ -591,4 +596,186 @@ public interface HttpClientConfig {
      * @return {@code true} if hostname verification is enabled, if configured
      */
     Optional<Boolean> verifyHost();
+
+    ResilienceConfig resilience();
+
+    @ConfigGroup
+    interface ResilienceConfig {
+        //@formatter:off
+        /**
+         * Identifier of the {@code TypeGuard<CompletionStage<WorkflowModel>>}
+         * implementation to be used by this HTTP client.
+         * <p>
+         * Default client:
+         *
+         * <pre>
+         * quarkus.flow.http.client.resilience.identifier=my-guard
+         * </pre>
+         *
+         * <p>
+         * Named client:
+         *
+         * <pre>
+         * quarkus.flow.http.client.named.&lt;name&gt;.resilience.identifier=my-guard
+         * </pre>
+         */
+        Optional<String> identifier();
+        //@formatter:on
+
+        RetryConfig retry();
+
+    }
+
+    @ConfigGroup
+    interface RetryConfig {
+
+        /**
+         * Defines the maximum number of retries for a task execution.
+         * <p>
+         * The value must be greater than or equal to {@code -1}.
+         * <ul>
+         * <li>{@code -1}: retries indefinitely</li>
+         * <li>{@code 0}: no retries (the task is executed only once)</li>
+         * <li>{@code N > 0}: the task is executed {@code N + 1} times
+         * (1 initial execution plus {@code N} retries)</li>
+         * </ul>
+         *
+         * <p>
+         * <strong>Default client configuration:</strong>
+         *
+         * <pre>
+         * quarkus.flow.http.client.resilience.retry.max-retries=3
+         * </pre>
+         *
+         * <p>
+         * <strong>Named client configuration:</strong>
+         *
+         * <pre>
+         * quarkus.flow.http.client.named.&lt;name&gt;.resilience.retry.max-retries=3
+         * </pre>
+         */
+        @WithDefault("3")
+        OptionalInt maxRetries();
+
+        /**
+         * Enables or disables Fault Tolerance retry support.
+         * <p>
+         * When enabled, failed task executions may be retried according to the
+         * configured retry policy.
+         *
+         * <p>
+         * <strong>Default client configuration:</strong>
+         *
+         * <pre>
+         * quarkus.flow.http.client.resilience.retry.enabled = true
+         * </pre>
+         *
+         * <p>
+         * <strong>Named client configuration:</strong>
+         *
+         * <pre>
+         * quarkus.flow.http.client.named.&lt;name&gt;.resilience.retry.enabled=true
+         * </pre>
+         */
+        @WithDefault("true")
+        Optional<Boolean> enabled();
+
+        /**
+         * Defines the delay between retry attempts.
+         * <p>
+         * The delay is applied <strong>only after a failed execution</strong> and
+         * <strong>before a retry attempt</strong> is performed.
+         * <p>
+         * The initial execution is not delayed. The delay applies only to subsequent
+         * retry attempts.
+         * <p>
+         * A value of {@code 0} disables the delay, causing retries to be executed
+         * immediately.
+         *
+         * <p>
+         * <strong>Default client configuration:</strong>
+         *
+         * <pre>
+         * quarkus.flow.http.client.resiilience.retry.delay = 0
+         * </pre>
+         *
+         * <p>
+         * <strong>Named client configuration:</strong>
+         *
+         * <pre>
+         * quarkus.flow.http.client.named.&lt;name&gt;.resilience.retry.delay=0
+         * </pre>
+         */
+        @WithDefault("0")
+        Duration delay();
+
+        /**
+         * Defines the jitter bound applied to the delay between retry attempts.
+         * <p>
+         * A random value in the range from {@code -jitter} to {@code +jitter} is added
+         * to the configured retry delay. This helps to avoid retry bursts when multiple
+         * tasks fail simultaneously.
+         * <p>
+         * The jitter is applied only to retry attempts. The initial execution is not
+         * affected.
+         * <p>
+         * A value of {@code 0} disables jitter, causing the retry delay to be applied
+         * without any random variation.
+         *
+         * <p>
+         * <strong>Default client configuration:</strong>
+         *
+         * <pre>
+         * quarkus.flow.http.client.resilience.retry.jitter=200ms
+         * </pre>
+         *
+         * <p>
+         * <strong>Named client configuration:</strong>
+         *
+         * <pre>
+         * quarkus.flow.http.client.named.&lt;name&gt;.resilience.retry.jitter=200ms
+         * </pre>
+         */
+        @WithDefault("200ms")
+        Duration jitter();
+
+        /**
+         * Defines the exception types that trigger a retry.
+         * <p>
+         * When the execution throws an exception whose type matches one of the
+         * configured values, the retry mechanism is applied.
+         * <p>
+         * The comparison is based on the fully qualified class name of the
+         * exception. Subclasses are also considered a match.
+         * <p>
+         * If this list is empty, the default retry behavior defined by
+         * SmallRye Fault Tolerance applies.
+         *
+         * <p>
+         * <strong>Default client configuration:</strong>
+         *
+         * <pre>
+         * quarkus.flow.http.client.resilience.retry.exceptions=
+         * </pre>
+         *
+         * <p>
+         * <strong>Named client configuration:</strong>
+         *
+         * <pre>
+         * quarkus.flow.http.client.named.&lt;name&gt;.resilience.retry.exceptions=
+         * </pre>
+         *
+         * <p>
+         * Example:
+         *
+         * <pre>
+         * quarkus.flow.http.client.resilience.retry.exceptions=
+         *     java.io.IOException,
+         *     jakarta.ws.rs.ProcessingException
+         * </pre>
+         */
+        Optional<List<String>> exceptions();
+
+    }
+
 }

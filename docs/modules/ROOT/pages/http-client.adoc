@@ -376,7 +376,102 @@ You can disable the automatic correlation header injection by setting the `quark
 [NOTE]
 The `quarkus.flow.http.client.enable-metadata-propagation` is a global-level HTTP client property. You cannot enable or disable correlation headers on a per-workflow or per-task basis.
 
-== 13. Putting it all together
+
+== 13. Integration with SmallRye Resilience
+
+Quarkus Flow integrates with the *SmallRye Fault Tolerance* project to provide
+resilience and fault-tolerance capabilities, such as retries and other
+resilience strategies, when invoking workflows.
+
+=== Retry
+
+By default, *all workflows have a retry strategy enabled*.
+
+You can disable retries globally for all workflows by setting the following
+property:
+
+[source,properties]
+----
+quarkus.flow.http.client.resilience.retry.enabled=false
+----
+
+When `quarkus.flow.http.client.resilience.retry.enabled` is set to `true`
+(the default), the following configuration values are applied:
+
+[source,properties]
+----
+quarkus.flow.http.client.resilience.retry.max-retries=3
+quarkus.flow.http.client.resilience.retry.delay=0
+quarkus.flow.http.client.resilience.retry.jitter=200ms
+----
+
+[NOTE]
+====
+Resilience configuration is applied per *named workflow*.
+
+If you are using named HTTP clients, you can scope the retry configuration as
+follows:
+
+[source,properties]
+----
+quarkus.flow.http.client.named."my-client".resilience.retry.*
+----
+====
+
+=== Using a TypedGuard from CDI
+
+For more advanced or fine-grained control, Quarkus Flow allows you to define
+resilience behavior programmatically by providing a CDI-produced `TypedGuard`.
+
+This approach is useful when:
+
+* Retry conditions depend on business logic
+* You need to inspect exceptions in detail
+* Different workflows require different resilience strategies
+
+To do this, create a CDI producer for a
+`TypedGuard<CompletionStage<WorkflowModel>>` and annotate it with
+`@io.smallrye.common.annotation.Identifier`, as shown below:
+
+[source,java]
+----
+@Produces
+@Identifier("custom-type-guard") // <1>
+public TypedGuard<CompletionStage<WorkflowModel>> custom() {
+    return TypedGuard.<CompletionStage<WorkflowModel>>create(new TypeLiteral<>() {})
+            .withRetry()
+            .whenException(throwable -> {
+                WorkflowException workflowException = (WorkflowException) throwable;
+                // custom retry logic
+                return true; // retry
+            })
+            .done()
+            .build();
+}
+----
+
+<1> Identifier value that must be referenced from `application.properties`.
+
+Next, configure Quarkus Flow to use this `TypedGuard` by setting the following
+property:
+
+[source,properties]
+----
+quarkus.flow.http.client.resilience.identifier=custom-type-guard
+----
+
+[NOTE]
+====
+When `quarkus.flow.http.client.resilience.identifier` is set,
+*all retry-related configuration defined via*
+`quarkus.flow.http.client.resilience.retry.*` is ignored.
+
+In this case, the resilience behavior is fully controlled by the provided
+`TypedGuard` implementation.
+====
+
+
+== 14. Putting it all together
 
 Example: a typical setup using both default and named clients:
 

@@ -2,6 +2,7 @@ package io.quarkiverse.flow.recorders;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -13,8 +14,10 @@ import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.metrics.MicrometerExecutionListener;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
+import io.quarkiverse.flow.providers.FaultToleranceProvider;
 import io.quarkiverse.flow.providers.HttpClientProvider;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
+import io.quarkiverse.flow.providers.WorkflowTaskContext;
 import io.quarkiverse.flow.tracing.TraceLoggerExecutionListener;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -23,14 +26,21 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.serverlessworkflow.api.types.CallHTTP;
+import io.serverlessworkflow.api.types.CallOpenAPI;
+import io.serverlessworkflow.api.types.TaskBase;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowApplication.Builder;
+import io.serverlessworkflow.impl.WorkflowModel;
 import io.serverlessworkflow.impl.config.ConfigManager;
 import io.serverlessworkflow.impl.config.SecretManager;
 import io.serverlessworkflow.impl.events.EventConsumer;
 import io.serverlessworkflow.impl.events.EventPublisher;
+import io.serverlessworkflow.impl.executors.CallableTask;
+import io.serverlessworkflow.impl.executors.CallableTaskProxyBuilder;
 import io.serverlessworkflow.impl.executors.http.HttpClientResolver;
 import io.serverlessworkflow.impl.expressions.jq.JQExpressionFactory;
+import io.smallrye.faulttolerance.api.TypedGuard;
 
 @Recorder
 public class WorkflowApplicationRecorder {
@@ -46,29 +56,27 @@ public class WorkflowApplicationRecorder {
     }
 
     public Supplier<WorkflowApplication> workflowAppSupplier(RuntimeValue<Builder> builderWrapper,
-            ShutdownContext shutdownContext) {
+            ShutdownContext shutdownContext, boolean isMicrometerSupported) {
         return () -> {
             final ArcContainer container = Arc.container();
             final Builder builder = builderWrapper.getValue();
-            builder.withExpressionFactory(new JQExpressionFactory(container.instance(JQScopeSupplier.class).get()));
 
-            InstanceHandle<MicrometerExecutionListener> instance = container
-                    .instance(MicrometerExecutionListener.class);
-            if (instance.isAvailable()) {
-                builder.withListener(instance.get());
-            }
+            this.injectJQExpressionFactory(builder, container);
             this.injectEventConsumers(container, builder);
             this.injectEventPublishers(container, builder);
             this.injectSecretManager(container, builder);
             this.injectConfigManager(container, builder);
             this.injectHttpClientProvider(container, builder);
+            this.injectMicrometerListener(container, builder);
+            this.injectFaultTolerance(container, builder, isMicrometerSupported);
+
             WorkflowApplication app = builder.build();
             shutdownContext.addShutdownTask(app::close);
             return app;
         };
     }
 
-    private void injectEventConsumers(final ArcContainer container, final WorkflowApplication.Builder builder) {
+    private void injectEventConsumers(final ArcContainer container, final Builder builder) {
         final InjectableInstance<EventConsumer<?, ?>> consumerHandle = container.select(new TypeLiteral<>() {
         }, Any.Literal.INSTANCE);
         if (consumerHandle.isResolvable()) {
@@ -83,7 +91,7 @@ public class WorkflowApplicationRecorder {
         }
     }
 
-    private void injectEventPublishers(final ArcContainer container, final WorkflowApplication.Builder builder) {
+    private void injectEventPublishers(final ArcContainer container, final Builder builder) {
         final List<EventPublisher> pubHandles = container.select(EventPublisher.class, Any.Literal.INSTANCE).stream()
                 .toList();
         if (!pubHandles.isEmpty()) {
@@ -99,7 +107,7 @@ public class WorkflowApplicationRecorder {
         }
     }
 
-    private void injectSecretManager(final ArcContainer container, final WorkflowApplication.Builder builder) {
+    private void injectSecretManager(final ArcContainer container, final Builder builder) {
         List<SecretManager> managers = container.select(SecretManager.class, Any.Literal.INSTANCE).stream().toList();
 
         if (managers.isEmpty()) {
@@ -124,7 +132,7 @@ public class WorkflowApplicationRecorder {
         }
     }
 
-    private void injectConfigManager(final ArcContainer container, final WorkflowApplication.Builder builder) {
+    private void injectConfigManager(final ArcContainer container, final Builder builder) {
         final InjectableInstance<ConfigManager> configHandler = container.select(new TypeLiteral<>() {
         }, Any.Literal.INSTANCE);
         if (configHandler.isResolvable()) {
@@ -139,7 +147,7 @@ public class WorkflowApplicationRecorder {
         }
     }
 
-    private void injectHttpClientProvider(final ArcContainer container, final WorkflowApplication.Builder builder) {
+    private void injectHttpClientProvider(final ArcContainer container, final Builder builder) {
         final HttpClientProvider httpClientProvider = container.instance(HttpClientProvider.class).get();
         LOG.info("Flow: Bound HttpClientProvider bean: {}", httpClientProvider.getClass().getName());
         builder.withAdditionalObject(HttpClientResolver.HTTP_CLIENT_PROVIDER, ((workflowContextData, taskContextData) -> {
@@ -149,4 +157,38 @@ public class WorkflowApplicationRecorder {
         }));
     }
 
+    private void injectMicrometerListener(ArcContainer container, Builder builder) {
+        InstanceHandle<MicrometerExecutionListener> instance = container
+                .instance(MicrometerExecutionListener.class);
+        if (instance.isAvailable()) {
+            builder.withListener(instance.get());
+        }
+    }
+
+    private void injectJQExpressionFactory(Builder builder, ArcContainer container) {
+        builder.withExpressionFactory(new JQExpressionFactory(container.instance(JQScopeSupplier.class).get()));
+    }
+
+    private void injectFaultTolerance(ArcContainer container, Builder builder, boolean isMicrometerSupported) {
+        FaultToleranceProvider faultToleranceProvider = container.instance(FaultToleranceProvider.class).get();
+        LOG.info("Flow: Bound FaultToleranceProvider bean: {}", faultToleranceProvider.getClass().getName());
+        builder.withCallableProxy(new CallableTaskProxyBuilder() {
+            @Override
+            public CallableTask build(CallableTask delegate) {
+                return (workflowContext, taskContext, input) -> {
+                    String workflowName = workflowContext.definition().workflow().getDocument().getName();
+                    String taskName = taskContext.taskName();
+                    TypedGuard<CompletionStage<WorkflowModel>> guard = faultToleranceProvider
+                            .guardFor(new WorkflowTaskContext(workflowName, taskName, isMicrometerSupported));
+
+                    return guard.get(() -> delegate.apply(workflowContext, taskContext, input)).toCompletableFuture();
+                };
+            }
+
+            @Override
+            public boolean accept(TaskBase taskBase) {
+                return taskBase instanceof CallHTTP || taskBase instanceof CallOpenAPI;
+            }
+        });
+    }
 }

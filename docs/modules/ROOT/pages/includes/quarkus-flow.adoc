@@ -1136,6 +1136,254 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |
 
+a| [[quarkus-flow_quarkus-flow-http-client-resilience-identifier]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-resilience-identifier[`quarkus.flow.http.client.resilience.identifier`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.resilience.identifier+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Identifier of the `TypeGuard<CompletionStage<WorkflowModel>>` implementation to be used by this HTTP client.
+
+Default client:
+
+```
+quarkus.flow.http.client.resilience.identifier=my-guard
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.resilience.identifier=my-guard
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_IDENTIFIER+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_IDENTIFIER+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-resilience-retry-max-retries]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-resilience-retry-max-retries[`quarkus.flow.http.client.resilience.retry.max-retries`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.resilience.retry.max-retries+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the maximum number of retries for a task execution.
+
+The value must be greater than or equal to `-1`.
+
+ - `-1`: retries indefinitely
+ - `0`: no retries (the task is executed only once)
+ - `N > 0`: the task is executed `N {plus} 1` times (1 initial execution plus `N` retries)
+
+
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.resilience.retry.max-retries=3
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.retry.max-retries=3
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_RETRY_MAX_RETRIES+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_RETRY_MAX_RETRIES+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++3+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-resilience-retry-enabled]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-resilience-retry-enabled[`quarkus.flow.http.client.resilience.retry.enabled`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.resilience.retry.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enables or disables Fault Tolerance retry support.
+
+When enabled, failed task executions may be retried according to the configured retry policy.
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.resilience.retry.enabled = true
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.retry.enabled=true
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_RETRY_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_RETRY_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-resilience-retry-delay]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-resilience-retry-delay[`quarkus.flow.http.client.resilience.retry.delay`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.resilience.retry.delay+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the delay between retry attempts.
+
+The delay is applied *only after a failed execution* and *before a retry attempt* is performed.
+
+The initial execution is not delayed. The delay applies only to subsequent retry attempts.
+
+A value of `0` disables the delay, causing retries to be executed immediately.
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.resiilience.retry.delay = 0
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.retry.delay=0
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_RETRY_DELAY+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_RETRY_DELAY+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
+|`+++0S+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-resilience-retry-jitter]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-resilience-retry-jitter[`quarkus.flow.http.client.resilience.retry.jitter`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.resilience.retry.jitter+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the jitter bound applied to the delay between retry attempts.
+
+A random value in the range from `-jitter` to `{plus}jitter` is added to the configured retry delay. This helps to avoid retry bursts when multiple tasks fail simultaneously.
+
+The jitter is applied only to retry attempts. The initial execution is not affected.
+
+A value of `0` disables jitter, causing the retry delay to be applied without any random variation.
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.resilience.retry.jitter=200ms
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.retry.jitter=200ms
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_RETRY_JITTER+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_RETRY_JITTER+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
+|`+++200MS+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-resilience-retry-exceptions]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-resilience-retry-exceptions[`quarkus.flow.http.client.resilience.retry.exceptions`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.resilience.retry.exceptions+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the exception types that trigger a retry.
+
+When the execution throws an exception whose type matches one of the configured values, the retry mechanism is applied.
+
+The comparison is based on the fully qualified class name of the exception. Subclasses are also considered a match.
+
+If this list is empty, the default retry behavior defined by SmallRye Fault Tolerance applies.
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.resilience.retry.exceptions=
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.retry.exceptions=
+```
+
+
+
+Example:
+
+```
+quarkus.flow.http.client.resilience.retry.exceptions=
+    java.io.IOException,
+    jakarta.ws.rs.ProcessingException
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_RETRY_EXCEPTIONS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_RETRY_EXCEPTIONS+++`
+endif::add-copy-button-to-env-var[]
+--
+|list of string
+|
+
 a| [[quarkus-flow_quarkus-flow-http-client-enable-metadata-propagation]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-enable-metadata-propagation[`quarkus.flow.http.client.enable-metadata-propagation`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.http.client.enable-metadata-propagation+++[]
@@ -2151,6 +2399,254 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |
 
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-resilience-identifier]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-resilience-identifier[`quarkus.flow.http.client.named."named".resilience.identifier`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".resilience.identifier+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Identifier of the `TypeGuard<CompletionStage<WorkflowModel>>` implementation to be used by this HTTP client.
+
+Default client:
+
+```
+quarkus.flow.http.client.resilience.identifier=my-guard
+```
+
+
+
+Named client:
+
+```
+quarkus.flow.http.client.named.<name>.resilience.identifier=my-guard
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_IDENTIFIER+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_IDENTIFIER+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-resilience-retry-max-retries]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-resilience-retry-max-retries[`quarkus.flow.http.client.named."named".resilience.retry.max-retries`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".resilience.retry.max-retries+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the maximum number of retries for a task execution.
+
+The value must be greater than or equal to `-1`.
+
+ - `-1`: retries indefinitely
+ - `0`: no retries (the task is executed only once)
+ - `N > 0`: the task is executed `N {plus} 1` times (1 initial execution plus `N` retries)
+
+
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.resilience.retry.max-retries=3
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.retry.max-retries=3
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_RETRY_MAX_RETRIES+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_RETRY_MAX_RETRIES+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++3+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-resilience-retry-enabled]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-resilience-retry-enabled[`quarkus.flow.http.client.named."named".resilience.retry.enabled`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".resilience.retry.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enables or disables Fault Tolerance retry support.
+
+When enabled, failed task executions may be retried according to the configured retry policy.
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.resilience.retry.enabled = true
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.retry.enabled=true
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_RETRY_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_RETRY_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-resilience-retry-delay]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-resilience-retry-delay[`quarkus.flow.http.client.named."named".resilience.retry.delay`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".resilience.retry.delay+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the delay between retry attempts.
+
+The delay is applied *only after a failed execution* and *before a retry attempt* is performed.
+
+The initial execution is not delayed. The delay applies only to subsequent retry attempts.
+
+A value of `0` disables the delay, causing retries to be executed immediately.
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.resiilience.retry.delay = 0
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.retry.delay=0
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_RETRY_DELAY+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_RETRY_DELAY+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
+|`+++0S+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-resilience-retry-jitter]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-resilience-retry-jitter[`quarkus.flow.http.client.named."named".resilience.retry.jitter`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".resilience.retry.jitter+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the jitter bound applied to the delay between retry attempts.
+
+A random value in the range from `-jitter` to `{plus}jitter` is added to the configured retry delay. This helps to avoid retry bursts when multiple tasks fail simultaneously.
+
+The jitter is applied only to retry attempts. The initial execution is not affected.
+
+A value of `0` disables jitter, causing the retry delay to be applied without any random variation.
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.resilience.retry.jitter=200ms
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.retry.jitter=200ms
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_RETRY_JITTER+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_RETRY_JITTER+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
+|`+++200MS+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-resilience-retry-exceptions]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-resilience-retry-exceptions[`quarkus.flow.http.client.named."named".resilience.retry.exceptions`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".resilience.retry.exceptions+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the exception types that trigger a retry.
+
+When the execution throws an exception whose type matches one of the configured values, the retry mechanism is applied.
+
+The comparison is based on the fully qualified class name of the exception. Subclasses are also considered a match.
+
+If this list is empty, the default retry behavior defined by SmallRye Fault Tolerance applies.
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.resilience.retry.exceptions=
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.retry.exceptions=
+```
+
+
+
+Example:
+
+```
+quarkus.flow.http.client.resilience.retry.exceptions=
+    java.io.IOException,
+    jakarta.ws.rs.ProcessingException
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_RETRY_EXCEPTIONS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_RETRY_EXCEPTIONS+++`
+endif::add-copy-button-to-env-var[]
+--
+|list of string
+|
+
 a| [[quarkus-flow_quarkus-flow-http-client-workflow-workflow-name]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-workflow-workflow-name[`quarkus.flow.http.client.workflow."workflow".name`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.http.client.workflow."workflow".name+++[]
@@ -2207,3 +2703,22 @@ endif::add-copy-button-to-env-var[]
 
 |===
 
+ifndef::no-duration-note[]
+[NOTE]
+[id=duration-note-anchor-quarkus-flow_quarkus-flow]
+.About the Duration format
+====
+To write duration values, use the standard `java.time.Duration` format.
+See the link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#parse(java.lang.CharSequence)[Duration#parse() Java API documentation] for more information.
+
+You can also use a simplified format, starting with a number:
+
+* If the value is only a number, it represents time in seconds.
+* If the value is a number followed by `ms`, it represents time in milliseconds.
+
+In other cases, the simplified format is translated to the `java.time.Duration` format for parsing:
+
+* If the value is a number followed by `h`, `m`, or `s`, it is prefixed with `PT`.
+* If the value is a number followed by `d`, it is prefixed with `P`.
+====
+endif::no-duration-note[]
