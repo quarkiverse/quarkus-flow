@@ -1,0 +1,2 @@
+ io.quarkiverse.flow.converters.Uni2CompletableFuture
+ io.quarkiverse.flow.converters.Multi2CompletableFuture

@@ -5,22 +5,26 @@ import static io.quarkiverse.flow.internal.WorkflowNameUtils.safeName;
 import static io.quarkiverse.flow.langchain4j.workflow.FlowAgentServiceUtil.agenticScopePassthrough;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import dev.langchain4j.agentic.UntypedAgent;
-import dev.langchain4j.agentic.declarative.ConditionalAgent;
 import dev.langchain4j.agentic.internal.AgentExecutor;
+import dev.langchain4j.agentic.planner.AgentInstance;
+import dev.langchain4j.agentic.planner.InitPlanningContext;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import dev.langchain4j.agentic.workflow.impl.ConditionalAgentServiceImpl;
 import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
 
-public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<T> {
+public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<T> implements FlowAgentService {
 
-    private final List<ConditionalAgent> flowConditionalAgents = new ArrayList<>();
+    private final Map<AgentInstance, Predicate<AgenticScope>> conditions = new IdentityHashMap<>();
 
     protected FlowConditionalAgentService(Class<T> agentServiceClass, Method agenticMethod) {
         super(agentServiceClass, agenticMethod);
@@ -39,33 +43,40 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
     public FlowConditionalAgentService<T> subAgents(String conditionDescription, Predicate<AgenticScope> condition,
             List<AgentExecutor> agentExecutors) {
         super.subAgents(conditionDescription, condition, agentExecutors);
-        this.flowConditionalAgents.add(new ConditionalAgent(condition, List.copyOf(agentExecutors)));
+        for (AgentExecutor agentExecutor : agentExecutors) {
+            this.conditions.compute(agentExecutor, (k, v) -> (v == null) ? condition : v.or(condition));
+        }
+        return this;
+    }
+
+    @Override
+    public FlowConditionalAgentService<T> subAgent(String conditionDescription, Predicate<AgenticScope> condition,
+            AgentExecutor agentExecutor) {
+        super.subAgent(conditionDescription, condition, agentExecutor);
+        this.conditions.compute(agentExecutor, (k, v) -> (v == null) ? condition : v.or(condition));
         return this;
     }
 
     @Override
     public T build() {
-        final FlowPlanner planner = new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition());
-        return build(() -> planner);
+        return build(() -> new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition()));
     }
 
-    protected Consumer<FuncDoTaskBuilder> tasksDefinition() {
-        return tasks -> {
+    public BiFunction<FlowPlanner, InitPlanningContext, Consumer<FuncDoTaskBuilder>> tasksDefinition() {
+        return (planner, initPlanningContext) -> tasks -> {
             int step = 0;
-            for (ConditionalAgent c : flowConditionalAgents) {
-                for (AgentExecutor agentExecutor : c.agentExecutors) {
-                    final String stepName = safeName(agentExecutor.agentInvoker().agentId() + "-" + (step++));
-                    tasks.function(stepName,
-                            fn -> fn.function(
-                                    (DefaultAgenticScope scope) -> agentExecutor.syncExecute(scope, null),
-                                    DefaultAgenticScope.class)
-                                    .when(c.condition, AgenticScope.class)
-                                    .outputAs((out, wf, tf) -> agenticScopePassthrough(tf.rawInput())));
-                }
+            for (AgentInstance agent : initPlanningContext.subagents()) {
+                final String stepName = safeName(agent.agentId() + "-" + (step++));
+                tasks.function(stepName,
+                        fn -> fn.function(
+                                (DefaultAgenticScope scope) -> {
+                                    CompletableFuture<Void> nextActionFuture = planner.executeAgent(agent);
+                                    return nextActionFuture.join();
+                                },
+                                DefaultAgenticScope.class)
+                                .when(this.conditions.get(agent), AgenticScope.class)
+                                .outputAs((out, wf, tf) -> agenticScopePassthrough(tf.rawInput())));
             }
         };
-    }
-
-    private record ConditionalAgent(Predicate<AgenticScope> condition, List<AgentExecutor> agentExecutors) {
     }
 }

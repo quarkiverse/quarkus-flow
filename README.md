@@ -59,6 +59,9 @@ Run:
 ./mvnw quarkus:dev
 ```
 
+Quarkus Flow allows you to load workflows through [CNCF Workflow Definitions](https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md).
+See [here](https://docs.quarkiverse.io/quarkus-flow/dev/workflow-definitions.html) how to load (YAML DSL) into your Quarkus application and expose them as WorkflowDefinition/Flow CDI beans you can inject and execute.
+
 ## LangChain4j (choose your approach)
 
 Quarkus Flow supports **three complementary ways** to use LangChain4j:
