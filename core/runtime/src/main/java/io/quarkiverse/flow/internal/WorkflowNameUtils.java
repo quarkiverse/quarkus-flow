@@ -54,7 +54,7 @@ public final class WorkflowNameUtils {
         // Fallback if everything got stripped
         if (sanitizedName.isEmpty()) {
             // won't return here since we don't know if defaultValue is safe or not.
-           sanitizedName = (WorkflowUtils.isValid(defaultValue)) ? safeName(defaultValue, "wf") : "wf";
+            sanitizedName = (WorkflowUtils.isValid(defaultValue)) ? safeName(defaultValue, "wf") : "wf";
         }
 
         // Ensure leading character is Alphanumeric
