@@ -56,8 +56,7 @@ public class TryWorkflowsResource {
 
         instance.resume();
 
-        return Uni.createFrom().completionStage(start.toCompletableFuture())
-                .onItem()
+        return Uni.createFrom().completionStage(start.toCompletableFuture()).onItem()
                 .transform(workflowModel -> workflowModel.as(Message.class).orElseThrow());
     }
 

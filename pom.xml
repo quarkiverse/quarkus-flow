@@ -32,15 +32,17 @@
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <quarkus.version>3.31.2</quarkus.version>
-        <io.serverlessworkflow.version>7.12.1.Final</io.serverlessworkflow.version>
+        <quarkus.version>3.31.3</quarkus.version>
+        <io.serverlessworkflow.version>7.13.2.Final</io.serverlessworkflow.version>
         <io.quarkiverse.jackson-jq.version>2.4.0</io.quarkiverse.jackson-jq.version>
-        <io.quarkiverse.langchain4j.version>1.7.0</io.quarkiverse.langchain4j.version>
+        <io.quarkiverse.langchain4j.version>1.7.1</io.quarkiverse.langchain4j.version>
         <org.assertj.version>3.27.7</org.assertj.version>
         <io.cloudevents.version>4.0.1</io.cloudevents.version>
         <quarkus-antora.version>3.25.0</quarkus-antora.version>
         <mockserver.version>5.15.0</mockserver.version>
         <mockwebserver.version>5.3.2</mockwebserver.version>
+        <version.org.jacoco>0.8.14</version.org.jacoco>
+        <io.quarkiverse.playwright>2.3.2</io.quarkiverse.playwright>
     </properties>
 
     <dependencyManagement>
@@ -157,6 +159,49 @@
                 <module>docs</module>
                 <module>examples</module>
             </modules>
+        </profile>
+        <profile>
+            <id>code-coverage</id>
+
+            <dependencies>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-jacoco</artifactId>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>${version.org.jacoco}</version>
+                        <executions>
+                            <execution>
+                                <id>prepare-agent</id>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                                <configuration>
+                                    <destFile>${maven.multiModuleProjectDirectory}/target/jacoco-quarkus.exec</destFile>
+                                    <append>true</append>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <quarkus.jacoco.data-file>${maven.multiModuleProjectDirectory}/target/jacoco-quarkus.exec</quarkus.jacoco.data-file>
+                                <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>
+                                <quarkus.jacoco.report-location>${maven.multiModuleProjectDirectory}/target/jacoco-report</quarkus.jacoco.report-location>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>

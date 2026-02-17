@@ -11,7 +11,7 @@ import io.serverlessworkflow.impl.persistence.test.AbstractPersistenceTest;
 
 @QuarkusTest
 @DisabledOnOs(OS.WINDOWS)
-public class QuarkusFlowRedisTest extends AbstractPersistenceTest {
+public class QuarkusFlowRedisIT extends AbstractPersistenceTest {
     @Inject
     PersistenceInstanceStore store;
 

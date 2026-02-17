@@ -1,16 +1,20 @@
 package org.acme.http;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
+
 import com.github.tomakehurst.wiremock.WireMockServer;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 
 public class PetstoreMockResource implements QuarkusTestResourceLifecycleManager {
 
@@ -28,17 +32,13 @@ public class PetstoreMockResource implements QuarkusTestResourceLifecycleManager
         configureFor("localhost", wireMock.port());
 
         // 1) findByStatus -> returns a list with a deterministic pet id
-        stubFor(get(urlPathEqualTo("/api/v3/pet/findByStatus"))
-                .withQueryParam("status", matching(".*"))
-                .willReturn(aResponse()
-                        .withHeader("Content-Type", "application/json")
+        stubFor(get(urlPathEqualTo("/api/v3/pet/findByStatus")).withQueryParam("status", matching(".*"))
+                .willReturn(aResponse().withHeader("Content-Type", "application/json")
                         .withBody("[{\"id\":123,\"name\":\"Mocked Pet\"}]")));
 
         // 2) getPetById -> returns deterministic pet details
-        stubFor(get(urlPathEqualTo("/api/v3/pet/123"))
-                .willReturn(aResponse()
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("{\"id\":123,\"name\":\"Mocked Pet\"}")));
+        stubFor(get(urlPathEqualTo("/api/v3/pet/123")).willReturn(aResponse()
+                .withHeader("Content-Type", "application/json").withBody("{\"id\":123,\"name\":\"Mocked Pet\"}")));
 
         // Rewrite OpenAPI servers[0].url to the WireMock port
         rewriteOpenApi("http://localhost:" + wireMock.port() + "/api/v3/");
