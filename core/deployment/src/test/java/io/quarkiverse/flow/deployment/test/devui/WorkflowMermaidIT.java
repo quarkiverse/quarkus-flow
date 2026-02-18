@@ -46,7 +46,7 @@ public class WorkflowMermaidIT {
     @DisplayName("Should generate the diagram as expected")
     void shouldGenerateMermaidSvg() {
         final Map<String, String> env = new HashMap<>(System.getenv());
-        //        env.put("DEBUG", "pw:api");
+        env.put("DEBUG", "pw:api");
 
         try (Playwright playwright = Playwright.create(new Playwright.CreateOptions().setEnv(env))) {
 
