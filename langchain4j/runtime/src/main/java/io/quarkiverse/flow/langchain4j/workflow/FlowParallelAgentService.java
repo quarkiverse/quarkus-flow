@@ -4,10 +4,11 @@ import static dev.langchain4j.agentic.internal.AgentUtil.validateAgentClass;
 import static io.quarkiverse.flow.internal.WorkflowNameUtils.safeName;
 
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.agentic.declarative.ParallelAgent;
 import dev.langchain4j.agentic.planner.AgentInstance;
-import dev.langchain4j.agentic.planner.InitPlanningContext;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import dev.langchain4j.agentic.workflow.impl.ParallelAgentServiceImpl;
 import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
@@ -45,19 +45,22 @@ public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> imp
 
     @Override
     public T build() {
-        return build(() -> new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition()));
+        final FlowAgentServiceWorkflowBuilder workflowBuilder = new FlowAgentServiceWorkflowBuilder(this.agentServiceClass,
+                this.description, this.tasksDefinition());
+        return build(() -> new FlowPlanner(workflowBuilder));
     }
 
     @Override
-    public BiFunction<FlowPlanner, InitPlanningContext, Consumer<FuncDoTaskBuilder>> tasksDefinition() {
-        return ((planner, initPlanningContext) -> tasks -> tasks.fork("parallel",
+    public Function<List<AgentInstance>, Consumer<FuncDoTaskBuilder>> tasksDefinition() {
+        return ((agents) -> tasks -> tasks.fork("parallel",
                 fork -> {
                     int step = 0;
-                    for (AgentInstance agent : initPlanningContext.subagents()) {
+                    for (AgentInstance agent : agents) {
                         final String branchName = safeName(agent.agentId() + "-" + (step++));
                         fork.branch(branchName,
                                 (DefaultAgenticScope scope) -> {
-                                    CompletableFuture<Void> nextActionFuture = planner.executeAgent(agent);
+                                    CompletableFuture<Void> nextActionFuture = FlowPlannerSessions.INSTANCE.execute(scope,
+                                            agent);
                                     LOG.debug("Parallel execution of agent {} in branch {} started", agent.agentId(),
                                             branchName);
                                     nextActionFuture.join();

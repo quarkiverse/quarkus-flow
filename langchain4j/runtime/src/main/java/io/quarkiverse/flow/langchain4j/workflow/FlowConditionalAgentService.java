@@ -9,14 +9,13 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.agentic.internal.AgentExecutor;
 import dev.langchain4j.agentic.planner.AgentInstance;
-import dev.langchain4j.agentic.planner.InitPlanningContext;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import dev.langchain4j.agentic.workflow.impl.ConditionalAgentServiceImpl;
@@ -59,18 +58,21 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
 
     @Override
     public T build() {
-        return build(() -> new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition()));
+        final FlowAgentServiceWorkflowBuilder workflowBuilder = new FlowAgentServiceWorkflowBuilder(this.agentServiceClass,
+                this.description, this.tasksDefinition());
+        return build(() -> new FlowPlanner(workflowBuilder));
     }
 
-    public BiFunction<FlowPlanner, InitPlanningContext, Consumer<FuncDoTaskBuilder>> tasksDefinition() {
-        return (planner, initPlanningContext) -> tasks -> {
+    public Function<List<AgentInstance>, Consumer<FuncDoTaskBuilder>> tasksDefinition() {
+        return (agents) -> tasks -> {
             int step = 0;
-            for (AgentInstance agent : initPlanningContext.subagents()) {
+            for (AgentInstance agent : agents) {
                 final String stepName = safeName(agent.agentId() + "-" + (step++));
                 tasks.function(stepName,
                         fn -> fn.function(
                                 (DefaultAgenticScope scope) -> {
-                                    CompletableFuture<Void> nextActionFuture = planner.executeAgent(agent);
+                                    CompletableFuture<Void> nextActionFuture = FlowPlannerSessions.INSTANCE.execute(scope,
+                                            agent);
                                     return nextActionFuture.join();
                                 },
                                 DefaultAgenticScope.class)

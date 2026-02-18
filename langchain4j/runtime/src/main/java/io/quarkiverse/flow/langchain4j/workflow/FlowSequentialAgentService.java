@@ -3,12 +3,13 @@ package io.quarkiverse.flow.langchain4j.workflow;
 import static dev.langchain4j.agentic.internal.AgentUtil.validateAgentClass;
 
 import java.lang.reflect.Method;
-import java.util.function.BiFunction;
+import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.agentic.declarative.SequenceAgent;
-import dev.langchain4j.agentic.planner.InitPlanningContext;
+import dev.langchain4j.agentic.planner.AgentInstance;
 import dev.langchain4j.agentic.workflow.impl.SequentialAgentServiceImpl;
 import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
 
@@ -29,11 +30,12 @@ public class FlowSequentialAgentService<T> extends SequentialAgentServiceImpl<T>
 
     @Override
     public T build() {
-        return build(() -> new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition()));
+        final FlowAgentServiceWorkflowBuilder workflowBuilder = new FlowAgentServiceWorkflowBuilder(this.agentServiceClass,
+                this.description, this.tasksDefinition());
+        return build(() -> new FlowPlanner(workflowBuilder));
     }
 
-    public BiFunction<FlowPlanner, InitPlanningContext, Consumer<FuncDoTaskBuilder>> tasksDefinition() {
-        return (flowPlanner, initPlanningContext) -> tasks -> FlowAgentServiceUtil.addAgentTasks(tasks, flowPlanner,
-                initPlanningContext.subagents());
+    public Function<List<AgentInstance>, Consumer<FuncDoTaskBuilder>> tasksDefinition() {
+        return (agents) -> tasks -> FlowAgentServiceUtil.addAgentTasks(tasks, agents);
     }
 }
