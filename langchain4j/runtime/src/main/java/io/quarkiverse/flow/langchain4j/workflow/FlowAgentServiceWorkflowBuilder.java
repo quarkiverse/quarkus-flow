@@ -27,7 +27,7 @@ public class FlowAgentServiceWorkflowBuilder {
     private final Map<String, WorkflowDefinition> cache = new ConcurrentHashMap<>();
 
     FlowAgentServiceWorkflowBuilder(Class<?> agentServiceClass, String description,
-                                    Function<List<AgentInstance>, Consumer<FuncDoTaskBuilder>> taskFactory) {
+            Function<List<AgentInstance>, Consumer<FuncDoTaskBuilder>> taskFactory) {
         this.agentServiceClass = agentServiceClass;
         this.description = description;
         this.taskFactory = taskFactory;
