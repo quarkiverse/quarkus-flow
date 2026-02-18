@@ -11,7 +11,7 @@ public class HelloWorldWorkflow extends Flow {
     public Workflow descriptor() {
         return WorkflowBuilder
                 .workflow("hello-world", "devui", "v1")
-                .tasks(t -> t.set("${ .message }"))
+                .tasks(t -> t.set("setMessage", "${ .message }"))
                 .build();
     }
 }

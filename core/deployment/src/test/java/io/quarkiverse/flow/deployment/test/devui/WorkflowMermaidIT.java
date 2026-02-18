@@ -18,6 +18,7 @@ import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.options.WaitForSelectorState;
 
 import io.quarkiverse.flow.deployment.test.HelloWorldWorkflow;
 import io.quarkus.test.QuarkusDevModeTest;
@@ -54,14 +55,21 @@ public class WorkflowMermaidIT {
                 Page page = browser.newPage();
                 page.navigate("http://localhost:8080/q/dev-ui/quarkus-flow/workflows");
 
-                Locator eyeButton = page.locator("#see-devui:hello-world:v1");
+                String mermaidId = "mermaid-devui-hello-world-v1";
+                String buttonSelector = "#see-" + mermaidId;
+
+                page.waitForSelector(buttonSelector);
+                Locator eyeButton = page.locator(buttonSelector);
 
                 eyeButton.click();
 
-                ElementHandle element = page.waitForSelector("pre.mermaid > svg");
+                ElementHandle dialog = page.waitForSelector("vaadin-dialog[opened]", new Page.WaitForSelectorOptions()
+                        .setState(WaitForSelectorState.ATTACHED));
 
-                Assertions.assertNotNull(element);
-                Assertions.assertTrue(element.getAttribute("id").startsWith("mermaid-"));
+                // Wait for the dialog to open and mermaid rendering
+                page.waitForTimeout(8000);
+
+                Assertions.assertTrue(dialog.innerText().contains("set: setMessage")); // the name of the set task
             }
         }
     }
