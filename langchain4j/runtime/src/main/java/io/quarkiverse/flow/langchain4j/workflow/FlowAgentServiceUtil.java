@@ -33,14 +33,14 @@ public final class FlowAgentServiceUtil {
     /**
      * Adds a straight sequence of agent calls as Flow function tasks.
      */
-    static void addAgentTasks(FuncDoFluent<?> tasks, FlowPlanner planner, List<AgentInstance> agents) {
+    static void addAgentTasks(FuncDoFluent<?> tasks, List<AgentInstance> agents) {
         for (int i = 0; i < agents.size(); i++) {
             AgentInstance agent = agents.get(i);
             String stepName = safeName(agent.agentId() + "-" + i);
             tasks.function(stepName,
                     fn -> fn.function(
                             (DefaultAgenticScope scope) -> {
-                                CompletableFuture<Void> nextActionFuture = planner.executeAgent(agent);
+                                CompletableFuture<Void> nextActionFuture = FlowPlannerSessions.INSTANCE.execute(scope, agent);
                                 return nextActionFuture.join();
                             },
                             DefaultAgenticScope.class)

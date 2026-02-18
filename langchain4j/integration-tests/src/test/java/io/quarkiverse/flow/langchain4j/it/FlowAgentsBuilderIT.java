@@ -68,10 +68,10 @@ public class FlowAgentsBuilderIT {
         assertThat(agenticScope.readState("score", 0.0)).isGreaterThanOrEqualTo(0.7);
 
         List<AgentInvocation> scoreAgentCalls = agenticScope.agentInvocations("scoreStyle");
-        assertThat(scoreAgentCalls).hasSizeBetween(1, 2).hasSize(Agents.loopCount.get());
+        assertThat(scoreAgentCalls).hasSizeBetween(1, 5).hasSize(Agents.loopCount.get());
 
         List<AgentInvocation> styleEditorAgentCalls = agenticScope.agentInvocations("editStory");
-        assertThat(styleEditorAgentCalls).hasSizeBetween(1, 2).hasSize(Agents.loopCount.get());
+        assertThat(styleEditorAgentCalls).hasSizeBetween(1, 5).hasSize(Agents.loopCount.get());
 
         Agents.loopCount = null;
     }

@@ -4,14 +4,15 @@ import static dev.langchain4j.agentic.internal.AgentUtil.validateAgentClass;
 import static io.quarkiverse.flow.langchain4j.workflow.FlowAgentServiceUtil.agenticScopePassthrough;
 
 import java.lang.reflect.Method;
-import java.util.function.BiFunction;
+import java.util.List;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.agentic.declarative.LoopAgent;
-import dev.langchain4j.agentic.planner.InitPlanningContext;
+import dev.langchain4j.agentic.planner.AgentInstance;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import dev.langchain4j.agentic.workflow.impl.LoopAgentServiceImpl;
@@ -81,12 +82,14 @@ public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> implements 
 
     @Override
     public T build() {
-        return build(() -> new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition()));
+        final FlowAgentServiceWorkflowBuilder workflowBuilder = new FlowAgentServiceWorkflowBuilder(this.agentServiceClass,
+                this.description, this.tasksDefinition());
+        return build(() -> new FlowPlanner(workflowBuilder));
     }
 
     @Override
-    public BiFunction<FlowPlanner, InitPlanningContext, Consumer<FuncDoTaskBuilder>> tasksDefinition() {
-        return (planner, initPlanningContext) -> tasks -> {
+    public Function<List<AgentInstance>, Consumer<FuncDoTaskBuilder>> tasksDefinition() {
+        return (agents) -> tasks -> {
             // If we check exit at loop end, reset per workflow invocation (not per iteration!)
             if (flowTestExitAtLoopEnd) {
                 tasks.function("loop-reset-exit",
@@ -99,7 +102,7 @@ public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> implements 
 
             tasks.forEach("loop",
                     does -> does
-                            .tasks(forDo -> FlowAgentServiceUtil.addAgentTasks(forDo, planner, initPlanningContext.subagents()))
+                            .tasks(forDo -> FlowAgentServiceUtil.addAgentTasks(forDo, agents))
                             .tasks(checkExitConditionAtLoopEndFunction())
                             .each(ITEM)
                             .at(AT)
