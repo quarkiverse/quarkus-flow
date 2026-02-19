@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.util.TypeLiteral;
@@ -21,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Metrics;
 import io.quarkiverse.flow.config.FlowHttpConfig;
 import io.quarkiverse.flow.config.FlowMetricsConfig;
@@ -29,6 +31,7 @@ import io.quarkiverse.flow.metrics.FlowMetrics;
 import io.quarkus.arc.Arc;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.smallrye.common.annotation.Identifier;
+import io.smallrye.faulttolerance.api.CircuitBreakerState;
 import io.smallrye.faulttolerance.api.TypedGuard;
 
 @ApplicationScoped
@@ -39,6 +42,7 @@ public class FaultToleranceProvider {
     private final RoutingNameResolver routingNameResolver;
     private final Map<String, TypedGuard<CompletionStage<WorkflowModel>>> namedGuards = new ConcurrentHashMap<>();
     private final FlowMetricsConfig flowMetricsConfig;
+    private final ConcurrentHashMap<CircuitBreakerKey, CircuitBreakerCounters> countersForGauge = new ConcurrentHashMap<>();
     private static final List<Class<? extends Throwable>> DEFAULT_CLASSES = List.of(
             IOException.class,
             ConnectException.class,
@@ -110,7 +114,37 @@ public class FaultToleranceProvider {
             configureRetry(ctx, builder, resilienceConfig);
         }
 
+        if (resilienceConfig.circuitBreaker().enabled().get()) {
+            configureCircuitBreaker(ctx, builder, resilienceConfig);
+        }
+
         return builder.build();
+    }
+
+    private void configureCircuitBreaker(WorkflowTaskContext ctx, TypedGuard.Builder<CompletionStage<WorkflowModel>> builder,
+            HttpClientConfig.ResilienceConfig resilienceConfig) {
+        var circuitBreakerBuilder = builder.withCircuitBreaker()
+                .failureRatio(resilienceConfig.circuitBreaker().failureRatio().getAsDouble())
+                .requestVolumeThreshold(resilienceConfig.circuitBreaker().requestVolumeThreshold().getAsInt())
+                .successThreshold(resilienceConfig.circuitBreaker().successThreshold().getAsInt())
+                .delay(resilienceConfig.circuitBreaker().delay().toMillis(), ChronoUnit.MILLIS);
+
+        if (resilienceConfig.circuitBreaker().exceptions().isPresent()) {
+            circuitBreakerBuilder.failOn(configureOnRetryExceptions(resilienceConfig.circuitBreaker().exceptions().get()));
+        } else {
+            circuitBreakerBuilder.failOn(DEFAULT_CLASSES);
+        }
+
+        if (ctx.isMicrometerSupported() && flowMetricsConfig.enabled()) {
+            circuitBreakerBuilder
+                    .onFailure(() -> sendCircuitBreakerFailure(ctx))
+                    .onPrevented(() -> sendCircuitBreakerPrevented(ctx))
+                    .onStateChange(state -> {
+                        CircuitBreakerKey key = new CircuitBreakerKey(ctx.workflowName(), ctx.taskName());
+                        onCircuitBreakerStateChange(state, key);
+                    })
+                    .done();
+        }
     }
 
     private void configureRetry(WorkflowTaskContext ctx, TypedGuard.Builder<CompletionStage<WorkflowModel>> builder,
@@ -123,9 +157,8 @@ public class FaultToleranceProvider {
                     .onFailure(() -> sendOnFailureMetric(ctx));
         }
 
-        List<Class<? extends Throwable>> retryOnExceptions = new ArrayList<>();
         if (resilienceConfig.retry().exceptions().isPresent()) {
-            retryBuilder.retryOn(configureOnRetryExceptions(resilienceConfig));
+            retryBuilder.retryOn(configureOnRetryExceptions(resilienceConfig.retry().exceptions().get()));
         } else {
             retryBuilder.retryOn(DEFAULT_CLASSES);
         }
@@ -138,15 +171,15 @@ public class FaultToleranceProvider {
                 .build();
     }
 
-    private List<Class<? extends Throwable>> configureOnRetryExceptions(HttpClientConfig.ResilienceConfig resilienceConfig) {
+    private List<Class<? extends Throwable>> configureOnRetryExceptions(List<String> exceptions) {
         List<Class<? extends Throwable>> retryOnExceptions = new ArrayList<>();
-        for (String exception : resilienceConfig.retry().exceptions().get()) {
+        for (String exception : exceptions) {
             try {
                 Class<?> clazz = Thread.currentThread().getContextClassLoader().loadClass(exception);
                 retryOnExceptions.add((Class<? extends Throwable>) clazz);
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(
-                        "Invalid retry exception configuration: class '" + exception +
+                        "Invalid exception configuration: class '" + exception +
                                 "' must exist on the classpath and be a subtype of java.lang.Throwable.");
             }
         }
@@ -155,21 +188,101 @@ public class FaultToleranceProvider {
     }
 
     private void sendOnFailureMetric(WorkflowTaskContext ctx) {
-        Counter.builder(FlowMetrics.FAULT_TOLERANCE_TASK_FAILURE.prefixedWith(flowMetricsConfig.prefix().get()))
+        Counter.builder(FlowMetrics.FAULT_TOLERANCE_TASK_RETRY_FAILURE_TOTAL.prefixedWith(flowMetricsConfig.prefix().get()))
                 .description("Fault Tolerance Task Failure")
-                .tag("taskName", ctx.taskName())
+                .tag("task", ctx.taskName())
                 .tag("workflow", ctx.workflowName())
                 .register(Metrics.globalRegistry)
                 .increment();
     }
 
     private void sendOnRetryMetric(WorkflowTaskContext ctx) {
-        Counter.builder(FlowMetrics.FAULT_TOLERANCE_TASK_RETRY.prefixedWith(flowMetricsConfig.prefix().get()))
+        Counter.builder(FlowMetrics.FAULT_TOLERANCE_TASK_RETRY_TOTAL.prefixedWith(flowMetricsConfig.prefix().get()))
                 .description("Fault Tolerance Task Retry")
-                .tag("taskName", ctx.taskName())
+                .tag("task", ctx.taskName())
                 .tag("workflow", ctx.workflowName())
                 .register(Metrics.globalRegistry)
                 .increment();
 
+    }
+
+    private void sendCircuitBreakerPrevented(WorkflowTaskContext ctx) {
+        Counter.builder(
+                FlowMetrics.FAULT_TOLERANCE_CIRCUIT_BREAKER_PREVENTED_TOTAL.prefixedWith(flowMetricsConfig.prefix().get()))
+                .description("Fault Tolerance Circuit Breaker Prevented")
+                .tag("task", ctx.taskName())
+                .tag("workflow", ctx.workflowName())
+                .register(Metrics.globalRegistry)
+                .increment();
+    }
+
+    private void sendCircuitBreakerFailure(WorkflowTaskContext ctx) {
+        Counter.builder(
+                FlowMetrics.FAULT_TOLERANCE_CIRCUIT_BREAKER_FAILURE_TOTAL.prefixedWith(flowMetricsConfig.prefix().get()))
+                .description("Fault Tolerance Circuit Breaker Failure")
+                .tag("task", ctx.taskName())
+                .tag("workflow", ctx.workflowName())
+                .register(Metrics.globalRegistry)
+                .increment();
+    }
+
+    private static class CircuitBreakerCounters {
+        private final AtomicLong halfOpen = new AtomicLong();
+        private final AtomicLong open = new AtomicLong();
+        private final AtomicLong closed = new AtomicLong();
+    }
+
+    private record CircuitBreakerKey(String workflowName, String taskName) {
+    }
+
+    private void onCircuitBreakerStateChange(CircuitBreakerState state, CircuitBreakerKey key) {
+        CircuitBreakerCounters counters = getCircuitBreakerCounters(key);
+        switch (state) {
+            case CLOSED -> {
+                counters.closed.set(1);
+                counters.open.set(0);
+                counters.halfOpen.set(0);
+            }
+            case OPEN -> {
+                counters.closed.set(0);
+                counters.open.set(1);
+                counters.halfOpen.set(0);
+            }
+            case HALF_OPEN -> {
+                counters.closed.set(0);
+                counters.open.set(0);
+                counters.halfOpen.set(1);
+            }
+        }
+    }
+
+    private CircuitBreakerCounters getCircuitBreakerCounters(CircuitBreakerKey key) {
+        return countersForGauge.computeIfAbsent(key, workflowMetadata -> {
+
+            CircuitBreakerCounters circuitBreakerCounters = new CircuitBreakerCounters();
+
+            Gauge.builder(FlowMetrics.FAULT_TOLERANCE_CIRCUIT_BREAKER_OPEN.prefixedWith(flowMetricsConfig.prefix().get()),
+                    circuitBreakerCounters.open, AtomicLong::get)
+                    .description("Circuit Breaker Currently Open")
+                    .tag("workflow", workflowMetadata.workflowName())
+                    .tag("task", workflowMetadata.taskName())
+                    .register(Metrics.globalRegistry);
+
+            Gauge.builder(FlowMetrics.FAULT_TOLERANCE_CIRCUIT_BREAKER_HALF_OPEN.prefixedWith(flowMetricsConfig.prefix().get()),
+                    circuitBreakerCounters.halfOpen, AtomicLong::get)
+                    .description("Circuit Breaker Currently Half Open")
+                    .tag("workflow", workflowMetadata.workflowName())
+                    .tag("task", workflowMetadata.taskName())
+                    .register(Metrics.globalRegistry);
+
+            Gauge.builder(FlowMetrics.FAULT_TOLERANCE_CIRCUIT_BREAKER_CLOSED.prefixedWith(flowMetricsConfig.prefix().get()),
+                    circuitBreakerCounters.closed, AtomicLong::get)
+                    .description("Circuit Breaker Currently Closed")
+                    .tag("workflow", workflowMetadata.workflowName())
+                    .tag("task", workflowMetadata.taskName())
+                    .register(Metrics.globalRegistry);
+
+            return circuitBreakerCounters;
+        });
     }
 }

@@ -163,6 +163,76 @@ quarkus_flow_workflow_duration_seconds_bucket{workflow="wait-event",le="0.001"} 
 quarkus_flow_workflow_duration_seconds_bucket{workflow="wait-event",le="0.002"} 0
 ----
 
+[[fault-tolerance-metrics]]
+== Fault Tolerance Metrics
+
+Quarkus Flow HTTP calls xref:http-client.adoc#smallrye-fault-tolerance[integrates with Smallrye Fault Tolerance] to provide resilience and fault tolerance capabilities.
+Quarkus Flow exports metrics for xref:http-client.adoc#fault-tolerance-retry[Retry] and xref:http-client.adoc#fault-tolerance-circuit-breaker[Circuit Breaker] strategies.
+
+=== Retry Metrics
+
+Retry metrics are exported as counters:
+
+|===
+| Metric name | Description | Type | Tags | Prometheus example
+
+| `quarkus_flow_fault_tolerance_task_retry_total`
+| Total number of retry attempts
+| Counter
+| `workflow`, `task`
+| `quarkus_flow_fault_tolerance_task_retry_total{workflow="wait-event",task="wait-for-event"} 1`
+
+| `quarkus_flow_fault_tolerance_task_retry_failure_total`
+| Total number of failed retry attempts
+| Counter
+| `workflow`, `task`
+| `quarkus_flow_fault_tolerance_task_retry_failure_total{workflow="wait-event",task="wait-for-event"} 1`
+|===
+
+
+=== Circuit Breaker Metrics
+
+Circuit Breaker metrics are exported as counters and gauges:
+
+|===
+| Metric name | Description | Type | Tags | Prometheus example
+
+| `quarkus_flow_fault_tolerance_task_circuit_breaker_open`
+| Indicates whether the circuit breaker is currently in the OPEN state.
+The value is `1` when OPEN and `0` otherwise.
+| Gauge
+| `workflow`, `task`
+| `quarkus_flow_fault_tolerance_task_circuit_breaker_open{workflow="wait-event",task="wait-for-event"} 1`
+
+| `quarkus_flow_fault_tolerance_task_circuit_breaker_closed`
+| Indicates whether the circuit breaker is currently in the CLOSED state.
+The value is `1` when CLOSED and `0` otherwise.
+| Gauge
+| `workflow`, `task`
+| `quarkus_flow_fault_tolerance_task_circuit_breaker_closed{workflow="wait-event",task="wait-for-event"} 1`
+
+| `quarkus_flow_fault_tolerance_task_circuit_breaker_half_open`
+| Indicates whether the circuit breaker is currently in the HALF_OPEN state.
+The value is `1` when HALF_OPEN and `0` otherwise.
+| Gauge
+| `workflow`, `task`
+| `quarkus_flow_fault_tolerance_task_circuit_breaker_half_open{workflow="wait-event",task="wait-for-event"} 1`
+
+| `quarkus_flow_fault_tolerance_task_circuit_breaker_prevented_total`
+| Total number of calls prevented because the circuit breaker was OPEN.
+| Counter
+| `workflow`, `task`
+| `quarkus_flow_fault_tolerance_task_circuit_breaker_prevented_total{workflow="wait-event",task="wait-for-event"} 1`
+
+| `quarkus_flow_fault_tolerance_circuit_breaker_failure_total`
+| Total number of failed executions recorded by the circuit breaker.
+| Counter
+| `workflow`, `task`
+| `quarkus_flow_fault_tolerance_circuit_breaker_failure_total{workflow="wait-event",task="wait-for-event"} 1`
+
+|===
+
+
 === Best practices
 
 ==== Name your tasks

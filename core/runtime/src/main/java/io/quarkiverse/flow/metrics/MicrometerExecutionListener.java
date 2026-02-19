@@ -267,7 +267,6 @@ public class MicrometerExecutionListener implements WorkflowExecutionListener {
     }
 
     private static class WorkflowInstanceCounters {
-        private final AtomicLong pending = new AtomicLong();
         private final AtomicLong running = new AtomicLong();
         private final AtomicLong waiting = new AtomicLong();
         private final AtomicLong suspended = new AtomicLong();
