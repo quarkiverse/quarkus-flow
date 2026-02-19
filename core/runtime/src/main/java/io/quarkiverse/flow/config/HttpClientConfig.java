@@ -3,6 +3,7 @@ package io.quarkiverse.flow.config;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.OptionalInt;
 
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
@@ -624,6 +625,132 @@ public interface HttpClientConfig {
 
         RetryConfig retry();
 
+        CircuitBreakerConfig circuitBreaker();
+    }
+
+    @ConfigGroup
+    interface CircuitBreakerConfig {
+
+        /**
+         * Enables or disables Fault Tolerance Circuit Breaker support.
+         * <p>
+         * <strong>Default client configuration:</strong>
+         * <p>
+         * <code>quarkus.flow.http.client.resilience.circuit-breaker.enabled=true</code>
+         *
+         * <p>
+         * <strong>Named client configuration:</strong>
+         *
+         * <pre>
+         * quarkus.flow.http.client.named.&lt;name&gt;.resilience.circuit-breaker.enabled=true
+         * </pre>
+         */
+        @WithDefault("true")
+        Optional<Boolean> enabled();
+
+        /**
+         * Defines the ratio of failures in the rolling window that causes a closed circuit breaker to move to open.
+         * <p>
+         * <strong>Default client configuration:</strong>
+         *
+         * <pre>
+         * quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio=0.5
+         * </pre>
+         *
+         * <p>
+         * <strong>Named client configuration:</strong>
+         *
+         * <pre>
+         * quarkus.flow.http.client.named.&lt;name&gt;.resilience.circuit-breaker.failure-ratio=0.5
+         * </pre>
+         */
+        @WithDefault("0.5")
+        OptionalDouble failureRatio();
+
+        /**
+         * Defines the size of the rolling window. That is, the number of recent consecutive invocations tracked by a closed
+         * circuit breaker.
+         * <p>
+         * <strong>Default client configuration:</strong>
+         *
+         * <pre>
+         * quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold=20
+         * </pre>
+         *
+         * <p>
+         * <strong>Named client configuration:</strong>
+         *
+         * <pre>
+         * quarkus.flow.http.client.named.&lt;name&gt;.resilience.circuit-breaker.request-volume-threshold=20
+         * </pre>
+         */
+        @WithDefault("20")
+        OptionalInt requestVolumeThreshold();
+
+        /**
+         * Defines the number of probe invocations allowed when the circuit breaker is half-open.
+         * If they all succeed, the circuit breaker moves to closed, otherwise it moves back to open.
+         *
+         * <pre>
+         * quarkus.flow.http.client.resilience.circuit-breaker.success-threshold=1
+         * </pre>
+         *
+         * <p>
+         * <strong>Named client configuration:</strong>
+         *
+         * <pre>
+         * quarkus.flow.http.client.named.&lt;name&gt;.resilience.circuit-breaker.success-threshold=1
+         * </pre>
+         */
+        @WithDefault("1")
+        OptionalInt successThreshold();
+
+        /**
+         * The delay after which an open circuit breaker moves to half-open.
+         *
+         * <pre>
+         * quarkus.flow.http.client.resilience.circuit-breaker.delay=5s
+         * </pre>
+         *
+         * <p>
+         * <strong>Named client configuration:</strong>
+         *
+         * <pre>
+         * quarkus.flow.http.client.named.&lt;name&gt;.resilience.circuit-breaker.delay=5s
+         * </pre>
+         */
+        @WithDefault("5s")
+        Duration delay();
+
+        /**
+         * Defines the set of exception types considered failure.
+         * <p>
+         * The comparison is based on the fully qualified class name of the
+         * exception. Subclasses are also considered a match.
+         * <p>
+         * <strong>Default client configuration:</strong>
+         *
+         * <pre>
+         * quarkus.flow.http.client.resilience.circuit-breaker.exceptions=
+         * </pre>
+         *
+         * <p>
+         * <strong>Named client configuration:</strong>
+         *
+         * <pre>
+         * quarkus.flow.http.client.named.&lt;name&gt;.resilience.circuit-breaker.exceptions=
+         * </pre>
+         *
+         * <p>
+         * Example:
+         *
+         * <pre>
+         * quarkus.flow.http.client.resilience.circuit-breaker.exceptions=
+         *     java.io.IOException,
+         *     jakarta.ws.rs.ProcessingException
+         * </pre>
+         */
+        Optional<List<String>> exceptions();
     }
 
     @ConfigGroup
@@ -747,10 +874,6 @@ public interface HttpClientConfig {
          * <p>
          * The comparison is based on the fully qualified class name of the
          * exception. Subclasses are also considered a match.
-         * <p>
-         * If this list is empty, the default retry behavior defined by
-         * SmallRye Fault Tolerance applies.
-         *
          * <p>
          * <strong>Default client configuration:</strong>
          *

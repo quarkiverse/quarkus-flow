@@ -15,8 +15,13 @@ public enum FlowMetrics {
     INSTANCES_RUNNING("instance.running"),
     INSTANCES_WAITING("instance.waiting"),
     INSTANCES_SUSPENDED("instance.suspended"),
-    FAULT_TOLERANCE_TASK_RETRY("fault.tolerance.task.retry"),
-    FAULT_TOLERANCE_TASK_FAILURE("fault.tolerance.task.failure");
+    FAULT_TOLERANCE_TASK_RETRY_TOTAL("fault.tolerance.task.retry.total"),
+    FAULT_TOLERANCE_TASK_RETRY_FAILURE_TOTAL("fault.tolerance.task.retry.failure.total"),
+    FAULT_TOLERANCE_CIRCUIT_BREAKER_OPEN("fault.tolerance.circuit.breaker.open"),
+    FAULT_TOLERANCE_CIRCUIT_BREAKER_HALF_OPEN("fault.tolerance.circuit.breaker.half.open"),
+    FAULT_TOLERANCE_CIRCUIT_BREAKER_CLOSED("fault.tolerance.circuit.breaker.closed"),
+    FAULT_TOLERANCE_CIRCUIT_BREAKER_PREVENTED_TOTAL("fault.tolerance.circuit.breaker.prevented.total"),
+    FAULT_TOLERANCE_CIRCUIT_BREAKER_FAILURE_TOTAL("fault.tolerance.circuit.breaker.failure.total");
 
     private final String metricName;
 

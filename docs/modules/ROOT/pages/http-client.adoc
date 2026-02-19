@@ -377,12 +377,14 @@ You can disable the automatic correlation header injection by setting the `quark
 The `quarkus.flow.http.client.enable-metadata-propagation` is a global-level HTTP client property. You cannot enable or disable correlation headers on a per-workflow or per-task basis.
 
 
-== 13. Integration with SmallRye Resilience
+[[smallrye-fault-tolerance]]
+== 13. Integration with SmallRye Fault Tolerance
 
 Quarkus Flow integrates with the *SmallRye Fault Tolerance* project to provide
 resilience and fault-tolerance capabilities, such as retries and other
 resilience strategies, when invoking workflows.
 
+[[fault-tolerance-retry]]
 === Retry
 
 By default, *all workflows have a retry strategy enabled*.
@@ -416,6 +418,106 @@ follows:
 ----
 quarkus.flow.http.client.named."my-client".resilience.retry.*
 ----
+====
+
+[[fault-tolerance-circuit-breaker]]
+=== Circuit Breaker
+
+By default, *all workflows have a circuit breaker strategy enabled*
+
+You can disable circuit breakers globally for all workflows by setting the
+following property:
+[source,properties]
+----
+quarkus.flow.http.client.resilience.circuit-breaker.enabled=false
+----
+
+When `quarkus.flow.http.client.resilience.circuit-breaker.enabled` is set to
+`true` (the default), the following configuration values are applied:
+
+[source,properties]
+----
+quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio=0.5
+quarkus.flow.http.client.resilience.circuit-breaker.delay=5s
+quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold=20
+quarkus.flow.http.client.resilience.circuit-breaker.success-threshold=1
+quarkus.flow.http.client.resilience.circuit-breaker.exceptions=
+----
+
+[NOTE]
+====
+Resilience configuration is applied per *named workflow*.
+
+If you are using named HTTP clients, you can scope the retry configuration as
+follows:
+
+[source,properties]
+----
+quarkus.flow.http.client.named."my-client".resilience.circuit-breaker.*
+----
+====
+
+== Retry + Circuit Breaker (Multiple Strategies)
+
+When both *Retry* and *Circuit Breaker* are enabled (the default), they work together following the link:https://smallrye.io/docs/smallrye-fault-tolerance/6.10.0/howto/multiple.html[SmallRye Fault Tolerance nesting rules].
+
+=== Understanding the Nesting Order
+
+SmallRye Fault Tolerance applies resilience strategies in a specific order:
+
+[source]
+----
+Retry(
+    CircuitBreaker(
+        ... the guarded method ...
+    )
+)
+----
+
+This means:
+
+* **Circuit Breaker is inner** — it wraps the actual HTTP call
+* **Retry is outer** — it wraps the circuit breaker
+
+=== How They Interact
+
+When a workflow task executes with both strategies enabled:
+
+1. **Retry attempts to call the Circuit Breaker** — Each retry attempt goes through the circuit breaker
+2. **Circuit Breaker evaluates each call** — It counts successes and failures to determine if it should open
+3. **Circuit can open during retry sequence** — If the failure threshold is reached, the circuit opens mid-retry
+4. **Subsequent retries get CircuitBreakerOpenException** — Once open, retry attempts fail immediately without calling the actual method
+
+
+[TIP]
+====
+All strategies provide metrics for monitoring, refer to xref:metrics-prometheus.adoc#fault-tolerance-metrics[metrics] for more details.
+====
+
+==== Example Scenario
+
+Consider this configuration:
+
+[source,properties]
+----
+quarkus.flow.http.client.resilience.retry.max-retries=3
+quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold=2
+quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio=0.5
+----
+
+**Execution flow:**
+
+1. **First attempt** — HTTP call fails → Circuit breaker records 1 failure
+2. **First retry** — HTTP call fails → Circuit breaker records 2 failures (threshold reached, 100% failure ratio > 50%)
+3. **Circuit opens** — Circuit breaker state changes to OPEN
+4. **Second retry** — Gets `CircuitBreakerOpenException` immediately (no HTTP call made)
+5. **Third retry** — Gets `CircuitBreakerOpenException` immediately (no HTTP call made)
+6. **Final result** — Workflow task fails after exhausting all retries
+
+
+[TIP]
+====
+All strategies provides metrics for monitoring, refer to
 ====
 
 === Using a TypedGuard from CDI
@@ -469,7 +571,6 @@ When `quarkus.flow.http.client.resilience.identifier` is set,
 In this case, the resilience behavior is fully controlled by the provided
 `TypedGuard` implementation.
 ====
-
 
 == 14. Putting it all together
 
