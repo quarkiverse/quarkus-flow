@@ -21,7 +21,11 @@ import dev.langchain4j.agentic.declarative.ParallelAgent;
 import dev.langchain4j.agentic.declarative.SequenceAgent;
 import io.quarkiverse.flow.langchain4j.recorders.AgenticWorkflowDescriptor;
 import io.quarkiverse.flow.langchain4j.recorders.FlowLangChain4jWorkflowRecorder;
+import io.quarkiverse.flow.langchain4j.workflow.FlowAgentsBuilderService;
+import io.quarkiverse.flow.langchain4j.workflow.FlowPlanner;
+import io.quarkiverse.flow.langchain4j.workflow.FlowPlannerFactory;
 import io.quarkiverse.langchain4j.agentic.deployment.DetectedAiAgentBuildItem;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -51,6 +55,16 @@ public class FlowLangChain4jProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FEATURE);
+    }
+
+    @BuildStep
+    AdditionalBeanBuildItem makeWorkflowBuilderBeansUnremovable() {
+        return AdditionalBeanBuildItem.builder()
+                .addBeanClass(FlowPlannerFactory.class)
+                .addBeanClass(FlowPlanner.class)
+                .addBeanClass(FlowAgentsBuilderService.class)
+                .setUnremovable()
+                .build();
     }
 
     @BuildStep(onlyIfNot = IsProduction.class)

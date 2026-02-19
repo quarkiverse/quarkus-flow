@@ -1,48 +1,58 @@
 package io.quarkiverse.flow.langchain4j.workflow;
 
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
-import dev.langchain4j.agentic.planner.AgentInstance;
-import dev.langchain4j.agentic.scope.AgenticScope;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.quarkus.arc.InstanceHandle;
 
 /**
  * Isolates {@link FlowPlanner} executions from the {@link io.serverlessworkflow.impl.WorkflowDefinition} instances.
  */
-public enum FlowPlannerSessions {
+public final class FlowPlannerSessions {
 
-    INSTANCE;
+    private static final Logger LOG = LoggerFactory.getLogger(FlowPlannerSessions.class);
 
-    final String SESSION_ID = "__flow_session_id";
-    final ConcurrentHashMap<Object, FlowPlanner> sessions = new ConcurrentHashMap<>();
+    private static final FlowPlannerSessions INSTANCE = new FlowPlannerSessions();
+    private final ConcurrentMap<String, Session> sessions = new ConcurrentHashMap<>();
 
-    CompletableFuture<Void> execute(AgenticScope scope, AgentInstance agent) {
-        String id = getSessionId(scope);
-        if (id == null) {
-            return CompletableFuture.failedFuture(new IllegalStateException("Missing " + SESSION_ID + " in scope"));
+    private FlowPlannerSessions() {
+    }
+
+    ;
+
+    public static FlowPlannerSessions getInstance() {
+        return INSTANCE;
+    }
+
+    public void open(String workflowInstanceId, FlowPlanner planner, InstanceHandle<FlowPlanner> handle) {
+        LOG.debug("Opening planner session for workflow instance {}", workflowInstanceId);
+        sessions.putIfAbsent(workflowInstanceId, new Session(planner, handle));
+    }
+
+    public FlowPlanner get(String id) {
+        final Session session = sessions.get(id);
+        if (session != null) {
+            return session.planner;
         }
-        FlowPlanner planner = sessions.get(id);
-        if (planner == null) {
-            return CompletableFuture.failedFuture(new IllegalStateException("No FlowPlanner for sessionId=" + id));
+        throw new IllegalArgumentException("Session with workflow instance id " + id + " not found");
+    }
+
+    public void close(String id, Throwable cause) {
+        final Session session = sessions.remove(id);
+        if (session != null) {
+            LOG.debug("Closing planner session for workflow instance {}", id);
+            if (cause != null)
+                session.planner.abort(cause);
+            else
+                session.planner.finish();
+
+            session.handle.destroy();
         }
-        return planner.executeAgent(agent);
-
     }
 
-    String register(AgenticScope scope, FlowPlanner planner) {
-        final String sessionId = UUID.randomUUID().toString();
-        scope.writeState(SESSION_ID, sessionId);
-        this.sessions.put(sessionId, planner);
-        return sessionId;
+    public record Session(FlowPlanner planner, InstanceHandle<FlowPlanner> handle) {
     }
-
-    void unregister(String sessionId, FlowPlanner planner) {
-        this.sessions.remove(sessionId, planner);
-    }
-
-    String getSessionId(AgenticScope scope) {
-        return (String) scope.readState(SESSION_ID);
-    }
-
 }

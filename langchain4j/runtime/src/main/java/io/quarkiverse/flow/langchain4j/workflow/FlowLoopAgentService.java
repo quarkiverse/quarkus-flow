@@ -16,6 +16,7 @@ import dev.langchain4j.agentic.planner.AgentInstance;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import dev.langchain4j.agentic.workflow.impl.LoopAgentServiceImpl;
+import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.serverlessworkflow.api.types.func.LoopPredicateIndex;
 import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
 import io.serverlessworkflow.fluent.func.FuncTaskItemListBuilder;
@@ -26,7 +27,6 @@ public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> implements 
     private static final String AT = "index";
     private static final String ITEM = "item";
     private static final String EXIT_PROP = "_exit";
-
     /**
      * For do..while semantics (check at end): continue while exit == false.
      */
@@ -34,21 +34,29 @@ public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> implements 
         Boolean exit = scope.readState(EXIT_PROP, false);
         return Boolean.FALSE.equals(exit);
     };
+    private final WorkflowRegistry workflowRegistry;
+    private final FlowPlannerFactory flowPlannerFactory;
     // We need our own copies (base fields are private)
     private int flowMaxIterations = Integer.MAX_VALUE;
     private BiPredicate<AgenticScope, Integer> flowExitCond = (scope, loopCounter) -> false;
     private boolean flowTestExitAtLoopEnd = false;
 
-    protected FlowLoopAgentService(Class<T> agentServiceClass, Method agenticMethod) {
+    protected FlowLoopAgentService(Class<T> agentServiceClass, Method agenticMethod, WorkflowRegistry workflowRegistry,
+            FlowPlannerFactory flowPlannerFactory) {
         super(agentServiceClass, agenticMethod);
+        this.workflowRegistry = workflowRegistry;
+        this.flowPlannerFactory = flowPlannerFactory;
     }
 
-    public static FlowLoopAgentService<UntypedAgent> builder() {
-        return new FlowLoopAgentService<>(UntypedAgent.class, null);
+    public static FlowLoopAgentService<UntypedAgent> builder(WorkflowRegistry workflowRegistry,
+            FlowPlannerFactory flowPlannerFactory) {
+        return new FlowLoopAgentService<>(UntypedAgent.class, null, workflowRegistry, flowPlannerFactory);
     }
 
-    public static <T> FlowLoopAgentService<T> builder(Class<T> agentServiceClass) {
-        return new FlowLoopAgentService<>(agentServiceClass, validateAgentClass(agentServiceClass, false, LoopAgent.class));
+    public static <T> FlowLoopAgentService<T> builder(Class<T> agentServiceClass, WorkflowRegistry workflowRegistry,
+            FlowPlannerFactory flowPlannerFactory) {
+        return new FlowLoopAgentService<>(agentServiceClass, validateAgentClass(agentServiceClass, false, LoopAgent.class),
+                workflowRegistry, flowPlannerFactory);
     }
 
     /**
@@ -83,8 +91,8 @@ public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> implements 
     @Override
     public T build() {
         final FlowAgentServiceWorkflowBuilder workflowBuilder = new FlowAgentServiceWorkflowBuilder(this.agentServiceClass,
-                this.description, this.tasksDefinition());
-        return build(() -> new FlowPlanner(workflowBuilder));
+                this.description, this.tasksDefinition(), workflowRegistry);
+        return build(() -> flowPlannerFactory.newPlanner(workflowBuilder));
     }
 
     @Override
