@@ -11,65 +11,68 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import jakarta.annotation.PreDestroy;
-import jakarta.enterprise.context.Dependent;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dev.langchain4j.agentic.planner.Action;
 import dev.langchain4j.agentic.planner.AgentInstance;
+import dev.langchain4j.agentic.planner.AgenticSystemTopology;
 import dev.langchain4j.agentic.planner.InitPlanningContext;
 import dev.langchain4j.agentic.planner.Planner;
 import dev.langchain4j.agentic.planner.PlanningContext;
-import io.quarkus.arc.InstanceHandle;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowInstance;
 
-@Dependent
 public class FlowPlanner implements Planner, AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(FlowPlanner.class);
-    private final BlockingQueue<AgentExchange> agentExchangeQueue = new LinkedBlockingQueue<>();
-    private final Map<String, AgentExchange> currentExchanges = new ConcurrentHashMap<>();
-    private final AtomicInteger parallelAgents = new AtomicInteger(0);
-    private final AtomicBoolean closed = new AtomicBoolean(false);
-    private FlowAgentServiceWorkflowBuilder workflowBuilder;
+    private final FlowAgentServiceWorkflowBuilder workflowBuilder;
+    private final AgenticSystemTopology topology;
+    private BlockingQueue<AgentExchange> agentExchangeQueue;
+    private Map<String, AgentExchange> currentExchanges;
+    private AtomicInteger parallelAgents;
+    private AtomicBoolean closed;
     private WorkflowDefinition definition;
-    private InstanceHandle<FlowPlanner> selfHandle;
     private String workflowInstanceId;
+    private Throwable terminationCause;
 
-    public FlowPlanner() {
-
+    public FlowPlanner(FlowAgentServiceWorkflowBuilder workflowBuilder, AgenticSystemTopology topology) {
+        this.workflowBuilder = workflowBuilder;
+        this.topology = topology;
     }
 
-    void configure(FlowAgentServiceWorkflowBuilder workflowBuilder, InstanceHandle<FlowPlanner> plannerHandle) {
-        this.workflowBuilder = workflowBuilder;
-        this.selfHandle = plannerHandle;
+    @Override
+    public AgenticSystemTopology topology() {
+        return topology;
     }
 
     @Override
     public void init(InitPlanningContext initPlanningContext) {
+        // lazy creation since we are being instantiated twice upstream
+        agentExchangeQueue = new LinkedBlockingQueue<>();
+        currentExchanges = new ConcurrentHashMap<>();
+        parallelAgents = new AtomicInteger(0);
+        closed = new AtomicBoolean(false);
         definition = this.workflowBuilder.build(initPlanningContext.subagents());
     }
 
     @Override
     public Action firstAction(PlanningContext planningContext) {
-        // Start workflow execution in background
-        CompletableFuture
-                .runAsync(() -> {
-                    final WorkflowInstance instance = definition.instance(planningContext.agenticScope());
-                    workflowInstanceId = instance.id();
-                    FlowPlannerSessions.getInstance().open(workflowInstanceId, this, selfHandle);
-                    instance.start().join();
-                })
-                .whenComplete((r, t) -> {
-                    executeAgent(null);
-                    FlowPlannerSessions.getInstance().close(workflowInstanceId, t);
-                    if (t != null)
-                        LOG.error("Workflow failed", t);
-                });
+        final WorkflowInstance instance = definition.instance(planningContext.agenticScope());
+        workflowInstanceId = instance.id();
+        FlowPlannerSessions.getInstance().open(workflowInstanceId, this);
 
+        // Starts workflow on a different thread
+        // Despite returning a CompletableFuture, the start() method executes on the same thread by design.
+        CompletableFuture.completedFuture(null)
+                .thenComposeAsync(t -> instance.start())
+                .whenCompleteAsync((r, e) -> {
+                    if (e != null) {
+                        LOG.error("Workflow failed", e);
+                    }
+                    signalTermination();
+                    FlowPlannerSessions.getInstance().close(workflowInstanceId, e);
+                });
         return internalNextAction();
     }
 
@@ -115,9 +118,7 @@ public class FlowPlanner implements Planner, AutoCloseable {
 
     public CompletableFuture<Void> executeAgent(AgentInstance agent) {
         if (closed.get()) {
-            CompletableFuture<Void> f = new CompletableFuture<>();
-            f.completeExceptionally(new CancellationException("Planner is closed"));
-            return f;
+            return CompletableFuture.failedFuture(new CancellationException("Planner is closed"));
         }
         CompletableFuture<Void> continuation = new CompletableFuture<>();
         AgentExchange exchange = new AgentExchange(agent, continuation);
@@ -133,9 +134,20 @@ public class FlowPlanner implements Planner, AutoCloseable {
         return continuation;
     }
 
-    @PreDestroy
+    void doTermination(Throwable cause) {
+        if (cause != null && terminationCause == null) {
+            terminationCause = cause;
+        }
+    }
+
     public void close() {
-        abort(new CancellationException("FlowPlanner destroyed"));
+        if (!closed.get()) {
+            LOG.debug("Closing planner for workflow instance {}", this.workflowInstanceId);
+            if (terminationCause != null)
+                this.abort(terminationCause);
+            else
+                this.finish();
+        }
     }
 
     private void signalTermination() {
@@ -163,12 +175,9 @@ public class FlowPlanner implements Planner, AutoCloseable {
     void finish() {
         if (!closed.compareAndSet(false, true))
             return;
-
         // best-effort cleanup
         currentExchanges.clear();
-        agentExchangeQueue.clear();
         parallelAgents.set(0);
-
         this.signalTermination();
     }
 

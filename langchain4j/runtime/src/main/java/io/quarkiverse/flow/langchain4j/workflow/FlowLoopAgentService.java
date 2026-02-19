@@ -13,6 +13,7 @@ import java.util.stream.IntStream;
 import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.agentic.declarative.LoopAgent;
 import dev.langchain4j.agentic.planner.AgentInstance;
+import dev.langchain4j.agentic.planner.AgenticSystemTopology;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import dev.langchain4j.agentic.workflow.impl.LoopAgentServiceImpl;
@@ -35,28 +36,24 @@ public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> implements 
         return Boolean.FALSE.equals(exit);
     };
     private final WorkflowRegistry workflowRegistry;
-    private final FlowPlannerFactory flowPlannerFactory;
+
     // We need our own copies (base fields are private)
     private int flowMaxIterations = Integer.MAX_VALUE;
     private BiPredicate<AgenticScope, Integer> flowExitCond = (scope, loopCounter) -> false;
     private boolean flowTestExitAtLoopEnd = false;
 
-    protected FlowLoopAgentService(Class<T> agentServiceClass, Method agenticMethod, WorkflowRegistry workflowRegistry,
-            FlowPlannerFactory flowPlannerFactory) {
+    protected FlowLoopAgentService(Class<T> agentServiceClass, Method agenticMethod, WorkflowRegistry workflowRegistry) {
         super(agentServiceClass, agenticMethod);
         this.workflowRegistry = workflowRegistry;
-        this.flowPlannerFactory = flowPlannerFactory;
     }
 
-    public static FlowLoopAgentService<UntypedAgent> builder(WorkflowRegistry workflowRegistry,
-            FlowPlannerFactory flowPlannerFactory) {
-        return new FlowLoopAgentService<>(UntypedAgent.class, null, workflowRegistry, flowPlannerFactory);
+    public static FlowLoopAgentService<UntypedAgent> builder(WorkflowRegistry workflowRegistry) {
+        return new FlowLoopAgentService<>(UntypedAgent.class, null, workflowRegistry);
     }
 
-    public static <T> FlowLoopAgentService<T> builder(Class<T> agentServiceClass, WorkflowRegistry workflowRegistry,
-            FlowPlannerFactory flowPlannerFactory) {
+    public static <T> FlowLoopAgentService<T> builder(Class<T> agentServiceClass, WorkflowRegistry workflowRegistry) {
         return new FlowLoopAgentService<>(agentServiceClass, validateAgentClass(agentServiceClass, false, LoopAgent.class),
-                workflowRegistry, flowPlannerFactory);
+                workflowRegistry);
     }
 
     /**
@@ -92,7 +89,7 @@ public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> implements 
     public T build() {
         final FlowAgentServiceWorkflowBuilder workflowBuilder = new FlowAgentServiceWorkflowBuilder(this.agentServiceClass,
                 this.description, this.tasksDefinition(), workflowRegistry);
-        return build(() -> flowPlannerFactory.newPlanner(workflowBuilder));
+        return build(() -> new FlowPlanner(workflowBuilder, AgenticSystemTopology.LOOP));
     }
 
     @Override

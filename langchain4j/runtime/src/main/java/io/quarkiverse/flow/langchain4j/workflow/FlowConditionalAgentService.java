@@ -17,6 +17,7 @@ import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.agentic.declarative.ConditionalAgent;
 import dev.langchain4j.agentic.internal.AgentExecutor;
 import dev.langchain4j.agentic.planner.AgentInstance;
+import dev.langchain4j.agentic.planner.AgenticSystemTopology;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import dev.langchain4j.agentic.workflow.impl.ConditionalAgentServiceImpl;
@@ -29,24 +30,19 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
     private final Map<AgentInstance, Predicate<AgenticScope>> conditions = new IdentityHashMap<>();
 
     private final WorkflowRegistry workflowRegistry;
-    private final FlowPlannerFactory flowPlannerFactory;
 
-    protected FlowConditionalAgentService(Class<T> agentServiceClass, Method agenticMethod, WorkflowRegistry workflowRegistry,
-            FlowPlannerFactory flowPlannerFactory) {
+    protected FlowConditionalAgentService(Class<T> agentServiceClass, Method agenticMethod, WorkflowRegistry workflowRegistry) {
         super(agentServiceClass, agenticMethod);
         this.workflowRegistry = workflowRegistry;
-        this.flowPlannerFactory = flowPlannerFactory;
     }
 
-    public static FlowConditionalAgentService<UntypedAgent> builder(WorkflowRegistry workflowRegistry,
-            FlowPlannerFactory flowPlannerFactory) {
-        return new FlowConditionalAgentService<>(UntypedAgent.class, null, workflowRegistry, flowPlannerFactory);
+    public static FlowConditionalAgentService<UntypedAgent> builder(WorkflowRegistry workflowRegistry) {
+        return new FlowConditionalAgentService<>(UntypedAgent.class, null, workflowRegistry);
     }
 
-    public static <T> FlowConditionalAgentService<T> builder(Class<T> agentServiceClass, WorkflowRegistry workflowRegistry,
-            FlowPlannerFactory flowPlannerFactory) {
+    public static <T> FlowConditionalAgentService<T> builder(Class<T> agentServiceClass, WorkflowRegistry workflowRegistry) {
         return new FlowConditionalAgentService<>(agentServiceClass,
-                validateAgentClass(agentServiceClass, false, ConditionalAgent.class), workflowRegistry, flowPlannerFactory);
+                validateAgentClass(agentServiceClass, false, ConditionalAgent.class), workflowRegistry);
     }
 
     @Override
@@ -71,7 +67,7 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
     public T build() {
         final FlowAgentServiceWorkflowBuilder workflowBuilder = new FlowAgentServiceWorkflowBuilder(this.agentServiceClass,
                 this.description, this.tasksDefinition(), workflowRegistry);
-        return build(() -> flowPlannerFactory.newPlanner(workflowBuilder));
+        return build(() -> new FlowPlanner(workflowBuilder, AgenticSystemTopology.ROUTER));
     }
 
     public Function<List<AgentInstance>, Consumer<FuncDoTaskBuilder>> tasksDefinition() {
