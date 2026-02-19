@@ -21,7 +21,7 @@
         <failsafe-plugin.version>3.5.4</failsafe-plugin.version>
 
         <quarkus.flow.version>1.0.0-SNAPSHOT</quarkus.flow.version>
-        <io.quarkiverse.langchain4j.version>1.7.1</io.quarkiverse.langchain4j.version>
+        <io.quarkiverse.langchain4j.version>1.7.2</io.quarkiverse.langchain4j.version>
         <org.assertj.version>3.27.7</org.assertj.version>
     </properties>
 
