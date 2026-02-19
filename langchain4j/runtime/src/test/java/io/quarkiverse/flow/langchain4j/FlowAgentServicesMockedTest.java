@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
+import jakarta.inject.Inject;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -13,15 +15,23 @@ import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
 import dev.langchain4j.service.V;
+import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkiverse.flow.langchain4j.workflow.FlowConditionalAgentService;
 import io.quarkiverse.flow.langchain4j.workflow.FlowLoopAgentService;
 import io.quarkiverse.flow.langchain4j.workflow.FlowParallelAgentService;
+import io.quarkiverse.flow.langchain4j.workflow.FlowPlannerFactory;
 import io.quarkiverse.flow.langchain4j.workflow.FlowSequentialAgentService;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
 @ExtendWith(MockitoExtension.class)
 public class FlowAgentServicesMockedTest {
+
+    @Inject
+    WorkflowRegistry registry;
+
+    @Inject
+    FlowPlannerFactory flowPlannerFactory;
 
     @Test
     void sequentialAgentInvokesExecutorsInOrder() {
@@ -38,7 +48,8 @@ public class FlowAgentServicesMockedTest {
         });
 
         // Build our Flow-backed LC4J service
-        FlowSequentialAgentService<TestSequentialAgent> service = FlowSequentialAgentService.builder(TestSequentialAgent.class);
+        FlowSequentialAgentService<TestSequentialAgent> service = FlowSequentialAgentService.builder(TestSequentialAgent.class,
+                registry, flowPlannerFactory);
 
         // Register sub-agents (executors)
         service.subAgents(agent1, agent2);
@@ -60,7 +71,8 @@ public class FlowAgentServicesMockedTest {
         var agent2 = AgenticServices.agentAction(scope -> scope.writeState("calledB", true));
         var agent3 = AgenticServices.agentAction(scope -> scope.writeState("calledC", true));
 
-        FlowParallelAgentService<TestParallelAgent> service = FlowParallelAgentService.builder(TestParallelAgent.class);
+        FlowParallelAgentService<TestParallelAgent> service = FlowParallelAgentService.builder(TestParallelAgent.class,
+                registry, flowPlannerFactory);
 
         service.subAgents(agent1, agent2, agent3);
 
@@ -81,7 +93,7 @@ public class FlowAgentServicesMockedTest {
         var financeExec = AgenticServices.agentAction(scope -> scope.writeState("branch", "finance"));
 
         FlowConditionalAgentService<TestConditionalAgent> service = FlowConditionalAgentService
-                .builder(TestConditionalAgent.class);
+                .builder(TestConditionalAgent.class, registry, flowPlannerFactory);
 
         // condition on state("type")
         Predicate<AgenticScope> isMedical = scope -> "medical".equals(scope.readState("type", ""));
@@ -111,7 +123,8 @@ public class FlowAgentServicesMockedTest {
             calls.incrementAndGet();
         });
 
-        FlowLoopAgentService<TestLoopAgent> service = FlowLoopAgentService.builder(TestLoopAgent.class);
+        FlowLoopAgentService<TestLoopAgent> service = FlowLoopAgentService.builder(TestLoopAgent.class, registry,
+                flowPlannerFactory);
 
         // max 10 iterations, but we exit when counter >= 3
         service.maxIterations(10);

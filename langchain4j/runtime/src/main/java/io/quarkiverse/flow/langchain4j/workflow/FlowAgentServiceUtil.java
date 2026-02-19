@@ -9,6 +9,7 @@ import dev.langchain4j.agentic.planner.AgentInstance;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import io.serverlessworkflow.fluent.func.spi.FuncDoFluent;
+import io.serverlessworkflow.impl.WorkflowContextData;
 import io.serverlessworkflow.impl.WorkflowModel;
 
 public final class FlowAgentServiceUtil {
@@ -39,8 +40,9 @@ public final class FlowAgentServiceUtil {
             String stepName = safeName(agent.agentId() + "-" + i);
             tasks.function(stepName,
                     fn -> fn.function(
-                            (DefaultAgenticScope scope) -> {
-                                CompletableFuture<Void> nextActionFuture = FlowPlannerSessions.INSTANCE.execute(scope, agent);
+                            (DefaultAgenticScope scope, WorkflowContextData ctx) -> {
+                                CompletableFuture<Void> nextActionFuture = FlowPlannerSessions.getInstance()
+                                        .get(ctx.instanceData().id()).executeAgent(agent);
                                 return nextActionFuture.join();
                             },
                             DefaultAgenticScope.class)

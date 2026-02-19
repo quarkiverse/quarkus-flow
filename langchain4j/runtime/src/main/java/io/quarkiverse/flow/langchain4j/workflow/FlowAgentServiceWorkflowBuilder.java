@@ -1,8 +1,6 @@
 package io.quarkiverse.flow.langchain4j.workflow;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -24,20 +22,19 @@ public class FlowAgentServiceWorkflowBuilder {
     private final Class<?> agentServiceClass;
     private final String description;
     private final Function<List<AgentInstance>, Consumer<FuncDoTaskBuilder>> taskFactory;
-    private final Map<String, WorkflowDefinition> cache = new ConcurrentHashMap<>();
+    private final WorkflowRegistry workflowRegistry;
 
     FlowAgentServiceWorkflowBuilder(Class<?> agentServiceClass, String description,
-            Function<List<AgentInstance>, Consumer<FuncDoTaskBuilder>> taskFactory) {
+            Function<List<AgentInstance>, Consumer<FuncDoTaskBuilder>> taskFactory, WorkflowRegistry workflowRegistry) {
         this.agentServiceClass = agentServiceClass;
         this.description = description;
         this.taskFactory = taskFactory;
+        this.workflowRegistry = workflowRegistry;
     }
 
-    public WorkflowDefinition build(List<AgentInstance> agents, String plannerAgentId) {
-        return cache.computeIfAbsent(plannerAgentId, __ -> {
-            final WorkflowDefinitionId id = WorkflowNameUtils.newId(agentServiceClass);
-            final WorkflowRegistry registry = WorkflowRegistry.current();
-
+    public WorkflowDefinition build(List<AgentInstance> agents) {
+        final WorkflowDefinitionId id = WorkflowNameUtils.newId(agentServiceClass);
+        return workflowRegistry.lookup(id).orElseGet(() -> {
             FuncWorkflowBuilder builder = FuncWorkflowBuilder.workflow();
             builder.document(d -> d
                     .name(id.name())
@@ -47,7 +44,7 @@ public class FlowAgentServiceWorkflowBuilder {
             builder.tasks(taskFactory.apply(agents));
 
             final Workflow topologyWorkflow = builder.build();
-            Workflow workflowToRegister = registry.lookupDescriptor(id)
+            Workflow workflowToRegister = workflowRegistry.lookupDescriptor(id)
                     .map(descriptor -> {
                         descriptor.getDocument().setName(id.name());
                         descriptor.getDocument().setNamespace(id.namespace());
@@ -59,7 +56,7 @@ public class FlowAgentServiceWorkflowBuilder {
                     .orElse(topologyWorkflow);
 
             LOG.info("Building LC4J Workflow {}", workflowToRegister.getDocument().getName());
-            return registry.register(workflowToRegister);
+            return workflowRegistry.register(workflowToRegister);
         });
     }
 

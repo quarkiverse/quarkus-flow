@@ -14,28 +14,39 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import dev.langchain4j.agentic.UntypedAgent;
+import dev.langchain4j.agentic.declarative.ConditionalAgent;
 import dev.langchain4j.agentic.internal.AgentExecutor;
 import dev.langchain4j.agentic.planner.AgentInstance;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import dev.langchain4j.agentic.workflow.impl.ConditionalAgentServiceImpl;
+import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
+import io.serverlessworkflow.impl.WorkflowContextData;
 
 public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<T> implements FlowAgentService {
 
     private final Map<AgentInstance, Predicate<AgenticScope>> conditions = new IdentityHashMap<>();
 
-    protected FlowConditionalAgentService(Class<T> agentServiceClass, Method agenticMethod) {
+    private final WorkflowRegistry workflowRegistry;
+    private final FlowPlannerFactory flowPlannerFactory;
+
+    protected FlowConditionalAgentService(Class<T> agentServiceClass, Method agenticMethod, WorkflowRegistry workflowRegistry,
+            FlowPlannerFactory flowPlannerFactory) {
         super(agentServiceClass, agenticMethod);
+        this.workflowRegistry = workflowRegistry;
+        this.flowPlannerFactory = flowPlannerFactory;
     }
 
-    public static FlowConditionalAgentService<UntypedAgent> builder() {
-        return new FlowConditionalAgentService<>(UntypedAgent.class, null);
+    public static FlowConditionalAgentService<UntypedAgent> builder(WorkflowRegistry workflowRegistry,
+            FlowPlannerFactory flowPlannerFactory) {
+        return new FlowConditionalAgentService<>(UntypedAgent.class, null, workflowRegistry, flowPlannerFactory);
     }
 
-    public static <T> FlowConditionalAgentService<T> builder(Class<T> agentServiceClass) {
+    public static <T> FlowConditionalAgentService<T> builder(Class<T> agentServiceClass, WorkflowRegistry workflowRegistry,
+            FlowPlannerFactory flowPlannerFactory) {
         return new FlowConditionalAgentService<>(agentServiceClass,
-                validateAgentClass(agentServiceClass, false, dev.langchain4j.agentic.declarative.ConditionalAgent.class));
+                validateAgentClass(agentServiceClass, false, ConditionalAgent.class), workflowRegistry, flowPlannerFactory);
     }
 
     @Override
@@ -59,8 +70,8 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
     @Override
     public T build() {
         final FlowAgentServiceWorkflowBuilder workflowBuilder = new FlowAgentServiceWorkflowBuilder(this.agentServiceClass,
-                this.description, this.tasksDefinition());
-        return build(() -> new FlowPlanner(workflowBuilder));
+                this.description, this.tasksDefinition(), workflowRegistry);
+        return build(() -> flowPlannerFactory.newPlanner(workflowBuilder));
     }
 
     public Function<List<AgentInstance>, Consumer<FuncDoTaskBuilder>> tasksDefinition() {
@@ -70,9 +81,9 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
                 final String stepName = safeName(agent.agentId() + "-" + (step++));
                 tasks.function(stepName,
                         fn -> fn.function(
-                                (DefaultAgenticScope scope) -> {
-                                    CompletableFuture<Void> nextActionFuture = FlowPlannerSessions.INSTANCE.execute(scope,
-                                            agent);
+                                (DefaultAgenticScope scope, WorkflowContextData ctx) -> {
+                                    CompletableFuture<Void> nextActionFuture = FlowPlannerSessions.getInstance()
+                                            .get(ctx.instanceData().id()).executeAgent(agent);
                                     return nextActionFuture.join();
                                 },
                                 DefaultAgenticScope.class)
