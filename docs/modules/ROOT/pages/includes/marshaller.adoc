@@ -1,0 +1,15 @@
+=== Add model marshaler
+
+In order to be able to write and read the workflow model to/from the persistence store, Quarkus Flow requires the presence of an implementation of `io.serverlessworkflow.impl.marshaller.CustomObjectMarshaller` interface capable of marshaling the workflow model.
+
+By default, the underlying `WorkflowModel` implementation is based on Jackson, therefore following dependency should be added together with the persistence plug-in one. 
+
+----
+<dependency>
+  <groupId>io.serverlessworkflow</groupId>
+  <artifactId>serverlessworkflow-persistence-jackson-marshaller</artifactId>
+</dependency>
+----
+
+
+ 

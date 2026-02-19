@@ -1,6 +1,6 @@
 name: Flow Redis
 description: |
-  Redis persitence plugin
+  Redis Persistence Plugin
 metadata:
   keywords:
     - workflow

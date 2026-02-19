@@ -1,6 +1,6 @@
 name: Flow MVStore
 description: |
-  MVStore persitence plugin
+  MVStore Persistence Plugin
 metadata:
   keywords:
     - workflow
