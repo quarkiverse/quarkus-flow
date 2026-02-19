@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.agentic.declarative.ParallelAgent;
 import dev.langchain4j.agentic.planner.AgentInstance;
+import dev.langchain4j.agentic.planner.AgenticSystemTopology;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import dev.langchain4j.agentic.workflow.impl.ParallelAgentServiceImpl;
 import io.quarkiverse.flow.internal.WorkflowRegistry;
@@ -27,25 +28,19 @@ public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> imp
     private static final Logger LOG = LoggerFactory.getLogger(FlowParallelAgentService.class);
 
     private final WorkflowRegistry workflowRegistry;
-    private final FlowPlannerFactory flowPlannerFactory;
 
-    protected FlowParallelAgentService(Class<T> agentServiceClass, Method agenticMethod, WorkflowRegistry workflowRegistry,
-            FlowPlannerFactory flowPlannerFactory) {
+    protected FlowParallelAgentService(Class<T> agentServiceClass, Method agenticMethod, WorkflowRegistry workflowRegistry) {
         super(agentServiceClass, agenticMethod);
         this.workflowRegistry = workflowRegistry;
-        this.flowPlannerFactory = flowPlannerFactory;
     }
 
-    public static FlowParallelAgentService<UntypedAgent> builder(WorkflowRegistry workflowRegistry,
-            FlowPlannerFactory flowPlannerFactory) {
-        return new FlowParallelAgentService<>(UntypedAgent.class, null, workflowRegistry, flowPlannerFactory);
+    public static FlowParallelAgentService<UntypedAgent> builder(WorkflowRegistry workflowRegistry) {
+        return new FlowParallelAgentService<>(UntypedAgent.class, null, workflowRegistry);
     }
 
-    public static <T> FlowParallelAgentService<T> builder(Class<T> agentServiceClass, WorkflowRegistry workflowRegistry,
-            FlowPlannerFactory flowPlannerFactory) {
+    public static <T> FlowParallelAgentService<T> builder(Class<T> agentServiceClass, WorkflowRegistry workflowRegistry) {
         return new FlowParallelAgentService<>(agentServiceClass,
-                validateAgentClass(agentServiceClass, false, ParallelAgent.class), workflowRegistry,
-                flowPlannerFactory);
+                validateAgentClass(agentServiceClass, false, ParallelAgent.class), workflowRegistry);
     }
 
     @Override
@@ -58,7 +53,7 @@ public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> imp
     public T build() {
         final FlowAgentServiceWorkflowBuilder workflowBuilder = new FlowAgentServiceWorkflowBuilder(this.agentServiceClass,
                 this.description, this.tasksDefinition(), workflowRegistry);
-        return build(() -> flowPlannerFactory.newPlanner(workflowBuilder));
+        return build(() -> new FlowPlanner(workflowBuilder, AgenticSystemTopology.PARALLEL));
     }
 
     @Override

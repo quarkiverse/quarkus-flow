@@ -19,38 +19,35 @@ public class FlowAgentsBuilderService {
     @Inject
     WorkflowRegistry workflowRegistry;
 
-    @Inject
-    FlowPlannerFactory flowPlannerFactory;
-
     public SequentialAgentService<UntypedAgent> newSequential() {
-        return FlowSequentialAgentService.builder(workflowRegistry, flowPlannerFactory);
+        return FlowSequentialAgentService.builder(workflowRegistry);
     }
 
     public <T> SequentialAgentService<T> newSequential(Class<T> agentServiceClass) {
-        return FlowSequentialAgentService.builder(agentServiceClass, workflowRegistry, flowPlannerFactory);
+        return FlowSequentialAgentService.builder(agentServiceClass, workflowRegistry);
     }
 
     public ParallelAgentService<UntypedAgent> newParallel() {
-        return FlowParallelAgentService.builder(workflowRegistry, flowPlannerFactory);
+        return FlowParallelAgentService.builder(workflowRegistry);
     }
 
     public <T> ParallelAgentService<T> newParallel(Class<T> agentServiceClass) {
-        return FlowParallelAgentService.builder(agentServiceClass, workflowRegistry, flowPlannerFactory);
+        return FlowParallelAgentService.builder(agentServiceClass, workflowRegistry);
     }
 
     public LoopAgentService<UntypedAgent> newLoop() {
-        return FlowLoopAgentService.builder(workflowRegistry, flowPlannerFactory);
+        return FlowLoopAgentService.builder(workflowRegistry);
     }
 
     public <T> LoopAgentService<T> newLoop(Class<T> agentServiceClass) {
-        return FlowLoopAgentService.builder(agentServiceClass, workflowRegistry, flowPlannerFactory);
+        return FlowLoopAgentService.builder(agentServiceClass, workflowRegistry);
     }
 
     public ConditionalAgentService<UntypedAgent> newConditional() {
-        return FlowConditionalAgentService.builder(workflowRegistry, flowPlannerFactory);
+        return FlowConditionalAgentService.builder(workflowRegistry);
     }
 
     public <T> ConditionalAgentService<T> newConditional(Class<T> agentServiceClass) {
-        return FlowConditionalAgentService.builder(agentServiceClass, workflowRegistry, flowPlannerFactory);
+        return FlowConditionalAgentService.builder(agentServiceClass, workflowRegistry);
     }
 }
