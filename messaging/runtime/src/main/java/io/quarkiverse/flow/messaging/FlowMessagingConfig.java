@@ -20,8 +20,8 @@ public interface FlowMessagingConfig {
      * <p>
      * The default correlation metadata includes:
      * <ul>
-     * <li><code>XFlowInstanceId</code> the instance ID, see {@link WorkflowInstance#id()}</li>
-     * <li><code>XFlowTaskId</code> the task's position that where the request was made, see
+     * <li><code>flowinstanceid</code> the instance ID, see {@link WorkflowInstance#id()}</li>
+     * <li><code>flowtaskid</code> the task's position that where the request was made, see
      * {@link io.serverlessworkflow.impl.TaskContext#position()}</li>
      * </ul>
      */
