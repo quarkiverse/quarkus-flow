@@ -29,6 +29,8 @@ For example
 quarkus.redis.hosts=redis://localhost:6379
 ----
 
+include::includes/marshaller.adoc[]
+
 == See also
 - link:https://quarkus.io/guides/redis[Using the Quarkus Redis Client]
 - link:https://github.com/serverlessworkflow/sdk-java/tree/main/impl/persistence[Serverless Workflow Java SDK Persistence]
