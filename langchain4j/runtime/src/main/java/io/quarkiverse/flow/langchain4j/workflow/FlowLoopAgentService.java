@@ -4,17 +4,20 @@ import static dev.langchain4j.agentic.internal.AgentUtil.validateAgentClass;
 import static io.quarkiverse.flow.langchain4j.workflow.FlowAgentServiceUtil.agenticScopePassthrough;
 
 import java.lang.reflect.Method;
-import java.util.function.BiFunction;
+import java.util.List;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.agentic.declarative.LoopAgent;
-import dev.langchain4j.agentic.planner.InitPlanningContext;
+import dev.langchain4j.agentic.planner.AgentInstance;
+import dev.langchain4j.agentic.planner.AgenticSystemTopology;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import dev.langchain4j.agentic.workflow.impl.LoopAgentServiceImpl;
+import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.serverlessworkflow.api.types.func.LoopPredicateIndex;
 import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
 import io.serverlessworkflow.fluent.func.FuncTaskItemListBuilder;
@@ -25,7 +28,6 @@ public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> implements 
     private static final String AT = "index";
     private static final String ITEM = "item";
     private static final String EXIT_PROP = "_exit";
-
     /**
      * For do..while semantics (check at end): continue while exit == false.
      */
@@ -33,21 +35,25 @@ public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> implements 
         Boolean exit = scope.readState(EXIT_PROP, false);
         return Boolean.FALSE.equals(exit);
     };
+    private final WorkflowRegistry workflowRegistry;
+
     // We need our own copies (base fields are private)
     private int flowMaxIterations = Integer.MAX_VALUE;
     private BiPredicate<AgenticScope, Integer> flowExitCond = (scope, loopCounter) -> false;
     private boolean flowTestExitAtLoopEnd = false;
 
-    protected FlowLoopAgentService(Class<T> agentServiceClass, Method agenticMethod) {
+    protected FlowLoopAgentService(Class<T> agentServiceClass, Method agenticMethod, WorkflowRegistry workflowRegistry) {
         super(agentServiceClass, agenticMethod);
+        this.workflowRegistry = workflowRegistry;
     }
 
-    public static FlowLoopAgentService<UntypedAgent> builder() {
-        return new FlowLoopAgentService<>(UntypedAgent.class, null);
+    public static FlowLoopAgentService<UntypedAgent> builder(WorkflowRegistry workflowRegistry) {
+        return new FlowLoopAgentService<>(UntypedAgent.class, null, workflowRegistry);
     }
 
-    public static <T> FlowLoopAgentService<T> builder(Class<T> agentServiceClass) {
-        return new FlowLoopAgentService<>(agentServiceClass, validateAgentClass(agentServiceClass, false, LoopAgent.class));
+    public static <T> FlowLoopAgentService<T> builder(Class<T> agentServiceClass, WorkflowRegistry workflowRegistry) {
+        return new FlowLoopAgentService<>(agentServiceClass, validateAgentClass(agentServiceClass, false, LoopAgent.class),
+                workflowRegistry);
     }
 
     /**
@@ -81,12 +87,14 @@ public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> implements 
 
     @Override
     public T build() {
-        return build(() -> new FlowPlanner(this.agentServiceClass, this.description, this.tasksDefinition()));
+        final FlowAgentServiceWorkflowBuilder workflowBuilder = new FlowAgentServiceWorkflowBuilder(this.agentServiceClass,
+                this.description, this.tasksDefinition(), workflowRegistry);
+        return build(() -> new FlowPlanner(workflowBuilder, AgenticSystemTopology.LOOP));
     }
 
     @Override
-    public BiFunction<FlowPlanner, InitPlanningContext, Consumer<FuncDoTaskBuilder>> tasksDefinition() {
-        return (planner, initPlanningContext) -> tasks -> {
+    public Function<List<AgentInstance>, Consumer<FuncDoTaskBuilder>> tasksDefinition() {
+        return (agents) -> tasks -> {
             // If we check exit at loop end, reset per workflow invocation (not per iteration!)
             if (flowTestExitAtLoopEnd) {
                 tasks.function("loop-reset-exit",
@@ -99,7 +107,7 @@ public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> implements 
 
             tasks.forEach("loop",
                     does -> does
-                            .tasks(forDo -> FlowAgentServiceUtil.addAgentTasks(forDo, planner, initPlanningContext.subagents()))
+                            .tasks(forDo -> FlowAgentServiceUtil.addAgentTasks(forDo, agents))
                             .tasks(checkExitConditionAtLoopEndFunction())
                             .each(ITEM)
                             .at(AT)
