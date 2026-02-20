@@ -1,5 +1,6 @@
 package io.quarkiverse.flow.langchain4j.workflow;
 
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -44,4 +45,14 @@ public final class FlowPlannerSessions {
             LOG.debug("Closed planner session for workflow instance {}", id);
         }
     }
+
+    // Begin: Tests access -------------------
+    int activeSessionCount() {
+        return sessions.size();
+    }
+
+    Set<String> activeSessionIds() {
+        return Set.copyOf(sessions.keySet());
+    }
+    // End: test access ----------------------
 }

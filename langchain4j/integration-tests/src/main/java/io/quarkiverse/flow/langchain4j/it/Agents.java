@@ -116,8 +116,8 @@ public class Agents {
 
     public interface CategoryRouter {
         @UserMessage("""
-                Analyze the following user request and categorize it as 'legal', 'medical' or 'technical'.
-                In case the request doesn't belong to any of those categories categorize it as 'unknown'.
+                Analyze the following user request and categorize it as 'LEGAL', 'MEDICAL' or 'TECHNICAL'.
+                In case the request doesn't belong to any of those categories categorize it as 'UNKNOWN'.
                 Reply with only one of those words and nothing else.
                 The user request is: '{{request}}'.
                 """)
@@ -158,6 +158,14 @@ public class Agents {
         String technical(@V("request") String request);
     }
 
+    public interface UnknownExpert {
+        @Tool("Fallback expert")
+        @Agent(outputKey = "response")
+        default String unknown(@V("request") String request) {
+            return "I’m not sure which category this is, but it sounds urgent. Please seek appropriate professional help.";
+        }
+    }
+
     @RegisterAiService
     public interface ExpertsAgent {
 
@@ -176,7 +184,13 @@ public class Agents {
             return category == RequestCategory.TECHNICAL;
         }
 
-        @ConditionalAgent(outputKey = "response", subAgents = { MedicalExpert.class, LegalExpert.class, TechnicalExpert.class })
+        @ActivationCondition(UnknownExpert.class)
+        static boolean activateUnknown(@V("category") RequestCategory category) {
+            return category == RequestCategory.UNKNOWN;
+        }
+
+        @ConditionalAgent(outputKey = "response", subAgents = { MedicalExpert.class, LegalExpert.class, TechnicalExpert.class,
+                UnknownExpert.class })
         String askExpert(@V("request") String request);
     }
 
