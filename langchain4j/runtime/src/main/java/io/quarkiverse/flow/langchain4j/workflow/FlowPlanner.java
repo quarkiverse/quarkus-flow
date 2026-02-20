@@ -47,6 +47,11 @@ public class FlowPlanner implements Planner, AutoCloseable {
     }
 
     @Override
+    public boolean terminated() {
+        return closed.get();
+    }
+
+    @Override
     public void init(InitPlanningContext initPlanningContext) {
         // lazy creation since we are being instantiated twice upstream
         agentExchangeQueue = new LinkedBlockingQueue<>();
@@ -129,6 +134,7 @@ public class FlowPlanner implements Planner, AutoCloseable {
             Thread.currentThread().interrupt();
             LOG.error("Interrupted while queueing agent exchange", e);
             continuation.completeExceptionally(e);
+            abort(e);
         }
 
         return continuation;
