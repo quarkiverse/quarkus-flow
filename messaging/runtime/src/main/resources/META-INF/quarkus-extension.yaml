@@ -2,6 +2,7 @@ name: Flow Messaging
 description: |
   SmallRye Messaging support for Quarkus Flow.
   Please see the main extension for more details.
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
   keywords:
     - workflow

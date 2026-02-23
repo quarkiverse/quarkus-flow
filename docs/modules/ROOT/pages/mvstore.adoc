@@ -29,6 +29,8 @@ For example
 quarkus.flow.persistence.mvstore.db-path=$HOME/testFlowMVStore.db
 ----
 
+include::includes/marshaller.adoc[]
+
 == See also
 - link:https://www.h2database.com/html/mvstore.html[MVStore homepage]
 - link:https://github.com/serverlessworkflow/sdk-java/tree/main/impl/persistence[Serverless Workflow Java SDK Persistence]

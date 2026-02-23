@@ -30,11 +30,19 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
             color: var(--lumo-primary-text-color);
             width: 100%;
         }
+        .mermaidError {
+            color: var(--lumo-error-text-color);
+            padding: 20px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: pre-wrap;
+        }
     `;
 
     static properties = {
         _workflows: { state: true },
         _currentMermaid: { state: true },
+        _currentMermaidWorkflow: { state: true },
         _mermaidDialogOpened: { state: true },
         _selectedWorkflow: { state: true }
     };
@@ -93,7 +101,8 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
                                 header="Actions"
                                 auto-width
                                 ${columnBodyRenderer(workflow => html`
-                                    <vaadin-button @click=${() => this._visualizeMermaid(workflow)} id="see-${workflow.id.namespace}:${workflow.id.name}:${workflow.id.version}">
+                                    <vaadin-button @click=${() => this._visualizeMermaid(workflow)}
+                                                   id="see-${this._generateMermaidId(workflow.id)}">
                                         <vaadin-icon icon="font-awesome-solid:eye"></vaadin-icon>
                                     </vaadin-button>
                                     <vaadin-button @click=${() => this._executeWorkflow(workflow)}>
@@ -117,9 +126,15 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
         if (!window.mermaid) {
             const script = document.createElement('script');
             script.src = 'https://cdn.jsdelivr.net/npm/mermaid@11.12.0/dist/mermaid.min.js';
+            script.onload = () => {
+                this._initializeMermaid();
+            };
             document.head.appendChild(script);
+        } else {
+            this._initializeMermaid();
         }
-        this.jsonRpc.getWorkflows().then(({ result }) => {
+
+        this.jsonRpc.getWorkflows().then(({result}) => {
             this._workflows = result;
         });
     }
@@ -128,21 +143,42 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
         super.disconnectedCallback();
     }
 
-    updated(changedProps) {
+    async updated(changedProps) {
         super.updated?.(changedProps);
         if (this._currentMermaid && window.mermaid) {
-            window.mermaid.init({
-                startOnLoad: false,
-                theme: themeState.theme.name === 'dark' ? 'dark' : 'default',
-                fontFamily: 'var(--lumo-font-family)',
-                fontSize: 12,
-                flowchart: {
-                    useMaxWidth: true,
-                    htmlLabels: true,
-                },
-                themeCSS: ".label foreignObject { font-size: 14px; overflow: visible; width: auto; }"
-            }, '.mermaid');
+            const mermaidElement = this.shadowRoot?.querySelector('.mermaid');
+            if (mermaidElement && !mermaidElement.hasAttribute('data-processed')) {
+                try {
+                    const id = this._generateMermaidId(this._currentMermaidWorkflow.id);
+                    const {svg} = await window.mermaid.render(id, this._currentMermaid);
+                    mermaidElement.innerHTML = svg;
+                    mermaidElement.setAttribute('data-processed', 'true');
+                } catch (error) {
+                    mermaidElement.innerHTML = `<div class="mermaidError">
+                            <p>Error rendering diagram: ${error.message || 'Unknown error'}</p>
+                        </div>`;
+                }
+            }
         }
+    }
+
+    _initializeMermaid() {
+        window.mermaid.initialize({
+            startOnLoad: false,
+            theme: themeState.theme.name === 'dark' ? 'dark' : 'default',
+            fontFamily: 'var(--lumo-font-family)',
+            fontSize: 12,
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+            },
+            themeCSS: ".label foreignObject { font-size: 14px; overflow: visible; width: auto; }"
+        });
+    };
+
+    _generateMermaidId(workflowId) {
+        const {namespace, name, version} = workflowId;
+        return 'mermaid-' + `${namespace.replaceAll('.', '-')}-${name.replaceAll('.', '-')}-${version.replaceAll('.', '-')}`;
     }
 
     _visualizeMermaid(workflow) {
@@ -153,6 +189,7 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
             this._currentMermaid = result.mermaid.replace(/^---[\s\S]*?---\s*/, '');
             this._mermaidDialogOpened = true;
         });
+        this._currentMermaidWorkflow = workflow;
     }
 
     _mermaidContent() {

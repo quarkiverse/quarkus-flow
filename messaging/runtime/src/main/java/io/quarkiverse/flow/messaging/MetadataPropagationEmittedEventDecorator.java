@@ -11,8 +11,8 @@ import io.serverlessworkflow.impl.events.EmittedEventDecorator;
 
 public class MetadataPropagationEmittedEventDecorator implements EmittedEventDecorator {
 
-    public static final String FLOW_INSTANCE_ID = "XFlowInstanceId";
-    public static final String FLOW_TASK_ID = "XFlowTaskId";
+    public static final String FLOW_INSTANCE_ID = "flowinstanceid";
+    public static final String FLOW_TASK_ID = "flowtaskid";
 
     private final boolean enableMetadataPropagation;
     private final String instanceIDKey;
