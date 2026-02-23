@@ -19,7 +19,7 @@ import io.serverlessworkflow.impl.WorkflowModel;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.faulttolerance.api.TypedGuard;
 
-public class FaultToleranceProviderTest {
+public class FaultToleranceRetryTest {
 
     private static final boolean micrometerNotSupported = false;
 
@@ -253,7 +253,7 @@ public class FaultToleranceProviderTest {
                 .addDiscoveredConverters()
                 .withMapping(FlowHttpConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.exceptions",
-                        "io.quarkiverse.flow.deployment.test.faulttolerance.FaultToleranceProviderTest$MyCustomException")
+                        "io.quarkiverse.flow.deployment.test.faulttolerance.FaultToleranceRetryTest$MyCustomException")
                 .build().getConfigMapping(FlowHttpConfig.class);
 
         FlowMetricsConfig flowMetricsConfig = new SmallRyeConfigBuilder()
