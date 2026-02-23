@@ -18,7 +18,7 @@
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.5</surefire-plugin.version>
 
-        <io.quarkiverse.langchain4j.version>1.7.2</io.quarkiverse.langchain4j.version>
+        <io.quarkiverse.langchain4j.version>1.7.4</io.quarkiverse.langchain4j.version>
         <version.assertj>3.27.7</version.assertj>
     </properties>
 
