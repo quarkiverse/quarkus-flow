@@ -26,7 +26,7 @@ import io.serverlessworkflow.impl.WorkflowInstance;
 public class FlowPlanner implements Planner, AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(FlowPlanner.class);
-    private final FlowAgentServiceWorkflowBuilder workflowBuilder;
+    private final FlowAgentWorkflowBuilder workflowBuilder;
     private final AgenticSystemTopology topology;
     private BlockingQueue<AgentExchange> agentExchangeQueue;
     private Map<String, AgentExchange> currentExchanges;
@@ -36,7 +36,7 @@ public class FlowPlanner implements Planner, AutoCloseable {
     private String workflowInstanceId;
     private Throwable terminationCause;
 
-    public FlowPlanner(FlowAgentServiceWorkflowBuilder workflowBuilder, AgenticSystemTopology topology) {
+    public FlowPlanner(FlowAgentWorkflowBuilder workflowBuilder, AgenticSystemTopology topology) {
         this.workflowBuilder = workflowBuilder;
         this.topology = topology;
     }
@@ -58,14 +58,14 @@ public class FlowPlanner implements Planner, AutoCloseable {
         currentExchanges = new ConcurrentHashMap<>();
         parallelAgents = new AtomicInteger(0);
         closed = new AtomicBoolean(false);
-        definition = this.workflowBuilder.build(initPlanningContext.subagents());
+        definition = this.workflowBuilder.buildOrGet(initPlanningContext.subagents());
     }
 
     @Override
     public Action firstAction(PlanningContext planningContext) {
         final WorkflowInstance instance = definition.instance(planningContext.agenticScope());
         workflowInstanceId = instance.id();
-        FlowPlannerSessions.getInstance().open(workflowInstanceId, this);
+        FlowPlannerSessions.getInstance().open(workflowInstanceId, this, planningContext.agenticScope());
 
         // Starts workflow on a different thread
         // Despite returning a CompletableFuture, the start() method executes on the same thread by design.

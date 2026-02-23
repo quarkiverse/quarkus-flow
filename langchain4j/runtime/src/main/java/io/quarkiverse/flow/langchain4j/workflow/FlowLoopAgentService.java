@@ -23,7 +23,7 @@ import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
 import io.serverlessworkflow.fluent.func.FuncTaskItemListBuilder;
 import io.serverlessworkflow.impl.TaskContext;
 
-public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> implements FlowAgentService {
+public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> implements FlowAgentService<T> {
 
     private static final String AT = "index";
     private static final String ITEM = "item";
@@ -87,9 +87,28 @@ public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> implements 
 
     @Override
     public T build() {
-        final FlowAgentServiceWorkflowBuilder workflowBuilder = new FlowAgentServiceWorkflowBuilder(this.agentServiceClass,
-                this.description, this.tasksDefinition(), workflowRegistry);
-        return build(() -> new FlowPlanner(workflowBuilder, AgenticSystemTopology.LOOP));
+        final FlowPlannerBuilder builder = new FlowPlannerBuilder(this);
+        return build(builder::build);
+    }
+
+    @Override
+    public String description() {
+        return this.description;
+    }
+
+    @Override
+    public WorkflowRegistry workflowRegistry() {
+        return this.workflowRegistry;
+    }
+
+    @Override
+    public Class<T> agentServiceClass() {
+        return this.agentServiceClass;
+    }
+
+    @Override
+    public AgenticSystemTopology topology() {
+        return AgenticSystemTopology.LOOP;
     }
 
     @Override

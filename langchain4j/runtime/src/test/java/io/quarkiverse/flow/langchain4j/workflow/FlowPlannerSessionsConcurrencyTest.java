@@ -14,7 +14,6 @@ import java.util.concurrent.atomic.LongAdder;
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import dev.langchain4j.agentic.AgenticServices;
@@ -24,7 +23,6 @@ import dev.langchain4j.service.V;
 import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkus.test.junit.QuarkusTest;
 
-@Disabled("Must fix errorHandler on Planner implementation first")
 @QuarkusTest
 class FlowPlannerSessionsConcurrencyTest {
 
@@ -93,7 +91,8 @@ class FlowPlannerSessionsConcurrencyTest {
                 }));
             }
 
-            ready.await(30, TimeUnit.SECONDS);
+            ready.await(15, TimeUnit.SECONDS);
+            // release the kraken
             start.countDown();
 
             for (Future<Void> f : futures) {

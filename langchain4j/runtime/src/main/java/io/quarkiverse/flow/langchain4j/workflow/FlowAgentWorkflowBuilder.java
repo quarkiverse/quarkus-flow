@@ -16,15 +16,15 @@ import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
-public class FlowAgentServiceWorkflowBuilder {
+public class FlowAgentWorkflowBuilder {
 
-    private static final Logger LOG = LoggerFactory.getLogger(FlowAgentServiceWorkflowBuilder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FlowAgentWorkflowBuilder.class);
     private final Class<?> agentServiceClass;
     private final String description;
     private final Function<List<AgentInstance>, Consumer<FuncDoTaskBuilder>> taskFactory;
     private final WorkflowRegistry workflowRegistry;
 
-    FlowAgentServiceWorkflowBuilder(Class<?> agentServiceClass, String description,
+    FlowAgentWorkflowBuilder(Class<?> agentServiceClass, String description,
             Function<List<AgentInstance>, Consumer<FuncDoTaskBuilder>> taskFactory, WorkflowRegistry workflowRegistry) {
         this.agentServiceClass = agentServiceClass;
         this.description = description;
@@ -32,7 +32,11 @@ public class FlowAgentServiceWorkflowBuilder {
         this.workflowRegistry = workflowRegistry;
     }
 
-    public WorkflowDefinition build(List<AgentInstance> agents) {
+    /**
+     * Build a new workflow definition for the given agents of this Agent Workflow Pattern. If already in registry (keyed by
+     * WorkflowDefinitionId), return it instead.
+     */
+    public WorkflowDefinition buildOrGet(List<AgentInstance> agents) {
         final WorkflowDefinitionId id = WorkflowNameUtils.newId(agentServiceClass);
         return workflowRegistry.lookup(id).orElseGet(() -> {
             FuncWorkflowBuilder builder = FuncWorkflowBuilder.workflow();

@@ -7,7 +7,6 @@ import static org.awaitility.Awaitility.await;
 
 import jakarta.inject.Inject;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +18,6 @@ import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-@Disabled("Must fix errorHandler on Planner implementation first")
 public class FlowAgentServicesFailedTest {
 
     private static Logger LOG = LoggerFactory.getLogger(FlowAgentServicesFailedTest.class);

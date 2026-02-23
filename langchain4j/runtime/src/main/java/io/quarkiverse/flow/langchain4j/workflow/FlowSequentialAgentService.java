@@ -15,7 +15,7 @@ import dev.langchain4j.agentic.workflow.impl.SequentialAgentServiceImpl;
 import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
 
-public class FlowSequentialAgentService<T> extends SequentialAgentServiceImpl<T> implements FlowAgentService {
+public class FlowSequentialAgentService<T> extends SequentialAgentServiceImpl<T> implements FlowAgentService<T> {
 
     private final WorkflowRegistry workflowRegistry;
 
@@ -35,9 +35,28 @@ public class FlowSequentialAgentService<T> extends SequentialAgentServiceImpl<T>
 
     @Override
     public T build() {
-        final FlowAgentServiceWorkflowBuilder workflowBuilder = new FlowAgentServiceWorkflowBuilder(this.agentServiceClass,
-                this.description, this.tasksDefinition(), workflowRegistry);
-        return build(() -> new FlowPlanner(workflowBuilder, AgenticSystemTopology.SEQUENCE));
+        final FlowPlannerBuilder builder = new FlowPlannerBuilder(this);
+        return build(builder::build);
+    }
+
+    @Override
+    public String description() {
+        return this.description;
+    }
+
+    @Override
+    public WorkflowRegistry workflowRegistry() {
+        return this.workflowRegistry;
+    }
+
+    @Override
+    public Class<T> agentServiceClass() {
+        return this.agentServiceClass;
+    }
+
+    @Override
+    public AgenticSystemTopology topology() {
+        return AgenticSystemTopology.SEQUENCE;
     }
 
     public Function<List<AgentInstance>, Consumer<FuncDoTaskBuilder>> tasksDefinition() {

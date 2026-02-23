@@ -25,7 +25,7 @@ import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
 import io.serverlessworkflow.impl.WorkflowContextData;
 
-public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<T> implements FlowAgentService {
+public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<T> implements FlowAgentService<T> {
 
     private final Map<AgentInstance, Predicate<AgenticScope>> conditions = new IdentityHashMap<>();
 
@@ -65,9 +65,28 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
 
     @Override
     public T build() {
-        final FlowAgentServiceWorkflowBuilder workflowBuilder = new FlowAgentServiceWorkflowBuilder(this.agentServiceClass,
-                this.description, this.tasksDefinition(), workflowRegistry);
-        return build(() -> new FlowPlanner(workflowBuilder, AgenticSystemTopology.ROUTER));
+        final FlowPlannerBuilder builder = new FlowPlannerBuilder(this);
+        return build(builder::build);
+    }
+
+    @Override
+    public String description() {
+        return this.description;
+    }
+
+    @Override
+    public WorkflowRegistry workflowRegistry() {
+        return this.workflowRegistry;
+    }
+
+    @Override
+    public Class<T> agentServiceClass() {
+        return this.agentServiceClass;
+    }
+
+    @Override
+    public AgenticSystemTopology topology() {
+        return AgenticSystemTopology.ROUTER;
     }
 
     public Function<List<AgentInstance>, Consumer<FuncDoTaskBuilder>> tasksDefinition() {

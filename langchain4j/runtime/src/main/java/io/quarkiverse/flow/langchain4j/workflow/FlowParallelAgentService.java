@@ -23,7 +23,7 @@ import dev.langchain4j.agentic.workflow.impl.ParallelAgentServiceImpl;
 import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
 
-public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> implements FlowAgentService {
+public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> implements FlowAgentService<T> {
 
     private static final Logger LOG = LoggerFactory.getLogger(FlowParallelAgentService.class);
 
@@ -51,9 +51,8 @@ public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> imp
 
     @Override
     public T build() {
-        final FlowAgentServiceWorkflowBuilder workflowBuilder = new FlowAgentServiceWorkflowBuilder(this.agentServiceClass,
-                this.description, this.tasksDefinition(), workflowRegistry);
-        return build(() -> new FlowPlanner(workflowBuilder, AgenticSystemTopology.PARALLEL));
+        final FlowPlannerBuilder builder = new FlowPlannerBuilder(this);
+        return build(builder::build);
     }
 
     @Override
@@ -77,5 +76,25 @@ public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> imp
 
                     }
                 }));
+    }
+
+    @Override
+    public String description() {
+        return this.description;
+    }
+
+    @Override
+    public WorkflowRegistry workflowRegistry() {
+        return this.workflowRegistry;
+    }
+
+    @Override
+    public Class<T> agentServiceClass() {
+        return this.agentServiceClass;
+    }
+
+    @Override
+    public AgenticSystemTopology topology() {
+        return AgenticSystemTopology.PARALLEL;
     }
 }
