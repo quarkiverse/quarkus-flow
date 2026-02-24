@@ -6,4 +6,4 @@ mvn --settings .github/quarkus-ecosystem-maven-settings.xml -B versions:set-prop
 mvn --settings .github/quarkus-ecosystem-maven-settings.xml -B versions:set-property -Dproperty=version.io.quarkus -DnewVersion=${QUARKUS_VERSION} -DgenerateBackupPoms=false
 
 # run the tests
-mvn --settings .github/quarkus-ecosystem-maven-settings.xml -B clean install -Dnative -Dquarkus.langchain4j.ollama.devservices.enabled=false -Dquarkus.native.container-build -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25 -DskipITs=true --fail-at-end -e
+mvn --settings .github/quarkus-ecosystem-maven-settings.xml -B clean install -Dnative -Dquarkus.native.container-build -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25 -DskipITs=true --fail-at-end -e
