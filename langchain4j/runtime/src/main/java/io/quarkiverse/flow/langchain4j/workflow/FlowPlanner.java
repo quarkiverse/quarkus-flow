@@ -4,127 +4,115 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dev.langchain4j.agentic.planner.Action;
 import dev.langchain4j.agentic.planner.AgentInstance;
+import dev.langchain4j.agentic.planner.AgenticSystemTopology;
 import dev.langchain4j.agentic.planner.InitPlanningContext;
 import dev.langchain4j.agentic.planner.Planner;
 import dev.langchain4j.agentic.planner.PlanningContext;
-import io.quarkiverse.flow.internal.WorkflowNameUtils;
-import io.quarkiverse.flow.internal.WorkflowRegistry;
-import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import io.serverlessworkflow.impl.WorkflowDefinition;
-import io.serverlessworkflow.impl.WorkflowDefinitionId;
+import io.serverlessworkflow.impl.WorkflowInstance;
 
-public class FlowPlanner implements Planner {
+public class FlowPlanner implements Planner, AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(FlowPlanner.class);
-
-    private final Class<?> agentServiceClass;
-    private final String description;
-    private final BiFunction<FlowPlanner, InitPlanningContext, Consumer<FuncDoTaskBuilder>> tasks;
-
-    private final BlockingQueue<AgentExchange> agentExchangeQueue = new LinkedBlockingQueue<>();
-    private final Map<String, AgentExchange> currentExchanges = new ConcurrentHashMap<>();
-
-    private final AtomicInteger parallelAgents = new AtomicInteger(0);
-
+    private final FlowAgentWorkflowBuilder workflowBuilder;
+    private final AgenticSystemTopology topology;
+    private BlockingQueue<AgentExchange> agentExchangeQueue;
+    private Map<String, AgentExchange> currentExchanges;
+    private AtomicInteger parallelAgents;
+    private AtomicBoolean closed;
     private WorkflowDefinition definition;
+    private String workflowInstanceId;
+    private Throwable terminationCause;
 
-    /**
-     * Encapsulates the bidirectional exchange between workflow execution and planner actions.
-     */
-    private record AgentExchange(AgentInstance agent, CompletableFuture<Void> continuation) {
+    public FlowPlanner(FlowAgentWorkflowBuilder workflowBuilder, AgenticSystemTopology topology) {
+        this.workflowBuilder = workflowBuilder;
+        this.topology = topology;
     }
 
-    public FlowPlanner(Class<?> agentServiceClass, String description,
-            BiFunction<FlowPlanner, InitPlanningContext, Consumer<FuncDoTaskBuilder>> tasks) {
-        this.agentServiceClass = agentServiceClass;
-        this.description = description;
-        this.tasks = tasks;
+    @Override
+    public AgenticSystemTopology topology() {
+        return topology;
     }
 
-    private WorkflowDefinition buildWorkflow(InitPlanningContext initPlanningContext) {
-        final WorkflowDefinitionId id = WorkflowNameUtils.newId(agentServiceClass);
-        final WorkflowRegistry registry = WorkflowRegistry.current();
-
-        FuncWorkflowBuilder builder = FuncWorkflowBuilder.workflow();
-        builder.document(d -> d
-                .name(id.name())
-                .namespace(id.namespace())
-                .version(id.version())
-                .summary(description));
-        builder.tasks(tasks.apply(this, initPlanningContext));
-
-        final Workflow topologyWorkflow = builder.build();
-        Workflow workflowToRegister = registry.lookupDescriptor(id)
-                .map(descriptor -> {
-                    descriptor.getDocument().setName(id.name());
-                    descriptor.getDocument().setNamespace(id.namespace());
-                    descriptor.getDocument().setVersion(id.version());
-                    descriptor.getDocument().setSummary(description);
-                    descriptor.setDo(topologyWorkflow.getDo());
-                    return descriptor;
-                })
-                .orElse(topologyWorkflow);
-
-        LOG.info("Building LC4J Workflow {}", workflowToRegister.getDocument().getName());
-        return registry.register(workflowToRegister);
+    @Override
+    public boolean terminated() {
+        return closed.get();
     }
 
     @Override
     public void init(InitPlanningContext initPlanningContext) {
-        definition = buildWorkflow(initPlanningContext);
+        // lazy creation since we are being instantiated twice upstream
+        agentExchangeQueue = new LinkedBlockingQueue<>();
+        currentExchanges = new ConcurrentHashMap<>();
+        parallelAgents = new AtomicInteger(0);
+        closed = new AtomicBoolean(false);
+        definition = this.workflowBuilder.buildOrGet(initPlanningContext.subagents());
     }
 
     @Override
     public Action firstAction(PlanningContext planningContext) {
-        // Start workflow execution in background
-        CompletableFuture.supplyAsync(() -> definition.instance(planningContext.agenticScope()).start().join())
-                .thenRun(() -> executeAgent(null));
+        final WorkflowInstance instance = definition.instance(planningContext.agenticScope());
+        workflowInstanceId = instance.id();
+        FlowPlannerSessions.getInstance().open(workflowInstanceId, this, planningContext.agenticScope());
 
+        // Starts workflow on a different thread
+        // Despite returning a CompletableFuture, the start() method executes on the same thread by design.
+        CompletableFuture.completedFuture(null)
+                .thenComposeAsync(t -> instance.start())
+                .whenCompleteAsync((r, e) -> {
+                    if (e != null) {
+                        LOG.error("Workflow failed", e);
+                    }
+                    signalTermination();
+                    FlowPlannerSessions.getInstance().close(workflowInstanceId, e);
+                });
         return internalNextAction();
     }
 
     @Override
     public Action nextAction(PlanningContext planningContext) {
-        currentExchanges.remove(planningContext.previousAgentInvocation().agentId()).continuation.complete(null);
+        AgentExchange exchange = currentExchanges.remove(planningContext.previousAgentInvocation().agentId());
+        if (exchange != null)
+            exchange.continuation.complete(null);
+        else
+            LOG.warn("No exchange found for agent {}", planningContext.previousAgentInvocation().agentId());
+
+        int remaining = parallelAgents.decrementAndGet();
+        if (remaining > 0) {
+            return done();
+        }
+
         return internalNextAction();
     }
 
     private Action internalNextAction() {
-        if (parallelAgents.decrementAndGet() > 0) {
-            return done();
-        }
-
         List<AgentInstance> agents = new ArrayList<>();
         try {
             do {
                 AgentExchange currentExchange = agentExchangeQueue.take();
                 if (currentExchange.agent == null) {
-                    LOG.info("Workflow terminated");
+                    LOG.debug("Workflow terminated");
                     break;
                 }
                 currentExchanges.put(currentExchange.agent.agentId(), currentExchange);
                 agents.add(currentExchange.agent);
             } while (!agentExchangeQueue.isEmpty());
 
-            if (agents.size() > 1) {
-                parallelAgents.set(agents.size());
-            }
+            parallelAgents.set(agents.size());
 
-            LOG.info("Executing {} agent(s)", agents.size());
+            LOG.debug("Executing {} agent(s)", agents.size());
             return agents.isEmpty() ? done() : call(agents);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -134,6 +122,9 @@ public class FlowPlanner implements Planner {
     }
 
     public CompletableFuture<Void> executeAgent(AgentInstance agent) {
+        if (closed.get()) {
+            return CompletableFuture.failedFuture(new CancellationException("Planner is closed"));
+        }
         CompletableFuture<Void> continuation = new CompletableFuture<>();
         AgentExchange exchange = new AgentExchange(agent, continuation);
 
@@ -143,8 +134,62 @@ public class FlowPlanner implements Planner {
             Thread.currentThread().interrupt();
             LOG.error("Interrupted while queueing agent exchange", e);
             continuation.completeExceptionally(e);
+            abort(e);
         }
 
         return continuation;
+    }
+
+    void doTermination(Throwable cause) {
+        if (cause != null && terminationCause == null) {
+            terminationCause = cause;
+        }
+    }
+
+    public void close() {
+        if (!closed.get()) {
+            LOG.debug("Closing planner for workflow instance {}", this.workflowInstanceId);
+            if (terminationCause != null)
+                this.abort(terminationCause);
+            else
+                this.finish();
+        }
+    }
+
+    private void signalTermination() {
+        agentExchangeQueue.offer(new AgentExchange(null, CompletableFuture.completedFuture(null)));
+    }
+
+    void abort(Throwable t) {
+        if (!closed.compareAndSet(false, true))
+            return;
+
+        currentExchanges.values().forEach(ex -> ex.continuation.completeExceptionally(t));
+
+        // drain
+        AgentExchange ex;
+        while ((ex = agentExchangeQueue.poll()) != null) {
+            if (ex.agent != null)
+                ex.continuation.completeExceptionally(t);
+        }
+        currentExchanges.clear();
+        parallelAgents.set(0);
+
+        this.signalTermination();
+    }
+
+    void finish() {
+        if (!closed.compareAndSet(false, true))
+            return;
+        // best-effort cleanup
+        currentExchanges.clear();
+        parallelAgents.set(0);
+        this.signalTermination();
+    }
+
+    /**
+     * Encapsulates the bidirectional exchange between workflow execution and planner actions.
+     */
+    private record AgentExchange(AgentInstance agent, CompletableFuture<Void> continuation) {
     }
 }

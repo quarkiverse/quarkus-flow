@@ -9,6 +9,7 @@ import dev.langchain4j.agentic.planner.AgentInstance;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import io.serverlessworkflow.fluent.func.spi.FuncDoFluent;
+import io.serverlessworkflow.impl.WorkflowContextData;
 import io.serverlessworkflow.impl.WorkflowModel;
 
 public final class FlowAgentServiceUtil {
@@ -33,14 +34,15 @@ public final class FlowAgentServiceUtil {
     /**
      * Adds a straight sequence of agent calls as Flow function tasks.
      */
-    static void addAgentTasks(FuncDoFluent<?> tasks, FlowPlanner planner, List<AgentInstance> agents) {
+    static void addAgentTasks(FuncDoFluent<?> tasks, List<AgentInstance> agents) {
         for (int i = 0; i < agents.size(); i++) {
             AgentInstance agent = agents.get(i);
             String stepName = safeName(agent.agentId() + "-" + i);
             tasks.function(stepName,
                     fn -> fn.function(
-                            (DefaultAgenticScope scope) -> {
-                                CompletableFuture<Void> nextActionFuture = planner.executeAgent(agent);
+                            (DefaultAgenticScope scope, WorkflowContextData ctx) -> {
+                                CompletableFuture<Void> nextActionFuture = FlowPlannerSessions.getInstance()
+                                        .get(ctx.instanceData().id()).executeAgent(agent);
                                 return nextActionFuture.join();
                             },
                             DefaultAgenticScope.class)
