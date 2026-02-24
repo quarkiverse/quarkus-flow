@@ -3,8 +3,6 @@ package io.quarkiverse.flow.it;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import io.quarkus.test.junit.QuarkusTestProfile;
-import io.quarkus.test.junit.TestProfile;
 import jakarta.enterprise.inject.Produces;
 import jakarta.enterprise.util.TypeLiteral;
 import jakarta.inject.Inject;
@@ -16,6 +14,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkiverse.flow.metrics.FlowMetrics;
 import io.quarkus.logging.Log;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.QuarkusTestProfile;
+import io.quarkus.test.junit.TestProfile;
 import io.serverlessworkflow.impl.WorkflowException;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.smallrye.common.annotation.Identifier;
