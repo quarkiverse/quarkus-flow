@@ -1,5 +1,6 @@
 package io.quarkiverse.flow.it;
 
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import jakarta.enterprise.inject.Produces;
@@ -13,12 +14,15 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkiverse.flow.metrics.FlowMetrics;
 import io.quarkus.logging.Log;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.QuarkusTestProfile;
+import io.quarkus.test.junit.TestProfile;
 import io.serverlessworkflow.impl.WorkflowException;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.smallrye.common.annotation.Identifier;
 import io.smallrye.faulttolerance.api.TypedGuard;
 
 @QuarkusTest
+@TestProfile(FlowMetricsWithCustomTypeGuardTest.FaultToleranceProfile.class)
 public class FlowMetricsWithCustomTypeGuardTest {
 
     // Metric identifiers from io.quarkiverse.flow.metrics.FlowMetrics with default prefix
@@ -121,5 +125,15 @@ public class FlowMetricsWithCustomTypeGuardTest {
                 .isEqualTo(1.0);
 
         softly.assertAll();
+    }
+
+    public static class FaultToleranceProfile implements QuarkusTestProfile {
+
+        @Override
+        public Map<String, String> getConfigOverrides() {
+            return Map.of(
+                    "quarkus.flow.http.client.workflow.problematic-workflow.name", "custom-type-guard",
+                    "quarkus.flow.http.client.named.custom-type-guard.resilience.identifier", "custom-type-guard");
+        }
     }
 }
