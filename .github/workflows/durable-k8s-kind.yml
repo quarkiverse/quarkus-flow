@@ -26,7 +26,7 @@ jobs:
       - name: Create Kind cluster
         uses: helm/kind-action@v1.12.0
         with:
-          cluster_name: quarkus-flow
+          cluster_name: kind
           wait: 120s
 
       - name: Cluster sanity
