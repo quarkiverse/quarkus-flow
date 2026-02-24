@@ -1,4 +1,4 @@
-name: Build
+name: Build with Integration Tests
 
 on:
   push:
@@ -6,6 +6,9 @@ on:
     paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "*.md", "*.adoc", "*.txt", ".all-contributorsrc", ".github/project.yml" ]
   pull_request:
     paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "*.md", "*.adoc", "*.txt", ".all-contributorsrc" ]
+
+env:
+  QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID: qwen2.5:3b-instruct-q4_K_M
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,16 +24,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-latest, windows-latest ]
-        java-version: [ 17, 21, 25 ]
+        os: [ ubuntu-latest ]
+        java-version: [ 25 ]
 
     steps:
-      - name: Prepare git (CRLF)
-        if: matrix.os == 'windows-latest'
-        run: git config --global core.autocrlf false
-
       - uses: actions/checkout@v6
-
       - name: Set up JDK ${{ matrix.java-version }}
         uses: actions/setup-java@v5
         with:
@@ -38,10 +36,16 @@ jobs:
           java-version: ${{ matrix.java-version }}
           cache: maven
 
-      - name: Build with Maven (Linux, full tests)
-        if: matrix.os == 'ubuntu-latest'
-        run: mvn -B clean install -Dno-format -DskipITs=true
+      - name: Setup Ollama
+        uses: ai-action/setup-ollama@v2
 
-      - name: Build with Maven (Windows, skip ITs)
-        if: matrix.os == 'windows-latest'
-        run: mvn -B clean install -Dno-format -DskipITs=true -Dquarkus.langchain4j.ollama.devservices.enabled=false
+      - uses: actions/cache@v5
+        with:
+          path: ~/.ollama
+          key: ${{ runner.os }}-ollama
+
+      - name: Run ${{ env.QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID }} model
+        run: ollama run ${{ env.QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID }}
+
+      - name: Build with Maven (Linux, full tests)
+        run: mvn clean install -DskipITs=false -Dquarkus.langchain4j.ollama.chat-model.model-id=${{ env.QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID }} -Dquarkus.langchain4j.timeout=60000

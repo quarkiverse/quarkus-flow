@@ -4,6 +4,9 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID: qwen2.5:3b-instruct-q4_K_M
+
 jobs:
   build-and-report:
     runs-on: ubuntu-latest
@@ -21,8 +24,19 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Setup Ollama
+        uses: ai-action/setup-ollama@v2
+
+      - uses: actions/cache@v5
+        with:
+          path: ~/.ollama
+          key: ${{ runner.os }}-ollama
+
+      - name: Run ${{ env.QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID }} model
+        run: ollama run ${{ env.QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID }}
+
       - name: Build with Maven
-        run: mvn -B clean install -Dno-format -Dquarkus.langchain4j.ollama.devservices.enabled=false -Pcode-coverage
+        run: mvn -B clean install -Dno-format -Pcode-coverage
 
       - name: Add Coverage Comment
         uses: madrapps/jacoco-report@v1.7.2
