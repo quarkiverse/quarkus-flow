@@ -1,0 +1,71 @@
+name: Durable K8s Lease Verification (Kind)
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Create Kind cluster
+        uses: helm/kind-action@v1.12.0
+        with:
+          cluster_name: quarkus-flow
+
+      - name: Build + deploy to Kind
+        run: |
+          chmod +x mvnw scripts/*.sh
+          
+          ./mvnw -Pkind clean package -Dquarkus.profile=kind
+
+      - name: Debug - show generated manifest replicas
+        run: |
+          echo "== target/kubernetes/kind.yml replicas =="
+          grep -n "replicas:" -n target/kubernetes/kind.yml || true
+
+      - name: Wait for rollout
+        run: |
+          kubectl -n default rollout status deployment/durable-flow-demo --timeout=240s
+          kubectl -n default get pods -l app=durable-flow-demo -o wide
+
+      - name: Verify lease renew
+        env:
+          NAMESPACE: default
+          APP_NAME: durable-flow-demo
+          EXPECTED_REPLICAS: "3"
+          FLOW_POOL_NAME: durable-flow
+        run: ./scripts/verify-lease.sh
+
+      - name: Verify failover
+        env:
+          NAMESPACE: default
+          APP_NAME: durable-flow-demo
+          EXPECTED_REPLICAS: "3"
+          FLOW_POOL_NAME: durable-flow
+        run: ./scripts/verify-failover.sh
+
+      - name: Dump cluster state on failure
+        if: failure()
+        run: |
+          echo "== pods =="
+          kubectl -n default get pods -o wide || true
+          echo "== leases =="
+          kubectl -n default get lease -o wide || true
+          echo "== deployment =="
+          kubectl -n default get deploy durable-flow-demo -o yaml || true
+          echo "== recent logs (all pods) =="
+          for p in $(kubectl -n default get pods -l app=durable-flow-demo -o name); do
+            echo "--- logs: $p ---"
+            kubectl -n default logs "$p" --tail=200 || true
+          done
