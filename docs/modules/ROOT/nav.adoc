@@ -18,13 +18,13 @@
 ** xref:workflow-definitions.adoc[Workflow definitions from YAML files]
 ** xref:test-debug.adoc[Test and debug workflows]
 
-
 * Concepts
 ** xref:concepts-architecture.adoc[Concepts & architecture]
 ** xref:specification.adoc[CNCF Workflow mapping and concepts]
 ** xref:data-flow.adoc[]
 ** xref:concepts-agentic-langchain4j.adoc[]
 ** xref:metrics-prometheus.adoc[]
+** xref:concepts-durable-workflow-k8s.adoc[]
 
 * Reference
 ** xref:dsl-cheatsheet.adoc[Java DSL cheatsheet]

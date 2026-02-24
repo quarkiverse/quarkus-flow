@@ -23,7 +23,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
         </dependency>
-        <!-- Cut to the dependencies we use: https://quarkus.io/guides/kubernetes-client#depend-only-on-the-modules-you-need -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-kubernetes-client</artifactId>
