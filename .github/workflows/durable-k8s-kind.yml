@@ -36,6 +36,9 @@ jobs:
 
       - name: Build + deploy example to Kind (from repo root)
         run: |
+          mvn -DskipTests \
+              -pl :quarkus-flow,:quarkus-flow-deployment,:quarkus-flow-durable-kubernetes,:quarkus-flow-durable-kubernetes-deployment \
+              -am install
           mvn -pl examples/durable-workflows-k8s -DskipTests -am -Pkind clean package
 
       - name: Wait for deployment
