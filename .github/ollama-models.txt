@@ -1,1 +1,0 @@
-qwen2.5:3b-instruct-q4_K_M
