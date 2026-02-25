@@ -8,7 +8,7 @@ on:
     paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "*.md", "*.adoc", "*.txt", ".all-contributorsrc" ]
 
 env:
-  QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID: qwen2.5:3b-instruct-q4_K_M
+  QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID: llama3.2
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
