@@ -3,51 +3,36 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.quarkiverse.flow</groupId>
-        <artifactId>quarkus-flow-redis-parent</artifactId>
+        <artifactId>quarkus-flow-jpa-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-flow-redis</artifactId>
-    <name>Quarkus Flow :: Persistence :: Redis :: Runtime</name>
+    <artifactId>quarkus-flow-jpa-deployment</artifactId>
+    <name>Quarkus Flow :: Persistence :: JPA :: Deployment</name>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
-        </dependency>
-        <dependency>
-           <groupId>io.quarkus</groupId>
-           <artifactId>quarkus-redis-client</artifactId>
-        </dependency>
-        <dependency>
-          <groupId>io.serverlessworkflow</groupId>
-          <artifactId>serverlessworkflow-persistence-api</artifactId>
+            <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>
-            <artifactId>quarkus-flow-persistence-common</artifactId>
+            <artifactId>quarkus-flow-jpa</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-hibernate-orm-panache-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-persistence-common-deployment</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-extension-maven-plugin</artifactId>
-                <version>${quarkus.version}</version>
-                <executions>
-                    <execution>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>extension-descriptor</goal>
-                        </goals>
-                        <configuration>
-                            <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}
-                            </deployment>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
@@ -58,15 +43,14 @@
                                 <path>
                                     <groupId>io.quarkus</groupId>
                                     <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${quarkus.version}</version>
                                 </path>
                             </annotationProcessorPaths>
-                            <annotationProcessorPathsUseDepMgmt>true</annotationProcessorPathsUseDepMgmt>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
         </plugins>
     </build>
-
 
 </project>
