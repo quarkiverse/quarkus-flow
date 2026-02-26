@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.quarkiverse.flow</groupId>
         <artifactId>quarkus-flow-langchain4j-parent</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>0.6.0</version>
     </parent>
     <artifactId>quarkus-flow-langchain4j-integration-tests</artifactId>
     <name>Quarkus Flow :: LangChain4j :: Integration Tests</name>

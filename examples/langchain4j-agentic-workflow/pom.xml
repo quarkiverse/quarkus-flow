@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.acme</groupId>
     <artifactId>langchain4j-agentic-workflow</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>0.6.0</version>
     <name>Quarkus Flow :: Examples :: LangChain4j Agentic Workflow</name>
 
     <properties>
@@ -14,7 +14,7 @@
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.version>3.32.1</quarkus.platform.version>
-        <quarkus.flow.version>1.0.0-SNAPSHOT</quarkus.flow.version>
+        <quarkus.flow.version>0.6.0</quarkus.flow.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.5</surefire-plugin.version>
 
