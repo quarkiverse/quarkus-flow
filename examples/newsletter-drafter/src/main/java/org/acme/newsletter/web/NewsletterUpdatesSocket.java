@@ -25,11 +25,13 @@ public class NewsletterUpdatesSocket {
 
     @OnOpen
     public void onOpen(Session session) {
+        LOG.info("Newsletter connection established: {}", session.getRequestURI());
         SESSIONS.add(session);
     }
 
     @OnClose
     public void onClose(Session session) {
+        LOG.info("Newsletter connection closed: {}", session.getRequestURI());
         SESSIONS.remove(session);
     }
 
