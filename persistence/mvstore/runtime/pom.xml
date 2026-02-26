@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.quarkiverse.flow</groupId>
         <artifactId>quarkus-flow-mvstore-parent</artifactId>
-        <version>0.6.0</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>quarkus-flow-mvstore</artifactId>
