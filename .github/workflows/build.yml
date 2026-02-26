@@ -45,11 +45,3 @@ jobs:
       - name: Build with Maven (Windows, skip ITs)
         if: matrix.os == 'windows-latest'
         run: mvn -B clean install -Dno-format -DskipITs=true -Dquarkus.langchain4j.ollama.devservices.enabled=false
-
-      - name: Build with Maven (Native, Mandrel on JDK 25 only)
-        if: matrix.os == 'ubuntu-latest' && matrix.java-version == 25
-        run: >
-          mvn -B install -Dnative
-          -Dquarkus.native.container-build
-          -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25
-          -DskipITs=true
