@@ -159,31 +159,39 @@ Then orchestrate it from a Flow using regular tasks:
 Quarkus Flow discovers these methods at build time and registers generated workflows automatically.
 
 ```java
-import dev.langchain4j.agentic.declarative.ParallelAgent;
 import dev.langchain4j.agentic.declarative.SequenceAgent;
-import dev.langchain4j.agentic.declarative.SubAgent;
+import io.quarkiverse.langchain4j.RegisterAiService;
 
 public final class Agents {
 
   // A generated workflow: chain sub-agents sequentially
-  @SequenceAgent
-  public interface StoryCreator {
-    String write(String topic, String style, String audience);
+  @RegisterAiService
+  public interface StoryCreatorWithConfigurableStyleEditor {
+    @SequenceAgent(outputKey = "story", subAgents = { CreativeWriter.class, AudienceEditor.class, StyleEditor.class })
+      String write(@V("topic") String topic, @V("style") String style, @V("audience") String audience);
   }
 
-  // A generated workflow: fork-join across sub-agents
-  @ParallelAgent
-  public interface EveningPlanner {
-    EveningPlan plan(String city, Mood mood);
+  // pseudo-snippet
+  @RegisterAiService
+  public interface CreativeWriter {
+
   }
 
-  @SubAgent interface DinnerAgent { String suggestDinner(String city, Mood mood); }
-  @SubAgent interface DrinksAgent { String suggestDrinks(String city, Mood mood); }
+  // pseudo-snippet
+  @RegisterAiService
+  public interface AudienceEditor {
 
-  public enum Mood { ROMANTIC, CHILL, PARTY, FAMILY }
-  public record EveningPlan(String city, Mood mood, String dinner, String drinks) {}
+  }
+
+  // pseudo-snippet
+  @RegisterAiService
+  public interface StyleEditor {
+
+  }
 }
 ```
+
+> **Content supressed on purpose**, see the complete example here: https://github.com/quarkiverse/quarkus-flow/tree/main/examples/langchain4j-agentic-workflow.
 
 ### 3) Hybrid (call a generated agentic workflow from a larger Flow)
 
@@ -212,8 +220,8 @@ See the [Messaging doc](https://docs.quarkiverse.io/quarkus-flow/dev/messaging.h
 
 ## Examples
 
-* `examples/newsletter-drafter` – agentic workflow (drafter + critic + HITL)
-* `examples/langchain4j-agentic-workflow` – minimal agentic example
+* [`examples/newsletter-drafter`](https://github.com/quarkiverse/quarkus-flow/tree/main/examples/newsletter-drafter) – agentic workflow (drafter + critic + HITL)
+* [`examples/langchain4j-agentic-workflow`](https://github.com/quarkiverse/quarkus-flow/tree/main/examples/langchain4j-agentic-workflow) – minimal agentic example
 * Docs snippets under `docs/modules/ROOT/examples/`
 
 ## Contributing
