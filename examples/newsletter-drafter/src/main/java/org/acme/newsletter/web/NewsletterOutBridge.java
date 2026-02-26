@@ -18,7 +18,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class NewsletterOutBridge {
 
-
     private static final JsonFormat CE_JSON = (JsonFormat) EventFormatProvider.getInstance()
             .resolveFormat(JsonFormat.CONTENT_TYPE);
     private static final Logger LOG = LoggerFactory.getLogger(NewsletterOutBridge.class);

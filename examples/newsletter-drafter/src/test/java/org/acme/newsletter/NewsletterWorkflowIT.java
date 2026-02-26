@@ -98,7 +98,8 @@ public class NewsletterWorkflowIT {
         assertThat(instanceIdRef.get()).isNotEmpty();
 
         // 3) needs_revision -> loop back to drafter, passing the correlation ID
-        sendHumanReview(instanceIdRef.get(), new HumanReview(draft1.get(), "Please tone down the hype", HumanReview.ReviewStatus.NEEDS_REVISION));
+        sendHumanReview(instanceIdRef.get(),
+                new HumanReview(draft1.get(), "Please tone down the hype", HumanReview.ReviewStatus.NEEDS_REVISION));
 
         // 4) ROUND #2 — wait NEXT review-required (offset strictly greater)
         await().atMost(ofSeconds(60)).untilAsserted(() -> {
