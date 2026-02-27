@@ -1,0 +1,16 @@
+name: Flow Durable Kubernetes
+description: Durable Workflows support on Kubernetes
+metadata:
+  keywords:
+    - workflow
+    - workflows
+    - cncf
+    - serverless
+    - cloudevents
+    - durable
+    - kubernetes
+  guide: https://docs.quarkiverse.io/quarkus-flow/dev/
+  categories:
+    - "integration"
+    - "kubernetes"
+  status: "preview"

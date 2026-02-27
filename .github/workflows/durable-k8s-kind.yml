@@ -1,0 +1,115 @@
+name: Durable Workflows (Kubernetes Lease) - Kind Verification
+
+on:
+  push:
+    branches: [ "main" ]
+    paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "*.md", "*.adoc", "*.txt", ".all-contributorsrc", ".github/project.yml" ]
+  pull_request:
+    paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "*.md", "*.adoc", "*.txt", ".all-contributorsrc" ]
+
+concurrency:
+  group: durable-k8s-kind-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  kind-lease-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Create Kind cluster
+        uses: helm/kind-action@v1.12.0
+        with:
+          cluster_name: kind
+          wait: 120s
+
+      - name: Cluster sanity
+        run: |
+          kubectl cluster-info
+          kubectl get nodes -o wide
+
+      - name: Build + deploy example to Kind (from repo root)
+        run: |
+          mvn -DskipTests \
+              -pl :quarkus-flow,:quarkus-flow-deployment,:quarkus-flow-durable-kubernetes,:quarkus-flow-durable-kubernetes-deployment \
+              -am install
+          mvn -pl examples/durable-workflows-k8s -DskipTests -am -Pkind clean package
+
+      - name: Wait for deployment
+        run: |
+          kubectl -n default rollout status deployment/durable-flow-demo --timeout=240s
+          kubectl -n default get pods -l app=durable-flow-demo -o wide
+          kubectl -n default get lease -o wide || true
+
+      - name: Verify lease renew
+        working-directory: examples/durable-workflows-k8s
+        env:
+          NAMESPACE: default
+          APP_NAME: durable-flow-demo
+          APP_PART_OF: quarkus-flow
+          APP_VERSION: 0.1.0
+          EXPECTED_REPLICAS: "3"
+          FLOW_POOL_NAME: durable-flow
+          RENEW_TIMEOUT_SECONDS: "120"
+          FAILOVER_TIMEOUT_SECONDS: "180"
+        run: ./scripts/verify-lease.sh
+
+      - name: Verify failover
+        working-directory: examples/durable-workflows-k8s
+        env:
+          NAMESPACE: default
+          APP_NAME: durable-flow-demo
+          APP_PART_OF: quarkus-flow
+          APP_VERSION: 0.1.0
+          EXPECTED_REPLICAS: "3"
+          FLOW_POOL_NAME: durable-flow
+          RENEW_TIMEOUT_SECONDS: "120"
+          FAILOVER_TIMEOUT_SECONDS: "180"
+        run: ./scripts/verify-failover.sh
+
+      - name: Verify two-pod disruption
+        working-directory: examples/durable-workflows-k8s
+        env:
+          NAMESPACE: default
+          APP_NAME: durable-flow-demo
+          APP_PART_OF: quarkus-flow
+          APP_VERSION: 0.1.0
+          EXPECTED_REPLICAS: "3"
+          FLOW_POOL_NAME: durable-flow
+          RENEW_TIMEOUT_SECONDS: "120"
+          FAILOVER_TIMEOUT_SECONDS: "240"
+          STABILITY_WINDOW_SECONDS: "20"
+        run: ./scripts/verify-two-pod-disruption.sh
+
+      - name: Dump debug info on failure
+        if: failure()
+        run: |
+          echo "== Pods (selector app=durable-flow-demo) =="
+          kubectl -n default get pods -l app=durable-flow-demo -o wide || true
+          echo "== Pods (k8s recommended labels) =="
+          kubectl -n default get pods -l app.kubernetes.io/name=durable-flow-demo -o wide || true
+          echo "== Deployment =="
+          kubectl -n default get deploy durable-flow-demo -o yaml || true
+          echo "== Service =="
+          kubectl -n default get svc durable-flow-demo -o yaml || true
+          echo "== Leases =="
+          kubectl -n default get lease -o wide || true
+          for l in $(kubectl -n default get lease -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null); do
+            echo "--- lease/$l ---"
+            kubectl -n default get lease "$l" -o yaml || true
+          done
+          echo "== Logs (all pods) =="
+          for p in $(kubectl -n default get pods -l app.kubernetes.io/name=durable-flow-demo -o name 2>/dev/null); do
+            echo "--- logs: $p ---"
+            kubectl -n default logs "$p" --tail=250 || true
+          done

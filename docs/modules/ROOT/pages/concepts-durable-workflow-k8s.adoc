@@ -1,0 +1,221 @@
+= Stable WorkflowApplication IDs on Kubernetes (Lease-based)
+:page-role: explanation
+
+This article explains how to use the *Kubernetes Lease-based* coordination feature to keep a *stable* `WorkflowApplication` id across Pod restarts and rescheduling.
+
+== Why this exists
+
+Quarkus Flow runs workflows inside a `WorkflowApplication` (the workflow runtime container). When you enable persistence, the database stores enough information to *resume* executions later. Part of that identity is the `WorkflowApplication` id, which acts like the worker/shard identifier that owns workflow instances.
+
+In Kubernetes, Pod names are ephemeral. If the `WorkflowApplication` id is derived from the Pod name, a reschedule can break “resume ownership”, causing workflows to be orphaned or resumed by the wrong worker.
+
+This feature solves that by binding the `WorkflowApplication` id to a *Kubernetes Lease name* (for example: `flow-pool-member-<pool>-00`). The Lease name is stable and can be reacquired by any Pod after disruptions.
+
+== What you get
+
+* A stable application id (Lease name) across:
+** Pod restarts
+** node drains
+** rescheduling
+** rolling updates
+* A simple scaling model:
+** One *leader* manages the pool’s Leases
+** Each Pod tries to acquire exactly one *member* Lease
+* Optional readiness gating: Pods become *Ready* only after acquiring a member lease (great to avoid routing traffic to workers that can’t own work).
+
+== When this is useful
+
+Use this feature when:
+
+* You enable *persistence* and want safe resume behavior after Pod disruptions.
+* You run multiple replicas and want deterministic “worker identity” that survives restarts.
+* You need coordination/sharding for:
+** polling controllers
+** event consumers with at-least-once delivery
+** long running workflows that must resume reliably
+* You want health/readiness to reflect “can this Pod safely process workflows right now?”
+
+== Add it to a Quarkus Flow project
+
+1) Add Quarkus Flow (if you don’t have it yet). See the Quarkus Flow getting started guide for the basic setup and Flow injection pattern.
+
+2) Add the Durable Kubernetes module:
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkiverse.flow</groupId>
+  <artifactId>quarkus-flow-durable-kubernetes</artifactId>
+</dependency>
+----
+
+3) Add optional Quarkus extensions:
+
+* `quarkus-kubernetes`, `quarkus-container-image-jib`, `quarkus-kind` (recommended for examples and CI)
+
+Quarkus can generate Kubernetes manifests during builds and can deploy them by applying generated manifests to a cluster.
+
+== Configure the pool and schedulers
+
+At minimum, you need:
+
+[source,properties]
+----
+# Pool name used in Lease names and labels
+quarkus.flow.durable.kube.pool.name=durable-flow
+
+# Recommended: gate readiness on acquiring a member lease - defaults to true
+quarkus.flow.durable.kube.health.readiness.require-lease=true
+----
+
+You will also configure leader/member lease behavior (enablement, intervals, durations). Refer to the extension configuration reference in the Quarkus Flow docs for the complete list of keys.
+
+== Deploy to Kubernetes
+
+=== Ensure Pod identity is available (Downward API)
+
+The lease mechanism uses the Pod identity as `holderIdentity`. Make sure the Deployment sets:
+
+* `POD_NAME = metadata.name`
+* `POD_NAMESPACE = metadata.namespace`
+
+Example (YAML):
+
+[source,yaml]
+----
+env:
+  - name: POD_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.name
+  - name: POD_NAMESPACE
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.namespace
+----
+
+=== RBAC requirements
+
+The controllers need to read and update Leases, and the leader logic often needs to resolve Deployment topology (Pod, ReplicaSet, Deployment). Typical permissions:
+
+* coordination.k8s.io `leases`: get, list, watch, create, update, patch, delete
+* core `pods`: get, list, watch
+* apps `deployments`, `replicasets`: get, list, watch
+
+link:https://quarkus.io/guides/deploying-to-kubernetes#generating-rbac-resources[Quarkus can generate RBAC resources] and allows full customization via `quarkus.kubernetes.rbac.*`.
+
+Example RBAC generation (properties-style):
+
+[source,properties]
+----
+# Generate ServiceAccount and use it in the Deployment
+quarkus.kubernetes.rbac.service-accounts.durable-flow-demo.use-as-default=true
+
+# Role rules
+quarkus.kubernetes.rbac.roles.durable-flow-demo.policy-rules.0.api-groups=coordination.k8s.io
+quarkus.kubernetes.rbac.roles.durable-flow-demo.policy-rules.0.resources=leases
+quarkus.kubernetes.rbac.roles.durable-flow-demo.policy-rules.0.verbs=get,list,watch,create,update,patch,delete
+
+quarkus.kubernetes.rbac.roles.durable-flow-demo.policy-rules.1.api-groups=
+quarkus.kubernetes.rbac.roles.durable-flow-demo.policy-rules.1.resources=pods
+quarkus.kubernetes.rbac.roles.durable-flow-demo.policy-rules.1.verbs=get,list,watch
+
+quarkus.kubernetes.rbac.roles.durable-flow-demo.policy-rules.2.api-groups=apps
+quarkus.kubernetes.rbac.roles.durable-flow-demo.policy-rules.2.resources=deployments,replicasets
+quarkus.kubernetes.rbac.roles.durable-flow-demo.policy-rules.2.verbs=get,list,watch
+
+# RoleBinding (Role -> ServiceAccount)
+quarkus.kubernetes.rbac.role-bindings.durable-flow-demo.subjects.durable-flow-demo.kind=ServiceAccount
+quarkus.kubernetes.rbac.role-bindings.durable-flow-demo.role-name=durable-flow-demo
+----
+
+=== Using KIND (recommended for local + CI)
+
+Quarkus provides `quarkus-kind` to generate Kind-tailored manifests and automate loading images into the Kind cluster during container image builds.
+
+Typical workflow:
+
+1. Create a cluster:
++
+[source,bash]
+----
+kind create cluster --name flow
+----
+
+2. Build (generates manifests in `target/kubernetes/`):
++
+[source,bash]
+----
+./mvnw clean package
+----
+Quarkus generates `kind.yml/json` under `target/kubernetes/` when the Kubernetes extension is present.
+
+3. Apply generated manifests (and RBAC if not generated):
++
+[source,bash]
+----
+kubectl apply -f target/kubernetes/kind.yml
+kubectl rollout status deploy/durable-flow-demo
+----
+
+== Verify it works
+
+=== 1) Observe leases
+
+[source,bash]
+----
+kubectl get lease
+kubectl get lease -l io.quarkiverse.flow.durable.k8s/pool=durable-flow -o wide
+----
+
+You should see:
+
+* one leader lease: `flow-pool-leader-<pool>`
+* N member leases: `flow-pool-member-<pool>-00..NN`
+
+And each member lease should have `spec.holderIdentity` set to a Pod name.
+
+=== 2) Check readiness includes the lease
+
+If you enabled the readiness check (recommended), query:
+
+[source,bash]
+----
+kubectl exec -it deploy/durable-flow-demo -- curl -s localhost:8080/q/health/ready
+----
+
+Expected output includes `leaseAcquired=true` and `leaseName=<member-lease>`.
+(Example response fields: `poolName`, `podName`, `podNamespace`, `leaseName`)
+
+=== 3) Test failover
+
+Delete a Pod and watch the member lease move to another Pod:
+
+[source,bash]
+----
+POD=$(kubectl get lease flow-pool-member-durable-flow-00 -o jsonpath='{.spec.holderIdentity}')
+kubectl delete pod "$POD"
+kubectl get lease flow-pool-member-durable-flow-00 -w
+----
+
+The Lease will be renewed by the new holder and the corresponding Pod will become Ready.
+
+== Technical details (worth knowing)
+
+* The implementation relies on Kubernetes `Lease` resources (`coordination.k8s.io/v1`) to coordinate leaders and members.
+* Each Pod runs a controller loop on a schedule:
+** The *leader* ensures the expected number of member leases exist (typically matching the Deployment replicas).
+** Each *member* tries to acquire one available member lease and keeps renewing it.
+* `holderIdentity` is the Pod name. This is why the Downward API env vars are required.
+* The `WorkflowApplication` id is set to the acquired *member lease name* using a `WorkflowApplicationBuilderCustomizer` (so the id remains stable across Pod disruptions).
+* Readiness can be configured to require a lease; liveness should generally remain independent (lease loss should not necessarily kill the process).
+* For dev/test convenience, you can disable readiness gating or disable leases entirely when not running inside a real Kubernetes Deployment.
+
+== Troubleshooting
+
+* Leases are not created:
+** Check RBAC for `leases` and `pods`.
+** Check that `POD_NAME` and `POD_NAMESPACE` are present.
+* Pods never become Ready:
+** Confirm the leader lease exists and member leases are created.
+** Inspect `/q/health/ready` output and logs for acquisition attempts.
