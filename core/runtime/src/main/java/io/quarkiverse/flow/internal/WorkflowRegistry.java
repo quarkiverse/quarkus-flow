@@ -36,61 +36,40 @@ public class WorkflowRegistry {
 
     private static final Logger LOG = LoggerFactory.getLogger(WorkflowRegistry.class);
 
-    private final Map<WorkflowDefinitionId, Workflow> workflows = new ConcurrentHashMap<>();
-
     @Inject
     WorkflowApplication app;
 
-    private volatile boolean warmedUp = false;
+    private Map<WorkflowDefinitionId, Workflow> agenticCache = new ConcurrentHashMap<>();
 
     public static WorkflowRegistry current() {
         return Arc.container().instance(WorkflowRegistry.class).get();
     }
 
     public Collection<Workflow> all() {
-        ensureWarmup();
-        return List.copyOf(workflows.values());
+        return app.workflowDefinitions().values().stream().map(WorkflowDefinition::workflow).toList();
     }
 
     public int count() {
-        ensureWarmup();
-        return workflows.size();
+        return app.workflowDefinitions().size();
     }
 
     public Optional<WorkflowDefinition> lookup(WorkflowDefinitionId id) {
-        ensureWarmup();
-        Optional<WorkflowDefinition> def = Optional.ofNullable(app.workflowDefinitions().get(id));
-        def.ifPresent(wf -> this.workflows.computeIfAbsent(id, k -> wf.workflow()));
-        return def;
+        return Optional.ofNullable(app.workflowDefinitions().get(id));
     }
 
     public Optional<Workflow> lookupDescriptor(WorkflowDefinitionId id) {
-        ensureWarmup();
-        return Optional.ofNullable(workflows.get(id));
+        Optional<Workflow> workflow = lookup(id).map(WorkflowDefinition::workflow);
+        return workflow.isPresent() ? workflow : Optional.ofNullable(agenticCache.get(id));
     }
 
     public WorkflowDefinition register(Flowable flowable) {
         LOG.info("Registering workflow {}", flowable.descriptor().getDocument().getName());
-        final WorkflowDefinition definition = app.workflowDefinition(addFlowableMetadata(flowable));
-        checkDuplicatedWorkflow(definition);
         return app.workflowDefinition(addFlowableMetadata(flowable));
     }
 
     public WorkflowDefinition register(Workflow workflow) {
         LOG.info("Registering workflow {}", workflow.getDocument().getName());
-        final WorkflowDefinition definition = app.workflowDefinition(workflow);
-        checkDuplicatedWorkflow(definition);
-        return definition;
-    }
-
-    private void checkDuplicatedWorkflow(WorkflowDefinition definition) {
-        WorkflowDefinitionId id = WorkflowDefinitionId.of(definition.workflow());
-        Workflow previous = workflows.putIfAbsent(id, definition.workflow());
-        if (previous != null) {
-            LOG.warn(
-                    "Duplicate workflow detected {}. Please remove the duplicate definition to prevent execution collisions or unexpected behavior during runtime.",
-                    id);
-        }
+        return app.workflowDefinition(workflow);
     }
 
     private Workflow addFlowableMetadata(final Flowable flowable) {
@@ -103,35 +82,22 @@ public class WorkflowRegistry {
         return workflow;
     }
 
+    void warmUp() {
+        List<InstanceHandle<WorkflowDefinition>> definitionHandles = Arc.container().listAll(WorkflowDefinition.class);
+        LOG.info("Warming up {} WorkflowDefinition beans", definitionHandles.size());
+        for (InstanceHandle<WorkflowDefinition> handle : definitionHandles) {
+            try {
+                // This triggers the synthetic bean's supplier (WorkflowDefinitionRecorder)
+                handle.get().workflow();
+            } catch (Exception e) {
+                LOG.warn("Flow: Failed to warm up WorkflowDefinition from {}",
+                        handle.getBean().getIdentifier(), e);
+            }
+        }
+    }
+
     public void cacheDescriptor(Workflow workflow) {
-        workflows.put(WorkflowDefinitionId.of(workflow), workflow);
+        LOG.debug("Caching workflow descriptor for {}", workflow.getDocument().getName());
+        agenticCache.put(WorkflowDefinitionId.of(workflow), workflow);
     }
-
-    private void ensureWarmup() {
-        if (warmedUp) {
-            return;
-        }
-        synchronized (this) {
-            if (warmedUp) {
-                return;
-            }
-            var container = Arc.container();
-            LOG.info("Warming up workflow registry");
-            for (InstanceHandle<WorkflowDefinition> handle : container.listAll(WorkflowDefinition.class)) {
-                try {
-                    // This triggers the synthetic bean's supplier (WorkflowDefinitionRecorder)
-                    WorkflowDefinition def = handle.get();
-                    Workflow wf = def.workflow();
-                    WorkflowDefinitionId id = WorkflowDefinitionId.of(wf);
-                    workflows.putIfAbsent(id, wf);
-                    LOG.info("Warmed Workflow {} registered with id {}", wf, id);
-                } catch (Exception e) {
-                    LOG.warn("Flow: Failed to warm up WorkflowDefinition from {}",
-                            handle.getBean().getIdentifier(), e);
-                }
-            }
-            warmedUp = true;
-        }
-    }
-
 }
