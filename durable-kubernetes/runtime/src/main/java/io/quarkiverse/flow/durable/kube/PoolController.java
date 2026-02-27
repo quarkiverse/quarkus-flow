@@ -45,10 +45,6 @@ public abstract class PoolController implements Runnable {
         }
         String scheduledExecutorName = scheduledExecutorName();
         LOG.info("Flow: Initializing pool controller '{}' scheduler", scheduledExecutorName);
-        if (!leaseConfig().enabled()) {
-            LOG.info("Flow: Lease Scheduler '{}' disabled", scheduledExecutorName);
-            return;
-        }
         executorService = Executors.newSingleThreadExecutor(Executors.defaultThreadFactory());
         String delayed = computeSchedulerDelay();
 
@@ -76,16 +72,15 @@ public abstract class PoolController implements Runnable {
             if (lease != null) {
                 if (leaseService.releaseLease(podName, lease)) {
                     LOG.debug("Lease {} has been released from pod {}", lease, podName);
-                    this.afterRelease(true);
+                    this.released();
                 }
             }
         } catch (Exception e) {
             LOG.debug("Skipping lease {} release during shutdown: ", leaseName(), e);
         }
-        this.afterRelease(false);
     }
 
-    protected void afterRelease(boolean released) {
+    protected void released() {
         // hook for child classes
     }
 
