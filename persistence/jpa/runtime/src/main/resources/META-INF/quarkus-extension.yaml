@@ -1,6 +1,6 @@
-name: Flow Redis
+name: Flow JPA
 description: |
-  Redis Persistence Plugin
+  JPA Persistence Plugin
 metadata:
   keywords:
     - workflow
