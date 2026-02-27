@@ -12,5 +12,6 @@
    <module>redis</module>
    <module>common</module>
    <module>mvstore</module>
+   <module>jpa</module>
   </modules>
 </project>
