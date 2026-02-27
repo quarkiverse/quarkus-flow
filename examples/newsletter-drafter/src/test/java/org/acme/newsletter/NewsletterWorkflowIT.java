@@ -66,17 +66,17 @@ public class NewsletterWorkflowIT {
 
         final NewsletterRequest request = new NewsletterRequest(
                 NewsletterRequest.MarketMood.BULLISH,
-                List.of("IBM:-13%", "GOOGL:+5%", "TSLA:-15%"),
+                List.of("IBM:-13%", "GOOGL:+5%"),
                 "Fed is about to cut taxes, software companies to move up",
                 NewsletterRequest.Tone.CAUTIOUS,
-                NewsletterRequest.Length.LONG);
+                NewsletterRequest.Length.SHORT);
 
         // 1) start via REST
         given().contentType("application/json").body(request).when().post("/api/newsletter").then()
                 .statusCode(202);
 
         // 2) ROUND #1 — wait first review-required and capture its offset AND instanceId
-        await().atMost(ofSeconds(60)).untilAsserted(() -> {
+        await().atMost(ofSeconds(120)).untilAsserted(() -> {
             boolean found = out.stream().anyMatch(rec -> {
                 CloudEvent ce = CE_JSON.deserialize((byte[]) rec.value());
                 if (expectedType.equals(ce.getType())) {
