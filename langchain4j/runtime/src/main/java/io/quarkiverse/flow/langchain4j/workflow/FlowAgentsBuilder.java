@@ -6,46 +6,51 @@ import dev.langchain4j.agentic.workflow.LoopAgentService;
 import dev.langchain4j.agentic.workflow.ParallelAgentService;
 import dev.langchain4j.agentic.workflow.SequentialAgentService;
 import dev.langchain4j.agentic.workflow.WorkflowAgentsBuilder;
+import io.quarkus.arc.Arc;
 
 public class FlowAgentsBuilder implements WorkflowAgentsBuilder {
 
+    private FlowAgentsBuilderService services() {
+        return Arc.container().instance(FlowAgentsBuilderService.class).get();
+    }
+
     @Override
     public SequentialAgentService<UntypedAgent> sequenceBuilder() {
-        return FlowSequentialAgentService.builder();
+        return services().newSequential();
     }
 
     @Override
     public <T> SequentialAgentService<T> sequenceBuilder(Class<T> agentServiceClass) {
-        return FlowSequentialAgentService.builder(agentServiceClass);
+        return services().newSequential(agentServiceClass);
     }
 
     @Override
     public ParallelAgentService<UntypedAgent> parallelBuilder() {
-        return FlowParallelAgentService.builder();
+        return services().newParallel();
     }
 
     @Override
     public <T> ParallelAgentService<T> parallelBuilder(Class<T> agentServiceClass) {
-        return FlowParallelAgentService.builder(agentServiceClass);
+        return services().newParallel(agentServiceClass);
     }
 
     @Override
     public LoopAgentService<UntypedAgent> loopBuilder() {
-        return FlowLoopAgentService.builder();
+        return services().newLoop();
     }
 
     @Override
     public <T> LoopAgentService<T> loopBuilder(Class<T> agentServiceClass) {
-        return FlowLoopAgentService.builder(agentServiceClass);
+        return services().newLoop(agentServiceClass);
     }
 
     @Override
     public ConditionalAgentService<UntypedAgent> conditionalBuilder() {
-        return FlowConditionalAgentService.builder();
+        return services().newConditional();
     }
 
     @Override
     public <T> ConditionalAgentService<T> conditionalBuilder(Class<T> agentServiceClass) {
-        return FlowConditionalAgentService.builder(agentServiceClass);
+        return services().newConditional(agentServiceClass);
     }
 }

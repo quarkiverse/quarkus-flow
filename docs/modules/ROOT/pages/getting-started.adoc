@@ -60,6 +60,14 @@ to start a new instance.
 include::{examples-dir}org/acme/HelloResource.java[]
 ----
 
+The `HelloResource` depends on a simple `Message` record used to serialize the workflow
+output as JSON:
+
+[source,java]
+----
+include::{examples-dir}org/acme/Message.java[]
+----
+
 === Inject the compiled definition (advanced)
 
 If you need the compiled `WorkflowDefinition`, you can inject it by FQCN instead.
@@ -86,11 +94,11 @@ Start Quarkus in dev mode:
 ----
 
 Then invoke the HTTP endpoint you exposed (for example, if `HelloResource` is mapped to
-`/hello`):
+`/hello-flow`):
 
 [source,bash]
 ----
-curl http://localhost:8080/hello
+curl http://localhost:8080/hello-flow
 ----
 
 You should see a JSON response with the message produced by the workflow.

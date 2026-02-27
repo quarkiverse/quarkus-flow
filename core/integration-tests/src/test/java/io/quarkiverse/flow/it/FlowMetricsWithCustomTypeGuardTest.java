@@ -1,17 +1,29 @@
 package io.quarkiverse.flow.it;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
 
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.util.TypeLiteral;
 import jakarta.inject.Inject;
 
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.quarkiverse.flow.metrics.FlowMetrics;
+import io.quarkus.logging.Log;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.QuarkusTestProfile;
+import io.quarkus.test.junit.TestProfile;
+import io.serverlessworkflow.impl.WorkflowException;
+import io.serverlessworkflow.impl.WorkflowModel;
+import io.smallrye.common.annotation.Identifier;
+import io.smallrye.faulttolerance.api.TypedGuard;
 
 @QuarkusTest
-public class FlowMetricsTest {
+@TestProfile(FlowMetricsWithCustomTypeGuardTest.FaultToleranceProfile.class)
+public class FlowMetricsWithCustomTypeGuardTest {
 
     // Metric identifiers from io.quarkiverse.flow.metrics.FlowMetrics with default prefix
     public static final String WORKFLOW_STARTED_TOTAL = "quarkus.flow.workflow.started.total";
@@ -20,7 +32,7 @@ public class FlowMetricsTest {
     public static final String WORKFLOW_FAULTED_TOTAL = "quarkus.flow.workflow.faulted.total";
     public static final String WORKFLOW_TASK_COMPLETED_TOTAL = "quarkus.flow.task.completed.total";
     public static final String WORKFLOW_TASK_FAILED_TOTAL = "quarkus.flow.task.failed.total";
-    public static final String WORKFLOW_FAULT_TOLERANCE_RETRY_TOTAL = "quarkus.flow.fault.tolerance.task.retry";
+    public static final String WORKFLOW_FAULT_TOLERANCE_RETRY_TOTAL = "quarkus.flow.fault.tolerance.task.retry.total";
 
     @Inject
     MeterRegistry registry;
@@ -30,6 +42,25 @@ public class FlowMetricsTest {
 
     @Inject
     ProblematicWorkflow problematicWorkflow;
+
+    @Produces
+    @Identifier("custom-type-guard")
+    public TypedGuard<CompletionStage<WorkflowModel>> custom() {
+        return TypedGuard.<CompletionStage<WorkflowModel>> create(new TypeLiteral<>() {
+        })
+                .withRetry()
+                .whenException(throwable -> {
+                    WorkflowException workflowException = (WorkflowException) throwable;
+                    Log.info("Handling WorkflowException class: " + workflowException.getWorkflowError());
+                    registry.counter(FlowMetrics.FAULT_TOLERANCE_TASK_RETRY_TOTAL.prefixedWith("quarkus.flow"))
+                            .increment();
+
+                    // just increment the metric
+                    return false;
+                })
+                .done()
+                .build();
+    }
 
     @Test
     void testMetricsForCompletedWorkflow() {
@@ -94,5 +125,15 @@ public class FlowMetricsTest {
                 .isEqualTo(1.0);
 
         softly.assertAll();
+    }
+
+    public static class FaultToleranceProfile implements QuarkusTestProfile {
+
+        @Override
+        public Map<String, String> getConfigOverrides() {
+            return Map.of(
+                    "quarkus.flow.http.client.workflow.problematic-workflow.name", "custom-type-guard",
+                    "quarkus.flow.http.client.named.custom-type-guard.resilience.identifier", "custom-type-guard");
+        }
     }
 }

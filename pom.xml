@@ -32,10 +32,10 @@
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <quarkus.version>3.32.0</quarkus.version>
-        <io.serverlessworkflow.version>7.13.4.Final</io.serverlessworkflow.version>
+        <quarkus.version>3.32.1</quarkus.version>
+        <io.serverlessworkflow.version>7.13.5.Final</io.serverlessworkflow.version>
         <io.quarkiverse.jackson-jq.version>2.4.0</io.quarkiverse.jackson-jq.version>
-        <io.quarkiverse.langchain4j.version>1.7.2</io.quarkiverse.langchain4j.version>
+        <io.quarkiverse.langchain4j.version>1.7.4</io.quarkiverse.langchain4j.version>
         <org.assertj.version>3.27.7</org.assertj.version>
         <io.cloudevents.version>4.0.1</io.cloudevents.version>
         <quarkus-antora.version>3.25.0</quarkus-antora.version>

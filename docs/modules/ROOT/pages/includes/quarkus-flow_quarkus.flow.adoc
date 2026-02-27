@@ -1347,8 +1347,6 @@ When the execution throws an exception whose type matches one of the configured 
 
 The comparison is based on the fully qualified class name of the exception. Subclasses are also considered a match.
 
-If this list is empty, the default retry behavior defined by SmallRye Fault Tolerance applies.
-
 *Default client configuration:*
 
 ```
@@ -1379,6 +1377,220 @@ Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_RESIL
 endif::add-copy-button-to-env-var[]
 ifndef::add-copy-button-to-env-var[]
 Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_RETRY_EXCEPTIONS+++`
+endif::add-copy-button-to-env-var[]
+--
+|list of string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-resilience-circuit-breaker-enabled]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-resilience-circuit-breaker-enabled[`quarkus.flow.http.client.resilience.circuit-breaker.enabled`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.resilience.circuit-breaker.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enables or disables Fault Tolerance Circuit Breaker support.
+
+*Default client configuration:*
+
+`quarkus.flow.http.client.resilience.circuit-breaker.enabled=true`
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.circuit-breaker.enabled=true
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_CIRCUIT_BREAKER_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_CIRCUIT_BREAKER_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-resilience-circuit-breaker-failure-ratio]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-resilience-circuit-breaker-failure-ratio[`quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the ratio of failures in the rolling window that causes a closed circuit breaker to move to open.
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio=0.5
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.circuit-breaker.failure-ratio=0.5
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_CIRCUIT_BREAKER_FAILURE_RATIO+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_CIRCUIT_BREAKER_FAILURE_RATIO+++`
+endif::add-copy-button-to-env-var[]
+--
+|double
+|`+++0.5+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-resilience-circuit-breaker-request-volume-threshold]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-resilience-circuit-breaker-request-volume-threshold[`quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the size of the rolling window. That is, the number of recent consecutive invocations tracked by a closed circuit breaker.
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold=20
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.circuit-breaker.request-volume-threshold=20
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_CIRCUIT_BREAKER_REQUEST_VOLUME_THRESHOLD+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_CIRCUIT_BREAKER_REQUEST_VOLUME_THRESHOLD+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++20+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-resilience-circuit-breaker-success-threshold]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-resilience-circuit-breaker-success-threshold[`quarkus.flow.http.client.resilience.circuit-breaker.success-threshold`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.resilience.circuit-breaker.success-threshold+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the number of probe invocations allowed when the circuit breaker is half-open. If they all succeed, the circuit breaker moves to closed, otherwise it moves back to open.
+
+```
+quarkus.flow.http.client.resilience.circuit-breaker.success-threshold=1
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.circuit-breaker.success-threshold=1
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_CIRCUIT_BREAKER_SUCCESS_THRESHOLD+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_CIRCUIT_BREAKER_SUCCESS_THRESHOLD+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++1+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-resilience-circuit-breaker-delay]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-resilience-circuit-breaker-delay[`quarkus.flow.http.client.resilience.circuit-breaker.delay`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.resilience.circuit-breaker.delay+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The delay after which an open circuit breaker moves to half-open.
+
+```
+quarkus.flow.http.client.resilience.circuit-breaker.delay=5s
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.circuit-breaker.delay=5s
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_CIRCUIT_BREAKER_DELAY+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_CIRCUIT_BREAKER_DELAY+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
+|`+++5S+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-resilience-circuit-breaker-exceptions]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-resilience-circuit-breaker-exceptions[`quarkus.flow.http.client.resilience.circuit-breaker.exceptions`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.resilience.circuit-breaker.exceptions+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the set of exception types considered failure.
+
+The comparison is based on the fully qualified class name of the exception. Subclasses are also considered a match.
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.resilience.circuit-breaker.exceptions=
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.circuit-breaker.exceptions=
+```
+
+
+
+Example:
+
+```
+quarkus.flow.http.client.resilience.circuit-breaker.exceptions=
+    java.io.IOException,
+    jakarta.ws.rs.ProcessingException
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_CIRCUIT_BREAKER_EXCEPTIONS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_RESILIENCE_CIRCUIT_BREAKER_EXCEPTIONS+++`
 endif::add-copy-button-to-env-var[]
 --
 |list of string
@@ -2610,8 +2822,6 @@ When the execution throws an exception whose type matches one of the configured 
 
 The comparison is based on the fully qualified class name of the exception. Subclasses are also considered a match.
 
-If this list is empty, the default retry behavior defined by SmallRye Fault Tolerance applies.
-
 *Default client configuration:*
 
 ```
@@ -2642,6 +2852,220 @@ Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED
 endif::add-copy-button-to-env-var[]
 ifndef::add-copy-button-to-env-var[]
 Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_RETRY_EXCEPTIONS+++`
+endif::add-copy-button-to-env-var[]
+--
+|list of string
+|
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-resilience-circuit-breaker-enabled]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-resilience-circuit-breaker-enabled[`quarkus.flow.http.client.named."named".resilience.circuit-breaker.enabled`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".resilience.circuit-breaker.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enables or disables Fault Tolerance Circuit Breaker support.
+
+*Default client configuration:*
+
+`quarkus.flow.http.client.resilience.circuit-breaker.enabled=true`
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.circuit-breaker.enabled=true
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_CIRCUIT_BREAKER_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_CIRCUIT_BREAKER_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-resilience-circuit-breaker-failure-ratio]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-resilience-circuit-breaker-failure-ratio[`quarkus.flow.http.client.named."named".resilience.circuit-breaker.failure-ratio`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".resilience.circuit-breaker.failure-ratio+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the ratio of failures in the rolling window that causes a closed circuit breaker to move to open.
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio=0.5
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.circuit-breaker.failure-ratio=0.5
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_CIRCUIT_BREAKER_FAILURE_RATIO+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_CIRCUIT_BREAKER_FAILURE_RATIO+++`
+endif::add-copy-button-to-env-var[]
+--
+|double
+|`+++0.5+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-resilience-circuit-breaker-request-volume-threshold]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-resilience-circuit-breaker-request-volume-threshold[`quarkus.flow.http.client.named."named".resilience.circuit-breaker.request-volume-threshold`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".resilience.circuit-breaker.request-volume-threshold+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the size of the rolling window. That is, the number of recent consecutive invocations tracked by a closed circuit breaker.
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold=20
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.circuit-breaker.request-volume-threshold=20
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_CIRCUIT_BREAKER_REQUEST_VOLUME_THRESHOLD+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_CIRCUIT_BREAKER_REQUEST_VOLUME_THRESHOLD+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++20+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-resilience-circuit-breaker-success-threshold]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-resilience-circuit-breaker-success-threshold[`quarkus.flow.http.client.named."named".resilience.circuit-breaker.success-threshold`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".resilience.circuit-breaker.success-threshold+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the number of probe invocations allowed when the circuit breaker is half-open. If they all succeed, the circuit breaker moves to closed, otherwise it moves back to open.
+
+```
+quarkus.flow.http.client.resilience.circuit-breaker.success-threshold=1
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.circuit-breaker.success-threshold=1
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_CIRCUIT_BREAKER_SUCCESS_THRESHOLD+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_CIRCUIT_BREAKER_SUCCESS_THRESHOLD+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++1+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-resilience-circuit-breaker-delay]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-resilience-circuit-breaker-delay[`quarkus.flow.http.client.named."named".resilience.circuit-breaker.delay`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".resilience.circuit-breaker.delay+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The delay after which an open circuit breaker moves to half-open.
+
+```
+quarkus.flow.http.client.resilience.circuit-breaker.delay=5s
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.circuit-breaker.delay=5s
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_CIRCUIT_BREAKER_DELAY+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_CIRCUIT_BREAKER_DELAY+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
+|`+++5S+++`
+
+a| [[quarkus-flow_quarkus-flow-http-client-named-named-resilience-circuit-breaker-exceptions]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-resilience-circuit-breaker-exceptions[`quarkus.flow.http.client.named."named".resilience.circuit-breaker.exceptions`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.named."named".resilience.circuit-breaker.exceptions+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Defines the set of exception types considered failure.
+
+The comparison is based on the fully qualified class name of the exception. Subclasses are also considered a match.
+
+*Default client configuration:*
+
+```
+quarkus.flow.http.client.resilience.circuit-breaker.exceptions=
+```
+
+
+
+*Named client configuration:*
+
+```
+quarkus.flow.http.client.named.<name>.resilience.circuit-breaker.exceptions=
+```
+
+
+
+Example:
+
+```
+quarkus.flow.http.client.resilience.circuit-breaker.exceptions=
+    java.io.IOException,
+    jakarta.ws.rs.ProcessingException
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_CIRCUIT_BREAKER_EXCEPTIONS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_NAMED__NAMED__RESILIENCE_CIRCUIT_BREAKER_EXCEPTIONS+++`
 endif::add-copy-button-to-env-var[]
 --
 |list of string

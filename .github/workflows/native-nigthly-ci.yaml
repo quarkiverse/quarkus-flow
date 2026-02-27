@@ -1,0 +1,131 @@
+name: Native Compilation Nightly
+
+on:
+  schedule:
+    # Run every night at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  native-build:
+    name: Native Build (JDK 25)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v6
+      
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: maven
+      
+      - name: Build with Maven (Native, Mandrel on JDK 25)
+        id: native-build
+        continue-on-error: true
+        run: >
+          mvn -B install -Dnative
+          -Dquarkus.native.container-build
+          -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25
+          -DskipITs=true
+      
+      - name: Check if issue exists
+        id: check-issue
+        if: always()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              labels: 'native-nightly-ci',
+              per_page: 1
+            });
+            
+            const issue = issues.data[0];
+            core.setOutput('issue_number', issue ? issue.number : '');
+            core.setOutput('issue_state', issue ? issue.state : '');
+            return issue ? issue.number : null;
+      
+      - name: Close issue on success
+        if: steps.native-build.outcome == 'success' && steps.check-issue.outputs.issue_number != '' && steps.check-issue.outputs.issue_state == 'open'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const issueNumber = parseInt('${{ steps.check-issue.outputs.issue_number }}');
+            
+            // close the issue
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              state: 'closed'
+            });
+      
+      - name: Create or update issue on failure
+        if: steps.native-build.outcome == 'failure'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const issueNumber = '${{ steps.check-issue.outputs.issue_number }}';
+            const issueState = '${{ steps.check-issue.outputs.issue_state }}';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            
+            const issueBody = `# 🔴 Native Compilation Failure
+            
+            The nightly native compilation test has failed.
+            
+            **Workflow Run:** ${runUrl}
+            
+            **Date:** ${new Date().toISOString()}
+            
+            @quarkiverse/quarkiverse-flow-triage Please investigate and fix this issue.
+            
+            ---
+            
+            This issue will be automatically updated on each nightly run until the native compilation passes.`;
+            
+            if (issueNumber) {
+              if (issueState === 'closed') {
+                // reopen the issue
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: parseInt(issueNumber),
+                  state: 'open'
+                });
+                
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: parseInt(issueNumber),
+                  body: `🔴 Native compilation is failing again!\n\n**Workflow Run:** ${runUrl}\n\n**Date:** ${new Date().toISOString()}\n\n@quarkiverse/quarkiverse-flow-triage Please investigate.`
+                });
+              } else {
+                // call the team again
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: parseInt(issueNumber),
+                  body: `🔴 Native compilation is still failing.\n\n**Workflow Run:** ${runUrl}\n\n**Date:** ${new Date().toISOString()}\n\n@quarkiverse/quarkiverse-flow-triage This issue requires attention.`
+                });
+              }
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '🔴 Native Compilation Failure',
+                body: issueBody,
+                labels: ['native-nightly-ci']
+              });
+            }
+      
+      - name: Fail the workflow if native build failed
+        if: steps.native-build.outcome == 'failure'
+        run: exit 1
