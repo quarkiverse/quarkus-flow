@@ -89,14 +89,12 @@ public class PoolMemberController extends PoolController {
     }
 
     @Override
-    protected void afterRelease(boolean released) {
-        if (released) {
-            leaseEvents.fire(new MemberLeaseEvent(
-                    MemberLeaseEvent.Type.RELEASED,
-                    poolConfig.name(),
-                    kubeInfo.podName(),
-                    leaseName.get()));
-        }
+    protected void released() {
+        leaseEvents.fire(new MemberLeaseEvent(
+                MemberLeaseEvent.Type.RELEASED,
+                poolConfig.name(),
+                kubeInfo.podName(),
+                leaseName.get()));
     }
 
     public boolean hasLease() {
