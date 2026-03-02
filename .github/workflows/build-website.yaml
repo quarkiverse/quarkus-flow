@@ -63,7 +63,7 @@ jobs:
           echo ${{ github.event.number }} > ./pr/pr-id.txt
 
       - name: Upload PR id as artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: pr-id
           path: pr
@@ -71,7 +71,7 @@ jobs:
 
       - name: Publishing directory for PR preview
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: site
           path: ./docs/target/classes/META-INF/resources/antora
