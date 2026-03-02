@@ -116,9 +116,19 @@ public class Agents {
 
     public interface CategoryRouter {
         @UserMessage("""
-                Analyze the following user request and categorize it as 'LEGAL', 'MEDICAL' or 'TECHNICAL'.
-                In case the request doesn't belong to any of those categories categorize it as 'UNKNOWN'.
-                Reply with only one of those words and nothing else.
+                You are a request classifier. Categorize the user request into exactly one of these categories:
+                - MEDICAL: requests about health, injuries, symptoms, diseases, medications, doctors, hospitals, or any physical/mental health concern
+                - LEGAL: requests about laws, contracts, rights, lawsuits, legal advice, or legal procedures
+                - TECHNICAL: requests about software, hardware, computers, programming, or technology issues
+                - UNKNOWN: requests that do not fit any of the above categories
+
+                Rules:
+                - If the request mentions body parts, injuries, pain, illness, or health conditions, classify as MEDICAL
+                - If the request mentions legal terms, contracts, or rights, classify as LEGAL
+                - If the request mentions technology or software, classify as TECHNICAL
+                - Otherwise classify as UNKNOWN
+
+                Reply with ONLY the category name (MEDICAL, LEGAL, TECHNICAL, or UNKNOWN) and absolutely nothing else.
                 The user request is: '{{request}}'.
                 """)
         @Agent(description = "Categorize a user request", outputKey = "category")

@@ -46,7 +46,8 @@ public class FlowAgentsBuilderIT {
     @Test
     void checkConditionalRouterWorkflow() {
         assertThat(expertRouterAgent).isNotNull();
-        ResultWithAgenticScope<String> result = expertRouterAgent.ask("I broke my leg what should I do");
+        ResultWithAgenticScope<String> result = expertRouterAgent
+                .ask("I have severe chest pain and difficulty breathing, what medical treatment should I seek?");
         String response = result.result();
         assertThat(response).isNotBlank();
         AgenticScope agenticScope = result.agenticScope();
