@@ -56,8 +56,8 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     }
 
     @Override
-    public void writeStatus(WorkflowContextData workflowContext, WorkflowStatus suspended) {
-        find(workflowContext).setStatus(suspended);
+    public void writeStatus(WorkflowContextData workflowContext, WorkflowStatus status) {
+        find(workflowContext).setStatus(status);
     }
 
     @Override
