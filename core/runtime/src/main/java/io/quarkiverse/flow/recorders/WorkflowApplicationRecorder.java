@@ -70,6 +70,11 @@ public class WorkflowApplicationRecorder {
             this.injectMicrometerListener(container, builder);
             this.injectFaultTolerance(container, builder, isMicrometerSupported);
 
+            // customize
+            container.select(WorkflowApplicationBuilderCustomizer.class, Any.Literal.INSTANCE)
+                    .stream()
+                    .forEachOrdered(customizer -> customizer.customize(builder));
+
             WorkflowApplication app = builder.build();
             shutdownContext.addShutdownTask(app::close);
             return app;
