@@ -116,6 +116,7 @@ Here you can:
 This is handy for logging, debugging, or adding metadata without polluting your
 business types.
 
+[[export-as]]
 === 2.2 `exportAs` – pass data to the next step
 
 `exportAs` controls what the task **exports** for downstream consumers (the next
@@ -266,6 +267,7 @@ Good when:
 
 You can freely mix JQ and Java across tasks in the same workflow.
 
+[[quick-reference]]
 == 5. Quick reference
 
 * `inputFrom(String jq)` – slice workflow data using JQ.
