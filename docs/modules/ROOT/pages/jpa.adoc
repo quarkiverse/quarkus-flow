@@ -1,10 +1,10 @@
-= Use MVStore persistence
+= Use JPA persistence
 :page-role: howto
 include::includes/attributes.adoc[]
 
-*Quarkus Flow MVStore* provides workflow restoration capabilities by storing workflow instance state using MVStore
+*Quarkus Flow JPA* provides workflow restoration capabilities by storing workflow instance state using a relational database compliant with JPA. 
 
-When active, every time a task is completed current workflow information is written into a local file system file. 
+When active, every time a task is completed the workflow current information is written into the relational database. 
 When after a server shutdown, the same application (as identified by its application id) is restored in a different Java Virtual machine, all running workflow instances resume execution at the latest recorded point. 
 
 Automatic restoration can be disabled by setting `quarkus.flow.persistence.autoRestore` to false.
@@ -13,24 +13,18 @@ Automatic restoration can be disabled by setting `quarkus.flow.persistence.autoR
 
 Setup a Quarkus application with xref:getting-started.adoc[Quarkus Flow set up].
 
-Add Quarkus Flow MVStore dependency to your `pom.xml`
+Add Quarkus Flow JPA dependency to your `pom.xml`
 
 ----
 <dependency>
   <groupId>io.quarkiverse.flow</groupId>
-  <artifactId>quarkus-flow-mvstore</artifactId>
+  <artifactId>quarkus-flow-jpa</artifactId>
 </dependency>
 ----
 
-Add `quarkus.flow.persistence.mvstore.db-path` property to application.properties.
-
-For example
-----
-quarkus.flow.persistence.mvstore.db-path=$HOME/testFlowMVStore.db
-----
+Setup Quarkus JDBC driver and data source to be used as per link:https://quarkus.io/guides/datasource#configure-datasources[Quarkus configure datasources]
 
 include::includes/marshaller.adoc[]
 
 == See also
-- link:https://www.h2database.com/html/mvstore.html[MVStore homepage]
 - link:https://github.com/serverlessworkflow/sdk-java/tree/main/impl/persistence[Serverless Workflow Java SDK Persistence]

@@ -6,17 +6,17 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.serverlessworkflow.impl.persistence.PersistenceInstanceStore;
-import io.serverlessworkflow.impl.persistence.test.AbstractPersistenceTest;
+import io.serverlessworkflow.impl.persistence.PersistenceInstanceHandlers;
+import io.serverlessworkflow.impl.persistence.test.AbstractHandlerPersistenceTest;
 
 @QuarkusTest
 @DisabledOnOs(OS.WINDOWS)
-public class QuarkusFlowRedisIT extends AbstractPersistenceTest {
+public class QuarkusFlowRedisIT extends AbstractHandlerPersistenceTest {
     @Inject
-    PersistenceInstanceStore store;
+    PersistenceInstanceHandlers handlers;
 
     @Override
-    protected PersistenceInstanceStore persistenceStore() {
-        return store;
+    protected PersistenceInstanceHandlers getPersistenceHandlers() {
+        return handlers;
     }
 }
