@@ -21,7 +21,6 @@
         <dependency>
           <groupId>io.serverlessworkflow</groupId>
           <artifactId>serverlessworkflow-persistence-api</artifactId>
-          <version>${io.serverlessworkflow.version}</version>
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>

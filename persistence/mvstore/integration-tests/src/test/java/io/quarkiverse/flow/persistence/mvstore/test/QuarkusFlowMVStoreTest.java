@@ -12,26 +12,26 @@ import org.junit.jupiter.api.condition.OS;
 
 import io.quarkiverse.flow.persistence.mvstore.MVStoreConfig;
 import io.quarkus.test.junit.QuarkusTest;
-import io.serverlessworkflow.impl.persistence.PersistenceInstanceStore;
-import io.serverlessworkflow.impl.persistence.test.AbstractPersistenceTest;
+import io.serverlessworkflow.impl.persistence.PersistenceInstanceHandlers;
+import io.serverlessworkflow.impl.persistence.test.AbstractHandlerPersistenceTest;
 
 @QuarkusTest
 @DisabledOnOs(OS.WINDOWS)
-public class QuarkusFlowMVStoreTest extends AbstractPersistenceTest {
+public class QuarkusFlowMVStoreTest extends AbstractHandlerPersistenceTest {
 
     @Inject
-    PersistenceInstanceStore store;
+    PersistenceInstanceHandlers handlers;
 
     @Inject
     MVStoreConfig config;
 
-    @Override
-    protected PersistenceInstanceStore persistenceStore() {
-        return store;
-    }
-
     @AfterEach
     void destroy() throws IOException {
         Files.delete(Path.of(config.dbPath()));
+    }
+
+    @Override
+    protected PersistenceInstanceHandlers getPersistenceHandlers() {
+        return handlers;
     }
 }

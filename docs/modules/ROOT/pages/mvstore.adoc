@@ -4,7 +4,7 @@ include::includes/attributes.adoc[]
 
 *Quarkus Flow MVStore* provides workflow restoration capabilities by storing workflow instance state using MVStore
 
-When active, every time a task is completed the workflow status is written into a local filesytem file. 
+When active, every time a task is completed current workflow information is written into a local file system file. 
 When after a server shutdown, the same application (as identified by its application id) is restored in a different Java Virtual machine, all running workflow instances resume execution at the latest recorded point. 
 
 Automatic restoration can be disabled by setting `quarkus.flow.persistence.autoRestore` to false.
