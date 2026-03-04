@@ -1,0 +1,204 @@
+name: Track Reporting Date on Field Changes
+
+# ---------------------------------------------------------------------------
+# Schedule configuration
+# NOTE: GitHub Actions does not support variables in cron expressions.
+#       To change the schedule update the cron expression below.
+#       All times are in UTC.
+# ---------------------------------------------------------------------------
+on:
+  schedule:
+    - cron: '0 5 * * *'   # daily at 05:00 UTC
+  workflow_dispatch:
+
+# Requires a PAT with 'project' and 'read:org' scopes stored as secret GH_TOKEN.
+# The default GITHUB_TOKEN does not have write access to organization-level projects.
+
+jobs:
+  track-reporting-date:
+    name: Check and update 'Reporting Date'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      PROJECT_OWNER: quarkiverse
+      PROJECT_NUMBER: 11
+    steps:
+      - name: Update 'Reporting Date' and 'Reporting Log' for changed items
+        run: |
+          set -e
+
+          TODAY=$(date -u +%Y-%m-%d)
+
+          # Extract a field value from a project item JSON blob by field name.
+          # Handles text, number, single-select and date field types.
+          get_field() {
+            local item_json="$1"
+            local field_name="$2"
+            echo "$item_json" | jq -r --arg n "$field_name" '
+              [ .fieldValues.nodes[] | select(.field.name == $n) ] |
+              if length == 0 then ""
+              else .[0] |
+                if .text != null then .text
+                elif .number != null then (.number | tostring)
+                elif .["name"] != null then .["name"]
+                elif .date != null then .date
+                else ""
+                end
+              end
+            '
+          }
+
+          # Fetch all project items along with their field metadata and values
+          RESPONSE=$(gh api graphql -f query='
+            query($owner: String!, $number: Int!) {
+              organization(login: $owner) {
+                projectV2(number: $number) {
+                  id
+                  fields(first: 30) {
+                    nodes {
+                      ... on ProjectV2Field {
+                        id
+                        name
+                      }
+                      ... on ProjectV2SingleSelectField {
+                        id
+                        name
+                      }
+                    }
+                  }
+                  items(first: 100) {
+                    nodes {
+                      id
+                      fieldValues(first: 20) {
+                        nodes {
+                          ... on ProjectV2ItemFieldTextValue {
+                            text
+                            field { ... on ProjectV2Field { name } }
+                          }
+                          ... on ProjectV2ItemFieldNumberValue {
+                            number
+                            field { ... on ProjectV2Field { name } }
+                          }
+                          ... on ProjectV2ItemFieldSingleSelectValue {
+                            name
+                            field { ... on ProjectV2SingleSelectField { name } }
+                          }
+                          ... on ProjectV2ItemFieldDateValue {
+                            date
+                            field { ... on ProjectV2Field { name } }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ' -f owner="$PROJECT_OWNER" -F number=$PROJECT_NUMBER)
+
+          PROJECT_ID=$(echo "$RESPONSE" | jq -r '.data.organization.projectV2.id')
+          REPORTING_DATE_FIELD_ID=$(echo "$RESPONSE" | jq -r '.data.organization.projectV2.fields.nodes[] | select(.name == "Reporting Date") | .id')
+          REPORTING_LOG_FIELD_ID=$(echo "$RESPONSE"  | jq -r '.data.organization.projectV2.fields.nodes[] | select(.name == "Reporting Log")  | .id')
+
+          if [ -z "$REPORTING_DATE_FIELD_ID" ]; then
+            echo "Error: 'Reporting Date' field not found in project."
+            exit 1
+          fi
+          if [ -z "$REPORTING_LOG_FIELD_ID" ]; then
+            echo "Error: 'Reporting Log' field not found in project."
+            exit 1
+          fi
+
+          echo "Project ID             : $PROJECT_ID"
+          echo "Reporting Date field ID: $REPORTING_DATE_FIELD_ID"
+          echo "Reporting Log field ID : $REPORTING_LOG_FIELD_ID"
+
+          UPDATED_COUNT=0
+          SKIPPED_COUNT=0
+
+          while IFS= read -r item; do
+            ITEM_ID=$(echo "$item" | jq -r '.id')
+            echo ""
+            echo "Item $ITEM_ID"
+
+            STATUS=$(get_field        "$item" "Status")
+            PRIORITY=$(get_field      "$item" "Priority")
+            ESTIMATE=$(get_field      "$item" "Estimate")
+            REMAINING_WORK=$(get_field "$item" "Remaining Work")
+            TIME_SPENT=$(get_field    "$item" "Time Spent")
+            REPORTING_LOG=$(get_field "$item" "Reporting Log")
+
+            # Parse tracked field values from the latest (first) entry in the log.
+            # Log format: ENTRY1 | ENTRY2 | ... where each entry is DATE, STATUS, PRIORITY, ESTIMATE, REMAINING_WORK, TIME_SPENT
+            if [ -z "$REPORTING_LOG" ]; then
+              LAST_STATUS="" LAST_PRIORITY="" LAST_ESTIMATE=""
+              LAST_REMAINING_WORK="" LAST_TIME_SPENT=""
+            else
+              LAST_ENTRY=$(echo "$REPORTING_LOG" | sed 's/ | /\n/g' | head -1)
+              LAST_STATUS=$(echo         "$LAST_ENTRY" | cut -d',' -f2 | xargs)
+              LAST_PRIORITY=$(echo       "$LAST_ENTRY" | cut -d',' -f3 | xargs)
+              LAST_ESTIMATE=$(echo       "$LAST_ENTRY" | cut -d',' -f4 | xargs)
+              LAST_REMAINING_WORK=$(echo "$LAST_ENTRY" | cut -d',' -f5 | xargs)
+              LAST_TIME_SPENT=$(echo     "$LAST_ENTRY" | cut -d',' -f6 | xargs)
+            fi
+
+            echo "  Current : $STATUS, $PRIORITY, $ESTIMATE, $REMAINING_WORK, $TIME_SPENT"
+            echo "  Last log: $LAST_STATUS, $LAST_PRIORITY, $LAST_ESTIMATE, $LAST_REMAINING_WORK, $LAST_TIME_SPENT"
+
+            # Skip if nothing has changed
+            if [ "$STATUS"         = "$LAST_STATUS"         ] && \
+               [ "$PRIORITY"        = "$LAST_PRIORITY"        ] && \
+               [ "$ESTIMATE"        = "$LAST_ESTIMATE"        ] && \
+               [ "$REMAINING_WORK"  = "$LAST_REMAINING_WORK"  ] && \
+               [ "$TIME_SPENT"      = "$LAST_TIME_SPENT"      ]; then
+              echo "  → No change detected. Skipping."
+              SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+              continue
+            fi
+
+            echo "  → Change detected. Updating 'Reporting Date' and prepending to 'Reporting Log'."
+
+            # Build new entry: DATE, STATUS, PRIORITY, ESTIMATE, REMAINING_WORK, TIME_SPENT
+            NEW_ENTRY="${TODAY}, ${STATUS}, ${PRIORITY}, ${ESTIMATE}, ${REMAINING_WORK}, ${TIME_SPENT}"
+
+            # Prepend new entry and keep at most 5 entries total (discard oldest)
+            if [ -z "$REPORTING_LOG" ]; then
+              NEW_LOG="$NEW_ENTRY"
+            else
+              TRIMMED=$(echo "$REPORTING_LOG" | sed 's/ | /\n/g' | head -4 | paste -sd'~' | sed 's/~/ | /g')
+              NEW_LOG="${NEW_ENTRY} | ${TRIMMED}"
+            fi
+
+            # Update 'Reporting Date' to today
+            gh api graphql -f query='
+              mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $date: Date!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $projectId
+                  itemId: $itemId
+                  fieldId: $fieldId
+                  value: { date: $date }
+                }) { projectV2Item { id } }
+              }
+            ' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" \
+              -f fieldId="$REPORTING_DATE_FIELD_ID" -f date="$TODAY"
+
+            # Append new entry to 'Reporting Log'
+            gh api graphql -f query='
+              mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $text: String!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $projectId
+                  itemId: $itemId
+                  fieldId: $fieldId
+                  value: { text: $text }
+                }) { projectV2Item { id } }
+              }
+            ' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" \
+              -f fieldId="$REPORTING_LOG_FIELD_ID" -f text="$NEW_LOG"
+
+            echo "  → Done."
+            UPDATED_COUNT=$((UPDATED_COUNT + 1))
+
+          done < <(echo "$RESPONSE" | jq -c '.data.organization.projectV2.items.nodes[]')
+
+          echo ""
+          echo "Summary: $UPDATED_COUNT item(s) updated, $SKIPPED_COUNT item(s) skipped."
