@@ -1,12 +1,12 @@
-# Newsletter Workflow (Quarkus + Serverless Workflow + Agents + CloudEvents)
+# Intelligent Newsletter Drafter (Quarkus Flow + LangChain4j + Human-in-the-Loop)
 
-A minimal-but-complete example that orchestrates **AI agents + human-in-the-loop review** using:
+A minimal-but-complete example that orchestrates a **Dual-Loop AI Workflow** (AI-to-AI iteration + Human-in-the-Loop review) using:
 
 - **Quarkus** (hot-reload dev mode)
-- **[CNCF Workflow Specification](https://serverlessworkflow.io/)** (function-first fluent DSL)
-- **LangChain4j** agents (via **Ollama**)
+- **[Quarkus Flow](https://docs.quarkiverse.io/quarkus-flow/dev/)** (function-first fluent DSL for Serverless Workflow)
+- **LangChain4j** (Declarative `@SequenceAgent` and Structured Outputs via **Ollama**)
 - **CloudEvents** over Kafka (Quarkus Dev Services)
-- A tiny **web UI** (compose + review) with live updates via **WebSocket**
+- A **Single Page Application (SPA)** UI with live updates via **WebSocket**
 
 > Run locally with hot reload and _no manual infra setup_ (Kafka is auto-started by Quarkus **Dev Services** if Docker/Podman is available).
 
@@ -46,208 +46,135 @@ Open: **http://localhost:8080**
 
 ## 🧭 What you’ll see
 
-- **Compose** page (`/index.html`): fill a small “newsletter prompt” and click **Generate Draft**.
-- The workflow calls the **DrafterAgent** then the **CriticAgent**, and emits a `review-required` CloudEvent.
-- **Review** page (`/review.html`): shows the latest critic result, lets you **approve** or **request changes**.
-    - If you choose **NEEDS_REVISION**, the workflow loops back to the drafter → critic → review.
-    - If you choose **DONE**, the workflow **sends the email** (via a mock `MailService`) and finishes.
+The UI is a clean, responsive Single Page Application built with Bootstrap. It flows through four states:
+
+1. **Compose**: Fill out a form capturing Market Mood, Tone, Length, and Macro Data. Click **Generate Draft**.
+2. **AI Loading**: The system runs a high-speed LangChain4j AI sequence (`Drafter` → `Critic` → `AI Editor`) entirely in the background.
+3. **Human Review**: A WebSocket pushes the finalized AI draft to your screen. You can edit the text directly, add Manager Notes, and click **Needs AI Revision** (loops back to the AI Editor) or **Approve & Send Email**.
+4. **Success**: The workflow completes, logs the sent email, and resets for the next run.
 
 ---
 
-## 🧩 Architecture (high level)
+## 🧩 Architecture: The Two Loops
 
-```
-+-----------------+        REST            +-------------------------+
-|  Compose UI     |  POST /api/newsletter  |  Quarkus API (JAX-RS)   |
-|  (index.html)   +----------------------->+  starts workflow        |
-+-----------------+                        +-----------+-------------+
-                                                      |
-                                                      v
-                                           +----------+----------+
-                                           |      Workflow       |
-                                           |  (Func DSL runtime) |
-                                           +----------+----------+
-                                                      |
-                                   +------------------+------------------+
-                                   |                                     |
-                                   v                                     v
-                        +-------------------+                  +-------------------+
-                        | DrafterAgent      |                  | CriticAgent       |
-                        | (LangChain4j via  |                  | (LangChain4j via  |
-                        |  Ollama)          |                  |  Ollama)          |
-                        +---------+---------+                  +---------+---------+
-                                  |                                      |
-                                  |                        CloudEvent "review-required"
-                                  |                         (Kafka: flow-out topic)
-                                  |                                      |
-                                  |      +------------------------------ v -----------------------------+
-                                  |      |   Quarkus WebSocket endpoint subscribes to flow-out and     |
-                                  |      |   pushes "review-required" to the browser (review.html)     |
-                                  |      +--------------+----------------------------------------------+
-                                  |                     |
-                                  |                     |
-                                  |              +------v------+
-                                  |              | Review UI   |
-                                  |   PUT /api/  | (review.html|
-                                  +------------->|  form)      |
-                                                 +------+------+
-                                                        |
-                                CloudEvent "org.acme.newsletter.review.done" (Kafka: flow-in topic)
-                                                        |
-                                                        v
-                                           +------------+-----------+
-                                           | Serverless Workflow    |
-                                           |  switch(status)        |
-                                           |  ├─ NEEDS_REVISION -> loop Draft->Critic->Review
-                                           |  └─ DONE -> send via MailService
-                                           +------------------------+
+This project separates concerns by utilizing two distinct loops:
+1. **The Fast Inner Loop (LangChain4j):** An automated AI sequence where agents debate and refine the draft until it passes compliance.
+2. **The Durable Outer Loop (Quarkus Flow):** The overarching business process that pauses, waits for asynchronous Human CloudEvents via Kafka, and finalizes the task.
+
+```text
+                                           +-----------------------------------+
+                                           |        QUARKUS FLOW (Outer Loop)  |
+                                           |                                   |
++-----------------+                        |     +-----------------------+     |
+|  SPA Web UI     |  POST /api/newsletter  |     | 1. AutoCriticSequence |     |
+|  (index.html)   +----------------------------->+    (Draft -> Critic ->|     |
++-----------------+                        |     |     CriticEditor)     |     |
+        ^                                  |     +-----------+-----------+     |
+        |                                  |                 |                 |
+        | CloudEvent "review-required"     |                 v                 |
+        | (WebSocket)                      |     +-----------------------+     |
+        +----------------------------------------+ 2. Emit "reviewReady" |     |
+        |                                  |     +-----------+-----------+     |
+        |                                  |                 |                 |
+        | PUT /api/newsletter              |                 v                 |
+        | (Kafka: flow-in)                 |     +-----------------------+     |
+        +--------------------------------------->+ 3. Listen for Human   |     |
+                                           |     |    Review Event       |     |
+                                           |     +-----------+-----------+     |
+                                           |                 |                 |
+                                           |           [Approved?]             |
+                                           |          /           \            |
+                                           |       NO               YES        |
+                                           |      /                   \        |
+                                           |     v                     v       |
+                                           | +----------------+   +----------+ |
+                                           | | 4. HumanEditor |   | 5. Send  | |
+                                           | |    Agent       |   |    Email | |
+                                           | +-------+--------+   +----------+ |
+                                           |         |                         |
+                                           +---------|-------------------------+
+                                                     |
+                                                     +-- (Loops back to Step 2)
 ```
 
 ---
 
-## 🔁 The Workflow (visual)
+## 🧠 The Magic: Structured Outputs & Pure Java Records
 
-```
-start
-  │
-  ▼
-[Call drafterAgent::draft (with instanceId)]
-  │
-  ▼
-[Call criticAgent::critique (with instanceId)]
-  │
-  ▼
-[emitJson "org.acme.email.review.required" with CriticAgentReview]
-  │
-  ▼
-[listen to "org.acme.newsletter.review.done"]
-  │   outputAs(selectFirstStringify() OR typed -> HumanReview)
-  │
-  ▼
-[switchWhenOrElse on review.status]
-  ├─ NEEDS_REVISION → go to "draftAgent" (loop back up)
-  └─ DONE          → go to "sendNewsletter"
-                        │
-                        ▼
-               [consume: MailService.send(...)]
-                        │
-                        ▼
-                      end
-```
+Gone are the days of begging the LLM to output valid JSON in the system prompt! This example heavily leverages **LangChain4j Structured Outputs**.
 
-**Key points:**
-
-- `agent(name, methodRef, Class<T>)` wraps your agent method and **injects the workflow instance id** as the first parameter (perfect for LLM memory).
-- `emitJson(type, clazz)` emits a **CloudEvent** to Kafka (`flow-out`), which the **WebSocket** layer forwards to the UI.
-- `listen(to().one(event(type)))` consumes from Kafka (`flow-in`) and resumes the workflow.
-- `switchWhenOrElse(...)` branches between “loop” and “finish+send”.
-
----
-
-## 🧠 Agents
-
-Agents are regular **LangChain4j** service interfaces (annotated with `@RegisterAiService`), e.g.:
-
-- `DrafterAgent#draft(String memoryId, String payloadJson) : String`
-- `CriticAgent#critique(String memoryId, String payloadJson) : CriticAgentReview`
-
-In the fluent DSL:
+All data passed between the UI, the Flow engine, and the AI Agents are strictly typed **Java Records** and **Enums**. LangChain4j automatically infers the JSON schema from your Records and maps the LLM response natively.
 
 ```java
-tasks(
-  agent("draftAgent", drafterAgent::draft, String.class),
-  agent("criticAgent", criticAgent::critique, String.class),
-  ...
-)
+// Pure Java Domain Objects
+public record NewsletterRequest(MarketMood mood, List<String> topMovers, String macroData, Tone tone, Length length) {}
+public record NewsletterDraft(String title, String lead, String body) {}
 ```
 
-The `agent(...)` DSL uses the **workflow instance id** as “memory id” automatically.
+### Declarative AI Sequences
+The AI Inner loop is defined using LangChain4j's powerful `@SequenceAgent`. With a single annotation, Quarkus wires together multiple specialized agents:
+
+```java
+@RegisterAiService
+public interface AutoDraftCriticAgent {
+    @SequenceAgent(
+        outputKey = "draft", 
+        subAgents = { DrafterAgent.class, CriticAgent.class, CriticEditorAgent.class }
+    )
+    NewsletterDraft write(@MemoryId String memoryId, @V("request") NewsletterRequest request);
+}
+```
 
 ---
 
-## 🌐 HTTP & UI
+## 🔁 The Quarkus Flow Definition
 
-### Endpoints
+The Serverless Workflow is orchestrated using the fluent `FuncWorkflowBuilder`. Notice how business logic is completely decoupled from AI prompt engineering:
 
-- `POST /api/newsletter`  
-  Starts a workflow run using your JSON input (the **compose** payload). Returns `{instanceId}`.
-
-- `PUT /api/newsletter`  
-  Sends a human review (JSON) as a **CloudEvent** to the engine:
-  ```json
-  { "draft": "...", "notes": "...", "status": "NEEDS_REVISION|DONE" }
-  ```
-
-### UI
-
-- `/index.html` – Compose page (“Generate Draft”)
-    - Uses `fetch(POST /api/newsletter)`
-    - Shows a spinner during generation
-    - Links to `review.html?instanceId=...`
-
-- `/review.html` – Human Review page
-    - Loads latest cached **review-required** event (so you don’t miss updates if the page was closed)
-    - Keeps a **WebSocket** open to receive live critic updates
-    - Shows a spinner while waiting for the next agent update
-    - On **DONE**, disables the form, shows a **“completed”** banner, closes the socket, clears cache
-
-> All UI is plain HTML + PicoCSS + tiny JS (no build toolchain).
-
----
-
-## 📦 Events & Topics
-
-- Outbound (engine → UI): `org.acme.email.review.required`
-    - **Produced** on Kafka topic (e.g. `flow-out`) by the workflow step `emitJson(...)`.
-    - **Consumed** by the server and **pushed over WebSocket** to the browser.
-
-- Inbound (UI → engine): `org.acme.newsletter.review.done`
-    - **Produced** by `PUT /api/newsletter` (JAX-RS resource) with `Emitter<byte[]>` to Kafka (e.g. `flow-in`).
-    - **Consumed** by `listen(to().one(event("org.acme.newsletter.review.done")))` in the workflow.
-
-> Topic names & channels are wired via MicroProfile Reactive Messaging; in dev mode Quarkus will create and manage them automatically (Dev Services + Docker/Podman).
+```java
+public Workflow descriptor() {
+    return FuncWorkflowBuilder
+        .workflow("intelligent-newsletter")
+        .tasks(
+            // 1. Run the LangChain4j Agent Sequence
+            agent("draftAgent", draftAgent::write, NewsletterRequest.class),
+            
+            // 2. Ask Human for Review via CloudEvent
+            emitJson("draftReady", "org.acme.email.review.required", NewsletterDraft.class),
+            listen("waitHumanReview", to().one(event("org.acme.newsletter.review.done")))
+                    .outputAs((Collection<Object> c) -> c.iterator().next()),
+            
+            // 3. Conditional Routing based on Human Enum decision
+            switchWhenOrElse(
+                    h -> HumanReview.ReviewStatus.NEEDS_REVISION.equals(h.status()), 
+                    "humanEditorAgent", 
+                    "sendNewsletter", 
+                    HumanReview.class)
+                .andThen(a -> a.function("humanEditorAgent", fn(humanEditorAgent::edit, HumanReview.class)
+                .andThen(f -> f.then("draftReady")))), // Loop back to review
+            
+            // 4. Terminate and Send
+            consume("sendNewsletter", draft -> mailService.send("subscribers@acme", draft), NewsletterDraft.class)
+                .inputFrom(input -> input.get("draft"), Map.class)
+        )
+        .build();
+}
+```
 
 ---
 
-## 🧪 Testing & Hot-Reload
+## 🛠 Troubleshooting
 
-- `mvn quarkus:dev` gives you **live reload** for Java, resources, and the UI.
-- Example tests (Quarkus Test + Kafka Companion) demonstrate:
-    - POST to start the workflow
-    - Wait for `review-required`
-    - Submit `NEEDS_REVISION` once (loop)
-    - Submit `DONE` (finish)
-    - Assert the `MailService.send(...)` was called
+- **400 Bad Request on "Generate Draft" or "Approve"** Ensure the UI Dropdowns match the Java Enums exactly (e.g., `BULLISH`, `DONE`, `NEEDS_REVISION`). Jackson will reject unknown string values.
 
----
+- **`OutputParsingException` in Server Logs** If the LLM generates a partial JSON response, it may have run out of tokens. Ensure `quarkus.langchain4j.ollama.chat-model.num-predict` in your `application.properties` is set high enough (e.g., `2048`) for long newsletters.
 
-## 🛠 Customize & Extend
+- **No live updates in UI** Check the browser console. Make sure the **WebSocket** is connected (`ws://localhost:8080/ws/newsletter`).
 
-- **Swap models**: change your Ollama model (e.g., `mistral`, `qwen2.5`), tune system prompts, or add new agent methods.
-- **Use your own events**: adjust the event types and payload classes in the DSL (`emitJson(...)` & `listen(...)`).
-- **Enrich the UI**: add auth, persistence, or a dashboard for multi-run tracking.
-- **No tight coupling**: the project `pom.xml` only uses published artifacts—copy **any** files into your project or clone this repo as a starter.
-
-> The **fluent function DSL** (`FuncDSL`) includes helpers like `agent(...)`, `emitJson(...)`, `listen(...)`, `switchWhenOrElse(...)`, `forEach(...)`.
-
----
-
-## 🔧 Troubleshooting
-
-- **400 on `PUT /api/newsletter`**  
-  Ensure the review form sends a non-empty `status` and `draft`. (The UI blocks invalid submit and shows a loader.)
-
-- **No live updates**  
-  Check the browser console and server logs. Make sure the **WebSocket** is connected and Ollama is running.
-
-- **Kafka not starting**  
-  Verify Docker/Podman is running. Quarkus will log Dev Services startup. You can also point to an external Kafka in `application.properties`.
-
-- **Ollama errors**  
-  Confirm `ollama serve` is running and the model is pulled. Check `http://localhost:11434` availability.
+- **Kafka not starting** Verify Docker/Podman is running. Quarkus will log Dev Services startup. You can also point to an external Kafka in `application.properties`.
 
 ---
 
 ## 📚 Build your own
 
-Use this repo as a template or copy the files you need. The `pom.xml` depends only on published artifacts—no coupling to this example. Extend the DSL, add agents, create new CloudEvents, or swap the transport entirely. Have fun! 🎉
+Use this repo as a template or copy the files you need. The `pom.xml` depends only on published artifacts—no coupling to this example. Extend the DSL, add new AI agents to the sequence, create new CloudEvents, or swap the UI framework. Have fun! 🎉

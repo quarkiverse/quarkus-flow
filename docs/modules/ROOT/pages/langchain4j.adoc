@@ -81,7 +81,7 @@ include::{examples-dir}org/acme/agentic/HelloAgenticWorkflow.java[tag=workflow]
 
 What is happening:
 
-. *Draft* via the first agent (for example, a newsletter drafter).
+. *NewsletterDraft* via the first agent (for example, a newsletter drafter).
 . *Critique* the draft via a second agent.
 . Optionally *emit* an event to request human review (`emitJson(...)`), then *listen* for a
 review result (`listen(...).outputAs(...)`).
