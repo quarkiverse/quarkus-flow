@@ -13,6 +13,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.Priorities;
 
+import org.jboss.jandex.DotName;
 import org.objectweb.asm.Opcodes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +61,8 @@ import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowException;
+import io.serverlessworkflow.impl.events.EventConsumer;
+import io.serverlessworkflow.impl.events.EventPublisher;
 import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener;
 import io.smallrye.common.annotation.Identifier;
 
@@ -105,6 +108,13 @@ class FlowProcessor {
                 .addBeanClass(WorkflowRegistry.class)
                 .setUnremovable()
                 .build();
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem keepCustomEventAdapters() {
+        return UnremovableBeanBuildItem.beanTypes(Set.of(
+                DotName.createSimple(EventPublisher.class.getName()),
+                DotName.createSimple(EventConsumer.class.getName())));
     }
 
     /**
