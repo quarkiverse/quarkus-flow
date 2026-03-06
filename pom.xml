@@ -19,6 +19,7 @@
         <module>langchain4j</module>
         <module>persistence</module>
         <module>durable-kubernetes</module>
+        <module>scheduler</module>
     </modules>
 
     <scm>
