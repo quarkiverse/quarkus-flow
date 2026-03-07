@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.internal;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,11 +47,14 @@ public class WorkflowRegistry {
     }
 
     public Collection<Workflow> all() {
-        return app.workflowDefinitions().values().stream().map(WorkflowDefinition::workflow).toList();
+        Map<WorkflowDefinitionId, Workflow> all = new LinkedHashMap<>();
+        app.workflowDefinitions().forEach((id, definition) -> all.put(id, definition.workflow()));
+        agenticCache.forEach(all::putIfAbsent);
+        return all.values();
     }
 
     public int count() {
-        return app.workflowDefinitions().size();
+        return all().size();
     }
 
     public Optional<WorkflowDefinition> lookup(WorkflowDefinitionId id) {
@@ -64,12 +68,17 @@ public class WorkflowRegistry {
 
     public WorkflowDefinition register(Flowable flowable) {
         LOG.info("Registering workflow {}", flowable.descriptor().getDocument().getName());
-        return app.workflowDefinition(addFlowableMetadata(flowable));
+        Workflow workflow = addFlowableMetadata(flowable);
+        WorkflowDefinition definition = app.workflowDefinition(workflow);
+        invalidateCachedDescriptor(workflow);
+        return definition;
     }
 
     public WorkflowDefinition register(Workflow workflow) {
         LOG.info("Registering workflow {}", workflow.getDocument().getName());
-        return app.workflowDefinition(workflow);
+        WorkflowDefinition definition = app.workflowDefinition(workflow);
+        invalidateCachedDescriptor(workflow);
+        return definition;
     }
 
     private Workflow addFlowableMetadata(final Flowable flowable) {
@@ -99,5 +108,12 @@ public class WorkflowRegistry {
     public void cacheDescriptor(Workflow workflow) {
         LOG.debug("Caching workflow descriptor for {}", workflow.getDocument().getName());
         agenticCache.put(WorkflowDefinitionId.of(workflow), workflow);
+    }
+
+    private void invalidateCachedDescriptor(Workflow workflow) {
+        WorkflowDefinitionId id = WorkflowDefinitionId.of(workflow);
+        if (agenticCache.remove(id) != null) {
+            LOG.debug("Invalidating cached workflow descriptor for {}", id.name());
+        }
     }
 }
