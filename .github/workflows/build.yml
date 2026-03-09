@@ -3,9 +3,9 @@ name: Build
 on:
   push:
     branches: [ "main" ]
-    paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "*.md", "*.adoc", "*.txt", ".all-contributorsrc", ".github/project.yml" ]
+    paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "**.md", "**.adoc", "**.txt", ".all-contributorsrc", ".github/project.yml" ]
   pull_request:
-    paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "*.md", "*.adoc", "*.txt", ".all-contributorsrc" ]
+    paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "**.md", "**.adoc", "**.txt", ".all-contributorsrc" ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
