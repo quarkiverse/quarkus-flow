@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.quarkiverse.flow</groupId>
+    <artifactId>quarkus-flow-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>quarkus-flow-bom</artifactId>
+  <packaging>pom</packaging>
+  <name>Quarkus Flow BOM</name>
+  <description>Centralized dependency management configuration of Quarkus Flow.</description>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <scm>
+    <connection>scm:git:git@github.com:quarkiverse/quarkus-flow.git</connection>
+    <developerConnection>scm:git:git@github.com:quarkiverse/quarkus-flow.git</developerConnection>
+    <url>https://github.com/quarkiverse/quarkus-flow</url>
+    <tag>HEAD</tag>
+  </scm>
+
+  <developers>
+    <developer>
+      <id>quarkus</id>
+      <name>Quarkus Community</name>
+    </developer>
+  </developers>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-deployment</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-dev</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-durable-kubernetes</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-durable-kubernetes-deployment</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-langchain4j</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-langchain4j-deployment</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-messaging</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-messaging-deployment</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-persistence-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-persistence-common-deployment</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-jpa</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-jpa-deployment</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-mvstore</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-mvstore-deployment</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-redis</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-redis-deployment</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-scheduler</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-scheduler-deployment</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+</project>
