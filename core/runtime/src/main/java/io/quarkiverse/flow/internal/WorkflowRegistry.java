@@ -47,14 +47,23 @@ public class WorkflowRegistry {
     }
 
     public Collection<Workflow> all() {
-        Map<WorkflowDefinitionId, Workflow> all = new LinkedHashMap<>();
-        app.workflowDefinitions().forEach((id, definition) -> all.put(id, definition.workflow()));
+        Map<WorkflowDefinitionId, Workflow> all = new LinkedHashMap<>(allDefinitionsMap());
         agenticCache.forEach(all::putIfAbsent);
         return all.values();
     }
 
+    public Collection<Workflow> allDefinitions() {
+        return allDefinitionsMap().values();
+    }
+
+    private Map<WorkflowDefinitionId, Workflow> allDefinitionsMap() {
+        Map<WorkflowDefinitionId, Workflow> all = new LinkedHashMap<>();
+        app.workflowDefinitions().forEach((id, definition) -> all.put(id, definition.workflow()));
+        return all;
+    }
+
     public int count() {
-        return all().size();
+        return allDefinitions().size();
     }
 
     public Optional<WorkflowDefinition> lookup(WorkflowDefinitionId id) {
@@ -70,14 +79,14 @@ public class WorkflowRegistry {
         LOG.info("Registering workflow {}", flowable.descriptor().getDocument().getName());
         Workflow workflow = addFlowableMetadata(flowable);
         WorkflowDefinition definition = app.workflowDefinition(workflow);
-        invalidateCachedDescriptor(workflow);
+        descriptorCache(workflow);
         return definition;
     }
 
     public WorkflowDefinition register(Workflow workflow) {
         LOG.info("Registering workflow {}", workflow.getDocument().getName());
         WorkflowDefinition definition = app.workflowDefinition(workflow);
-        invalidateCachedDescriptor(workflow);
+        descriptorCache(workflow);
         return definition;
     }
 
@@ -110,7 +119,7 @@ public class WorkflowRegistry {
         agenticCache.put(WorkflowDefinitionId.of(workflow), workflow);
     }
 
-    private void invalidateCachedDescriptor(Workflow workflow) {
+    private void descriptorCache(Workflow workflow) {
         WorkflowDefinitionId id = WorkflowDefinitionId.of(workflow);
         if (agenticCache.remove(id) != null) {
             LOG.debug("Invalidating cached workflow descriptor for {}", id.name());
