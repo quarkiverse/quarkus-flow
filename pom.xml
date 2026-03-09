@@ -20,14 +20,15 @@
         <module>persistence</module>
         <module>durable-kubernetes</module>
         <module>scheduler</module>
+        <module>bom</module>
     </modules>
 
     <scm>
         <connection>scm:git:git@github.com:quarkiverse/quarkus-flow.git</connection>
         <developerConnection>scm:git:git@github.com:quarkiverse/quarkus-flow.git</developerConnection>
         <url>https://github.com/quarkiverse/quarkus-flow</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
 
     <properties>
         <compiler-plugin.version>3.15.0</compiler-plugin.version>
