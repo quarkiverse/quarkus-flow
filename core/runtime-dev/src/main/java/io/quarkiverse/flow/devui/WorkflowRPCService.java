@@ -55,7 +55,7 @@ public class WorkflowRPCService {
 
     @JsonRpcDescription("Get info about workflows")
     public List<WorkflowInfo> getWorkflows() {
-        return registry.allDefinitions().stream()
+        return registry.all().stream()
                 .map(w -> new WorkflowInfo(
                         WorkflowDefinitionId.of(w),
                         w.getDocument().getSummary()))

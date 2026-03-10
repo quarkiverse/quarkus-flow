@@ -52,10 +52,6 @@ public class WorkflowRegistry {
         return all.values();
     }
 
-    public Collection<Workflow> allDefinitions() {
-        return allDefinitionsMap().values();
-    }
-
     private Map<WorkflowDefinitionId, Workflow> allDefinitionsMap() {
         Map<WorkflowDefinitionId, Workflow> all = new LinkedHashMap<>();
         app.workflowDefinitions().forEach((id, definition) -> all.put(id, definition.workflow()));
@@ -63,7 +59,7 @@ public class WorkflowRegistry {
     }
 
     public int count() {
-        return allDefinitions().size();
+        return all().size();
     }
 
     public Optional<WorkflowDefinition> lookup(WorkflowDefinitionId id) {
@@ -79,14 +75,14 @@ public class WorkflowRegistry {
         LOG.info("Registering workflow {}", flowable.descriptor().getDocument().getName());
         Workflow workflow = addFlowableMetadata(flowable);
         WorkflowDefinition definition = app.workflowDefinition(workflow);
-        invalidateCachedDescriptor(workflow);
+        invalidateCachedDescriptor(definition);
         return definition;
     }
 
     public WorkflowDefinition register(Workflow workflow) {
         LOG.info("Registering workflow {}", workflow.getDocument().getName());
         WorkflowDefinition definition = app.workflowDefinition(workflow);
-        invalidateCachedDescriptor(workflow);
+        invalidateCachedDescriptor(definition);
         return definition;
     }
 
@@ -119,8 +115,8 @@ public class WorkflowRegistry {
         descriptorCache.put(WorkflowDefinitionId.of(workflow), workflow);
     }
 
-    private void invalidateCachedDescriptor(Workflow workflow) {
-        WorkflowDefinitionId id = WorkflowDefinitionId.of(workflow);
+    private void invalidateCachedDescriptor(WorkflowDefinition definition) {
+        WorkflowDefinitionId id = definition.id();
         if (descriptorCache.remove(id) != null) {
             LOG.debug("Invalidating cached workflow descriptor for {}", id.name());
         }
