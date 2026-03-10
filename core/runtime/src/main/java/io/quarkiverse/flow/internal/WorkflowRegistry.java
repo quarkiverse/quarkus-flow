@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.internal;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -39,18 +40,26 @@ public class WorkflowRegistry {
     @Inject
     WorkflowApplication app;
 
-    private Map<WorkflowDefinitionId, Workflow> agenticCache = new ConcurrentHashMap<>();
+    private Map<WorkflowDefinitionId, Workflow> descriptorCache = new ConcurrentHashMap<>();
 
     public static WorkflowRegistry current() {
         return Arc.container().instance(WorkflowRegistry.class).get();
     }
 
     public Collection<Workflow> all() {
-        return app.workflowDefinitions().values().stream().map(WorkflowDefinition::workflow).toList();
+        Map<WorkflowDefinitionId, Workflow> all = new LinkedHashMap<>(allDefinitionsMap());
+        descriptorCache.forEach(all::putIfAbsent);
+        return all.values();
+    }
+
+    private Map<WorkflowDefinitionId, Workflow> allDefinitionsMap() {
+        Map<WorkflowDefinitionId, Workflow> all = new LinkedHashMap<>();
+        app.workflowDefinitions().forEach((id, definition) -> all.put(id, definition.workflow()));
+        return all;
     }
 
     public int count() {
-        return app.workflowDefinitions().size();
+        return all().size();
     }
 
     public Optional<WorkflowDefinition> lookup(WorkflowDefinitionId id) {
@@ -59,17 +68,22 @@ public class WorkflowRegistry {
 
     public Optional<Workflow> lookupDescriptor(WorkflowDefinitionId id) {
         Optional<Workflow> workflow = lookup(id).map(WorkflowDefinition::workflow);
-        return workflow.isPresent() ? workflow : Optional.ofNullable(agenticCache.get(id));
+        return workflow.isPresent() ? workflow : Optional.ofNullable(descriptorCache.get(id));
     }
 
     public WorkflowDefinition register(Flowable flowable) {
         LOG.info("Registering workflow {}", flowable.descriptor().getDocument().getName());
-        return app.workflowDefinition(addFlowableMetadata(flowable));
+        Workflow workflow = addFlowableMetadata(flowable);
+        WorkflowDefinition definition = app.workflowDefinition(workflow);
+        invalidateCachedDescriptor(definition);
+        return definition;
     }
 
     public WorkflowDefinition register(Workflow workflow) {
         LOG.info("Registering workflow {}", workflow.getDocument().getName());
-        return app.workflowDefinition(workflow);
+        WorkflowDefinition definition = app.workflowDefinition(workflow);
+        invalidateCachedDescriptor(definition);
+        return definition;
     }
 
     private Workflow addFlowableMetadata(final Flowable flowable) {
@@ -98,6 +112,13 @@ public class WorkflowRegistry {
 
     public void cacheDescriptor(Workflow workflow) {
         LOG.debug("Caching workflow descriptor for {}", workflow.getDocument().getName());
-        agenticCache.put(WorkflowDefinitionId.of(workflow), workflow);
+        descriptorCache.put(WorkflowDefinitionId.of(workflow), workflow);
+    }
+
+    private void invalidateCachedDescriptor(WorkflowDefinition definition) {
+        WorkflowDefinitionId id = definition.id();
+        if (descriptorCache.remove(id) != null) {
+            LOG.debug("Invalidating cached workflow descriptor for {}", id.name());
+        }
     }
 }
