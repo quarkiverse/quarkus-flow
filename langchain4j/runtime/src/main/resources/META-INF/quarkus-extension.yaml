@@ -1,6 +1,7 @@
 name: Flow LangChain4j
 description: |
   LangChain4j Agentic Workflow implementation for Quarkus Flow.
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
   keywords:
     - workflow

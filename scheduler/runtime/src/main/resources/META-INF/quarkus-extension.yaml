@@ -1,6 +1,7 @@
 name: Flow Scheduler
 description: |
   Flow scheduler implemetation relying on quarkus scheduler
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
   keywords:
     - workflow

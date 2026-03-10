@@ -1,5 +1,6 @@
 name: Flow Durable Kubernetes
 description: Durable Workflows support on Kubernetes
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
   keywords:
     - workflow
