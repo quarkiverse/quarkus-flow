@@ -26,6 +26,6 @@ public class FlowCachedDescriptorDevUIJsonRPCTest extends DevUIJsonRPCTest {
     @Test
     void shouldListOnlyDefinitionsFromDevUIBackend() throws Exception {
         JsonNode node = super.executeJsonRPCMethod("getWorkflows");
-        assertEquals(1, node.size());
+        assertEquals(2, node.size());
     }
 }
