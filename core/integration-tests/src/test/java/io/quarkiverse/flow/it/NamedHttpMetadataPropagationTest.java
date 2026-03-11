@@ -1,43 +1,42 @@
 package io.quarkiverse.flow.it;
 
-import static io.quarkiverse.flow.it.HttpPortUtils.generateRandomPort;
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static io.quarkiverse.flow.providers.MetadataPropagationRequestDecorator.X_FLOW_INSTANCE_ID;
 import static io.quarkiverse.flow.providers.MetadataPropagationRequestDecorator.X_FLOW_TASK_ID;
-import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.get;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 
-import jakarta.enterprise.context.ApplicationScoped;
+import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
 
 import org.assertj.core.api.SoftAssertions;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+
 import io.quarkiverse.flow.Flow;
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
-import io.quarkus.test.junit.TestProfile;
-import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowInstance;
 import io.smallrye.common.annotation.Identifier;
-import mockwebserver3.MockResponse;
-import mockwebserver3.MockWebServer;
-import mockwebserver3.RecordedRequest;
-import okhttp3.Headers;
 
 @QuarkusTest
-@TestProfile(NamedHttpMetadataPropagationTest.OnlyWorkflowNamedHttpClientProfile.class)
+@QuarkusTestResource(NamedHttpMetadataPropagationTest.WireMockTestResource.class)
+@TestProfile(NamedHttpMetadataPropagationTest.TestProfile.class)
 public class NamedHttpMetadataPropagationTest {
 
-    private static MockWebServer mockServer;
-    private static final Headers contentTypeJson = Headers.of("Content-Type", "application/json");
     private static final String oneProfile = """
             [{ "profile": "orange-coder" }]
             """;
@@ -49,27 +48,6 @@ public class NamedHttpMetadataPropagationTest {
             ]
             """;
 
-    static int randomPort;
-
-    static {
-        try {
-            randomPort = generateRandomPort();
-        } catch (IOException e) {
-            throw new UncheckedIOException("Was not possible to generate a random port", e);
-        }
-    }
-
-    @BeforeEach
-    void setup() throws IOException {
-        mockServer = new MockWebServer();
-        mockServer.start(randomPort);
-    }
-
-    @AfterEach
-    void shutdownServer() {
-        mockServer.close();
-    }
-
     @Inject
     @Identifier("flow.QuarkusFlow")
     Flow quarkusFlowFlow;
@@ -77,146 +55,200 @@ public class NamedHttpMetadataPropagationTest {
     @Inject
     GetContributorsFlow getContributorsFlow;
 
+    @BeforeEach
+    void setup() {
+        // Reset WireMock to clear previous test's stubs and requests
+        WireMockTestResource.server.resetAll();
+    }
+
     @Test
-    void shouldPropagateCorrelationMetadata() throws IOException, InterruptedException {
+    void shouldPropagateCorrelationMetadata() throws IOException {
         // mock the download of OpenAPI from ServerlessWorkflow SDK
         String openAPI = readOpenAPIFromClasspath();
 
-        mockServer.enqueue(new MockResponse(
-                200,
-                contentTypeJson,
-                openAPI));
+        WireMockTestResource.server.stubFor(get(urlEqualTo("/resources/schema.json"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(openAPI)));
 
-        mockServer.enqueue(new MockResponse(
-                200,
-                contentTypeJson,
-                oneProfile));
+        WireMockTestResource.server.stubFor(get(urlPathEqualTo("/quarkiverse/quarkus-flow/contributors"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(oneProfile)));
 
         WorkflowInstance instance = quarkusFlowFlow.instance(Map.of(
-                "mockServerUrl", "http://127.0.0.1:" + mockServer.getPort() + "/resources/schema.json"));
+                "mockServerUrl", WireMockTestResource.server.baseUrl() + "/resources/schema.json"));
 
         // act
         instance.start().join();
 
-        mockServer.takeRequest();
-
-        RecordedRequest correlationMetadata = mockServer.takeRequest();
+        // assert
+        List<LoggedRequest> requests = WireMockTestResource.server
+                .findAll(getRequestedFor(urlPathEqualTo("/quarkiverse/quarkus-flow/contributors")));
 
         SoftAssertions.assertSoftly(softly -> {
-            softly.assertThat(correlationMetadata.getHeaders().get(X_FLOW_INSTANCE_ID)).isEqualTo(
-                    instance.id());
-            softly.assertThat(correlationMetadata.getHeaders().get(X_FLOW_TASK_ID))
+            softly.assertThat(requests).hasSize(1);
+            LoggedRequest correlationMetadata = requests.get(0);
+            softly.assertThat(correlationMetadata.getHeader(X_FLOW_INSTANCE_ID)).isEqualTo(instance.id());
+            softly.assertThat(correlationMetadata.getHeader(X_FLOW_TASK_ID))
                     .isEqualTo("do/0/getQuarkusFlowContributors");
         });
     }
 
     @Test
-    void shouldPropagateX_Flow_Task_ID_PerTask() throws InterruptedException {
+    void shouldPropagateX_Flow_Task_ID_PerTask() {
+        WireMockTestResource.server.stubFor(get(urlPathEqualTo("/serverlessworkflow/sdk-java/contributors"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(threeProfiles)));
 
-        mockServer.enqueue(new MockResponse(200, contentTypeJson, threeProfiles));
-        mockServer.enqueue(new MockResponse(200, contentTypeJson, oneProfile));
+        WireMockTestResource.server.stubFor(get(urlPathEqualTo("/quarkusio/quarkus/contributors"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(oneProfile)));
 
         WorkflowInstance instance = getContributorsFlow.instance();
-
         String instanceID = instance.id();
 
         // act
         instance.start().join();
 
         // assert
-        RecordedRequest serverlessWorkflowRequest = mockServer.takeRequest();
-        RecordedRequest quarkusRequest = mockServer.takeRequest();
+        List<LoggedRequest> sdkJavaRequests = WireMockTestResource.server.findAll(
+                getRequestedFor(urlPathEqualTo("/serverlessworkflow/sdk-java/contributors")));
+        List<LoggedRequest> quarkusRequests = WireMockTestResource.server.findAll(
+                getRequestedFor(urlPathEqualTo("/quarkusio/quarkus/contributors")));
 
         SoftAssertions.assertSoftly(softly -> {
-            softly.assertThat(serverlessWorkflowRequest.getHeaders().get(X_FLOW_INSTANCE_ID))
+            softly.assertThat(sdkJavaRequests).hasSize(1);
+            LoggedRequest serverlessWorkflowRequest = sdkJavaRequests.get(0);
+            softly.assertThat(serverlessWorkflowRequest.getHeader(X_FLOW_INSTANCE_ID))
                     .isEqualTo(instanceID);
-            softly.assertThat(serverlessWorkflowRequest.getHeaders().get(X_FLOW_TASK_ID))
+            softly.assertThat(serverlessWorkflowRequest.getHeader(X_FLOW_TASK_ID))
                     .isEqualTo("do/0/getSdkJavaContributors");
 
-            softly.assertThat(quarkusRequest.getHeaders().get(X_FLOW_INSTANCE_ID))
+            softly.assertThat(quarkusRequests).hasSize(1);
+            LoggedRequest quarkusRequest = quarkusRequests.get(0);
+            softly.assertThat(quarkusRequest.getHeader(X_FLOW_INSTANCE_ID))
                     .isEqualTo(instanceID);
-            softly.assertThat(quarkusRequest.getHeaders().get(X_FLOW_TASK_ID))
+            softly.assertThat(quarkusRequest.getHeader(X_FLOW_TASK_ID))
                     .isEqualTo("do/1/getQuarkusContributors");
         });
     }
 
     @Test
-    void shouldPropagateCorrelationMetadataUsingDifferentWorkflow() throws IOException, InterruptedException {
+    void shouldPropagateCorrelationMetadataUsingDifferentWorkflow() throws IOException {
         // mock the download of OpenAPI from ServerlessWorkflow SDK
         String openAPI = readOpenAPIFromClasspath();
 
-        // getting OpenAPI document
-        mockServer.enqueue(new MockResponse(200, contentTypeJson, openAPI));
+        WireMockTestResource.server.stubFor(get(urlEqualTo("/resources/schema.json"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(openAPI)));
 
-        // quarkus-flow contributors
-        mockServer.enqueue(new MockResponse(200, contentTypeJson, threeProfiles));
+        WireMockTestResource.server.stubFor(get(urlPathEqualTo("/quarkiverse/quarkus-flow/contributors"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(threeProfiles)));
 
-        // sdk-java contributors
-        mockServer.enqueue(new MockResponse(200, contentTypeJson, oneProfile));
+        WireMockTestResource.server.stubFor(get(urlPathEqualTo("/serverlessworkflow/sdk-java/contributors"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(oneProfile)));
 
-        // quarkus contributors
-        mockServer.enqueue(new MockResponse(200, contentTypeJson, threeProfiles));
+        WireMockTestResource.server.stubFor(get(urlPathEqualTo("/quarkusio/quarkus/contributors"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(threeProfiles)));
 
         // first instance
-        var quarkusFlowInstance = quarkusFlowFlow.instance(Map.of(
-                "mockServerUrl", "http://127.0.0.1:" + mockServer.getPort() + "/resources/schema.json"));
+        WorkflowInstance quarkusFlowInstance = quarkusFlowFlow.instance(Map.of(
+                "mockServerUrl", WireMockTestResource.server.baseUrl() + "/resources/schema.json"));
         String quarkusFlowInstanceID = quarkusFlowInstance.id();
 
         // second instance
-        var sdkFlowInstance = getContributorsFlow.instance();
+        WorkflowInstance sdkFlowInstance = getContributorsFlow.instance();
         String sdkFlowInstanceID = sdkFlowInstance.id();
 
         // act: start both synchronously
         quarkusFlowInstance.start().join();
         sdkFlowInstance.start().join();
 
-        // ignore OpenAPI download
-        mockServer.takeRequest();
-
-        RecordedRequest quarkusFlowRequest = mockServer.takeRequest();
-
-        RecordedRequest sdkJavaRequest = mockServer.takeRequest();
-        RecordedRequest quarkusRequest = mockServer.takeRequest();
+        // assert
+        List<LoggedRequest> quarkusFlowRequests = WireMockTestResource.server.findAll(
+                getRequestedFor(urlPathEqualTo("/quarkiverse/quarkus-flow/contributors")));
+        List<LoggedRequest> sdkJavaRequests = WireMockTestResource.server.findAll(
+                getRequestedFor(urlPathEqualTo("/serverlessworkflow/sdk-java/contributors")));
+        List<LoggedRequest> quarkusRequests = WireMockTestResource.server.findAll(
+                getRequestedFor(urlPathEqualTo("/quarkusio/quarkus/contributors")));
 
         SoftAssertions.assertSoftly(softly -> {
-            softly.assertThat(quarkusFlowRequest.getHeaders().get(X_FLOW_INSTANCE_ID)).isEqualTo(quarkusFlowInstanceID);
-            softly.assertThat(quarkusFlowRequest.getHeaders().get(X_FLOW_TASK_ID)).isEqualTo("do/0/getQuarkusFlowContributors");
+            softly.assertThat(quarkusFlowRequests).hasSize(1);
+            LoggedRequest quarkusFlowRequest = quarkusFlowRequests.get(0);
+            softly.assertThat(quarkusFlowRequest.getHeader(X_FLOW_INSTANCE_ID)).isEqualTo(quarkusFlowInstanceID);
+            softly.assertThat(quarkusFlowRequest.getHeader(X_FLOW_TASK_ID)).isEqualTo("do/0/getQuarkusFlowContributors");
 
-            softly.assertThat(sdkJavaRequest.getHeaders().get(X_FLOW_INSTANCE_ID)).isEqualTo(sdkFlowInstanceID);
-            softly.assertThat(sdkJavaRequest.getHeaders().get(X_FLOW_TASK_ID)).isEqualTo("do/0/getSdkJavaContributors");
+            softly.assertThat(sdkJavaRequests).hasSize(1);
+            LoggedRequest sdkJavaRequest = sdkJavaRequests.get(0);
+            softly.assertThat(sdkJavaRequest.getHeader(X_FLOW_INSTANCE_ID)).isEqualTo(sdkFlowInstanceID);
+            softly.assertThat(sdkJavaRequest.getHeader(X_FLOW_TASK_ID)).isEqualTo("do/0/getSdkJavaContributors");
 
-            softly.assertThat(quarkusRequest.getHeaders().get(X_FLOW_INSTANCE_ID)).isEqualTo(sdkFlowInstanceID);
-            softly.assertThat(quarkusRequest.getHeaders().get(X_FLOW_TASK_ID)).isEqualTo("do/1/getQuarkusContributors");
+            softly.assertThat(quarkusRequests).hasSize(1);
+            LoggedRequest quarkusRequest = quarkusRequests.get(0);
+            softly.assertThat(quarkusRequest.getHeader(X_FLOW_INSTANCE_ID)).isEqualTo(sdkFlowInstanceID);
+            softly.assertThat(quarkusRequest.getHeader(X_FLOW_TASK_ID)).isEqualTo("do/1/getQuarkusContributors");
         });
     }
 
     public String readOpenAPIFromClasspath() throws IOException {
         try (InputStream stream = getClass().getClassLoader().getResourceAsStream("openapi/http-correlation-metadata.json")) {
             return new String(stream.readAllBytes(), StandardCharsets.UTF_8)
-                    .replace("{{mockServerPort}}", Integer.toString(mockServer.getPort()));
+                    .replace("{{mockServerPort}}", Integer.toString(WireMockTestResource.port));
         }
     }
 
-    @ApplicationScoped
-    public static class GetContributorsFlow extends Flow {
-
-        @Override
-        public Workflow descriptor() {
-            return workflow("sdk-java-repository")
-                    .tasks(get("getSdkJavaContributors",
-                            "http://localhost:" + mockServer.getPort() + "/serverlessworkflow/sdk-java/contributors"),
-                            get("getQuarkusContributors",
-                                    "http://localhost:" + mockServer.getPort() + "/quarkusio/quarkus/contributors"))
-                    .build();
-        }
-    }
-
-    public static class OnlyWorkflowNamedHttpClientProfile implements QuarkusTestProfile {
-
+    public static class TestProfile implements QuarkusTestProfile {
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
-                    "quarkus.flow.http.client.workflow.sdk-java-repository.name", "sdk-java-contributors");
+                    "quarkus.flow.http.client.workflow.sdk-java-repository.name", "sdk-java-contributors",
+                    "wiremock.url", "http://localhost:" + WireMockTestResource.port);
+        }
+    }
+
+    public static class WireMockTestResource implements QuarkusTestResourceLifecycleManager {
+
+        static WireMockServer server;
+        static int port;
+
+        static {
+            try {
+                port = HttpPortUtils.generateRandomPort();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public Map<String, String> start() {
+            server = new WireMockServer(port);
+            server.start();
+            return Map.of("wiremock.url", server.baseUrl());
+        }
+
+        @Override
+        public void stop() {
+            if (server != null) {
+                server.stop();
+            }
         }
     }
 }
