@@ -26,10 +26,10 @@ public class CompletedTaskEntity extends TaskInfoEntity {
     public CompletedTaskEntity() {
     }
 
-    public CompletedTaskEntity(String jsonPointer, Instant instant, WorkflowModel model, WorkflowModel context,
+    public CompletedTaskEntity(TaskInfoKey key, Instant instant, WorkflowModel model, WorkflowModel context,
             boolean isEndNode,
             String nextPosition) {
-        super(jsonPointer);
+        super(key);
         this.instant = instant;
         this.model = model;
         this.context = context;
