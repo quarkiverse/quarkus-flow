@@ -13,7 +13,7 @@ import io.serverlessworkflow.api.types.Workflow;
 @ApplicationScoped
 public class GetContributorsFlow extends Flow {
 
-    @ConfigProperty(name = "wiremock.url", defaultValue = "http://localhost:8888")
+    @ConfigProperty(name = "wiremock.url")
     String baseUrl;
 
     @Override
