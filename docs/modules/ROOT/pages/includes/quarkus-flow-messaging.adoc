@@ -7,7 +7,7 @@ h|[.header-title]##Configuration property##
 h|Type
 h|Default
 
-a|icon:lock[title=Fixed at build time] [[quarkus-flow-messaging_quarkus-flow-messaging-defaults-enabled]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-defaults-enabled[`quarkus.flow.messaging.defaults-enabled`]##
+a|icon:lock[title=Fixed at build time] [[quarkus-flow-messaging_quarkus-flow-messaging-defaults-enabled]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-defaults-enabled[`+++quarkus.flow.messaging.defaults-enabled+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.messaging.defaults-enabled+++[]
 endif::add-copy-button-to-config-props[]
@@ -28,7 +28,7 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |`+++false+++`
 
-a|icon:lock[title=Fixed at build time] [[quarkus-flow-messaging_quarkus-flow-messaging-lifecycle-enabled]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-lifecycle-enabled[`quarkus.flow.messaging.lifecycle-enabled`]##
+a|icon:lock[title=Fixed at build time] [[quarkus-flow-messaging_quarkus-flow-messaging-lifecycle-enabled]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-lifecycle-enabled[`+++quarkus.flow.messaging.lifecycle-enabled+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.messaging.lifecycle-enabled+++[]
 endif::add-copy-button-to-config-props[]
@@ -49,7 +49,7 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |`+++false+++`
 
-a| [[quarkus-flow-messaging_quarkus-flow-messaging-enable-metadata-correlation]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-enable-metadata-correlation[`quarkus.flow.messaging.enable-metadata-correlation`]##
+a| [[quarkus-flow-messaging_quarkus-flow-messaging-enable-metadata-correlation]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-enable-metadata-correlation[`+++quarkus.flow.messaging.enable-metadata-correlation+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.messaging.enable-metadata-correlation+++[]
 endif::add-copy-button-to-config-props[]
@@ -77,7 +77,7 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |`+++true+++`
 
-a| [[quarkus-flow-messaging_quarkus-flow-messaging-metadata-task-id-key]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-metadata-task-id-key[`quarkus.flow.messaging.metadata.task-id.key`]##
+a| [[quarkus-flow-messaging_quarkus-flow-messaging-metadata-task-id-key]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-metadata-task-id-key[`+++quarkus.flow.messaging.metadata.task-id.key+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.messaging.metadata.task-id.key+++[]
 endif::add-copy-button-to-config-props[]
@@ -100,7 +100,7 @@ endif::add-copy-button-to-env-var[]
 |string
 |
 
-a| [[quarkus-flow-messaging_quarkus-flow-messaging-metadata-instance-id-key]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-metadata-instance-id-key[`quarkus.flow.messaging.metadata.instance-id.key`]##
+a| [[quarkus-flow-messaging_quarkus-flow-messaging-metadata-instance-id-key]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-metadata-instance-id-key[`+++quarkus.flow.messaging.metadata.instance-id.key+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.messaging.metadata.instance-id.key+++[]
 endif::add-copy-button-to-config-props[]
