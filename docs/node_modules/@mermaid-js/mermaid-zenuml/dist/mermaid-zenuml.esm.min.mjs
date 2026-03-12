@@ -1,1 +1,0 @@
-import{a as n}from"./chunks/mermaid-zenuml.esm.min/chunk-VDOFMJQL.mjs";var r="zenuml",e=n(t=>/^\s*zenuml/.test(t),"detector"),i=n(async()=>{let{diagram:t}=await import("./chunks/mermaid-zenuml.esm.min/zenuml-definition-XJYTECJ4.mjs");return{id:r,diagram:t}},"loader"),a={id:r,detector:e,loader:i},o=a;export{o as default};
