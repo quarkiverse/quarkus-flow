@@ -52,6 +52,12 @@ public class FlowAgentsBuilderIT {
         assertThat(response).isNotBlank();
         AgenticScope agenticScope = result.agenticScope();
         assertThat(agenticScope.readState("category")).isEqualTo(Agents.RequestCategory.MEDICAL);
+        
+        assertThat(agenticScope.readState("__flow_instance_id__", "")).isNotBlank();
+        assertThat(agenticScope.readState("workflowInstanceID", ""))
+                .isEqualTo(agenticScope.readState("__flow_instance_id__", ""));
+        assertThat(agenticScope.readState("taskName", "")).isNotBlank();
+        assertThat(agenticScope.readState("taskPosition", "")).startsWith("/");
     }
 
     @Test
@@ -67,6 +73,11 @@ public class FlowAgentsBuilderIT {
         assertThat(agenticScope.readState("style")).isEqualTo("comedy");
         assertThat(story).isEqualTo(agenticScope.readState("story"));
         assertThat(agenticScope.readState("score", 0.0)).isGreaterThanOrEqualTo(0.7);
+        assertThat(agenticScope.readState("__flow_instance_id__", "")).isNotBlank();
+        assertThat(agenticScope.readState("workflowInstanceID", ""))
+                .isEqualTo(agenticScope.readState("__flow_instance_id__", ""));
+        assertThat(agenticScope.readState("taskName", "")).isNotBlank();
+        assertThat(agenticScope.readState("taskPosition", "")).startsWith("/");
 
         List<AgentInvocation> scoreAgentCalls = agenticScope.agentInvocations("scoreStyle");
         assertThat(scoreAgentCalls).hasSizeBetween(1, 5).hasSize(Agents.loopCount.get());

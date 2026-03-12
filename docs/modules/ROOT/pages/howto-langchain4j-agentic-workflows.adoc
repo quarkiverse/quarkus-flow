@@ -90,6 +90,31 @@ auto-generates an HTML form.
 * You can switch to the *Mermaid* view to see the underlying workflow topology
 (sequence or fork-join).
 
+== Correlation metadata (workflow + task)
+
+When an agentic workflow runs under Quarkus Flow, the engine propagates correlation metadata so agents and tools can
+reference it for observability and traceability:
+
+* `workflowInstanceID` - the workflow instance id
+* `taskPosition` - the current task position (JSON pointer when available; best-effort for fork branches)
+* `taskName` - the current task name
+
+These values are written into the `AgenticScope` state before each agent execution, which means you can:
+
+* Read them from `AgenticScope` in custom code/tools.
+* Include them in prompts by referencing the variables in your message templates, for example in `@SystemMessage`:
++
+[source,java]
+----
+@SystemMessage("""
+        ...your instructions...
+        ---
+        Workflow Instance's ID: {workflowInstanceID}
+        Task's Position: {taskPosition}
+        Task's Name: {taskName}
+        """)
+----
+
 [[hybrid]]
 == 4. Hybrid: call an annotated agentic workflow from a larger Flow
 
