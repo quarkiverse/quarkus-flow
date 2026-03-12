@@ -1,4 +1,6 @@
 = Observability with Prometheus and Micrometer
+:page-role: howto
+include::includes/attributes.adoc[]
 
 Quarkus Flow integrates with the Micrometer Prometheus Registry to provide observability for workflow executions.
 It exposes metrics for execution counts, durations, and runtime states, which can be easily visualized and used for alerting with Prometheus and Grafana.
@@ -166,8 +168,8 @@ quarkus_flow_workflow_duration_seconds_bucket{workflow="wait-event",le="0.002"} 
 [[fault-tolerance-metrics]]
 == Fault Tolerance Metrics
 
-Quarkus Flow HTTP calls xref:http-client.adoc#smallrye-fault-tolerance[integrates with Smallrye Fault Tolerance] to provide resilience and fault tolerance capabilities.
-Quarkus Flow exports metrics for xref:http-client.adoc#fault-tolerance-retry[Retry] and xref:http-client.adoc#fault-tolerance-circuit-breaker[Circuit Breaker] strategies.
+Quarkus Flow HTTP calls xref:fault-tolerance.adoc[integrates with Smallrye Fault Tolerance] to provide resilience and fault tolerance capabilities.
+Quarkus Flow exports metrics for xref:fault-tolerance.adoc#config-retries[Retry] and xref:fault-tolerance.adoc#configuring-circuit-breakers[Circuit Breaker] strategies.
 
 === Retry Metrics
 
@@ -244,7 +246,7 @@ Always provide descriptive task names to ensure meaningful metrics.
 
 ==== Make task names unique
 
-The CNCF Serverless Workflow specification does not require task names to be unique within a workflow.
+The Serverless Workflow specification does not require task names to be unique within a workflow.
 When multiple tasks share the same name, their metrics are aggregated under the same label.
 
 Quarkus Flow uses the combination of workflow name (`workflow`) and task name (`task`) as metric labels.
@@ -266,3 +268,7 @@ When using Quarkus Flow, a Grafana dashboard named *Quarkus Flow* is created aut
 providing a ready-to-use visualization of workflow metrics.
 
 image::quarkus-flow-dashboard.jpg[]
+
+== See also
+* xref:tracing.adoc[Enable distributed tracing] — complement your metrics with OpenTelemetry span tracing.
+* xref:fault-tolerance.adoc[Fault tolerance and resilience] — configure the retry and circuit breaker logic that drives these metrics.

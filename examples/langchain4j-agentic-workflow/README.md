@@ -54,6 +54,3 @@ For full details on the integration between Quarkus Flow and LangChain4j, see:
 
 - Concept: Agentic workflows with LangChain4j and Quarkus Flow  
   👉 https://docs.quarkiverse.io/quarkus-flow/dev/concept-agentic-langchain4j.html
-
-- How-to: Use the LangChain4j Agentic Workflow API with Quarkus Flow  
-  👉 https://docs.quarkiverse.io/quarkus-flow/dev/howto-langchain4j-agentic-workflows.html

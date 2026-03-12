@@ -2,82 +2,99 @@
 :page-role: tutorial
 include::includes/attributes.adoc[]
 
-In this lab you:
+In this lab, you will extend your Quarkus Flow application to communicate with the outside world.
 
-* Add an HTTP call to a secured endpoint.
-* Call an OpenAPI operation by `operationId`.
-* See how `WorkflowException` is mapped to an RFC 7807 / `WorkflowError` response.
-* Use Dev UI and logs to troubleshoot.
+You will:
 
-We will reuse the existing example classes:
+* Create a dummy secured REST endpoint to act as a downstream service.
+* Add an HTTP task to your workflow to call that secured endpoint.
+* Call an OpenAPI operation simply by referencing its `operationId`.
+* Secure the calls using the Quarkus `CredentialsProvider` fallback mechanism.
+* See how Quarkus Flow automatically maps HTTP failures (`WorkflowException`) into standard RFC 7807 Problem Details responses.
+* Use the Dev UI and trace logs to troubleshoot network issues.
 
-* `org.acme.example.CustomerProfileFlow`
-* `org.acme.example.CustomerProfileResource`
-* `org.acme.example.PetstoreFlow`
+[TIP]
+====
+For your reference, this lab has a full working example here: https://github.com/quarkiverse/quarkus-flow/tree/main/examples/http-basic-auth
+====
 
-== 1. Add HTTP client configuration
+== 1. Add HTTP client and Secret configuration
 
-First, configure basic HTTP timeouts and logging:
+First, let's configure the HTTP client timeouts, enable wire logging to see the actual payloads, and define a dummy secret in your `application.properties` for local testing.
+
+(We will also define a quick test user for Quarkus Security so our dummy endpoint can authenticate the request).
 
 [source,properties]
+.application.properties
 ----
+# HTTP Client Tuning
 quarkus.flow.http.client.connect-timeout=5000
 quarkus.flow.http.client.read-timeout=10000
+
+# Enable RESTEasy Reactive wire logging
 quarkus.flow.http.client.logging.scope=request-response
 quarkus.flow.http.client.logging.body-limit=2048
 quarkus.log.category."org.jboss.resteasy.reactive.client.logging".level=DEBUG
+
+# Define a local dummy secret for the workflow to use
+demo.username=alice
+demo.password=s3cr3t!
+
+# Define the Quarkus Security test user for the downstream endpoint to validate against
+quarkus.security.users.embedded.users.alice=s3cr3t!
+quarkus.security.users.embedded.roles.alice=user
 ----
 
-For details see xref:http-client.adoc[Configure the HTTP client].
+*(For advanced details on these settings, see xref:http-client.adoc[Configure the HTTP client] and xref:secrets.adoc[Resolve secrets securely]).*
 
-== 2. Add the HTTP workflow
+== 2. Create the secured downstream service
 
-Create a workflow that calls a secured endpoint and uses Basic auth via secrets:
+To test our workflow, we need a downstream service that requires authentication. Create a standard JAX-RS resource protected by `@RolesAllowed("user")`:
+
+[source,java]
+----
+include::{examples-dir}org/acme/example/SecureCustomerProfileResource.java[]
+----
+
+== 3. Add the HTTP workflow
+
+Now, create the workflow that calls your newly secured endpoint.
 
 [source,java]
 ----
 include::{examples-dir}org/acme/example/CustomerProfileFlow.java[]
 ----
 
-This workflow uses:
+Notice how this workflow manages security:
 
-* `get(...)` from the Func DSL to perform an HTTP GET.
-* `basic(...)` auth wired to secret values (`demo.username` / `demo.password`).
-* Standard data transformations to shape the response.
+* `.use(secret("demo"))` tells the engine to load the `demo` secret bundle.
+* `get(endpoint, basic(...))` attaches the HTTP Basic Auth headers by injecting the `demo.username` and `demo.password` directly from the workflow's secure context.
 
-Configure the demo credentials in `application.properties` as shown in
-xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services].
+== 4. Expose the workflow as a REST endpoint
 
-TIP: You can see a fully functional project of this example at https://github.com/quarkiverse/quarkus-flow/tree/main/examples/http-basic-auth.
-
-== 3. Expose the workflow as a REST endpoint
-
-Create a resource that invokes the workflow:
+Create a JAX-RS resource that invokes the workflow so you can trigger it from your browser:
 
 [source,java]
 ----
 include::{examples-dir}org/acme/example/CustomerProfileResource.java[]
 ----
 
-Notice:
+**Key points:**
 
-* The method returns `Uni<Map<String, Object>>` and calls `onItem().transform(...)`.
-* If the HTTP call fails (for example, `401` or `404`), a `WorkflowException` is thrown.
-* Quarkus Flow’s `ExceptionMapper<WorkflowException>` returns a Problem Details JSON body
-based on the underlying `WorkflowError`.
+* The endpoint is non-blocking, returning a `Uni<Map<String, Object>>`.
+* Because it is reactive, if the HTTP call inside the workflow fails (e.g., a `401 Unauthorized` or `404 Not Found`), Quarkus Flow’s `ExceptionMapper` catches it automatically.
 
-== 4. Try a failing call
+== 5. Try a failing call
 
-With dev mode running:
+With dev mode running (`./mvnw quarkus:dev`):
 
-* Call the endpoint with wrong credentials or misconfigured auth.
-* Observe the HTTP response:
-
+1. Call the endpoint but intentionally break the credentials (for example, change `demo.password=wrong` in your `application.properties`).
+2. Observe the HTTP response. You won't get a messy Java stack trace; you get a clean, standard Problem Details response:
++
 [source,http]
 ----
 HTTP/1.1 401 Unauthorized
 Content-Type: application/json
-
 {
   "type": "https://serverlessworkflow.io/spec/1.0.0/errors/communication",
   "status": 401,
@@ -86,34 +103,29 @@ Content-Type: application/json
 }
 ----
 
-* Open Dev UI and look at:
-** REST call in the *REST Client* (if OpenAPI is enabled).
-** Logs from the REST client logger and from Flow tracing.
+3. Open the **Quarkus Dev UI** (`http://localhost:8080/q/dev`). Check the logs from the REST client logger to see the exact wire request that failed!
 
-== 5. Call an OpenAPI operation
+== 6. Call an OpenAPI operation
 
-Add a workflow that calls the Petstore demo by `operationId`:
+If you have an OpenAPI specification file for a downstream service, you don't even need to write the HTTP URL or method.
+
+1. Download the link:https://petstore.swagger.io/v2/swagger.json[Petstore Swagger JSON] and place it in your project at `src/main/resources/openapi/petstore.json`.
+2. Add a new workflow that uses the `openapi()` builder:
 
 [source,java]
 ----
 include::{examples-dir}org/acme/example/PetstoreFlow.java[]
 ----
 
-and put the `petstore.json` OpenAPI document under `src/main/resources/openapi/petstore.json`
-(or similar) as shown in xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services].
+Run the workflow and inspect the Dev UI traces. You will see that Quarkus Flow automatically read the `petstore.json` file, found the `findPetsByStatus` operation, determined it was a `GET` request, and appended the parameters correctly to the URL.
 
-TIP: You can see a fully functional project of this example at https://github.com/quarkiverse/quarkus-flow/tree/main/examples/petstore-openapi.
+== 7. Summary
 
-Run the workflow and:
+You have successfully completed Lab 2! You learned:
 
-* Inspect how the operation is resolved by `operationId`.
-* Use Dev UI and logs to verify the actual URL, method and payload being used.
+* How to execute standard HTTP and OpenAPI calls from your workflows.
+* How to use local `application.properties` to mock secrets for HTTP Authentication.
+* How HTTP failures seamlessly translate into `WorkflowException` / `WorkflowError` RFC 7807 responses.
+* How wire logging makes troubleshooting third-party APIs incredibly easy.
 
-== 6. What you learned
-
-* How to perform HTTP and OpenAPI calls from workflows.
-* How to configure HTTP behaviour (timeouts, logging, auth).
-* How HTTP failures become `WorkflowException` / `WorkflowError` Problem Details responses.
-* How Dev UI + logs make troubleshooting much easier.
-
-Next: xref:wk-lab-3-events-yaml.adoc[Lab 3 – Events with YAML workflows].
+**Next up:** Let's dive into asynchronous, event-driven orchestrations. Proceed to xref:wk-lab-3-events-yaml.adoc[Lab 3 – Events with YAML workflows].

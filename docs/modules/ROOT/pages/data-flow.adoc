@@ -1,96 +1,109 @@
-= Data flow and transformations
+= Data flow and Context Management
 :page-role: concept
 include::includes/attributes.adoc[]
 
-Workflows in Quarkus Flow (and in the CNCF Workflow Specification) operate on a
-single logical **data document** – a JSON-like tree.
+Workflows in Quarkus Flow operate on a single logical **Global Context**—usually a JSON document or a strongly typed Java record. As the workflow executes, this context is passed from task to task.
 
-Each task can:
+However, a task rarely needs the *entire* global context to do its job, and its result rarely needs to overwrite the *entire* document.
 
-* **Select** what part of that document it sees as input.
-* **Shape** what it exports to the next step.
-* **Commit** what it writes back into workflow data.
 
-This page explains how that maps to the CNCF Workflow data flow model and how to
-use the Java DSL helpers:
 
-* `inputFrom(...)`
-* `exportAs(...)`
-* `outputAs(...)`
+To manage this, the CNCF Serverless Workflow specification defines a strict Data Flow model. Every task can define:
 
-== 1. Mapping CNCF Workflow data flow → Java DSL
+* **Input:** What specific data the task extracts from the global context before executing.
+* **Output:** How to format the raw result produced by the task.
+* **Export:** How to merge that formatted result back into the global context for the next task.
 
-The link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#data-flow[CNCF Workflow data flow model] introduces the ideas of:
+[[quick-reference]]
+== 1. The Core Data Flow Methods
 
-* *Input* – what a state or task receives.
-* *Export* – what a state exposes to downstream consumers / events.
-* *Output* – what is written back to the workflow data.
-
-In the Java Func DSL, these concepts map to:
+In the Quarkus Flow Java DSL, you control this flow using three optional filtering methods on your tasks. If you don't use them, the engine uses sensible defaults (the task sees the whole context, and its result is merged directly back).
 
 |===
-| Spec concept | YAML field | Java DSL helper | Effect
+| Spec Concept | Java DSL Method | Purpose
 
 | Input
-| `input.from`
 | `inputFrom(...)`
-| Choose what the task sees as input.
-
-| Export
-| `export.as`
-| `exportAs(...)`
-| Shape what’s forwarded to the next step / event without committing to global data.
+| Filters the global context to provide only the exact data the task needs.
 
 | Output
-| `output.as`
 | `outputAs(...)`
-| Shape what’s written back into workflow data (`WorkflowModel.data`).
+| Transforms the raw result returned by the task itself (e.g., formatting an HTTP response) before it is exported.
+
+| Export
+| `exportAs(...)`
+| Dictates how the task's output is merged back into the global context for downstream tasks.
 |===
 
-All three helpers are **optional**. If you don’t set them, the engine uses
-sensible defaults (task input = workflow data, output merged back as-is).
+== 2. Using the DSL Filters
 
-== 2. Three layers of transformations
+You can define these filters using either **jq expressions** (great for JSON manipulation) or **Java Functions** (great for type safety and complex logic). You can mix and match them freely within the same workflow.
 
-For any task you typically decide **three things**:
+[[input-from]]
+=== 2.1 `inputFrom` – Shaping the Task Input
+Use `inputFrom` to give a task a narrowed, focused view of the global context. This isolates the task from changes in the broader document.
 
-. What **input** it should see (`inputFrom`).
-. What part of its result should be **exported** (`exportAs`).
-. What should be **committed** to workflow data (`outputAs`).
-
-Each of these can be expressed as:
-
-* a **jq expression** (`String`), or
-* a **Java function**, including the context-aware variants:
-** `JavaContextFunction<T,R>` – sees workflow context.
-** `JavaFilterFunction<T,R>` – sees workflow + task context.
-
-The overloads all eventually populate the spec fields described earlier.
-
-=== 2.1 `inputFrom` – shape the task input
-
-Without transformations, a task sees the **whole workflow data** as its input.
-
-Use `inputFrom` to give it a smaller, focused view:
-
+**Using jq:**
 [source,java]
 ----
-// Only pass the "seed" field into this task:
-set("normalizeInput")
-    .inputFrom("$.seed");
+// The task only receives the "customer" object from the global context
+call("processOrder")
+    .inputFrom("{ customerId: .customer.id }");
 ----
 
-With Java code:
-
+**Using Java Functions:**
 [source,java]
 ----
-// T is the current workflow data / task input
-inputFrom((InvestmentRequest in) ->
-        Map.of("ticker", in.ticker().toUpperCase()),
-    InvestmentRequest.class);
+// T is the current global context type
+call("processOrder")
+    .inputFrom((OrderContext ctx) -> new ProcessRequest(ctx.customerId()), OrderContext.class);
 ----
 
-For context-aware filters:
+[[output-as]]
+=== 2.2 `outputAs` – Formatting the Task Result
+`outputAs` controls the direct result of the task *before* it is merged into the global context. This is highly useful when a task (like an HTTP call or an AI agent) returns a large payload, but you only care about a specific field.
+
+**Using jq:**
+[source,java]
+----
+// The task makes an HTTP call, but we only want the "status" field from the response body
+call("checkInventory")
+    .outputAs(".body.status");
+----
+
+**Using Java Functions:**
+[source,java]
+----
+call("checkInventory")
+    .outputAs((InventoryResponse response) -> response.isAvailable(), InventoryResponse.class);
+----
+
+[[export-as]]
+=== 2.3 `exportAs` – Merging Back to the Global Context
+`exportAs` dictates how the task's formatted output is appended to or updates the global context. This is the data that the *next* task will see.
+
+**Using jq:**
+[source,java]
+----
+// Nests the task's output under a new "inventoryStatus" key in the global context
+call("checkInventory")
+    .exportAs("{ inventoryStatus: . }");
+----
+
+**Using Java Functions:**
+[source,java]
+----
+call("checkInventory")
+    .exportAs((Boolean isAvailable, WorkflowContextData wf) -> {
+        // Merge the boolean result back into the typed global context
+        var currentCtx = (OrderContext) wf.currentData();
+        return currentCtx.withInventoryStatus(isAvailable);
+    }, Boolean.class);
+----
+
+== 3. Context-Aware Functions (Advanced)
+
+Sometimes, transforming data requires metadata about the workflow execution itself. Quarkus Flow provides context-aware functional interfaces for `inputFrom`, `outputAs`, and `exportAs`.
 
 [source,java]
 ----
@@ -98,188 +111,20 @@ import io.serverlessworkflow.api.types.func.JavaFilterFunction;
 import io.serverlessworkflow.impl.WorkflowContextData;
 import io.serverlessworkflow.impl.TaskContextData;
 
-// T = InvestmentRequest, R = Map<String,Object>
-inputFrom((InvestmentRequest in,
-           WorkflowContextData wf,
-           TaskContextData task) -> Map.of(
-        "ticker", in.ticker(),
-        "objective", in.objective(),
-        "taskPos", task.position().jsonPointer() // e.g. /do/0/task
-    ), InvestmentRequest.class);
+call("auditStep")
+    .inputFrom((OrderContext in, WorkflowContextData wf, TaskContextData task) -> Map.of(
+        "orderId", in.id(),
+        "workflowInstanceId", wf.instanceId(),   // Engine metadata
+        "taskPosition", task.position().jsonPointer() // e.g. do/0/task
+    ), OrderContext.class);
 ----
 
-Here you can:
+* `WorkflowContextData (wf)` gives you access to the instance ID, global metadata, and the current global data state.
+* `TaskContextData (task)` gives you access to the task's specific execution position, name, and raw unformatted output.
 
-* Inspect the **workflow context** (`wf`) – ids, metadata, current data.
-* Inspect the **task context** (`task`) – position, name, etc.
+== 4. Best Practices
 
-This is handy for logging, debugging, or adding metadata without polluting your
-business types.
+* **Keep tasks ignorant:** Use `inputFrom` heavily. A task should only know about the exact data it needs to execute, not the entire workflow payload.
+* **Lean on Java Records:** If you are building Agentic workflows or complex orchestrations, define your global context as a Java Record. Using the typed Java function overloads for `inputFrom` and `exportAs` provides compile-time safety that jq expressions cannot.
 
-=== 2.2 `exportAs` – pass data to the next step
-
-`exportAs` controls what the task **exports** for downstream consumers (the next
-task, events, etc.) without immediately updating global workflow data.
-
-Think of it as a **pipe** between steps:
-
-[source,java]
-----
-// Draft -> export only the text, not the whole object
-agent("draftNewsletter", drafter::draft, Draft.class)
-    .exportAs(draft -> Map.of(
-        "draftText", draft.text(),
-        "quality", draft.quality()
-    ), Draft.class);
-
-// Critic sees a narrow view shaped by exportAs(...)
-agent("criticNewsletter", critic::critique, Review.class);
-----
-
-Unlike `outputAs`, this doesn’t decide what ends up in the **workflow data
-document**, only what is forwarded as the **exported payload**.
-
-Use it when:
-
-* You want **tight coupling** between adjacent steps.
-* You want to feed a **clean payload** into an event (`emitJson(...)`), while
-controlling what gets exposed.
-
-[NOTE]
-====
-`exportAs(...)` does *not* write into the main workflow data document (the JSON you see as Input/Output in Dev UI).
-Instead, it updates the workflow **context** that is carried across the execution.
-
-That context is available to adjacent and later steps via `WorkflowContextData` / `TaskContextData`
-(for example when you use `JavaContextFunction` or `JavaFilterFunction`), which makes `exportAs(...)`
-a good place to keep technical values such as access tokens, correlation ids or intermediate
-LLM prompts that you want to reuse across steps without polluting your business payload.
-====
-
-
-=== 2.3 `outputAs` – commit results to workflow data
-
-`outputAs` controls what gets written back into the workflow data document.
-
-In many cases you want the task result as-is; in others you want to:
-
-* rename fields,
-* drop internal details, or
-* construct a composite DTO.
-
-Simple variant:
-
-[source,java]
-----
-// Persist a memo under $.memo
-agent("investmentAnalyst", analyst::analyse, InvestmentMemo.class)
-    .outputAs(memo -> Map.of("memo", memo), InvestmentMemo.class);
-----
-
-Context-aware variant (similar to the agentic HTTP example):
-
-[source,java]
-----
-get("fetchMarketData", "http://localhost:8081/market-data/{ticker}")
-    .outputAs((MarketDataSnapshot snapshot,
-               WorkflowContextData wf,
-               TaskContextData task) -> {
-        // Original task input as seen by this step
-        var input = task.input().asMap().orElseThrow();
-
-        // Raw HTTP body before any shaping
-        var rawBody = task.rawOutput().asText().orElseThrow();
-
-        return new InvestmentPrompt(
-            snapshot.ticker(),
-            input.get("objective").toString(),
-            input.get("horizon").toString(),
-            rawBody
-        );
-    }, MarketDataSnapshot.class);
-----
-
-Here:
-
-* `snapshot` is the typed task result (`MarketDataSnapshot`).
-* `wf` lets you inspect current workflow data / metadata.
-* `task` gives you:
-** `task.input()` – what this task saw as input (after `inputFrom`).
-** `task.rawOutput()` – the raw result before `outputAs`.
-** `task.position()` – including `jsonPointer()`.
-
-The `outputAs` return value becomes the **committed** output for this task in
-the workflow data.
-
-== 3. Which one should I use?
-
-A practical rule of thumb:
-
-* Use **`inputFrom`** when:
-** you want to keep the task **insulated** from changes in the global data
-shape,
-** or you want to pass a small, explicit input record.
-
-* Use **`exportAs`** when:
-** you want to **pipe** data between adjacent steps,
-** or you are shaping a payload for events / downstream services.
-
-* Use **`outputAs`** when:
-** you are deciding what should live in the **workflow data document**,
-** or you want neat, testable state at the end of the workflow (what Dev UI
-shows as Output).
-
-In many workflows you will only need `inputFrom` and `outputAs`. `exportAs` is
-most useful in more advanced pipelines and event-driven flows.
-
-== 4. JQ vs Java functions
-
-All three helpers have two “families” of overloads:
-
-* **JQ expressions** (string):
-+
-[source,java]
-----
-inputFrom("$.customer");
-outputAs("$.result");
-----
-+
-Good when you already think in terms of JSON paths and you’re transforming
-purely structural data.
-
-* **Java functions**:
-+
-[source,java]
-----
-// Simple function
-outputAs((MyResult r) -> Map.of("value", r.value()), MyResult.class);
-
-// Context-aware with workflow + task
-outputAs((MyResult r, WorkflowContextData wf, TaskContextData t) -> { ... },
-    MyResult.class);
-----
-+
-Good when:
-** you already have **domain types** (records, POJOs),
-** you want to reuse **Java logic** or validation,
-** or you need **context** (workflow instance id, task position, etc.).
-
-You can freely mix JQ and Java across tasks in the same workflow.
-
-== 5. Quick reference
-
-* `inputFrom(String jq)` – slice workflow data using JQ.
-* `inputFrom(Function<T,R>, Class<T>)` – map input with plain Java.
-* `inputFrom(JavaContextFunction<T,R>, Class<T>)` – Java + workflow context.
-* `inputFrom(JavaFilterFunction<T,R>, Class<T>)` – Java + workflow + task context.
-
-* `exportAs(Function/JavaContextFunction/JavaFilterFunction, Class<T>)` – shape
-the exported result for the next step / event (no direct commit to workflow
-data).
-
-* `outputAs(String jq)` – project task result into workflow data via JQ.
-* `outputAs(Function/JavaContextFunction/JavaFilterFunction, Class<T>)` – shape
-what is written back into workflow data.
-
-For a compact operator list and other DSL shortcuts, see
-xref:dsl-cheatsheet.adoc[Java DSL cheatsheet].
+For a compact list of all DSL data flow operators, see the xref:dsl-cheatsheet.adoc[Java DSL cheatsheet].

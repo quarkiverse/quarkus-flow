@@ -2,42 +2,40 @@
 
 * Tutorials
 ** xref:getting-started.adoc[Getting Started]
+** xref:wk-index.adoc[Workshop: Overview]
+*** xref:wk-lab-1-hello-flow-devui.adoc[Lab 1 – Hello Flow & Dev UI]
+*** xref:wk-lab-2-http-openapi.adoc[Lab 2 – Call HTTP & OpenAPI services]
+*** xref:wk-lab-3-events-yaml.adoc[Lab 3 – Events with YAML workflows]
+*** xref:wk-lab-4-agentic-langchain4j.adoc[Lab 4 – Agentic workflows]
+*** xref:wk-lab-4b-agentic-langchain4j-annotations.adoc[Lab 5 - LangChain4j Annotations]
 
-* How-to Guides
-** LangChain4j
+* Core Capabilities
+** Building Workflows
+*** xref:workflow-definitions.adoc[Define workflows from YAML]
+*** xref:scheduler.adoc[Schedule workflow executions]
+*** xref:secrets.adoc[Resolve secrets securely]
+** Agentic AI & LangChain4j
 *** xref:langchain4j.adoc[Orchestrate agents with the Java DSL]
-*** xref:howto-langchain4j-agentic-workflows.adoc[Generate workflows from annotations]
-** xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services]
-** xref:http-client.adoc[Configure the HTTP client]
-** xref:messaging.adoc[Use messaging and events]
-** xref:scheduler.adoc[Scheduler]
-** xref:tracing.adoc[Enable tracing]
-** xref:secrets.adoc[Resolve secrets securely]
-** xref:workflow-definitions.adoc[Workflow definitions from YAML files]
-** xref:test-debug.adoc[Test and debug workflows]
+** External Integrations
+*** xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services]
+*** xref:http-client.adoc[Configure the HTTP client]
+*** xref:fault-tolerance.adoc[Fault tolerance and resilience]
+*** xref:messaging.adoc[Use messaging and events]
+** State Persistence
+*** xref:persistence.adoc[Configure state persistence]
+** Monitoring
+*** xref:metrics-prometheus.adoc[Metrics & Prometheus Integration]
+*** xref:tracing.adoc[Enable distributed tracing]
+** Testing
+*** xref:test-debug.adoc[Test and debug workflows]
 
-* Concepts
-** xref:concepts-architecture.adoc[Concepts & architecture]
-** xref:specification.adoc[CNCF Workflow mapping and concepts]
-** xref:data-flow.adoc[]
-** xref:concepts-agentic-langchain4j.adoc[]
-** xref:metrics-prometheus.adoc[]
-** xref:concepts-durable-workflow-k8s.adoc[]
+* Architecture & Concepts
+** xref:concepts-architecture.adoc[Engine Architecture]
+** xref:specification.adoc[Specification Mapping]
+** xref:data-flow.adoc[Data Flow and Context Management]
+** xref:concepts-agentic-langchain4j.adoc[Agentic AI Topology]
+** xref:concepts-durable-workflow-k8s.adoc[Durable Workflows in Kubernetes]
 
 * Reference
 ** xref:dsl-cheatsheet.adoc[Java DSL cheatsheet]
 ** xref:configuration.adoc[Extension Configuration Reference]
-
-* Workshop
-** xref:wk-index.adoc[Workshop overview]
-** xref:wk-lab-1-hello-flow-devui.adoc[Lab 1 – Hello Flow & Dev UI]
-** xref:wk-lab-2-http-openapi.adoc[Lab 2 – Call HTTP & OpenAPI services]
-** xref:wk-lab-3-events-yaml.adoc[Lab 3 – Events with YAML workflows]
-** xref:wk-lab-4-agentic-langchain4j.adoc[Lab 4 – Agentic workflows]
-** xref:wk-lab-4b-agentic-langchain4j-annotations.adoc[]
-
-* Persistence
-
-** xref:redis.adoc[Use Redis persistence]
-** xref:mvstore.adoc[Use MVStore persistence]
-** xref:jpa.adoc[Use JPA persistence]

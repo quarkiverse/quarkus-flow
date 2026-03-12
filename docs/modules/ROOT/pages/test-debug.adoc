@@ -2,87 +2,84 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
+Because Quarkus Flow is deeply integrated with the Quarkus ecosystem, testing your workflows is as straightforward as testing any standard Java application.
+
 This guide shows how to:
 
-* unit-test workflow logic (Java DSL and YAML-loaded workflows)
-* write integration tests for REST resources that invoke workflows
-* validate HTTP error mapping (`WorkflowException` → RFC 7807 / `WorkflowError`)
-* turn on tracing and structured logging to debug workflow executions
+* Write fast unit tests for workflow logic (both Java DSL and YAML definitions).
+* Write end-to-end integration tests for REST resources that trigger workflows.
+* Verify automatic HTTP error mapping (RFC 7807 Problem Details).
+* Enable tracing and structured logging to debug test executions.
 
 == Prerequisites
 
 * A Quarkus application with xref:getting-started.adoc[Quarkus Flow set up].
-* JUnit 5 tests using `@QuarkusTest` (or `QuarkusUnitTest` if you use the JUnit 5 extension pattern).
-* Optional: REST Assured for HTTP endpoint testing.
-* Optional: JSON logging (`quarkus-logging-json`) if you want structured logs for debugging.
+* JUnit 5 tests using `@QuarkusTest` (or `QuarkusUnitTest` if writing extension tests).
+* REST Assured (included in `quarkus-junit5-mockito` or `quarkus-rest-client`) for HTTP endpoint testing.
 
 == 1. Unit-test workflow logic
 
-You can test workflows *without* going through HTTP by injecting either:
+You can test workflow execution logic directly without going through the HTTP layer. You simply inject the compiled `Flow` bean into your `@QuarkusTest` and assert the output state.
 
-* the **workflow class** (Java DSL, `Flow` subclass), or
-* the compiled **`WorkflowDefinition`** (Java DSL or YAML-loaded definitions).
+=== 1.1 Test a Java DSL workflow
 
-For most cases we recommend testing against `WorkflowDefinition`, because that is what Quarkus Flow compiles and runs.
-
-=== 1.1 Test a Java DSL workflow via `WorkflowDefinition`
-
-Assume you have a Java DSL workflow similar to `HelloWorkflow` from the getting started guide.
-
-Create a test:
+Assume you have a Java DSL workflow called `HelloWorkflow`. You can inject it by its class name or identifier:
 
 [source,java]
 ----
 include::{examples-dir}test/HelloWorkflowTest.java[tag=should_produce_hello_message]
 ----
 
-Key points:
-
-* `@QuarkusTest` boots your Quarkus app once and lets you inject CDI beans in tests.
-* `.start()` returns a `CompletionStage<WorkflowModel>`; in tests it’s fine to block with a timeout.
+[NOTE]
+In unit tests, it is perfectly acceptable to block execution using `.await().indefinitely()` (for Mutiny `Uni`) or `.join()` (for `CompletionStage`) to easily assert the final result.
 
 === 1.2 Test a YAML-loaded workflow
 
-For YAML workflows (for example the `echo-name.yaml` from
-xref:workflow-definitions.adoc[Workflow definitions from YAML files]):
+Testing YAML workflows works exactly the same way. The engine compiles the YAML into a `Flow` bean at build time, meaning you test the actual runtime semantics, not just text parsing.
+
+For a YAML workflow like `echo-name.yaml` (from xref:workflow-definitions.adoc[Workflow definitions from YAML files]):
 
 [source,java]
 ----
 include::{examples-dir}test/EchoYamlWorkflowTest.java[tag=should_echo_name_from_yaml_workflow]
 ----
 
-This pattern mirrors the examples in the YAML guide and the extension tests:
-
-* you verify that the **YAML file is discovered and compiled**
-* you verify that the **runtime semantics** (input → output) are correct
-
 == 2. Test REST resources that invoke workflows
 
-Most real applications expose workflows via HTTP endpoints.
-For these you can use standard Quarkus REST testing with REST Assured.
+Most real-world applications expose workflows via HTTP endpoints. You should write integration tests using REST Assured to verify both the REST layer and the workflow execution.
 
-Assume a resource like `EchoResource`:
+Assume you have a modern, reactive JAX-RS resource like this:
 
 [source,java]
 ----
+import io.quarkiverse.flow.Flow;
+import io.serverlessworkflow.api.WorkflowInstance;
+import io.smallrye.common.annotation.Identifier;
+import io.smallrye.mutiny.Uni;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+import java.util.Map;
+
 @Path("/echo")
 public class EchoResource {
 
     @Inject
-    @Identifier("flow:echo-name")
-    WorkflowDefinition definition;
+    @Identifier("org.acme.EchoWorkflow")
+    Flow echoFlow;
 
     @GET
-    public CompletionStage<String> echo(@QueryParam("name") String name) {
-        String finalName = Objects.requireNonNullElse(name, "(Duke)");
-        return definition.instance(Map.of("name", finalName))
-                .start()
-                .thenApply(result -> result.asText().orElseThrow());
+    public Uni<Map<String, Object>> echo(@QueryParam("name") String name) {
+        String finalName = (name != null && !name.isBlank()) ? name : "Duke";
+
+        return echoFlow.startInstance(Map.of("name", finalName))
+                       .map(WorkflowInstance::output); // Return final workflow state
     }
 }
 ----
 
-You can test it end-to-end:
+You can test this end-to-end using REST Assured:
 
 [source,java]
 ----
@@ -98,28 +95,21 @@ class EchoResourceTest {
     @Test
     void should_echo_name_over_http() {
         given()
-                .queryParam("name", "John")
+            .queryParam("name", "John")
         .when()
-                .get("/echo")
+            .get("/echo")
         .then()
-                .statusCode(200)
-                .body("message", equalTo("Echo: John"));
+            .statusCode(200)
+            .body("message", equalTo("Hello, John!"));
     }
 }
 ----
 
-This verifies *both*:
+== 3. Verify HTTP error mapping
 
-* workflow wiring (YAML/Java DSL → `WorkflowDefinition` → execution), and
-* HTTP resource behavior.
+If your workflow includes an HTTP or OpenAPI task that fails (e.g., calling a secured external API without credentials), Quarkus Flow automatically translates the internal `WorkflowException` into an RFC 7807 Problem Details HTTP response.
 
-== 3. Verify HTTP error mapping (`WorkflowException` → RFC 7807)
-
-Quarkus Flow registers a standard `ExceptionMapper<WorkflowException>`.
-Any JAX-RS resource that throws `WorkflowException` (directly, or via a non-blocked `Uni`/`CompletionStage`)
-will automatically be translated into an RFC 7807 / `WorkflowError` response.
-
-For workflows that use HTTP / OpenAPI tasks (for example, calling a secured endpoint), you can test the error mapping like this:
+You should write tests to verify this mapping behaves correctly for your clients:
 
 [source,java]
 ----
@@ -133,89 +123,47 @@ import org.junit.jupiter.api.Test;
 class CustomerProfileResourceTest {
 
     @Test
-    void should_map_workflowexception_to_problem_details() {
+    void should_map_workflow_exception_to_problem_details() {
         given()
-                .queryParam("customerId", "unauthorized")
+            .queryParam("customerId", "unauthorized-user")
         .when()
-                .get("/customer/profile")
+            .get("/customer/profile")
         .then()
-                .statusCode(401)
-                .body("type", equalTo("https://serverlessworkflow.io/spec/1.0.0/errors/communication"))
-                .body("title", equalTo("HTTP 401 Unauthorized"))
-                .body("status", equalTo(401));
+            .statusCode(401)
+            .body("type", equalTo("https://serverlessworkflow.io/spec/1.0.0/errors/communication"))
+            .body("title", equalTo("HTTP 401 Unauthorized"))
+            .body("status", equalTo(401));
     }
 }
 ----
 
-Tips:
+[TIP]
+For this automatic error mapping to work, your JAX-RS resource **must be reactive** (returning a `Uni` or `CompletionStage`). If you block the thread with `.await().indefinitely()`, Java wraps the error in an `ExecutionException`, and the standard Quarkus mapper will not catch it.
 
-* Use the **reactive style** in your resource (`Uni`/`CompletionStage`), as recommended in
-xref:http-openapi-tasks.adoc#non-blocking-vs-blocking-style[Non-blocking vs blocking style],
-so that `WorkflowException` propagates directly.
-* If you *do* block (`.get()`, `.join()`), remember that Java wraps exceptions in `ExecutionException` —
-unwrap and rethrow `WorkflowException` if you want the mapper to handle it.
+== 4. Enable tracing for debugging tests
 
-== 4. Enable tracing and structured logging for debugging
+When a complex workflow test fails, it can be hard to know exactly which task broke. You can enable Quarkus Flow's execution tracer specifically for your test runs to see exactly how the engine routed the data.
 
-For deep debugging of execution, enable the built-in **tracing listener**
-(see xref:tracing.adoc[Enable tracing]) and JSON logging.
-
-=== 4.1 Turn on tracing in test profile
+Add this to your `application.properties`:
 
 [source,properties]
 ----
+# Enable tracing only during test execution
 %test.quarkus.flow.tracing.enabled=true
 ----
 
-This will emit workflow/task lifecycle logs from `TraceLoggerExecutionListener` for every test run.
+When you run `mvn test`, the console will output a clear, linear history of every task start, completion, and failure for that specific workflow execution.
 
-=== 4.2 Enable JSON logging with MDC
-
-To get structured logs you can ship to ELK/Datadog, add `quarkus-logging-json` and enable JSON console. :contentReference[oaicite:4]{index=4}
-
-.Maven
-[source,xml]
-----
-<dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-logging-json</artifactId>
-  <scope>test</scope>
-</dependency>
-----
-
-.Test profile
-[source,properties]
-----
-%test.quarkus.flow.tracing.enabled=true
-%test.quarkus.log.json.console.enabled=true
-----
-
-The tracer will populate MDC with:
-
-* `quarkus.flow.instanceId` – workflow instance id
-* `quarkus.flow.event` – `workflow.started`, `task.completed`, `task.failed`, …
-* `quarkus.flow.time` – event timestamp
-* `quarkus.flow.task` / `quarkus.flow.taskPos` – task name and JSON pointer (task events)
-
-In JSON logs these appear as structured fields that your log backend can index.
-
-For more details, see xref:tracing.adoc[Enable tracing] and the
-link:https://quarkus.io/guides/logging[Quarkus Logging guide].
+*(For advanced structured logging with JSON and MDC fields, see xref:tracing.adoc[Enable distributed tracing]).*
 
 == 5. Tips for reliable workflow tests
 
-* **Avoid real external services in unit tests** – mock agents, HTTP clients or provide local stubs
-(WireMock, Testcontainers, in-memory services).
-* **Keep test workflows small and focused** – it’s easier to assert a single responsibility
-(for example, “maps input JSON to output JSON”) than an entire business process.
-* **Assert on workflow data, not just HTTP** – even in REST tests, consider injecting
-`WorkflowDefinition` in a separate test and asserting the `WorkflowModel` directly.
-* **Use timeouts on blocking waits** – when you call `.get()` or `.join()` in tests, use a reasonable timeout
-to avoid hanging test suites.
+* **Mock External Dependencies:** Avoid calling real external APIs in unit tests. Use tools like `WireMock` or `Testcontainers` to stub the endpoints your HTTP tasks call.
+* **Mock AI Agents:** If you are testing xref:langchain4j.adoc[LangChain4j workflows], mock the AI provider to avoid flaky tests caused by network latency or non-deterministic LLM generations.
+* **Keep workflows focused:** It is much easier to write exhaustive tests for a workflow that has a single responsibility than it is to test a massive, sprawling business process. Break complex logic into smaller subflows.
 
 == See also
 
-* xref:getting-started.adoc[Getting Started] — quickest way to define and run your first workflow.
-* xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services] — how HTTP/OpenAPI tasks behave and how errors are mapped.
-* xref:workflow-definitions.adoc[Workflow definitions from YAML files] — discover and inject YAML workflows.
-* xref:tracing.adoc[Enable tracing] — structured logs for debugging workflow executions.
+* xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services] — learn how HTTP errors are mapped and handled.
+* xref:workflow-definitions.adoc[Define workflows from YAML] — review the syntax for discovering and injecting YAML workflows.
+* xref:tracing.adoc[Enable distributed tracing] — read the full guide on MDC logs and trace extraction.

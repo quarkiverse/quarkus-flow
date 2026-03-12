@@ -1,0 +1,138 @@
+var $49f0d9486c2408aa$exports = require("./getScrollParents.main.js");
+var $9e20cff0af27e8cc$exports = require("./platform.main.js");
+
+
+function $parcel$export(e, n, v, s) {
+  Object.defineProperty(e, n, {get: v, set: s, enumerable: true, configurable: true});
+}
+
+$parcel$export(module.exports, "scrollIntoView", () => $449412113267a1fe$export$53a0910f038337bd);
+$parcel$export(module.exports, "scrollIntoViewport", () => $449412113267a1fe$export$c826860796309d1b);
+/*
+ * Copyright 2020 Adobe. All rights reserved.
+ * This file is licensed to you under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+ * OF ANY KIND, either express or implied. See the License for the specific language
+ * governing permissions and limitations under the License.
+ */ 
+
+function $449412113267a1fe$export$53a0910f038337bd(scrollView, element, opts = {}) {
+    let { block: block = 'nearest', inline: inline = 'nearest' } = opts;
+    if (scrollView === element) return;
+    let y = scrollView.scrollTop;
+    let x = scrollView.scrollLeft;
+    let target = element.getBoundingClientRect();
+    let view = scrollView.getBoundingClientRect();
+    let itemStyle = window.getComputedStyle(element);
+    let viewStyle = window.getComputedStyle(scrollView);
+    let root = document.scrollingElement || document.documentElement;
+    let viewTop = scrollView === root ? 0 : view.top;
+    let viewBottom = scrollView === root ? scrollView.clientHeight : view.bottom;
+    let viewLeft = scrollView === root ? 0 : view.left;
+    let viewRight = scrollView === root ? scrollView.clientWidth : view.right;
+    let scrollMarginTop = parseInt(itemStyle.scrollMarginTop, 10) || 0;
+    let scrollMarginBottom = parseInt(itemStyle.scrollMarginBottom, 10) || 0;
+    let scrollMarginLeft = parseInt(itemStyle.scrollMarginLeft, 10) || 0;
+    let scrollMarginRight = parseInt(itemStyle.scrollMarginRight, 10) || 0;
+    let scrollPaddingTop = parseInt(viewStyle.scrollPaddingTop, 10) || 0;
+    let scrollPaddingBottom = parseInt(viewStyle.scrollPaddingBottom, 10) || 0;
+    let scrollPaddingLeft = parseInt(viewStyle.scrollPaddingLeft, 10) || 0;
+    let scrollPaddingRight = parseInt(viewStyle.scrollPaddingRight, 10) || 0;
+    let borderTopWidth = parseInt(viewStyle.borderTopWidth, 10) || 0;
+    let borderBottomWidth = parseInt(viewStyle.borderBottomWidth, 10) || 0;
+    let borderLeftWidth = parseInt(viewStyle.borderLeftWidth, 10) || 0;
+    let borderRightWidth = parseInt(viewStyle.borderRightWidth, 10) || 0;
+    let scrollAreaTop = target.top - scrollMarginTop;
+    let scrollAreaBottom = target.bottom + scrollMarginBottom;
+    let scrollAreaLeft = target.left - scrollMarginLeft;
+    let scrollAreaRight = target.right + scrollMarginRight;
+    let scrollBarOffsetX = scrollView === root ? 0 : borderLeftWidth + borderRightWidth;
+    let scrollBarOffsetY = scrollView === root ? 0 : borderTopWidth + borderBottomWidth;
+    let scrollBarWidth = scrollView.offsetWidth - scrollView.clientWidth - scrollBarOffsetX;
+    let scrollBarHeight = scrollView.offsetHeight - scrollView.clientHeight - scrollBarOffsetY;
+    let scrollPortTop = viewTop + borderTopWidth + scrollPaddingTop;
+    let scrollPortBottom = viewBottom - borderBottomWidth - scrollPaddingBottom - scrollBarHeight;
+    let scrollPortLeft = viewLeft + borderLeftWidth + scrollPaddingLeft;
+    let scrollPortRight = viewRight - borderRightWidth - scrollPaddingRight;
+    // IOS always positions the scrollbar on the right ¯\_(ツ)_/¯
+    if (viewStyle.direction === 'rtl' && !(0, $9e20cff0af27e8cc$exports.isIOS)()) scrollPortLeft += scrollBarWidth;
+    else scrollPortRight -= scrollBarWidth;
+    let shouldScrollBlock = scrollAreaTop < scrollPortTop || scrollAreaBottom > scrollPortBottom;
+    let shouldScrollInline = scrollAreaLeft < scrollPortLeft || scrollAreaRight > scrollPortRight;
+    if (shouldScrollBlock && block === 'start') y += scrollAreaTop - scrollPortTop;
+    else if (shouldScrollBlock && block === 'center') y += (scrollAreaTop + scrollAreaBottom) / 2 - (scrollPortTop + scrollPortBottom) / 2;
+    else if (shouldScrollBlock && block === 'end') y += scrollAreaBottom - scrollPortBottom;
+    else if (shouldScrollBlock && block === 'nearest') {
+        let start = scrollAreaTop - scrollPortTop;
+        let end = scrollAreaBottom - scrollPortBottom;
+        y += Math.abs(start) <= Math.abs(end) ? start : end;
+    }
+    if (shouldScrollInline && inline === 'start') x += scrollAreaLeft - scrollPortLeft;
+    else if (shouldScrollInline && inline === 'center') x += (scrollAreaLeft + scrollAreaRight) / 2 - (scrollPortLeft + scrollPortRight) / 2;
+    else if (shouldScrollInline && inline === 'end') x += scrollAreaRight - scrollPortRight;
+    else if (shouldScrollInline && inline === 'nearest') {
+        let start = scrollAreaLeft - scrollPortLeft;
+        let end = scrollAreaRight - scrollPortRight;
+        x += Math.abs(start) <= Math.abs(end) ? start : end;
+    }
+    if (process.env.NODE_ENV === 'test') {
+        scrollView.scrollLeft = x;
+        scrollView.scrollTop = y;
+        return;
+    }
+    scrollView.scrollTo({
+        left: x,
+        top: y
+    });
+}
+function $449412113267a1fe$export$c826860796309d1b(targetElement, opts = {}) {
+    let { containingElement: containingElement } = opts;
+    if (targetElement && targetElement.isConnected) {
+        let root = document.scrollingElement || document.documentElement;
+        let isScrollPrevented = window.getComputedStyle(root).overflow === 'hidden';
+        // If scrolling is not currently prevented then we aren't in a overlay nor is a overlay open, just use element.scrollIntoView to bring the element into view
+        // Also ignore in chrome because of this bug: https://issues.chromium.org/issues/40074749
+        if (!isScrollPrevented && !(0, $9e20cff0af27e8cc$exports.isChrome)()) {
+            var // use scrollIntoView({block: 'nearest'}) instead of .focus to check if the element is fully in view or not since .focus()
+            // won't cause a scroll if the element is already focused and doesn't behave consistently when an element is partially out of view horizontally vs vertically
+            _targetElement_scrollIntoView;
+            let { left: originalLeft, top: originalTop } = targetElement.getBoundingClientRect();
+            targetElement === null || targetElement === void 0 ? void 0 : (_targetElement_scrollIntoView = targetElement.scrollIntoView) === null || _targetElement_scrollIntoView === void 0 ? void 0 : _targetElement_scrollIntoView.call(targetElement, {
+                block: 'nearest'
+            });
+            let { left: newLeft, top: newTop } = targetElement.getBoundingClientRect();
+            // Account for sub pixel differences from rounding
+            if (Math.abs(originalLeft - newLeft) > 1 || Math.abs(originalTop - newTop) > 1) {
+                var _containingElement_scrollIntoView, _targetElement_scrollIntoView1;
+                containingElement === null || containingElement === void 0 ? void 0 : (_containingElement_scrollIntoView = containingElement.scrollIntoView) === null || _containingElement_scrollIntoView === void 0 ? void 0 : _containingElement_scrollIntoView.call(containingElement, {
+                    block: 'center',
+                    inline: 'center'
+                });
+                (_targetElement_scrollIntoView1 = targetElement.scrollIntoView) === null || _targetElement_scrollIntoView1 === void 0 ? void 0 : _targetElement_scrollIntoView1.call(targetElement, {
+                    block: 'nearest'
+                });
+            }
+        } else {
+            let { left: originalLeft, top: originalTop } = targetElement.getBoundingClientRect();
+            // If scrolling is prevented, we don't want to scroll the body since it might move the overlay partially offscreen and the user can't scroll it back into view.
+            let scrollParents = (0, $49f0d9486c2408aa$exports.getScrollParents)(targetElement, true);
+            for (let scrollParent of scrollParents)$449412113267a1fe$export$53a0910f038337bd(scrollParent, targetElement);
+            let { left: newLeft, top: newTop } = targetElement.getBoundingClientRect();
+            // Account for sub pixel differences from rounding
+            if (Math.abs(originalLeft - newLeft) > 1 || Math.abs(originalTop - newTop) > 1) {
+                scrollParents = containingElement ? (0, $49f0d9486c2408aa$exports.getScrollParents)(containingElement, true) : [];
+                for (let scrollParent of scrollParents)$449412113267a1fe$export$53a0910f038337bd(scrollParent, containingElement, {
+                    block: 'center',
+                    inline: 'center'
+                });
+            }
+        }
+    }
+}
+
+
+//# sourceMappingURL=scrollIntoView.main.js.map

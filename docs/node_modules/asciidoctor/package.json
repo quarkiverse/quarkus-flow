@@ -1,0 +1,58 @@
+{
+  "name": "asciidoctor",
+  "version": "3.0.4",
+  "description": "A JavaScript AsciiDoc processor, cross-compiled from the Ruby-based AsciiDoc implementation, Asciidoctor, using Opal",
+  "main": "index.js",
+  "types": "types",
+  "bin": {
+    "asciidoctor": "bin/asciidoctor",
+    "asciidoctorjs": "bin/asciidoctor"
+  },
+  "scripts": {
+    "test": "./bin/asciidoctor --version",
+    "dist": "pkg package.json --out-path dist"
+  },
+  "engines": {
+    "node": ">=16",
+    "npm": ">=8"
+  },
+  "files": [
+    "bin",
+    "types/index.d.ts"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/asciidoctor/asciidoctor.js.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "asciidoc",
+    "asciidoctor",
+    "opal",
+    "javascript",
+    "library"
+  ],
+  "authors": [
+    "Dan Allen (https://github.com/mojavelinux)",
+    "Guillaume Grossetie (https://github.com/mogztter)",
+    "Anthonny Quérouil (https://github.com/anthonny)"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/asciidoctor/asciidoctor.js/issues"
+  },
+  "homepage": "https://github.com/asciidoctor/asciidoctor.js",
+  "dependencies": {
+    "@asciidoctor/cli": "4.0.0",
+    "@asciidoctor/core": "3.0.4",
+    "ejs": "^3.1.2",
+    "handlebars": "^4.7.6",
+    "nunjucks": "^3.2.1",
+    "pug": "^3.0.0"
+  },
+  "devDependencies": {
+    "pkg": "5.8.1"
+  }
+}

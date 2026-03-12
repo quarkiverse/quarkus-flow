@@ -1,0 +1,1 @@
+To generate new sgvs go to https://kroki.io/ and paste the puml files content.
