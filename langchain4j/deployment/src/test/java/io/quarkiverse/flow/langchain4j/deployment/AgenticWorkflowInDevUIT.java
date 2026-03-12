@@ -32,7 +32,7 @@ public class AgenticWorkflowInDevUIT {
     @BeforeAll
     static void setUp() {
         launchOptions = new BrowserType.LaunchOptions()
-                .setHeadless(false)
+                .setHeadless(true)
                 .setChromiumSandbox(false)
                 .setChannel("")
                 .setArgs(List.of("--disable-gpu"));
