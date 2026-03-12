@@ -175,7 +175,7 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
             <div class="button-container">
                 ${this._loading
                         ? html`<vaadin-progress-bar class="progress" indeterminate></vaadin-progress-bar>`
-                        : html`<vaadin-button theme="primary success" @click=${() => this._executeWorkflow()}>
+                        : html`<vaadin-button id="execute-workflow" theme="primary success" @click=${() => this._executeWorkflow()}>
                             <vaadin-icon icon="font-awesome-solid:play"></vaadin-icon>
                             Start workflow
                         </vaadin-button>`

@@ -105,7 +105,7 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
                                                    id="see-${this._generateMermaidId(workflow.id)}">
                                         <vaadin-icon icon="font-awesome-solid:eye"></vaadin-icon>
                                     </vaadin-button>
-                                    <vaadin-button @click=${() => this._executeWorkflow(workflow)}>
+                                    <vaadin-button id="play-${this._generateMermaidId(workflow.id)}"  @click=${() => this._executeWorkflow(workflow)}>
                                         <vaadin-icon icon="font-awesome-solid:play"></vaadin-icon>
                                     </vaadin-button>
                                 `, [])}>
@@ -197,7 +197,7 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
             ${!this._currentMermaid ? `
             <span style="display:flex;align-items:center;gap:8px;color:var(--lumo-secondary-text-color);">
                 <vaadin-icon icon="font-awesome-solid:circle-info"></vaadin-icon>
-                <span style="margin:0;font-size:var(--lumo-font-size-xs);">
+                <span id="unavailable-mermaid-warning" style="margin:0;font-size:var(--lumo-font-size-xs);">
                 Diagram not available. Run the workflow once to generate it.
                 </span>
             </span>` : ''}
