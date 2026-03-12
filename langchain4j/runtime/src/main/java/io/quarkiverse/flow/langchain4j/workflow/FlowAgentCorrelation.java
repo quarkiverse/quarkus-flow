@@ -31,11 +31,7 @@ final class FlowAgentCorrelation {
             return null;
         }
 
-        String taskPosition = null;
-        if (task.position() != null) {
-            taskPosition = task.position().jsonPointer();
-        }
-
+        String taskPosition = (task.position() != null) ? task.position().jsonPointer() : null;
         if (taskPosition == null || taskPosition.isBlank()) {
             return "/";
         }
