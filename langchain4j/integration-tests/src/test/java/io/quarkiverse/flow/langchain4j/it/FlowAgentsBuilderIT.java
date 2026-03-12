@@ -52,7 +52,7 @@ public class FlowAgentsBuilderIT {
         assertThat(response).isNotBlank();
         AgenticScope agenticScope = result.agenticScope();
         assertThat(agenticScope.readState("category")).isEqualTo(Agents.RequestCategory.MEDICAL);
-        
+
         assertThat(agenticScope.readState("__flow_instance_id__", "")).isNotBlank();
         assertThat(agenticScope.readState("workflowInstanceID", ""))
                 .isEqualTo(agenticScope.readState("__flow_instance_id__", ""));
