@@ -26,9 +26,28 @@ final class FlowAgentCorrelation {
     private FlowAgentCorrelation() {
     }
 
+    static String verificationNull(TaskContextData task) {
+        if (task == null) {
+            return null;
+        }
+
+        String taskPosition = null;
+        if (task.position() != null) {
+            taskPosition = task.position().jsonPointer();
+        }
+
+        if (taskPosition == null || taskPosition.isBlank()) {
+            return "/";
+        }
+        if (!taskPosition.startsWith("/")) {
+            return "/" + taskPosition;
+        }
+        return taskPosition;
+    }
+
     static void withCorrelation(DefaultAgenticScope scope, WorkflowContextData workflow, TaskContextData task, Runnable r) {
         String workflowInstanceId = (workflow != null && workflow.instanceData() != null) ? workflow.instanceData().id() : null;
-        String taskPosition = (task != null && task.position() != null) ? task.position().jsonPointer() : null;
+        String taskPosition = verificationNull(task);
         String taskName = (task != null) ? task.taskName() : null;
 
         withCorrelation(scope, workflowInstanceId, taskPosition, taskName, r);
