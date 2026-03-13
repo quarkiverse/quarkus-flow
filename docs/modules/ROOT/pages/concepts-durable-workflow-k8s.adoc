@@ -2,7 +2,7 @@
 :page-role: concept
 include::includes/attributes.adoc[]
 
-When you enable xref:persistence.adoc[State Persistence], Quarkus Flow stores enough information in the database to resume paused or failed workflow executions.
+When you enable xref:persistence.adoc[State Persistence], Quarkus Flow stores enough information in the database to restore paused or abruptly ended workflows, resuming execution from the last successfully completed task.
 
 However, to safely resume a workflow, the engine needs a deterministic "worker identity" (`WorkflowApplication` ID) so it knows *which* instance owns the execution.
 

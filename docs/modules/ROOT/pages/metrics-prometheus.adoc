@@ -2,7 +2,7 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
-Quarkus Flow integrates with the Micrometer Prometheus Registry to provide observability for workflow executions.
+Quarkus Flow integrates with Quarkus Micrometer to provide observability for workflow executions.
 It exposes metrics for execution counts, durations, and runtime states, which can be easily visualized and used for alerting with Prometheus and Grafana.
 
 == Configuring Observability

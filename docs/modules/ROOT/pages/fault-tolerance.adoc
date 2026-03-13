@@ -132,7 +132,7 @@ quarkus.flow.http.client.named.crm-api.resilience.identifier=smart-retry-guard
 ----
 
 [NOTE]
-When `resilience.identifier` is set, **all property-based configurations** (`resilience.retry.*` and `resilience.circuit-breaker.*`) for that client are ignored. The `TypedGuard` takes complete control.
+When `resilience.identifier` is set, **all property-based configurations** (`resilience.retry.\*` and `resilience.circuit-breaker.*`) for that client are ignored. The `TypedGuard` takes complete control.
 
 == See also
 * xref:http-client.adoc[Configure the HTTP client] — routing, timeouts, and network tuning.
