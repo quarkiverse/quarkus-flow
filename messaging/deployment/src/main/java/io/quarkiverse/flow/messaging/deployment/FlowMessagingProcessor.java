@@ -1,5 +1,8 @@
 package io.quarkiverse.flow.messaging.deployment;
 
+import java.util.Optional;
+
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,10 +28,21 @@ public class FlowMessagingProcessor {
         if (!config.defaultsEnabled()) {
             return;
         }
-        final AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder()
-                .addBeanClass(FlowMessagingConsumer.class)
-                .addBeanClass(FlowDomainEventsPublisher.class)
-                .setUnremovable();
+
+        final AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
+
+        Optional<String> flowIn = ConfigProvider.getConfig()
+                .getOptionalValue("mp.messaging.incoming.flow-in.connector", String.class);
+        if (flowIn.isPresent()) {
+            builder.addBeanClass(FlowMessagingConsumer.class);
+        }
+
+        Optional<String> flowOut = ConfigProvider.getConfig()
+                .getOptionalValue("mp.messaging.outgoing.flow-out.connector", String.class);
+        if (flowOut.isPresent()) {
+            builder.addBeanClass(FlowDomainEventsPublisher.class);
+        }
+
         LOG.info("Flow: default engine publisher and consumer enabled.");
 
         if (config.lifecycleEnabled()) {
@@ -38,7 +52,7 @@ public class FlowMessagingProcessor {
             LOG.info("Flow: lifecycle publisher disabled.");
         }
 
-        beans.produce(builder.build());
+        beans.produce(builder.setUnremovable().build());
     }
 
 }
