@@ -1,148 +1,126 @@
-= Enable tracing
+= Enable distributed tracing
 :page-role: howto
 :page-aliases: tracing/index.adoc
+include::includes/attributes.adoc[]
 
-Quarkus Flow provides a *logging-only* execution tracer.
-It emits human-readable log lines and attaches structured fields via MDC so you can
-search and graph them in tools like Kibana or Datadog.
-This tracer is independent of Messaging/CloudEvents.
+To effectively monitor and debug workflows in production, you need to track a workflow instance from the moment it starts, through every internal task, and across the network to external services.
 
-This guide shows how to:
+Quarkus Flow provides a lightweight tracing facility that achieves this through two mechanisms:
 
-* enable the Flow tracer
-* expose MDC fields via JSON or pattern logging
-* understand the MDC keys emitted for each event
-* relate tracing to Messaging
+1. **Local Tracing (MDC Logging):** Emits structured lifecycle logs with Mapped Diagnostic Context (MDC) fields, allowing you to filter logs by instance ID in tools like Kibana, Datadog, or Loki.
+2. **Distributed Tracing (HTTP Headers):** Automatically propagates those same instance IDs to downstream services via HTTP headers.
 
-== Prerequisites
+This guide shows how to enable and configure both mechanisms.
 
-* A Quarkus application with xref:getting-started.adoc[Quarkus Flow set up].
-* Basic familiarity with Quarkus logging configuration (JSON vs pattern, log categories).
+== 1. Enable execution log tracing
 
-== 1. Enable tracing
+The Quarkus Flow execution tracer emits a log line every time a workflow or task starts, completes, or fails.
 
-Add to `application.properties`:
+Tracing is **enabled by default in `dev` and `test` modes**, but **disabled by default in `prod`** to avoid flooding your production logs.
+
+To enable it in production, add this to your `application.properties`:
 
 [source,properties]
 ----
-# Production (explicit ON)
 quarkus.flow.tracing.enabled=true
 ----
 
-=== 1.1 Defaults per profile
+*(If you ever need to explicitly disable it in dev/test, use `%dev.quarkus.flow.tracing.enabled=false`).*
 
-Tracing is *enabled by default* in *dev* and *test* modes, and *disabled by default* in *prod*.
+== 2. Structured logging and MDC fields
 
-Dev/Test (default ON):
-
-[source,properties]
-----
-# implicit default (no config needed)
-# %dev.quarkus.flow.tracing.enabled=true
-# %test.quarkus.flow.tracing.enabled=true
-
-# you can explicitly turn it off:
-%dev.quarkus.flow.tracing.enabled=false
-%test.quarkus.flow.tracing.enabled=false
-----
-
-Prod (default OFF):
+To make your tracing logs searchable in centralized logging platforms, you should enable JSON console logging. This automatically extracts the MDC fields injected by Quarkus Flow into queryable JSON attributes.
 
 [source,properties]
 ----
-# enable tracing explicitly
-quarkus.flow.tracing.enabled=true
+# Enable JSON console logging
+quarkus.log.console.json.enabled=true
 ----
 
-== 2. Structured logging and MDC
+[TIP]
+====
+If you prefer pattern logging (plain text) over JSON, you must manually reference the MDC keys in your log format string using `%X\{key}`:
+`quarkus.log.console.format=%d{HH:mm:ss} %-5p instanceId=%X{quarkus.flow.instanceId} [%c{2.}] %s%n`
+====
 
-To make fields queryable, enable *JSON console logging* and include MDC.
-Example for the *test* profile:
+=== MDC keys emitted by the tracer
 
-[source,properties]
-----
-%test.quarkus.flow.tracing.enabled=true
+Every trace log emitted by the engine includes the following MDC fields:
 
-# Enable JSON console logging (disabled by default)
-%test.quarkus.log.console.json.enabled=true
-
-# Optional: when using *pattern* (non-JSON) logging, you can surface MDC values
-# in the format string (ignored when JSON logging is enabled):
-%test.quarkus.log.console.format=%d{HH:mm:ss} %-5p quarkus.flow.instanceId=%X{quarkus.flow.instanceId} quarkus.flow.event=%X{quarkus.flow.event} [%c{2.}] (%t) %s%n
-----
-
-TIP: Quarkus logging options evolve; see the official guide for the most up-to-date knobs:
-link:https://quarkus.io/guides/logging[Quarkus Logging guide].
-
-=== 2.1 MDC keys emitted by the tracing listener
-
+[cols="1,1,2",options="header"]
 |===
 | Key | Example | Description
 
 | `quarkus.flow.instanceId`
 | `01K9GDCXJVN89V0N4CWVG40R7C`
-| Workflow instance ID.
+| The unique Workflow instance ID.
 
 | `quarkus.flow.event`
-| `workflow.started`, `workflow.completed`, `task.started`, `task.completed`, `task.failed`, …
-| Normalized lifecycle event name.
+| `workflow.started`
+| The normalized lifecycle event name (e.g., `task.started`, `task.failed`).
 
 | `quarkus.flow.time`
-| `2025-11-07T19:20:59.120084-05:00`
-| Event timestamp (same as the event’s `eventDate()`).
+| `2026-03-12T19:20:59.120Z`
+| The exact event timestamp.
 
 | `quarkus.flow.task`
-| `sayHelloWorld`
-| Task name (task events only).
+| `fetchCustomerData`
+| The task name *(only present for task-level events)*.
 
 | `quarkus.flow.taskPos`
-| `do/0/sayHelloWorld`
-| JSON pointer to the task position in the workflow definition (task events only).
+| `do/0/fetchCustomerData`
+| The JSON pointer to the task's position in the workflow definition *(only present for task-level events)*.
 |===
 
-[NOTE]
-====
-MDC fields become first-class, searchable fields only when
-`quarkus.log.console.json.enabled=true` *and* JSON logging includes MDC by default
-(Quarkus JSON encoder).
+=== Example JSON Output
 
-With pattern logging you must reference `%X\{key}` in `quarkus.log.console.format`.
-See link:https://quarkus.io/guides/logging[Quarkus Logging guide].
-====
-
-== 3. Example output (test profile)
-
-When JSON console logging is enabled, logs resemble:
+When JSON logging is enabled, your application will emit structured logs resembling this:
 
 [source,json]
 ----
-{"timestamp":"2025-11-07T19:20:59.096591-05:00","loggerName":"io.quarkiverse.flow.recorders.WorkflowApplicationRecorder","level":"INFO","message":"Flow: Tracing enabled","mdc":{}}
-{"timestamp":"2025-11-07T19:20:59.117491-05:00","loggerName":"io.quarkiverse.flow.tracing.TraceLoggerExecutionListener","level":"INFO","message":"Workflow id=01K9GDCXJVN89V0N4CWVG40R7C started at 2025-11-07T19:20:59.106716-05:00 input={}","mdc":{"quarkus.flow.event":"workflow.started","quarkus.flow.time":"2025-11-07T19:20:59.106716-05:00","quarkus.flow.instanceId":"01K9GDCXJVN89V0N4CWVG40R7C"}}
-{"timestamp":"2025-11-07T19:20:59.118746-05:00","loggerName":"io.quarkiverse.flow.tracing.TraceLoggerExecutionListener","level":"INFO","message":"Task 'sayHelloWorld' started at 2025-11-07T19:20:59.118675-05:00 pos=do/0/sayHelloWorld","mdc":{"quarkus.flow.event":"task.started","quarkus.flow.time":"2025-11-07T19:20:59.118675-05:00","quarkus.flow.task":"sayHelloWorld","quarkus.flow.taskPos":"do/0/sayHelloWorld","quarkus.flow.instanceId":"01K9GDCXJVN89V0N4CWVG40R7C"}}
-{"timestamp":"2025-11-07T19:20:59.120407-05:00","loggerName":"io.quarkiverse.flow.tracing.TraceLoggerExecutionListener","level":"INFO","message":"Task 'sayHelloWorld' completed at 2025-11-07T19:20:59.120084-05:00 output={\"message\":\"hello world!\"}","mdc":{"quarkus.flow.event":"task.completed","quarkus.flow.time":"2025-11-07T19:20:59.120084-05:00","quarkus.flow.task":"sayHelloWorld","quarkus.flow.taskPos":"do/0/sayHelloWorld","quarkus.flow.instanceId":"01K9GDCXJVN89V0N4CWVG40R7C"}}
-{"timestamp":"2025-11-07T19:20:59.120991-05:00","loggerName":"io.quarkiverse.flow.tracing.TraceLoggerExecutionListener","level":"INFO","message":"Workflow id=01K9GDCXJVN89V0N4CWVG40R7C completed at 2025-11-07T19:20:59.120947-05:00","mdc":{"quarkus.flow.event":"workflow.completed","quarkus.flow.time":"2025-11-07T19:20:59.120947-05:00","quarkus.flow.instanceId":"01K9GDCXJVN89V0N4CWVG40R7C"}}
+{
+  "timestamp": "2026-03-12T19:20:59.117Z",
+  "level": "INFO",
+  "message": "Workflow id=01K9GDCXJVN89V0N4CWVG40R7C started...",
+  "mdc": {
+    "quarkus.flow.event": "workflow.started",
+    "quarkus.flow.instanceId": "01K9GDCXJVN89V0N4CWVG40R7C"
+  }
+}
 ----
 
-These records give you:
+Because the `mdc` block is structured, you can easily run a query in your log aggregator like: `mdc."quarkus.flow.instanceId" == "01K9GDCXJVN89V0N4CWVG40R7C"` to see the exact linear history of a single workflow execution.
 
-* a linear view of workflow and task lifecycle
-* a stable `instanceId` you can filter on
-* a `taskPos` pointer you can map back to the workflow definition
+== 3. Distributed Tracing via HTTP Headers
 
-== 4. Relation to Messaging
+Local logs are only half the battle. When your workflow executes an HTTP or OpenAPI task, you need a way to correlate your workflow logs with the logs of the external service.
 
-The tracing listener is *independent* from Messaging lifecycle publishing.
-You can enable either or both:
+For idempotency and end-to-end distributed traceability, Quarkus Flow automatically attaches correlation metadata to all outgoing HTTP calls as headers.
 
-* Tracing — emits *log* entries with MDC (good for log-based observability).
-* Messaging lifecycle stream — emits *CloudEvents* on a channel
-(good for external monitoring systems and event-driven dashboards).
+When your workflow makes an external call, the downstream service will receive:
 
-For CloudEvents-based lifecycle monitoring, see
-xref:messaging.adoc[Use messaging and events].
+* `X-Flow-Instance-Id`: Matches the `quarkus.flow.instanceId` from your MDC logs.
+* `X-Flow-Task-Id`: Matches the `quarkus.flow.taskPos` from your MDC logs.
+
+These headers allow downstream services to implement idempotency keys, ensuring that if a workflow retries an HTTP call due to a network timeout, the external service knows it is part of the exact same execution step.
+
+You can disable automatic header injection globally if a strict downstream API rejects unrecognized headers:
+[source,properties]
+----
+quarkus.flow.http.client.enable-metadata-propagation=false
+----
+
+== 4. Log Tracing vs. Messaging Events
+
+It is important to understand the difference between this logging tracer and the lifecycle events emitted over messaging:
+
+* **Log Tracing (`quarkus.flow.tracing.enabled`):** Writes text/JSON to `stdout`. It is designed for operational observability (log aggregation, debugging, Grafana Loki).
+* **Messaging Lifecycle (`quarkus.flow.messaging.lifecycle-enabled`):** Broadcasts CloudEvents to a Kafka broker. It is designed for system-to-system integration (e.g., triggering another service when a workflow completes).
+
+You can safely enable both simultaneously.
 
 == See also
 
-* xref:messaging.adoc[Use messaging and events] — lifecycle CloudEvents via Reactive Messaging.
-* xref:specification.adoc[CNCF Workflow mapping and concepts] — background on workflow/task lifecycle.
+* xref:metrics-prometheus.adoc[Metrics & Prometheus Integration] — complement your logs with numeric health metrics.
+* xref:messaging.adoc[Use messaging and events] — publish lifecycle events to Kafka as CloudEvents.
 * link:https://quarkus.io/guides/logging[Quarkus Logging guide] — full logging configuration reference.

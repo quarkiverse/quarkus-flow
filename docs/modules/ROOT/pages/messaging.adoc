@@ -2,31 +2,29 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
-*Quarkus Flow Messaging* bridges the workflow engine with *MicroProfile Reactive Messaging*
-(SmallRye), so workflows can *listen to* and *emit* CloudEvents over Kafka (or any supported
-connector). It activates automatically when Quarkus Messaging is on the classpath.
+*Quarkus Flow Messaging* bridges the workflow engine with *MicroProfile Reactive Messaging* (SmallRye). This allows your workflows to act as fully event-driven orchestrations: they can be triggered by events, emit events to external systems, and pause execution while listening for asynchronous callbacks.
+
+The bridge activates automatically when a supported Quarkus Messaging connector (like Kafka or AMQP) is on the classpath.
 
 This guide shows how to:
 
-* activate the Flow ↔ Reactive Messaging bridge
-* use the default `flow-in` / `flow-out` channels with Kafka
-* enable lifecycle events
-* override the bridge with your own messaging beans
-* understand the serialization format
+* Activate the Flow ↔ Reactive Messaging bridge.
+* Map the default `flow-in` / `flow-out` channels to Kafka.
+* Use the Java DSL to emit and listen for events.
+* Enable automated lifecycle events.
+* Understand the CloudEvent correlation metadata.
 
 == Prerequisites
 
 * A Quarkus application with xref:getting-started.adoc[Quarkus Flow set up].
-* Quarkus Messaging on the classpath (for example `quarkus-messaging-kafka`).
+* Quarkus Messaging on the classpath (e.g., `quarkus-messaging-kafka`).
 * Basic familiarity with MicroProfile Reactive Messaging configuration (`mp.messaging.*`).
 
-== 1. Activate the bridge
+== 1. Add the dependencies and activate the bridge
 
-You do *not* add a separate `quarkus-flow-messaging` artifact.
-The bridge is auto-registered when *any* `quarkus-messaging-*` connector is present
-(for example, Kafka, AMQP, JMS).
+You do *not* need a separate `quarkus-flow-messaging` artifact. The bridge is auto-registered when any `quarkus-messaging-*` connector is present.
 
-.Maven (Kafka connector)
+.pom.xml
 [source,xml]
 ----
 <dependency>
@@ -35,49 +33,33 @@ The bridge is auto-registered when *any* `quarkus-messaging-*` connector is pres
 </dependency>
 ----
 
-Enable the default bridge bean with:
+To activate the bridge, enable the default domain event channels in your `application.properties`:
 
 [source,properties]
 ----
 quarkus.flow.messaging.defaults-enabled=true
 ----
 
-This creates a CDI bean that consumes domain events from `flow-in` and publishes
-domain events to `flow-out`.
+Once enabled, the engine creates two default channels:
 
-== 2. Understand what you get
+* `flow-in` (Inbound): Consumes structured CloudEvents JSON to start or wake up workflows.
+* `flow-out` (Outbound): Publishes structured CloudEvents JSON emitted by workflows.
 
-Once enabled, the default bridge provides:
+== 2. Map channels to Kafka topics
 
-* *Default channels* – `flow-in` (inbound) and `flow-out` (outbound) for *structured CloudEvents JSON*.
-* *Connector-agnostic* wiring – works with any SmallRye connector you add (Kafka, JMS, AMQP, …).
-* *Optional lifecycle stream* – publish engine lifecycle CloudEvents on `flow-lifecycle-out`.
-* *BYO integration* – you can override with your own `EventConsumer` / `EventPublisher` beans if needed.
+Configure MicroProfile Reactive Messaging to connect the default Flow channels to your Kafka topics.
 
-== 3. Quickstart with Kafka
-
-=== 3.1 Add the connector
-
-Add `quarkus-messaging-kafka` as shown above; the bridge auto-activates.
-
-=== 3.2 Turn on the default bridge
+Notice that Quarkus Flow uses `byte[]` for the payload on the wire; the engine handles the serialization and deserialization of the CloudEvent JSON envelope automatically.
 
 [source,properties]
 ----
-quarkus.flow.messaging.defaults-enabled=true
-----
-
-=== 3.3 Map default channels to Kafka topics
-
-[source,properties]
-----
-# Inbound (structured CloudEvents JSON)
+# Inbound (Listens for events to start or resume workflows)
 mp.messaging.incoming.flow-in.connector=smallrye-kafka
 mp.messaging.incoming.flow-in.topic=flow-in
 mp.messaging.incoming.flow-in.value.deserializer=org.apache.kafka.common.serialization.ByteArrayDeserializer
 mp.messaging.incoming.flow-in.key.deserializer=org.apache.kafka.common.serialization.StringDeserializer
 
-# Outbound (structured CloudEvents JSON)
+# Outbound (Publishes events emitted by the workflow)
 mp.messaging.outgoing.flow-out.connector=smallrye-kafka
 mp.messaging.outgoing.flow-out.topic=flow-out
 mp.messaging.outgoing.flow-out.value.serializer=org.apache.kafka.common.serialization.ByteArraySerializer
@@ -87,7 +69,14 @@ mp.messaging.outgoing.flow-out.key.serializer=org.apache.kafka.common.serializat
 # kafka.bootstrap.servers=localhost:9092
 ----
 
-=== 3.4 Define a tiny event-driven workflow
+== 3. Emit and Listen in the Java DSL
+
+In your Quarkus Flow definitions, you interact with these Kafka topics using two primary tasks:
+
+* **`emitJson("event.type", Pojo.class)`**: Takes a standard Java POJO from your workflow data, wraps it in a CloudEvent envelope with the specified type, and publishes it to `flow-out`.
+* **`listen("taskName", toOne("event.type"))`**: Pauses the workflow instance and releases the execution thread. The engine defines an **Event Filter** waiting for a CloudEvent of `event.type` to arrive on `flow-in`. When it does, the engine automatically correlates it to the paused instance, extracts the payload, and resumes execution.
+
+Here is a complete example of an event-driven workflow:
 
 [source,java]
 ----
@@ -96,13 +85,12 @@ include::{examples-dir}org/acme/HelloMessagingFlow.java[]
 
 With this in place:
 
-* external producers can send CloudEvents to the `flow-in` topic to *start or continue* workflows
-* workflows can `emit` CloudEvents, which are then written to the `flow-out` topic
+* External producers can send CloudEvents to the `flow-in` topic to *start or continue* workflows.
+* Workflows can `emit` CloudEvents, which are then written to the `flow-out` topic.
 
-== 4. Enable lifecycle events (optional)
+== 4. Enable lifecycle events (Optional)
 
-You can also enable a separate lifecycle stream (engine signals: task/workflow started,
-completed, suspended, faulted, …):
+You can configure the engine to publish its internal state changes (e.g., when a workflow starts, suspends, or faults) to a dedicated Kafka topic. This is highly useful for building observability dashboards or audit logs.
 
 [source,properties]
 ----
@@ -114,56 +102,24 @@ mp.messaging.outgoing.flow-lifecycle-out.key.serializer=org.apache.kafka.common.
 mp.messaging.outgoing.flow-lifecycle-out.value.serializer=org.apache.kafka.common.serialization.ByteArraySerializer
 ----
 
-Common event types include:
+Common lifecycle event types published to this topic include:
 
-* `io.serverlessworkflow.task.started.v1`
-* `io.serverlessworkflow.task.completed.v1`
 * `io.serverlessworkflow.workflow.started.v1`
 * `io.serverlessworkflow.workflow.completed.v1`
-* and similar variants for faults/suspensions.
+* `io.serverlessworkflow.task.started.v1`
+* `io.serverlessworkflow.task.suspended.v1`
+* `io.serverlessworkflow.task.faulted.v1`
 
-This stream is useful for observability dashboards and external monitoring systems.
+== 5. CloudEvent Correlation Headers
 
-== 5. Bring your own messaging (advanced)
+For idempotency and end-to-end distributed traceability, Quarkus Flow automatically attaches correlation metadata to all emitted events via link:https://github.com/cloudevents/spec/blob/v1.0/spec.md#extension-context-attributes[CloudEvent Extension Context Attributes].
 
-If you need full control over how events are consumed and produced, you can provide your own beans:
+By default, every event published to `flow-out` will include:
 
-* exactly *one* `io.serverlessworkflow.impl.events.EventConsumer` (inbound)
-* zero or more `io.serverlessworkflow.impl.events.EventPublisher` (outbound)
+* `flowinstanceid`: The UUID of the executing `WorkflowInstance`.
+* `flowtaskid`: The JSON Pointer of the specific task that emitted the event (e.g., `do/0/task`).
 
-If none are provided, the defaults described above apply when `quarkus.flow.messaging.defaults-enabled=true`.
-
-This lets you:
-
-* integrate with existing messaging abstractions
-* route events through custom logic before they reach the engine
-* publish only a subset of events, or enrich them before sending
-
-== 6. Notes on serialization
-
-* Flow Messaging uses *structured* CloudEvents JSON end-to-end (`byte[]` payload on the wire).
-* Event `data` is typically `application/json`. Jackson handles (de)serialization of payloads
-referenced by your workflow tasks.
-* On the Reactive Messaging side, you configure `byte[]` serializers/deserializers (as shown in the Kafka example);
-the bridge takes care of turning those bytes into CloudEvents.
-
-== 7. Correlation through Extension Context Attributes
-
-For idempotency and traceability purposes, Quarkus Flow by default attaches correlation metadata for all emitted events.
-
-The metadata are added into the link:https://github.com/cloudevents/spec/blob/v1.0/spec.md#extension-context-attributes[CloudEvent Extension Context Attribute].
-
-* `flowinstanceid` - contains the `WorkflowInstance` id
-* `flowtaskid` - contains the current position (link:https://datatracker.ietf.org/doc/html/rfc6901[JSON Pointer]) of the Workflow's task responsible for sending the HTTP request. For more information about this field see link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#task-descriptor[the Task Descriptor section on the specification docs].
-
-You can change the key through `quarkus.flow.messaging.metadata.instance-id.key` and `quarkus.flow.messaging.metadata.task-id.key` properties.
-
-These metadata enable end-to-end traceability and idempotency handling throughout the workflow execution. You can disable the automatic correlation header injection by setting the `quarkus.flow.messaging.enable-metadata-propagation` configuration property to `false`.
-
-=== Getting correlation metadata
-
-Correlation metadata is propagated as CloudEvent extension attributes.
-You can retrieve these attributes directly from the `CloudEvent` instance:
+If you are writing a custom consumer downstream, you can extract these attributes directly from the `CloudEvent`:
 
 [source,java]
 ----
@@ -179,8 +135,29 @@ public void printCorrelation(CloudEvent event) {
 }
 ----
 
+If you need to rename these keys to match your enterprise naming conventions, or disable them entirely:
+[source,properties]
+----
+quarkus.flow.messaging.metadata.instance-id.key=mycompany-instance-id
+quarkus.flow.messaging.metadata.task-id.key=mycompany-task-id
+
+# To disable injection entirely:
+# quarkus.flow.messaging.enable-metadata-propagation=false
+----
+
+== 6. Bring your own messaging (Advanced)
+
+If you need full control over how events are consumed and produced—for example, to route events through custom enrichment logic before they reach the engine, or to filter which events get published—you can bypass the `flow-in` and `flow-out` channels.
+
+Provide your own CDI beans implementing the Flow interfaces:
+
+* Exactly **one** `io.serverlessworkflow.impl.events.EventConsumer` (for inbound events).
+* Zero or more `io.serverlessworkflow.impl.events.EventPublisher` (for outbound events).
+
+When you provide these beans, the default bridge is ignored.
+
 == See also
 
-* xref:dsl-cheatsheet.adoc[] — Emit/Listen patterns in the Java DSL.
-* xref:specification.adoc[] — CNCF Workflow Emit/Listen and event model.
-* xref:tracing.adoc[] — trace event-driven workflows and correlate with messaging.
+* xref:data-flow.adoc[Data flow and context management] — how to shape event payloads.
+* xref:dsl-cheatsheet.adoc[Java DSL cheatsheet] — syntax for `emit`, `listen`, and event builders.
+* xref:specification.adoc[Serverless Workflow Spec mapping and concepts] — the spec rules for event consumption.

@@ -9,7 +9,7 @@ Use it to model **classic workflows** *and* **Agentic AI orchestrations**, with 
 > 📚 Docs: https://docs.quarkiverse.io/quarkus-flow/dev/
 >
 > 🤖 Agentic (LangChain4j):
-> - https://docs.quarkiverse.io/quarkus-flow/dev/howto-langchain4j-agentic-workflows.html
+> - https://docs.quarkiverse.io/quarkus-flow/dev/langchain4j.html
 > - https://docs.quarkiverse.io/quarkus-flow/dev/concepts-agentic-langchain4j.html
 
 ## Why Quarkus Flow?
@@ -72,8 +72,7 @@ Quarkus Flow supports **three complementary ways** to use LangChain4j:
 
 Docs:
 
-* [https://docs.quarkiverse.io/quarkus-flow/dev/langchain4j.html#_choose_your_approach](https://docs.quarkiverse.io/quarkus-flow/dev/langchain4j.html#_choose_your_approach)
-* [https://docs.quarkiverse.io/quarkus-flow/dev/howto-langchain4j-agentic-workflows.html](https://docs.quarkiverse.io/quarkus-flow/dev/howto-langchain4j-agentic-workflows.html)
+* [https://docs.quarkiverse.io/quarkus-flow/dev/langchain4j.html](https://docs.quarkiverse.io/quarkus-flow/dev/langchain4j.html)
 
 ### 1) Java DSL tasks (call LangChain4j beans)
 

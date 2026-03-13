@@ -1,57 +1,38 @@
 = Configure the HTTP client
 :page-role: howto
 :page-aliases: http/index.adoc
+include::includes/attributes.adoc[]
 
-Quarkus Flow supports calling external services over HTTP and OpenAPI.
-All HTTP / OpenAPI tasks share a common, tunable HTTP client layer powered by RESTEasy Reactive and Vert.x.
+Quarkus Flow supports calling external services over HTTP and OpenAPI. All HTTP and OpenAPI tasks share a common, tunable HTTP client layer powered by RESTEasy Reactive and Vert.x.
 
 This guide shows how to:
 
-* understand which HTTP client Quarkus Flow uses for a given workflow / task
-* configure the *default* HTTP client
-* define *named* HTTP clients
-* route specific workflows / tasks to a named client
-* configure static headers, logging, proxy, TLS and other network options
+* Configure the *default* HTTP client.
+* Define *named* HTTP clients for specific external services.
+* Route specific workflows or tasks to a named client.
+* Configure static headers, logging, proxies, and TLS.
 
-TIP: The low-level configuration reference for all HTTP properties lives in the
-xref:configuration.adoc[Extension Configuration Reference] page under
-the `quarkus.flow.http.client.*` namespace.
+[TIP]
+For retry and circuit breaker configurations, see xref:fault-tolerance.adoc[Fault tolerance and resilience]. For correlation headers, see xref:tracing.adoc[Enable tracing].
 
 == Prerequisites
 
 * A Quarkus application with xref:getting-started.adoc[Quarkus Flow set up].
-* At least one workflow that uses HTTP or OpenAPI tasks
-(see xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services]).
-* Basic familiarity with Quarkus configuration.
+* At least one workflow that uses HTTP or OpenAPI tasks (see xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services]).
 
 == 1. Understand the HTTP client model
 
-All Flow HTTP / OpenAPI tasks use a `jakarta.ws.rs.client.Client` managed by Quarkus Flow.
+All Flow HTTP and OpenAPI tasks use a `jakarta.ws.rs.client.Client` managed by Quarkus Flow.
 
 At runtime, Quarkus Flow:
-
-* builds a *default client* from `quarkus.flow.http.client.*`
-* optionally builds *named clients* from `quarkus.flow.http.client.named.<name>.*`
-* resolves *which client to use* for a given workflow + task using
-`quarkus.flow.http.client.workflow.*` routing
-* reuses and closes these clients automatically for you at the end of the application lifecycle
-
-Internally, the extension maps these configuration properties to a RESTEasy Reactive
-`ClientBuilderImpl` and Vert.x `HttpClientOptions`, but the API you configure is purely
-Quarkus Flow configuration.
+* Builds a *default client* from `quarkus.flow.http.client.*`.
+* Optionally builds *named clients* from `quarkus.flow.http.client.named.<name>.*`.
+* Resolves *which client to use* for a given workflow or task using `quarkus.flow.http.client.workflow.*` routing.
+* Reuses and closes these clients automatically at the end of the application lifecycle.
 
 == 2. Configure the default HTTP client
 
 The *default HTTP client* is used when no routing is configured for a workflow or task.
-
-All default client properties live under:
-
-[source,properties]
-----
-quarkus.flow.http.client.<property>=<value>
-----
-
-Common examples:
 
 [source,properties]
 ----
@@ -68,22 +49,9 @@ quarkus.flow.http.client.connection-ttl=60
 quarkus.flow.http.client.user-agent=quarkus-flow/1.0
 ----
 
-These settings apply to all HTTP / OpenAPI tasks unless a more specific *named client*
-is selected via routing.
-
 == 3. Create named HTTP clients
 
-You can declare as many *named HTTP clients* as you need, each with its own tuning
-(timeouts, headers, logging, proxy, etc.).
-
-Named clients live under:
-
-[source,properties]
-----
-quarkus.flow.http.client.named.<name>.<property>=<value>
-----
-
-Example: two named clients, `secureA` and `internal`:
+You can declare as many *named HTTP clients* as you need, each with its own tuning.
 
 [source,properties]
 ----
@@ -91,262 +59,106 @@ Example: two named clients, `secureA` and `internal`:
 quarkus.flow.http.client.named.secureA.connect-timeout=3000
 quarkus.flow.http.client.named.secureA.read-timeout=8000
 quarkus.flow.http.client.named.secureA.user-agent=MyCompanyBot/1.0
-quarkus.flow.http.client.named.secureA.logging.scope=request-response
-quarkus.flow.http.client.named.secureA.logging.body-limit=256
-quarkus.flow.http.client.named.secureA.static-headers=X-Env=prod,X-Tenant=acme
 
 # "internal" – internal service with a larger pool and relaxed timeouts
 quarkus.flow.http.client.named.internal.connect-timeout=1000
 quarkus.flow.http.client.named.internal.read-timeout=20000
 quarkus.flow.http.client.named.internal.connection-pool-size=100
-quarkus.flow.http.client.named.internal.keep-alive-enabled=true
 ----
-
-If a named client is resolved but not configured, Quarkus Flow falls back to the
-*default* HTTP client.
 
 == 4. Route workflows and tasks to clients
 
-Routing is configured under the `workflow` section of the HTTP config:
+Routing is configured under the `workflow` section:
 
 [source,properties]
 ----
-# Use "secureA" for all HTTP/OpenAPI tasks in workflow "order-flow"
+# Use "secureA" for all HTTP/OpenAPI tasks in the workflow "order-flow"
 quarkus.flow.http.client.workflow.order-flow.name=secureA
 
-# Override only the "fetchCustomers" task in "order-flow" to use "internal"
+# Override only the "fetchCustomers" task within "order-flow" to use "internal"
 quarkus.flow.http.client.workflow.order-flow.task.fetchCustomers.name=internal
 ----
 
 Resolution order for a call:
+. Task-level override.
+. Workflow-level default.
+. Fallback to the global default client.
 
-. Task-level override: +
-`quarkus.flow.http.client.workflow.<workflowId>.task.<taskId>.name`
-. Workflow-level default: +
-`quarkus.flow.http.client.workflow.<workflowId>.name`
-. Fallback to the global default client (`quarkus.flow.http.client.*`)
-
-Here, `<workflowId>` is the workflow id (from the Workflow DSL),
-and `<taskId>` is the HTTP/OpenAPI task name.
-
-IMPORTANT: Although you can have an inner task named the same as a parent task
-per specification, for HTTP clients it's highly recommended that you keep
-HTTP-related task names unique.
+[IMPORTANT]
+It is highly recommended that you keep HTTP-related task names unique within your workflow to avoid routing conflicts.
 
 == 5. Configure static headers
 
-Use `static-headers` to attach headers to *every* request sent by a client.
-
-The value is a comma-separated list of `name=value` pairs:
+Use `static-headers` to attach headers to *every* request sent by a client (comma-separated):
 
 [source,properties]
 ----
 # Default client
 quarkus.flow.http.client.static-headers=X-Env=prod,X-Tenant=acme
 
-# Named client "secureA"
+# Named client
 quarkus.flow.http.client.named.secureA.static-headers=X-Env=prod,X-Region=us-east-1
 ----
 
-Rules:
-
-* entries are separated by commas `,`
-* each entry must be `name=value`
-* whitespace around names/values is ignored
-* invalid entries are ignored with a warning in the logs
-
-Example:
-
-[source,properties]
-----
-quarkus.flow.http.client.static-headers=X-Env=prod,X-Tenant=acme
-----
-
-results in:
-
-* `X-Env: prod`
-* `X-Tenant: acme`
-
-on every request performed by the selected client.
-
 == 6. Logging and debugging HTTP requests
 
-When wiring workflows to external HTTP or OpenAPI services, seeing the actual requests
-and responses is crucial for debugging.
-
-Quarkus Flow reuses the RESTEasy Reactive client logger, which you can enable and tune
-via `quarkus.flow.http.client.*` and standard Quarkus logging categories.
-
-=== Enable request/response logging
-
-At minimum, set the logging scope for the HTTP client and turn on DEBUG logging for the
-REST client logger:
+Enable the RESTEasy Reactive client logger to see the exact payloads on the wire:
 
 [source,properties]
 ----
-# Log both request and response line + headers (+ body, see below)
+# Log both request and response line + headers (+ body, up to limit)
 quarkus.flow.http.client.logging.scope=request-response
-
-# Truncate logged body after N characters
 quarkus.flow.http.client.logging.body-limit=1024
 
 # Enable the REST client logger
 quarkus.log.category."org.jboss.resteasy.reactive.client.logging".level=DEBUG
 ----
 
-The `logging.scope` property maps to `LoggingScope`:
-
-* `none` – no logging (default)
-* `request-response` – log one line per request/response, plus headers and body
-(up to `logging.body-limit` chars)
-* `all` – most verbose; includes additional internal details
-
-The `logging.body-limit` controls how much of the request/response body is included
-in the logs, helping avoid flooding your logs with very large payloads.
-
-You can configure them per named client:
-
-[source,properties]
-----
-quarkus.flow.http.client.named.secureA.logging.scope=request-response
-quarkus.flow.http.client.named.secureA.logging.body-limit=256
-
-quarkus.flow.http.client.named.internal.logging.scope=none
-----
-
-The logging category stays the same:
-
-[source,properties]
-----
-quarkus.log.category."org.jboss.resteasy.reactive.client.logging".level=DEBUG
-----
-
-Once enabled, every HTTP/OpenAPI task that uses those clients will emit debug logs with the
-full HTTP interaction, which is especially useful when iterating on workflow definitions
-or diagnosing failures against third-party APIs.
-
 == 7. HTTP/2 and ALPN
 
-You can enable HTTP/2 and ALPN per client:
-
 [source,properties]
 ----
-# Default client
 quarkus.flow.http.client.http2=true
 quarkus.flow.http.client.alpn=true
-
-# Named client
-quarkus.flow.http.client.named.secureA.http2=true
-quarkus.flow.http.client.named.secureA.alpn=true
 ----
-
-Quarkus Flow passes these flags to the underlying Vert.x `HttpClientOptions`.
-If you also configure TLS, ALPN is used to negotiate the protocol when supported
-by the server.
 
 == 8. Proxy support
 
-Quarkus Flow provides proxy support through integration with the
-https://quarkus.io/guides/proxy-registry[Quarkus Proxy Registry].
-The Proxy Registry supplies a centralized and secure way to configure HTTP proxies across the Quarkus Platform,
-including support for https://quarkus.io/guides/credentials-provider[Credentials Providers].
-
-With this integration, Quarkus Flow HTTP clients can reference a proxy configuration by name,
-without directly embedding proxy details or credentials in application code.
-
-=== 8.1 Configuring a default proxy
-
-To use a proxy with the default Flow HTTP client, configure the Proxy Registry
-and reference it using the `proxy-configuration-name` property.
+Quarkus Flow integrates with the link:https://quarkus.io/guides/proxy-registry[Quarkus Proxy Registry].
 
 [source,properties]
 ----
-# Proxy Registry configuration
+# 1. Configure the Proxy Registry
 quarkus.proxy.registry.host=proxy.mycorp.internal
 quarkus.proxy.registry.port=3128
 
-# Optional proxy settings
-quarkus.proxy.registry.username=api-user
-quarkus.proxy.registry.password=change-me
-quarkus.proxy.registry.non-proxy-hosts=localhost,*.svc.cluster.local
-quarkus.proxy.registry.proxy-connect-timeout=5000
+# 2. Tell the default client to use it
+quarkus.flow.http.client.proxy-configuration-name=none
 
-# Flow HTTP client proxy configuration
-quarkus.flow.http.client.proxy-configuration-name=none # <1>
-----
-
-<1> Uses the default proxy configuration from the Proxy Registry.
-
-=== 8.2 Configuring a proxy for a named HTTP client
-
-Named Flow HTTP clients can reference a specific proxy configuration by name.
-This allows different clients to use different proxies if required.
-
-[source,properties]
-----
-# Named proxy configuration
+# Or configure a named client to use a specific named proxy
 quarkus.proxy.my-proxy.registry.host=proxy.mycorp.internal
-quarkus.proxy.my-proxy.registry.port=3128
-
-# Named Flow HTTP client using the named proxy
-quarkus.flow.http.client.named.secureA.proxy-configuration-name=my-proxy # <1>
+quarkus.flow.http.client.named.secureA.proxy-configuration-name=my-proxy
 ----
-
-<1> Uses the `my-proxy` configuration from the Proxy Registry.
-
-[NOTE]
-====
-For advanced Proxy Registry configuration, including the use of
-https://quarkus.io/guides/credentials-provider[Credentials Providers],
-refer to the https://quarkus.io/guides/proxy-registry[Quarkus Proxy Registry documentation].
-====
 
 == 9. Redirects, compression and chunk size
 
-Additional tuning is available:
-
 [source,properties]
 ----
-# Max redirects
 quarkus.flow.http.client.max-redirects=5
-
-# Follow redirects at the client level
 quarkus.flow.http.client.follow-redirects=true
-
-# Enable transparent decompression
 quarkus.flow.http.client.enable-compression=true
-
-# HTTP chunk size (bytes)
 quarkus.flow.http.client.max-chunk-size=16384
-----
-
-All of these can be set per named client as well:
-
-[source,properties]
-----
-quarkus.flow.http.client.named.internal.max-redirects=2
-quarkus.flow.http.client.named.internal.enable-compression=true
 ----
 
 == 10. Multi-valued query parameters
 
-If you rely on repeated query parameters (for example, `?tag=a&tag=b`),
-you can control how the underlying REST client encodes them:
-
 [source,properties]
 ----
-# See MultiQueryParamMode enum in RESTEasy Reactive for supported values
+# See MultiQueryParamMode enum in RESTEasy Reactive
 quarkus.flow.http.client.multi-query-param-mode=multi
 ----
 
-This maps to `ClientBuilderImpl.multiQueryParamMode(...)`.
-
 == 11. TLS, trust and host verification
-
-For most use cases, you configure TLS using standard Quarkus SSL / REST client facilities.
-
-Quarkus Flow exposes two booleans that directly map to `ClientBuilderImpl.trustAll(boolean)`
-and `verifyHost(boolean)`:
 
 [source,properties]
 ----
@@ -357,265 +169,11 @@ quarkus.flow.http.client.trust-all=true
 quarkus.flow.http.client.verify-host=false
 ----
 
-WARNING: Only enable `trust-all` or disable `verify-host` in controlled environments
-(for example, local development). In production these settings significantly reduce TLS security.
-
-== 12. Correlation headers
-
-For idempotency and traceability purposes, Quarkus Flow by default attaches correlation metadata HTTP headers for all HTTP/OpenAPI outgoing calls.
-
-The metadata HTTP headers are:
-
-* `X-Flow-Instance-Id` - contains the `WorkflowInstance` id
-* `X-Flow-Task-Id` - contains the current position (link:https://datatracker.ietf.org/doc/html/rfc6901[JSON Pointer]) of the Workflow's task responsible for sending the HTTP request. For more information about this field see link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#task-descriptor[the Task Descriptor section on the specification docs].
-
-These headers enable end-to-end traceability and idempotency handling throughout the workflow execution.
-
-You can disable the automatic correlation header injection by setting the `quarkus.flow.http.client.enable-metadata-propagation` configuration property to `false`.
-
-[NOTE]
-The `quarkus.flow.http.client.enable-metadata-propagation` is a global-level HTTP client property. You cannot enable or disable correlation headers on a per-workflow or per-task basis.
-
-
-[[smallrye-fault-tolerance]]
-== 13. Integration with SmallRye Fault Tolerance
-
-Quarkus Flow integrates with the *SmallRye Fault Tolerance* project to provide
-resilience and fault-tolerance capabilities, such as retries and other
-resilience strategies, when invoking workflows.
-
-[[fault-tolerance-retry]]
-=== Retry
-
-By default, *all workflows have a retry strategy enabled*.
-
-You can disable retries globally for all workflows by setting the following
-property:
-
-[source,properties]
-----
-quarkus.flow.http.client.resilience.retry.enabled=false
-----
-
-When `quarkus.flow.http.client.resilience.retry.enabled` is set to `true`
-(the default), the following configuration values are applied:
-
-[source,properties]
-----
-quarkus.flow.http.client.resilience.retry.max-retries=3
-quarkus.flow.http.client.resilience.retry.delay=0
-quarkus.flow.http.client.resilience.retry.jitter=200ms
-----
-
-[NOTE]
-====
-Resilience configuration is applied per *named workflow*.
-
-If you are using named HTTP clients, you can scope the retry configuration as
-follows:
-
-[source,properties]
-----
-quarkus.flow.http.client.named."my-client".resilience.retry.*
-----
-====
-
-[[fault-tolerance-circuit-breaker]]
-=== Circuit Breaker
-
-By default, *all workflows have a circuit breaker strategy enabled*
-
-You can disable circuit breakers globally for all workflows by setting the
-following property:
-[source,properties]
-----
-quarkus.flow.http.client.resilience.circuit-breaker.enabled=false
-----
-
-When `quarkus.flow.http.client.resilience.circuit-breaker.enabled` is set to
-`true` (the default), the following configuration values are applied:
-
-[source,properties]
-----
-quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio=0.5
-quarkus.flow.http.client.resilience.circuit-breaker.delay=5s
-quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold=20
-quarkus.flow.http.client.resilience.circuit-breaker.success-threshold=1
-quarkus.flow.http.client.resilience.circuit-breaker.exceptions=
-----
-
-[NOTE]
-====
-Resilience configuration is applied per *named workflow*.
-
-If you are using named HTTP clients, you can scope the retry configuration as
-follows:
-
-[source,properties]
-----
-quarkus.flow.http.client.named."my-client".resilience.circuit-breaker.*
-----
-====
-
-== Retry + Circuit Breaker (Multiple Strategies)
-
-When both *Retry* and *Circuit Breaker* are enabled (the default), they work together following the link:https://smallrye.io/docs/smallrye-fault-tolerance/6.10.0/howto/multiple.html[SmallRye Fault Tolerance nesting rules].
-
-=== Understanding the Nesting Order
-
-SmallRye Fault Tolerance applies resilience strategies in a specific order:
-
-[source]
-----
-Retry(
-    CircuitBreaker(
-        ... the guarded method ...
-    )
-)
-----
-
-This means:
-
-* **Circuit Breaker is inner** — it wraps the actual HTTP call
-* **Retry is outer** — it wraps the circuit breaker
-
-=== How They Interact
-
-When a workflow task executes with both strategies enabled:
-
-1. **Retry attempts to call the Circuit Breaker** — Each retry attempt goes through the circuit breaker
-2. **Circuit Breaker evaluates each call** — It counts successes and failures to determine if it should open
-3. **Circuit can open during retry sequence** — If the failure threshold is reached, the circuit opens mid-retry
-4. **Subsequent retries get CircuitBreakerOpenException** — Once open, retry attempts fail immediately without calling the actual method
-
-
-[TIP]
-====
-All strategies provide metrics for monitoring, refer to xref:metrics-prometheus.adoc#fault-tolerance-metrics[metrics] for more details.
-====
-
-==== Example Scenario
-
-Consider this configuration:
-
-[source,properties]
-----
-quarkus.flow.http.client.resilience.retry.max-retries=3
-quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold=2
-quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio=0.5
-----
-
-**Execution flow:**
-
-1. **First attempt** — HTTP call fails → Circuit breaker records 1 failure
-2. **First retry** — HTTP call fails → Circuit breaker records 2 failures (threshold reached, 100% failure ratio > 50%)
-3. **Circuit opens** — Circuit breaker state changes to OPEN
-4. **Second retry** — Gets `CircuitBreakerOpenException` immediately (no HTTP call made)
-5. **Third retry** — Gets `CircuitBreakerOpenException` immediately (no HTTP call made)
-6. **Final result** — Workflow task fails after exhausting all retries
-
-
-[TIP]
-====
-All strategies provides metrics for monitoring, refer to
-====
-
-=== Using a TypedGuard from CDI
-
-For more advanced or fine-grained control, Quarkus Flow allows you to define
-resilience behavior programmatically by providing a CDI-produced `TypedGuard`.
-
-This approach is useful when:
-
-* Retry conditions depend on business logic
-* You need to inspect exceptions in detail
-* Different workflows require different resilience strategies
-
-To do this, create a CDI producer for a
-`TypedGuard<CompletionStage<WorkflowModel>>` and annotate it with
-`@io.smallrye.common.annotation.Identifier`, as shown below:
-
-[source,java]
-----
-@Produces
-@Identifier("custom-type-guard") // <1>
-public TypedGuard<CompletionStage<WorkflowModel>> custom() {
-    return TypedGuard.<CompletionStage<WorkflowModel>>create(new TypeLiteral<>() {})
-            .withRetry()
-            .whenException(throwable -> {
-                WorkflowException workflowException = (WorkflowException) throwable;
-                // custom retry logic
-                return true; // retry
-            })
-            .done()
-            .build();
-}
-----
-
-<1> Identifier value that must be referenced from `application.properties`.
-
-Next, configure Quarkus Flow to use this `TypedGuard` by setting the following
-property:
-
-[source,properties]
-----
-quarkus.flow.http.client.resilience.identifier=custom-type-guard
-----
-
-[NOTE]
-====
-When `quarkus.flow.http.client.resilience.identifier` is set,
-*all retry-related configuration defined via*
-`quarkus.flow.http.client.resilience.retry.*` is ignored.
-
-In this case, the resilience behavior is fully controlled by the provided
-`TypedGuard` implementation.
-====
-
-== 14. Putting it all together
-
-Example: a typical setup using both default and named clients:
-
-[source,properties]
-----
-# Default client: used by most workflows
-quarkus.flow.http.client.connect-timeout=5000
-quarkus.flow.http.client.read-timeout=10000
-quarkus.flow.http.client.user-agent=quarkus-flow/1.0
-quarkus.flow.http.client.logging.scope=request-response
-quarkus.flow.http.client.logging.body-limit=512
-
-# Named client for a SaaS API
-quarkus.flow.http.client.named.crm.connect-timeout=3000
-quarkus.flow.http.client.named.crm.read-timeout=8000
-quarkus.flow.http.client.named.crm.user-agent=MyCRMIntegrator/1.0
-quarkus.flow.http.client.named.crm.static-headers=X-Env=prod
-quarkus.flow.http.client.named.crm.http2=true
-quarkus.flow.http.client.named.crm.enable-compression=true
-
-# Route "customer-sync-flow" to the CRM client
-quarkus.flow.http.client.workflow.customer-sync-flow.name=crm
-
-# Override only a specific task in another flow
-quarkus.flow.http.client.workflow.order-flow.task.pushOrderToCrm.name=crm
-----
-
-With this configuration:
-
-* most workflows use the default client
-* any HTTP / OpenAPI task in `customer-sync-flow` uses the `crm` client
-* within `order-flow`, only the `pushOrderToCrm` task uses `crm`;
-other tasks fall back to the default client
-
-This lets you centralize all HTTP behavior (timeouts, logging, headers, proxy, TLS)
-per *logical client*, and route workflows and tasks declaratively without touching
-your Java or DSL code.
+[WARNING]
+Only enable `trust-all` or disable `verify-host` in controlled environments like local development.
 
 == See also
 
-* xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services] — how to create HTTP/OpenAPI tasks in workflows.
-* xref:configuration.adoc[Extension Configuration Reference] — complete property list under `quarkus.flow.http.client.*`.
-* link:https://quarkus.io/guides/rest-client-reactive[Using the REST Client Reactive] — Quarkus REST client reactive guide.
-* link:https://javadoc.io/doc/io.quarkus/quarkus-rest-client-reactive/latest/org/jboss/resteasy/reactive/client/api/QuarkusRestClientProperties.html[QuarkusRestClientProperties] — RESTEasy Reactive HTTP client properties.
-* link:https://smallrye.io/smallrye-config/Main/config/map-support/[SmallRye Config map support] — details on map / complex configuration values.
-* link:https://vertx.io/docs/apidocs/io/vertx/core/http/HttpClientOptions.html[Vert.x HttpClientOptions] — low-level tuning options.
+* xref:fault-tolerance.adoc[Fault tolerance and resilience] — configure HTTP retries and circuit breakers.
+* xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services] — how to create HTTP tasks in Java DSL.
+* xref:configuration.adoc[Extension Configuration Reference] — complete property list.

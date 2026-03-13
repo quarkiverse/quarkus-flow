@@ -1,0 +1,108 @@
+= Configure state persistence
+:page-role: howto
+include::includes/attributes.adoc[]
+
+By default, Quarkus Flow executes workflows entirely in memory. While this is incredibly fast, it means that if your application crashes, restarts, or is scaled down, any currently running workflow instances are lost.
+
+**State Persistence** solves this by writing the workflow's state to a durable datastore every time a task completes or pauses.
+
+Enabling persistence allows your workflows to survive:
+
+* **Asynchronous Callbacks:** Pausing a workflow for days or weeks while waiting for a human approval (HITL) or an external webhook.
+* **Failures & Restarts:** Recovering automatically from unexpected JVM crashes.
+* **Kubernetes Node Drains:** Safely migrating running workflows across pods during rolling updates, deployments, or cluster scaling events.
+
+*(For a deeper conceptual dive into how this enables cluster-wide orchestration, see xref:concepts-durable-workflow-k8s.adoc[Durable Workflows in Kubernetes]).*
+
+[NOTE]
+====
+The Quarkus Flow team is currently actively testing and benchmarking these persistence providers for high-throughput production scenarios. Expect deeper performance tuning guides in the future.
+====
+
+== 1. Automatic Restoration
+
+When a persistence provider is active, Quarkus Flow will automatically attempt to resume interrupted workflows upon application startup.
+
+When the server boots, any workflow instance that was running when the JVM previously shut down (as identified by its application ID) will resume execution from its last recorded checkpoint.
+
+If you need to disable this auto-resume behavior, add this to your `application.properties`:
+[source,properties]
+----
+quarkus.flow.persistence.autoRestore=false
+----
+
+== 2. Choose a Persistence Provider
+
+Quarkus Flow provides three drop-in persistence implementations. You should only include **one** of these dependencies in your project at a time.
+
+=== Option A: Redis (Recommended for distributed workloads)
+Redis is an in-memory data structure store that provides excellent performance for high-throughput workflow checkpoints.
+
+.pom.xml
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkiverse.flow</groupId>
+  <artifactId>quarkus-flow-redis</artifactId>
+</dependency>
+----
+
+Configure the Redis connection in your `application.properties`:
+[source,properties]
+----
+quarkus.redis.hosts=redis://localhost:6379
+----
+
+=== Option B: JPA (Relational Databases)
+JPA allows you to store workflow state in a standard relational database (e.g., PostgreSQL, MySQL). This is ideal if your enterprise architecture already relies heavily on a relational database.
+
+.pom.xml
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkiverse.flow</groupId>
+  <artifactId>quarkus-flow-jpa</artifactId>
+</dependency>
+----
+
+You must also configure a Quarkus JDBC driver and datasource. See the link:https://quarkus.io/guides/datasource#configure-datasources[Quarkus Datasources Guide] for full instructions.
+
+=== Option C: MVStore (Local file system)
+MVStore writes workflow state to a local file system file. This is an excellent, zero-infrastructure option for local development, testing, or single-node edge deployments.
+
+.pom.xml
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkiverse.flow</groupId>
+  <artifactId>quarkus-flow-mvstore</artifactId>
+</dependency>
+----
+
+Configure the local file path in your `application.properties`:
+[source,properties]
+----
+quarkus.flow.persistence.mvstore.db-path=${user.home}/testFlowMVStore.db
+----
+
+== 3. Data Serialization
+
+To safely write and read your workflow's state to and from the persistence store, Quarkus Flow needs to know how to serialize your workflow data context.
+
+Because the underlying `WorkflowModel` is evaluated as JSON, you must provide a Jackson-based marshaller. This dependency provides an implementation of the `CustomObjectMarshaller` interface, which automatically translates your in-memory workflow data into a format the database can store.
+
+Add the following dependency to your `pom.xml` alongside your chosen persistence provider:
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.serverlessworkflow</groupId>
+  <artifactId>serverlessworkflow-persistence-jackson-marshaller</artifactId>
+</dependency>
+----
+
+== See also
+* xref:concepts-durable-workflow-k8s.adoc[Durable Workflows in Kubernetes] — architecture and concepts for distributed execution.
+* link:https://quarkus.io/guides/redis[Using the Quarkus Redis Client] — advanced Redis configuration.
+* link:https://www.h2database.com/html/mvstore.html[MVStore homepage] — deeper dive into the MVStore engine.
+* link:https://github.com/serverlessworkflow/sdk-java/tree/main/impl/persistence[Serverless Workflow Java SDK Persistence] — upstream SDK reference.

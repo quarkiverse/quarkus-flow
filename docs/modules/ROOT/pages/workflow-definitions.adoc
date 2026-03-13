@@ -1,32 +1,23 @@
-= Workflow definitions from YAML files
+= Define workflows from YAML files
 :page-role: howto
 include::includes/attributes.adoc[]
 
-This guide shows you how to load link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md[CNCF Workflow definitions] (YAML DSL) into your Quarkus application and expose them as `WorkflowDefinition`/`Flow` CDI beans you can inject and execute.
+Quarkus Flow *recommends the Java DSL* as the primary way to define workflows because it provides type safety, refactoring support, and excellent IDE integration.
 
-Quarkus Flow *recommends the Java DSL* as the primary way to define workflows in Quarkus applications,
-because it gives you type safety, refactor-friendly code and excellent IDE support.
-Loading workflows from YAML is available as an alternative for teams that already maintain CNCF Workflow
-specification files or need to share definitions across runtimes.
-For the Java DSL reference, see xref:dsl-cheatsheet.adoc[Java DSL cheatsheet].
+However, Quarkus Flow fully supports loading link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md[CNCF Serverless Workflow 1.0.0] definitions written in YAML or JSON. This is ideal for teams that already maintain specification files or need to share definitions across different runtime environments.
 
-If you are new to the CNCF Workflow concepts, see
-xref:specification.adoc[CNCF Workflow mapping and concepts] first.
+This guide shows you how to load a YAML workflow into your Quarkus application and expose it as a standard `Flow` CDI bean that you can inject and execute.
 
 == Prerequisites
 
 * A Quarkus application with xref:getting-started.adoc[Quarkus Flow set up].
-* A directory that will hold your workflow definitions:
-** by default: `src/main/flow`
-** or a custom directory configured via `quarkus.flow.definitions.dir`
-* Basic familiarity with YAML and the CNCF Workflow DSL.
+* Basic familiarity with YAML and the xref:specification.adoc[Serverless Workflow Specification].
 
 == 1. Create the workflow specification file
 
-By default, Quarkus Flow scans the `src/main/flow` directory (relative to your Maven module root)
-for workflow specification files.
+By default, Quarkus Flow scans the `src/main/flow` directory (relative to your Maven module root) for workflow specification files at build time.
 
-Create the directory and add a simple workflow:
+Create the directory and add your CNCF 1.0.0 workflow:
 
 [source,yaml]
 .src/main/flow/echo-name.yaml
@@ -36,91 +27,57 @@ include::{examples-dir}flow/echo-name.yaml[]
 
 This definition:
 
-* declares the workflow metadata in the `document` section (DSL version, namespace, name, version)
-* defines a single `set` task that writes a `message` field into the workflow data based on the input `.name`
+* Declares the workflow metadata in the `document` section (DSL version, namespace, name, version).
+* Defines a single `set` task that writes a `message` field into the global workflow data based on the input `.name`.
 
 [TIP]
 ====
-You can customize the directory location by setting the
-xref:configuration.adoc#quarkus-flow_quarkus-flow-definitions-dir[`quarkus.flow.definitions.dir`]
-property in your `application.properties`.
+You can customize the discovery directory by setting the xref:configuration.adoc#quarkus-flow_quarkus-flow-definitions-dir[`quarkus.flow.definitions.dir`] property in your `application.properties`.
 
-The value can be:
-
-* an *absolute* path, or
-* a *relative* path resolved from the Maven module root (the directory that contains your `pom.xml`).
-
-By default it is `src/main/flow`. All `*.yaml` and `*.yml` files in the resolved directory are
-discovered at build time.
+It accepts an absolute path or a path relative to the Maven module root. All `*.yaml` and `*.yml` files in the resolved directory are discovered automatically.
 ====
 
 == 2. Inject the `Flow` bean
 
-For each discovered specification file, Quarkus Flow generates a `WorkflowDefinition` and `Flow` CDI beans.
+During the Quarkus build, the engine parses your YAML files and generates `WorkflowDefinition` and `Flow` CDI beans for them.
 
-[NOTE]
-====
-Quarkus Flow uses the `document.namespace` and `document.name` fields to create unique identifiers for each workflow.
+Quarkus Flow uses the `document.namespace` and `document.name` fields from your YAML file to create a unique identifier for the bean. It generates two formats you can use:
 
-The extension creates two types of identifiers (`@Identifier`) values:
+* **Fully Qualified Class Name (Recommended):** `namespace.name` (e.g., if your YAML has `namespace: org.acme` and `name: EchoWorkflow`, the identifier is `org.acme.EchoWorkflow`).
+* **Regular:** `namespace:name` (e.g., `org.acme:EchoWorkflow`).
 
-* *Regular:* `\{namespace}:\{name}`.
-* *Fully Qualified Class Name:* `\{namespace}.\{name}` being converted to a Java package and class name format.
-
-*All identifiers can be used for `WorkflowDefinition` and `Flow` injection points.*
-====
-
-Create a JAX-RS resource that injects and runs the workflow:
+Create a JAX-RS resource that injects and runs the workflow using the generated identifier:
 
 [source,java]
 ----
 include::{examples-dir}org/acme/EchoResource.java[]
 ----
-<1> Use the `@Identifier` annotation with the *Fully Qualified Class Name* from your YAML file.
+<1> Use the `@Identifier` annotation with the *Fully Qualified Class Name* derived from your YAML file.
 
 [IMPORTANT]
 ====
-The `@Identifier` value must exactly match *Regular* or *Fully Qualified Class Name* generated from in your YAML specification.
-
-If you change either `document.namespace` or `document.name`, you must update every injection point
-that references this workflow.
+The `@Identifier` value must exactly match the metadata generated from your YAML specification. If you change either `document.namespace` or `document.name` in the YAML, you must update the `@Identifier` in every Java class that injects this workflow.
 ====
 
 [TIP]
 ====
-You can define a global namespace prefix for *Fully Qualified Class Name* identifiers using the xref:configuration.adoc#quarkus-flow_quarkus-flow-definitions-namespace-prefix[`quarkus.flow.definitions.namespace.prefix`] property in your `application.properties`.
+You can define a global namespace prefix for the identifiers using the xref:configuration.adoc#quarkus-flow_quarkus-flow-definitions-namespace-prefix[`quarkus.flow.definitions.namespace.prefix`] property in your `application.properties`.
 ====
 
-A typical execution flow in this example looks like:
+=== 2.1 Reactive Execution and Error Handling
 
-1. `flow.startInstance(Map.of("name", finalName))` creates a new `io.smallrye.mutiny.Uni<WorkflowModel>` instance with the initial data (`name`).
-2. `.onItem().transform(...)` observes and transform the item emitted by `Uni` and creates a new `Uni<String>` with the JSON representation of the workflow data.
-3. The JAX-RS method returns a `Uni<String>`, so the endpoint remains reactive/non-blocking.
+The `EchoResource` example uses the **recommended non-blocking style** for Quarkus REST endpoints (returning a `Uni<String>`).
 
-=== 2.1 Blocking vs non-blocking REST endpoints
+A typical execution flow looks like this:
 
-The `EchoResource` above uses the *recommended non-blocking style* for Quarkus REST endpoints:
+1. `flow.startInstance(...)` executes the workflow non-blocking and returns a `Uni<WorkflowInstance>`.
+2. `.map(WorkflowInstance::output)` extracts just the final JSON payload.
 
-* the method returns `Uni<String>`
-* the workflow is started with `startInstance(...)` and the `Uni` is propagated back to the caller
+Because it is non-blocking, if the YAML workflow encounters an error (e.g., an HTTP task fails), the `WorkflowException` propagates cleanly to the HTTP layer. Quarkus Flow automatically translates it into an RFC 7807 Problem Details HTTP response.
 
-This style integrates well with Quarkus’ reactive model and, when a workflow is invoked
-from a JAX-RS resource, lets any `WorkflowException` propagate directly to the HTTP layer.
-Quarkus Flow registers a standard JAX-RS `ExceptionMapper<WorkflowException>`, so any
-resource that throws `WorkflowException` (including those that call workflows) will
-automatically be translated into an RFC 7807 / `WorkflowError` HTTP response.
+*(For a deeper discussion on error mapping and the pitfalls of blocking `.join()` calls, see xref:http-openapi-tasks.adoc#4-http-errors-and-workflowexception-mapping[HTTP Errors and Exception Mapping]).*
 
-If you prefer a *blocking* style in very simple scenarios (for example in a CLI or quick prototype), you can:
-
-* call `.instance().start().join()` using a `CompletionStage` or `.await().indefinetely()` when using Mutiny to wait for the result, and return a `Response` or a plain DTO from your JAX-RS method.
-
-In that case, be aware that blocking on a `CompletionStage`/`Uni` may wrap underlying exceptions
-(for example in `ExecutionException`, `CompletionException`), and you might need to unwrap and rethrow `WorkflowException`
-if you want the standard HTTP error mapping.
-For a deeper discussion and a full HTTP/OpenAPI example, see
-xref:http-openapi-tasks.adoc#non-blocking-vs-blocking-style[Non-blocking vs blocking style].
-
-== 3. Run the application
+== 3. Run and live-reload
 
 Start your Quarkus application in development mode:
 
@@ -129,34 +86,20 @@ Start your Quarkus application in development mode:
 ./mvnw quarkus:dev
 ----
 
-Quarkus Flow will:
-
-* discover the YAML file in `src/main/flow`.
-* compile it into a `Flow` bean.
-* wire it into your `EchoResource` via CDI.
-
-Any change to the YAML file is picked up by Quarkus dev mode with a live reload, just like regular Java code.
-
-== 4. Test the workflow
-
-Call the REST endpoint:
+Call your new REST endpoint:
 
 [source,shell]
 ----
 curl "http://localhost:8080/echo?name=John"
+
+# Expected JSON response:
+# {"message":"echo: John"}
 ----
 
-== 5. Expected outcome
+**The best part:** Because Quarkus Flow integrates seamlessly with Quarkus dev mode, any changes you make to the YAML file in `src/main/flow` will be picked up and live-reloaded immediately. You do not need to restart your application when tweaking YAML tasks!
 
-After completing these steps, you should have:
+== See also
 
-* a workflow specification file loaded automatically by Quarkus Flow
-* a `Flow` CDI bean available for injection using `@Identifier("company.EchoName")`
-* a working REST endpoint that executes the workflow and returns the result
-
-The expected JSON response from the `curl` command is:
-
-[source,json]
-----
-{"message":"echo: John"}
-----
+* xref:specification.adoc[Serverless Workflow Spec mapping and concepts] — a quick orientation to the 1.0.0 specification components.
+* xref:data-flow.adoc[Data flow and context management] — understand how data mutates across YAML tasks.
+* xref:test-debug.adoc[Test and debug workflows] — learn how to write unit tests for your injected `Flow` beans.
