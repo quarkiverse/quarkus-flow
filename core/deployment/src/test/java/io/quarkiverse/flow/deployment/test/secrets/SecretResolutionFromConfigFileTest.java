@@ -29,8 +29,10 @@ public class SecretResolutionFromConfigFileTest {
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(SecretEchoWorkflow.class)
-                    .addAsResource(new StringAsset("mySecret.username=alice\n" +
-                            "mySecret.password=s3cr3t!"),
+                    .addAsResource(new StringAsset("""
+                            mySecret.username=alice
+                            mySecret.password=s3cr3t!
+                            quarkus.http.test-port=0"""),
                             "application.properties"));
 
     @Test

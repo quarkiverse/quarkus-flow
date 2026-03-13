@@ -23,6 +23,7 @@ public class SecretResolutionTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(SecretEchoWorkflow.class)
                     .addClass(DumbCredentialsProvider.class))
+            .withConfigurationResource("application-test-random.properties")
             // select our @Named("dumb") provider globally for secrets
             .overrideConfigKey("quarkus.flow.secrets.credentials-provider-name", "dumb");
 

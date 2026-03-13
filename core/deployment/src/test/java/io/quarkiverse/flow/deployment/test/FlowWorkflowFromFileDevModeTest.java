@@ -18,6 +18,7 @@ public class FlowWorkflowFromFileDevModeTest {
                     .addAsResource(new StringAsset("""
                             quarkus.flow.definitions.dir=src/main/resources/flow
                             quarkus.flow.tracing.enabled=false
+                            quarkus.http.test-port=0
                             """), "application.properties")
                     .addClass(IdentifierResource.class)
                     .addAsResource(new StringAsset("""

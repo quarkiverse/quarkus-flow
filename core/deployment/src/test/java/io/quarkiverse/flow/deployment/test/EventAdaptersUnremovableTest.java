@@ -26,7 +26,8 @@ public class EventAdaptersUnremovableTest {
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(CustomEventPublisher.class, CustomEventConsumer.class));
+                    .addClasses(CustomEventPublisher.class, CustomEventConsumer.class))
+            .withConfigurationResource("application-test-random.properties");
 
     @Test
     void customPublisherAndConsumerAreAvailable() {

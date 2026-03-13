@@ -171,6 +171,7 @@ public class FaultToleranceProvider {
                 .build();
     }
 
+    @SuppressWarnings("unchecked")
     private List<Class<? extends Throwable>> configureOnRetryExceptions(List<String> exceptions) {
         List<Class<? extends Throwable>> retryOnExceptions = new ArrayList<>();
         for (String exception : exceptions) {

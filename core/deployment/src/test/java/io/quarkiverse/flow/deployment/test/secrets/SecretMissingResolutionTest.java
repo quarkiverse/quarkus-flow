@@ -32,7 +32,8 @@ public class SecretMissingResolutionTest {
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(MissingSecretFlow.class)
-                    .addClass(EmptyCredentialsProvider.class));
+                    .addClass(EmptyCredentialsProvider.class))
+            .withConfigurationResource("application-test-random.properties");
 
     @Test
     public void missing_secret_raises_sdk_error() {
