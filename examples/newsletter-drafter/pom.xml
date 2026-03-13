@@ -120,6 +120,12 @@
             <version>${quarkus.flow.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-langchain4j-deployment</artifactId>
+            <version>${quarkus.flow.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
