@@ -36,6 +36,8 @@
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <quarkus.log.level>OFF</quarkus.log.level>
+
         <quarkus.version>3.32.2</quarkus.version>
         <io.serverlessworkflow.version>7.13.8.Final</io.serverlessworkflow.version>
         <io.cloudevents.version>4.0.1</io.cloudevents.version>
@@ -228,30 +230,11 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>build-helper-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>reserve-network-port</id>
-                                <goals>
-                                    <goal>reserve-network-port</goal>
-                                </goals>
-                                <phase>process-test-resources</phase>
-                                <configuration>
-                                    <portNames>
-                                        <portName>quarkus.http.test-port</portName>
-                                    </portNames>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <configuration>
                             <argLine>@{argLine} -Xmx1024m</argLine>
                             <systemPropertyVariables>
-                                <quarkus.http.test-port>${quarkus.http.test-port}</quarkus.http.test-port>
                                 <native.image.path>${project.build.directory}/${project.build.finalName}-runner
                                 </native.image.path>
                                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
