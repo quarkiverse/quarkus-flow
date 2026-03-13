@@ -62,16 +62,23 @@ public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> imp
                     int step = 0;
                     for (AgentInstance agent : agents) {
                         final String branchName = safeName(agent.agentId() + "-" + (step++));
-                        fork.branches(withInstanceId(branchName, (String instanceId, DefaultAgenticScope scope) -> {
-                            CompletableFuture<Void> nextActionFuture = FlowPlannerSessions.getInstance().get(instanceId)
-                                    .executeAgent(agent);
-                            LOG.debug("Parallel execution of agent {} in branch {} started", agent.agentId(),
-                                    branchName);
-                            nextActionFuture.join();
-                            LOG.debug("Parallel execution of agent {} in branch {} terminated", agent.agentId(),
-                                    branchName);
-                            return null;
-                        },
+                        fork.branches(withInstanceId(branchName,
+                                (String instanceId, DefaultAgenticScope scope) -> {
+                                    // Fork branches don't expose TaskContextData, so taskPosition is best-effort here.
+                                    String syntheticTaskPosition = "/parallel/" + branchName;
+                                    FlowAgentCorrelation.withCorrelation(scope, instanceId, syntheticTaskPosition, branchName,
+                                            () -> {
+                                                CompletableFuture<Void> nextActionFuture = FlowPlannerSessions.getInstance()
+                                                        .get(instanceId)
+                                                        .executeAgent(agent);
+                                                LOG.debug("Parallel execution of agent {} in branch {} started",
+                                                        agent.agentId(), branchName);
+                                                nextActionFuture.join();
+                                                LOG.debug("Parallel execution of agent {} in branch {} terminated",
+                                                        agent.agentId(), branchName);
+                                            });
+                                    return null;
+                                },
                                 DefaultAgenticScope.class));
 
                     }

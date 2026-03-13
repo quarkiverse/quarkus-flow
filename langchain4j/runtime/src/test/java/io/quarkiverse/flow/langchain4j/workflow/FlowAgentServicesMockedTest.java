@@ -22,6 +22,14 @@ public class FlowAgentServicesMockedTest {
     @Inject
     WorkflowRegistry registry;
 
+    private static void assertCorrelationMetadataPresent(AgenticScope scope) {
+        String flowInstanceId = scope.readState("__flow_instance_id__", "");
+        assertThat(flowInstanceId).isNotBlank();
+        assertThat(scope.readState("workflowInstanceID", "")).isEqualTo(flowInstanceId);
+        assertThat(scope.readState("taskName", "")).isNotBlank();
+        assertThat(scope.readState("taskPosition", "")).startsWith("/");
+    }
+
     @Test
     void sequentialAgentInvokesExecutorsInOrder() {
         var agent1 = AgenticServices.agentAction(scope -> {
@@ -48,6 +56,7 @@ public class FlowAgentServicesMockedTest {
         // Act
         ResultWithAgenticScope<String> result = agent.run("hello");
         AgenticScope scope = result.agenticScope();
+        assertCorrelationMetadataPresent(scope);
 
         // And the custom state shows order "12"
         StringBuilder seqOrder = scope.readState("seqOrder", new StringBuilder());
@@ -70,6 +79,7 @@ public class FlowAgentServicesMockedTest {
         // Act
         ResultWithAgenticScope<String> result = agent.run("parallel-input");
         AgenticScope scope = result.agenticScope();
+        assertCorrelationMetadataPresent(scope);
 
         assertThat(scope.readState("calledA", false)).isTrue();
         assertThat(scope.readState("calledB", false)).isTrue();
@@ -96,6 +106,7 @@ public class FlowAgentServicesMockedTest {
         // Act: route("medical")
         ResultWithAgenticScope<String> result = agent.route("medical");
         AgenticScope scope = result.agenticScope();
+        assertCorrelationMetadataPresent(scope);
 
         assertThat(scope.readState("branch", "")).isEqualTo("medical");
     }
@@ -130,6 +141,7 @@ public class FlowAgentServicesMockedTest {
         // Act
         ResultWithAgenticScope<String> result = agent.run("any-topic");
         AgenticScope scope = result.agenticScope();
+        assertCorrelationMetadataPresent(scope);
 
         int counter = scope.readState("counter", 0);
 
