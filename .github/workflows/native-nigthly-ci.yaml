@@ -29,7 +29,7 @@ jobs:
         id: native-build
         continue-on-error: true
         run: >
-          mvn -B install -Dnative
+          mvn -B install -Dnative -ntp
           -Dquarkus.native.container-build
           -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25
           -DskipITs=true
