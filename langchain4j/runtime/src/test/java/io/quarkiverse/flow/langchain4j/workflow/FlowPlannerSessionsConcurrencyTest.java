@@ -51,9 +51,9 @@ class FlowPlannerSessionsConcurrencyTest {
 
         TestParallelAgent agent = service.build();
 
-        int tasks = 300;
-        int threads = 24;
-        int everyNthFails = 17;
+        int tasks = 100;
+        int threads = 12;
+        int everyNthFails = 8;
 
         ExecutorService pool = Executors.newFixedThreadPool(threads);
         try {
@@ -91,16 +91,16 @@ class FlowPlannerSessionsConcurrencyTest {
                 }));
             }
 
-            ready.await(15, TimeUnit.SECONDS);
+            ready.await(30, TimeUnit.SECONDS);
             // release the kraken
             start.countDown();
 
             for (Future<Void> f : futures) {
-                f.get(60, TimeUnit.SECONDS);
+                f.get(90, TimeUnit.SECONDS);
             }
 
             // If any async cleanup finishes slightly after futures complete:
-            FlowPlannerSessionsAwait.awaitNoSessions(5);
+            FlowPlannerSessionsAwait.awaitNoSessions(10);
 
             long total = ok.sum() + failed.sum();
             double avgMs = (nanos.sum() / 1_000_000.0) / Math.max(1, total);

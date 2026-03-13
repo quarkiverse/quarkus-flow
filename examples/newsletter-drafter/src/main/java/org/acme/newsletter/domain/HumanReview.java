@@ -2,10 +2,17 @@ package org.acme.newsletter.domain;
 
 import java.util.Locale;
 
-public record HumanReview(String draft, String notes, ReviewStatus status) {
+import com.fasterxml.jackson.annotation.JsonCreator;
 
-    public HumanReview(String draft, String notes, String status) {
-        this(draft, notes, ReviewStatus.valueOf(status.toLowerCase(Locale.ROOT)));
+public record HumanReview(NewsletterDraft draft, String notes, ReviewStatus status) {
+
+    public enum ReviewStatus {
+        DONE,
+        NEEDS_REVISION;
+
+        @JsonCreator
+        public static ReviewStatus from(String v) {
+            return v == null ? null : ReviewStatus.valueOf(v.trim().toUpperCase(Locale.ROOT));
+        }
     }
-
 }

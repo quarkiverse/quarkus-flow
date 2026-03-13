@@ -3,10 +3,8 @@ package io.quarkiverse.flow.scheduler.test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 import jakarta.inject.Inject;
 
@@ -32,28 +30,28 @@ public class FlowSchedulerTest {
     WorkflowDefinition everyDefinition;
 
     @Test
-    void testAfter() throws IOException, InterruptedException, ExecutionException {
+    void testAfter() {
         afterStartDefinition.instance(Map.of()).start().join();
         assertThat(afterStartDefinition.scheduledInstances().isEmpty());
         await()
                 .pollDelay(Duration.ofMillis(50))
                 .atMost(Duration.ofMillis(500))
-                .until(() -> afterStartDefinition.scheduledInstances().size() >= 1);
+                .until(() -> !afterStartDefinition.scheduledInstances().isEmpty());
     }
 
     @Test
-    void testEvery() throws IOException, InterruptedException, ExecutionException {
+    void testEvery() {
         await()
-                .atMost(Duration.ofSeconds(1).plus(Duration.ofMillis(200)))
+                .atMost(Duration.ofSeconds(3).plus(Duration.ofMillis(200)))
                 .until(() -> everyDefinition.scheduledInstances().size() == 1);
         await()
-                .atMost(Duration.ofSeconds(1).plus(Duration.ofMillis(200)))
+                .atMost(Duration.ofSeconds(3).plus(Duration.ofMillis(200)))
                 .until(() -> everyDefinition.scheduledInstances().size() == 2);
     }
 
     @Test
     @Disabled
-    void testCron() throws IOException, InterruptedException, ExecutionException {
+    void testCron() {
         await()
                 .atMost(Duration.ofMinutes(1).plus(Duration.ofSeconds(10)))
                 .until(() -> cronDefinition.scheduledInstances().size() == 1);

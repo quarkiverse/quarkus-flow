@@ -25,7 +25,8 @@ public class FlowDefinitionInjectionTest {
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(HelloWorldWorkflow.class)
-                    .addClass(GreetingsWorkflow.class));
+                    .addClass(GreetingsWorkflow.class))
+            .withConfigurationResource("application-test-random.properties");;
 
     @Test
     public void helloWorld_definition_is_produced_and_runs() {

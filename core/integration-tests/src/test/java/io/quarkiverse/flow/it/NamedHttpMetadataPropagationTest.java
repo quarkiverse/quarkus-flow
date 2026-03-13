@@ -14,7 +14,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
-import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
 
 import org.assertj.core.api.SoftAssertions;
@@ -29,6 +28,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
+import io.quarkus.test.junit.TestProfile;
 import io.serverlessworkflow.impl.WorkflowInstance;
 import io.smallrye.common.annotation.Identifier;
 
