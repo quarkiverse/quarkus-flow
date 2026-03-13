@@ -224,9 +224,6 @@
                     <value>false</value>
                 </property>
             </activation>
-            <properties>
-                <quarkus.log.level>OFF</quarkus.log.level>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
