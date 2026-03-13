@@ -3,10 +3,8 @@ package io.quarkiverse.flow.scheduler.test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 import jakarta.inject.Inject;
 
@@ -32,7 +30,7 @@ public class FlowSchedulerTest {
     WorkflowDefinition everyDefinition;
 
     @Test
-    void testAfter(){
+    void testAfter() {
         afterStartDefinition.instance(Map.of()).start().join();
         assertThat(afterStartDefinition.scheduledInstances().isEmpty());
         await()
