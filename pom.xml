@@ -52,6 +52,7 @@
         <mockwebserver.version>5.3.2</mockwebserver.version>
         <version.org.jacoco>0.8.14</version.org.jacoco>
         <io.quarkiverse.playwright>2.3.2</io.quarkiverse.playwright>
+        <com.h2database.version>2.4.240</com.h2database.version>
     </properties>
 
     <dependencyManagement>
@@ -90,6 +91,11 @@
                 <artifactId>assertj-core</artifactId>
                 <version>${org.assertj.version}</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2-mvstore</artifactId>
+                <version>${com.h2database.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
