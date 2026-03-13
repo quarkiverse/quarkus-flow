@@ -10,6 +10,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
@@ -56,7 +57,7 @@ public class JwtWithinWorkflowTest {
 
         @Override
         public Map<String, String> start() {
-            wireMockServer = new WireMockServer(port);
+            wireMockServer = new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort());
             wireMockServer.start();
 
             wireMockServer.stubFor(
@@ -67,7 +68,7 @@ public class JwtWithinWorkflowTest {
                                             [{ "name": "John Doe" }]
                                             """)));
 
-            return Map.of("wiremock.url", wireMockServer.baseUrl());
+            return Map.of("wiremock.jwt.url", wireMockServer.baseUrl());
         }
 
         @Override
