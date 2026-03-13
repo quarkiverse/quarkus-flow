@@ -1,14 +1,18 @@
 package org.acme.agentic;
 
-import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.agent;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.get;
+import java.util.Map;
+
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.util.Map;
+
+import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.agent;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.get;
 
 /**
  * Workflow that:
@@ -21,6 +25,9 @@ public class InvestmentMemoFlow extends Flow {
 
     private final InvestmentAnalystAgent analyst;
 
+    @ConfigProperty(name = "org.acme.agentic.market-data.url")
+    String marketDataUrl;
+
     @Inject
     public InvestmentMemoFlow(InvestmentAnalystAgent analyst) {
         this.analyst = analyst;
@@ -32,7 +39,7 @@ public class InvestmentMemoFlow extends Flow {
         return workflow("investment-memo").tasks(
                 // 1) Fetch market data via HTTP and turn it into an InvestmentPrompt
                 // tag::http-step[]
-                get("fetchMarketData", "http://localhost:8081/market-data/{ticker}").outputAs((result, wf, tf) -> {
+                get("fetchMarketData", marketDataUrl).outputAs((result, wf, tf) -> {
                     // This is the original task input, as sent by the workflow user
                     // It has the user's objective and horizon
                     // It could be a record, but we use as a Map to exemplify how to handle this type of object in the

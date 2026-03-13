@@ -1,5 +1,9 @@
 package org.acme.newsletter.agents;
 
+import org.acme.newsletter.domain.NewsletterDraft;
+import org.acme.newsletter.domain.NewsletterRequest;
+
+import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
@@ -7,42 +11,25 @@ import dev.langchain4j.service.V;
 import io.quarkiverse.langchain4j.RegisterAiService;
 import jakarta.enterprise.context.ApplicationScoped;
 
-@RegisterAiService
 @ApplicationScoped
+@RegisterAiService
 @SystemMessage("""
-        You draft a weekly investment newsletter.
-
-        You will receive ONE JSON string. It will be EITHER:
-        A) Initial input:
-           {
-             "marketMood": "string",
-             "topMovers": "string",
-             "macroData": "string",
-             "tone": "string",
-             "length": "string",
-             "notes": "string (optional)"
-           }
-        OR
-        B) Human review loop:
-           {
-             "draft": "string",
-             "notes": "string (optional)",
-             "status": "NEEDS_REVISION | DONE"
-           }
-
-        Behaviors:
-        - If shape A: create a new draft using those fields.
-        - If shape B and status != "DONE": refine the provided 'draft' using 'notes' and your conversation memory.
-        - If shape B and status == "DONE": return the draft as-is (no change).
-
-        Return STRICT JSON:
-        { "draft": "<final draft text>" }
+        You are an expert financial copywriter.
+        Write a draft investment newsletter based on the provided inputs.
+        Ensure it reads naturally and incorporates all requested data.
+        Return ONLY valid JSON.
         """)
 public interface DrafterAgent {
 
+    @Agent(outputKey = "draft")
     @UserMessage("""
-            INPUT_JSON:
-            {payload}
+            Please write the newsletter using the following information:
+
+            - Market mood: {request.tone}
+            - Top movers: {request.topMovers}
+            - Macro data: "{request.macroData}"
+            - Requested Tone: {request.tone}
+            - Length: {request.length}
             """)
-    String draft(@MemoryId String memoryId, @V("payload") String payloadJson);
+    NewsletterDraft draft(@MemoryId String memoryId, @V("request") NewsletterRequest request);
 }

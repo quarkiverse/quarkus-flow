@@ -5,12 +5,11 @@ import java.util.Collection;
 
 import jakarta.persistence.Basic;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinColumns;
 import jakarta.persistence.OneToMany;
 
 import org.hibernate.annotations.DynamicUpdate;
@@ -29,17 +28,16 @@ public class ProcessInstanceEntity {
     @Id
     private String applicationId;
 
-    @Basic(fetch = FetchType.LAZY, optional = true)
+    @Column(nullable = true)
     private WorkflowStatus status;
 
-    @Basic(fetch = FetchType.LAZY)
+    @Column(nullable = false)
     private Instant startedAt;
 
     @Basic(fetch = FetchType.LAZY)
     private WorkflowModel input;
 
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumns({ @JoinColumn(name = "processInstanceId"), @JoinColumn(name = "applicationId") })
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "processInstance")
     private Collection<TaskInfoEntity> tasks;
 
     public ProcessInstanceEntity() {

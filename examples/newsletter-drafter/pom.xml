@@ -63,6 +63,11 @@
             <version>${quarkus.flow.version}</version>
         </dependency>
         <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-langchain4j</artifactId>
+            <version>${quarkus.flow.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
@@ -103,6 +108,16 @@
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <version>${org.assertj.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+
+        <!-- Can be ignored / Used to run Quarkus Flow project in parallel -->
+        <!-- On real use cases this can be safely removed -->
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-deployment</artifactId>
+            <version>${quarkus.flow.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

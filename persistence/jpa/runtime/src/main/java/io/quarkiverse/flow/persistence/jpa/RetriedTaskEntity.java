@@ -14,8 +14,8 @@ public class RetriedTaskEntity extends TaskInfoEntity {
     @Column
     private short retryAttempt;
 
-    public RetriedTaskEntity(String jsonPointer, short retryAttempt) {
-        super(jsonPointer);
+    public RetriedTaskEntity(TaskInfoKey key, short retryAttempt) {
+        super(key);
         this.retryAttempt = retryAttempt;
     }
 

@@ -8,6 +8,7 @@ import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
 import io.serverlessworkflow.impl.TaskContext;
@@ -31,6 +32,9 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     @Inject
     ProcessInstanceRepository repository;
 
+    @Inject
+    EntityManager em;
+
     @Override
     public void writeInstanceData(WorkflowContextData workflowContext) {
         WorkflowInstanceData instance = workflowContext.instanceData();
@@ -40,18 +44,19 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
 
     @Override
     public void writeRetryTask(WorkflowContextData workflowContext, TaskContextData taskContext) {
-        find(workflowContext).getTasks()
-                .add(new RetriedTaskEntity(taskContext.position().jsonPointer(), ((TaskContext) taskContext).retryAttempt()));
+        em.persist(new RetriedTaskEntity(TaskInfoKey.from(workflowContext, taskContext),
+                ((TaskContext) taskContext).retryAttempt()));
     }
 
     @Override
     public void writeCompletedTask(WorkflowContextData workflowContext, TaskContextData taskContext) {
         TransitionInfo transition = ((TaskContext) taskContext).transition();
         AbstractTaskExecutor<?> next = (AbstractTaskExecutor<?>) transition.next();
-        find(workflowContext).getTasks().add(new CompletedTaskEntity(
-                taskContext.position().jsonPointer(), taskContext.completedAt(), taskContext.output(),
-                workflowContext.context(),
-                transition.isEndNode(), next == null ? null : next.position().jsonPointer()));
+        em.persist(
+                new CompletedTaskEntity(
+                        TaskInfoKey.from(workflowContext, taskContext), taskContext.completedAt(), taskContext.output(),
+                        workflowContext.context(),
+                        transition.isEndNode(), next == null ? null : next.position().jsonPointer()));
 
     }
 

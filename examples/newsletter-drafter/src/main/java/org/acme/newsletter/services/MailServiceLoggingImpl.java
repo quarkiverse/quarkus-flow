@@ -1,6 +1,8 @@
 package org.acme.newsletter.services;
 
 import jakarta.enterprise.context.ApplicationScoped;
+
+import org.acme.newsletter.domain.NewsletterDraft;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,9 +14,9 @@ public class MailServiceLoggingImpl implements MailService {
     private static final Logger LOG = LoggerFactory.getLogger(MailServiceLoggingImpl.class);
 
     @Override
-    public void send(String to, String subject, String body) {
+    public void send(String to, NewsletterDraft draft) {
         LOG.info(
                 "\n\n-------------------------- NEWSLETTER -------------------------\n\nSending {} to {} \n--\n\n{}\n--",
-                subject, to, body);
+                draft.title(), to, draft.body());
     }
 }
