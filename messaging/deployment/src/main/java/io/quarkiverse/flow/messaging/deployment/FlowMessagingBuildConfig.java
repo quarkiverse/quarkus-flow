@@ -20,5 +20,4 @@ public interface FlowMessagingBuildConfig {
      */
     @WithDefault("false")
     boolean lifecycleEnabled();
-
 }
