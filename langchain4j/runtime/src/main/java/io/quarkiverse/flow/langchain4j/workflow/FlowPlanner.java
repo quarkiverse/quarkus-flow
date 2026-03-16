@@ -71,7 +71,7 @@ public class FlowPlanner implements Planner, AutoCloseable {
         // Despite returning a CompletableFuture, the start() method executes on the same thread by design.
         CompletableFuture.completedFuture(null)
                 .thenComposeAsync(t -> instance.start())
-                .whenCompleteAsync((r, e) -> {
+                .whenComplete((r, e) -> {
                     if (e != null) {
                         LOG.error("Workflow failed", e);
                     }
@@ -181,7 +181,7 @@ public class FlowPlanner implements Planner, AutoCloseable {
     void finish() {
         if (!closed.compareAndSet(false, true))
             return;
-        // best-effort cleanup
+        currentExchanges.values().forEach(ex -> ex.continuation.complete(null));
         currentExchanges.clear();
         parallelAgents.set(0);
         this.signalTermination();

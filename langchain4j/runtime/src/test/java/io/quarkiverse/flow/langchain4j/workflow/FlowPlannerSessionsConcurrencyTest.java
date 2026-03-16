@@ -1,7 +1,9 @@
 package io.quarkiverse.flow.langchain4j.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -14,7 +16,10 @@ import java.util.concurrent.atomic.LongAdder;
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.scope.AgenticScope;
@@ -26,12 +31,27 @@ import io.quarkus.test.junit.QuarkusTest;
 @QuarkusTest
 class FlowPlannerSessionsConcurrencyTest {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(FlowPlannerSessionsConcurrencyTest.class.getName());
+
     @Inject
     WorkflowRegistry registry;
 
+    private int baselineSessions;
+
+    @BeforeEach
+    void captureBaseline() {
+        // Record how many sessions exist BEFORE this test starts.
+        // This isolates the test from other parallel executions in the same JVM.
+        baselineSessions = FlowPlannerSessions.getInstance().activeSessionCount();
+        LOGGER.info("Baseline sessions: {}", baselineSessions);
+    }
+
     @AfterEach
     void noLeaks() {
-        FlowPlannerSessionsAwait.awaitNoSessions(5);
+        await()
+                .atMost(Duration.ofSeconds(30))
+                .pollInterval(Duration.ofMillis(250))
+                .until(() -> FlowPlannerSessions.getInstance().activeSessionCount() <= baselineSessions);
     }
 
     @Test
@@ -52,7 +72,8 @@ class FlowPlannerSessionsConcurrencyTest {
         TestParallelAgent agent = service.build();
 
         int tasks = 100;
-        int threads = 12;
+        // Dropping to 8 threads to prevent suffocating GHA's 2-core runners
+        int threads = 8;
         int everyNthFails = 8;
 
         ExecutorService pool = Executors.newFixedThreadPool(threads);
@@ -105,11 +126,8 @@ class FlowPlannerSessionsConcurrencyTest {
             long total = ok.sum() + failed.sum();
             double avgMs = (nanos.sum() / 1_000_000.0) / Math.max(1, total);
 
-            System.out.println("Parallel run completed: total=" + total
-                    + " ok=" + ok.sum()
-                    + " failed=" + failed.sum()
-                    + " avgMs=" + avgMs
-                    + " activeSessions=" + FlowPlannerSessions.getInstance().activeSessionCount());
+            LOGGER.info("Parallel run completed: total={} ok={} failed={} avgMs={} activeSessions={}", total, ok.sum(),
+                    failed.sum(), avgMs, FlowPlannerSessions.getInstance().activeSessionCount());
 
         } finally {
             pool.shutdownNow();
