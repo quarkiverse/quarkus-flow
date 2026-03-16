@@ -10,15 +10,11 @@ public final class FlowPlannerSessionsAwait {
     private FlowPlannerSessionsAwait() {
     }
 
-    public static void awaitNoSessions() {
-        awaitNoSessions(5);
-    }
-
     public static void awaitNoSessions(int timeoutSeconds) {
         FlowPlannerSessions s = FlowPlannerSessions.getInstance();
         await()
                 .atMost(timeoutSeconds, SECONDS)
-                .pollInterval(10, MILLISECONDS)
+                .pollInterval(250, MILLISECONDS)
                 .untilAsserted(() -> {
                     int n = s.activeSessionCount();
                     assertThat(n)
