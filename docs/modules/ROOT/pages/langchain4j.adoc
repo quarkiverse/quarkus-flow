@@ -67,7 +67,7 @@ public class NewsletterFlow extends Flow {
             .tasks(
                 // Call the agent, passing the global context as input
                 agent("draftAgent", drafterAgent::draft, String.class)
-                    .inputFrom("$.topic")
+                    .inputFrom(".topic")
                     .exportAs("{ draft: . }")
             )
             .build();
