@@ -10,6 +10,8 @@ import { dialogRenderer, dialogFooterRenderer } from '@vaadin/dialog/lit.js';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import { devuiState } from 'devui-state';
 
+import { notifier } from 'notifier';
+
 import './qwc-flow-workflow-execution.js';
 
 import { themeState } from 'theme-state';
@@ -105,7 +107,7 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
                                                    id="see-${this._generateMermaidId(workflow.id)}">
                                         <vaadin-icon icon="font-awesome-solid:eye"></vaadin-icon>
                                     </vaadin-button>
-                                    <vaadin-button @click=${() => this._executeWorkflow(workflow)}>
+                                    <vaadin-button id="play-${this._generateMermaidId(workflow.id)}"  @click=${() => this._executeWorkflow(workflow)}>
                                         <vaadin-icon icon="font-awesome-solid:play"></vaadin-icon>
                                     </vaadin-button>
                                 `, [])}>
@@ -197,7 +199,7 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
             ${!this._currentMermaid ? `
             <span style="display:flex;align-items:center;gap:8px;color:var(--lumo-secondary-text-color);">
                 <vaadin-icon icon="font-awesome-solid:circle-info"></vaadin-icon>
-                <span style="margin:0;font-size:var(--lumo-font-size-xs);">
+                <span id="unavailable-mermaid-warning" style="margin:0;font-size:var(--lumo-font-size-xs);">
                 Diagram not available. Run the workflow once to generate it.
                 </span>
             </span>` : ''}
@@ -207,7 +209,7 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
     }
 
     _downloadDiagramAsPng() {
-        let svgData = document.querySelector('pre.mermaid > svg');
+        let svgData = document.querySelector("#page > qwc-flow-workflows").shadowRoot.querySelector("svg");
         if (!svgData) {
             return;
         }
@@ -223,7 +225,8 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
                 lnk.href = URL.createObjectURL(blob);
                 lnk.download = "flow-" + devuiState.applicationInfo.applicationName + "-" + new Date().toISOString().replace(/\D/g, '') + ".png";
                 lnk.click();
-                notifier.showSuccessMessage(lnk.download + " downloaded.", 'bottom-end');
+                const message = lnk.download + " downloaded.";
+                notifier.showSuccessMessage(message, 'bottom-end');
             });
         }
     }
@@ -236,7 +239,7 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
                     ${dialogRenderer(() => this._mermaidContent(), [])}
                     ${dialogFooterRenderer(() => html`
                         <div class="buttonBar">
-                            <vaadin-button class="button" @click=${() => this._downloadDiagramAsPng()}>
+                            <vaadin-button id="download-diagram" class="button" @click=${() => this._downloadDiagramAsPng()}>
                                 <vaadin-icon icon="font-awesome-solid:file-export"></vaadin-icon>
                                 Export
                             </vaadin-button>
