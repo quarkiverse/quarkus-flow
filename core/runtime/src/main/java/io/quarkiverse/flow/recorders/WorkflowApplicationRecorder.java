@@ -40,6 +40,8 @@ import io.serverlessworkflow.impl.executors.CallableTask;
 import io.serverlessworkflow.impl.executors.CallableTaskProxyBuilder;
 import io.serverlessworkflow.impl.executors.http.HttpClientResolver;
 import io.serverlessworkflow.impl.expressions.jq.JQExpressionFactory;
+import io.serverlessworkflow.impl.model.func.JavaModelFactory;
+import io.serverlessworkflow.impl.model.jackson.JacksonModelFactory;
 import io.smallrye.faulttolerance.api.TypedGuard;
 
 @Recorder
@@ -52,6 +54,7 @@ public class WorkflowApplicationRecorder {
             LOG.info("Flow: Tracing enabled");
             builder.withListener(new TraceLoggerExecutionListener());
         }
+        builder.withContextFactory(new JavaModelFactory()).withModelFactory(new JacksonModelFactory());
         return new RuntimeValue<>(builder);
     }
 
