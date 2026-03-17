@@ -117,6 +117,11 @@ class FlowProcessor {
                 DotName.createSimple(EventConsumer.class.getName())));
     }
 
+    @BuildStep
+    UnremovableBeanBuildItem keepCustomExecutionListeners() {
+        return UnremovableBeanBuildItem.beanTypes(WorkflowExecutionListener.class);
+    }
+
     /**
      * Registers our default {@link WorkflowExceptionMapper} to the JAX-RS exception mappers.
      */

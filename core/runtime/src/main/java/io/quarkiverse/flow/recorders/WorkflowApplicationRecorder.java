@@ -41,6 +41,7 @@ import io.serverlessworkflow.impl.executors.CallableTask;
 import io.serverlessworkflow.impl.executors.CallableTaskProxyBuilder;
 import io.serverlessworkflow.impl.executors.http.HttpClientResolver;
 import io.serverlessworkflow.impl.expressions.jq.JQExpressionFactory;
+import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener;
 import io.serverlessworkflow.impl.model.func.JavaModelFactory;
 import io.serverlessworkflow.impl.model.jackson.JacksonModelFactory;
 import io.smallrye.faulttolerance.api.TypedGuard;
@@ -74,6 +75,7 @@ public class WorkflowApplicationRecorder {
             this.injectHttpClientProvider(container, builder);
             this.injectMicrometerListener(container, builder);
             this.injectFaultTolerance(container, builder, isMicrometerSupported);
+            this.injectCustomListeners(container, builder);
 
             // customize
             container.select(WorkflowApplicationBuilderCustomizer.class, Any.Literal.INSTANCE)
@@ -88,6 +90,31 @@ public class WorkflowApplicationRecorder {
 
     private void injectAppId(final Builder builder) {
         ConfigProvider.getConfig().getOptionalValue("quarkus.application.name", String.class).ifPresent(builder::withId);
+    }
+
+    private void injectCustomListeners(ArcContainer container, Builder builder) {
+        // List of internal classes
+        List<Class<?>> internalListeners = List.of(
+                TraceLoggerExecutionListener.class,
+                MicrometerExecutionListener.class);
+
+        final List<WorkflowExecutionListener> listeners = container
+                .select(WorkflowExecutionListener.class, Any.Literal.INSTANCE)
+                .stream()
+                .filter(listener -> !internalListeners.contains(listener.getClass()))
+                .toList();
+
+        if (!listeners.isEmpty()) {
+            for (WorkflowExecutionListener listener : listeners) {
+                builder.withListener(listener);
+            }
+            LOG.info("Flow: Bound {} WorkflowExecutionListener bean(s): {}",
+                    listeners.size(), listeners.stream()
+                            .map(p -> p.getClass().getName())
+                            .collect(Collectors.joining(", ")));
+        } else {
+            LOG.debug("Flow: No custom WorkflowExecutionListener registered.");
+        }
     }
 
     private void injectEventConsumers(final ArcContainer container, final Builder builder) {
