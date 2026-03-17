@@ -1,4 +1,4 @@
-= CNCF Workflow mapping and concepts
+= Serverless Workflow Specification mapping and concepts
 :page-role: explanation
 include::includes/attributes.adoc[]
 
@@ -9,11 +9,11 @@ If you understand these concepts, you can read any Quarkus Flow example and know
 
 == What the spec gives you (in 30 seconds)
 
-* **Tasks-based workflow model** — compose steps that **set data**, **call services/functions/agents**, **emit** or **listen** to events, and **branch/loop** based on conditions.
-* **Event-native** — first-class events (e.g., CloudEvents) for choreography, correlation, and wake-ups.
-* **Service-oriented** — call HTTP/GRPC/OpenAPI/AsyncAPI services with inputs/outputs mapped to workflow data.
-* **Deterministic execution & error handling** — timeouts, retries, and explicit failure paths.
-* **Portable definitions** — JSON/YAML DSL with a **versioned schema** (1.0.0) and SDKs across languages.
+* **Task-based workflow model** — compose sequences that **set** data, **call** services or functions, **emit** or **listen** to events, and control the flow via **switch**, **for**, or **try** tasks.
+* **Event-native** — first-class support for CloudEvents for choreography, correlation, and waking up paused instances.
+* **Service-oriented** — call HTTP/GRPC/OpenAPI/AsyncAPI services with inputs and outputs strictly mapped to the workflow data context.
+* **Deterministic execution & fault tolerance** — explicit error handling (`try/catch`), retries with backoff, and timeouts.
+* **Portable definitions** — a vendor-neutral, declarative DSL (JSON/YAML) with a **versioned schema** (1.0.0).
 
 === Quick links:
 
@@ -22,94 +22,92 @@ If you understand these concepts, you can read any Quarkus Flow example and know
 
 == Core components (cheatsheet)
 
+The CNCF 1.0.0 Specification organizes workflows around the `document` (metadata) and a sequence of `tasks` (the `do` block).
+
 [%autowidth,cols="1,3,3,2"]
 |===
 |Component |What it is |Typical use |Spec link
 
-|**Document**
-|Top-level metadata: `dsl` (version), `namespace`, `name`, `version`, optional `description`.
-|Identify the workflow and which schema version you’re using (e.g., `1.0.0`).
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#document[DSL] · link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#document[Reference]
+|**Document Metadata**
+|Top-level definition: `dsl` (version 1.0.0), `namespace`, `name`, `version`, optional `description`.
+|Identify the workflow, its domain, and which schema version you’re using.
+|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#document[DSL]
 
 |**Data model**
-|Workflow data context (JSON). Tasks read/write slices of this context.
-|Keep transient state, map call inputs/outputs, and drive conditions.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#data[DSL] · link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#data[Reference]
+|The global workflow data context (JSON). Tasks extract from, transform, and export back to this context.
+|Keep transient state, map call inputs/outputs, and drive branching conditions.
+|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#data-flow[DSL Data Flow]
 
 |**Tasks (`do`)**
-|Ordered list of steps to execute. Each item is a task (see next rows).
-|Define your flow: set → call → emit/listen → branch → loop, etc.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#tasks[DSL] · link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#tasks[Reference]
+|The ordered list of steps to execute.
+|Define your core process: set → call → emit/listen → switch → loop, etc.
+|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#task[DSL Task]
 
 |**Task: `set`**
-|Writes/merges values into workflow data.
-|Initialize fields, compute constants, stash intermediate values.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#set[DSL] · link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#set[Reference]
+|Evaluates an expression and updates the workflow data context.
+|Initialize fields, compute constants, or shape intermediate values.
+|link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#settask[Reference]
 
 |**Task: `call`**
-|Invokes a service/function/agent and maps input/output.
-|HTTP/GRPC/OpenAPI calls, LangChain4j agents, internal functions.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#call[DSL] · link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#call[Reference]
+|Invokes external endpoints or internal functions.
+|HTTP/OpenAPI calls, communicating with other microservices, or triggering LangChain4j AI agents.
+|link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#calltask[Reference]
 
 |**Task: `emit`**
-|Emits an event (e.g., CloudEvent) with payload from workflow data.
-|Notify other services, fan-out, integration events.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#emit[DSL] · link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#emit[Reference]
+|Publishes a CloudEvent to an external broker.
+|Notify other services, fan-out architectural patterns, or broadcast integration events.
+|link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#emittask[Reference]
 
 |**Task: `listen`**
-|Waits for one or more events and resumes with received data.
-|Human-in-the-loop approvals, external signals, callbacks.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#listen[DSL] · link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#listen[Reference]
+|Pauses execution and waits for one or more CloudEvents matching specific correlation rules.
+|Human-in-the-loop approvals, asynchronous callbacks, or waiting for external system signals.
+|link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#listentask[Reference]
 
-|**Conditions / branching**
-|Execute tasks only **when** an expression is true; branch/choose paths.
-|Feature flags, guardrails, compliance checks, “happy/error” paths.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#conditions[DSL] · link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#conditions[Reference]
+|**Task: `switch` (Branching)**
+|Evaluates conditions (`when`) and routes execution to specific paths (`then`).
+|Feature flags, guardrails, compliance checks, or routing "happy vs. error" paths.
+|link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#switchtask[Reference]
 
-|**Loops / repetition**
-|Repeat a task block until a condition is met; bounded by timeouts/retries.
-|Agentic revise-loops, polling, chunked processing.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#loops[DSL] · link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#loops[Reference]
+|**Task: `for` (Loops)**
+|Iterates over a collection in the data context, executing a block of tasks for each item.
+|Batch processing, agentic revise-loops, or polling.
+|link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#fortask[Reference]
 
-|**Errors & retries**
-|Declarative error handling, per-task or global; backoff strategies.
-|Wrap unreliable calls, steer to compensations, surface clear failures.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#error-handling[DSL] · link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#error-handling[Reference]
+|**Task: `try` (Errors)**
+|Executes a block of tasks and catches specific errors to trigger compensations or retries.
+|Wrap unreliable network calls, steer to fallback paths, and surface clear failures without crashing the instance.
+|link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#trytask[Reference]
 
 |**Timeouts**
-|Time limits on tasks and/or the whole workflow.
-|Prevent hangs; bound external waits; enforce SLAs.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#timeouts[DSL] · link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#timeouts[Reference]
+|Declarative time limits applied to individual tasks or the overarching workflow execution.
+|Prevent stalled processes, bound external waits, and enforce business SLAs.
+|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#timeouts[DSL Timeouts]
 
-|**Schedule**
-|Start workflows on CRON/time schedules.
-|Nightly batches, hourly ingestions, weekly newsletters.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#schedules[DSL] · link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#schedules[Reference]
+|**Expressions & Data Filters**
+|The runtime evaluation of `input`, `output`, and `export` fields within a task using `jq`.
+|Extracting payloads from events, filtering API responses, or computing booleans for `switch` blocks. (See xref:data-flow.adoc[Data flow]).
+|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#runtime-expressions[DSL Expressions]
 
-|**Events & correlation**
-|Event shapes/types and how inbound events correlate to an instance.
-|Match review events to the right pending workflow, multi-event joins.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#events-and-correlation[DSL] · link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#events[Reference]
-
-|**Expressions & data mapping**
-|How to read/write parts of workflow data; `jq` expression dialects.
-|Map payloads to APIs, filter data, compute booleans for `when`.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#data-mapping-and-expressions[DSL] · link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#expressions[Reference]
-
-|**Auth, secrets, refs**
-|Reference credentials/secrets/config for calls without hardcoding.
-|Call secured services, keep definitions portable and safe.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#security-and-references[DSL] · link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#security[Reference]
-
-//|**Extensions**
-//|Vendor-/project-specific add-ons registered with the spec.
-//|Adopt ecosystem features without forking the DSL.
-//|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#extensions[DSL] · link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#extensions[Reference]
+|**Auth & Secrets**
+|References to credentials or API keys used during `call` tasks.
+|Securely communicate with external services without hardcoding tokens in the definition.
+|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#authentication[DSL Auth]
 |===
 
 [NOTE]
-This is a **quick reference**. For the authoritative wording and full option sets, always read the linked spec sections.
+This is a **quick reference**. For the authoritative wording and full property sets, always read the linked spec sections.
 
 == Where Quarkus Flow fits
 
-Quarkus Flow provides a **Java fluent API** that maps 1:1 to the concepts above (e.g., `set`, `call`, `emit`, `listen`, conditions/loops, retries/timeouts), discovers your `Flow` classes at **build time**, and integrates with CDI, HTTP/OpenAPI, messaging, and **LangChain4j** for agentic workflows.
+Quarkus Flow provides a **Java fluent API** that maps 1:1 to the tasks defined above (e.g., `set`, `call`, `emit`, `listen`, `switchWhenOrElse`, `forEach`, `tasks`).
+
+Crucially, Quarkus Flow leans into the Quarkus "Ahead-of-Time" philosophy by discovering your `Flow` classes at **build time**, and integrates deeply with CDI, HTTP/OpenAPI, SmallRye Messaging, and **LangChain4j** for building standard-compliant agentic AI orchestrations.
+
+== See also
+
+Now that you understand the underlying specification, here is where you can see these concepts applied in Quarkus Flow:
+
+* xref:dsl-cheatsheet.adoc[Java DSL Cheatsheet]: A quick reference of all the Java methods that map directly to these CNCF tasks.
+* xref:data-flow.adoc[Data flow and context management]: A deep dive into how `input`, `output`, and `export` manipulate the workflow data context.
+* xref:getting-started.adoc[Getting Started]: Build your first Spec-compliant workflow in 5 minutes.
+* xref:concepts-agentic-langchain4j.adoc[Agentic AI Topology]: See how LLMs and Human-in-the-Loop patterns are treated as standard workflow tasks.

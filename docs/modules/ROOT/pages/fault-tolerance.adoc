@@ -1,0 +1,139 @@
+= Fault tolerance and resilience
+:page-role: howto
+include::includes/attributes.adoc[]
+
+Networks are inherently unreliable. When your workflow interacts with external services via HTTP or OpenAPI tasks, those calls can fail due to timeouts, rate limits, or temporary outages.
+
+Quarkus Flow integrates directly with **SmallRye Fault Tolerance** to ensure your workflows can survive these disruptions.
+
+This guide shows how to:
+
+* Configure automated retries for HTTP tasks.
+* Configure circuit breakers to prevent cascading failures.
+* Understand how multiple resilience strategies interact.
+* Implement programmatic resilience using a CDI `TypedGuard`.
+
+== 1. Default Resilience Behavior
+
+By default, Quarkus Flow enables **both a Retry strategy and a Circuit Breaker strategy** for all workflows executing HTTP or OpenAPI tasks.
+
+If an external API throws a 500 or times out, the engine will automatically attempt to retry the call using an exponential backoff before finally failing the workflow task.
+
+[[config-retries]]
+== 2. Configuring Retries
+
+You can tune the retry behavior globally, or disable it entirely if you prefer workflows to fail fast.
+
+[source,properties]
+----
+# Disable retries globally
+# quarkus.flow.http.client.resilience.retry.enabled=false
+
+# Tune the default retry behavior
+quarkus.flow.http.client.resilience.retry.max-retries=3
+quarkus.flow.http.client.resilience.retry.delay=0
+quarkus.flow.http.client.resilience.retry.jitter=200ms
+----
+
+[[configuring-circuit-breakers]]
+== 3. Configuring Circuit Breakers
+
+A circuit breaker prevents your workflow from hammering a downstream service that is already struggling.
+
+[source,properties]
+----
+# Disable circuit breakers globally
+# quarkus.flow.http.client.resilience.circuit-breaker.enabled=false
+
+# Tune the default circuit breaker behavior
+quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio=0.5
+quarkus.flow.http.client.resilience.circuit-breaker.delay=5s
+quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold=20
+quarkus.flow.http.client.resilience.circuit-breaker.success-threshold=1
+----
+
+== 4. Scoping Resilience to Specific Clients
+
+Just like standard network configurations, resilience settings are applied per **named workflow** or **named HTTP client**.
+
+If you have a named HTTP client called `crm-api`, you can scope specific retry and circuit breaker logic just to that client:
+
+[source,properties]
+----
+quarkus.flow.http.client.named.crm-api.resilience.retry.max-retries=5
+quarkus.flow.http.client.named.crm-api.resilience.circuit-breaker.delay=10s
+----
+
+== 5. How Retries and Circuit Breakers Interact
+
+When both strategies are enabled (the default), they follow the link:https://smallrye.io/docs/smallrye-fault-tolerance/6.10.0/howto/multiple.html[SmallRye nesting rules]:
+
+* **The Circuit Breaker is inner** — it wraps the actual HTTP network call.
+* **The Retry is outer** — it wraps the circuit breaker.
+
+=== Example Scenario
+If your task is configured for 3 max retries and a circuit breaker failure ratio of 50% (threshold of 2):
+
+1. **First attempt:** HTTP call fails (e.g., 503 Service Unavailable). Circuit breaker records 1 failure.
+2. **First retry:** HTTP call fails again. Circuit breaker records 2 failures. The threshold is reached (100% failure > 50%).
+3. **Circuit opens:** The circuit breaker state changes to OPEN.
+4. **Second retry:** Receives a `CircuitBreakerOpenException` immediately without making a network call.
+5. **Final result:** The workflow task fails after exhausting all retries.
+
+[TIP]
+All fault tolerance strategies provide metrics for monitoring. Refer to xref:metrics-prometheus.adoc#fault-tolerance-metrics[Metrics & Prometheus] for details on tracking open circuits and retry counts.
+
+== 6. Advanced: Programmatic Resilience (TypedGuard)
+
+Property-based configuration works for most scenarios, but sometimes you need conditional resilience—for example, retrying on a `503 Service Unavailable`, but failing immediately on a `400 Bad Request`.
+
+You can take full control of the resilience behavior by providing a CDI-produced `TypedGuard`.
+
+Create a producer method and annotate it with `@Identifier`:
+
+[source,java]
+----
+import io.smallrye.faulttolerance.api.TypedGuard;
+import io.smallrye.common.annotation.Identifier;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.util.TypeLiteral;
+import java.util.concurrent.CompletionStage;
+
+public class ResilienceProducers {
+
+    @Produces
+    @Identifier("smart-retry-guard")
+    public TypedGuard<CompletionStage<WorkflowModel>> custom() {
+        return TypedGuard.<CompletionStage<WorkflowModel>>create(new TypeLiteral<>() {})
+            .withRetry()
+            .whenException(throwable -> {
+                if (throwable instanceof WorkflowException we) {
+                    // Only retry if the HTTP status is a 5xx server error
+                    return we.getWorkflowError().getStatus() >= 500;
+                }
+                return false;
+            })
+            .maxRetries(4)
+            .done()
+            .build();
+    }
+}
+----
+
+Next, configure Quarkus Flow to use this specific `TypedGuard` by referencing its identifier:
+
+[source,properties]
+----
+# Apply to the default client
+quarkus.flow.http.client.resilience.identifier=smart-retry-guard
+
+# Or apply it only to a specific named client
+quarkus.flow.http.client.named.crm-api.resilience.identifier=smart-retry-guard
+----
+
+[NOTE]
+When `resilience.identifier` is set, **all property-based configurations** (`resilience.retry.\*` and `resilience.circuit-breaker.*`) for that client are ignored. The `TypedGuard` takes complete control.
+
+== See also
+* xref:http-client.adoc[Configure the HTTP client] — routing, timeouts, and network tuning.
+* link:https://smallrye.io/docs/smallrye-fault-tolerance/6.10.0/index.html[SmallRye Fault Tolerance Documentation] — deeper dive into the underlying engine.

@@ -1,0 +1,13 @@
+@startuml
+skinparam componentStyle rectangle
+component "Quarkus Application" {
+  [Java DSL or YAML Definition] -> [Quarkus Flow Engine] : Build-time compile
+  [Quarkus Flow Engine] <--> [CDI Beans / Services]
+  [Quarkus Flow Engine] <--> [LangChain4j Agents]
+}
+cloud "External Systems" {
+  [Messaging (Kafka/AMQP)]
+  [REST APIs]
+}
+[Quarkus Flow Engine] --> [External Systems] : Orchestrates
+@enduml

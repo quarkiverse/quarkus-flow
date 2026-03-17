@@ -32,7 +32,7 @@ public class HelloAgenticWorkflow extends Flow {
                         // Build a single brief string from topic + notes and feed it to the drafter
                         // (jq-style expression produces a String)
                         agent("draftAgent", drafterAgent::draft, String.class)
-                                .inputFrom("\"Topic: \" + $.topic + \"\\nNotes: \" + $.notes")
+                                .inputFrom("\"Topic: \" + .topic +\"\\nNotes: \"+ .notes")
                                 .exportAs("."), // expose the whole draft text to the next step
 
                         // Critic evaluates the draft and we persist a normalized review state

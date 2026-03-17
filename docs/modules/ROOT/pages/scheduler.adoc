@@ -1,13 +1,27 @@
-= Scheduler
+= Schedule workflow executions
 :page-role: howto
 include::includes/attributes.adoc[]
 
-Serverless Workflow SDK reference implementation provides a full implementation of the scheduling functionality defined on the CNFC specification. Besides this, Quarkus Flow provide an additional implementation based on Quarkus Scheduler. 
+The Serverless Workflow specification allows you to define workflows that execute automatically on a recurring schedule.
 
-The default implementation uses a ScheduledExecutorService instance for `every` and `after` and link:https://github.com/jmrozanec/cron-utils[cron-utils] lightweight library for `cron`
+By default, the Quarkus Flow engine uses a lightweight, in-memory implementation (based on `ScheduledExecutorService` and the `cron-utils` library) to trigger these executions. However, for a production-grade Quarkus application, **we highly recommend replacing this with the native Quarkus Scheduler integration**.
 
-In case users want to replace default implementation by the Quarkus base one, they should add following dependency in their `pom.xml` file
+This guide shows how to:
 
+* Enable the native Quarkus Flow Scheduler.
+* Configure the scheduler to comply with the specification CRON standards.
+* Define a recurring schedule in your workflow.
+
+== Prerequisites
+
+* A Quarkus application with xref:getting-started.adoc[Quarkus Flow set up].
+
+== 1. Add the Scheduler dependency
+
+To replace the default engine scheduler with the native Quarkus Scheduler, simply add the `quarkus-flow-scheduler` extension to your project.
+
+.pom.xml
+[source,xml]
 ----
 <dependency>
   <groupId>io.quarkiverse.flow</groupId>
@@ -15,14 +29,75 @@ In case users want to replace default implementation by the Quarkus base one, th
 </dependency>
 ----
 
-== Setup
+Adding this dependency automatically wires Quarkus Flow to use the underlying Quarkus scheduling infrastructure. This gives you access to robust application lifecycle management and all standard link:https://quarkus.io/guides/scheduler-reference#configuration-reference[Quarkus Scheduler configuration properties].
 
-Once you are using the Quarkus scheduler you have access to the set of link:https://quarkus.io/guides/scheduler-reference#configuration-reference[properties] defined for this Quarkus component.
-By default, in order to be compliant with the CNFC spec, `quarkus.scheduler.cron-type` is set to `unix`
+== 2. Configure for specification compliance
+
+The Serverless Workflow specification mandates that CRON expressions follow the standard **Unix** format.
+
+The Quarkus Scheduler, however, defaults to the `quartz` format. To ensure your workflow definitions behave exactly as specified by the standard, you must configure the CRON type in your application properties:
+
+[source,properties]
+.application.properties
+----
+# Force the Quarkus scheduler to use Unix cron syntax for CNCF compliance
+quarkus.scheduler.cron-type=unix
+----
+
+== 3. Define a schedule in your workflow
+
+You can define a schedule directly in your workflow definition. The specification supports three scheduling formats:
+
+* `cron`: A standard CRON expression.
+* `every`: An ISO-8601 duration (e.g., `PT15M` for every 15 minutes) representing the interval between executions.
+* `after`: An ISO-8601 duration representing a delay before the workflow starts.
+
+=== Example: YAML Definition
+
+Here is an example of a workflow that executes automatically every 15 minutes using a CRON expression:
+
+[source,yaml]
+----
+document:
+  dsl: '1.0.0'
+  namespace: org.acme
+  name: ScheduledJob
+  version: '1.0'
+schedule:
+  cron: "0/15 * * * *"
+do:
+  - runTask:
+      call: http
+      with:
+        method: POST
+        endpoint: "https://api.example.com/sync"
+----
+
+// TODO: add to the Java SDK
+
+// === Example: Java DSL
+//
+// You can also define the schedule programmatically in your Java DSL using the `.schedule()` builder:
+//
+// [source,java]
+// ----
+// import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+//
+// public class ScheduledFlow extends Flow {
+//     @Override
+//     public Workflow descriptor() {
+//         return workflow("scheduled-job")
+//             // Define the CNCF schedule
+//             .schedule(s -> s.cron("0/15 * * * *"))
+//             .tasks(
+//                 post("syncData", "https://api.example.com/sync")
+//             )
+//             .build();
+//     }
+// }
+// ----
 
 == See also
-- link:https://github.com/serverlessworkflow/sdk-java/tree/main/impl[Serverless Workflow SDK Reference implementation] 
-- link:https://quarkus.io/guides/scheduler-reference[Quarkus scheduler reference guide]
-- link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#scheduling[CNFC specification scheduling section]
-- link:https://github.com/serverlessworkflow/specification/blob/main/examples/schedule-cron.yaml[CNFC specification cron example]
 
+* link:https://quarkus.io/guides/scheduler-reference[Quarkus Scheduler Reference Guide] — learn how to configure threads, metrics, and tracing for the underlying scheduler.
+* link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#scheduling[Serverless Workflow Specification: Scheduling] — full details and edge cases for the `every`, `after`, and `cron` syntax.

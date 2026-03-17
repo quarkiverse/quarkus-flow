@@ -1,72 +1,44 @@
 = Quarkus Flow
 :page-layout: default
-:description: Workflow engine for Quarkus based on the CNCF Workflow Specification, with Java DSL and Agentic AI support.
+:description: Workflow engine for Quarkus based on the CNCF Serverless Workflow Specification, with Java DSL and Agentic AI support.
 
 include::./includes/attributes.adoc[]
 
+Quarkus Flow is a lightweight, native-friendly workflow engine for Quarkus, built on the link:https://serverlessworkflow.io/[CNCF Serverless Workflow Specification].
+It allows you to model both classic orchestrations and Agentic AI flows using a fluent Java DSL that maps directly to the specification's core concepts (such as states, transitions, and event filters), all with first-class CDI and Quarkus ergonomics.
 
-Quarkus Flow is a lightweight, native-friendly workflow engine for Quarkus, built on the link:https://serverlessworkflow.io/[CNCF Workflow Specification].
-It lets you model classic workflows and Agentic AI orchestrations, with first-class CDI/Quarkus ergonomics.
+== Architecture Overview
+
+image::architecture.svg[Quarkus Flow Architecture Diagram, align="center"]
 
 == Highlights
 
-* CNCF-compliant workflows via a fluent Java DSL
-* Build-time discovery of workflow descriptors and injection of compiled beans
-* Agentic workflows with link:https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html[LangChain4j]
-* Messaging support with link:https://quarkus.io/guides/messaging[SmallRye]
-* HTTP Client support with link:https://resteasy.dev/[RESTEasy Reactive].
-
-== When you’d use it
-
-* **You’re already on Quarkus** and want orchestration without leaving your stack (CDI, Dev Services, config, build-time optimization).
-* **You need deterministic, debuggable flows** in Java—code-reviewable, testable, and observable—rather than opaque or bespoke DSLs.
-* **You want agentic AI orchestration** beside regular services (LangChain4j agents as first-class tasks: call, critique, loop, HITL).
-* **You prefer CNCF alignment** so your workflow concepts match an open specification and aren’t locked into a closed runtime.
-* **You need fast start & low memory** for container/serverless deployments (Quarkus + native image friendly).
-* **You want compile-time discovery** of flows for safer wiring and simpler DI (`Flow` subclasses discovered at build time).
+* **CNCF-Compliant Vocabulary:** Define workflows using a fluent Java DSL that strictly adheres to the CNCF Serverless Workflow specification.
+* **Build-Time Optimization:** Compile-time discovery of workflow descriptors and automatic injection of compiled beans.
+* **Standard Orchestration:** Robust state management, retries, branching, and event routing directly within your Quarkus app.
+* **AI First-Class Citizen:** Seamless Agentic workflows integrating with link:https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html[LangChain4j].
+* **Ecosystem Integration:** Native messaging support via link:https://quarkus.io/guides/messaging[SmallRye] and HTTP client support via link:https://resteasy.dev/[RESTEasy Reactive].
 
 == Why Quarkus Flow?
 
-* **Reduce time-to-market for automations**:
-Model cross-service processes (APIs, events, agents) with a consistent DSL and Quarkus dev-mode feedback.
+Instead of relying on an external orchestration cluster or opaque XML/YAML scripts, Quarkus Flow brings orchestration directly into your application codebase.
 
-* **Lower operational risk**:
-Typed Java flows + unit/integration tests + Quarkus observability = fewer production surprises.
-
-* **Govern AI interactions**:
-Encode guardrails (critique/revise loops, compliance checks, HITL steps) as explicit tasks and transitions.
-
-* **Improve portability & longevity**:
-Concepts map to the CNCF Workflow Spec, lowering re-platforming cost and vendor lock-in.
-
-* **Orchestration in the same language/runtime as services**:
-Developers implement and review workflows in Java, using familiar Quarkus tooling and CI.
-* **Compliance & auditability of automated decisions**:
-Flows are explicit code; reviews, tests, and logs provide traceability for audits.
-* **Human-in-the-loop (HITL) control for AI**:
-Encode pause/review/approve steps and event-driven resumes to keep humans in control.
-* **Resilience & recoverability**:
-Declarative retries, error paths, and event listeners make failure behavior predictable.
-* **Observability & supportability**:
-Integrates with Quarkus metrics/logging; flow boundaries make SRE triage easier.
-* **Performance & scalability in cloud environments**:
-Quarkus native compatibility supports fast startup and high density for microservices/serverless.
-* **Standards alignment**:
-Tasks, events, data mapping, and transitions align with the CNCF Workflow Specification to ease long-term maintenance.
-* **Extensibility for AI & integrations**:
-LangChain4j agents, HTTP/OpenAPI calls, and messaging tasks can be combined in one model.
+* **Unified Developer Experience:** You're already on Quarkus. Orchestrate without leaving your stack (CDI, Dev Services, config). Developers implement and review workflows in Java, using familiar tooling and CI.
+* **Deterministic & Observable:** Typed Java flows plus unit/integration tests and Quarkus observability result in fewer production surprises. Flows are explicit code, providing traceability for audits.
+* **Govern AI Interactions:** Encode guardrails (critique/revise loops, compliance checks, Human-in-the-loop steps) as explicit workflow tasks and transitions.
+* **Fast & Lightweight:** Built for cloud environments. Quarkus native compatibility supports fast startup and low memory footprint for containerized and serverless deployments.
+* **Avoid Vendor Lock-in:** Concepts map directly to the open specification, lowering re-platforming costs and improving longevity.
 
 == Typical use cases
 
-* **Back-office automation:** approval chains, enrichment, notifications, SLAs with retries and timeouts.
-* **Agentic AI pipelines:** draft → critique → revise loops with compliance checks and HITL reviews.
-* **Service orchestration:** call multiple microservices (OpenAPI/HTTP), correlate events, and emit domain events.
-* **Event-driven processes:** wait for external signals (e.g., “review.required”), then resume with captured context.
+* **Service orchestration:** Call multiple microservices (OpenAPI/HTTP), correlate events, and emit domain events with declarative retries and timeouts.
+* **Agentic AI pipelines:** Draft → critique → revise loops with compliance checks and HITL (Human-in-the-loop) reviews.
+* **Event-driven processes:** Wait for external signals (e.g., "review.required"), capture context, and resume automatically.
+* **Back-office automation:** Approval chains, enrichment, and notifications.
 
 == How it compares (high-level)
 
-The landscape is rich; here’s a brief, opinionated snapshot to help positioning.
-This is not exhaustive—evaluate with your team’s constraints.
+The landscape is rich; here’s a brief, opinionated snapshot to help positioning. This is not exhaustive—evaluate with your team’s constraints.
 
 [cols="1,3,3,3,3",options="header"]
 |===
@@ -77,32 +49,22 @@ This is not exhaustive—evaluate with your team’s constraints.
 | Fit vs Quarkus Flow
 
 | **Temporal**
-| Code-first workflows (SDKs in several languages) with a separate Temporal Cluster
-(services: History/Matching/Frontend). Durable timers/queues built-in.
-| Excellent reliability story (durable execution, retries, signals),
-strong developer experience for long-running workflows.
-| You’re fine running a dedicated Temporal cluster and adopting its programming model/SDK;
-language polyglot is important.
-| **Quarkus Flow** keeps everything in your Quarkus app with CDI & build-time discovery,
-and aligns with the CNCF Workflow concepts. You avoid running a separate orchestration
-control plane.
+| Code-first workflows (SDKs in several languages) with a separate Temporal Cluster.
+| Excellent reliability story (durable execution, retries, signals), strong developer experience for long-running workflows.
+| You’re fine running a dedicated Temporal cluster and adopting its programming model/SDK; language polyglot is important.
+| **Quarkus Flow** keeps everything in your Quarkus app with CDI & build-time discovery, and aligns with CNCF Workflow concepts. You avoid running a separate orchestration control plane.
 
 | **Camunda 8**
-| BPMN 2.0 (diagram-first) with Zeebe engine; separate SaaS/self-managed control plane;
-Java/Polyglot workers.
+| BPMN 2.0 (diagram-first) with Zeebe engine; separate SaaS/self-managed control plane.
 | Business-friendly diagrams, mature ecosystem, monitoring/ops tooling out of the box.
-| You want BPMN for stakeholder collaboration and can operate Zeebe/Console (or use SaaS).
-| **Quarkus Flow** favors code-first (fluent Java) and CNCF alignment; lighter footprint
-inside your Quarkus services; easier to unit test alongside code.
+| You want BPMN for stakeholder collaboration and can operate Zeebe/Console.
+| **Quarkus Flow** favors code-first (fluent Java) and CNCF alignment; lighter footprint inside your Quarkus services; easier to unit test alongside code.
 
 | **Netflix Conductor**
-| JSON/YAML workflow definitions; server orchestrator + workers (HTTP/GRPC);
-strong microservice orchestration patterns.
-| Good for service orchestration with pluggable tasks and external workers;
-battle-tested at scale.
+| JSON/YAML workflow definitions; server orchestrator + workers (HTTP/GRPC).
+| Good for service orchestration with pluggable tasks and external workers; battle-tested at scale.
 | You’re comfortable with an external orchestrator and JSON/YAML modeling + worker model.
-| **Quarkus Flow** keeps models and tests in Java, integrates tightly with CDI/Quarkus,
-and adds agentic AI/HITL patterns while mapping to CNCF concepts.
+| **Quarkus Flow** keeps models and tests in Java, integrates tightly with CDI/Quarkus, and adds agentic AI/HITL patterns while mapping to CNCF concepts.
 |===
 
 [TIP]
@@ -115,6 +77,6 @@ Nothing stops you from a **hybrid** approach:
 
 == What's next?
 
-* xref:getting-started.adoc[]
-* xref:dsl-cheatsheet.adoc[]
-* xref:specification.adoc[]
+* xref:getting-started.adoc[Getting Started (Java DSL)]
+* xref:dsl-cheatsheet.adoc[Java DSL Cheatsheet]
+* xref:specification.adoc[CNCF Specification Mapping]

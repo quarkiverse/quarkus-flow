@@ -2,6 +2,8 @@ package org.acme;
 
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.set;
 
+import java.util.Map;
+
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkiverse.flow.Flow;
@@ -13,8 +15,9 @@ public class HelloWorkflow extends Flow {
     @Override
     public Workflow descriptor() {
         return FuncWorkflowBuilder.workflow("hello")
-                // jq expression to set our context to the JSON object `message`
-                .tasks(set("{ message: \"hello world!\" }"))
+                // setting the workflow context with a map carrying a message.
+                // it can be translated to JSON as { "message": "hello world!" }
+                .tasks(set(Map.of("message", "hello world!")))
                 .build();
     }
 }

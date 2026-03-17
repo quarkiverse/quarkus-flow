@@ -1,200 +1,173 @@
-= Orchestrate LangChain4j agents with the Quarkus Flow Java DSL
+= Orchestrate LangChain4j Agents and Patterns
 :page-role: howto
 include::includes/attributes.adoc[]
 
-This guide shows how to orchestrate link:https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html[LangChain4j]
-agents inside Quarkus Flow using the Java DSL.
-You will define one or more agents (interfaces) and then compose them as *tasks* (`agent(...)` or `function(...)`)
-with optional loops and human-in-the-loop (HITL) gates.
+LangChain4j provides powerful abstractions for interacting with LLMs and defining AI agents. However, AI processes rarely exist in isolation—they need to interact with external services, pause for human approval, and survive system restarts.
 
-== Choose your approach
+Quarkus Flow acts as the durable, observable orchestration layer for your AI. By wrapping your LangChain4j components into standard Flow Tasks, you gain:
 
-Quarkus Flow supports three complementary ways to use LangChain4j:
+* **Durability:** Long-running agentic loops survive application restarts.
+* **Observability:** Full execution traces, logs, and Dev UI visualizers.
+* **Integration:** Seamlessly mix AI tasks with HTTP calls, messaging, and scheduled events.
 
-. *Java DSL tasks (this guide)* — call LangChain4j beans from Flow tasks via `agent(...)` or `function(...)`.
-Use this when you want full control of the workflow topology and to mix AI with HTTP, messaging, timers, long-running instances, etc.
-. *Annotations → generated workflows* — declare patterns with LangChain4j Agentic annotations (`@SequenceAgent`, `@ParallelAgent`, …),
-and let Quarkus Flow generate and register workflows for you.
-See xref:howto-langchain4j-agentic-workflows.adoc[].
-. *Hybrid* — declare patterns with annotations, then call them from a larger Java DSL workflow via `function(...)`.
-See xref:howto-langchain4j-agentic-workflows.adoc#hybrid[here].
+== 1. Add the dependencies
 
-== Prerequisites
+Add the required extensions to your `pom.xml`. You will need the base LangChain4j dependencies, your chosen AI provider (e.g., Ollama or OpenAI), and optionally the dedicated Quarkus Flow integration.
 
-* A Quarkus application with xref:getting-started.adoc[Quarkus Flow already set up].
-* At least one LangChain4j provider dependency on the classpath (Ollama, OpenAI, …).
-* Basic familiarity with Quarkus configuration and CDI.
-
-== 1. Add a LangChain4j provider (choose a backend)
-
-Pick the provider(s) you want; Quarkus will configure them via application properties.
-
-.Ollama (local models)
-[source,xml]
+[source,xml,subs=attributes+]
 ----
-<dependency>
-  <groupId>io.quarkiverse.langchain4j</groupId>
-  <artifactId>quarkus-langchain4j-ollama</artifactId>
-</dependency>
+<dependencies>
+    <dependency>
+        <groupId>io.quarkiverse.langchain4j</groupId>
+        <artifactId>quarkus-langchain4j-agentic</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>io.quarkiverse.langchain4j</groupId>
+        <artifactId>quarkus-langchain4j-ollama</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-langchain4j</artifactId>
+    </dependency>
+</dependencies>
 ----
 
-.OpenAI (hosted)
-[source,xml]
+Configure your chosen provider in `application.properties`:
+[source,properties]
 ----
-<dependency>
-  <groupId>io.quarkiverse.langchain4j</groupId>
-  <artifactId>quarkus-langchain4j-openai</artifactId>
-</dependency>
+quarkus.langchain4j.ollama.base-url=http://localhost:11434
+quarkus.langchain4j.ollama.chat-model.model=llama3.2
 ----
 
-[NOTE]
-You can have multiple providers on the classpath.
-Bind agents to a provider using standard LangChain4j / Quarkus configuration.
+== 2. Pattern A: Orchestrating Simple Agents
 
-== 2. Define an agent
+The most common approach is to define a standard LangChain4j AI Service and orchestrate it directly as a task within your Java DSL workflow.
 
-Agents are plain interfaces with annotations such as `@SystemMessage` and `@UserMessage`
-and are registered as CDI beans.
-For workflows, it is common to accept a *memory id* and structured parameters.
+=== Define the Agent
+Create a plain interface annotated with `@RegisterAiService`. Use `@SystemMessage` to define the system prompt and the expected output structure.
 
 [source,java]
 ----
 include::{examples-dir}org/acme/agentic/DrafterAgent.java[tag=agent]
 ----
 
-Key points:
-
-* `@RegisterAiService` registers the interface as a CDI bean.
-* `@SystemMessage` defines role/instructions and output shape.
-* `@UserMessage` builds the prompt from method arguments.
-* Use `@MemoryId` when the backend supports per-conversation memory.
-
-== 3. Compose agents in a workflow
-
-Create a `Flow` that calls agents with `agent(name, fn, ResultType.class)` (or `function(...)`).
-You can export results, branch, and loop based on typed outputs.
+=== Compose the Agent in a Flow
+Inject the agent (or call it via method reference) using the `agent(name, fn, ResultType.class)` task provider.
 
 [source,java]
 ----
-include::{examples-dir}org/acme/agentic/HelloAgenticWorkflow.java[tag=workflow]
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+
+public class NewsletterFlow extends Flow {
+    @Override
+    public Workflow descriptor() {
+        return workflow("newsletter-drafter")
+            .tasks(
+                // Call the agent, passing the global context as input
+                agent("draftAgent", drafterAgent::draft, String.class)
+                    .inputFrom(".topic")
+                    .exportAs("{ draft: . }")
+            )
+            .build();
+    }
+}
 ----
 
-What is happening:
+=== Shape the Data
+When piping multiple agents together, use xref:data-flow.adoc[Data Flow transformations] to keep prompts clean and context tightly scoped:
 
-. *Draft* via the first agent (for example, a newsletter drafter).
-. *Critique* the draft via a second agent.
-. Optionally *emit* an event to request human review (`emitJson(...)`), then *listen* for a
-review result (`listen(...).outputAs(...)`).
-. *Branch* with `switchWhenOrElse(...)` to either revise (loop back to the drafter) or
-*consume* the final output (for example, send an email).
-
-== 4. Shape data between tasks
-
-Use transformations to keep prompts and results clean:
-
-* `inputFrom(...)` – select what the task consumes (jq or Java lambda).
-* `exportAs(...)` – expose only part of a result to the next task without committing to global state.
-* `outputAs(...)` – write a shaped result to the workflow data.
-
-Example (agent → agent piping):
+* `inputFrom(...)`: Select exactly what part of the workflow context the agent sees.
+* `exportAs(...)`: Expose the agent's output to the global context for the next task.
 
 [source,java]
 ----
-agent("draftAgent", drafterAgent::draft, String.class)
-  .inputFrom("$.seedPrompt")           // read only the seed
-  .exportAs("$.draft");                // pass only the draft text forward
-
+// The critic only sees the "draft" field, not the whole context
 agent("criticAgent", criticAgent::critique, String.class)
-  .outputAs(r -> Map.of(               // persist a structured review
-      "review", r,
-      "status", r.needsRevision() ? "REVISION" : "OK"
-  ));
+    .inputFrom("$.draft")
+    .exportAs(r -> Map.of("review", r, "status", r.needsRevision() ? "REVISION" : "OK"));
 ----
 
-== 5. Add an optional human-in-the-loop gate
+== 3. Pattern B: Orchestrating Agentic Subflows
 
-You can insert a human approval gate using events:
+LangChain4j provides declarative annotations like `@SequenceAgent` and `@ParallelAgent` to define complex multi-agent patterns. From Quarkus Flow's perspective, these annotated methods are just **Subflows**.
+
+You can define the complex internal routing of your AI using LangChain4j's annotations, and then call that entire pattern as a single task from your overarching business workflow.
+
+=== Define the Agentic Pattern
+[source,java]
+----
+include::{examples-dir}/org/acme/langchain4j/Agents.java[]
+----
+
+=== Call the Pattern from Quarkus Flow
+Inject the annotated bean into your `Flow` class and orchestrate it alongside standard business tasks (like HTTP calls or emitting events).
 
 [source,java]
 ----
-emitJson("org.acme.email.review.required", CriticAgentReview.class);
+import org.acme.langchain4j.Agents;
+import jakarta.inject.Inject;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
 
-listen("waitHumanReview", to().one(event("org.acme.newsletter.review.done")))
-  .outputAs((java.util.Collection<Object> c) -> c.iterator().next());
+public class OrderWorkflow extends Flow {
 
+    @Inject
+    Agents.EveningPlannerAgent eveningPlanner; // LangChain4j @ParallelAgent
+
+    @Override
+    public Workflow descriptor() {
+        return workflow("evening-planner")
+            .tasks(
+                // Call the LangChain4j pattern as a subflow task
+                function("planEvening", eveningPlanner::plan, Agents.EveningPlan.class)
+                    .inputFrom("$.location")
+                    .exportAs("{ plan: . }"),
+
+                // Continue with non-AI business logic
+                post("notify", "https://example.org/notify"),
+                emitJson("org.acme.plan.created", Agents.EveningPlan.class)
+            )
+            .build();
+    }
+}
+----
+
+== 4. Adding Human-in-the-Loop (HITL) Guardrails
+
+You can easily pause an AI orchestration to wait for human approval by combining an `emit` task with a `listen` task.
+
+[source,java]
+----
+// 1. Ask a human for a review
+emitJson("org.acme.email.review.required", CriticAgentReview.class),
+
+// 2. Pause the workflow and wait for the human's response event
+listen("waitHumanReview", toOne("org.acme.newsletter.review.done"))
+  .outputAs((java.util.Collection<Object> c) -> c.iterator().next()),
+
+// 3. Branch based on the human's decision
 switchWhenOrElse(
   (HumanReview h) -> ReviewStatus.NEEDS_REVISION.equals(h.status()),
-  "draftAgent",            // loop back to the drafter
-  "sendNewsletter",        // or finalize
+  "draftAgent",            // If rejected, loop back to the AI Drafter task
+  "sendNewsletter",        // If approved, proceed to finalization
   HumanReview.class
-);
+)
 ----
 
-This pattern lets you have a drafter → critic → human triad, while still keeping the
-workflow deterministic and observable.
+== 5. The Dev UI "Auto-Generation" Magic
 
-== 6. Configure providers
+If you only want to use LangChain4j's `@SequenceAgent` or `@ParallelAgent` annotations without writing a larger Java DSL workflow, the `quarkus-flow-langchain4j` extension provides a massive developer experience boost.
 
-Choose one provider (or both) and configure it via `application.properties` (or YAML).
+When you start your application in dev mode (`./mvnw quarkus:dev`):
 
-.Ollama (local)
-[source,properties]
-----
-quarkus.langchain4j.ollama.base-url=http://localhost:11434
-quarkus.langchain4j.ollama.chat-model.model=llama3.1
-# Optional: temperature/max-tokens/etc. (provider-specific)
-# quarkus.langchain4j.ollama.chat-model.temperature=0.3
-----
+1. Quarkus Flow automatically discovers your `@SequenceAgent` and `@ParallelAgent` methods.
+2. It generates a standalone `WorkflowDefinition` for each one in the background.
+3. It derives a JSON Schema from the agent's method parameters.
 
-.OpenAI
-[source,properties]
-----
-quarkus.langchain4j.openai.api-key=${OPENAI_API_KEY}
-quarkus.langchain4j.openai.chat-model.model=gpt-4o-mini
-# Optional knobs:
-# quarkus.langchain4j.openai.chat-model.temperature=0.2
-# quarkus.langchain4j.openai.chat-model.max-tokens=1024
-----
-
-.Memory (optional, if used by your agent)
-[source,properties]
-----
-# Example: enable memory if the provider supports it; scope depends on backend
-# quarkus.langchain4j.memory.enabled=true
-# quarkus.langchain4j.memory.window-size=20
-----
-
-[TIP]
-Keep prompts *short and strict* in `@SystemMessage` with an explicit JSON contract for outputs.
-This makes downstream workflow tasks easier to type and test.
-
-== 7. Testing agents and workflows
-
-* Unit-test your *agent interface* by injecting it directly and calling the method
-(mock the provider if you want speed or deterministic outputs).
-* Unit-test your *Flow* by injecting the `Flow` subclass and calling `startInstance(...)`;
-mock agents to avoid network calls.
-* For end-to-end tests, run `quarkus:dev` (or use Testcontainers) with your chosen provider
-and exercise the HTTP endpoints or messaging entry points.
-
-== Troubleshooting
-
-* *Output does not parse as expected* –
-tighten your `@SystemMessage` contract and validate it in a small unit test; then use
-`outputAs(...)` to normalize the result into a stable shape.
-* *Prompt drift* –
-keep `@UserMessage` minimal, compute heavy strings in Java, and feed only what is needed
-via `inputFrom(...)`.
-* *Latency or cost* –
-export narrow fields (`exportAs(...)`) and cache intermediate results in your workflow data.
-* *Memory issues* –
-if the provider keeps chat history, ensure you pass a stable `@MemoryId`
-(for example, your workflow instance id) or turn memory off for deterministic runs.
+Open the **Quarkus Flow Dev UI**, and you will see your LangChain4j agents listed as fully-fledged workflows. You can execute them via auto-generated HTML forms, view their internal topology using Mermaid diagrams, and inspect their execution traces—all without writing a single line of orchestration code.
 
 == See also
-
-* xref:howto-langchain4j-agentic-workflows.adoc[] — generate workflows from LangChain4j Agentic annotations.
-* xref:concepts-agentic-langchain4j.adoc[] — how the annotations integration works internally.
-* xref:dsl-cheatsheet.adoc[] — all task providers and transformations (`inputFrom`, `exportAs`, `outputAs`, …).
-* xref:specification.adoc[] — CNCF Workflow concepts behind `call`, events, conditions, and loops.
-* xref:messaging.adoc[] — emitting review requests and waiting for approvals via messaging.
+* xref:data-flow.adoc[Data flow and context management] — deeper dive into `inputFrom` and `exportAs`.
+* xref:dsl-cheatsheet.adoc[Java DSL cheatsheet] — a quick reference for all available workflow tasks.
+* xref:messaging.adoc[Use messaging and events] — how to emit and listen for CloudEvents.

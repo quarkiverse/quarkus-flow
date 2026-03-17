@@ -1,67 +1,53 @@
 = Concepts & architecture
 :page-role: explanation
 
-This page explains the core concepts behind Quarkus Flow and how they relate to the
-CNCF Workflow Specification and the Quarkus runtime.
+This page explains the core concepts behind Quarkus Flow, its internal architecture, and how it maps to the CNCF Serverless Workflow Specification.
 
-== Core concepts
+== The Build-Time Engine Paradigm
 
-=== Workflows
+Unlike traditional workflow engines that parse XML or YAML at runtime and rely on heavy database polling, Quarkus Flow leans entirely into the Quarkus "Ahead-of-Time" (AoT) philosophy.
 
-* A *workflow* describes a unit of work: tasks, transitions, inputs and outputs.
-* In Quarkus Flow, workflows are defined using the CNCF Workflow Java DSL and exposed
-as CDI beans.
+=== Build-Time Discovery
+When you compile your application, the Quarkus Flow extension scans for classes extending `Flow` or for xref:workflow-definitions.adoc[YAML definitions in your resources]. It parses the fluent Java DSL (or YAML) and compiles it directly into a `WorkflowDefinition` CDI bean.
 
-Link: xref:dsl-cheatsheet.adoc[Java DSL cheatsheet].
+=== Fast Runtime Execution
+Because the workflow definition is already compiled and injected, the runtime engine does not need to parse models or use reflection. It simply executes the task sequence. This results in incredibly fast startup times and a minimal memory footprint, making it ideal for serverless environments.
 
-=== Flow classes
+== Specification Alignment
 
-* A `Flow` is a CDI bean that provides a `descriptor()` method returning a Workflow.
-* At build time, Quarkus Flow discovers all `Flow` beans and generates compiled
-workflow definitions.
+Quarkus Flow uses the link:https://serverlessworkflow.io/[CNCF Serverless Workflow] specification as its foundational vocabulary. When you write a flow using the Java DSL, you are programmatically generating a CNCF-compliant model.
 
-=== Workflow definitions and instances
+* **Workflow (Flow):** The overarching container representing the process.
+* **Task:** A distinct step in the workflow (e.g., executing a function, waiting for an event, or evaluating a condition).
+* **Transition:** The defined path moving the execution from one Task to another.
+* **Context (Data):** The JSON payload (or Java object) that is passed, transformed, and enriched as it moves through the Tasks.
 
-* A *workflow definition* is the compiled representation used at runtime.
-* A *workflow instance* is a running execution of that definition with its own data
-(context) and lifecycle (created, running, completed, failed).
+== Core Engine Mechanics
 
-== Lifecycle
+=== Execution & Threading
+Quarkus Flow is designed to be non-blocking. When a workflow hits a wait task (like a timer or waiting for a message), the execution thread is released back to the Quarkus worker pool. The workflow state is serialized and persisted. Once the resume condition is met, a new thread picks up the state and continues execution.
 
-=== Build time
+=== Event Filtering
+A major strength of the engine is its ability to route asynchronous events to the correct, paused workflow instance.
 
-* Quarkus scans for `Flow` beans or xref:workflow-definitions.adoc[YAML definitions].
-* For each one, it compiles the Java/YAML DSL into a `WorkflowDefinition`.
-* The definitions are registered for injection and use at runtime.
+When a workflow enters an event-waiting (listen) state, it defines an **Event Filter**. This allows you to describe exactly how you want to filter incoming events directly within the listen task. You can filter based on the CloudEvent type, specific CloudEvent extensions, or the underlying CloudEvent data. When a message arrives via your messaging broker (like Kafka) that matches your defined filter criteria, the engine routes the payload directly to the correct execution and wakes it up.
 
-=== Runtime
+== Agentic AI Topology
+Quarkus Flow treats LangChain4j Agents as native task workers. Conceptually, an AI orchestration is not a separate engine; it is integrated directly into the standard workflow lifecycle.
 
-* Your application code starts instances from injected Flows or definitions.
-* The engine executes tasks, transitions, and event waits.
-* Results and errors are exposed through a simple API (`as(...)`, etc.).
+* **LLM Calls as Tasks:** Requesting a generation from an LLM is treated as call task. The workflow passes the current context to the prompt and waits for the response.
+* **Structured Outputs:** Because the workflow context is typed, LLM responses can be mapped directly into pure Java Records, ensuring the workflow continues with strictly structured data.
+* **Human-in-the-Loop (HITL):** For agentic loops requiring human oversight, the workflow can be designed to transition to a paused event-wait task. The AI's output is held in the context until a human explicitly emits a continuation event (often via a REST endpoint or event), demonstrating the synergy between standard event correlation and AI guardrails.
 
-== Integration points
+== Integration Points
 
-=== HTTP and OpenAPI
+The engine relies on the broader Quarkus ecosystem to do the heavy lifting for external communications:
 
-* Use HTTP/OpenAPI tasks to call external services from workflows.
-* See xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services].
+* **HTTP & OpenAPI:** Uses RESTEasy Reactive to perform non-blocking HTTP calls. (See xref:http-openapi-tasks.adoc[Call HTTP services]).
+* **Messaging:** Uses SmallRye Reactive Messaging to consume and emit CloudEvents to brokers like Kafka or RabbitMQ. (See xref:messaging.adoc[Use messaging]).
+* **AI & LLMs:** Uses the Quarkus LangChain4j extension to inject AI services directly into tasks. (See xref:langchain4j.adoc[Agentic workflows]).
 
-=== Messaging and events
+== What's next?
 
-* Integrate with MicroProfile Reactive Messaging to consume and emit CloudEvents.
-* See xref:messaging.adoc[Use messaging and events].
-
-=== Agentic workflows
-
-* Orchestrate AI agents built with LangChain4j as tasks in your workflows.
-* See xref:langchain4j.adoc[Agentic workflows with LangChain4j].
-
-//== Error handling and retries
-
-//
-
-== Where to go next
-
-* For a first hands-on walkthrough, see xref:getting-started.adoc[Getting Started].
-* For configuration details, see xref:configuration.adoc[Extension Configuration Reference].
+* To see these concepts in action, head to xref:getting-started.adoc[Getting Started].
+* For a quick reference of the DSL methods mapping to these tasks, see the xref:dsl-cheatsheet.adoc[Java DSL Cheatsheet].

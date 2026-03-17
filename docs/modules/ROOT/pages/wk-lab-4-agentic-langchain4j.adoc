@@ -1,27 +1,14 @@
-= Agentic workflows with LangChain4j
-:page-role: howto
+= Lab 4 – Agentic workflows with LangChain4j
+:page-role: tutorial
 include::includes/attributes.adoc[]
 
-This guide shows how to orchestrate link:https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html[**LangChain4j**] agents
-*and* HTTP tasks in a single workflow.
+In this lab, you will build an **Investment Memo Agent**. This demonstrates the "Agent + Tool" pattern: the workflow calls a deterministic HTTP API to fetch real-time market data, then passes that data to an AI Agent to produce a structured, professional investment recommendation.
 
-We’ll build a small **Investment Memo Agent** inspired by common enterprise patterns:
-the workflow calls an HTTP API to fetch market data for a ticker, then asks an AI agent
-to produce a short, structured memo your backend can safely consume.
+== 1. Add LangChain4j and a Model Provider
 
-High-level flow:
+First, add the LangChain4j extension for your preferred LLM provider. Quarkus Flow works seamlessly with any provider supported by Quarkus LangChain4j.
 
-. Input: `{ "ticker": "CSU.TO", "objective": "long-term compounder", "horizon": "5y" }`
-. HTTP task calls a market-data API (internal or public).
-. The HTTP task’s output and the original input are combined into an `InvestmentPrompt`.
-. LangChain4j agent produces a typed memo (`InvestmentMemo` with summary, stance, risks).
-. The memo becomes the workflow output (or can be emitted as an event, if you want).
-
-== 1. Add LangChain4j (choose a backend)
-
-Pick the provider(s) you want; Quarkus will configure them via application properties.
-
-.Ollama (local models)
+.Ollama (Local models - Recommended for this lab)
 [source,xml]
 ----
 <dependency>
@@ -30,7 +17,7 @@ Pick the provider(s) you want; Quarkus will configure them via application prope
 </dependency>
 ----
 
-.OpenAI (hosted)
+.OpenAI (Cloud-based)
 [source,xml]
 ----
 <dependency>
@@ -39,247 +26,95 @@ Pick the provider(s) you want; Quarkus will configure them via application prope
 </dependency>
 ----
 
-[NOTE]
-You can have multiple providers on the classpath. Bind agents to a provider using
-standard LangChain4j / Quarkus config.
+== 2. Define the AI Agent
 
-== 2. Define the Investment Analyst agent
+Our Agent is a simple Java interface. We use `@RegisterAiService` to tell Quarkus to create a CDI bean that talks to the LLM.
 
-The agent receives:
-
-* the **ticker** and investment context (objective, horizon), and
-* a **market data snapshot** fetched by the HTTP task,
-
-then returns a **typed memo** your workflow can pass around safely.
-
-=== 2.1 Define Investment Analyst agent data
-
-Create a Java Record that represents the investment memo:
+=== 2.1 The Data Models
+We want the AI to return structured JSON, not just a raw string. We define Java Records to act as the "Schema" for the AI's response and the "Prompt" for its input.
 
 [source,java]
 ----
 include::{examples-dir}org/acme/agentic/InvestmentMemo.java[]
 ----
 
-Additionally, create a Java Record that represents the prompt:
-
 [source,java]
 ----
 include::{examples-dir}/org/acme/agentic/InvestmentPrompt.java[]
 ----
 
-=== 2.2 Define the Agent
-
-Create the Investment Analyst agent class:
+=== 2.2 The AI Service Interface
+The `@SystemMessage` defines the Agent's persona and strict output requirements (JSON fields like `summary`, `stance`, and `keyRisks`).
 
 [source,java]
 ----
 include::{examples-dir}org/acme/agentic/InvestmentAnalystAgent.java[tag=agent]
 ----
 
-Key points:
+== 3. Create the Downstream "Market Data" Tool
 
-* `@RegisterAiService` turns the interface into a CDI bean backed by your chosen LLM.
-* `@SystemMessage` sets strict instructions & output schema (JSON fields like
-`summary`, `stance`, `keyRisks`).
-* `@UserMessage` combines:
-** user intent (ticker, objective, horizon), and
-** serialized market data (from the HTTP call).
-* The method returns a **strongly-typed** DTO such as `InvestmentMemo` instead
-of a raw `String`, which makes downstream tasks easier to test.
-
-TIP: Keep the system prompt short and explicit about the response JSON structure.
-Your workflow can then validate/map that DTO without extra parsing.
-
-== 3. Create a mock API to simulate market-data API
-
-Create a JAX-RS resource called `MarketDataResource`:
-
-[source,java]
-----
-include::{examples-dir}/org/acme/agentic/MarketDataResource.java[]
-----
-
-Additionally, create the `MarketDataSnapshot` DTO that represents the market data.
+An Agent is only as good as the data it receives. We'll create a simple JAX-RS resource to simulate a financial data API that provides the "ground truth" (prices, ratios) to the AI.
 
 [source,java]
 ----
 include::{examples-dir}/org/acme/agentic/MarketDataSnapshot.java[]
 ----
 
-You can call this service directly from the workflow using the HTTP Func DSL.
-Instead of just storing the HTTP response in the data tree, we use an
-`outputAs` filter to **build an `InvestmentPrompt`** that becomes the input
-for the agent.
+[source,java]
+----
+include::{examples-dir}/org/acme/agentic/MarketDataResource.java[]
+----
 
-== 4. Compose HTTP + agent in a single Flow
+== 4. Orchestrate the Flow (The "Agent + Tool" Loop)
 
-Now we can wire the HTTP step and the agent into a single `Flow` subclass.
+Now we wire them together. This is the "Aha!" moment where the workflow coordinates the tools. We use the `outputAs` filter to take the raw HTTP response and "shape" it into the `InvestmentPrompt` the Agent expects.
 
 [source,java]
 ----
 include::{examples-dir}org/acme/agentic/InvestmentMemoFlow.java[]
 ----
 
-=== How the `outputAs` filter works here
-
-In this example we use the *typed* `outputAs` variant:
+=== Understanding the Data Bridge (`outputAs`)
+Inside the `fetchMarketData` task, we use a lambda to bridge the tool and the agent:
 
 [source,java]
 ----
 include::{examples-dir}org/acme/agentic/InvestmentMemoFlow.java[tag=http-step]
 ----
 
-* `result` is the **typed HTTP output** (`MarketDataSnapshot`) – the deserialized response body.
-* `wf` is the workflow context (not used here, but available if you need globals).
-* `tf` is the task context, where:
-** `tf.input()` is the **original task input** – here, the same shape as what the user sent when starting the workflow (e.g. `{ticker, objective, horizon}`).
-** `tf.rawOutput()` is the **raw HTTP output** *before* the filter – here we turn it into `String` to pass as JSON to the agent.
+* **`result`**: The Java object returned by the HTTP call (`MarketDataSnapshot`).
+* **`tf.input()`**: The original data the user sent (e.g., the `objective` and `horizon`).
+* **The Return**: We combine them into a single `InvestmentPrompt` object. The engine automatically passes this object as the input to the next task: the AI Agent.
 
-The lambda returns an `InvestmentPrompt`, so after this step:
+== 5. Run and Visualize
 
-* the **workflow data** is now an `InvestmentPrompt` instance,
-* the next task sees that `InvestmentPrompt` as its input,
-* you effectively did: **“HTTP result + original user input → unified prompt object”**.
-
-This is the core pattern for data transformation between tasks:
-use `outputAs` to map *arbitrary* inputs/outputs into a shape that the next step
-(LLM agent, another HTTP call, event emit, etc.) actually needs.
-
-For HTTP timeouts, logging, proxy, and TLS options, see
-xref:http-client.adoc[Configure the HTTP client].
-
-
-What this workflow does:
-
-. Accepts an input like:
+1. Start Quarkus in dev mode: `./mvnw quarkus:dev`.
+2. Open the **Quarkus Dev UI** (`http://localhost:8080/q/dev`).
+3. Find **Quarkus Flow → Workflows** and select `investment-memo`.
+4. Paste a sample request into the **Input** pane:
 +
 [source,json]
 ----
 {
   "ticker": "CSU.TO",
-  "objective": "long-term compounder",
-  "horizon": "5y"
+  "objective": "High growth, low risk",
+  "horizon": "10 years"
 }
 ----
-. Runs the **HTTP task** `fetchMarketData`, which:
-** calls `GET /market-data/{ticker}` using the ticker from the input, and
-** uses `outputAs` to combine:
-*** the HTTP output (`MarketDataSnapshot`), and
-*** the original input (`objective`, `horizon`)
 +
-into a single `InvestmentPrompt`.
-. Calls the **InvestmentAnalystAgent** with that `InvestmentPrompt`
-(the agent takes ticker + objective + horizon + raw market-data JSON).
-. The agent returns an `InvestmentMemo` that becomes the workflow data / result
-(no extra `outputAs` needed in this simple case).
+5. Click **Start workflow**.
 
-This pattern shows the typical “agent + tool” combination:
 
-* HTTP task = **deterministic, structured tool** (prices, fundamentals).
-* `outputAs` = **data shaper** that turns “tool output + user input”
-into a single prompt object.
-* Agent = **judgement + narrative** (interpretation, explanation, recommendation).
 
-== 5. Expose the workflow via REST and Dev UI
+In the **Output** tab, you will see a structured `InvestmentMemo` JSON object. If you check your terminal logs, you'll see the HTTP call firing first, followed by the LLM prompt.
 
-You can expose the workflow as a simple JAX-RS endpoint,
-or just run it from the Flow Dev UI.
+== 6. Summary
 
-=== 5.1 REST resource
+You have successfully completed Lab 4! You learned:
 
-[source,java]
-----
-include::{examples-dir}org/acme/agentic/InvestmentMemoResource.java[tag=resource]
-----
+* How to use **Quarkus LangChain4j** agents as first-class workflow tasks.
+* How to use the **"Agent + Tool"** pattern to provide real-time data to an LLM.
+* How to use **`outputAs`** as a data shaper to bridge deterministic APIs and non-deterministic AI.
+* How to achieve **Type Safety** from the HTTP response all the way to the AI's structured DTO.
 
-* The endpoint accepts the investment request (ticker, objective, horizon).
-* It injects the `InvestmentMemoFlow` `Flow` subclass and starts an instance.
-* It returns the resulting `InvestmentMemo` to the caller as JSON.
-
-Because the method returns `Uni<Response>` (or another reactive type),
-any `WorkflowException` (e.g. HTTP 4xx/5xx from the market-data API) propagates
-directly and is mapped to a RFC 7807 / `WorkflowError` HTTP response. See
-xref:http-openapi-tasks.adoc#non-blocking-vs-blocking-style[Non-blocking vs blocking style]
-for details.
-
-=== 5.2 Run from Flow Dev UI
-
-In dev mode:
-
-. Open Dev UI → **Flow → Workflows**.
-. Select the `investment-memo` workflow.
-. Provide input JSON such as:
-+
-[source,json]
-----
-{
-  "ticker": "CSU.TO",
-  "objective": "long-term compounder",
-  "horizon": "5y"
-}
-----
-. Click **Start workflow**.
-
-You’ll see:
-
-* The **Input** panel with your investment request.
-* The **Output** panel with the final `InvestmentMemo`.
-* In the logs you can inspect:
-** the HTTP call to `/market-data/\{ticker}`, and
-** the agent interaction (if you enable LangChain4j logging).
-
-Combine this with xref:tracing.adoc[Enable tracing] to get
-MDC-enriched logs per workflow instance.
-
-== 6. Configuration (Optional)
-
-Example configuration for an Ollama-backed analyst agent
-and a named HTTP client tuned for your market-data service:
-
-[source,properties]
-----
-# LangChain4j (Ollama)
-quarkus.langchain4j.ollama.base-url=http://localhost:11434
-quarkus.langchain4j.ollama.chat-model.model=llama3.1
-
-# Optional: stricter / cheaper behaviour
-# quarkus.langchain4j.ollama.chat-model.temperature=0.2
-# quarkus.langchain4j.ollama.chat-model.max-tokens=1024
-
-# Named HTTP client for market data
-quarkus.flow.http.client.named.market-data.connect-timeout=2000
-quarkus.flow.http.client.named.market-data.read-timeout=4000
-quarkus.flow.http.client.named.market-data.user-agent=QuarkusFlow/InvestmentMemoDemo
-quarkus.flow.http.client.named.market-data.logging.scope=request-response
-quarkus.flow.http.client.named.market-data.logging.body-limit=2048
-
-# Route the HTTP task in this workflow to the "market-data" client
-quarkus.flow.http.client.workflow.investment-memo.task.fetchMarketData.name=market-data
-----
-
-For more HTTP tuning options (proxy, TLS, compression, redirects) see
-xref:http-client.adoc[Configure the HTTP client].
-
-== 7. Extending the pattern
-
-Once this “agent + HTTP tool” pattern is in place, you can easily extend it:
-
-* Add a **second agent** to critique or shorten the memo before returning it.
-* Emit the memo as a CloudEvent using xref:messaging.adoc[Use messaging and events]
-so other services can react to `memo.ready`.
-* Replace the market-data API with:
-** an internal pricing engine,
-** a credit-risk service,
-** or any other HTTP/OpenAPI backend.
-
-The key idea is always the same: **use workflows to coordinate tools and agents**,
-so your business logic stays testable, observable, and safe to evolve.
-
-== 8. What you learned
-
-* Quarkus Flow allows you to build agentic workflows using Quarkus LangChain4j
-* You can orchestrate AI agents and HTTP tasks in a single workflow
-* The DSL allows you to use the `outputAs` method to transforms an task output
-
-Next: xref:wk-lab-4b-agentic-langchain4j-annotations.adoc[Lab 4a – Agentic workflows via LangChain4j annotations].
+**Next up:** Let's see how Quarkus Flow can automate this even further. Proceed to xref:wk-lab-4b-agentic-langchain4j-annotations.adoc[Lab 5 – Agentic workflows via Annotations].
