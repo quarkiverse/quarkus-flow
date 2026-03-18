@@ -1,0 +1,83 @@
+= Listen to workflow events
+:description: Learn how to register custom execution listeners to hook into the lifecycle of Quarkus Flow workflows and tasks.
+
+Quarkus Flow allows you to hook into the lifecycle of workflows and tasks by registering custom execution listeners. While Quarkus Flow provides built-in observability features, custom listeners are highly useful for advanced use cases, such as implementing custom audit logging, triggering specific business logic, or integrating with proprietary tracking systems when a workflow or task changes state.
+
+== The WorkflowExecutionListener Interface
+
+To listen to workflow events, implement the `io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener` interface.
+
+The interface provides default empty implementations for all lifecycle methods. This means you only need to override the specific events you care about. Available event hooks include:
+
+* **Workflow level:** `onWorkflowStarted`, `onWorkflowSuspended`, `onWorkflowResumed`, `onWorkflowCompleted`, `onWorkflowFailed`, `onWorkflowCancelled`, `onWorkflowStatusChanged`
+* **Task level:** `onTaskStarted`, `onTaskCompleted`, `onTaskFailed`, `onTaskCancelled`, `onTaskSuspended`, `onTaskResumed`, `onTaskRetried`
+
+== Registering a Custom Listener
+
+Registering a custom listener is as simple as exposing your implementation as a standard Quarkus CDI bean (for example, by annotating it with `@ApplicationScoped`).
+
+The engine automatically discovers any beans implementing `WorkflowExecutionListener` at build time and wires them in safely. The extension ensures these beans are kept during the build process, so you don't have to worry about Quarkus's dead code elimination removing them even if they aren't explicitly injected elsewhere in your codebase.
+
+=== Example
+
+Here is an example of a custom listener that logs a message every time a workflow starts and completes:
+
+[source,java]
+----
+package org.acme;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener;
+import io.serverlessworkflow.impl.lifecycle.WorkflowStartedEvent;
+import io.serverlessworkflow.impl.lifecycle.WorkflowCompletedEvent;
+
+@ApplicationScoped
+public class AuditLogExecutionListener implements WorkflowExecutionListener {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AuditLogExecutionListener.class);
+
+    @Override
+    public void onWorkflowStarted(WorkflowStartedEvent ev) {
+        LOG.info("Audit: Workflow '{}' (ID: {}) has started.",
+            ev.workflowContext().workflowId(),
+            ev.workflowContext().instanceId());
+    }
+
+    @Override
+    public void onWorkflowCompleted(WorkflowCompletedEvent ev) {
+        LOG.info("Audit: Workflow '{}' (ID: {}) completed successfully.",
+            ev.workflowContext().workflowId(),
+            ev.workflowContext().instanceId());
+    }
+
+    @Override
+    public int priority() {
+        // Optional: override if you need to control the execution order
+        // relative to other internal listeners. Default is 0.
+        return 0;
+    }
+}
+----
+
+== Built-in Observability
+
+[NOTE]
+====
+If your primary goal is to add metrics or tracing to your application, you likely **do not** need to write a custom execution listener.
+
+Quarkus Flow already provides out-of-the-box observability features using internal listeners. For standard monitoring, please refer to:
+
+* xref:metrics-prometheus.adoc[Metrics & Prometheus Integration]
+* xref:tracing.adoc[Enable distributed tracing]
+
+Custom listeners should be reserved for advanced, domain-specific use cases (like the audit logger above) or when triggering specific side-effects.
+====
+
+== See also
+
+* xref:data-flow.adoc[Data Flow and Context Management] — Understand the context objects passed into your listener events.
+* xref:concepts-architecture.adoc[Engine Architecture] — Learn more about the underlying engine lifecycle that triggers these events.
+* xref:test-debug.adoc[Test and debug workflows] — Strategies for testing your workflows and custom listeners.

@@ -26,6 +26,7 @@
 ** Monitoring
 *** xref:metrics-prometheus.adoc[Metrics & Prometheus Integration]
 *** xref:tracing.adoc[Enable distributed tracing]
+*** xref:custom-listeners.adoc[Listen to workflow events]
 ** Testing
 *** xref:test-debug.adoc[Test and debug workflows]
 
