@@ -103,11 +103,6 @@
 
         <!-- Unit Tests Dependencies -->
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
