@@ -7,8 +7,8 @@ import java.util.function.Predicate;
 
 import jakarta.inject.Inject;
 
-import org.slf4j.MDC;
 import org.junit.jupiter.api.Test;
+import org.slf4j.MDC;
 
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.scope.AgenticScope;

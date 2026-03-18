@@ -101,6 +101,13 @@ final class FlowAgentCorrelationListener implements AgentListener {
             return;
         }
 
+        if (instanceId != null && !instanceId.isBlank()) {
+            String flowInstanceId = scope.readState("__flow_instance_id__", "");
+            if (flowInstanceId == null || flowInstanceId.isBlank()) {
+                scope.writeState("__flow_instance_id__", instanceId);
+            }
+        }
+
         Map<String, String> snapshot = MDC.getCopyOfContextMap();
         SNAPSHOT.set(new MdcSnapshot(snapshot));
 
