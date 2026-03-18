@@ -125,7 +125,7 @@ function("scoreProposal", (Proposal input) -> { // <1>
 
 [IMPORTANT]
 ====
-`outputAs` transforms what gets passed to the next step without immediately committing to the workflow data document.
+`outputAs` transforms what gets passed to the next step.
 ====
 
 == Step 4: Enrich data and commit with exportAs
