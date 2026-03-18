@@ -58,6 +58,12 @@ final class FlowAgentCorrelation {
         }
 
         if (scope != null) {
+            if (workflowInstanceId != null && !workflowInstanceId.isBlank()) {
+                String existingInstanceId = scope.readState("__flow_instance_id__", "");
+                if (existingInstanceId == null || existingInstanceId.isBlank()) {
+                    scope.writeState("__flow_instance_id__", workflowInstanceId);
+                }
+            }
             ensureListener(scope);
             // Always write all keys to avoid stale values in subsequent invocations.
             scope.writeState(SCOPE_INSTANCE, workflowInstanceId);

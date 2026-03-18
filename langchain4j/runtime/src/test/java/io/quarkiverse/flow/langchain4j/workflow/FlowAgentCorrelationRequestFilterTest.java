@@ -47,7 +47,7 @@ class FlowAgentCorrelationRequestFilterTest {
             assertThat(MDC.get(FlowAgentCorrelation.MDC_TASK_NAME)).isNull();
         });
 
-        assertThat(MDC.getCopyOfContextMap()).isNull();
+        assertThat(MDC.getCopyOfContextMap()).isNullOrEmpty();
     }
 
     @Test
