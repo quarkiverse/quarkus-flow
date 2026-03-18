@@ -63,5 +63,6 @@ jobs:
           report_paths: |
             **/target/surefire-reports/TEST-*.xml
             **/target/failsafe-reports/TEST-*.xml
-          include_passed: true
+          include_passed: false
           detailed_summary: true
+          annotate_only: true
