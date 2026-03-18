@@ -24,7 +24,6 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.serverlessworkflow.api.types.CallHTTP;
@@ -50,21 +49,17 @@ import io.smallrye.faulttolerance.api.TypedGuard;
 public class WorkflowApplicationRecorder {
     private static final Logger LOG = LoggerFactory.getLogger(WorkflowApplicationRecorder.class);
 
-    public RuntimeValue<WorkflowApplication.Builder> workflowAppBuilderSupplier(boolean tracingEnabled) {
-        WorkflowApplication.Builder builder = WorkflowApplication.builder();
-        if (tracingEnabled) {
-            LOG.info("Flow: Tracing enabled");
-            builder.withListener(new TraceLoggerExecutionListener());
-        }
-        builder.withContextFactory(new JavaModelFactory()).withModelFactory(new JacksonModelFactory());
-        return new RuntimeValue<>(builder);
-    }
-
-    public Supplier<WorkflowApplication> workflowAppSupplier(RuntimeValue<Builder> builderWrapper,
-            ShutdownContext shutdownContext, boolean isMicrometerSupported) {
+    public Supplier<WorkflowApplication> workflowAppSupplier(ShutdownContext shutdownContext, boolean tracingEnabled,
+            boolean isMicrometerSupported) {
         return () -> {
+            final WorkflowApplication.Builder builder = WorkflowApplication.builder();
+            if (tracingEnabled) {
+                LOG.info("Flow: Tracing enabled");
+                builder.withListener(new TraceLoggerExecutionListener());
+            }
+            builder.withContextFactory(new JavaModelFactory()).withModelFactory(new JacksonModelFactory());
+
             final ArcContainer container = Arc.container();
-            final Builder builder = builderWrapper.getValue();
 
             this.injectAppId(builder);
             this.injectJQExpressionFactory(builder, container);

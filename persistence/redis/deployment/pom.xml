@@ -26,7 +26,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>
-            <artifactId>quarkus-flow-persistence-common-deployment</artifactId>
+            <artifactId>quarkus-flow-deployment</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>
