@@ -37,6 +37,7 @@ jobs:
           mvn -B install -Dnative -ntp
           -Dquarkus.native.container-build
           -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25
+          -DskipITs=false
 
       - name: Publish Failed Test Report
         uses: mikepenz/action-junit-report@v6
