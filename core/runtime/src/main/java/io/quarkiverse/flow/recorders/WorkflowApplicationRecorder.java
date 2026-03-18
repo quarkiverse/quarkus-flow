@@ -2,6 +2,7 @@ package io.quarkiverse.flow.recorders;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -9,6 +10,7 @@ import java.util.stream.Collectors;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.util.TypeLiteral;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +66,7 @@ public class WorkflowApplicationRecorder {
             final ArcContainer container = Arc.container();
             final Builder builder = builderWrapper.getValue();
 
+            this.injectAppId(builder);
             this.injectJQExpressionFactory(builder, container);
             this.injectEventConsumers(container, builder);
             this.injectEventPublishers(container, builder);
@@ -82,6 +85,11 @@ public class WorkflowApplicationRecorder {
             shutdownContext.addShutdownTask(app::close);
             return app;
         };
+    }
+
+    private void injectAppId(final Builder builder) {
+        builder.withId(ConfigProvider.getConfig().getOptionalValue("quarkus.application.name", String.class)
+                .orElse(UUID.randomUUID().toString()));
     }
 
     private void injectEventConsumers(final ArcContainer container, final Builder builder) {
