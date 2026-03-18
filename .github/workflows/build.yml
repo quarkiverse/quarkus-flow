@@ -56,9 +56,7 @@ jobs:
         if: always()
         with:
           check_name: "JUnit Test Report (${{ matrix.os }} / JDK ${{ matrix.java-version }})"
-          report_paths: |
-            **/target/surefire-reports/TEST-*.xml
-            **/target/failsafe-reports/TEST-*.xml
+          report_paths: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
           include_passed: false
           detailed_summary: true
           annotate_only: true
