@@ -7,6 +7,11 @@ on:
 env:
   QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID: llama3.2
 
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 jobs:
   build-and-report:
     runs-on: ubuntu-latest
