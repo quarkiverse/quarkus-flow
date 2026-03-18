@@ -7,6 +7,7 @@ import java.util.function.Predicate;
 
 import jakarta.inject.Inject;
 
+import org.slf4j.MDC;
 import org.junit.jupiter.api.Test;
 
 import dev.langchain4j.agentic.AgenticServices;
@@ -22,9 +23,36 @@ public class FlowAgentServicesMockedTest {
     @Inject
     WorkflowRegistry registry;
 
+    private static void assertCorrelationMetadataPresent(AgenticScope scope) {
+        String flowInstanceId = scope.readState("__flow_instance_id__", "");
+        assertThat(flowInstanceId).isNotBlank();
+        assertThat(scope.readState("mdcInstanceId", "")).isEqualTo(flowInstanceId);
+        assertThat(scope.readState("mdcTaskName", "")).isNotBlank();
+        assertThat(scope.readState("mdcTaskPos", "")).startsWith("/");
+        assertThat(scope.readState("workflowInstanceID", "")).isBlank();
+        assertThat(scope.readState("taskName", "")).isBlank();
+        assertThat(scope.readState("taskPosition", "")).isBlank();
+    }
+
+    private static void captureCorrelationFromMdc(AgenticScope scope) {
+        String instanceId = MDC.get(FlowAgentCorrelation.MDC_INSTANCE);
+        String taskPos = MDC.get(FlowAgentCorrelation.MDC_TASK_POS);
+        String taskName = MDC.get(FlowAgentCorrelation.MDC_TASK_NAME);
+        if (instanceId != null) {
+            scope.writeState("mdcInstanceId", instanceId);
+        }
+        if (taskPos != null) {
+            scope.writeState("mdcTaskPos", taskPos);
+        }
+        if (taskName != null) {
+            scope.writeState("mdcTaskName", taskName);
+        }
+    }
+
     @Test
     void sequentialAgentInvokesExecutorsInOrder() {
         var agent1 = AgenticServices.agentAction(scope -> {
+            captureCorrelationFromMdc(scope);
             StringBuilder sb = scope.readState("seqOrder", new StringBuilder());
             sb.append("1");
             scope.writeState("seqOrder", sb);
@@ -48,6 +76,7 @@ public class FlowAgentServicesMockedTest {
         // Act
         ResultWithAgenticScope<String> result = agent.run("hello");
         AgenticScope scope = result.agenticScope();
+        assertCorrelationMetadataPresent(scope);
 
         // And the custom state shows order "12"
         StringBuilder seqOrder = scope.readState("seqOrder", new StringBuilder());
@@ -56,9 +85,18 @@ public class FlowAgentServicesMockedTest {
 
     @Test
     void parallelAgentInvokesAllBranches() {
-        var agent1 = AgenticServices.agentAction(scope -> scope.writeState("calledA", true));
-        var agent2 = AgenticServices.agentAction(scope -> scope.writeState("calledB", true));
-        var agent3 = AgenticServices.agentAction(scope -> scope.writeState("calledC", true));
+        var agent1 = AgenticServices.agentAction(scope -> {
+            captureCorrelationFromMdc(scope);
+            scope.writeState("calledA", true);
+        });
+        var agent2 = AgenticServices.agentAction(scope -> {
+            captureCorrelationFromMdc(scope);
+            scope.writeState("calledB", true);
+        });
+        var agent3 = AgenticServices.agentAction(scope -> {
+            captureCorrelationFromMdc(scope);
+            scope.writeState("calledC", true);
+        });
 
         FlowParallelAgentService<TestParallelAgent> service = FlowParallelAgentService.builder(TestParallelAgent.class,
                 registry);
@@ -70,6 +108,7 @@ public class FlowAgentServicesMockedTest {
         // Act
         ResultWithAgenticScope<String> result = agent.run("parallel-input");
         AgenticScope scope = result.agenticScope();
+        assertCorrelationMetadataPresent(scope);
 
         assertThat(scope.readState("calledA", false)).isTrue();
         assertThat(scope.readState("calledB", false)).isTrue();
@@ -78,8 +117,14 @@ public class FlowAgentServicesMockedTest {
 
     @Test
     void conditionalAgentInvokesOnlyMatchingBranch() {
-        var medicalExec = AgenticServices.agentAction(scope -> scope.writeState("branch", "medical"));
-        var financeExec = AgenticServices.agentAction(scope -> scope.writeState("branch", "finance"));
+        var medicalExec = AgenticServices.agentAction(scope -> {
+            captureCorrelationFromMdc(scope);
+            scope.writeState("branch", "medical");
+        });
+        var financeExec = AgenticServices.agentAction(scope -> {
+            captureCorrelationFromMdc(scope);
+            scope.writeState("branch", "finance");
+        });
 
         FlowConditionalAgentService<TestConditionalAgent> service = FlowConditionalAgentService
                 .builder(TestConditionalAgent.class, registry);
@@ -96,6 +141,7 @@ public class FlowAgentServicesMockedTest {
         // Act: route("medical")
         ResultWithAgenticScope<String> result = agent.route("medical");
         AgenticScope scope = result.agenticScope();
+        assertCorrelationMetadataPresent(scope);
 
         assertThat(scope.readState("branch", "")).isEqualTo("medical");
     }
@@ -106,6 +152,7 @@ public class FlowAgentServicesMockedTest {
 
         // Each execution increments "counter" in the scope
         var loopExec = AgenticServices.agentAction(scope -> {
+            captureCorrelationFromMdc(scope);
             int c = scope.readState("counter", 0);
             c++;
             scope.writeState("counter", c);
@@ -130,6 +177,7 @@ public class FlowAgentServicesMockedTest {
         // Act
         ResultWithAgenticScope<String> result = agent.run("any-topic");
         AgenticScope scope = result.agenticScope();
+        assertCorrelationMetadataPresent(scope);
 
         int counter = scope.readState("counter", 0);
 

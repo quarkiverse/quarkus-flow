@@ -9,6 +9,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -23,6 +24,7 @@ import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import dev.langchain4j.agentic.workflow.impl.ConditionalAgentServiceImpl;
 import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
+import io.serverlessworkflow.impl.TaskContextData;
 import io.serverlessworkflow.impl.WorkflowContextData;
 
 public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<T> implements FlowAgentService<T> {
@@ -96,10 +98,12 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
                 final String stepName = safeName(agent.agentId() + "-" + (step++));
                 tasks.function(stepName,
                         fn -> fn.function(
-                                (DefaultAgenticScope scope, WorkflowContextData ctx) -> {
-                                    CompletableFuture<Void> nextActionFuture = FlowPlannerSessions.getInstance()
-                                            .get(ctx.instanceData().id()).executeAgent(agent);
-                                    return nextActionFuture.join();
+                                (DefaultAgenticScope scope, WorkflowContextData wf, TaskContextData task) -> {
+                                    AtomicReference<CompletableFuture<Void>> futureRef = new AtomicReference<>();
+                                    FlowAgentCorrelation.withCorrelation(scope, wf, task, () -> futureRef.set(
+                                            FlowPlannerSessions.getInstance()
+                                                    .get(wf.instanceData().id()).executeAgent(agent)));
+                                    return futureRef.get().join();
                                 },
                                 DefaultAgenticScope.class)
                                 .when(this.conditions.get(agent), AgenticScope.class)

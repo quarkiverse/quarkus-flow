@@ -1,12 +1,11 @@
 package org.acme.agentic;
 
-import java.math.BigDecimal;
-
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import java.math.BigDecimal;
 
 /**
  * Simple in-memory market data endpoint used by the InvestmentMemoFlow.

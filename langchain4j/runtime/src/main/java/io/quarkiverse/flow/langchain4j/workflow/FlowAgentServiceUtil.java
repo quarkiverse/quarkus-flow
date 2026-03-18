@@ -4,11 +4,13 @@ import static io.quarkiverse.flow.internal.WorkflowNameUtils.safeName;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 
 import dev.langchain4j.agentic.planner.AgentInstance;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import io.serverlessworkflow.fluent.func.spi.FuncDoFluent;
+import io.serverlessworkflow.impl.TaskContextData;
 import io.serverlessworkflow.impl.WorkflowContextData;
 import io.serverlessworkflow.impl.WorkflowModel;
 
@@ -40,10 +42,12 @@ public final class FlowAgentServiceUtil {
             String stepName = safeName(agent.agentId() + "-" + i);
             tasks.function(stepName,
                     fn -> fn.function(
-                            (DefaultAgenticScope scope, WorkflowContextData ctx) -> {
-                                CompletableFuture<Void> nextActionFuture = FlowPlannerSessions.getInstance()
-                                        .get(ctx.instanceData().id()).executeAgent(agent);
-                                return nextActionFuture.join();
+                            (DefaultAgenticScope scope, WorkflowContextData wf, TaskContextData task) -> {
+                                AtomicReference<CompletableFuture<Void>> futureRef = new AtomicReference<>();
+                                FlowAgentCorrelation.withCorrelation(scope, wf, task, () -> futureRef.set(
+                                        FlowPlannerSessions.getInstance()
+                                                .get(wf.instanceData().id()).executeAgent(agent)));
+                                return futureRef.get().join();
                             },
                             DefaultAgenticScope.class)
                             .outputAs((out, wf, tf) -> agenticScopePassthrough(tf.rawInput())));
