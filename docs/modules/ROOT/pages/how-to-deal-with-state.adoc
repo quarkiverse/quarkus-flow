@@ -130,7 +130,7 @@ function("scoreProposal", (Proposal input) -> { // <1>
 
 == Step 4: Enrich data and commit with exportAs
 
-Add a task that prepares the notification by enriching the score with data from the original workflow input, then commits to workflow data using `exportAs`:
+Add a task that prepares the notification by enriching the score with data from the original workflow input, then commits to workflow **context** using `exportAs`:
 
 [source,java]
 ----
