@@ -1,0 +1,670 @@
+= How to transform data between workflow tasks
+
+include::includes/attributes.adoc[]
+:page-role: howto
+:sectnums:
+
+This guide shows you how to control data flow between tasks in a workflow using `inputFrom`, `exportAs`, and `outputAs` transformations.
+
+== What you'll build
+
+You'll create a conference paper submission workflow that:
+
+1. Receives a paper proposal submission
+2. Validates and scores the proposal
+3. Enriches the data with submission metadata
+4. Sends a notification with the review result
+
+This demonstrates the three key data transformation methods:
+
+* `inputFrom` – to shape what each task receives as input
+* `exportAs` – to control what gets persisted in the workflow data
+* `outputAs` – to pass enriched data between tasks without modifying workflow state
+
+[TIP]
+====
+For conceptual background on data flow, see xref:data-flow.adoc[Data Flow and Transformations].
+For a quick syntax reference, see xref:data-flow.adoc#quick-reference[Quick Reference].
+====
+
+== Prerequisites
+
+* A Quarkus Flow project (see xref:getting-started.adoc[Getting Started])
+* Basic understanding of Java records and functional programming
+
+== Step 1: Define your data types
+
+Create the records that represent data at different stages of the workflow:
+
+[source,java]
+.Call4PapersFlow.java
+----
+public class Call4PapersFlow {
+
+    public record ProposalSubmission(String title, String proposal, String author) {} // <1>
+
+    public record Proposal(String title, String abstractText, String author) {} // <2>
+
+    public record ProposalScore(int score, boolean accepted) {} // <3>
+
+    public record NotificationPayload(String title, String author, int score, boolean accepted) {} // <4>
+
+}
+----
+<1> The external data received from the API
+<2> The internal domain model used for processing
+<3> The scoring result
+<4> The final notification payload
+
+== Step 2: Create the workflow with inputFrom
+
+Start by creating a workflow that transforms the input submission into your domain model:
+
+[source,java]
+.Call4PapersFlow.java
+----
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
+
+@ApplicationScoped // <1>
+public class Call4PapersFlow extends Flow { // <2>
+
+    @Override
+    public Workflow descriptor() {
+        return FuncWorkflowBuilder.workflow("call4papers")
+            .tasks(
+                function("validateProposal", (Proposal input) -> {
+                    System.out.println("Validating proposal: " + input.title());
+                    return input;
+                }, Proposal.class)
+                    .inputFrom((ProposalSubmission submission) ->
+                        new Proposal(
+                            submission.title(),
+                            submission.proposal(),
+                            submission.author()
+                        ), ProposalSubmission.class)
+            )
+            .build();
+    }
+}
+----
+<1> Add CDI annotation to make the flow injectable
+<2> Extend `Flow` to define a workflow descriptor
+
+In the `validateProposal` task, we expect a `Proposal` as input, but the workflow receives a `ProposalSubmission`. Use `inputFrom` to transform the submission into the proposal domain model.
+
+[TIP]
+====
+`inputFrom` isolates tasks from changes in the workflow data structure. The task only sees what it needs.
+====
+
+== Step 3: Add scoring with outputAs
+
+Add a task that scores the proposal and uses `outputAs` to pass transformed data to the next step:
+
+[source,java]
+----
+function("validateProposal", (Proposal input) -> {
+    System.out.println("Validating proposal: " + input.title());
+    return input;
+}, Proposal.class)
+    .inputFrom((ProposalSubmission submission) ->
+        new Proposal(submission.title(), submission.proposal(), submission.author()),
+        ProposalSubmission.class),
+
+function("scoreProposal", (Proposal input) -> { // <1>
+    Integer score = calculateScore(input.abstractText());
+    System.out.println("Score calculated having the result as: " + score);
+    return score;
+}, Proposal.class)
+    .outputAs((Integer score) -> // <2>
+        new ProposalScore(score, score >= 7))
+----
+<1> Task receives the output from the previous task (a `Proposal`)
+<2> Use `outputAs` to transform the task result (`Integer score`) into a `ProposalScore` and pass it to the next step
+
+
+[IMPORTANT]
+====
+`outputAs` transforms what gets passed to the next step without immediately committing to the workflow data document.
+====
+
+== Step 4: Enrich data and commit with exportAs
+
+Add a task that prepares the notification by enriching the score with data from the original workflow input, then commits to workflow data using `exportAs`:
+
+[source,java]
+----
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.http;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.output;
+import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
+import io.serverlessworkflow.impl.WorkflowContextData;
+
+function("scoreProposal", (Proposal input) -> {
+    Integer score = calculateScore(input.abstractText());
+    return score;
+}, Proposal.class)
+    .outputAs((Integer score) ->
+        new ProposalScore(score, score >= 7)),
+
+function("prepareNotification", Function.identity(), ProposalScore.class) // <1>
+        .exportAs((object, workflowContext, taskContextData) -> { // <2>
+
+            // Use FuncDSL.output to get the task's output from taskContextData
+            ProposalScore taskOutput = output(taskContextData, ProposalScore.class); // <3>
+
+            // Access original workflow input to get title and author
+            ProposalSubmission submission = FuncDSL.input(workflowContext, ProposalSubmission.class); // <4>
+
+            // Create enriched payload combining original input with score
+            return new NotificationPayload( // <5>
+                    submission.title(),
+                    submission.author(),
+                    taskOutput.score(),
+                    taskOutput.accepted());
+        }),
+
+http("sendNotification") // <6>
+    .POST()
+    .body("${.}") // <7>
+    .header("Content-Type", "application/json")
+    .uri(URI.create("http://localhost:9999/notifications"))
+----
+<1> Just pass the `ProposalScore` through without transformation (identity function)
+<2> Use `exportAs` with `JavaFilterFunction` to commit enriched data to workflow data
+<3> Use `FuncDSL.output()` to get type-safe access to the current task's output
+<4> Use `FuncDSL.input()` to get type-safe access to original workflow input
+<5> Create enriched payload combining data from multiple sources
+<6> HTTP task receives the committed NotificationPayload from workflow data
+<7> The body will be the NotificationPayload as JSON
+
+== Step 5: Complete example
+
+Here's the complete workflow with all transformations:
+
+[source,java]
+----
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.http;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.output;
+
+import java.net.URI;import java.util.function.Function;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkiverse.flow.Flow;
+import io.serverlessworkflow.api.types.Workflow;
+import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
+import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
+
+@ApplicationScoped
+public class Call4PapersFlow extends Flow {
+
+    @Override
+    public Workflow descriptor() {
+        return FuncWorkflowBuilder.workflow("call4papers")
+                .tasks(
+                        // Step 1: Validate proposal with inputFrom transformation
+                        function("validateProposal", (Proposal input) -> {
+                            System.out.println("Validating proposal: " + input.title());
+                            return input;
+                        }, Proposal.class)
+                                .inputFrom((ProposalSubmission submission) -> new Proposal( // <1>
+                                        submission.title(),
+                                        submission.proposal(), // Maps to abstractText
+                                        submission.author()), ProposalSubmission.class),
+
+                        // Step 2: Score proposal with outputAs transformation
+                        // Passes ProposalScore to next step without committing to workflow data
+                        function("scoreProposal", (Proposal input) -> {
+                            Integer score = calculateScore(input.abstractText());
+                            System.out.println("Score calculated having the result as: " + score);
+                            return score;
+                        }, Proposal.class)
+                                .outputAs((Integer score) -> new ProposalScore(score, score >= 7)), // <2>
+
+                        // Step 3: Prepare notification with exportAs using workflow context
+                        // Commits NotificationPayload to workflow data
+                        function("prepareNotification", Function.identity(), ProposalScore.class)
+                                .exportAs((object, workflowContext, taskContextData) -> { // <3>
+
+                                    // Use FuncDSL.output to get the task's output from taskContextData
+                                    ProposalScore taskOutput = output(taskContextData, ProposalScore.class); // <4>
+
+                                    // Access original workflow input to get title and author
+                                    ProposalSubmission submission = FuncDSL.input(workflowContext,
+                                            ProposalSubmission.class); // <5>
+
+                                    // Create enriched payload combining original input with score
+                                    return new NotificationPayload(
+                                            submission.title(),
+                                            submission.author(),
+                                            taskOutput.score(),
+                                            taskOutput.accepted());
+                                }),
+
+                        // Step 4: Send notification via HTTP
+                        http("sendNotification")
+                                .POST()
+                                .body("${.}") // Uses the NotificationPayload from exportAs
+                                .header("Content-Type", "application/json")
+                                .uri(URI.create("http://localhost:9999/notifications")))
+                .build();
+    }
+
+    /**
+     * Calculate a score for the proposal based on its abstract.
+     * In a real implementation, this might use NLP, keyword analysis, etc.
+     */
+    private Integer calculateScore(String abstractText) {
+        int length = abstractText.length();
+        if (length > 500) return 9;
+        if (length > 300) return 7;
+        if (length > 150) return 5;
+        return 3;
+    }
+}
+----
+<1> `inputFrom` transforms `ProposalSubmission` to `Proposal` for the first task
+<2> `outputAs` transforms Integer to ProposalScore and passes to next step (no commit)
+<3> `exportAs` with `JavaFilterFunction` commits the enriched NotificationPayload to workflow data
+<4> `FuncDSL.output()` provides type-safe access to the current task's output
+<5> `FuncDSL.input()` provides type-safe access to the original workflow input
+
+== Testing the workflow
+
+Start a workflow instance with a submission:
+
+[source,java]
+----
+@Inject
+Call4PapersFlow flow;
+
+public void submitProposal() {
+    var submission = new ProposalSubmission(
+        "Reactive Workflows with Quarkus",
+        "This paper explores reactive workflow patterns...",
+        "Jane Developer"
+    );
+    
+    flow.startInstance(submission).await().indefinitely();
+}
+----
+
+The workflow will:
+
+1. Transform `ProposalSubmission` → `Proposal` (via `inputFrom`)
+2. Score the proposal and pass `ProposalScore` to next step (via `outputAs` - no commit)
+3. Prepare notification by enriching with original input and commit `NotificationPayload` (via `exportAs`)
+4. Send HTTP notification with the enriched payload
+
+== Understanding the data flow
+
+At each stage, different data is available:
+
+[cols="1,2,2"]
+|===
+|Stage |Workflow Data |Task Input
+
+|After `validateProposal`
+|`Proposal` object
+|`Proposal` (transformed from `ProposalSubmission` via `inputFrom`)
+
+|After `scoreProposal`
+|`Proposal` object (unchanged - `outputAs` doesn't commit)
+|`Proposal` (from previous task)
+
+|After `prepareNotification`
+|`NotificationPayload` object (committed via `exportAs`)
+|`ProposalScore` (passed via `outputAs` from previous step)
+
+|In `sendNotification`
+|`NotificationPayload` object
+|`NotificationPayload` (from workflow data)
+|===
+
+=== Data flow visualization
+
+[source]
+----
+ProposalSubmission (API input)
+        │
+        ▼ inputFrom: ProposalSubmission → Proposal
+┌───────────────────────┐
+│   validateProposal    │
+└───────────────────────┘
+        │
+        ▼
+┌───────────────────────┐
+│    scoreProposal      │ → Integer
+└───────────────────────┘
+        │
+        ▼ outputAs: Integer → ProposalScore (passed to next step, NOT committed)
+┌───────────────────────┐
+│  prepareNotification  │ + FuncDSL.input() (access original input)
+│                       │ + FuncDSL.output() (access task output)
+└───────────────────────┘
+        │
+        ▼ exportAs: Commit NotificationPayload to workflow data
+┌───────────────────────┐
+│   sendNotification    │ (HTTP POST with NotificationPayload)
+└───────────────────────┘
+        │
+        ▼
+    HTTP Response
+----
+
+== Advanced: Combining typed task output with workflow context
+
+The previous examples showed basic transformations. Now let's explore advanced patterns where you combine the typed task result with workflow context data.
+
+=== Using JavaContextFunction for type-safe access
+
+The `exportAs(JavaContextFunction<T, V> function, Class<T> argClass)` overload gives you:
+
+* `T` – The typed task result (e.g., `ProposalScore`)
+* `WorkflowContextData` – Access to workflow input and metadata
+* `V` – The return type (what gets saved to workflow data)
+
+[source,java]
+----
+import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
+
+function("scoreProposal", (Proposal input) -> {
+    int score = calculateScore(input.abstractText());
+    return score;
+}, Proposal.class)
+    .exportAs((Integer score, WorkflowContextData workflowContext) -> { // <1>
+        // Access the original workflow input with type safety using FuncDSL helper
+        ProposalSubmission submission = FuncDSL.input(workflowContext, ProposalSubmission.class); // <2>
+
+        // Combine task result with workflow input
+        return new EnrichedProposalScore( // <3>
+            submission.title(),
+            submission.author(),
+            score,
+            score >= 7,
+            java.time.Instant.now()
+        );
+    }, Integer.class) // <4>
+
+public record EnrichedProposalScore(
+    String title, 
+    String author, 
+    int score, 
+    boolean accepted,
+    Instant scoredAt
+) {}
+----
+<1> Use `JavaContextFunction` to access both the typed score and workflow context
+<2> Use `FuncDSL.input()` helper for type-safe access to the original workflow input
+<3> Create a new object combining task result with workflow input data
+<4> Specify the task result type (Integer)
+
+[TIP]
+====
+This pattern is useful when you need to enrich the task result with data from the original workflow input without passing it through every task.
+====
+
+=== Using JavaFilterFunction for full context access
+
+The `exportAs(JavaFilterFunction<T, V> function, Class<T> argClass)` overload provides even more context:
+
+* `T` – The typed task result
+* `WorkflowContextData` – Workflow-level context
+* `TaskContextData` – Task-level context (input, raw output, position)
+* `V` – The return type
+
+[source,java]
+----
+import io.serverlessworkflow.impl.TaskContextData;
+
+function("scoreProposal", (Proposal input) -> {
+    int score = calculateScore(input.abstractText());
+    return score;
+}, Proposal.class)
+    .exportAs((Integer score, // <1>
+               WorkflowContextData workflowContext, // <2>
+               TaskContextData taskContext) -> { // <3>
+        
+        // Access original workflow input
+        WorkflowModel originalInput = workflowContext.instanceData().input();
+        ProposalSubmission submission = originalInput.as(ProposalSubmission.class).orElseThrow();
+        
+        // Access task-specific context
+        var taskInput = taskContext.input().as(Proposal.class).orElseThrow(); // <4>
+        String taskPosition = taskContext.position().jsonPointer(); // <5>
+        
+        // Create enriched result with metadata
+        return new DetailedProposalScore(
+            submission.title(),
+            submission.author(),
+            taskInput.abstractText().length(), // From task input
+            score,
+            score >= 7,
+            taskPosition, // e.g., "/do/1/task"
+            java.time.Instant.now()
+        );
+    }, Integer.class)
+
+public record DetailedProposalScore(
+    String title,
+    String author,
+    int abstractLength,
+    int score,
+    boolean accepted,
+    String evaluatedAt, // Task position in workflow
+    Instant timestamp
+) {}
+----
+<1> Typed task result (Integer score)
+<2> Workflow context for accessing original input
+<3> Task context for accessing task-specific data
+<4> Access what this specific task received as input (after `inputFrom`)
+<5> Get the task's position in the workflow structure
+
+[IMPORTANT]
+====
+`JavaFilterFunction` gives you the most complete picture:
+
+* **Task result** – What the function returned
+* **Task input** – What the task received (after `inputFrom`)
+* **Workflow input** – The original data passed to `startInstance()`
+* **Task metadata** – Position, name, raw output
+====
+
+=== Type-safe vs dynamic access
+
+You can choose between type-safe and dynamic access patterns:
+
+[source,java]
+----
+import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
+
+// Type-safe using FuncDSL helper
+.exportAs((Integer score, WorkflowContextData wf) -> {
+    ProposalSubmission submission = FuncDSL.input(wf, ProposalSubmission.class); // <1>
+    return new EnrichedScore(submission.title(), score);
+}, Integer.class)
+
+// Type-safe using WorkflowModel: More verbose but also works
+.exportAs((Integer score, WorkflowContextData wf) -> {
+    ProposalSubmission submission = wf.instanceData()
+        .input()
+        .as(ProposalSubmission.class)
+        .orElseThrow(); // <2>
+    return new EnrichedScore(submission.title(), score);
+}, Integer.class)
+
+// Dynamic: Useful for flexible/generic workflows
+.exportAs((Integer score, WorkflowContextData wf) -> {
+    var inputMap = wf.instanceData()
+        .input()
+        .asMap()
+        .orElseThrow(); // <3>
+    return Map.of(
+        "title", inputMap.get("title"),
+        "score", score
+    );
+}, Integer.class)
+----
+<1> Type-safe with `FuncDSL.input()`: Concise and recommended approach
+<2> Type-safe with `WorkflowModel`: More verbose but explicit
+<3> Dynamic: More flexible but loses compile-time safety
+
+[TIP]
+====
+**When to use each approach:**
+
+* **`FuncDSL.input()` helper** – Recommended for most cases, concise and type-safe
+* **`WorkflowModel.as()`** – When you need more control or want to handle missing data explicitly
+* **Dynamic** (`asMap()`) – For generic workflows, external data, or when structure varies
+====
+
+=== Accessing task output with FuncDSL.output()
+
+Similar to `FuncDSL.input()`, the `FuncDSL.output()` helper provides type-safe access to a task's output data. This is useful when you need to access the result produced by a task execution within transformations.
+
+[source,java]
+----
+import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
+import io.serverlessworkflow.impl.TaskContextData;
+
+// Access the typed task output in exportAs or outputAs transformations
+function("calculateScore", (Proposal input) -> {
+    return calculateScore(input.abstractText());
+}, Proposal.class)
+    .exportAs((Object rawResult, WorkflowContextData wf, TaskContextData task) -> { // <1>
+        // Use FuncDSL.output() to get type-safe access to task output
+        Integer score = FuncDSL.output(task, Integer.class); // <2>
+
+        // Transform or enrich the output
+        return new ProposalScore(score, score >= 7); // <3>
+    })
+----
+<1> Use `JavaFilterFunction` to access both workflow and task context
+<2> `FuncDSL.output()` deserializes the task output into the specified type
+<3> Create enriched result using the typed output
+
+==== When to use FuncDSL.output()
+
+The `FuncDSL.output()` helper is particularly useful when:
+
+* You're using `exportAs` with `JavaFilterFunction` (which receives `TaskContextData`)
+* You need to transform the raw task output into a different type
+* You want type-safe access without manual deserialization
+
+[source,java]
+----
+// Example: Doubling a numeric result and committing to workflow data
+function("computeValue", input -> computeExpensiveCalculation(input), Input.class)
+    .exportAs((object, workflowContext, taskContextData) -> {
+        Long output = FuncDSL.output(taskContextData, Long.class); // <1>
+        return output * 2; // <2>
+    })
+
+// Example: Combining task output with workflow input
+function("processData", data -> processData(data), Data.class)
+    .exportAs((Object raw, WorkflowContextData wf, TaskContextData task) -> {
+        ProcessedData result = FuncDSL.output(task, ProcessedData.class); // <3>
+        OriginalRequest request = FuncDSL.input(wf, OriginalRequest.class); // <4>
+
+        return new EnrichedResult(
+            request.correlationId(),
+            result.value(),
+            result.timestamp()
+        );
+    })
+----
+<1> Type-safe access to task output as `Long`
+<2> Transform the output (double the value) and commit to workflow data
+<3> Get typed task output
+<4> Combine with original workflow input
+
+[NOTE]
+====
+**FuncDSL helper methods summary:**
+
+* `FuncDSL.input(WorkflowContextData, Class<T>)` – Access the original workflow input
+* `FuncDSL.output(TaskContextData, Class<T>)` – Access the current task's output
+
+Both methods throw `IllegalStateException` if the data cannot be deserialized into the specified type, ensuring fail-fast behavior.
+====
+
+=== Practical example: Audit trail
+
+Here's a real-world example combining everything, including both `FuncDSL.input()` and `FuncDSL.output()`:
+
+[source,java]
+----
+import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
+
+function("scoreProposal", (Proposal input) -> {
+    int score = calculateScore(input.abstractText());
+    return score;
+}, Proposal.class)
+    .exportAs((Object rawResult,
+               WorkflowContextData workflowContext,
+               TaskContextData taskContext) -> {
+        
+        // Get typed task output using FuncDSL.output()
+        Integer score = FuncDSL.output(taskContext, Integer.class); // <1>
+
+        // Get original submission using FuncDSL.input()
+        ProposalSubmission submission = FuncDSL.input(workflowContext, ProposalSubmission.class); // <2>
+
+        // Get workflow instance ID for audit
+        String instanceId = workflowContext.instanceData().id();
+        
+        // Create audit trail combining all sources
+        return new ScoredProposal(
+            instanceId,
+            submission.title(),
+            submission.author(),
+            score,
+            score >= 7,
+            taskContext.position().jsonPointer(),
+            java.time.Instant.now()
+        );
+    }) // <3>
+
+public record ScoredProposal(
+    String workflowInstanceId,
+    String title,
+    String author,
+    int score,
+    boolean accepted,
+    String evaluatedBy, // Task position
+    Instant evaluatedAt
+) {}
+----
+<1> `FuncDSL.output()` – Type-safe access to the task's output (Integer score)
+<2> `FuncDSL.input()` – Type-safe access to the original workflow input
+<3> When using `JavaFilterFunction`, no need to specify the input class since you access data via helpers
+
+This creates a complete audit record combining:
+
+* Workflow instance tracking (instanceId)
+* Original submission data (title, author) via `FuncDSL.input()`
+* Evaluation result (score, accepted) via `FuncDSL.output()`
+* Evaluation metadata (where and when)
+
+== Key takeaways
+
+* Use **`inputFrom`** to give tasks a focused, typed view of the data they need
+* Use **`exportAs`** to control what gets persisted in the workflow data document
+* Use **`outputAs`** to pass data to the next step without committing to workflow data
+* Use **`FuncDSL.input(workflowContext, Type.class)`** for type-safe access to the original workflow input
+* Use **`FuncDSL.output(taskContext, Type.class)`** for type-safe access to the current task's output
+* Access workflow and task context in transformations to combine data from multiple sources
+
+== Next steps
+
+* Learn about context-aware transformations with `JavaFilterFunction` in xref:data-flow.adoc[Data Flow and Transformations]
+* Explore JQ expressions as an alternative to Java functions
+* See xref:data-flow.adoc#quick-reference[Quick Reference] for all transformation method signatures
+
+== Related guides
+
+* xref:data-flow.adoc[Data Flow and Transformations] – Conceptual overview
+* xref:dsl-cheatsheet.adoc[Java DSL Cheatsheet] – Quick syntax reference
+* xref:test-debug.adoc[Testing and Debugging] – How to test workflows
