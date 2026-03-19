@@ -7,6 +7,11 @@ on:
 env:
   QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID: llama3.2
 
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 jobs:
   build-and-report:
     runs-on: ubuntu-latest
@@ -40,12 +45,14 @@ jobs:
 
       - name: Publish Failed Test Report
         uses: mikepenz/action-junit-report@v6
-        if: failure()
+        if: always()
         with:
+          check_name: "JUnit Test Report (Coverage)"
           report_paths: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
-          annotate_only: true
+          include_passed: false
           detailed_summary: true
-          fail_on_failure: true
+          annotate_only: true
+
 
       - name: Add Coverage Comment
         uses: madrapps/jacoco-report@v1.7.2
