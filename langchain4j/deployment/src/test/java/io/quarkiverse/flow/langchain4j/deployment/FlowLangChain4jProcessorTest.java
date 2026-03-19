@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Optional;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -30,7 +31,8 @@ public class FlowLangChain4jProcessorTest {
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(Agents.class));
+                    .addClasses(Agents.class)
+                    .addAsResource(new StringAsset("quarkus.http.test-port=0"), "application.properties"));
 
     @Test
     void shouldRegisterPlaceholderWorkflowForSequenceAgent() {

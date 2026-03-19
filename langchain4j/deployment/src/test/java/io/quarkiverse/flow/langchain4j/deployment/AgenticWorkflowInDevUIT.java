@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.assertj.core.api.SoftAssertions;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -27,13 +28,12 @@ public class AgenticWorkflowInDevUIT {
     private static final String SEE_AGENTIC_ID = "see-mermaid-io-quarkiverse-flow-langchain4j-story-creator-with-configurable-style-editor-0-0-1";
     private static final String SEE_SIMPLE_ID = "see-mermaid-quarkus-flow-simple-workflow-0-0-1";
     private static final String UNAVAILABLE_MERMAID_WARNING_SELECTOR = "id=unavailable-mermaid-warning";
-
-    private static BrowserType.LaunchOptions launchOptions;
-
     @RegisterExtension
     static QuarkusDevModeTest devMode = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(Agents.class, SimpleWorkflow.class));
+                    .addClasses(Agents.class, SimpleWorkflow.class)
+                    .addAsResource(new StringAsset("quarkus.http.test-port=0"), "application.properties"));
+    private static BrowserType.LaunchOptions launchOptions;
 
     @BeforeAll
     static void setUp() {
@@ -42,6 +42,12 @@ public class AgenticWorkflowInDevUIT {
                 .setChromiumSandbox(false)
                 .setChannel("")
                 .setArgs(List.of("--disable-gpu"));
+    }
+
+    private static Playwright createPlaywright() {
+        Map<String, String> env = new HashMap<>(System.getenv());
+        env.put("DEBUG", "pw:api");
+        return Playwright.create(new Playwright.CreateOptions().setEnv(env));
     }
 
     @Test
@@ -160,11 +166,5 @@ public class AgenticWorkflowInDevUIT {
         }
 
         softly.assertAll();
-    }
-
-    private static Playwright createPlaywright() {
-        Map<String, String> env = new HashMap<>(System.getenv());
-        env.put("DEBUG", "pw:api");
-        return Playwright.create(new Playwright.CreateOptions().setEnv(env));
     }
 }
