@@ -19,11 +19,10 @@ import jakarta.inject.Inject;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.agent;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.consume;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.emitJson;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.event;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.listen;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.switchWhenOrElse;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.to;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.toOne;
 
 @ApplicationScoped
 public class NewsletterWorkflow extends Flow {
@@ -43,7 +42,7 @@ public class NewsletterWorkflow extends Flow {
                 .workflow("intelligent-newsletter")
                 .tasks(agent("draftAgent", draftAgent::write, NewsletterRequest.class),
                         emitJson("draftReady", "org.acme.email.review.required", NewsletterDraft.class),
-                        listen("waitHumanReview", to().one(event("org.acme.newsletter.review.done")))
+                        listen("waitHumanReview", toOne("org.acme.newsletter.review.done"))
                                 .outputAs((Collection<Object> c) -> c.iterator().next()),
                         switchWhenOrElse(h -> HumanReview.ReviewStatus.NEEDS_REVISION.equals(h.status()), "humanEditorAgent",
                                 "sendNewsletter", HumanReview.class),

@@ -2,6 +2,9 @@ package org.acme;
 
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
 
+import java.util.Collection;
+import java.util.Map;
+
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkiverse.flow.Flow;
@@ -16,15 +19,15 @@ public class HelloMessagingFlow extends Flow {
         return FuncWorkflowBuilder.workflow("hello-messaging")
                 .tasks(
                         // Wait for one request event
-                        listen("waitHello", to().one(event("org.acme.hello.request")))
+                        listen("waitHello", toOne("org.acme.hello.request"))
                                 // listen() returns a collection; pick the first
-                                .outputAs((java.util.Collection<Object> c) -> c.iterator().next()),
+                                .outputAs((Collection<Object> c) -> c.iterator().next()),
 
                         // Build a response with jq
                         set("{ message: \"Hello \" + .name }"),
 
                         // Emit the response event
-                        emitJson("org.acme.hello.response", java.util.Map.class))
+                        emitJson("org.acme.hello.response", Map.class))
                 .build();
     }
 }
