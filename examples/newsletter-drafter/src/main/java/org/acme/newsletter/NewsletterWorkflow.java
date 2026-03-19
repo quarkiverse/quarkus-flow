@@ -10,9 +10,12 @@ import org.acme.newsletter.domain.NewsletterDraft;
 import org.acme.newsletter.domain.NewsletterRequest;
 import org.acme.newsletter.services.MailService;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
+import io.serverlessworkflow.impl.jackson.JsonUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -43,7 +46,7 @@ public class NewsletterWorkflow extends Flow {
                 .tasks(agent("draftAgent", draftAgent::write, NewsletterRequest.class),
                         emitJson("draftReady", "org.acme.email.review.required", NewsletterDraft.class),
                         listen("waitHumanReview", toOne("org.acme.newsletter.review.done"))
-                                .outputAs((Collection<Object> c) -> c.iterator().next()),
+                                .outputAs((JsonNode node) -> node.isArray() ? node.get(0) : node),
                         switchWhenOrElse(h -> HumanReview.ReviewStatus.NEEDS_REVISION.equals(h.status()), "humanEditorAgent",
                                 "sendNewsletter", HumanReview.class),
                         function("humanEditorAgent", humanEditorAgent::edit, HumanReview.class).then("draftReady"),

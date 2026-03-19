@@ -106,7 +106,7 @@ public class NewsletterWorkflowIT {
                 .statusCode(202);
 
         // 2) ROUND #1 — wait first review-required and capture its offset AND instanceId
-        await().atMost(ofSeconds(240)).untilAsserted(() -> {
+        await().atMost(ofSeconds(10)).untilAsserted(() -> {
             boolean found = out.stream().anyMatch(rec -> {
                 CloudEvent ce = CE_JSON.deserialize((byte[]) rec.value());
                 if (expectedType.equals(ce.getType())) {
@@ -133,7 +133,7 @@ public class NewsletterWorkflowIT {
                 new HumanReview(draft1.get(), "Please tone down the hype", HumanReview.ReviewStatus.NEEDS_REVISION));
 
         // 4) ROUND #2 — wait NEXT review-required (offset strictly greater)
-        await().atMost(ofSeconds(120)).untilAsserted(() -> {
+        await().atMost(ofSeconds(10)).untilAsserted(() -> {
             boolean found = out.stream().anyMatch(rec -> {
                 if (rec.offset() <= firstReviewOffset.get())
                     return false;
@@ -152,7 +152,7 @@ public class NewsletterWorkflowIT {
         sendHumanReview(instanceIdRef.get(), new HumanReview(draft2.get(), "", HumanReview.ReviewStatus.DONE));
 
         // 6) verify MailService was called with some non-empty body
-        await().atMost(ofSeconds(30)).untilAsserted(() -> {
+        await().atMost(ofSeconds(10)).untilAsserted(() -> {
             ArgumentCaptor<NewsletterDraft> bodyCaptor = ArgumentCaptor.forClass(NewsletterDraft.class);
             verify(mailService, atLeastOnce()).send(eq("subscribers@acme.finance.org"), bodyCaptor.capture());
             assertThat(bodyCaptor.getValue()).isNotNull();
