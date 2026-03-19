@@ -10,20 +10,22 @@ import org.acme.newsletter.domain.NewsletterDraft;
 import org.acme.newsletter.domain.NewsletterRequest;
 import org.acme.newsletter.services.MailService;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
+import io.serverlessworkflow.impl.jackson.JsonUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.agent;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.consume;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.emitJson;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.event;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.listen;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.switchWhenOrElse;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.to;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.toOne;
 
 @ApplicationScoped
 public class NewsletterWorkflow extends Flow {
@@ -43,8 +45,8 @@ public class NewsletterWorkflow extends Flow {
                 .workflow("intelligent-newsletter")
                 .tasks(agent("draftAgent", draftAgent::write, NewsletterRequest.class),
                         emitJson("draftReady", "org.acme.email.review.required", NewsletterDraft.class),
-                        listen("waitHumanReview", to().one(event("org.acme.newsletter.review.done")))
-                                .outputAs((Collection<Object> c) -> c.iterator().next()),
+                        listen("waitHumanReview", toOne("org.acme.newsletter.review.done"))
+                                .outputAs((JsonNode node) -> node.isArray() ? node.get(0) : node),
                         switchWhenOrElse(h -> HumanReview.ReviewStatus.NEEDS_REVISION.equals(h.status()), "humanEditorAgent",
                                 "sendNewsletter", HumanReview.class),
                         function("humanEditorAgent", humanEditorAgent::edit, HumanReview.class).then("draftReady"),

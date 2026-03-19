@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -87,7 +88,7 @@ public class HelloMessagingFlowTest {
         assertEquals(expectedType, ce.getType());
 
         // Validate payload content (adjust to your workflow’s behavior)
-        assertTrue(new String(ce.getData().toBytes()).contains("\"Hello Elisa!\""),
+        assertTrue(new String(Objects.requireNonNull(ce.getData()).toBytes()).contains("\"Hello Elisa!\""),
                 "Unexpected CE data: " + new String(ce.getData().toBytes()));
 
         assertTrue(ce.getExtensionNames().containsAll(List.of("custominstanceid", "customtaskid")));

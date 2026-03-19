@@ -17,7 +17,7 @@ public class SaveProposalWorkflow extends Flow {
     @Override
     public Workflow descriptor() {
         return FuncWorkflowBuilder.workflow("saveProposalWorkflow")
-                .tasks(function("doSave", this::save, String.class).outputAs(o -> (Long) o))
+                .tasks(function("doSave", this::save, String.class).outputAs((Long o) -> o))
                 .build();
     }
 
