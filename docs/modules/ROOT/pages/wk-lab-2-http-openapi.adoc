@@ -18,6 +18,22 @@ You will:
 For your reference, this lab has a full working example here: https://github.com/quarkiverse/quarkus-flow/tree/main/examples/http-basic-auth
 ====
 
+== 0. Add required dependency
+
+[WARNING]
+====
+You must add the following dependency to your `pom.xml` before proceeding. Without it, the workflow will fail.
+====
+
+[source,xml]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-rest-jackson</artifactId>
+</dependency>
+----
+
 == 1. Add HTTP client and Secret configuration
 
 First, let's configure the HTTP client timeouts, enable wire logging to see the actual payloads, and define a dummy secret in your `application.properties` for local testing.
