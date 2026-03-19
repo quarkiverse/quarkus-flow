@@ -4,12 +4,15 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.acme.newsletter.agents.AutoDraftCriticAgent;
+import org.acme.newsletter.agents.HumanEditorAgent;
 import org.acme.newsletter.domain.HumanReview;
 import org.acme.newsletter.domain.NewsletterDraft;
 import org.acme.newsletter.domain.NewsletterRequest;
 import org.acme.newsletter.services.MailService;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -32,9 +35,11 @@ import static java.time.Duration.ofSeconds;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @DisabledOnOs(OS.WINDOWS)
 @QuarkusTest
@@ -49,6 +54,31 @@ public class NewsletterWorkflowIT {
 
     @InjectMock
     MailService mailService;
+
+    @InjectMock
+    AutoDraftCriticAgent draftAgent;
+
+    @InjectMock
+    HumanEditorAgent humanEditorAgent;
+
+    @BeforeEach
+    void setupAiMocks() {
+        NewsletterDraft initialDraft = new NewsletterDraft(
+                "Bullish Market Update",
+                "Fed cuts taxes...",
+                "Full body text...");
+
+        NewsletterDraft revisedDraft = new NewsletterDraft(
+                "Cautious Market Update",
+                "Fed considers tax cuts...",
+                "Toned down body text...");
+
+        when(draftAgent.write(anyString(), any()))
+                .thenReturn(initialDraft);
+
+        when(humanEditorAgent.edit(any()))
+                .thenReturn(revisedDraft);
+    }
 
     @Test
     void agent_chain_human_review_two_rounds_via_rest() {
