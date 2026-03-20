@@ -61,7 +61,7 @@ public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> implements 
      * Continue while exitCondition == false.
      */
     protected LoopPredicateIndex<AgenticScope, Object> continuePredicate() {
-        return (scope, item, idx) -> !flowExitCond.test(scope, idx);
+        return (scope, item, idx) -> !flowExitCond.test(scope, idx + 1);
     }
 
     @Override
@@ -92,7 +92,8 @@ public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> implements 
             flowExitCond = (scope, loopCounter) -> false;
         }
         if (flowMaxIterations == 0) {
-            flowMaxIterations = Integer.MAX_VALUE;
+            // Integer.MAX_VALUE may explode on OoM in runtime
+            flowMaxIterations = 100;
         }
         final FlowPlannerBuilder builder = new FlowPlannerBuilder(this);
         return build(builder::build);
