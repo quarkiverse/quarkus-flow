@@ -38,9 +38,9 @@ public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> implements 
     private final WorkflowRegistry workflowRegistry;
 
     // We need our own copies (base fields are private)
-    private int flowMaxIterations = Integer.MAX_VALUE;
-    private BiPredicate<AgenticScope, Integer> flowExitCond = (scope, loopCounter) -> false;
-    private boolean flowTestExitAtLoopEnd = false;
+    private int flowMaxIterations;
+    private BiPredicate<AgenticScope, Integer> flowExitCond;
+    private boolean flowTestExitAtLoopEnd;
 
     protected FlowLoopAgentService(Class<T> agentServiceClass, Method agenticMethod, WorkflowRegistry workflowRegistry) {
         super(agentServiceClass, agenticMethod);
@@ -87,6 +87,13 @@ public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> implements 
 
     @Override
     public T build() {
+        // Moving defaults to late since initializing the fields will get overridden by parent init logic
+        if (flowExitCond == null) {
+            flowExitCond = (scope, loopCounter) -> false;
+        }
+        if (flowMaxIterations == 0) {
+            flowMaxIterations = Integer.MAX_VALUE;
+        }
         final FlowPlannerBuilder builder = new FlowPlannerBuilder(this);
         return build(builder::build);
     }
