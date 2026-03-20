@@ -20,10 +20,7 @@ For your reference, this lab has a full working example here: https://github.com
 
 == Prereqs
 
-[WARNING]
-====
 You must add the following dependency to your `pom.xml` before proceeding. Without it, the workflow will fail.
-====
 
 [source,xml]
 .pom.xml
