@@ -2,7 +2,6 @@ package io.quarkiverse.flow.recorders;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -88,8 +87,7 @@ public class WorkflowApplicationRecorder {
     }
 
     private void injectAppId(final Builder builder) {
-        builder.withId(ConfigProvider.getConfig().getOptionalValue("quarkus.application.name", String.class)
-                .orElse(UUID.randomUUID().toString()));
+        ConfigProvider.getConfig().getOptionalValue("quarkus.application.name", String.class).ifPresent(builder::withId);
     }
 
     private void injectEventConsumers(final ArcContainer container, final Builder builder) {
