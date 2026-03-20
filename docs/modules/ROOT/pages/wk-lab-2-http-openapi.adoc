@@ -20,6 +20,7 @@ For your reference, this lab has a full working example here: https://github.com
 
 == Prereqs
 
+This step of the workshop relies on Quarkus REST Jackson to create and expose JAX-RS resources.
 You must add the following dependency to your `pom.xml` before proceeding. Without it, the workflow will fail.
 
 [source,xml]
