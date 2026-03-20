@@ -117,6 +117,11 @@ class FlowProcessor {
                 DotName.createSimple(EventConsumer.class.getName())));
     }
 
+    @BuildStep
+    UnremovableBeanBuildItem keepCustomExecutionListeners() {
+        return UnremovableBeanBuildItem.beanTypes(WorkflowExecutionListener.class);
+    }
+
     /**
      * Registers our default {@link WorkflowExceptionMapper} to the JAX-RS exception mappers.
      */
@@ -232,30 +237,24 @@ class FlowProcessor {
 
     }
 
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    WorkflowApplicationBuilderBuildItem produceApplicationBuilder(WorkflowApplicationRecorder recorder, FlowTracingConfig cfg,
-            LaunchModeBuildItem launchMode) {
-        return new WorkflowApplicationBuilderBuildItem(
-                recorder.workflowAppBuilderSupplier(cfg.enabled().orElse(launchMode.getLaunchMode().isDevOrTest())));
-    }
-
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void registerWorkflowApp(WorkflowApplicationRecorder recorder,
             ShutdownContextBuildItem shutdown,
-            WorkflowApplicationBuilderBuildItem appBuilder,
+            FlowTracingConfig cfg,
+            LaunchModeBuildItem launchMode,
             Optional<MetricsCapabilityBuildItem> metricsCapability,
             BuildProducer<SyntheticBeanBuildItem> beans) {
 
         boolean isMicrometerSupported = metricsCapability
                 .map(capability -> capability.metricsSupported(MetricsFactory.MICROMETER)).orElse(false);
+        boolean isTracingEnabled = cfg.enabled().orElse(launchMode.getLaunchMode().isDevOrTest());
 
         beans.produce(SyntheticBeanBuildItem.configure(WorkflowApplication.class)
                 .scope(ApplicationScoped.class)
                 .unremovable()
                 .setRuntimeInit()
-                .supplier(recorder.workflowAppSupplier(appBuilder.builder(), shutdown, isMicrometerSupported))
+                .supplier(recorder.workflowAppSupplier(shutdown, isTracingEnabled, isMicrometerSupported))
                 .done());
         LOG.info("Flow: Registering Workflow Application bean: {}", WorkflowApplication.class.getName());
     }

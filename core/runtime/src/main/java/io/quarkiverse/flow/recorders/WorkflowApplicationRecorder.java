@@ -2,6 +2,7 @@ package io.quarkiverse.flow.recorders;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -24,7 +25,6 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.serverlessworkflow.api.types.CallHTTP;
@@ -41,6 +41,7 @@ import io.serverlessworkflow.impl.executors.CallableTask;
 import io.serverlessworkflow.impl.executors.CallableTaskProxyBuilder;
 import io.serverlessworkflow.impl.executors.http.HttpClientResolver;
 import io.serverlessworkflow.impl.expressions.jq.JQExpressionFactory;
+import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener;
 import io.serverlessworkflow.impl.model.func.JavaModelFactory;
 import io.serverlessworkflow.impl.model.jackson.JacksonModelFactory;
 import io.smallrye.faulttolerance.api.TypedGuard;
@@ -49,21 +50,17 @@ import io.smallrye.faulttolerance.api.TypedGuard;
 public class WorkflowApplicationRecorder {
     private static final Logger LOG = LoggerFactory.getLogger(WorkflowApplicationRecorder.class);
 
-    public RuntimeValue<WorkflowApplication.Builder> workflowAppBuilderSupplier(boolean tracingEnabled) {
-        WorkflowApplication.Builder builder = WorkflowApplication.builder();
-        if (tracingEnabled) {
-            LOG.info("Flow: Tracing enabled");
-            builder.withListener(new TraceLoggerExecutionListener());
-        }
-        builder.withContextFactory(new JavaModelFactory()).withModelFactory(new JacksonModelFactory());
-        return new RuntimeValue<>(builder);
-    }
-
-    public Supplier<WorkflowApplication> workflowAppSupplier(RuntimeValue<Builder> builderWrapper,
-            ShutdownContext shutdownContext, boolean isMicrometerSupported) {
+    public Supplier<WorkflowApplication> workflowAppSupplier(ShutdownContext shutdownContext, boolean tracingEnabled,
+            boolean isMicrometerSupported) {
         return () -> {
+            final WorkflowApplication.Builder builder = WorkflowApplication.builder();
+            if (tracingEnabled) {
+                LOG.info("Flow: Tracing enabled");
+                builder.withListener(new TraceLoggerExecutionListener());
+            }
+            builder.withContextFactory(new JavaModelFactory()).withModelFactory(new JacksonModelFactory());
+
             final ArcContainer container = Arc.container();
-            final Builder builder = builderWrapper.getValue();
 
             this.injectAppId(builder);
             this.injectJQExpressionFactory(builder, container);
@@ -74,6 +71,7 @@ public class WorkflowApplicationRecorder {
             this.injectHttpClientProvider(container, builder);
             this.injectMicrometerListener(container, builder);
             this.injectFaultTolerance(container, builder, isMicrometerSupported);
+            this.injectCustomListeners(container, builder);
 
             // customize
             container.select(WorkflowApplicationBuilderCustomizer.class, Any.Literal.INSTANCE)
@@ -88,6 +86,22 @@ public class WorkflowApplicationRecorder {
 
     private void injectAppId(final Builder builder) {
         ConfigProvider.getConfig().getOptionalValue("quarkus.application.name", String.class).ifPresent(builder::withId);
+    }
+
+    private void injectCustomListeners(ArcContainer container, Builder builder) {
+        // List of internal classes
+        final Set<Class<?>> internalListeners = Set.of(
+                TraceLoggerExecutionListener.class,
+                MicrometerExecutionListener.class);
+
+        container
+                .select(WorkflowExecutionListener.class, Any.Literal.INSTANCE)
+                .stream()
+                .filter(listener -> !internalListeners.contains(listener.getClass()))
+                .forEach(listener -> {
+                    builder.withListener(listener);
+                    LOG.debug("Flow: Bound WorkflowExecutionListener bean: {}", listener.getClass().getName());
+                });
     }
 
     private void injectEventConsumers(final ArcContainer container, final Builder builder) {

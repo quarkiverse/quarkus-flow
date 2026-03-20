@@ -91,11 +91,6 @@
         <artifactId>quarkus-flow-persistence-common</artifactId>
         <version>${project.version}</version>
       </dependency>
-      <dependency>
-        <groupId>io.quarkiverse.flow</groupId>
-        <artifactId>quarkus-flow-persistence-common-deployment</artifactId>
-        <version>${project.version}</version>
-      </dependency>
 
       <dependency>
         <groupId>io.quarkiverse.flow</groupId>

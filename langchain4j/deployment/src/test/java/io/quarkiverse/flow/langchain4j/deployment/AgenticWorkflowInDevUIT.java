@@ -28,12 +28,14 @@ public class AgenticWorkflowInDevUIT {
     private static final String SEE_AGENTIC_ID = "see-mermaid-io-quarkiverse-flow-langchain4j-story-creator-with-configurable-style-editor-0-0-1";
     private static final String SEE_SIMPLE_ID = "see-mermaid-quarkus-flow-simple-workflow-0-0-1";
     private static final String UNAVAILABLE_MERMAID_WARNING_SELECTOR = "id=unavailable-mermaid-warning";
+
+    private static BrowserType.LaunchOptions launchOptions;
+
     @RegisterExtension
     static QuarkusDevModeTest devMode = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(Agents.class, SimpleWorkflow.class)
                     .addAsResource(new StringAsset("quarkus.http.test-port=0"), "application.properties"));
-    private static BrowserType.LaunchOptions launchOptions;
 
     @BeforeAll
     static void setUp() {
