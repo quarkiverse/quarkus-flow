@@ -18,7 +18,7 @@ You will:
 For your reference, this lab has a full working example here: https://github.com/quarkiverse/quarkus-flow/tree/main/examples/http-basic-auth
 ====
 
-== 0. Add required dependency
+== Prereqs
 
 [WARNING]
 ====
