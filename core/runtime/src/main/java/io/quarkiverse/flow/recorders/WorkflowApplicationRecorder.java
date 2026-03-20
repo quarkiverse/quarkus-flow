@@ -2,6 +2,7 @@ package io.quarkiverse.flow.recorders;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -89,27 +90,18 @@ public class WorkflowApplicationRecorder {
 
     private void injectCustomListeners(ArcContainer container, Builder builder) {
         // List of internal classes
-        List<Class<?>> internalListeners = List.of(
+        final Set<Class<?>> internalListeners = Set.of(
                 TraceLoggerExecutionListener.class,
                 MicrometerExecutionListener.class);
 
-        final List<WorkflowExecutionListener> listeners = container
+        container
                 .select(WorkflowExecutionListener.class, Any.Literal.INSTANCE)
                 .stream()
                 .filter(listener -> !internalListeners.contains(listener.getClass()))
-                .toList();
-
-        if (!listeners.isEmpty()) {
-            for (WorkflowExecutionListener listener : listeners) {
-                builder.withListener(listener);
-            }
-            LOG.info("Flow: Bound {} WorkflowExecutionListener bean(s): {}",
-                    listeners.size(), listeners.stream()
-                            .map(p -> p.getClass().getName())
-                            .collect(Collectors.joining(", ")));
-        } else {
-            LOG.debug("Flow: No custom WorkflowExecutionListener registered.");
-        }
+                .forEach(listener -> {
+                    builder.withListener(listener);
+                    LOG.debug("Flow: Bound WorkflowExecutionListener bean: {}", listener.getClass().getName());
+                });
     }
 
     private void injectEventConsumers(final ArcContainer container, final Builder builder) {
