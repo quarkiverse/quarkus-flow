@@ -1,13 +1,12 @@
 package org.acme.newsletter.agents;
 
-import org.acme.newsletter.domain.NewsletterDraft;
-import org.acme.newsletter.domain.NewsletterRequest;
-
 import dev.langchain4j.agentic.declarative.SequenceAgent;
 import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.V;
 import io.quarkiverse.langchain4j.RegisterAiService;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.acme.newsletter.domain.NewsletterDraft;
+import org.acme.newsletter.domain.NewsletterRequest;
 
 @ApplicationScoped
 @RegisterAiService

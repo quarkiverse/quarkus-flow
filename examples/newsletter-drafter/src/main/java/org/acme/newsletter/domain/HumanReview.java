@@ -1,8 +1,7 @@
 package org.acme.newsletter.domain;
 
-import java.util.Locale;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
+import java.util.Locale;
 
 public record HumanReview(NewsletterDraft draft, String notes, ReviewStatus status) {
 
