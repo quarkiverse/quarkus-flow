@@ -23,7 +23,7 @@ public class WorkflowApplicationIdTest {
     WorkflowApplication application;
 
     @Test
-    void should_have_appid_not_empty() {
+    void should_have_appid_equal_config() {
         assertThat(application.id()).isEqualTo("test-app");
     }
 
