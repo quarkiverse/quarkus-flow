@@ -13,7 +13,7 @@ import io.serverlessworkflow.api.types.Workflow;
 @ApplicationScoped
 public class SubmissionWorkflow extends Flow {
 
-    @ConfigProperty(name = "wiremock.url")
+    @ConfigProperty(name = "jwt.wiremock.url")
     String reviewServiceUrl;
 
     @Override

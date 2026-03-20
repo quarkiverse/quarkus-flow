@@ -67,7 +67,7 @@ public class JwtWithinWorkflowTest {
                                             [{ "name": "John Doe" }]
                                             """)));
 
-            return Map.of("wiremock.url", wireMockServer.baseUrl());
+            return Map.of("jwt.wiremock.url", wireMockServer.baseUrl());
         }
 
         @Override
