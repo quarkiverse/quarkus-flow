@@ -137,9 +137,8 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
 
     @Override
     public Stream<PersistenceWorkflowInfo> scanAll(String applicationId, WorkflowDefinition definition) {
-        String pattern = prefixId(applicationId, definition) + "*";
         KeyScanCursor<String> cursor = keyCommands
-                .scan(new KeyScanArgs().match(pattern));
+                .scan(new KeyScanArgs().match(prefixId(applicationId, definition) + "*"));
         if (!cursor.hasNext()) {
             return Stream.empty();
         }

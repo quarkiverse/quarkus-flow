@@ -5,6 +5,7 @@ import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.listen;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.toOne;
 
+import io.serverlessworkflow.api.types.Workflow;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkiverse.flow.Flow;
@@ -16,7 +17,7 @@ import io.serverlessworkflow.impl.WorkflowModel;
 public class ListenWorkflow extends Flow {
 
     @Override
-    public io.serverlessworkflow.api.types.Workflow descriptor() {
+    public Workflow descriptor() {
         return FuncWorkflowBuilder.workflow("listenWorkflow")
                 .tasks(
                         function("printMessage", o -> {

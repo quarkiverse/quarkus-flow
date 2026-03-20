@@ -115,7 +115,7 @@ public class DurableListenWorkflowIT {
             LOGGER.info("Starting Redis container");
             REDIS.start();
             String host = REDIS.getHost();
-            Integer port = REDIS.getMappedPort(6379);
+            Integer port = REDIS.getFirstMappedPort();
             return Map.of(
                     "quarkus.redis.hosts", "redis://" + host + ":" + port);
         }
