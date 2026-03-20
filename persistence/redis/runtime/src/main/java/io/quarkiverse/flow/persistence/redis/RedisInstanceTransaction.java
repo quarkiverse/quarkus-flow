@@ -137,13 +137,16 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
 
     @Override
     public Stream<PersistenceWorkflowInfo> scanAll(String applicationId, WorkflowDefinition definition) {
+        String pattern = prefixId(applicationId, definition) + "*";
         KeyScanCursor<String> cursor = keyCommands
-                .scan(new KeyScanArgs().match(prefixId(applicationId, definition) + "*"));
+                .scan(new KeyScanArgs().match(pattern));
         if (!cursor.hasNext()) {
             return Stream.empty();
         }
+
         PersistenceWorkflowInfoGenerator generator = new PersistenceWorkflowInfoGenerator(cursor);
-        return Stream.iterate(generator.next(), generator, generator);
+        return Stream.generate(generator::next)
+                .takeWhile(info -> info != null && generator.hasMore);
     }
 
     private class PersistenceWorkflowInfoGenerator
@@ -151,6 +154,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
 
         private final KeyScanCursor<String> cursor;
         private Iterator<String> keys;
+        boolean hasMore = true;
 
         public PersistenceWorkflowInfoGenerator(KeyScanCursor<String> cursor) {
             this.cursor = cursor;
@@ -163,6 +167,10 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
 
         public PersistenceWorkflowInfo next() {
             if (!keys.hasNext()) {
+                if (!cursor.hasNext()) {
+                    hasMore = false;
+                    return null;
+                }
                 keys();
             }
             String key = keys.next();
@@ -191,7 +199,6 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
                         instanceData.get(DATE)), MarshallingUtils.readModel(factory, instanceData.get(INPUT)),
                         MarshallingUtils.readEnum(factory, instanceData.get(STATUS), WorkflowStatus.class),
                         readTasksInfo(instanceId));
-
     }
 
     private Map<String, PersistenceTaskInfo> readTasksInfo(String instanceId) {
@@ -250,7 +257,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     }
 
     private String prefixId(String applicationId, WorkflowDefinitionData definition) {
-        return definition.application().id() + SEPARATOR + definition.id().toString(SEPARATOR) + SEPARATOR;
+        return applicationId + SEPARATOR + definition.id().toString(SEPARATOR) + SEPARATOR;
     }
 
     private String taskId(WorkflowContextData workflowContext, TaskContextData taskContext) {
