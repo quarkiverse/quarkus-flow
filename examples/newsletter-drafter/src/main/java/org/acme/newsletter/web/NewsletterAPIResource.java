@@ -1,16 +1,5 @@
 package org.acme.newsletter.web;
 
-import java.net.URI;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-
-import org.acme.newsletter.NewsletterWorkflow;
-import org.acme.newsletter.domain.HumanReview;
-import org.acme.newsletter.domain.NewsletterRequest;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.cloudevents.CloudEvent;
@@ -23,6 +12,15 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
+import java.net.URI;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import org.acme.newsletter.NewsletterWorkflow;
+import org.acme.newsletter.domain.HumanReview;
+import org.acme.newsletter.domain.NewsletterRequest;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 
 @Path("/api")
 public class NewsletterAPIResource {
@@ -44,7 +42,9 @@ public class NewsletterAPIResource {
     /**
      * Starts the workflow to create a new newsletter draft.
      *
-     * @param request input from the user
+     * @param request
+     *        input from the user
+     *
      * @return A workflow instance that will call the agents and produce a request for review event once it's done.
      */
     @POST
@@ -62,10 +62,8 @@ public class NewsletterAPIResource {
         byte[] body = objectMapper.writeValueAsBytes(review);
 
         CloudEvent ce = CloudEventBuilder.v1().withId(UUID.randomUUID().toString())
-                .withSource(URI.create("api:/newsletter"))
-                .withType("org.acme.newsletter.review.done")
-                .withDataContentType("application/json")
-                .withData(body).build();
+                .withSource(URI.create("api:/newsletter")).withType("org.acme.newsletter.review.done")
+                .withDataContentType("application/json").withData(body).build();
 
         byte[] ceBytes = CE_JSON.serialize(ce);
         flowIn.send(ceBytes);

@@ -1,9 +1,8 @@
 package org.acme.newsletter.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import java.util.List;
 import java.util.Locale;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
 
 public record NewsletterRequest(MarketMood mood, List<String> topMovers, String macroData, Tone tone, Length length) {
 

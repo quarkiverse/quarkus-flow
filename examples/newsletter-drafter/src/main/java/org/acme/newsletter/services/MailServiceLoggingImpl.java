@@ -1,7 +1,6 @@
 package org.acme.newsletter.services;
 
 import jakarta.enterprise.context.ApplicationScoped;
-
 import org.acme.newsletter.domain.NewsletterDraft;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

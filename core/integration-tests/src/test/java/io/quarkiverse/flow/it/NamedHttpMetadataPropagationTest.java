@@ -27,14 +27,11 @@ import io.quarkiverse.flow.Flow;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.QuarkusTestProfile;
-import io.quarkus.test.junit.TestProfile;
 import io.serverlessworkflow.impl.WorkflowInstance;
 import io.smallrye.common.annotation.Identifier;
 
 @QuarkusTest
 @QuarkusTestResource(NamedHttpMetadataPropagationTest.WireMockTestResource.class)
-@TestProfile(NamedHttpMetadataPropagationTest.TestProfile.class)
 public class NamedHttpMetadataPropagationTest {
 
     private static final String oneProfile = """
@@ -215,15 +212,6 @@ public class NamedHttpMetadataPropagationTest {
         }
     }
 
-    public static class TestProfile implements QuarkusTestProfile {
-        @Override
-        public Map<String, String> getConfigOverrides() {
-            return Map.of(
-                    "quarkus.flow.http.client.workflow.sdk-java-repository.name", "sdk-java-contributors",
-                    "wiremock.url", "http://localhost:" + WireMockTestResource.port);
-        }
-    }
-
     public static class WireMockTestResource implements QuarkusTestResourceLifecycleManager {
 
         static WireMockServer server;
@@ -241,7 +229,8 @@ public class NamedHttpMetadataPropagationTest {
         public Map<String, String> start() {
             server = new WireMockServer(port);
             server.start();
-            return Map.of("wiremock.url", server.baseUrl());
+            return Map.of("named.http.metadata.propagation.url", server.baseUrl(),
+                    "quarkus.flow.http.client.workflow.sdk-java-repository.name", "sdk-java-contributors");
         }
 
         @Override

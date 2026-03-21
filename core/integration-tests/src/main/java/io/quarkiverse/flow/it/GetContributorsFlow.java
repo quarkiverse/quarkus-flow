@@ -13,7 +13,7 @@ import io.serverlessworkflow.api.types.Workflow;
 @ApplicationScoped
 public class GetContributorsFlow extends Flow {
 
-    @ConfigProperty(name = "wiremock.url")
+    @ConfigProperty(name = "named.http.metadata.propagation.url")
     String baseUrl;
 
     @Override
