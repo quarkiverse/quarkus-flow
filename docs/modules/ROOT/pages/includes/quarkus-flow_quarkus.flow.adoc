@@ -97,6 +97,53 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |
 
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-devui-storage-type]] [.property-path]##link:#quarkus-flow_quarkus-flow-devui-storage-type[`+++quarkus.flow.devui.storage-type+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.devui.storage-type+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The type of storage to use for workflow instances in dev mode.
+
+ - *in-memory*: Data is stored in memory and lost on restart
+ - *mvstore*: Data is persisted to a file using H2 MVStore
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DEVUI_STORAGE_TYPE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_DEVUI_STORAGE_TYPE+++`
+endif::add-copy-button-to-env-var[]
+--
+a|`in-memory`, `mvstore`
+|`+++mvstore+++`
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-devui-mvstore-db-path]] [.property-path]##link:#quarkus-flow_quarkus-flow-devui-mvstore-db-path[`+++quarkus.flow.devui.mvstore.db-path+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.devui.mvstore.db-path+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Path to the MVStore database file.
+
+Only used when `storage-type=mvstore`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DEVUI_MVSTORE_DB_PATH+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_DEVUI_MVSTORE_DB_PATH+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|`+++target/flow-devui.mv.db+++`
+
 a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-metrics-enabled]] [.property-path]##link:#quarkus-flow_quarkus-flow-metrics-enabled[`+++quarkus.flow.metrics.enabled+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.metrics.enabled+++[]
