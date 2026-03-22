@@ -23,8 +23,8 @@ public class RecoveryWorkflow extends Flow {
                         function("task2", RecoveryFunctions::passThrough, Map.class),
                         listen("wait",
                                 to().one(event -> event
-                                        .with(props -> props.type("\"" + RecoveryTestConstants.RESUME_EVENT_TYPE + "\"")
-                                                .source("\"" + RecoveryTestConstants.RESUME_EVENT_SOURCE + "\"")))),
+                                        .with(props -> props.type(RecoveryTestConstants.RESUME_EVENT_TYPE)
+                                                .source(RecoveryTestConstants.RESUME_EVENT_SOURCE)))),
                         function("task4", RecoveryFunctions::passThrough, Map.class),
                         function("task5", RecoveryFunctions::passThrough, Map.class))
                 .build();
