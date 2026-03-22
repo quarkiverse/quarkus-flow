@@ -66,6 +66,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <runOrder>alphabetical</runOrder>
                     <systemPropertyVariables>
                         <native.image.path>${project.build.directory}/${project.build.finalName}-runner
                         </native.image.path>
