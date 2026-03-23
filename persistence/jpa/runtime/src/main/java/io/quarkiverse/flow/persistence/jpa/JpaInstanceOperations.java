@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
 
 import io.serverlessworkflow.impl.TaskContext;
@@ -57,7 +58,6 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
                         TaskInfoKey.from(workflowContext, taskContext), taskContext.completedAt(), taskContext.output(),
                         workflowContext.context(),
                         transition.isEndNode(), next == null ? null : next.position().jsonPointer()));
-
     }
 
     @Override
@@ -77,7 +77,10 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
 
     @Override
     public Stream<PersistenceWorkflowInfo> scanAll(String applicationId, WorkflowDefinition definition) {
-        return repository.stream("select x from ProcessInstanceEntity where x.applicationId=?1", applicationId).map(this::from);
+        TypedQuery<ProcessInstanceEntity> query = em
+                .createQuery("select x from ProcessInstanceEntity x where x.applicationId=?1", ProcessInstanceEntity.class)
+                .setParameter(1, applicationId);
+        return query.getResultStream().map(this::from).collect(Collectors.toList()).stream();
     }
 
     private PersistenceWorkflowInfo from(ProcessInstanceEntity x) {
