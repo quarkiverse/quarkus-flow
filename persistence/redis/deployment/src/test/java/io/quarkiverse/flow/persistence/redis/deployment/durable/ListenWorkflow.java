@@ -5,11 +5,11 @@ import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.listen;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.toOne;
 
-import io.serverlessworkflow.api.types.Workflow;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkiverse.flow.Flow;
 import io.quarkus.logging.Log;
+import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import io.serverlessworkflow.impl.WorkflowModel;
 

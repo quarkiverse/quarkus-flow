@@ -1,14 +1,14 @@
 package io.quarkiverse.flow.persistence.redis;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import io.quarkus.redis.datasource.RedisDataSource;
@@ -137,53 +137,38 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
 
     @Override
     public Stream<PersistenceWorkflowInfo> scanAll(String applicationId, WorkflowDefinition definition) {
-        KeyScanCursor<String> cursor = keyCommands
-                .scan(new KeyScanArgs().match(prefixId(applicationId, definition) + "*"));
-        if (!cursor.hasNext()) {
-            return Stream.empty();
-        }
-
-        PersistenceWorkflowInfoGenerator generator = new PersistenceWorkflowInfoGenerator(cursor);
-        return Stream.generate(generator::next)
-                .takeWhile(info -> info != null && generator.hasMore);
+        PersistenceWorkflowInfoGenerator generator = new PersistenceWorkflowInfoGenerator(keyCommands
+                .scan(new KeyScanArgs().match(prefixId(applicationId, definition) + "*")));
+        return Stream.generate(generator::next).takeWhile(Objects::nonNull);
     }
 
-    private class PersistenceWorkflowInfoGenerator
-            implements UnaryOperator<PersistenceWorkflowInfo>, Predicate<PersistenceWorkflowInfo> {
+    private class PersistenceWorkflowInfoGenerator {
 
         private final KeyScanCursor<String> cursor;
         private Iterator<String> keys;
-        boolean hasMore = true;
 
         public PersistenceWorkflowInfoGenerator(KeyScanCursor<String> cursor) {
             this.cursor = cursor;
-            keys();
-        }
-
-        private void keys() {
-            this.keys = cursor.next().iterator();
+            this.keys = Collections.emptyIterator();
         }
 
         public PersistenceWorkflowInfo next() {
-            if (!keys.hasNext()) {
-                if (!cursor.hasNext()) {
-                    hasMore = false;
-                    return null;
-                }
-                keys();
+            if (keys.hasNext()) {
+                String key = keys.next();
+                return readPersistenceInfo(key, lastChunk(key));
             }
-            String key = keys.next();
-            return readPersistenceInfo(key, lastChunk(key));
-        }
 
-        @Override
-        public PersistenceWorkflowInfo apply(PersistenceWorkflowInfo t) {
-            return next();
-        }
+            if (!cursor.hasNext()) {
+                return null;
+            }
 
-        @Override
-        public boolean test(PersistenceWorkflowInfo t) {
-            return keys.hasNext() || cursor.hasNext();
+            keys = cursor.next().iterator();
+            if (keys.hasNext()) {
+                String key = keys.next();
+                return readPersistenceInfo(key, lastChunk(key));
+            }
+
+            return null;
         }
     }
 
