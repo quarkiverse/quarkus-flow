@@ -25,6 +25,7 @@ import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.ResponseStatus;
 
+import io.serverlessworkflow.impl.WorkflowInstance;
 import io.smallrye.mutiny.Uni;
 
 @Path("/hello")
@@ -39,5 +40,19 @@ public class GreetingResource {
     public Uni<Message> hello() {
         return devUIWorkflow.startInstance(Map.of("name", "Quarkiverse")).onItem()
                 .transform(wf -> wf.as(Message.class).orElseThrow());
+    }
+
+    @GET
+    @Path("/async")
+    @ResponseStatus(202)
+    public Uni<Map<String, Object>> runHelloAsync() {
+        WorkflowInstance instance = devUIWorkflow.instance(Map.of("name", "Quarkiverse"));
+
+        instance.start().thenAccept(result -> {
+            // no-op, just start the instance async
+        });
+
+        return Uni.createFrom().item(Map.of(
+                "id", instance.id()));
     }
 }

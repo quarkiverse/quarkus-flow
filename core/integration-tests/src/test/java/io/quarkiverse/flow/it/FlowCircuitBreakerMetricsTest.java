@@ -2,6 +2,8 @@ package io.quarkiverse.flow.it;
 
 import static io.quarkiverse.flow.it.FlowMetricsWithCustomTypeGuardTest.WORKFLOW_FAULT_TOLERANCE_RETRY_TOTAL;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.openapi;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.awaitility.Awaitility.await;
 
 import java.net.URI;
 import java.util.List;
@@ -111,9 +113,18 @@ public class FlowCircuitBreakerMetricsTest {
 
         softly.assertThat(gauge).isNotNull();
 
-        // The Circuit Breaker should be kept opened
+        await().atMost(10, SECONDS)
+                .pollInterval(100, java.util.concurrent.TimeUnit.MILLISECONDS)
+                .untilAsserted(() -> {
+                    double gaugeValue = gauge.value();
+                    if (gaugeValue != 1.0) {
+                        throw new AssertionError("Expected gauge value to be 1.0 but was " + gaugeValue);
+                    }
+                });
+
         softly.assertThat(gauge.value())
-                .isEqualTo(1);
+                .as("Circuit Breaker should be open")
+                .isEqualTo(1.0);
 
         // We have 3 retries 2 times (3 * 2)
         softly.assertThat(globalRegistry.counter(WORKFLOW_FAULT_TOLERANCE_RETRY_TOTAL, commonTags).count())
