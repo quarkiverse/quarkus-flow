@@ -153,22 +153,17 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
         }
 
         public PersistenceWorkflowInfo next() {
-            if (keys.hasNext()) {
-                String key = keys.next();
-                return readPersistenceInfo(key, lastChunk(key));
+            if (!keys.hasNext()) {
+                if (!cursor.hasNext()) {
+                    return null;
+                }
+                this.keys = cursor.next().iterator();
+                if (!keys.hasNext()) {
+                    return null;
+                }
             }
-
-            if (!cursor.hasNext()) {
-                return null;
-            }
-
-            keys = cursor.next().iterator();
-            if (keys.hasNext()) {
-                String key = keys.next();
-                return readPersistenceInfo(key, lastChunk(key));
-            }
-
-            return null;
+            String key = keys.next();
+            return readPersistenceInfo(key, lastChunk(key));
         }
     }
 
