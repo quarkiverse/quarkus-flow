@@ -1,9 +1,6 @@
-name: Build
+name: Build with Quarkus Platform
 
 on:
-  push:
-    branches: [ "main" ]
-    paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "**.md", "**.adoc", "**.txt", ".all-contributorsrc", ".github/project.yml" ]
   pull_request:
     paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "**.md", "**.adoc", "**.txt", ".all-contributorsrc" ]
 
