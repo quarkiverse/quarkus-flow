@@ -37,11 +37,9 @@ jobs:
           cache: maven
 
       - name: Build Quarkus Flow SNAPSHOT with the PR changes
-        if: matrix.os == 'ubuntu-latest'
         run: mvn -B clean install -Dno-format -DskipTests -Dquarkus.log.level=OFF -ntp
 
       - name: Run Quarkus Flow tests in Quarkus Platform with the SNAPSHOT built with the PR changes
-        if: matrix.os == 'windows-latest'
         run: mvn -B clean install -f quarkus-platform-checks/pom.xml -Pquarkus-platform-build-and-test -Dno-format -Dquarkus.log.level=OFF -ntp
 
       - name: Publish Failed Test Report
