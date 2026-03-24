@@ -11,11 +11,20 @@ import io.serverlessworkflow.impl.auth.JWTConverter;
 import io.serverlessworkflow.impl.events.EventConsumer;
 import io.serverlessworkflow.impl.events.EventPublisher;
 import io.serverlessworkflow.impl.events.InMemoryEvents;
+import io.serverlessworkflow.impl.executors.CallableTaskBuilder;
 import io.serverlessworkflow.impl.executors.TaskExecutorFactory;
 import io.serverlessworkflow.impl.executors.func.DataTypeConverter;
+import io.serverlessworkflow.impl.executors.func.JavaConsumerCallExecutorBuilder;
+import io.serverlessworkflow.impl.executors.func.JavaContextFunctionCallExecutorBuilder;
+import io.serverlessworkflow.impl.executors.func.JavaFilterFunctionCallExecutorBuilder;
+import io.serverlessworkflow.impl.executors.func.JavaFunctionCallExecutorBuilder;
+import io.serverlessworkflow.impl.executors.func.JavaLoopFunctionCallExecutorBuilder;
+import io.serverlessworkflow.impl.executors.func.JavaLoopFunctionIndexCallExecutorBuilder;
 import io.serverlessworkflow.impl.executors.func.JavaTaskExecutorFactory;
+import io.serverlessworkflow.impl.executors.http.CallableTaskHttpExecutorBuilder;
 import io.serverlessworkflow.impl.executors.http.HttpRequestDecorator;
 import io.serverlessworkflow.impl.executors.http.oauth.jackson.JacksonJWTConverter;
+import io.serverlessworkflow.impl.executors.openapi.OpenAPIExecutorBuilder;
 import io.serverlessworkflow.impl.expressions.ExpressionFactory;
 import io.serverlessworkflow.impl.expressions.func.JavaExpressionFactory;
 import io.serverlessworkflow.impl.expressions.jq.JQExpressionFactory;
@@ -49,6 +58,21 @@ final class FlowNativeProcessor {
         sp.produce(new ServiceProviderBuildItem(JWTConverter.class.getName(), JacksonJWTConverter.class.getName()));
         sp.produce(new ServiceProviderBuildItem(DataTypeConverter.class.getName(),
                 Uni2CompletableFuture.class.getName(), Multi2CompletableFuture.class.getName()));
+        sp.produce(new ServiceProviderBuildItem(CallableTaskBuilder.class.getName(), OpenAPIExecutorBuilder.class.getName()));
+        sp.produce(new ServiceProviderBuildItem(CallableTaskBuilder.class.getName(),
+                CallableTaskHttpExecutorBuilder.class.getName()));
+        sp.produce(new ServiceProviderBuildItem(CallableTaskBuilder.class.getName(),
+                JavaLoopFunctionIndexCallExecutorBuilder.class.getName()));
+        sp.produce(new ServiceProviderBuildItem(CallableTaskBuilder.class.getName(),
+                JavaLoopFunctionCallExecutorBuilder.class.getName()));
+        sp.produce(new ServiceProviderBuildItem(CallableTaskBuilder.class.getName(),
+                JavaFunctionCallExecutorBuilder.class.getName()));
+        sp.produce(new ServiceProviderBuildItem(CallableTaskBuilder.class.getName(),
+                JavaConsumerCallExecutorBuilder.class.getName()));
+        sp.produce(new ServiceProviderBuildItem(CallableTaskBuilder.class.getName(),
+                JavaContextFunctionCallExecutorBuilder.class.getName()));
+        sp.produce(new ServiceProviderBuildItem(CallableTaskBuilder.class.getName(),
+                JavaFilterFunctionCallExecutorBuilder.class.getName()));
     }
 
 }
