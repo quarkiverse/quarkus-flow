@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.persistence.redis;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -127,7 +128,14 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
 
     @Override
     public void removeProcessInstance(WorkflowContextData workflowContext) {
-        operations.add(tx -> keyCommands(tx).del(key(workflowContext)));
+        KeyScanCursor<String> keysCursor = keyCommands
+                .scan(new KeyScanArgs().match(taskPrefix(workflowContext.instanceData().id()) + "*"));
+        Collection<String> toDelete = new ArrayList<>();
+        toDelete.add(key(workflowContext));
+        while (keysCursor.hasNext()) {
+            keysCursor.next().forEach(toDelete::add);
+        }
+        operations.add(tx -> keyCommands(tx).del(toDelete.toArray(new String[toDelete.size()])));
     }
 
     @Override
@@ -204,7 +212,6 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
         } else {
             throw new IllegalArgumentException("Unsupported status " + status);
         }
-
     }
 
     @Override
