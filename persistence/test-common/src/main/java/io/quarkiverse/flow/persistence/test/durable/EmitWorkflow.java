@@ -1,6 +1,5 @@
-package io.quarkiverse.flow.persistence.redis.deployment.durable;
+package io.quarkiverse.flow.persistence.test.durable;
 
-import static io.quarkiverse.flow.persistence.redis.deployment.DurableListenWorkflowIT.EVENT_NAME;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.emit;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -19,7 +18,7 @@ public class EmitWorkflow extends Flow {
     @Override
     public Workflow descriptor() {
         return FuncWorkflowBuilder.workflow("emitWorkflow")
-                .tasks(emit(EVENT_NAME, string -> {
+                .tasks(emit(ListenWorkflow.EVENT_NAME, string -> {
                     ObjectNode node = JsonNodeFactory.instance.objectNode().put("message", string);
                     return JsonCloudEventData.wrap(node).toBytes();
                 }, String.class))
