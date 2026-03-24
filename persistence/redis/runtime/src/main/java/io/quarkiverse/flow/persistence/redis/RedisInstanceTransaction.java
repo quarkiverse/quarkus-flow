@@ -1,14 +1,14 @@
 package io.quarkiverse.flow.persistence.redis;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import io.quarkus.redis.datasource.RedisDataSource;
@@ -137,46 +137,33 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
 
     @Override
     public Stream<PersistenceWorkflowInfo> scanAll(String applicationId, WorkflowDefinition definition) {
-        KeyScanCursor<String> cursor = keyCommands
-                .scan(new KeyScanArgs().match(prefixId(applicationId, definition) + "*"));
-        if (!cursor.hasNext()) {
-            return Stream.empty();
-        }
-        PersistenceWorkflowInfoGenerator generator = new PersistenceWorkflowInfoGenerator(cursor);
-        return Stream.iterate(generator.next(), generator, generator);
+        PersistenceWorkflowInfoGenerator generator = new PersistenceWorkflowInfoGenerator(keyCommands
+                .scan(new KeyScanArgs().match(prefixId(applicationId, definition) + "*")));
+        return Stream.generate(generator::next).takeWhile(Objects::nonNull);
     }
 
-    private class PersistenceWorkflowInfoGenerator
-            implements UnaryOperator<PersistenceWorkflowInfo>, Predicate<PersistenceWorkflowInfo> {
+    private class PersistenceWorkflowInfoGenerator {
 
         private final KeyScanCursor<String> cursor;
         private Iterator<String> keys;
 
         public PersistenceWorkflowInfoGenerator(KeyScanCursor<String> cursor) {
             this.cursor = cursor;
-            keys();
-        }
-
-        private void keys() {
-            this.keys = cursor.next().iterator();
+            this.keys = Collections.emptyIterator();
         }
 
         public PersistenceWorkflowInfo next() {
             if (!keys.hasNext()) {
-                keys();
+                if (!cursor.hasNext()) {
+                    return null;
+                }
+                this.keys = cursor.next().iterator();
+                if (!keys.hasNext()) {
+                    return null;
+                }
             }
             String key = keys.next();
             return readPersistenceInfo(key, lastChunk(key));
-        }
-
-        @Override
-        public PersistenceWorkflowInfo apply(PersistenceWorkflowInfo t) {
-            return next();
-        }
-
-        @Override
-        public boolean test(PersistenceWorkflowInfo t) {
-            return keys.hasNext() || cursor.hasNext();
         }
     }
 
@@ -191,7 +178,6 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
                         instanceData.get(DATE)), MarshallingUtils.readModel(factory, instanceData.get(INPUT)),
                         MarshallingUtils.readEnum(factory, instanceData.get(STATUS), WorkflowStatus.class),
                         readTasksInfo(instanceId));
-
     }
 
     private Map<String, PersistenceTaskInfo> readTasksInfo(String instanceId) {
@@ -250,7 +236,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     }
 
     private String prefixId(String applicationId, WorkflowDefinitionData definition) {
-        return definition.application().id() + SEPARATOR + definition.id().toString(SEPARATOR) + SEPARATOR;
+        return applicationId + SEPARATOR + definition.id().toString(SEPARATOR) + SEPARATOR;
     }
 
     private String taskId(WorkflowContextData workflowContext, TaskContextData taskContext) {
