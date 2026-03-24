@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>quarkus-flow-platform-checks</artifactId>
+    <packaging>pom</packaging>
+    <name>Quarkus Flow :: Quarkus Platform Checks</name>
+    <description>Module that allows running Quarkus Platform build and tests with latest changes in the Quarkus Flow repository. </description>
+
+    <properties>
+        <java.module.name>org.kie.dmn.tck</java.module.name>
+        <quarkus.platform.repository.url>https://github.com/quarkusio/quarkus-platform</quarkus.platform.repository.url>
+        <quarkus.platform.branch>main</quarkus.platform.branch>
+    </properties>
+
+    <profiles>
+        <profile>
+            <id>quarkus-platform-build-and-test</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-scm-plugin</artifactId>
+                        <configuration>
+                                <connectionUrl>scm:git:${quarkus.platform.repository.url}</connectionUrl>
+                                <scmVersion>${quarkus.platform.branch}</scmVersion>
+                                <scmVersionType>branch</scmVersionType>
+                                <shallow>true</shallow>
+                                <pushChanges>false</pushChanges>
+                                <skipCheckoutIfExists>true</skipCheckoutIfExists>
+                            </configuration>
+                        <executions>
+                            <execution>
+                                <id>clone-quarkus-platform-and-generate-platform-modules</id>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>bootstrap</goal>
+                                </goals>
+                                <configuration>
+                                    <goals>install -Dquarkus-flow.version=${project.version} -DskipTests</goals>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-invoker-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>run-tests-quarkus-platform</id>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <projectsDirectory>${project.build.directory}/checkout/generated-platform-project/quarkus-flow</projectsDirectory>
+                                    <pomIncludes>
+                                        <pomInclude>pom.xml</pomInclude>
+                                    </pomIncludes>
+                                    <goals>
+                                        <goal>clean</goal>
+                                        <goal>install</goal>
+                                    </goals>
+                                    <properties>
+                                        <quarkus-flow.version>${project.version}</quarkus-flow.version>
+                                    </properties>
+                                    <streamLogs>true</streamLogs>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>
