@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.persistence.redis.deployment.durable;
+package io.quarkiverse.flow.persistence.test.durable;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

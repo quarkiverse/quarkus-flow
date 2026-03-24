@@ -1,6 +1,5 @@
-package io.quarkiverse.flow.persistence.redis.deployment.durable;
+package io.quarkiverse.flow.persistence.test.durable;
 
-import static io.quarkiverse.flow.persistence.redis.deployment.DurableListenWorkflowIT.EVENT_NAME;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.listen;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.toOne;
@@ -15,6 +14,8 @@ import io.serverlessworkflow.impl.WorkflowModel;
 
 @ApplicationScoped
 public class ListenWorkflow extends Flow {
+
+    public static final String EVENT_NAME = "org.acme.user.decision.Decision";
 
     @Override
     public Workflow descriptor() {
