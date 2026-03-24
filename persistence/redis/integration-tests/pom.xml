@@ -27,7 +27,6 @@
         <dependency>
           <groupId>io.serverlessworkflow</groupId>
           <artifactId>serverlessworkflow-persistence-tests</artifactId>
-          <version>${io.serverlessworkflow.version}</version>
           <scope>test</scope>
         </dependency>
 
