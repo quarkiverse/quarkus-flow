@@ -1,5 +1,7 @@
 package io.quarkiverse.flow.deployment;
 
+import java.util.Set;
+
 import io.quarkiverse.flow.converters.Multi2CompletableFuture;
 import io.quarkiverse.flow.converters.Uni2CompletableFuture;
 import io.quarkiverse.flow.providers.MetadataPropagationRequestDecorator;
@@ -42,9 +44,7 @@ final class FlowNativeProcessor {
         // TODO: these providers must be compatible with Quarkus Ecosystem
 
         sp.produce(new ServiceProviderBuildItem(ExpressionFactory.class.getName(),
-                JQExpressionFactory.class.getName()));
-        sp.produce(new ServiceProviderBuildItem(ExpressionFactory.class.getName(),
-                JavaExpressionFactory.class.getName()));
+                Set.of(JQExpressionFactory.class.getName(), JavaExpressionFactory.class.getName())));
         sp.produce(new ServiceProviderBuildItem(TaskExecutorFactory.class.getName(),
                 JavaTaskExecutorFactory.class.getName()));
         sp.produce(new ServiceProviderBuildItem(EventConsumer.class.getName(),
@@ -58,21 +58,14 @@ final class FlowNativeProcessor {
         sp.produce(new ServiceProviderBuildItem(JWTConverter.class.getName(), JacksonJWTConverter.class.getName()));
         sp.produce(new ServiceProviderBuildItem(DataTypeConverter.class.getName(),
                 Uni2CompletableFuture.class.getName(), Multi2CompletableFuture.class.getName()));
-        sp.produce(new ServiceProviderBuildItem(CallableTaskBuilder.class.getName(), OpenAPIExecutorBuilder.class.getName()));
         sp.produce(new ServiceProviderBuildItem(CallableTaskBuilder.class.getName(),
-                CallableTaskHttpExecutorBuilder.class.getName()));
-        sp.produce(new ServiceProviderBuildItem(CallableTaskBuilder.class.getName(),
-                JavaLoopFunctionIndexCallExecutorBuilder.class.getName()));
-        sp.produce(new ServiceProviderBuildItem(CallableTaskBuilder.class.getName(),
-                JavaLoopFunctionCallExecutorBuilder.class.getName()));
-        sp.produce(new ServiceProviderBuildItem(CallableTaskBuilder.class.getName(),
-                JavaFunctionCallExecutorBuilder.class.getName()));
-        sp.produce(new ServiceProviderBuildItem(CallableTaskBuilder.class.getName(),
-                JavaConsumerCallExecutorBuilder.class.getName()));
-        sp.produce(new ServiceProviderBuildItem(CallableTaskBuilder.class.getName(),
-                JavaContextFunctionCallExecutorBuilder.class.getName()));
-        sp.produce(new ServiceProviderBuildItem(CallableTaskBuilder.class.getName(),
-                JavaFilterFunctionCallExecutorBuilder.class.getName()));
+                Set.of(OpenAPIExecutorBuilder.class.getName(), CallableTaskHttpExecutorBuilder.class.getName(),
+                        JavaLoopFunctionIndexCallExecutorBuilder.class.getName(),
+                        JavaLoopFunctionCallExecutorBuilder.class.getName(),
+                        JavaFunctionCallExecutorBuilder.class.getName(),
+                        JavaConsumerCallExecutorBuilder.class.getName(),
+                        JavaContextFunctionCallExecutorBuilder.class.getName(),
+                        JavaFilterFunctionCallExecutorBuilder.class.getName())));
     }
 
 }
