@@ -1,7 +1,5 @@
 package io.quarkiverse.flow.persistence.redis;
 
-import java.util.concurrent.ExecutorService;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 
@@ -14,7 +12,7 @@ public class RedisPersistenceProducer {
 
     @Produces
     @ApplicationScoped
-    PersistenceInstanceHandlers redisPersistenceHandlers(PersistenceInstanceStore store, ExecutorService service) {
-        return DefaultPersistenceInstanceHandlers.builder(store).withExecutorService(service).build();
+    PersistenceInstanceHandlers redisPersistenceHandlers(PersistenceInstanceStore store) {
+        return DefaultPersistenceInstanceHandlers.builder(store).build();
     }
 }

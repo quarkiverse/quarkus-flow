@@ -1,7 +1,5 @@
 package io.quarkiverse.flow.persistence.mvstore;
 
-import java.util.concurrent.ExecutorService;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 
@@ -15,8 +13,7 @@ public class MVStoreProducer {
 
     @Produces
     @ApplicationScoped
-    PersistenceInstanceHandlers mvStoreHandlers(MVStoreConfig config, WorkflowBufferFactory factory, ExecutorService service) {
-        return DefaultPersistenceInstanceHandlers.builder(new MVStorePersistenceStore(config.dbPath(), factory))
-                .withExecutorService(service).build();
+    PersistenceInstanceHandlers mvStoreHandlers(MVStoreConfig config, WorkflowBufferFactory factory) {
+        return DefaultPersistenceInstanceHandlers.builder(new MVStorePersistenceStore(config.dbPath(), factory)).build();
     }
 }
