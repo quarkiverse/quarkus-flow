@@ -37,6 +37,7 @@ jobs:
           mvn -B install -Dnative -ntp
           -Dquarkus.native.container-build
           -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25
+          -Dquarkus.langchain4j.timeout=60000
           -DskipITs=false
 
       - name: Publish Failed Test Report
