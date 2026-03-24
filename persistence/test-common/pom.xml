@@ -11,6 +11,11 @@
     <artifactId>quarkus-flow-persistence-test-common</artifactId>
     <name>Quarkus Flow :: Persistence :: Test Common</name>
 
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+        <maven.install.skip>true</maven.install.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
