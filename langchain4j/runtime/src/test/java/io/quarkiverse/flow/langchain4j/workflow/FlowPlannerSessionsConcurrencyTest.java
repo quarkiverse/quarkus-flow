@@ -26,9 +26,9 @@ import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
 import dev.langchain4j.service.V;
 import io.quarkiverse.flow.internal.WorkflowRegistry;
-import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.component.QuarkusComponentTest;
 
-@QuarkusTest
+@QuarkusComponentTest
 class FlowPlannerSessionsConcurrencyTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FlowPlannerSessionsConcurrencyTest.class.getName());
