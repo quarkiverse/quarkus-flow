@@ -1,0 +1,145 @@
+name: Quarkus Platform Nightly
+
+on:
+  schedule:
+    # Run every night at 3 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+  checks: write
+  issues: write
+
+jobs:
+  quarkus-platform-build:
+    name: Quarkus Platform Build (JDK 21)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v6
+      
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      
+      - name: Build Quarkus Flow SNAPSHOT
+        run: mvn -B clean install -Dno-format -DskipTests -DskipITs=true -Dquarkus.log.level=OFF -ntp
+
+      - name: Run Quarkus Flow tests in Quarkus Platform with the SNAPSHOT
+        id: platform-build
+        continue-on-error: true
+        run: mvn -B clean install -f quarkus-platform-checks/pom.xml -Pquarkus-platform-build-and-test -Dno-format -Dquarkus.log.level=OFF -ntp
+
+      - name: Publish Failed Test Report
+        uses: mikepenz/action-junit-report@v6
+        if: always()
+        with:
+          check_name: "JUnit Test Report (Quarkus Platform Nightly)"
+          report_paths: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
+          include_passed: false
+          detailed_summary: true
+          annotate_only: true
+
+      - name: Check if issue exists
+        id: check-issue
+        if: always()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              labels: 'quarkus-platform-nightly',
+              per_page: 1
+            });
+            
+            const issue = issues.data[0];
+            core.setOutput('issue_number', issue ? issue.number : '');
+            core.setOutput('issue_state', issue ? issue.state : '');
+            return issue ? issue.number : null;
+      
+      - name: Close issue on success
+        if: steps.platform-build.outcome == 'success' && steps.check-issue.outputs.issue_number != '' && steps.check-issue.outputs.issue_state == 'open'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const issueNumber = parseInt('${{ steps.check-issue.outputs.issue_number }}');
+            
+            // close the issue
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              state: 'closed'
+            });
+      
+      - name: Create or update issue on failure
+        if: steps.platform-build.outcome == 'failure'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const issueNumber = '${{ steps.check-issue.outputs.issue_number }}';
+            const issueState = '${{ steps.check-issue.outputs.issue_state }}';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            
+            const issueBody = `# 🔴 Quarkus Platform Build Failure
+            
+            The nightly Quarkus Platform build test has failed.
+            
+            **Workflow Run:** ${runUrl}
+            
+            **Date:** ${new Date().toISOString()}
+            
+            @quarkiverse/quarkiverse-flow-triage Please investigate and fix this issue.
+            
+            ---
+            
+            This issue will be automatically updated on each nightly run until the Quarkus Platform build passes.`;
+            
+            if (issueNumber) {
+              if (issueState === 'closed') {
+                // reopen the issue
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: parseInt(issueNumber),
+                  state: 'open'
+                });
+                
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: parseInt(issueNumber),
+                  body: `🔴 Quarkus Platform build is failing again!\n\n**Workflow Run:** ${runUrl}\n\n**Date:** ${new Date().toISOString()}\n\n@quarkiverse/quarkiverse-flow-triage Please investigate.`
+                });
+              } else {
+                // call the team again
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: parseInt(issueNumber),
+                  body: `🔴 Quarkus Platform build is still failing.\n\n**Workflow Run:** ${runUrl}\n\n**Date:** ${new Date().toISOString()}\n\n@quarkiverse/quarkiverse-flow-triage This issue requires attention.`
+                });
+              }
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '🔴 Quarkus Platform Build Failure',
+                body: issueBody,
+                labels: ['quarkus-platform-nightly']
+              });
+            }
+      
+      - name: Fail the workflow if platform build failed
+        if: steps.platform-build.outcome == 'failure'
+        run: exit 1
