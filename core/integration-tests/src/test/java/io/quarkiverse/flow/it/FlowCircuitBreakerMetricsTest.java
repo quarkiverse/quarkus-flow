@@ -20,13 +20,13 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.quarkiverse.flow.Flow;
 import io.quarkiverse.flow.metrics.FlowMetrics;
-import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.component.QuarkusComponentTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 
-@QuarkusTest
+@QuarkusComponentTest
 @TestProfile(FlowCircuitBreakerMetricsTest.FastCircuitBreakerTestProfiler.class)
 public class FlowCircuitBreakerMetricsTest {
 
