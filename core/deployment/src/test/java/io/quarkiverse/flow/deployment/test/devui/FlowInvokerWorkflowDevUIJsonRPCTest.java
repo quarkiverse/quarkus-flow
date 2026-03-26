@@ -27,12 +27,11 @@ public class FlowInvokerWorkflowDevUIJsonRPCTest extends DevUIJsonRPCTest {
                             DevUIAgenticServiceBean.class));
 
     public FlowInvokerWorkflowDevUIJsonRPCTest() {
-        super("quarkus-flow",
-                "http://localhost:8080");
+        super("quarkus-flow");
     }
 
     @Test
-    public void shouldExecuteAgenticWorkflowViaBeanInvoker() throws Exception {
+    void shouldExecuteAgenticWorkflowViaBeanInvoker() throws Exception {
         JsonNode node = super.executeJsonRPCMethod("executeWorkflow", Map.of(
                 "id", WorkflowDefinitionId.of(new AgenticDevUIWorkflow().descriptor()),
                 "input", """

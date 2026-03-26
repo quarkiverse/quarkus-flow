@@ -37,6 +37,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.serverlessworkflow</groupId>
+            <artifactId>serverlessworkflow-persistence-jackson-marshaller</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow-persistence-test-common</artifactId>
             <version>${project.version}</version>

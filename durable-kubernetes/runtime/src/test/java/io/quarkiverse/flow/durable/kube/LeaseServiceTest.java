@@ -24,10 +24,10 @@ import io.fabric8.kubernetes.api.model.coordination.v1.Lease;
 import io.fabric8.kubernetes.api.model.coordination.v1.LeaseBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.test.InjectMock;
-import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.component.QuarkusComponentTest;
 import io.quarkus.test.kubernetes.client.WithKubernetesTestServer;
 
-@QuarkusTest
+@QuarkusComponentTest
 @WithKubernetesTestServer
 public class LeaseServiceTest {
 

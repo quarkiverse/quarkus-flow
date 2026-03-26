@@ -24,7 +24,7 @@ public class LifecycleManagementDevUIJsonRPCTest extends DevUIJsonRPCTest {
                     .addClasses(GreetingResource.class, DevUIWorkflow.class));
 
     public LifecycleManagementDevUIJsonRPCTest() {
-        super("quarkus-flow", "http://localhost:8080");
+        super("quarkus-flow");
     }
 
     @Test

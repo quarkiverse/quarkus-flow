@@ -24,29 +24,29 @@ public class FlowWorkflowDefinitionDevUIJsonRPCTest extends DevUIJsonRPCTest {
     private static final WorkflowDefinitionId workflowId = WorkflowDefinitionId.of(new DevUIWorkflow().descriptor());
 
     public FlowWorkflowDefinitionDevUIJsonRPCTest() {
-        super("quarkus-flow", "http://localhost:8080");
+        super("quarkus-flow");
     }
 
     @Test
-    public void shouldHaveOneWorkflow() throws Exception {
+    void shouldHaveOneWorkflow() throws Exception {
         JsonNode node = super.executeJsonRPCMethod("getNumbersOfWorkflows");
         Assertions.assertEquals(1, node.asInt());
     }
 
     @Test
-    public void shouldGenerateMermaidDiagram() throws Exception {
+    void shouldGenerateMermaidDiagram() throws Exception {
         JsonNode node = super.executeJsonRPCMethod("generateMermaidDiagram", Map.of("id", workflowId));
         Assertions.assertTrue(node.get("mermaid").asText().contains("flowchart TD"));
     }
 
     @Test
-    public void shouldGetWorkflowInfo() throws Exception {
+    void shouldGetWorkflowInfo() throws Exception {
         JsonNode node = super.executeJsonRPCMethod("getWorkflows");
         Assertions.assertEquals("helloQuarkus", node.get(0).get("id").get("name").asText());
     }
 
     @Test
-    public void shouldExecuteWorkflow() throws Exception {
+    void shouldExecuteWorkflow() throws Exception {
         JsonNode node = super.executeJsonRPCMethod("executeWorkflow", Map.of(
                 "id", workflowId));
 

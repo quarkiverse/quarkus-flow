@@ -30,14 +30,12 @@ public class MVStoreWorkflowInstanceStoreDevModeTest extends DevUIJsonRPCTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(GreetingResource.class, DevUIWorkflow.class, Message.class)
                     .addAsResource(new StringAsset(
-                            """
-                                    quarkus.flow.devui.storage-type=MVSTORE
-                                    quarkus.flow.devui.mvstore.db-path=%s
-                                    """.formatted(DB_PATH)),
+                            "quarkus.flow.devui.storage-type=mvstore\n" +
+                                    "quarkus.flow.devui.mvstore.db-path=" + DB_PATH + "\n"),
                             "application.properties"));
 
     public MVStoreWorkflowInstanceStoreDevModeTest() {
-        super("quarkus-flow", "http://localhost:8080");
+        super("quarkus-flow");
     }
 
     @Test
