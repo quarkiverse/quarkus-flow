@@ -5,7 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 
@@ -15,8 +18,9 @@ import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
 import dev.langchain4j.service.V;
 import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkus.test.component.QuarkusComponentTest;
+import io.serverlessworkflow.impl.WorkflowApplication;
 
-@QuarkusComponentTest
+@QuarkusComponentTest(FlowAgentServicesMockedTest.WorkflowAppProducer.class)
 public class FlowAgentServicesMockedTest {
 
     @Inject
@@ -153,5 +157,14 @@ public class FlowAgentServicesMockedTest {
 
     interface TestLoopAgent {
         ResultWithAgenticScope<String> run(@V("topic") String topic);
+    }
+
+    @ApplicationScoped
+    static class WorkflowAppProducer {
+        @Produces
+        @Singleton
+        WorkflowApplication workflowApplication() {
+            return WorkflowApplication.builder().build();
+        }
     }
 }

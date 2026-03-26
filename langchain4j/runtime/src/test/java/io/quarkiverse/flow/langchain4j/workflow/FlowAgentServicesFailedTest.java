@@ -5,7 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -16,8 +19,9 @@ import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
 import dev.langchain4j.service.V;
 import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkus.test.component.QuarkusComponentTest;
+import io.serverlessworkflow.impl.WorkflowApplication;
 
-@QuarkusComponentTest
+@QuarkusComponentTest(FlowAgentServicesFailedTest.WorkflowAppProducer.class)
 public class FlowAgentServicesFailedTest {
 
     private static Logger LOG = LoggerFactory.getLogger(FlowAgentServicesFailedTest.class);
@@ -54,5 +58,14 @@ public class FlowAgentServicesFailedTest {
 
     interface TestParallelAgent {
         ResultWithAgenticScope<String> run(@V("input") String input);
+    }
+
+    @ApplicationScoped
+    static class WorkflowAppProducer {
+        @Produces
+        @Singleton
+        WorkflowApplication workflowApplication() {
+            return WorkflowApplication.builder().build();
+        }
     }
 }
