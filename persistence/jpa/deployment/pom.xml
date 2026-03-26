@@ -10,10 +10,6 @@
     <artifactId>quarkus-flow-jpa-deployment</artifactId>
     <name>Quarkus Flow :: Persistence :: JPA :: Deployment</name>
 
-    <properties>
-        <org.testcontainers.mysql.version>2.0.3</org.testcontainers.mysql.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
