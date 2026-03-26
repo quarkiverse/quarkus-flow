@@ -6,26 +6,24 @@ import static org.awaitility.Awaitility.await;
 import java.time.Duration;
 import java.util.Map;
 
-import jakarta.inject.Inject;
-
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.component.QuarkusComponentTest;
+import io.quarkus.test.junit.QuarkusTest;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.smallrye.common.annotation.Identifier;
 
-@QuarkusComponentTest
+@QuarkusTest
 public class FlowSchedulerTest {
-    @Inject
+    @jakarta.inject.Inject
     @Identifier("test:after-driven-schedule")
     WorkflowDefinition afterStartDefinition;
 
-    @Inject
+    @jakarta.inject.Inject
     @Identifier("test:cron-driven-schedule")
     WorkflowDefinition cronDefinition;
 
-    @Inject
+    @jakarta.inject.Inject
     @Identifier("test:every-driven-schedule")
     WorkflowDefinition everyDefinition;
 

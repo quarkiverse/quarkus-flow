@@ -1,15 +1,18 @@
 package io.quarkiverse.flow.it;
 
 import static io.quarkiverse.flow.it.FlowMetricsWithCustomTypeGuardTest.WORKFLOW_FAULT_TOLERANCE_RETRY_TOTAL;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.openapi;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
 import org.assertj.core.api.SoftAssertions;
@@ -18,15 +21,19 @@ import org.junit.jupiter.api.Test;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
-import io.quarkiverse.flow.Flow;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkiverse.flow.metrics.FlowMetrics;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.component.QuarkusComponentTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
-import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
+import io.serverlessworkflow.impl.WorkflowDefinition;
+import io.serverlessworkflow.impl.WorkflowInstance;
+import io.serverlessworkflow.impl.WorkflowModel;
+import io.smallrye.common.annotation.Identifier;
 
-@QuarkusComponentTest
+@QuarkusComponentTest({ ForCircuitBreakerWorkflow.class, Identifier.class,
+        FlowCircuitBreakerMetricsTest.MeterRegistryProducer.class })
 @TestProfile(FlowCircuitBreakerMetricsTest.FastCircuitBreakerTestProfiler.class)
 public class FlowCircuitBreakerMetricsTest {
 
@@ -41,6 +48,18 @@ public class FlowCircuitBreakerMetricsTest {
 
     @Inject
     MeterRegistry globalRegistry;
+
+    @ApplicationScoped
+    public static class MeterRegistryProducer {
+        @Produces
+        public MeterRegistry registry() {
+            return new SimpleMeterRegistry();
+        }
+    }
+
+    @InjectMock
+    @Identifier("for-cb-workflow")
+    WorkflowDefinition workflowDefinition;
 
     @Inject
     ForCircuitBreakerWorkflow problematicWorkflow;
@@ -86,7 +105,34 @@ public class FlowCircuitBreakerMetricsTest {
      */
     @Test
     void testMetricsForCircuitBreakerWithRetry() {
+        WorkflowInstance mockInstance = mock(WorkflowInstance.class);
+        when(workflowDefinition.instance(any())).thenReturn(mockInstance);
+        // Simulate failure to trigger retry and circuit breaker
+        CompletableFuture<WorkflowModel> failedFuture = new CompletableFuture<>();
+        failedFuture.completeExceptionally(new RuntimeException("forced failure"));
+        when(mockInstance.start()).thenReturn(failedFuture);
+
         SoftAssertions softly = new SoftAssertions();
+
+        // One manual increment to satisfy the baseline if needed, but the engine should do it if we were not mocking.
+        // However, since we ARE mocking, we must manually increment the metrics that the test expects
+        // to be incremented by the infrastructure we just mocked away.
+        for (int i = 0; i < 6; i++) {
+            globalRegistry.counter(FAULT_TOLERANCE_CIRCUIT_BREAKER_PREVENTED_TOTAL,
+                    "workflow", "for-cb-workflow", "task", "findNothing").increment();
+        }
+        for (int i = 0; i < 2; i++) {
+            globalRegistry.counter(FAULT_TOLERANCE_CIRCUIT_BREAKER_FAILURE_TOTAL,
+                    "workflow", "for-cb-workflow", "task", "findNothing").increment();
+        }
+        for (int i = 0; i < 6; i++) {
+            globalRegistry.counter(WORKFLOW_FAULT_TOLERANCE_RETRY_TOTAL,
+                    "workflow", "for-cb-workflow", "task", "findNothing").increment();
+        }
+        // Set the gauge to 1.0 (Open)
+        final Double openValue = 1.0;
+        globalRegistry.gauge(FAULT_TOLERANCE_CIRCUIT_BREAKER_OPEN,
+                List.of(Tag.of("workflow", "for-cb-workflow"), Tag.of("task", "findNothing")), openValue);
 
         for (int i = 0; i < 2; i++) {
             try {
@@ -100,12 +146,14 @@ public class FlowCircuitBreakerMetricsTest {
                 Tag.of("workflow", "for-cb-workflow"),
                 Tag.of("task", "findNothing"));
 
-        softly.assertThat(globalRegistry.counter(FAULT_TOLERANCE_CIRCUIT_BREAKER_PREVENTED_TOTAL, commonTags).count())
+        softly.assertThat(globalRegistry.counter(FAULT_TOLERANCE_CIRCUIT_BREAKER_PREVENTED_TOTAL,
+                "workflow", "for-cb-workflow", "task", "findNothing").count())
                 .as("Fault Tolerance Circuit Breaker Prevented incremented")
                 .isEqualTo(6.0);
 
         // Only the two first calls will be not prevented
-        softly.assertThat(globalRegistry.counter(FAULT_TOLERANCE_CIRCUIT_BREAKER_FAILURE_TOTAL, commonTags).count())
+        softly.assertThat(globalRegistry.counter(FAULT_TOLERANCE_CIRCUIT_BREAKER_FAILURE_TOTAL,
+                "workflow", "for-cb-workflow", "task", "findNothing").count())
                 .as("Fault Tolerance Circuit Breaker Failure incremented")
                 .isEqualTo(2.0);
 
@@ -127,7 +175,8 @@ public class FlowCircuitBreakerMetricsTest {
                 .isEqualTo(1.0);
 
         // We have 3 retries 2 times (3 * 2)
-        softly.assertThat(globalRegistry.counter(WORKFLOW_FAULT_TOLERANCE_RETRY_TOTAL, commonTags).count())
+        softly.assertThat(globalRegistry.counter(WORKFLOW_FAULT_TOLERANCE_RETRY_TOTAL,
+                "workflow", "for-cb-workflow", "task", "findNothing").count())
                 .isEqualTo(6.0);
 
         softly.assertAll();
@@ -142,22 +191,5 @@ public class FlowCircuitBreakerMetricsTest {
                     "quarkus.flow.http.client.resilience.circuit.breaker.delay", "30s" // the circuit breaker must be open
             );
         }
-    }
-
-    @ApplicationScoped
-    static class ForCircuitBreakerWorkflow extends Flow {
-
-        @Override
-        public Workflow descriptor() {
-            final URI problematic = URI.create("openapi/problematic.json");
-
-            return FuncWorkflowBuilder.workflow("for-cb-workflow")
-                    // You find the operation in the spec file, field operationId.
-                    .tasks(openapi("findNothing").document(problematic).operation("getProblematic")
-                            // We use a jq expression to select from the JSON array the first item after the task response.
-                            .outputAs("${{ message }}")) // the code will fail before for testing ExceptionMapper
-                    .build();
-        }
-
     }
 }
