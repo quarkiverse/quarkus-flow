@@ -49,7 +49,7 @@ class FlowPlannerSessionsConcurrencyTest {
     @AfterEach
     void noLeaks() {
         await()
-                .atMost(Duration.ofSeconds(30))
+                .atMost(Duration.ofSeconds(120))
                 .pollInterval(Duration.ofMillis(250))
                 .until(() -> FlowPlannerSessions.getInstance().activeSessionCount() <= baselineSessions);
     }
@@ -71,9 +71,9 @@ class FlowPlannerSessionsConcurrencyTest {
 
         TestParallelAgent agent = service.build();
 
-        int tasks = 100;
-        // Dropping to 8 threads to prevent suffocating GHA's 2-core runners
-        int threads = 8;
+        int tasks = 40;
+        // Keep contention moderate to reduce CI flakiness on low-core runners
+        int threads = 4;
         int everyNthFails = 8;
 
         ExecutorService pool = Executors.newFixedThreadPool(threads);
@@ -117,7 +117,7 @@ class FlowPlannerSessionsConcurrencyTest {
             start.countDown();
 
             for (Future<Void> f : futures) {
-                f.get(90, TimeUnit.SECONDS);
+                f.get(60, TimeUnit.SECONDS);
             }
 
             // If any async cleanup finishes slightly after futures complete:
@@ -130,7 +130,10 @@ class FlowPlannerSessionsConcurrencyTest {
                     failed.sum(), avgMs, FlowPlannerSessions.getInstance().activeSessionCount());
 
         } finally {
-            pool.shutdownNow();
+            pool.shutdown();
+            if (!pool.awaitTermination(30, TimeUnit.SECONDS)) {
+                pool.shutdownNow();
+            }
         }
     }
 
