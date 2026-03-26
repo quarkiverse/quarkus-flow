@@ -10,6 +10,10 @@
     <artifactId>quarkus-flow-jpa-deployment</artifactId>
     <name>Quarkus Flow :: Persistence :: JPA :: Deployment</name>
 
+    <properties>
+        <org.testcontainers.mysql.version>2.0.3</org.testcontainers.mysql.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -28,6 +32,22 @@
             <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow-deployment</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-persistence-test-common</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-jackson-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-postgresql-deployment</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

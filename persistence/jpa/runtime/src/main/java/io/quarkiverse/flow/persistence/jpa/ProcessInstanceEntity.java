@@ -14,6 +14,7 @@ import jakarta.persistence.OneToMany;
 
 import org.hibernate.annotations.DynamicUpdate;
 
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.serverlessworkflow.impl.WorkflowStatus;
 
@@ -27,6 +28,15 @@ public class ProcessInstanceEntity {
 
     @Id
     private String applicationId;
+
+    @Column(nullable = false)
+    private String workflowNamespace;
+
+    @Column(nullable = false)
+    private String workflowName;
+
+    @Column(nullable = false)
+    private String workflowVersion;
 
     @Column(nullable = true)
     private WorkflowStatus status;
@@ -43,8 +53,12 @@ public class ProcessInstanceEntity {
     public ProcessInstanceEntity() {
     }
 
-    public ProcessInstanceEntity(String applicationId, String instanceId, Instant startedAt, WorkflowModel input) {
+    public ProcessInstanceEntity(String applicationId, WorkflowDefinitionId definitionId, String instanceId, Instant startedAt,
+            WorkflowModel input) {
         this.applicationId = applicationId;
+        this.workflowNamespace = definitionId.namespace();
+        this.workflowName = definitionId.name();
+        this.workflowVersion = definitionId.version();
         this.instanceId = instanceId;
         this.startedAt = startedAt;
         this.input = input;
@@ -52,6 +66,18 @@ public class ProcessInstanceEntity {
 
     public String getInstanceId() {
         return instanceId;
+    }
+
+    public String getWorkflowNamespace() {
+        return workflowNamespace;
+    }
+
+    public String getWorkflowName() {
+        return workflowName;
+    }
+
+    public String getWorkflowVersion() {
+        return workflowVersion;
     }
 
     public WorkflowStatus getStatus() {
