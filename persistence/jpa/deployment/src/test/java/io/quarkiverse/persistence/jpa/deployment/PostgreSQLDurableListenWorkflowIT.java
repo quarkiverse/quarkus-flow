@@ -13,7 +13,7 @@ import io.quarkiverse.flow.persistence.test.durable.ListenWorkflow;
 import io.quarkus.test.QuarkusDevModeTest;
 
 @DisabledOnOs(OS.WINDOWS)
-public class MySQLDurableListenWorkflowIT extends AbstractDurableListenWorkflowIT {
+public class PostgreSQLDurableListenWorkflowIT extends AbstractDurableListenWorkflowIT {
 
     @RegisterExtension
     static QuarkusDevModeTest devMode = new QuarkusDevModeTest()
