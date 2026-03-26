@@ -1,0 +1,38 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Localhost Fail API",
+    "version": "1.0.0",
+    "description": "Points to an unreachable server to trigger connection errors and exercise fault tolerance."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:1/"
+    }
+  ],
+  "paths": {
+    "/problematic": {
+      "get": {
+        "operationId": "getProblematic",
+        "summary": "Unreachable endpoint used for fault tolerance testing",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
