@@ -39,8 +39,8 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     @Override
     public void writeInstanceData(WorkflowContextData workflowContext) {
         WorkflowInstanceData instance = workflowContext.instanceData();
-        repository.persist(new ProcessInstanceEntity(workflowContext.definition().application().id(), instance.id(),
-                instance.startedAt(), instance.input()));
+        repository.persist(new ProcessInstanceEntity(workflowContext.definition().application().id(),
+                workflowContext.definition().id(), instance.id(), instance.startedAt(), instance.input()));
     }
 
     @Override
@@ -78,9 +78,14 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     @Override
     public Stream<PersistenceWorkflowInfo> scanAll(String applicationId, WorkflowDefinition definition) {
         TypedQuery<ProcessInstanceEntity> query = em
-                .createQuery("select x from ProcessInstanceEntity x where x.applicationId=?1", ProcessInstanceEntity.class)
-                .setParameter(1, applicationId);
-        return query.getResultStream().map(this::from).collect(Collectors.toList()).stream();
+                .createQuery(
+                        "select x from ProcessInstanceEntity x where x.applicationId=?1 and x.workflowNamespace=?2 and x.workflowName=?3 and x.workflowVersion=?4",
+                        ProcessInstanceEntity.class)
+                .setParameter(1, applicationId)
+                .setParameter(2, definition.id().namespace())
+                .setParameter(3, definition.id().name())
+                .setParameter(4, definition.id().version());
+        return query.getResultStream().map(this::from).toList().stream();
     }
 
     private PersistenceWorkflowInfo from(ProcessInstanceEntity x) {
