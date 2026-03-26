@@ -7,6 +7,7 @@ import java.util.Map;
 import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -22,6 +23,7 @@ public class FlowInvokerWorkflowDevUIJsonRPCTest extends DevUIJsonRPCTest {
     @RegisterExtension
     static final QuarkusDevModeTest devMode = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addAsResource(new StringAsset("quarkus.http.port=0"), "application.properties")
                     .addClasses(
                             AgenticDevUIWorkflow.class,
                             DevUIAgenticServiceBean.class));

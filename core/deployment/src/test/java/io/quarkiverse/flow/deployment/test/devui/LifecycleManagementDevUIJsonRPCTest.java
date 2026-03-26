@@ -5,6 +5,7 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.SoftAssertions;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -21,6 +22,7 @@ public class LifecycleManagementDevUIJsonRPCTest extends DevUIJsonRPCTest {
     @RegisterExtension
     static final QuarkusDevModeTest devMode = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addAsResource(new StringAsset("quarkus.http.port=0"), "application.properties")
                     .addClasses(GreetingResource.class, DevUIWorkflow.class));
 
     public LifecycleManagementDevUIJsonRPCTest() {

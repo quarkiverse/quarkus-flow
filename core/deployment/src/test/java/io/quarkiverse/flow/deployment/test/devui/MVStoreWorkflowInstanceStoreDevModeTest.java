@@ -33,6 +33,7 @@ public class MVStoreWorkflowInstanceStoreDevModeTest extends DevUIJsonRPCTest {
                             """
                                     quarkus.flow.devui.storage-type=MVSTORE
                                     quarkus.flow.devui.mvstore.db-path=%s
+                                    quarkus.http.port=0
                                     """.formatted(DB_PATH)),
                             "application.properties"));
 
