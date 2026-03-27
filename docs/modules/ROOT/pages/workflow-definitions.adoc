@@ -4,7 +4,7 @@ include::includes/attributes.adoc[]
 
 Quarkus Flow *recommends the Java DSL* as the primary way to define workflows because it provides type safety, refactoring support, and excellent IDE integration.
 
-However, Quarkus Flow fully supports loading link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md[CNCF Serverless Workflow 1.0.0] definitions written in YAML or JSON. This is ideal for teams that already maintain specification files or need to share definitions across different runtime environments.
+However, Quarkus Flow fully supports loading xref:quarkus-flow-cookbook.adoc[CNCF Serverless Workflow 1.0.0] definitions written in YAML or JSON. This is ideal for teams that already maintain specification files or need to share definitions across different runtime environments.
 
 This guide shows you how to load a YAML workflow into your Quarkus application and expose it as a standard `Flow` CDI bean that you can inject and execute.
 
@@ -100,6 +100,7 @@ curl "http://localhost:8080/echo?name=John"
 
 == See also
 
-* xref:specification.adoc[Serverless Workflow Spec mapping and concepts] — a quick orientation to the 1.0.0 specification components.
+* xref:quarkus-flow-cookbook.adoc[] — A comprehensive collection of practical, copy-and-paste YAML examples for the Serverless Workflow DSL.
+* xref:specification.adoc[Serverless Workflow Spec mapping and concepts] — a quick orientation to the 1.x.x specification components.
 * xref:data-flow.adoc[Data flow and context management] — understand how data mutates across YAML tasks.
 * xref:test-debug.adoc[Test and debug workflows] — learn how to write unit tests for your injected `Flow` beans.
