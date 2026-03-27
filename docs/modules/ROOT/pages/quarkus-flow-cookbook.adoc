@@ -1,0 +1,501 @@
+= Quarkus Flow & CNCF Serverless Workflow Cookbook
+:page-role: reference
+include::includes/attributes.adoc[]
+
+[IMPORTANT]
+====
+**Java DSL is Recommended**
+
+While this cookbook provides extensive examples for defining workflows using the CNCF Serverless Workflow YAML DSL, Quarkus Flow *strongly recommends the Java DSL* as the primary method for defining workflows. The Java DSL offers superior type safety, refactoring capabilities, and seamless IDE integration.
+
+These YAML examples are ideal for teams maintaining specification files, or sharing definitions across different runtime environments.
+====
+
+This cookbook provides a comprehensive collection of practical, copy-and-paste xref:workflow-definitions.adoc[YAML examples for building modern Serverless Workflows in Quarkus Flow].
+
+Every Serverless Workflow definition starts with a `document:` header to declare its identity and version, followed by a `do:` block that orchestrates the execution steps.
+
+== 1. Pausing Execution (Wait State)
+To pause a workflow for a specific amount of time, use the `wait` task. You can define the duration using an ISO 8601 time string.
+
+[source,yaml]
+----
+document:
+  dsl: '1.0.3'
+  namespace: test
+  name: wait-duration-8601
+  version: '0.1.0'
+do:
+  - wait30Seconds:
+      wait: PT30S
+----
+
+== 2. Scheduled Executions (CRON)
+You can trigger workflows on a specific schedule using CRON expressions. The `schedule` block sits at the root level, alongside the `document` definition.
+
+[source,yaml]
+----
+document:
+  dsl: '1.0.3'
+  namespace: examples
+  name: cron-schedule
+  version: '0.1.0'
+schedule:
+  cron: 0 0 * * *
+do:
+  - backup:
+      call: http
+      with:
+        method: post
+        endpoint: https://example.com/api/v1/backup/start
+----
+
+== 3. External API Integrations (HTTP REST)
+To interact with external REST APIs, use the `call` task with the `http` directive. You can dynamically inject headers, query parameters, and payloads using `jq` expressions.
+
+[source,yaml]
+----
+document:
+  dsl: '1.0.3'
+  namespace: examples
+  name: http-query-headers-expressions
+  version: '1.0.0'
+input:
+  schema:
+    format: json
+    document:
+      type: object
+      required:
+        - searchQuery
+      properties:
+        searchQuery:
+          type: string
+do:
+  - setQueryAndHeaders:
+      set:
+        query:
+          search: ${.searchQuery}
+        headers:
+          Accept: application/json
+  - searchStarWarsCharacters:
+      call: http
+      with:
+        method: get
+        endpoint: https://swapi.dev/api/people/
+        headers: ${.headers}
+        query: ${.query}
+----
+
+== 4. OpenAPI Services
+Quarkus Flow natively supports strongly-typed service integrations. You can invoke OpenAPI endpoints directly by referencing their specification files.
+
+[source,yaml]
+----
+document:
+  dsl: '1.0.3'
+  namespace: test
+  name: openapi-example
+  version: '0.1.0'
+do:
+  - findPet:
+      call: openapi
+      with:
+        document:
+          endpoint: https://petstore.swagger.io/v2/swagger.json
+        operationId: findPetsByStatus
+        parameters:
+          status: available
+----
+
+== 5. Authentication (OAuth2)
+When calling secure endpoints, you can define the authentication mechanism inline. The DSL supports Bearer tokens, OIDC, and OAuth2.
+
+[source,yaml]
+----
+document:
+  dsl: '1.0.3'
+  namespace: examples
+  name: oauth2-authentication
+  version: '0.1.0'
+do:
+  - getPet:
+      call: http
+      with:
+        method: get
+        endpoint:
+          uri: https://petstore.swagger.io/v2/pet/{petId}
+          authentication:
+            oauth2:
+              authority: http://keycloak/realms/fake-authority
+              endpoints:
+                token: /auth/token
+                introspection: /auth/introspect
+              grant: client_credentials
+              client:
+                id: workflow-runtime-id
+                secret: workflow-runtime-secret
+----
+
+== 6. Event Consumption and Production
+Serverless Workflow integrates heavily with CloudEvents. You can pause a workflow until a specific event is received using the `listen` task, or publish events using the `emit` task.
+
+*Listening for an Event:*
+[source,yaml]
+----
+document:
+  dsl: '1.0.3'
+  namespace: test
+  name: listen-to-one
+  version: '0.1.0'
+do:
+  - waitForStartup:
+      listen:
+        to:
+          one:
+            with:
+              type: com.virtual-wf-powered-race.events.race.started.v1
+  - startup:
+      call: http
+      with:
+        method: post
+        endpoint:
+          uri: https://virtual-wf-powered-race.com/api/v4/cars/{carId}/start
+----
+
+*Emitting an Event:*
+[source,yaml]
+----
+document:
+  dsl: '1.0.3'
+  namespace: test
+  name: emit
+  version: '0.1.0'
+do:
+  - emitEvent:
+      emit:
+        event:
+          with:
+            source: https://petstore.com
+            type: com.petstore.order.placed.v1
+            data:
+              client:
+                firstName: Cruella
+                lastName: de Vil
+              items:
+                - breed: dalmatian
+                  quantity: 101
+----
+
+
+== 7. Data Transformation (`set`)
+To format data without external services, use the `set` task. This allows you to construct new JSON objects or map existing state data[cite: 80, 81].
+
+[source,yaml]
+----
+document:
+  dsl: '1.0.3'
+  namespace: test
+  name: set
+  version: '0.1.0'
+schedule:
+  on:
+    one:
+      with:
+        type: io.serverlessworkflow.samples.events.trigger.v1
+do:
+  - initialize:
+      set:
+        startEvent: ${ $workflow.input[0] }
+----
+
+== 8. Conditional Logic (`if` and `switch`)
+You can branch execution using `if` for simple conditions, or `switch` for multiple routes.
+
+*Switch Statement:*
+[source,yaml]
+----
+document:
+  dsl: '1.0.3'
+  namespace: test
+  name: sample-workflow
+  version: 0.1.0
+do:
+  - processOrder:
+      switch:
+        - case1:
+            when: .orderType == "electronic"
+            then: processElectronicOrder
+        - case2:
+            when: .orderType == "physical"
+            then: processPhysicalOrder
+        - default:
+            then: handleUnknownOrderType
+  - processElectronicOrder:
+      set:
+        validate: true
+        status: fulfilled
+      then: exit
+  - processPhysicalOrder:
+      set:
+        inventory: clear
+        items: 1
+        address: Elmer St
+      then: exit
+  - handleUnknownOrderType:
+      set:
+        log: warn
+        message: something's wrong
+----
+
+*If Statement:*
+[source,yaml]
+----
+document:
+  dsl: '1.0.3'
+  namespace: default
+  name: conditional-task
+  version: '0.1.0'
+do:
+  - raiseErrorIfUnderage:
+      if: .customer.age < 18
+      raise:
+        error:
+          type: https://superbet-casinos.com/customer/access-forbidden
+          status: 400
+          title: Access Forbidden
+      then: end
+  - placeBet:
+      call: http
+      with:
+        method: post
+        endpoint: https://superbet-casinos.com/api/bet/on/football
+        body:
+          customer: .customer
+          bet: .bet
+----
+
+== 9. Iteration (`for` loops)
+To execute logic over arrays of data, use the `for` task.
+
+[source,yaml]
+----
+document:
+  dsl: '1.0.3'
+  namespace: test
+  name: for-example
+  version: '0.1.0'
+do:
+  - checkup:
+      for:
+        each: pet
+        in: .pets
+        at: index
+      while: .vet != null
+      do:
+        - waitForCheckup:
+            listen:
+              to:
+                one:
+                  with:
+                    type: com.fake.petclinic.pets.checkup.completed.v2
+            output:
+              as: '.pets + [{ "id": $pet.id }]'
+----
+
+== 10. Parallel Execution (`fork`)
+When tasks are independent of one another, executing them simultaneously can significantly reduce total execution time using the `fork` task.
+
+[source,yaml]
+----
+document:
+  dsl: '1.0.3'
+  namespace: test
+  name: fork-example
+  version: '0.1.0'
+do:
+  - raiseAlarm:
+      fork:
+        compete: true
+        branches:
+          - callNurse:
+              call: http
+              with:
+                method: put
+                endpoint: https://fake-hospital.com/api/v3/alert/nurses
+                body:
+                  patientId: ${ .patient.fullName }
+                  room: ${ .room.number }
+          - callDoctor:
+              call: http
+              with:
+                method: put
+                endpoint: https://fake-hospital.com/api/v3/alert/doctor
+                body:
+                  patientId: ${ .patient.fullName }
+                  room: ${ .room.number }
+----
+
+== 11. Invoking Subflows
+To keep your definitions clean and modular, complex logic can be broken down into smaller, reusable workflows using the `run` directive.
+
+[source,yaml]
+----
+document:
+  dsl: '1.0.3'
+  namespace: test
+  name: run-subflow
+  version: '0.1.0'
+do:
+  - registerCustomer:
+      run:
+        workflow:
+          namespace: test
+          name: register-customer
+          version: '0.1.0'
+          input:
+            customer: .user
+----
+
+== 12. Business Logic Error Handling (`try` / `catch`)
+While transient infrastructure errors are handled by Quarkus Flow's built-in Fault Tolerance, the workflow DSL's `try` and `catch` constructs are specifically designed for compensatory business logic.
+
+[source,yaml]
+----
+document:
+  dsl: '1.0.3'
+  namespace: default
+  name: try-catch
+  version: '0.1.0'
+do:
+  - tryGetPet:
+      try:
+        - getPet:
+            call: http
+            with:
+              method: get
+              endpoint: https://petstore.swagger.io/v2/pet/{petId}
+      catch:
+        errors:
+           with:
+            type: https://serverlessworkflow.io/spec/1.0.0/errors/communication
+            status: 404
+        as: error
+        do:
+          - notifySupport:
+              emit:
+                event:
+                  with:
+                    source: https://petstore.swagger.io
+                    type: io.swagger.petstore.events.pets.not-found.v1
+                    data: ${ $error }
+          - setError:
+              set:
+                 error: $error
+              export:
+                as: '$context + { error: $error }'
+  - buyPet:
+      if: $context.error == null
+      call: http
+      with:
+        method: put
+        endpoint: https://petstore.swagger.io/v2/pet/{petId}
+        body: '${ . + { status: "sold" } }'
+----
+
+== 13. Raising Explicit Errors
+If your workflow encounters an invalid business logic state, you can explicitly halt execution and throw an error using the `raise` task.
+
+[source,yaml]
+----
+document:
+  dsl: '1.0.3'
+  namespace: test
+  name: raise-not-implemented
+  version: '0.1.0'
+do:
+  - notImplemented:
+      raise:
+        error:
+          type: https://serverlessworkflow.io/errors/not-implemented
+          status: 500
+          title: Not Implemented
+          detail: ${ "The workflow '\( $workflow.definition.document.name ):\( $workflow.definition.document.version )' is a work in progress and cannot be run yet" }
+----
+
+// TODO: add it later in the "OpenAPI" section
+
+// *gRPC Example:*
+// [source,yaml]
+// ----
+// document:
+//   dsl: '1.0.3'
+//   namespace: test
+//   name: grpc-example
+//   version: '0.1.0'
+// do:
+//   - greet:
+//       call: grpc
+//       with:
+//         proto:
+//           endpoint: file://app/greet.proto
+//         service:
+//           name: GreeterApi.Greeter
+//           host: localhost
+//           port: 5011
+//         method: SayHello
+//         arguments:
+//           name: ${ .user.preferredDisplayName }
+// ----
+
+// TODO: add later when we enable these features in qflow
+
+// == 7. AsyncAPI (Message Brokers)
+// For message-driven architectures, you can publish payloads directly to message brokers (like Kafka or RabbitMQ) defined via AsyncAPI specifications.
+//
+// [source,yaml]
+// ----
+// document:
+//   dsl: '1.0.3'
+//   namespace: examples
+//   name: bearer-auth
+//   version: '0.1.0'
+// do:
+//   - findPet:
+//       call: asyncapi
+//       with:
+//         document:
+//           endpoint: https://fake.com/docs/asyncapi.json
+//         operation: findPetsByStatus
+//         server:
+//           name: staging
+//         message:
+//           payload:
+//             petId: ${ .pet.id }
+//         authentication:
+//           bearer:
+//             token: ${ .token }
+// ----
+
+// == 15. Container Execution (`runContainer`)
+// For executing specialized tools or isolated logic environments, you can orchestrate Docker containers directly from the workflow.
+//
+// [source,yaml]
+// ----
+// document:
+//   dsl: '1.0.3'
+//   namespace: test
+//   name: run-container
+//   version: '0.1.0'
+// do:
+//   - runContainer:
+//       run:
+//         container:
+//           image: hello-world
+//         return: all
+// ----
+
+== See also
+
+* xref:specification.adoc[Serverless Workflow Spec mapping and concepts] — a quick orientation to the 1.0.0 specification components.
+* xref:workflow-definitions.adoc[Define workflows from YAML] — review the syntax for discovering and injecting YAML workflows.
+* xref:data-flow.adoc[Data flow and context management]: A deep dive into how `input`, `output`, and `export` manipulate the workflow data context.

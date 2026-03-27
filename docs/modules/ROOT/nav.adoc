@@ -39,4 +39,5 @@
 
 * Reference
 ** xref:dsl-cheatsheet.adoc[Java DSL cheatsheet]
+** xref:quarkus-flow-cookbook.adoc[]
 ** xref:configuration.adoc[Extension Configuration Reference]
