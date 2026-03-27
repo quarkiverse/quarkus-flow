@@ -9,13 +9,14 @@ import java.util.stream.Stream;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
 
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.serverlessworkflow.impl.TaskContext;
 import io.serverlessworkflow.impl.TaskContextData;
 import io.serverlessworkflow.impl.WorkflowContextData;
 import io.serverlessworkflow.impl.WorkflowDefinition;
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
 import io.serverlessworkflow.impl.WorkflowInstanceData;
 import io.serverlessworkflow.impl.WorkflowStatus;
 import io.serverlessworkflow.impl.executors.AbstractTaskExecutor;
@@ -27,7 +28,6 @@ import io.serverlessworkflow.impl.persistence.PersistenceWorkflowInfo;
 import io.serverlessworkflow.impl.persistence.RetriedTaskInfo;
 
 @ApplicationScoped
-@Transactional
 public class JpaInstanceOperations implements PersistenceInstanceOperations {
 
     @Inject
@@ -37,6 +37,7 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     EntityManager em;
 
     @Override
+    @Transactional
     public void writeInstanceData(WorkflowContextData workflowContext) {
         WorkflowInstanceData instance = workflowContext.instanceData();
         repository.persist(new ProcessInstanceEntity(workflowContext.definition().application().id(),
@@ -44,12 +45,14 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     }
 
     @Override
+    @Transactional
     public void writeRetryTask(WorkflowContextData workflowContext, TaskContextData taskContext) {
         em.persist(new RetriedTaskEntity(TaskInfoKey.from(workflowContext, taskContext),
                 ((TaskContext) taskContext).retryAttempt()));
     }
 
     @Override
+    @Transactional
     public void writeCompletedTask(WorkflowContextData workflowContext, TaskContextData taskContext) {
         TransitionInfo transition = ((TaskContext) taskContext).transition();
         AbstractTaskExecutor<?> next = (AbstractTaskExecutor<?>) transition.next();
@@ -61,31 +64,31 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     }
 
     @Override
+    @Transactional
     public void writeStatus(WorkflowContextData workflowContext, WorkflowStatus status) {
         find(workflowContext).setStatus(status);
     }
 
     @Override
+    @Transactional
     public void removeProcessInstance(WorkflowContextData workflowContext) {
         repository.deleteById(toKey(workflowContext));
     }
 
     @Override
+    @Transactional
     public void clearStatus(WorkflowContextData workflowContext) {
         find(workflowContext).setStatus(null);
     }
 
     @Override
     public Stream<PersistenceWorkflowInfo> scanAll(String applicationId, WorkflowDefinition definition) {
-        TypedQuery<ProcessInstanceEntity> query = em
-                .createQuery(
-                        "select x from ProcessInstanceEntity x where x.applicationId=?1 and x.workflowNamespace=?2 and x.workflowName=?3 and x.workflowVersion=?4",
-                        ProcessInstanceEntity.class)
-                .setParameter(1, applicationId)
-                .setParameter(2, definition.id().namespace())
-                .setParameter(3, definition.id().name())
-                .setParameter(4, definition.id().version());
-        return query.getResultStream().map(this::from).toList().stream();
+        QuarkusTransaction.begin();
+        WorkflowDefinitionId id = definition.id();
+        return repository.stream(
+                "select x from ProcessInstanceEntity x where x.applicationId=?1 and x.workflowNamespace=?2 and x.workflowName=?3 and x.workflowVersion=?4",
+                applicationId, id.namespace(), id.name(), id.version()).map(this::from)
+                .onClose(() -> QuarkusTransaction.commit());
     }
 
     private PersistenceWorkflowInfo from(ProcessInstanceEntity x) {
@@ -107,6 +110,7 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     }
 
     @Override
+    @Transactional
     public Optional<PersistenceWorkflowInfo> readWorkflowInfo(WorkflowDefinition definition, String instanceId) {
         return repository.findByIdOptional(new ProcessInstanceKey(instanceId, definition.application().id())).map(this::from);
     }
