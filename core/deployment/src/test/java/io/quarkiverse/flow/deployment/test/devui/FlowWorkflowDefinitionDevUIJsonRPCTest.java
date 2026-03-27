@@ -3,6 +3,7 @@ package io.quarkiverse.flow.deployment.test.devui;
 import java.util.Map;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,7 @@ public class FlowWorkflowDefinitionDevUIJsonRPCTest extends DevUIJsonRPCTest {
     @RegisterExtension
     static final QuarkusDevModeTest devMode = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addAsResource(new StringAsset("quarkus.http.port=0"), "application.properties")
                     .addClasses(GreetingResource.class, DevUIWorkflow.class));
 
     private static final WorkflowDefinitionId workflowId = WorkflowDefinitionId.of(new DevUIWorkflow().descriptor());
