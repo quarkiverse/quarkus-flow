@@ -75,9 +75,29 @@ public class FlowInstanceDeserializer extends StdDeserializer<FlowInstance> {
                         : null;
                 events.add(new LifecycleEventSummary(type, taskName, timestamp, details));
             }
+
+            // Skip first event as it's added by FlowInstance constructor
+            events.stream()
+                    .skip(1)
+                    .forEach(event -> restoreHistoryEvent(instance, event));
         }
 
         return instance;
+    }
+
+    private void restoreHistoryEvent(FlowInstance instance, LifecycleEventSummary event) {
+        String eventType = event.type();
+        switch (eventType) {
+            case "task.failed" -> instance.recordTaskFailure(event.taskName(), event.timestamp(),
+                    event.details() != null ? new RuntimeException(event.details()) : null);
+            case "workflow.failed" -> instance.recordFailure(event.timestamp(),
+                    event.details() != null ? new RuntimeException(event.details()) : null);
+            case "workflow.cancelled" -> instance.recordCancellation(event.timestamp());
+            case "workflow.suspended" -> instance.recordSuspension(event.timestamp());
+            case "workflow.resumed" -> instance.recordResumption(event.timestamp());
+            case "workflow.status.changed" -> instance.recordStatusChange(event.details(), event.timestamp());
+            default -> instance.recordTaskEvent(eventType, event.taskName(), event.timestamp());
+        }
     }
 
     private WorkflowModel readWorkflowModel(JsonNode node) {
