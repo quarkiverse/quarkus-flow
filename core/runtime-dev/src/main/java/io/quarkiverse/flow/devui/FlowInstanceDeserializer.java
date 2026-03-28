@@ -41,7 +41,7 @@ public class FlowInstanceDeserializer extends StdDeserializer<FlowInstance> {
         String workflowVersion = node.get("workflowVersion").asText();
         WorkflowStatus status = WorkflowStatus.valueOf(node.get("status").asText());
         Instant startTime = Instant.ofEpochMilli(node.get("startTime").asLong());
-        WorkflowModel input = parseWorkflowModel(node.get("input"));
+        WorkflowModel input = readWorkflowModel(node.get("input"));
 
         FlowInstance instance = new FlowInstance(
                 instanceId,
@@ -56,7 +56,7 @@ public class FlowInstanceDeserializer extends StdDeserializer<FlowInstance> {
         JsonNode endTimeNode = node.get("endTime");
         if (endTimeNode != null && !endTimeNode.isNull()) {
             Instant endTime = Instant.ofEpochMilli(endTimeNode.asLong());
-            WorkflowModel output = parseWorkflowModel(node.get("output"));
+            WorkflowModel output = readWorkflowModel(node.get("output"));
             instance.recordCompletion(endTime, output);
         }
 
@@ -75,55 +75,16 @@ public class FlowInstanceDeserializer extends StdDeserializer<FlowInstance> {
                         : null;
                 events.add(new LifecycleEventSummary(type, taskName, timestamp, details));
             }
-
-            // Skip first event as it's added by FlowInstance constructor
-            events.stream()
-                    .skip(1)
-                    .forEach(event -> restoreHistoryEvent(instance, event));
         }
 
         return instance;
     }
 
-    private WorkflowModel parseWorkflowModel(JsonNode node) {
+    private WorkflowModel readWorkflowModel(JsonNode node) {
         if (node == null || node.isNull()) {
             return null;
         }
-        // Convert JsonNode to Object and then to WorkflowModel
-        Object obj = parseObject(node);
-        return obj != null ? modelFactory.fromOther(obj) : null;
+        return modelFactory.from(node.toString());
     }
 
-    private Object parseObject(JsonNode node) {
-        if (node == null || node.isNull()) {
-            return null;
-        }
-        if (node.isTextual()) {
-            return node.asText();
-        }
-        if (node.isNumber()) {
-            return node.numberValue();
-        }
-        if (node.isBoolean()) {
-            return node.asBoolean();
-        }
-        // For complex objects, return the JsonNode itself
-        // Jackson will handle the conversion when needed
-        return node;
-    }
-
-    private void restoreHistoryEvent(FlowInstance instance, LifecycleEventSummary event) {
-        String eventType = event.type();
-        switch (eventType) {
-            case "task.failed" -> instance.recordTaskFailure(event.taskName(), event.timestamp(),
-                    event.details() != null ? new RuntimeException(event.details()) : null);
-            case "workflow.failed" -> instance.recordFailure(event.timestamp(),
-                    event.details() != null ? new RuntimeException(event.details()) : null);
-            case "workflow.cancelled" -> instance.recordCancellation(event.timestamp());
-            case "workflow.suspended" -> instance.recordSuspension(event.timestamp());
-            case "workflow.resumed" -> instance.recordResumption(event.timestamp());
-            case "workflow.status.changed" -> instance.recordStatusChange(event.details(), event.timestamp());
-            default -> instance.recordTaskEvent(eventType, event.taskName(), event.timestamp());
-        }
-    }
 }

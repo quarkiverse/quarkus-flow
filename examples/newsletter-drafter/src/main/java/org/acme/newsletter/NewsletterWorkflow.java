@@ -9,11 +9,9 @@ import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.switchWhenOrElse;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.toOne;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
-import io.serverlessworkflow.impl.jackson.JsonUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Collection;
