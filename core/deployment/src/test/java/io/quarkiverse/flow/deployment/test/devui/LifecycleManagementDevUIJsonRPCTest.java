@@ -1,10 +1,14 @@
 package io.quarkiverse.flow.deployment.test.devui;
 
+import static org.awaitility.Awaitility.await;
+
+import java.time.Duration;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.SoftAssertions;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -21,6 +25,11 @@ public class LifecycleManagementDevUIJsonRPCTest extends DevUIJsonRPCTest {
     @RegisterExtension
     static final QuarkusDevModeTest devMode = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addAsResource(new StringAsset("""
+                            quarkus.flow.devui.mvstore.db-path=target/flow-lifecycle-management.mv.db
+                            quarkus.flow.devui.backend.storage.enabled=true
+                            """),
+                            "application.properties")
                     .addClasses(GreetingResource.class, DevUIWorkflow.class));
 
     public LifecycleManagementDevUIJsonRPCTest() {
@@ -117,6 +126,40 @@ public class LifecycleManagementDevUIJsonRPCTest extends DevUIJsonRPCTest {
                 "the instance ID must be the same value");
 
         softly.assertAll();
+    }
+
+    @Test
+    void list_all_workflow_instances_should_expose_serialized_input_and_output() throws Exception {
+        String instanceId = RestAssured.given()
+                .get("/hello/async")
+                .then()
+                .statusCode(202)
+                .extract()
+                .path("id");
+
+        await().atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofMillis(500))
+                .untilAsserted(() -> {
+                    JsonNode result = this.executeJsonRPCMethod("findByWorkflowInstanceId", Map.of("instanceId", instanceId));
+                    Assertions.assertThat(result.get("status").asText()).isEqualTo("COMPLETED");
+                });
+
+        JsonNode root = this.executeJsonRPCMethod("listAllWorkflowInstances", Map.of(
+                "page", 0,
+                "size", 20,
+                "sort", "LAST_UPDATE_DESC"));
+
+        JsonNode workflowInstance = root.valueStream()
+                .filter(node -> instanceId.equals(node.path("instanceId").asText()))
+                .findFirst()
+                .orElseThrow();
+
+        SoftAssertions.assertSoftly(softly -> {
+            softly.assertThat(workflowInstance.path("input").path("name").asText()).isEqualTo("Quarkiverse");
+            softly.assertThat(workflowInstance.path("input").has("null")).isFalse();
+            softly.assertThat(workflowInstance.path("output").path("message").asText()).isEqualTo("Message from Alice to me!");
+            softly.assertThat(workflowInstance.path("output").has("null")).isFalse();
+        });
     }
 
     private static void executeDevUIWorkflow(int times) {

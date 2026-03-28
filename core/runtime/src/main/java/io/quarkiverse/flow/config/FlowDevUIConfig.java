@@ -1,6 +1,5 @@
 package io.quarkiverse.flow.config;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -10,21 +9,9 @@ import io.smallrye.config.WithDefault;
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public interface FlowDevUIConfig {
 
-    /**
-     * Storage type for workflow instances in dev mode.
-     */
-    enum StorageType {
-        /**
-         * In-memory storage. Data is lost when the application restarts.
-         */
-        IN_MEMORY,
+    FlowDevUIBackendConfig backend();
 
-        /**
-         * File-based storage using H2 MVStore. Data is persisted to disk
-         * and survives application restarts.
-         */
-        MVSTORE
-    }
+    MVStoreConfig mvstore();
 
     /**
      * The type of storage to use for workflow instances in dev mode.
@@ -34,23 +21,6 @@ public interface FlowDevUIConfig {
      * </ul>
      */
     @WithDefault("mvstore")
-    StorageType storageType();
+    MVStoreConfig.StorageType storageType();
 
-    /**
-     * MVStore-specific configuration options.
-     * Only applicable when {@code storage-type=mvstore}.
-     */
-    MVStore mvstore();
-
-    @ConfigGroup
-    interface MVStore {
-
-        /**
-         * Path to the MVStore database file.
-         * <p>
-         * Only used when {@code storage-type=mvstore}.
-         */
-        @WithDefault("target/flow-devui.mv.db")
-        String dbPath();
-    }
 }
