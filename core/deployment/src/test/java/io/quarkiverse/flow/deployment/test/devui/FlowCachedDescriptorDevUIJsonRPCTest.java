@@ -20,11 +20,11 @@ public class FlowCachedDescriptorDevUIJsonRPCTest extends DevUIJsonRPCTest {
                     .addClasses(DevUIWorkflow.class, CachedDevUIDescriptorObserver.class));
 
     public FlowCachedDescriptorDevUIJsonRPCTest() {
-        super("quarkus-flow");
+        super("quarkus-flow", "http://localhost:8080");
     }
 
     @Test
-    void shouldListOnlyDefinitionsFromDevUIBackend() throws Exception {
+    public void shouldListOnlyDefinitionsFromDevUIBackend() throws Exception {
         JsonNode node = super.executeJsonRPCMethod("getWorkflows");
         assertEquals(2, node.size());
     }
