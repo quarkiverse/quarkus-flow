@@ -47,7 +47,7 @@ public abstract class AbstractDurableListenWorkflowIT {
      * </ol>
      */
     @Test
-    public void listen_workflow_should_be_restored_after_app_restart() throws InterruptedException {
+    public void listen_workflow_should_be_restored_after_app_restart() {
 
         // 1. Start the listen workflow
         RestAssured.given()
@@ -56,9 +56,24 @@ public abstract class AbstractDurableListenWorkflowIT {
                 .then()
                 .statusCode(202);
 
-        // Wait for async persistence to complete before triggering reload
-        // This ensures completed tasks (set, printMessage) are persisted
-        Thread.sleep(2000);
+        // Wait until the first task has definitely run and been persisted before reload.
+        Awaitility.await()
+                .atMost(Duration.ofSeconds(20))
+                .pollInterval(Duration.ofMillis(300))
+                .untilAsserted(() -> {
+                    DurableResource.DurableResult durableResult = RestAssured.given()
+                            .get("/durable/status")
+                            .then()
+                            .statusCode(200)
+                            .extract()
+                            .body()
+                            .as(DurableResource.DurableResult.class);
+
+                    Assertions.assertEquals(1, durableResult.printMessage(),
+                            "printMessage should have been called once before reload");
+                    Assertions.assertEquals(0, durableResult.printDecision(),
+                            "printDecision should not run before event emission");
+                });
 
         // 2. Trigger dev mode reload by modifying properties
         getDevModeTest().modifyResourceFile("application.properties", s -> s.replace("INFO", "DEBUG"));
@@ -97,8 +112,9 @@ public abstract class AbstractDurableListenWorkflowIT {
                             .body()
                             .as(DurableResource.DurableResult.class);
 
-                    Assertions.assertEquals(1, durableResult.printMessage(),
-                            "printMessage should have been called exactly once");
+                    Assertions.assertEquals(0, durableResult.printMessage(),
+                            "printMessage should have been called once before reload");
+
                     Assertions.assertEquals(1, durableResult.printDecision(),
                             "printDecision should have been called exactly once after event emission");
                 });
