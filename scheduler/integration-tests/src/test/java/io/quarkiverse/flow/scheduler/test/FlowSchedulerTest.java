@@ -11,11 +11,11 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.component.QuarkusComponentTest;
+import io.quarkus.test.junit.QuarkusTest;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.smallrye.common.annotation.Identifier;
 
-@QuarkusComponentTest
+@QuarkusTest
 public class FlowSchedulerTest {
     @Inject
     @Identifier("test:after-driven-schedule")
