@@ -4,13 +4,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.Optional;
 
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Alternative;
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -23,11 +25,10 @@ import io.fabric8.kubernetes.api.model.apps.ReplicaSetBuilder;
 import io.fabric8.kubernetes.api.model.coordination.v1.Lease;
 import io.fabric8.kubernetes.api.model.coordination.v1.LeaseBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.quarkus.test.InjectMock;
-import io.quarkus.test.component.QuarkusComponentTest;
+import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kubernetes.client.WithKubernetesTestServer;
 
-@QuarkusComponentTest
+@QuarkusTest
 @WithKubernetesTestServer
 public class LeaseServiceTest {
 
@@ -37,20 +38,30 @@ public class LeaseServiceTest {
     @Inject
     LeaseService leaseService;
 
-    @InjectMock
-    KubeInfoStrategy kubeInfo;
-
     @Inject
     PoolConfig poolConfig;
 
     @Inject
     LeaseGroupConfig leaseConfig;
 
+    @Alternative
+    @Priority(1)
+    @ApplicationScoped
+    static class TestKubeInfoStrategy implements KubeInfoStrategy {
+
+        @Override
+        public String namespace() {
+            return "default";
+        }
+
+        @Override
+        public String podName() {
+            return "pod-1";
+        }
+    }
+
     @BeforeEach
     void setup() {
-        when(kubeInfo.namespace()).thenReturn("default");
-        when(kubeInfo.podName()).thenReturn("pod-1");
-
         // Clean for test isolation
         client.leases().inNamespace("default").delete();
         client.pods().inNamespace("default").delete();
