@@ -22,6 +22,7 @@
         <module>durable-kubernetes</module>
         <module>scheduler</module>
         <module>bom</module>
+        <module>quarkus-platform-checks</module>
     </modules>
 
     <scm>
@@ -38,8 +39,8 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.log.level>OFF</quarkus.log.level>
 
-        <quarkus.version>3.33.0</quarkus.version>
-        <io.serverlessworkflow.version>7.14.1.Final</io.serverlessworkflow.version>
+        <quarkus.version>3.34.1</quarkus.version>
+        <io.serverlessworkflow.version>7.15.0.Final</io.serverlessworkflow.version>
         <io.cloudevents.version>4.0.1</io.cloudevents.version>
 
         <io.quarkiverse.jackson-jq.version>2.4.0</io.quarkiverse.jackson-jq.version>

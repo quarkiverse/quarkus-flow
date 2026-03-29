@@ -1,0 +1,130 @@
+name: Issue Tracker
+
+on:
+  workflow_call:
+    inputs:
+      build_outcome:
+        description: 'The outcome of the build step (success or failure)'
+        required: true
+        type: string
+      issue_label:
+        description: 'The label to use for the issue'
+        required: true
+        type: string
+      issue_title:
+        description: 'The title for the issue'
+        required: true
+        type: string
+      failure_description:
+        description: 'Description of what failed (e.g., "Quarkus Platform build", "Native compilation")'
+        required: true
+        type: string
+      run_url:
+        description: 'The URL of the workflow run that triggered this issue tracker'
+        required: true
+        type: string
+      team_mention:
+        description: 'GitHub team to mention in the issue'
+        required: false
+        type: string
+        default: '@quarkiverse/quarkiverse-flow-triage'
+
+permissions:
+  issues: write
+
+jobs:
+  track-issue:
+    name: Track Issue
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check if issue exists
+        id: check-issue
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              labels: '${{ inputs.issue_label }}',
+              per_page: 1
+            });
+            
+            const issue = issues.data[0];
+            core.setOutput('issue_number', issue ? issue.number : '');
+            core.setOutput('issue_state', issue ? issue.state : '');
+            return issue ? issue.number : null;
+      
+      - name: Close issue on success
+        if: inputs.build_outcome == 'success' && steps.check-issue.outputs.issue_number != '' && steps.check-issue.outputs.issue_state == 'open'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const issueNumber = parseInt('${{ steps.check-issue.outputs.issue_number }}');
+            
+            // close the issue
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              state: 'closed'
+            });
+      
+      - name: Create or update issue on failure
+        if: inputs.build_outcome == 'failure'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const issueNumber = '${{ steps.check-issue.outputs.issue_number }}';
+            const issueState = '${{ steps.check-issue.outputs.issue_state }}';
+            const runUrl = '${{ inputs.run_url }}';
+            
+            const issueBody = `# 🔴 ${{ inputs.issue_title }}
+            
+            The nightly ${{ inputs.failure_description }} test has failed.
+            
+            **Workflow Run:** ${runUrl}
+            
+            **Date:** ${new Date().toISOString()}
+            
+            ${{ inputs.team_mention }} Please investigate and fix this issue.
+            
+            ---
+            
+            This issue will be automatically updated on each nightly run until the ${{ inputs.failure_description }} passes.`;
+            
+            if (issueNumber) {
+              if (issueState === 'closed') {
+                // reopen the issue
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: parseInt(issueNumber),
+                  state: 'open'
+                });
+                
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: parseInt(issueNumber),
+                  body: `🔴 ${{ inputs.failure_description }} is failing again!\n\n**Workflow Run:** ${runUrl}\n\n**Date:** ${new Date().toISOString()}\n\n${{ inputs.team_mention }} Please investigate.`
+                });
+              } else {
+                // call the team again
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: parseInt(issueNumber),
+                  body: `🔴 ${{ inputs.failure_description }} is still failing.\n\n**Workflow Run:** ${runUrl}\n\n**Date:** ${new Date().toISOString()}\n\n${{ inputs.team_mention }} This issue requires attention.`
+                });
+              }
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '${{ inputs.issue_title }}',
+                body: issueBody,
+                labels: ['${{ inputs.issue_label }}']
+              });
+            }
