@@ -6,7 +6,7 @@ include::includes/attributes.adoc[]
 ====
 **Java DSL is Recommended**
 
-While this cookbook provides extensive examples for defining workflows using the CNCF Serverless Workflow YAML DSL, Quarkus Flow *strongly recommends the Java DSL* as the primary method for defining workflows. The Java DSL offers superior type safety, refactoring capabilities, and seamless IDE integration.
+While this cookbook provides extensive examples for defining workflows using the CNCF Serverless Workflow YAML DSL (Serverless Workflow), Quarkus Flow *strongly recommends the Java DSL* as the primary method for defining workflows. The Java DSL offers superior type safety, refactoring capabilities, and seamless IDE integration.
 
 These YAML examples are ideal for teams maintaining specification files, or sharing definitions across different runtime environments.
 ====
@@ -108,7 +108,7 @@ do:
 ----
 
 == 5. Authentication (OAuth2)
-When calling secure endpoints, you can define the authentication mechanism inline. The DSL supports Bearer tokens, OIDC, and OAuth2.
+When calling secure endpoints, you can define the authentication mechanism inline. The DSL supports Bearer tokens, OIDC, and OAuth 2.0.
 
 [source,yaml]
 ----
