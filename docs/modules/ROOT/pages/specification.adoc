@@ -7,6 +7,11 @@ This page is a fast orientation to the **CNCF Serverless Workflow Specification 
 [.lead]
 If you understand these concepts, you can read any Quarkus Flow example and know exactly what it’s doing.
 
+[TIP]
+====
+Check out the xref:quarkus-flow-cookbook.adoc[] to see these concepts applied in real-world, contextualized YAML examples.
+====
+
 == What the spec gives you (in 30 seconds)
 
 * **Task-based workflow model** — compose sequences that **set** data, **call** services or functions, **emit** or **listen** to events, and control the flow via **switch**, **for**, or **try** tasks.
@@ -107,6 +112,8 @@ Crucially, Quarkus Flow leans into the Quarkus "Ahead-of-Time" philosophy by dis
 
 Now that you understand the underlying specification, here is where you can see these concepts applied in Quarkus Flow:
 
+* xref:quarkus-flow-cookbook.adoc[]: A comprehensive collection of practical, copy-and-paste YAML examples for the Serverless Workflow DSL.
+* xref:workflow-definitions.adoc[Define workflows from YAML]: review the syntax for discovering and injecting YAML workflows.
 * xref:dsl-cheatsheet.adoc[Java DSL Cheatsheet]: A quick reference of all the Java methods that map directly to these CNCF tasks.
 * xref:data-flow.adoc[Data flow and context management]: A deep dive into how `input`, `output`, and `export` manipulate the workflow data context.
 * xref:getting-started.adoc[Getting Started]: Build your first Spec-compliant workflow in 5 minutes.
