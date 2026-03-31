@@ -68,10 +68,6 @@
             <artifactId>quarkus-arc</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jackson</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.quarkiverse.jackson-jq</groupId>
             <artifactId>quarkus-jackson-jq</artifactId>
         </dependency>
@@ -85,6 +81,7 @@
             <version>${project.version}</version>
             <optional>true</optional>
         </dependency>
+
         <!-- Required by serverlessworkflow-core-http HttpExecutor service module -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -95,10 +92,13 @@
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
         </dependency>
-
         <dependency>
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-fault-tolerance-standalone</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.microprofile.health</groupId>
+            <artifactId>microprofile-health-api</artifactId>
         </dependency>
 
         <!-- Unit Tests Dependencies -->

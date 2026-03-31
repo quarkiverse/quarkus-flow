@@ -23,19 +23,25 @@ public class WorkflowRegistryInitializer {
     @Inject
     WorkflowApplication application;
 
+    private volatile WorkflowApplicationInfo appInfo = new WorkflowApplicationInfo();
+
     void onStart(@Observes StartupEvent ev) {
         LOG.debug("Flow: Starting Workflow Registry");
         CompletableFuture.runAsync(() -> {
             try {
                 // Force the CDI container to fully initialize the WorkflowApplication.
                 application.id();
-                // Now it is perfectly safe to warm up the registry.
                 LOG.info("Flow: WorkflowApplication is ready. Starting Workflow Registry warmup.");
                 registry.warmUp();
-
+                appInfo = new WorkflowApplicationInfo(application.id());
             } catch (Exception e) {
                 LOG.error("Flow: Failed to initialize and warm up workflows", e);
+                appInfo = new WorkflowApplicationInfo(e);
             }
         });
+    }
+
+    public WorkflowApplicationInfo getAppInfo() {
+        return appInfo;
     }
 }
