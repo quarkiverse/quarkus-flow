@@ -2,6 +2,7 @@ package io.quarkiverse.flow.persistence.common;
 
 import java.util.Map;
 
+import io.quarkiverse.flow.internal.WorkflowApplicationReady;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -10,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.quarkus.arc.properties.IfBuildProperty;
-import io.quarkus.runtime.StartupEvent;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
@@ -26,7 +26,7 @@ public class FlowPersistenceRestore {
     @Inject
     WorkflowApplication application;
 
-    void restoreInstances(@Observes StartupEvent event) {
+    void restoreInstances(@Observes WorkflowApplicationReady event) {
         Map<WorkflowDefinitionId, WorkflowDefinition> definitions = application.workflowDefinitions();
         LOG.debug("Restoring workflow instances from persistence, found {} workflow definitions", definitions.size());
         for (WorkflowDefinition def : definitions.values()) {

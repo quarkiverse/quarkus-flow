@@ -3,6 +3,7 @@ package io.quarkiverse.flow.internal;
 import java.util.concurrent.CompletableFuture;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
@@ -23,6 +24,9 @@ public class WorkflowRegistryInitializer {
     @Inject
     WorkflowApplication application;
 
+    @Inject
+    Event<WorkflowApplicationReady> applicationReadyEvent;
+
     private volatile WorkflowApplicationInfo appInfo = new WorkflowApplicationInfo();
 
     void onStart(@Observes StartupEvent ev) {
@@ -34,6 +38,7 @@ public class WorkflowRegistryInitializer {
                 LOG.info("Flow: WorkflowApplication is ready. Starting Workflow Registry warmup.");
                 registry.warmUp();
                 appInfo = new WorkflowApplicationInfo(application.id());
+                applicationReadyEvent.fire(new WorkflowApplicationReady(application.id()));
             } catch (Exception e) {
                 LOG.error("Flow: Failed to initialize and warm up workflows", e);
                 appInfo = new WorkflowApplicationInfo(e);
