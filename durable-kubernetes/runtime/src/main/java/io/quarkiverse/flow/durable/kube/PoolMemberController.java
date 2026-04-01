@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.durable.kube;
 
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -47,10 +48,16 @@ public class PoolMemberController extends PoolController {
             return;
 
         try {
-            if (!acquireLease())
+            if (!acquireLease()) {
                 LOG.warn(
                         "Flow: Failed to acquire lease on {}, waiting for next scheduled cycle to try again. Won't process any new workflows until there",
                         kubeInfo.podName());
+                // If the app hasn't successfully bound a lease yet, retry quickly
+                // in case the Leader Controller is currently generating the lease.
+                if (!hasLease() && executorService != null && !executorService.isShutdown()) {
+                    executorService.schedule(this, 2, TimeUnit.SECONDS);
+                }
+            }
         } catch (Exception e) {
             LOG.warn("Lease acquisition failed on pod {}", kubeInfo.podName(), e);
         } finally {

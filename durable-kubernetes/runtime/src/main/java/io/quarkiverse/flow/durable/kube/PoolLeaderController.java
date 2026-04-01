@@ -29,9 +29,6 @@ public class PoolLeaderController extends PoolController {
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     @Inject
-    FlowDurableKubeConfig settings;
-
-    @Inject
     LeaseGroupConfig leaseConfig;
 
     @Inject

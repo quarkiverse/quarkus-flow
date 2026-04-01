@@ -15,6 +15,8 @@ public class Fabric8KubeInfoStrategy implements KubeInfoStrategy {
 
     private static final String POD_NAME_ENV_VAR = "POD_NAME";
     private static final String NAMESPACE_ENV_VAR = "POD_NAMESPACE";
+    // Usually, tools add this env var to deployments - we can use it as an alternative in case users forgot to set POD_NAMESPACE
+    private static final String K8S_NAMESPACE_ENV_VAR = "KUBERNETES_NAMESPACE";
     private static final String HOSTNAME_ENV_VAR = "HOSTNAME";
 
     private static final Path SERVICE_ACCOUNT_NAMESPACE_PATH = Path
@@ -71,6 +73,10 @@ public class Fabric8KubeInfoStrategy implements KubeInfoStrategy {
 
     protected String resolveNamespaceOrNull() {
         String namespace = System.getenv(NAMESPACE_ENV_VAR);
+        if (namespace != null && !namespace.isBlank())
+            return namespace;
+
+        namespace = System.getenv(K8S_NAMESPACE_ENV_VAR);
         if (namespace != null && !namespace.isBlank())
             return namespace;
 

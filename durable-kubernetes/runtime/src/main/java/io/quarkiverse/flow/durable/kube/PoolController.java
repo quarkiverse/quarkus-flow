@@ -1,8 +1,9 @@
 package io.quarkiverse.flow.durable.kube;
 
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -17,7 +18,7 @@ import io.quarkus.scheduler.Scheduler;
 public abstract class PoolController implements Runnable {
 
     private static final Logger LOG = LoggerFactory.getLogger(PoolController.class);
-    protected ExecutorService executorService;
+    protected ScheduledExecutorService executorService;
 
     @Inject
     Scheduler scheduler;
@@ -45,10 +46,12 @@ public abstract class PoolController implements Runnable {
         }
         String scheduledExecutorName = scheduledExecutorName();
         LOG.info("Flow: Initializing pool controller '{}' scheduler", scheduledExecutorName);
-        executorService = Executors.newSingleThreadExecutor(Executors.defaultThreadFactory());
+        executorService = Executors.newSingleThreadScheduledExecutor(Executors.defaultThreadFactory());
         String delayed = computeSchedulerDelay();
 
         LOG.debug("Setting delayed controller '{}' executor to {}", scheduledExecutorName, delayed);
+
+        executorService.schedule(this, Long.parseLong(delayed.replace("s", "")), TimeUnit.SECONDS);
 
         scheduler.newJob(scheduledExecutorName)
                 .setInterval(schedulerConfig().interval())
