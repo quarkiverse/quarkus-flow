@@ -2,7 +2,6 @@ package io.quarkiverse.flow.persistence.common;
 
 import java.util.Map;
 
-import io.quarkiverse.flow.internal.WorkflowApplicationReady;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -10,6 +9,7 @@ import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.quarkiverse.flow.internal.WorkflowApplicationReady;
 import io.quarkus.arc.properties.IfBuildProperty;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
