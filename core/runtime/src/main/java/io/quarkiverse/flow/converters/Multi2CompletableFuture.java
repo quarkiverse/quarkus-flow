@@ -17,4 +17,8 @@ public class Multi2CompletableFuture implements DataTypeConverter<Multi, Complet
     public Class<Multi> sourceType() {
         return Multi.class;
     }
+
+    public Class<CompletableFuture> targetType() {
+        return CompletableFuture.class;
+    }
 }
