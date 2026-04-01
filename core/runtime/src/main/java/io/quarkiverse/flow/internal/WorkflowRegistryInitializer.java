@@ -10,6 +10,7 @@ import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.StartupEvent;
 import io.serverlessworkflow.impl.WorkflowApplication;
 
@@ -27,23 +28,35 @@ public class WorkflowRegistryInitializer {
     @Inject
     Event<WorkflowApplicationReady> applicationReadyEvent;
 
+    @Inject
+    LaunchMode launchMode;
+
     private volatile WorkflowApplicationInfo appInfo = new WorkflowApplicationInfo();
 
     void onStart(@Observes StartupEvent ev) {
         LOG.debug("Flow: Starting Workflow Registry");
-        CompletableFuture.runAsync(() -> {
-            try {
-                // Force the CDI container to fully initialize the WorkflowApplication.
-                application.id();
-                LOG.info("Flow: WorkflowApplication is ready. Starting Workflow Registry warmup.");
-                registry.warmUp();
-                appInfo = new WorkflowApplicationInfo(application.id());
-                applicationReadyEvent.fire(new WorkflowApplicationReady(application.id()));
-            } catch (Exception e) {
-                LOG.error("Flow: Failed to initialize and warm up workflows", e);
-                appInfo = new WorkflowApplicationInfo(e);
-            }
-        });
+        if (launchMode == LaunchMode.DEVELOPMENT) {
+            LOG.debug("Flow: {} mode detected. Warmup configured as SYNC.", launchMode);
+            doStart();
+        } else {
+            LOG.debug("Flow: {} mode detected. Warmup configured as ASYNC.", launchMode);
+            CompletableFuture.runAsync(this::doStart);
+        }
+    }
+
+    private void doStart() {
+        try {
+            // Force the CDI container to fully initialize the WorkflowApplication.
+            application.id();
+            LOG.info("Flow: WorkflowApplication is ready. Starting Workflow Registry warmup.");
+            registry.warmUp();
+            appInfo = new WorkflowApplicationInfo(application.id());
+            LOG.info("Flow: Workflow Registry warmup complete.");
+            applicationReadyEvent.fire(new WorkflowApplicationReady(application.id()));
+        } catch (Exception e) {
+            LOG.error("Flow: Failed to initialize and warm up workflows", e);
+            appInfo = new WorkflowApplicationInfo(e);
+        }
     }
 
     public WorkflowApplicationInfo getAppInfo() {
