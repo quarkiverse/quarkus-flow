@@ -40,12 +40,6 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
-        </dependency>
-
-        <!-- Health endpoints (optional but handy on k8s) -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-health</artifactId>
         </dependency>
 
@@ -60,6 +54,13 @@
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow-durable-kubernetes</artifactId>
+            <version>${quarkus.flow.version}</version>
+        </dependency>
+
+        <!-- Persistence to actually have persisted state across restarts / pod drain -->
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-redis</artifactId>
             <version>${quarkus.flow.version}</version>
         </dependency>
 

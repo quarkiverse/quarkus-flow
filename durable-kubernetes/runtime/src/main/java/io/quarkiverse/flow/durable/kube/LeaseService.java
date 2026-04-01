@@ -22,6 +22,8 @@ import io.fabric8.kubernetes.api.model.coordination.v1.Lease;
 import io.fabric8.kubernetes.api.model.coordination.v1.LeaseBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.quarkiverse.flow.durable.kube.config.LeaseGroupConfig;
+import io.quarkiverse.flow.durable.kube.config.PoolConfig;
 
 /**
  * Manages the creation of Kubernetes Lease objects to support the workers pool.

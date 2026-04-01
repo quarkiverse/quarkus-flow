@@ -1,10 +1,12 @@
 package io.quarkiverse.flow.durable.kube;
 
+import static io.quarkiverse.flow.durable.kube.config.DevModeConfig.DEV_MODE_ENABLED_CONFIG;
+
 import jakarta.enterprise.context.ApplicationScoped;
 
-import io.quarkus.arc.profile.IfBuildProfile;
+import io.quarkus.arc.properties.IfBuildProperty;
 
-@IfBuildProfile("dev")
+@IfBuildProperty(name = DEV_MODE_ENABLED_CONFIG, stringValue = "true", enableIfMissing = true)
 @ApplicationScoped
 public class DevModeKubeInfoStrategy extends Fabric8KubeInfoStrategy {
 

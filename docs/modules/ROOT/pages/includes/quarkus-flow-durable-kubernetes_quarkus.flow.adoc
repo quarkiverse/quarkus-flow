@@ -7,28 +7,26 @@ h|[.header-title]##Configuration property##
 h|Type
 h|Default
 
-a|icon:lock[title=Fixed at build time] [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-pool-name]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-pool-name[`+++quarkus.flow.durable.kube.pool.name+++`]##
+a|icon:lock[title=Fixed at build time] [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-dev-dev-mode-strategy-enabled]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-dev-dev-mode-strategy-enabled[`+++quarkus.flow.durable.kube.dev.dev-mode-strategy-enabled+++`]##
 ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.durable.kube.pool.name+++[]
+config_property_copy_button:+++quarkus.flow.durable.kube.dev.dev-mode-strategy-enabled+++[]
 endif::add-copy-button-to-config-props[]
 
 
 [.description]
 --
-It's highly recommended that users set this property to not have objects clashing on Kubernetes.
-
-The group pool name used to create the Lease objects coordination on the cluster. It's used to name and label every object created by the pool.
+If true, enables the dev-mode/test-mode strategy that avoids querying the K8s cluster. Defaults to true.
 
 
 ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DURABLE_KUBE_POOL_NAME+++[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DURABLE_KUBE_DEV_DEV_MODE_STRATEGY_ENABLED+++[]
 endif::add-copy-button-to-env-var[]
 ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_DURABLE_KUBE_POOL_NAME+++`
+Environment variable: `+++QUARKUS_FLOW_DURABLE_KUBE_DEV_DEV_MODE_STRATEGY_ENABLED+++`
 endif::add-copy-button-to-env-var[]
 --
-|string
-|`+++flow-pool+++`
+|boolean
+|`+++true+++`
 
 a|icon:lock[title=Fixed at build time] [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-schedulers-leader-interval]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-schedulers-leader-interval[`+++quarkus.flow.durable.kube.schedulers.leader.interval+++`]##
 ifdef::add-copy-button-to-config-props[]
@@ -113,6 +111,29 @@ endif::add-copy-button-to-env-var[]
 --
 |string
 |`+++random+++`
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-pool-name]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-pool-name[`+++quarkus.flow.durable.kube.pool.name+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.durable.kube.pool.name+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+It's highly recommended that users set this property to not have objects clashing on Kubernetes.
+
+The group pool name used to create the Lease objects coordination on the cluster. It's used to name and label every object created by the pool.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DURABLE_KUBE_POOL_NAME+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_DURABLE_KUBE_POOL_NAME+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|`+++flow-pool+++`
 
 a| [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-lease-member-duration]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-lease-member-duration[`+++quarkus.flow.durable.kube.lease.member.duration+++`]##
 ifdef::add-copy-button-to-config-props[]

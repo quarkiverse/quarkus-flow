@@ -1,5 +1,7 @@
 package io.quarkiverse.flow.durable.kube;
 
+import static io.quarkiverse.flow.durable.kube.config.DevModeConfig.DEV_MODE_ENABLED_CONFIG;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -10,10 +12,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.fabric8.kubernetes.api.model.OwnerReference;
-import io.quarkus.arc.profile.IfBuildProfile;
+import io.quarkus.arc.properties.IfBuildProperty;
 
+@IfBuildProperty(name = DEV_MODE_ENABLED_CONFIG, stringValue = "true", enableIfMissing = true)
 @ApplicationScoped
-@IfBuildProfile("dev")
 public class DevPoolTopologyResolver implements PoolTopologyResolver {
 
     private static final Logger LOG = LoggerFactory.getLogger(DevPoolTopologyResolver.class.getName());

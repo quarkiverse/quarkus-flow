@@ -9,6 +9,9 @@ import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.eclipse.microprofile.health.Readiness;
 
+import io.quarkiverse.flow.durable.kube.config.LeaseGroupConfig;
+import io.quarkiverse.flow.durable.kube.config.PoolConfig;
+
 @Readiness
 @ApplicationScoped
 public class LeaseAcquisitionHealthCheck implements HealthCheck {
