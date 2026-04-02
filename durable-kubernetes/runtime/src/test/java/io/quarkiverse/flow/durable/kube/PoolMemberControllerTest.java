@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.fabric8.kubernetes.api.model.coordination.v1.LeaseBuilder;
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 
@@ -42,11 +43,13 @@ class PoolMemberControllerTest {
         // make sure podName is always stable in these tests
         when(kubeInfo.podName()).thenReturn(POD);
 
+        Object target = ClientProxy.unwrap(controller);
+
         var f = PoolMemberController.class.getDeclaredField("leaseName");
         f.setAccessible(true);
 
         @SuppressWarnings("unchecked")
-        AtomicReference<String> ref = (AtomicReference<String>) f.get(controller);
+        AtomicReference<String> ref = (AtomicReference<String>) f.get(target);
         ref.set(null);
     }
 
@@ -118,11 +121,14 @@ class PoolMemberControllerTest {
     }
 
     private void seedLeaseName(String leaseName) throws Exception {
+        Object target = ClientProxy.unwrap(controller);
+
         var f = PoolMemberController.class.getDeclaredField("leaseName");
         f.setAccessible(true);
 
+        // 2. Set the value on the real instance
         @SuppressWarnings("unchecked")
-        AtomicReference<String> ref = (AtomicReference<String>) f.get(controller);
+        AtomicReference<String> ref = (AtomicReference<String>) f.get(target);
         ref.set(leaseName);
     }
 }

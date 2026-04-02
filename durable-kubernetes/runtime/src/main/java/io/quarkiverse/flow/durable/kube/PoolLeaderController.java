@@ -3,14 +3,15 @@ package io.quarkiverse.flow.durable.kube;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.fabric8.kubernetes.api.model.coordination.v1.Lease;
-import io.quarkus.runtime.Startup;
+import io.quarkiverse.flow.durable.kube.config.LeaseGroupConfig;
+import io.quarkiverse.flow.durable.kube.config.PoolConfig;
 
 /**
  * Runs on every pod on a given interval scheduled via property configuration (check the Quarkus Flow Durable Workflows docs).
@@ -18,8 +19,7 @@ import io.quarkus.runtime.Startup;
  * Every 30 seconds (by default) checks whether this instance is the leader.
  * If true, guarantees that every pod instance in this deployment has a Lease to start accepting instance requests.
  */
-@Startup
-@Singleton
+@ApplicationScoped
 public class PoolLeaderController extends PoolController {
 
     private static final String POOL_LEADER_NAME_FMT = "flow-pool-leader-%s";

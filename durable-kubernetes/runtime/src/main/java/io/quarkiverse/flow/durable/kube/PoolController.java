@@ -5,13 +5,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.quarkiverse.flow.durable.kube.config.LeaseGroupConfig;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.Scheduler;
 
@@ -29,6 +30,9 @@ public abstract class PoolController implements Runnable {
     @Inject
     KubeInfoStrategy kubeInfo;
 
+    @Inject
+    DevModeStrategy devModeStrategy;
+
     protected String computeSchedulerDelay() {
         String schedulerInitialDelay = schedulerConfig().initialDelay();
         if (SchedulerGroupConfig.SCHEDULER_INITIAL_DELAY_DEFAULT.equals(schedulerInitialDelay)) {
@@ -39,12 +43,15 @@ public abstract class PoolController implements Runnable {
         return schedulerInitialDelay;
     }
 
-    @PostConstruct
-    void init() {
+    protected void onLeaseStartup(@Observes LeaseStartupEvent ev) {
         if (!leaseConfig().enabled()) {
             return;
         }
         String scheduledExecutorName = scheduledExecutorName();
+        if (devModeStrategy.enabled()) {
+            LOG.debug("Flow: pool controller '{}' disabled by dev mode strategy settings", scheduledExecutorName);
+            return;
+        }
         LOG.info("Flow: Initializing pool controller '{}' scheduler", scheduledExecutorName);
         executorService = Executors.newSingleThreadScheduledExecutor(Executors.defaultThreadFactory());
         String delayed = computeSchedulerDelay();
@@ -64,6 +71,10 @@ public abstract class PoolController implements Runnable {
 
     @PreDestroy
     public void release() {
+        if (devModeStrategy.enabled()) {
+            return;
+        }
+
         try {
             scheduler.unscheduleJob(scheduledExecutorName());
             if (executorService != null) {
