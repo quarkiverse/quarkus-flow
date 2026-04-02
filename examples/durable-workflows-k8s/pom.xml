@@ -36,11 +36,15 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest</artifactId>
+            <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-health</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-websockets</artifactId>
         </dependency>
 
         <!-- Quarkus Flow core -->
@@ -141,6 +145,8 @@
         <profile>
             <id>kind</id>
             <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
                 <quarkus.profile>kind</quarkus.profile>
             </properties>
             <dependencies>

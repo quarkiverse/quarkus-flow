@@ -39,7 +39,6 @@ public class MemberLeaseCoordinator {
                 } else {
                     LOG.debug("Lease '{}' has been lost ", evt.leaseName());
                 }
-
             }
         }
     }

@@ -1,5 +1,7 @@
 package org.acme.flow.durable.kube;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
 import io.smallrye.common.annotation.Blocking;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -11,11 +13,14 @@ import jakarta.ws.rs.core.Response;
 @Produces(MediaType.APPLICATION_JSON)
 public class DelayedServiceResource {
 
+    @ConfigProperty(defaultValue = "1000", name = "org.acme.flow.durable.kube.sleep-seconds")
+    int sleepSeconds;
+
     @GET
     @Path("/operation")
     @Blocking
     public Response delayedOperation() throws InterruptedException {
-        Thread.sleep(5000);
+        Thread.sleep(sleepSeconds * 1000L);
         return Response.ok("{ \"response\": \"OK\" }").build();
     }
 

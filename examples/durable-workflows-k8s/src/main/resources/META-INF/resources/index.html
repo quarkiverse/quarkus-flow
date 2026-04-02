@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Durable Workflow Orchestrator</title>
+    <style>
+        :root {
+            --bg-base: #020617;
+            --surface: #0f172a;
+            --surface-hover: #1e293b;
+            --border: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --brand: #3b82f6;
+            --brand-glow: rgba(59, 130, 246, 0.5);
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #fbbf24;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 3rem 1rem;
+            display: flex;
+            justify-content: center;
+            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, transparent 50%);
+        }
+
+        .dashboard {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Header & Status */
+        .header-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 24px 38px 3px rgba(0, 0, 0, 0.14);
+        }
+
+        .title-group h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; }
+        .title-group p { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: var(--surface-hover);
+            padding: 0.5rem 1rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid var(--border);
+        }
+
+        .ping { position: relative; display: flex; height: 12px; width: 12px; }
+        .ping-blob { position: absolute; height: 100%; width: 100%; border-radius: 50%; opacity: 0.75; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite; }
+        .ping-dot { position: relative; display: inline-flex; height: 12px; width: 12px; border-radius: 50%; }
+
+        @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
+
+        .status-connected .ping-blob, .status-connected .ping-dot { background-color: var(--success); }
+        .status-connected .status-text { color: var(--success); }
+
+        .status-disconnected .ping-blob { animation: none; }
+        .status-disconnected .ping-dot { background-color: var(--error); box-shadow: 0 0 10px var(--error); }
+        .status-disconnected .status-text { color: var(--error); }
+
+        /* Controls */
+        .controls { display: flex; gap: 1rem; }
+
+        button {
+            padding: 0.875rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--brand);
+            color: white;
+            box-shadow: 0 0 15px var(--brand-glow);
+        }
+        .btn-primary:hover:not(:disabled) { background-color: #2563eb; transform: translateY(-1px); }
+        .btn-primary:active:not(:disabled) { transform: translateY(1px); }
+        .btn-primary:disabled { background-color: var(--border); color: var(--text-muted); box-shadow: none; cursor: not-allowed; }
+
+        .btn-secondary { background-color: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-secondary:hover { background-color: var(--surface-hover); }
+
+        /* Table */
+        .log-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .log-header {
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--border);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); }
+        th { background: rgba(0,0,0,0.2); font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
+
+        tbody tr { transition: background-color 0.2s; }
+        tbody tr:hover { background-color: rgba(255, 255, 255, 0.02); }
+        tbody tr:last-child td { border-bottom: none; }
+
+        .empty-state { text-align: center; padding: 3rem !important; color: var(--text-muted); font-style: italic; }
+
+        /* Animations */
+        .row-enter {
+            animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            background-color: rgba(16, 185, 129, 0.1);
+        }
+
+        @keyframes slideIn {
+            0% { opacity: 0; transform: translateY(-10px); }
+            100% { opacity: 1; transform: translateY(0); background-color: transparent; }
+        }
+
+        .badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+
+    <div class="header-panel">
+        <div class="title-group">
+            <h1>Durable Orchestrator</h1>
+            <p>Native Serverless Workflow Engine</p>
+        </div>
+        <div class="connection-status status-disconnected" id="connStatus">
+            <div class="ping">
+                <span class="ping-blob"></span>
+                <span class="ping-dot"></span>
+            </div>
+            <span class="status-text" id="connText">Connecting...</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-primary" id="execBtn" onclick="executeWorkflow()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            Fire Async Event
+        </button>
+        <button class="btn-secondary" onclick="clearLogs()">Clear Logs</button>
+    </div>
+
+    <div class="log-panel">
+        <div class="log-header">Live Execution Stream</div>
+        <table>
+            <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Workflow ID</th>
+                <th>Duration</th>
+                <th>Status</th>
+            </tr>
+            </thead>
+            <tbody id="eventLog">
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    const MAX_EVENTS = 50;
+    let ws;
+    let eventsList = [];
+
+    function connect() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUri = `${protocol}//${window.location.host}/api/workflow/stream`;
+
+        ws = new WebSocket(wsUri);
+        const statusDiv = document.getElementById('connStatus');
+        const statusText = document.getElementById('connText');
+
+        ws.onopen = () => {
+            statusDiv.className = 'connection-status status-connected';
+            statusText.innerText = 'Stream Active';
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const msg = JSON.parse(event.data);
+
+                if (msg.type === 'HISTORY') {
+                    // Hydrate from backend state silently
+                    eventsList = msg.events;
+                    renderTable(false);
+                }
+                else if (msg.type === 'LIVE') {
+                    // Add new event to the top and animate
+                    eventsList.unshift(msg.event);
+                    if (eventsList.length > MAX_EVENTS) eventsList.pop();
+                    renderTable(true);
+                }
+            } catch (e) {
+                console.error("Failed to parse event data", e);
+            }
+        };
+
+        ws.onclose = () => {
+            statusDiv.className = 'connection-status status-disconnected';
+            statusText.innerText = 'Pod Offline. Reconnecting...';
+            setTimeout(connect, 2000); // Aggressive auto-reconnect
+        };
+
+        ws.onerror = () => { ws.close(); };
+    }
+
+    function formatTime(timestampMillis) {
+        if (!timestampMillis) return 'N/A';
+        return new Date(timestampMillis).toLocaleTimeString('en-US', {
+            hour12: false, hour: "numeric", minute: "numeric", second: "numeric", fractionalSecondDigits: 3
+        });
+    }
+
+    function renderTable(animateTopRow = false) {
+        const tbody = document.getElementById('eventLog');
+
+        if (eventsList.length === 0) {
+            tbody.innerHTML = '<tr id="emptyState"><td colspan="4" class="empty-state">Waiting for workflow completions...</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = '';
+
+        eventsList.forEach((evt, index) => {
+            const row = document.createElement('tr');
+            if (index === 0 && animateTopRow) row.className = 'row-enter';
+
+            const timeStr = formatTime(evt.completedAt);
+            const duration = evt.durationMillis ? `${evt.durationMillis}ms` : 'N/A';
+            const result = evt.httpResult || 'SUCCESS';
+
+            // Read the actual instance ID populated by the workflow descriptor
+            const rawWfId = evt.workflowInstanceID || 'Unknown';
+            const displayWfId = rawWfId !== 'Unknown' ? rawWfId.substring(0, 8) + '...' : rawWfId;
+
+            row.innerHTML = `
+                    <td style="color: var(--text-muted); font-family: monospace;">${timeStr}</td>
+                    <td style="color: var(--text-main);" title="${rawWfId}">${displayWfId}</td>
+                    <td style="color: var(--warning); font-family: monospace;">${duration}</td>
+                    <td><span class="badge">${result}</span></td>
+                `;
+            tbody.appendChild(row);
+        });
+    }
+
+    async function executeWorkflow() {
+        const btn = document.getElementById('execBtn');
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Dispatching...`;
+
+        try {
+            await fetch('/api/workflow', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+        } catch (error) {
+            console.error("Failed to start workflow", error);
+        } finally {
+            setTimeout(() => { btn.disabled = false; btn.innerHTML = originalHtml; }, 500);
+        }
+    }
+
+    function clearLogs() {
+        // Note: This only clears the UI. To fully clear the backend history buffer,
+        // you would need to add a REST endpoint in your Java code and call it here.
+        eventsList = [];
+        renderTable();
+    }
+
+    // Boot
+    connect();
+</script>
+</body>
+</html>

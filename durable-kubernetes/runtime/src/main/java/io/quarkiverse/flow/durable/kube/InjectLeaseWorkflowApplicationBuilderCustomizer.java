@@ -23,6 +23,9 @@ public class InjectLeaseWorkflowApplicationBuilderCustomizer implements Workflow
     @Inject
     LeaseGroupConfig leaseConfig;
 
+    @Inject
+    DevModeStrategy devModeStrategy;
+
     @Override
     public int priority() {
         return 10;
@@ -33,6 +36,13 @@ public class InjectLeaseWorkflowApplicationBuilderCustomizer implements Workflow
         if (!leaseConfig.member().enabled()) {
             return;
         }
+
+        if (devModeStrategy.enabled()) {
+            LOG.info("Flow: Dev Mode detected. Bypassing Kubernetes Lease acquisition for instant startup.");
+            // Return early. The WorkflowApplication will fallback to a default/local UUID.
+            return;
+        }
+
         LOG.info("Flow: Binding Kubernetes Lease to Workflow Application ID");
 
         final String lease = memberLeaseCoordinator.awaitLease(Duration.ofSeconds(30));

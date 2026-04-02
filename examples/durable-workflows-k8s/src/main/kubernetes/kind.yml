@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: infra-config
+data:
+  QUARKUS_REDIS_HOSTS: "redis://redis.default.svc.cluster.local:6379"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: durable-flow-demo
+spec:
+  # Have to force this here since quarkus.kubernetes.strategy property is not working
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      containers:
+        - name: durable-flow-demo

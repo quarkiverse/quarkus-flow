@@ -30,6 +30,9 @@ public abstract class PoolController implements Runnable {
     @Inject
     KubeInfoStrategy kubeInfo;
 
+    @Inject
+    DevModeStrategy devModeStrategy;
+
     protected String computeSchedulerDelay() {
         String schedulerInitialDelay = schedulerConfig().initialDelay();
         if (SchedulerGroupConfig.SCHEDULER_INITIAL_DELAY_DEFAULT.equals(schedulerInitialDelay)) {
@@ -43,6 +46,9 @@ public abstract class PoolController implements Runnable {
     @PostConstruct
     void init() {
         if (!leaseConfig().enabled()) {
+            return;
+        }
+        if (devModeStrategy.enabled()) {
             return;
         }
         String scheduledExecutorName = scheduledExecutorName();
@@ -65,6 +71,10 @@ public abstract class PoolController implements Runnable {
 
     @PreDestroy
     public void release() {
+        if (devModeStrategy.enabled()) {
+            return;
+        }
+
         try {
             scheduler.unscheduleJob(scheduledExecutorName());
             if (executorService != null) {

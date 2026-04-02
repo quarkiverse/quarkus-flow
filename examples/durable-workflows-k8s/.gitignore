@@ -1,3 +1,4 @@
+.quarkus
 #Maven
 target/
 pom.xml.tag
