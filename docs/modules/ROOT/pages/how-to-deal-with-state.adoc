@@ -1,0 +1,143 @@
+= How to transform data between workflow tasks
+include::includes/attributes.adoc[]
+:page-role: howto
+:sectnums:
+
+This guide shows you how to control data flow between tasks in a workflow using `inputFrom`, `exportAs`, and `outputAs` transformations.
+
+== What you'll build
+
+You'll create a conference paper submission workflow that:
+
+1. Receives a paper proposal submission
+2. Validates and scores the proposal
+3. Enriches the data with submission metadata
+4. Sends a notification with the review result
+
+This demonstrates the three key data transformation methods:
+
+* `inputFrom` – to shape what each task receives as input
+* `exportAs` – to control what gets persisted in the workflow data
+* `outputAs` – to pass enriched data between tasks without modifying workflow state
+
+[TIP]
+====
+For conceptual background on data flow, see xref:data-flow.adoc[Data Flow and Transformations].
+For a quick syntax reference, see xref:data-flow.adoc#quick-reference[Quick Reference].
+====
+
+== Prerequisites
+
+* A Quarkus Flow project (see xref:getting-started.adoc[Getting Started])
+* Basic understanding of Java records and functional programming
+
+== Step 1: Define your data types
+
+Create the records that represent data at different stages of the workflow:
+
+[source,java]
+----
+include::{examples-dir}org/acme/dataflow/Call4PapersFlow.java[tag=data-types]
+----
+
+== Step 2: Create the workflow with inputFrom
+
+Start by creating a workflow that transforms the input submission into your domain model:
+
+[source,java]
+----
+include::{examples-dir}org/acme/dataflow/Call4PapersFlow.java[tag=validate-proposal]
+----
+
+<1> Add CDI annotation to make the flow injectable
+<2> Extend `Flow` to define a workflow descriptor
+
+In the `validateProposal` task, we expect a `Proposal` as input, but the workflow receives a `ProposalSubmission`. Use `inputFrom` to transform the submission into the proposal domain model.
+
+[TIP]
+====
+`inputFrom` isolates tasks from changes in the workflow data structure. The task only sees what it needs.
+====
+
+== Step 3: Add scoring with outputAs
+
+Add a task that scores the proposal and uses `outputAs` to pass transformed data to the next step:
+
+[source,java]
+----
+include::{examples-dir}org/acme/dataflow/Call4PapersFlow.java[tag=validate-and-score]
+----
+<1> Task receives the output from the previous task (a `Proposal`)
+<2> Use `outputAs` to transform the task result (`Integer score`) into a `ProposalScore` and pass it to the next step
+
+
+[IMPORTANT]
+====
+`outputAs` transforms what gets passed to the subsequent steps.
+====
+
+== Step 4: Enrich data and commit with exportAs
+
+Add a task that prepares the notification by enriching the score with data from the original workflow input, then commits to workflow **context** using `exportAs`:
+
+[source,java]
+----
+include::{examples-dir}org/acme/dataflow/Call4PapersFlow.java[tag=last-tasks]
+----
+<1> Just pass the `ProposalScore` through without transformation (identity function)
+<2> Use `exportAs` with `JavaFilterFunction` to commit enriched data to workflow data
+<3> Use `FuncDSL.output()` to get type-safe access to the current task's output
+<4> Use `FuncDSL.input()` to get type-safe access to original workflow input
+<5> Create enriched payload combining data from multiple sources
+<6> HTTP task receives the committed NotificationPayload from workflow data.
+The body will be the `NotificationPayload` as JSON
+
+== Step 5: Complete example
+
+Here's the complete workflow with all transformations:
+
+[source,java]
+----
+include::{examples-dir}org/acme/dataflow/Call4PapersFlow.java[]
+----
+
+== Testing the workflow
+
+Start a workflow instance with a submission:
+
+[source,java]
+----
+@Inject
+Call4PapersFlow flow;
+
+public void submitProposal() {
+    var submission = new ProposalSubmission(
+        "Reactive Workflows with Quarkus",
+        "This paper explores reactive workflow patterns...",
+        "Jane Developer"
+    );
+    
+    flow.startInstance(submission).await().indefinitely();
+}
+----
+
+== Key takeaways
+
+* Use **`inputFrom`** to give tasks a focused, typed view of the data they need
+* Use **`exportAs`** to control what gets persisted in the workflow data document
+* Use **`outputAs`** to pass data to the next step without committing to workflow data
+* Use **`FuncDSL.input(workflowContext, Type.class)`** for type-safe access to the original workflow input
+* Use **`FuncDSL.output(taskContext, Type.class)`** for type-safe access to the current task's output
+* Access workflow and task context in transformations to combine data from multiple sources
+
+== Next steps
+
+* Learn about context-aware transformations with `JavaFilterFunction` in xref:data-flow.adoc[Data Flow and Transformations]
+* Explore JQ expressions as an alternative to Java functions
+* See xref:data-flow.adoc#quick-reference[Quick Reference] for all transformation method signatures
+
+== Related guides
+
+* xref:data-flow.adoc[Data Flow and Transformations] – Conceptual overview
+* xref:dsl-cheatsheet.adoc[Java DSL Cheatsheet] – Quick syntax reference
+* xref:test-debug.adoc[Testing and Debugging] – How to test workflows
