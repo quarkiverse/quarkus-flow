@@ -86,7 +86,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     public void writeInstanceData(WorkflowContextData workflowContext) {
         String instanceId = key(workflowContext);
         operations.add(tx -> hashCommands(tx).hset(instanceId, DATE,
-                MarshallingUtils.writeInstant(factory, workflowContext.instanceData().startedAt())));
+                RedisInstantCodec.encode(workflowContext.instanceData().startedAt())));
         operations.add(tx -> hashCommands(tx).hset(instanceId, INPUT,
                 MarshallingUtils.writeModel(factory, workflowContext.instanceData().input())));
     }
@@ -104,8 +104,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
             TaskContextData taskContext) {
         String key = taskId(workflowContext, taskContext);
         operations.add(tx -> hashCommands(tx).hset(key, STATUS, MarshallingUtils.writeEnum(factory, TaskStatus.COMPLETED)));
-        operations.add(
-                tx -> hashCommands(tx).hset(key, DATE, MarshallingUtils.writeInstant(factory, taskContext.completedAt())));
+        operations.add(tx -> hashCommands(tx).hset(key, DATE, RedisInstantCodec.encode(taskContext.completedAt())));
         operations.add(tx -> hashCommands(tx).hset(key, OUTPUT, MarshallingUtils.writeModel(factory, taskContext.output())));
         if (workflowContext.context() != null) {
             operations.add(
@@ -182,8 +181,8 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     private PersistenceWorkflowInfo readPersistenceInfo(String key, String instanceId) {
         Map<String, byte[]> instanceData = hashCommands.hgetall(key);
         return instanceData.isEmpty() ? null
-                : new PersistenceWorkflowInfo(instanceId, MarshallingUtils.readInstant(factory,
-                        instanceData.get(DATE)), MarshallingUtils.readModel(factory, instanceData.get(INPUT)),
+                : new PersistenceWorkflowInfo(instanceId, RedisInstantCodec.decode(factory, instanceData.get(DATE)),
+                        MarshallingUtils.readModel(factory, instanceData.get(INPUT)),
                         MarshallingUtils.readEnum(factory, instanceData.get(STATUS), WorkflowStatus.class),
                         readTasksInfo(instanceId));
     }
@@ -202,7 +201,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
         Map<String, byte[]> data = hashCommands.hgetall(key);
         TaskStatus status = MarshallingUtils.readEnum(factory, data.get(STATUS), TaskStatus.class);
         if (status == TaskStatus.COMPLETED) {
-            return new CompletedTaskInfo(MarshallingUtils.readInstant(factory, data.get(DATE)),
+            return new CompletedTaskInfo(RedisInstantCodec.decode(factory, data.get(DATE)),
                     MarshallingUtils.readModel(factory, data.get(OUTPUT)),
                     MarshallingUtils.readModel(factory, data.get(CONTEXT)),
                     MarshallingUtils.readBoolean(factory, data.get(END_NODE)),
