@@ -5,8 +5,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import org.slf4j.Logger;
@@ -43,15 +43,15 @@ public abstract class PoolController implements Runnable {
         return schedulerInitialDelay;
     }
 
-    @PostConstruct
-    void init() {
+    protected void onLeaseStartup(@Observes LeaseStartupEvent ev) {
         if (!leaseConfig().enabled()) {
             return;
         }
+        String scheduledExecutorName = scheduledExecutorName();
         if (devModeStrategy.enabled()) {
+            LOG.debug("Flow: pool controller '{}' disabled by dev mode strategy settings", scheduledExecutorName);
             return;
         }
-        String scheduledExecutorName = scheduledExecutorName();
         LOG.info("Flow: Initializing pool controller '{}' scheduler", scheduledExecutorName);
         executorService = Executors.newSingleThreadScheduledExecutor(Executors.defaultThreadFactory());
         String delayed = computeSchedulerDelay();

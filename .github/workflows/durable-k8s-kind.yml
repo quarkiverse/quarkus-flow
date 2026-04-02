@@ -52,7 +52,7 @@ jobs:
 
       - name: Wait for deployment
         run: |
-          kubectl -n default rollout status deployment/durable-flow-demo --timeout=300s
+          kubectl -n default rollout status deployment/durable-flow-demo --timeout=240s
           kubectl -n default get pods -l app=durable-flow-demo -o wide
           kubectl -n default get lease -o wide || true
 

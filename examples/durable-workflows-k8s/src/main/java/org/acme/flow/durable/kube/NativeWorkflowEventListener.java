@@ -41,8 +41,8 @@ public class NativeWorkflowEventListener {
     void onStart(@Observes StartupEvent ev) {
         LOGGER.info("Registering InMemory Serverless Workflow event listener...");
 
-        EventConsumer<TypeEventRegistration, TypeEventRegistrationBuilder> eventConsumer =
-                (EventConsumer<TypeEventRegistration, TypeEventRegistrationBuilder>) workflowApplication.eventConsumer();
+        EventConsumer<TypeEventRegistration, TypeEventRegistrationBuilder> eventConsumer = (EventConsumer<TypeEventRegistration, TypeEventRegistrationBuilder>) workflowApplication
+                .eventConsumer();
 
         EventProperties properties = new EventProperties();
         properties.setType("org.acme.flow.durable.kube.finished");

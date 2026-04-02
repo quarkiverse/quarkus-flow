@@ -195,9 +195,10 @@ public class LeaseService {
                         .build())
                 .list()
                 .getItems();
-        if (leases == null || leases.isEmpty())
+        if (leases == null || leases.isEmpty()) {
+            LOG.warn("Can't find lease in namespace {}, labeled with pool name {}", kubeInfo.namespace(), poolName);
             return Optional.empty();
-
+        }
         // mine first
         for (Lease l : leases) {
             if (l.getSpec() != null && holderIdentity.equals(l.getSpec().getHolderIdentity())) {

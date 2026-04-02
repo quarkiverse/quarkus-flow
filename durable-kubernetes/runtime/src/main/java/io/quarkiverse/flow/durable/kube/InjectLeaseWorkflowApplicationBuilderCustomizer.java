@@ -3,6 +3,7 @@ package io.quarkiverse.flow.durable.kube;
 import java.time.Duration;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 
 import org.slf4j.Logger;
@@ -26,6 +27,9 @@ public class InjectLeaseWorkflowApplicationBuilderCustomizer implements Workflow
     @Inject
     DevModeStrategy devModeStrategy;
 
+    @Inject
+    Event<LeaseStartupEvent> leaseStartupEvent;
+
     @Override
     public int priority() {
         return 10;
@@ -44,6 +48,9 @@ public class InjectLeaseWorkflowApplicationBuilderCustomizer implements Workflow
         }
 
         LOG.info("Flow: Binding Kubernetes Lease to Workflow Application ID");
+
+        LOG.debug("Flow: Firing LeaseStartupEvent to initialize Kubernetes polling...");
+        leaseStartupEvent.fire(new LeaseStartupEvent());
 
         final String lease = memberLeaseCoordinator.awaitLease(Duration.ofSeconds(30));
         builder.withId(lease);

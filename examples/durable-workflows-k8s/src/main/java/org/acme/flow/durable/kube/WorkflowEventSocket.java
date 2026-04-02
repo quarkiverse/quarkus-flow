@@ -66,7 +66,8 @@ public class WorkflowEventSocket {
             String message = mapper.writeValueAsString(liveMsg);
 
             sessions.forEach(s -> {
-                if (s.isOpen()) s.getAsyncRemote().sendText(message);
+                if (s.isOpen())
+                    s.getAsyncRemote().sendText(message);
             });
         } catch (Exception e) {
             LOGGER.error("Failed to broadcast live event", e);
