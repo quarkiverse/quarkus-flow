@@ -2,11 +2,14 @@
 
 This example demonstrates **Quarkus Flow Durable Workflows** using **Kubernetes Lease-based coordination** (leader election + failover) via the `quarkus-flow-durable-kubernetes` extension.
 
-It is meant as a **hands-on demo** so you can deploy a small app to a local **Kind** cluster, then use the included scripts to verify that:
+It also includes a real-time **Interactive Control Center UI** powered by WebSockets to visualize workflow executions and demonstrate true state persistence across pod restarts.
+
+It is meant as a **hands-on demo** so you can deploy a small app to a local **Kind** cluster, then use the included UI and scripts to verify that:
 - a leader is elected using a Kubernetes **Lease**
 - the leader keeps renewing the lease
 - leadership **fails over** when the leader pod is killed
 - the system behaves correctly under multiple pod disruptions
+- workflow state is safely persisted and resumed automatically after pod failures
 
 ---
 
@@ -46,17 +49,30 @@ kubectl config current-context
 
 ---
 
-## 2) Build + deploy the example
+## 2) Deploy Redis (State Persistence)
 
-This example lives under:
+To support durable workflows, **Redis is required** for persisting the workflow state.
 
+Navigate to the example directory and deploy the Redis manifests before deploying the main application:
+
+```bash
+cd examples/durable-workflows-k8s
+kubectl apply -f manifests/redis.yaml
 ```
-examples/durable-workflows-k8s
+
+Wait a moment for the Redis pod to be ready:
+```bash
+kubectl get pods -l app=redis
 ```
+
+---
+
+## 3) Build + deploy the example
 
 From the **repository root**, build (and deploy) only this module plus its dependencies:
 
 ```bash
+cd ../.. # back to repo root
 ./mvnw -pl examples/durable-workflows-k8s -am -Pkind clean package
 ```
 
@@ -74,7 +90,25 @@ kubectl -n default get pods -l app=durable-flow-demo -o wide
 
 ---
 
-## 3) Verify Lease coordination using the scripts
+## 4) The Interactive Control Center
+
+This demo includes a real-time UI dashboard to visualize durable workflow execution. It listens natively to the engine's events and streams results via WebSockets.
+
+1. Port-forward the application to access the UI locally:
+   ```bash
+   kubectl -n default port-forward svc/durable-flow-demo 8080:8080
+   ```
+2. Open your browser and navigate to: `http://localhost:8080/index.html`
+3. **Demo the Durability:**
+    - Click **"Fire Async Event"** multiple times to queue up workflows.
+    - Quickly kill the Quarkus pods using a separate terminal: `kubectl -n default delete pod -l app=durable-flow-demo`
+    - Watch the UI instantly reflect the disconnected state.
+    - Once the pods are recreated by the Deployment, the UI will auto-reconnect.
+    - Because of Redis state persistence, the interrupted workflows will wake up, resume execution, and dynamically stream their results into the UI table!
+
+---
+
+## 5) Verify Lease coordination using the scripts
 
 The scripts are located in:
 
@@ -88,7 +122,7 @@ Go to the example directory:
 cd examples/durable-workflows-k8s
 ```
 
-### 3.1 Verify leader election + renewals
+### 5.1 Verify leader election + renewals
 
 This script ensures you have 3 replicas (it will scale the deployment if needed), then:
 - finds the Lease owned by your app
@@ -99,7 +133,7 @@ This script ensures you have 3 replicas (it will scale the deployment if needed)
 EXPECTED_REPLICAS=3 ./scripts/verify-lease.sh
 ```
 
-### 3.2 Verify failover (kill leader)
+### 5.2 Verify failover (kill leader)
 
 This script:
 - finds the current leader pod (based on the Lease holder identity)
@@ -111,7 +145,7 @@ This script:
 EXPECTED_REPLICAS=3 ./scripts/verify-failover.sh
 ```
 
-### 3.3 Verify disruption behavior (kill 2 pods)
+### 5.3 Verify disruption behavior (kill 2 pods)
 
 This script runs two phases:
 - delete **two followers** and confirm the leader remains stable
@@ -123,7 +157,7 @@ EXPECTED_REPLICAS=3 ./scripts/verify-two-pod-disruption.sh
 
 ---
 
-## 4) Inspect the Lease manually (optional)
+## 6) Inspect the Lease manually (optional)
 
 List Leases:
 
@@ -143,7 +177,7 @@ While the cluster is running, you should see:
 
 ---
 
-## 5) Useful overrides
+## 7) Useful overrides
 
 All scripts support env var overrides if you deployed with different metadata:
 
@@ -190,5 +224,6 @@ This example validates the behavior of the **Quarkus Flow Durable Kubernetes Lea
 - Exactly one pod becomes the **leader** and holds a Lease.
 - Leadership can **transfer** on pod termination without manual intervention.
 - The system remains stable under pod churn.
+- **State is completely durable:** Engine state is backed by Redis, surviving total pod annihilation and automatically resuming once pods are restored.
 
 If you’re evaluating durable workflow execution on Kubernetes, this is the recommended quick-start to confirm your cluster setup and observe Lease behavior in practice.
