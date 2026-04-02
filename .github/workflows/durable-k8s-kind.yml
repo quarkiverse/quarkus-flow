@@ -39,7 +39,9 @@ jobs:
           kubectl get nodes -o wide
 
       - name: Deploy Redis
-        run: kubectl apply -f examples/durable-workflows-k8s/manifests/redis.yaml
+        run: |
+          kubectl apply -f examples/durable-workflows-k8s/manifests/redis.yaml
+          kubectl wait --for=condition=Ready pod -l app=redis --timeout=120s -n default
 
       - name: Build + deploy example to Kind (from repo root)
         run: |
@@ -50,7 +52,7 @@ jobs:
 
       - name: Wait for deployment
         run: |
-          kubectl -n default rollout status deployment/durable-flow-demo --timeout=240s
+          kubectl -n default rollout status deployment/durable-flow-demo --timeout=300s
           kubectl -n default get pods -l app=durable-flow-demo -o wide
           kubectl -n default get lease -o wide || true
 
