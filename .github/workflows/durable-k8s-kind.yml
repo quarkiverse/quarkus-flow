@@ -38,6 +38,9 @@ jobs:
           kubectl cluster-info
           kubectl get nodes -o wide
 
+      - name: Deploy Redis
+        run: kubectl apply -f examples/durable-workflows-k8s/manifests/redis.yaml
+
       - name: Build + deploy example to Kind (from repo root)
         run: |
           mvn -DskipTests -Dquarkus.log.level=OFF -ntp \
