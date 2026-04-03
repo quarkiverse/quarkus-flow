@@ -1,0 +1,1013 @@
+= Quarkus Flow Initialization Process
+:page-role: reference
+include::includes/attributes.adoc[]
+
+This reference guide documents the internal initialization process of Quarkus Flow, from build-time discovery through runtime startup. Understanding this process helps developers and contributors make informed decisions about the framework's behavior, troubleshoot issues, and extend functionality.
+
+== Overview
+
+Quarkus Flow follows Quarkus's build-time optimization philosophy, performing as much work as possible during compilation to minimize runtime overhead. The initialization process is divided into distinct phases:
+
+1. **Build-Time Phase**: Discovery and registration of workflows
+2. **Runtime Initialization Phase**: WorkflowApplication setup with providers
+3. **Registry Warmup Phase**: Loading and caching workflow definitions
+4. **Optional Extensions**: Persistence, Durable Kubernetes, and Agentic Workflows
+
+== Initialization Sequence Diagram
+
+The following diagram illustrates the complete initialization flow:
+
+[mermaid]
+----
+sequenceDiagram
+    participant QBuild as Quarkus Build
+    participant FP as FlowProcessor
+    participant FC as FlowCollector
+    participant WDR as WorkflowDefinitionRecorder
+    participant WAR as WorkflowApplicationRecorder
+    participant App as Application Startup
+    participant WRI as WorkflowRegistryInitializer
+    participant WR as WorkflowRegistry
+    participant WA as WorkflowApplication
+    participant Ext as Optional Extensions
+
+    Note over QBuild,FC: BUILD-TIME PHASE
+    QBuild->>FP: Execute build steps
+    FP->>FC: Scan for Flow classes
+    FC-->>FP: DiscoveredWorkflowBuildItem(s)
+    FP->>FC: Scan for YAML definitions
+    FC-->>FP: DiscoveredWorkflowBuildItem(s)
+    
+    FP->>FP: Generate Flow subclasses (YAML)
+    FP->>WDR: Create WorkflowDefinition beans
+    WDR-->>FP: SyntheticBeanBuildItem(s)
+    
+    FP->>WAR: Configure WorkflowApplication
+    WAR->>WAR: Inject providers (HTTP, Secrets, etc.)
+    WAR-->>FP: WorkflowApplication bean supplier
+
+    Note over App,WA: RUNTIME INITIALIZATION PHASE
+    App->>WA: CDI initializes WorkflowApplication
+    WA->>WA: Build with all providers
+    WA->>WA: Apply customizers
+    
+    Note over App,Ext: OPTIONAL EXTENSIONS INIT
+    opt Persistence Enabled
+        Ext->>WA: Inject PersistenceInstanceHandlers
+    end
+    
+    opt Durable Kubernetes Enabled
+        Ext->>Ext: Acquire Kubernetes Lease
+        Ext->>WA: Set WorkflowApplication ID to Lease name
+    end
+    
+    opt LangChain4j Enabled
+        Ext->>WA: Register FlowAgentsBuilderService
+    end
+
+    Note over App,WR: REGISTRY WARMUP PHASE
+    App->>WRI: Observe StartupEvent
+    WRI->>WA: Force initialization (app.id())
+    WRI->>WR: warmUp()
+    WR->>WR: List all WorkflowDefinition beans
+    WR->>WR: Cache workflow descriptors
+    WRI->>WRI: Fire WorkflowApplicationReady event
+----
+
+== Build-Time Phase
+
+The build-time phase is where Quarkus Flow discovers workflows and prepares them for runtime execution. This happens during Maven/Gradle compilation.
+
+=== 1. Workflow Discovery
+
+The `FlowCollectorProcessor` scans the application for workflows in two ways:
+
+==== Java DSL Workflows (Flow Classes)
+
+[source,java]
+----
+// FlowCollectorProcessor.java
+@BuildStep
+void collectFlowsFromSource(
+    CombinedIndexBuildItem index,
+    BuildProducer<DiscoveredWorkflowBuildItem> workflows) {
+    
+    // Scan for classes extending Flow
+    Collection<ClassInfo> flowClasses = index.getIndex()
+        .getAllKnownSubclasses(DotNames.FLOW);
+    
+    for (ClassInfo flowClass : flowClasses) {
+        workflows.produce(new DiscoveredWorkflowBuildItem(
+            flowClass.name().toString(),
+            true  // fromSource = true
+        ));
+    }
+}
+----
+
+**What happens:**
+
+* Scans the Jandex index for all classes extending `Flow`
+* Creates a `DiscoveredWorkflowBuildItem` for each found class
+* Marks them as `fromSource=true` to indicate they're Java-based
+
+==== YAML/JSON Workflow Definitions
+
+[source,java]
+----
+// FlowCollectorProcessor.java
+@BuildStep
+void collectFlowsFromFiles(
+    FlowDefinitionsConfig config,
+    BuildProducer<DiscoveredWorkflowBuildItem> workflows) {
+    
+    // Scan configured directories for .yaml/.json files
+    Path flowDir = Paths.get(config.location());
+    Files.walk(flowDir)
+        .filter(path -> path.toString().matches(".*\\.(yaml|json)$"))
+        .forEach(path -> {
+            Workflow workflow = parseWorkflowFile(path);
+            workflows.produce(new DiscoveredWorkflowBuildItem(
+                workflow.getDocument().getNamespace(),
+                workflow.getDocument().getName(),
+                path.toString(),
+                false  // fromSource = false
+            ));
+        });
+}
+----
+
+**What happens:**
+
+* Scans directories specified in `quarkus.flow.definitions.location`
+* Parses YAML/JSON files into `Workflow` objects
+* Creates `DiscoveredWorkflowBuildItem` for each definition
+* Marks them as `fromSource=false` to indicate they're spec-based
+
+=== 2. WorkflowDefinition Bean Generation
+
+The `FlowProcessor` creates CDI beans for each discovered workflow:
+
+==== For Java DSL Workflows
+
+[source,java]
+----
+// FlowProcessor.java
+@BuildStep
+void produceWorkflowDefinitions(
+    WorkflowDefinitionRecorder recorder,
+    BuildProducer<SyntheticBeanBuildItem> beans,
+    List<DiscoveredWorkflowBuildItem> workflows) {
+    
+    for (DiscoveredWorkflowBuildItem workflow : workflows) {
+        if (workflow.fromSource()) {
+            // Create bean qualified with class name
+            beans.produce(SyntheticBeanBuildItem
+                .configure(WorkflowDefinition.class)
+                .scope(ApplicationScoped.class)
+                .addQualifier()
+                    .annotation(Identifier.class)
+                    .addValue("value", workflow.className())
+                    .done()
+                .supplier(recorder.workflowDefinitionSupplier(
+                    workflow.className()))
+                .done());
+        }
+    }
+}
+----
+
+**What happens:**
+
+* Creates a `@ApplicationScoped` CDI bean of type `WorkflowDefinition`
+* Qualifies it with `@Identifier("<ClassName>")`
+* The bean supplier will instantiate the Flow class at runtime and extract its descriptor
+
+==== For YAML/JSON Workflows
+
+[source,java]
+----
+// FlowProcessor.java
+@BuildStep
+void produceGeneratedFlows(
+    List<DiscoveredWorkflowBuildItem> workflows,
+    BuildProducer<GeneratedBeanBuildItem> classes) {
+    
+    for (DiscoveredWorkflowBuildItem workflow : workflows) {
+        if (workflow.fromSpec()) {
+            String className = generateFlowClassName(workflow);
+            
+            // Generate a Flow subclass using Gizmo
+            try (ClassCreator creator = ClassCreator.builder()
+                    .className(className)
+                    .superClass(Flow.class)
+                    .build()) {
+                
+                creator.addAnnotation(ApplicationScoped.class);
+                creator.addAnnotation(Identifier.class)
+                    .add("value", className);
+                
+                // Inject WorkflowDefinition field
+                FieldCreator field = creator.getFieldCreator(
+                    "workflowDefinition", 
+                    WorkflowDefinition.class);
+                field.addAnnotation(Inject.class);
+                field.addAnnotation(Identifier.class)
+                    .add("value", className);
+                
+                // Override descriptor() method
+                var method = creator.getMethodCreator(
+                    "descriptor", Workflow.class);
+                method.returnValue(
+                    method.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(
+                            WorkflowDefinition.class, 
+                            "workflow", 
+                            Workflow.class),
+                        method.readInstanceField(
+                            field.getFieldDescriptor(), 
+                            method.getThis())));
+            }
+        }
+    }
+}
+----
+
+**What happens:**
+
+* Generates a Java class at build-time that extends `Flow`
+* The generated class is annotated with `@ApplicationScoped` and `@Identifier`
+* Injects the corresponding `WorkflowDefinition` bean
+* Implements the `descriptor()` method to return the workflow definition
+
+=== 3. WorkflowApplication Bean Configuration
+
+The `FlowProcessor` configures the `WorkflowApplication` bean:
+
+[source,java]
+----
+// FlowProcessor.java
+@BuildStep
+void registerWorkflowApp(
+    WorkflowApplicationRecorder recorder,
+    ShutdownContextBuildItem shutdown,
+    FlowTracingConfig tracingConfig,
+    Optional<MetricsCapabilityBuildItem> metricsCapability,
+    BuildProducer<SyntheticBeanBuildItem> beans) {
+    
+    boolean isMicrometerSupported = metricsCapability
+        .map(cap -> cap.metricsSupported(MetricsFactory.MICROMETER))
+        .orElse(false);
+    
+    boolean isTracingEnabled = tracingConfig.enabled()
+        .orElse(launchMode.isDevOrTest());
+    
+    beans.produce(SyntheticBeanBuildItem
+        .configure(WorkflowApplication.class)
+        .scope(ApplicationScoped.class)
+        .supplier(recorder.workflowAppSupplier(
+            shutdown, 
+            isTracingEnabled, 
+            isMicrometerSupported))
+        .done());
+}
+----
+
+**What happens:**
+
+* Determines which capabilities are available (metrics, tracing)
+* Creates a synthetic bean for `WorkflowApplication`
+* The supplier will be executed at runtime to build the application
+
+== Runtime Initialization Phase
+
+When the Quarkus application starts, the CDI container initializes the `WorkflowApplication` bean.
+
+=== 1. WorkflowApplication Builder Setup
+
+The `WorkflowApplicationRecorder` builds the `WorkflowApplication` with all necessary providers:
+
+[source,java]
+----
+// WorkflowApplicationRecorder.java
+public Supplier<WorkflowApplication> workflowAppSupplier(
+    ShutdownContext shutdownContext,
+    boolean tracingEnabled,
+    boolean isMicrometerSupported) {
+    
+    return () -> {
+        WorkflowApplication.Builder builder = 
+            WorkflowApplication.builder();
+        
+        // 1. Configure tracing
+        if (tracingEnabled) {
+            builder.withListener(new TraceLoggerExecutionListener());
+        }
+        
+        // 2. Set model factories
+        builder.withContextFactory(new JavaModelFactory())
+               .withModelFactory(new JacksonModelFactory());
+        
+        ArcContainer container = Arc.container();
+        
+        // 3. Inject application ID
+        injectAppId(builder);
+        
+        // 4. Inject JQ expression factory
+        injectJQExpressionFactory(builder, container);
+        
+        // 5. Inject event consumers/publishers
+        injectEventConsumers(container, builder);
+        injectEventPublishers(container, builder);
+        
+        // 6. Inject secret manager
+        injectSecretManager(container, builder);
+        
+        // 7. Inject config manager
+        injectConfigManager(container, builder);
+        
+        // 8. Inject HTTP client provider
+        injectHttpClientProvider(container, builder);
+        
+        // 9. Inject metrics listener
+        injectMicrometerListener(container, builder);
+        
+        // 10. Inject fault tolerance
+        injectFaultTolerance(container, builder, isMicrometerSupported);
+        
+        // 11. Inject custom listeners
+        injectCustomListeners(container, builder);
+        
+        // 12. Apply customizers
+        container.select(WorkflowApplicationBuilderCustomizer.class)
+            .stream()
+            .forEachOrdered(customizer -> customizer.customize(builder));
+        
+        // 13. Build and register shutdown hook
+        WorkflowApplication app = builder.build();
+        shutdownContext.addShutdownTask(app::close);
+        
+        return app;
+    };
+}
+----
+
+**What happens:**
+
+* Creates a `WorkflowApplication.Builder`
+* Injects all required providers from the CDI container
+* Applies any registered `WorkflowApplicationBuilderCustomizer` beans
+* Builds the application and registers a shutdown hook
+
+=== 2. Provider Injection Details
+
+==== Application ID
+
+[source,java]
+----
+private void injectAppId(Builder builder) {
+    ConfigProvider.getConfig()
+        .getOptionalValue("quarkus.application.name", String.class)
+        .ifPresent(builder::withId);
+}
+----
+
+Sets the application ID from `quarkus.application.name`. This ID is crucial for persistence and distributed coordination.
+
+==== HTTP Client Provider
+
+[source,java]
+----
+private void injectHttpClientProvider(
+    ArcContainer container, 
+    Builder builder) {
+    
+    HttpClientProvider provider = 
+        container.instance(HttpClientProvider.class).get();
+    
+    builder.withAdditionalObject(
+        HttpClientResolver.HTTP_CLIENT_PROVIDER,
+        (workflowContext, taskContext) -> {
+            String workflowName = workflowContext
+                .definition()
+                .workflow()
+                .getDocument()
+                .getName();
+            String taskName = taskContext.taskName();
+            return provider.clientFor(workflowName, taskName);
+        });
+}
+----
+
+Provides HTTP clients for workflow tasks, with per-workflow and per-task configuration support.
+
+==== Fault Tolerance Provider
+
+[source,java]
+----
+private void injectFaultTolerance(
+    ArcContainer container,
+    Builder builder,
+    boolean isMicrometerSupported) {
+    
+    FaultToleranceProvider provider = 
+        container.instance(FaultToleranceProvider.class).get();
+    
+    builder.withCallableProxy(new CallableTaskProxyBuilder() {
+        @Override
+        public CallableTask build(CallableTask delegate) {
+            return (workflowContext, taskContext, input) -> {
+                String workflowName = /* extract workflow name */;
+                String taskName = taskContext.taskName();
+                
+                TypedGuard<CompletionStage<WorkflowModel>> guard = 
+                    provider.guardFor(new WorkflowTaskContext(
+                        workflowName, 
+                        taskName, 
+                        isMicrometerSupported));
+                
+                return guard.get(() -> 
+                    delegate.apply(workflowContext, taskContext, input))
+                    .toCompletableFuture();
+            };
+        }
+        
+        @Override
+        public boolean accept(TaskBase taskBase) {
+            return taskBase instanceof CallHTTP || 
+                   taskBase instanceof CallOpenAPI;
+        }
+    });
+}
+----
+
+Wraps HTTP/OpenAPI tasks with SmallRye Fault Tolerance for retries, circuit breakers, and timeouts.
+
+==== Secret Manager
+
+[source,java]
+----
+private void injectSecretManager(
+    ArcContainer container, 
+    Builder builder) {
+    
+    List<SecretManager> managers = container
+        .select(SecretManager.class)
+        .stream()
+        .toList();
+    
+    if (managers.isEmpty()) {
+        return; // Fall back to MicroProfile Config
+    }
+    
+    List<SecretManager> usable = managers.stream()
+        .filter(sm -> !(sm instanceof CredentialsProviderSecretManager) ||
+                      ((CredentialsProviderSecretManager) sm)
+                          .hasAnyProviders())
+        .sorted(Comparator.comparingInt(SecretManager::priority))
+        .toList();
+    
+    if (!usable.isEmpty()) {
+        builder.withSecretManager(usable.get(0));
+    }
+}
+----
+
+Selects the highest-priority `SecretManager` bean for resolving workflow secrets.
+
+==== Event Consumers and Publishers
+
+[source,java]
+----
+private void injectEventConsumers(
+    ArcContainer container, 
+    Builder builder) {
+    
+    InjectableInstance<EventConsumer<?, ?>> consumer = 
+        container.select(new TypeLiteral<>() {});
+    
+    if (consumer.isResolvable()) {
+        builder.withEventConsumer(consumer.get());
+    } else if (consumer.isAmbiguous()) {
+        throw new IllegalStateException(
+            "Multiple EventConsumer beans found");
+    }
+}
+
+private void injectEventPublishers(
+    ArcContainer container, 
+    Builder builder) {
+    
+    List<EventPublisher> publishers = container
+        .select(EventPublisher.class)
+        .stream()
+        .toList();
+    
+    publishers.forEach(builder::withEventPublisher);
+}
+----
+
+Injects messaging adapters for event-driven workflows.
+
+=== 3. WorkflowApplicationBuilderCustomizer Extension Point
+
+Extensions can customize the `WorkflowApplication` by providing `WorkflowApplicationBuilderCustomizer` beans:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyCustomizer 
+    implements WorkflowApplicationBuilderCustomizer {
+    
+    @Override
+    public int priority() {
+        return 100; // Higher priority runs later
+    }
+    
+    @Override
+    public void customize(WorkflowApplication.Builder builder) {
+        // Add custom configuration
+        builder.withAdditionalObject("my-key", myValue);
+    }
+}
+----
+
+Customizers are executed in priority order (lower numbers first).
+
+== Registry Warmup Phase
+
+After the `WorkflowApplication` is initialized, the `WorkflowRegistryInitializer` warms up the registry.
+
+=== 1. Startup Event Observation
+
+[source,java]
+----
+// WorkflowRegistryInitializer.java
+@ApplicationScoped
+public class WorkflowRegistryInitializer {
+    
+    @Inject WorkflowRegistry registry;
+    @Inject WorkflowApplication application;
+    @Inject Event<WorkflowApplicationReady> applicationReadyEvent;
+    @Inject LaunchMode launchMode;
+    
+    void onStart(@Observes StartupEvent ev) {
+        if (launchMode == LaunchMode.DEVELOPMENT) {
+            // Synchronous warmup in dev mode for fast feedback
+            doStart();
+        } else {
+            // Asynchronous warmup in production to not block startup
+            CompletableFuture.runAsync(this::doStart);
+        }
+    }
+    
+    private void doStart() {
+        try {
+            // Force CDI to fully initialize WorkflowApplication
+            application.id();
+            
+            // Warm up the registry
+            registry.warmUp();
+            
+            // Fire ready event
+            applicationReadyEvent.fire(
+                new WorkflowApplicationReady(application.id()));
+        } catch (Exception e) {
+            LOG.error("Failed to initialize workflows", e);
+        }
+    }
+}
+----
+
+**What happens:**
+
+* In **development mode**: Warmup is synchronous for immediate feedback
+* In **production mode**: Warmup is asynchronous to not delay application startup
+* Forces the `WorkflowApplication` to fully initialize
+* Calls `registry.warmUp()` to cache all workflow definitions
+* Fires a `WorkflowApplicationReady` CDI event
+
+=== 2. Registry Warmup Process
+
+[source,java]
+----
+// WorkflowRegistry.java
+void warmUp() {
+    List<InstanceHandle<WorkflowDefinition>> definitions = 
+        Arc.container().listAll(WorkflowDefinition.class);
+    
+    for (InstanceHandle<WorkflowDefinition> handle : definitions) {
+        WorkflowDefinition definition = handle.get();
+        
+        // Cache the workflow descriptor
+        Workflow workflow = definition.workflow();
+        WorkflowDefinitionId id = new WorkflowDefinitionId(
+            workflow.getDocument().getNamespace(),
+            workflow.getDocument().getName(),
+            workflow.getDocument().getVersion()
+        );
+        
+        descriptorCache.put(id, workflow);
+        
+        LOG.debug("Warmed up workflow: {}", 
+            workflow.getDocument().getName());
+    }
+    
+    LOG.info("Registry warmup complete. {} workflows loaded.", 
+        descriptorCache.size());
+}
+----
+
+**What happens:**
+
+* Lists all `WorkflowDefinition` CDI beans
+* Forces CDI to instantiate each bean (triggering Flow class instantiation)
+* Caches the workflow descriptors for fast lookup
+* Logs the number of loaded workflows
+
+== Optional Extensions Initialization
+
+=== Persistence (JPA/Redis/MVStore)
+
+When a persistence extension is present, it provides `PersistenceInstanceHandlers`:
+
+[source,java]
+----
+// JpaPersistenceHandlerProducer.java
+@ApplicationScoped
+@Produces
+PersistenceInstanceHandlers jpaPersistenceHandlers(
+    JpaInstanceWriter writer,
+    JpaInstanceReader reader) {
+    return new PersistenceInstanceHandlers(writer, reader);
+}
+----
+
+The `FlowPersistenceApplicationBuilderCustomizer` injects these handlers:
+
+[source,java]
+----
+// FlowPersistenceApplicationBuilderCustomizer.java
+@ApplicationScoped
+public class FlowPersistenceApplicationBuilderCustomizer 
+    implements WorkflowApplicationBuilderCustomizer {
+    
+    @Inject PersistenceInstanceHandlers handlers;
+    
+    @Override
+    public int priority() {
+        return 50; // Run before most customizers
+    }
+    
+    @Override
+    public void customize(WorkflowApplication.Builder builder) {
+        builder.withPersistence(handlers);
+        LOG.info("Flow: Persistence enabled");
+    }
+}
+----
+
+**What happens:**
+
+* The persistence extension produces `PersistenceInstanceHandlers`
+* The customizer injects these handlers into the `WorkflowApplication`
+* Workflows can now persist their state to the configured datastore
+
+==== Auto-Restore on Startup
+
+If `quarkus.flow.persistence.autoRestore=true` (default), the `FlowPersistenceRestore` bean restores interrupted workflows:
+
+[source,java]
+----
+// FlowPersistenceRestore.java
+void onApplicationReady(
+    @Observes WorkflowApplicationReady event) {
+    
+    if (!config.autoRestore()) {
+        return;
+    }
+    
+    String appId = event.applicationId();
+    
+    // Query for workflows that were running when this app ID last shut down
+    List<ProcessInstance> interrupted = 
+        reader.findByApplicationId(appId);
+    
+    for (ProcessInstance instance : interrupted) {
+        LOG.info("Restoring workflow instance: {}", instance.getId());
+        
+        // Resume execution from the last checkpoint
+        application.resume(instance);
+    }
+}
+----
+
+**What happens:**
+
+* Observes the `WorkflowApplicationReady` event
+* Queries the persistence store for workflows owned by this application ID
+* Resumes each interrupted workflow from its last checkpoint
+
+=== Durable Kubernetes Lease Coordination
+
+When the `quarkus-flow-durable-kubernetes` extension is present, it provides stable worker identities using Kubernetes Leases.
+
+==== Lease Acquisition
+
+[source,java]
+----
+// InjectLeaseWorkflowApplicationBuilderCustomizer.java
+@ApplicationScoped
+public class InjectLeaseWorkflowApplicationBuilderCustomizer 
+    implements WorkflowApplicationBuilderCustomizer {
+    
+    @Inject MemberLeaseCoordinator memberLeaseCoordinator;
+    @Inject LeaseGroupConfig leaseConfig;
+    
+    @Override
+    public int priority() {
+        return 10; // Run very early
+    }
+    
+    @Override
+    public void customize(WorkflowApplication.Builder builder) {
+        if (!leaseConfig.member().enabled()) {
+            return;
+        }
+        
+        LOG.info("Flow: Binding Kubernetes Lease to Workflow Application ID");
+        
+        // Block until a lease is acquired (with timeout)
+        String leaseName = memberLeaseCoordinator.awaitLease(
+            Duration.ofSeconds(30));
+        
+        // Set the application ID to the lease name
+        builder.withId(leaseName);
+        
+        LOG.info("Flow: Workflow Application ID is {}", leaseName);
+    }
+}
+----
+
+**What happens:**
+
+* Runs with high priority (10) to execute early
+* Blocks until the pod acquires a Kubernetes Lease
+* Sets the `WorkflowApplication` ID to the lease name (e.g., `flow-pool-member-durable-flow-00`)
+* This ensures the application ID is stable across pod restarts
+
+==== Lease Coordination Process
+
+[source,java]
+----
+// PoolController.java (base class)
+@PostConstruct
+void init() {
+    if (!leaseConfig().enabled()) {
+        return;
+    }
+    
+    // Create a scheduled executor for lease renewal
+    executorService = Executors.newSingleThreadScheduledExecutor();
+    
+    // Schedule periodic lease renewal
+    scheduler.newJob(scheduledExecutorName())
+        .setInterval(schedulerConfig().interval())
+        .setConcurrentExecution(Scheduled.ConcurrentExecution.SKIP)
+        .setDelayed(computeSchedulerDelay())
+        .setTask(executionContext -> executorService.execute(this))
+        .schedule();
+}
+
+@PreDestroy
+public void release() {
+    // Release the lease on shutdown
+    String lease = leaseName();
+    String podName = kubeInfo.podName();
+    
+    if (lease != null) {
+        leaseService.releaseLease(podName, lease);
+    }
+}
+----
+
+**What happens:**
+
+* On startup, schedules periodic lease renewal
+* Continuously sends heartbeats to maintain the lease
+* On shutdown, explicitly releases the lease so another pod can claim it
+
+=== Agentic Workflows (LangChain4j)
+
+When the `quarkus-flow-langchain4j` extension is present, it registers the `FlowAgentsBuilderService`:
+
+[source,java]
+----
+// FlowAgentsBuilderService.java
+@ApplicationScoped
+public class FlowAgentsBuilderService {
+    
+    @Inject WorkflowRegistry workflowRegistry;
+    
+    public SequentialAgentService<UntypedAgent> newSequential() {
+        return FlowSequentialAgentService.builder(workflowRegistry);
+    }
+    
+    public <T> SequentialAgentService<T> newSequential(
+        Class<T> agentServiceClass) {
+        return FlowSequentialAgentService.builder(
+            agentServiceClass, 
+            workflowRegistry);
+    }
+    
+    // Similar methods for Parallel, Loop, and Conditional agents
+}
+----
+
+This service is registered as a Java ServiceLoader provider:
+
+[source]
+----
+# META-INF/services/dev.langchain4j.agentic.workflow.WorkflowAgentsBuilder
+io.quarkiverse.flow.langchain4j.workflow.FlowAgentWorkflowBuilder
+----
+
+**What happens:**
+
+* LangChain4j discovers the `FlowAgentWorkflowBuilder` via ServiceLoader
+* The builder delegates to `FlowAgentsBuilderService` (CDI bean)
+* Agentic workflows are registered in the `WorkflowRegistry` like any other workflow
+* Agents can be invoked as workflow tasks
+
+== Initialization Timing
+
+Understanding when each phase occurs:
+
+[cols="1,2,3",options="header"]
+|===
+| Phase
+| When
+| Duration Impact
+
+| **Build-Time Discovery**
+| Maven/Gradle compile
+| Increases build time slightly (typically <1s for dozens of workflows)
+
+| **Bean Generation**
+| Maven/Gradle compile
+| Minimal impact (bytecode generation is fast)
+
+| **WorkflowApplication Init**
+| Application startup (CDI initialization)
+| ~50-200ms depending on number of providers
+
+| **Registry Warmup**
+| After CDI initialization (async in prod, sync in dev)
+| ~10-50ms per workflow (depends on complexity)
+
+| **Persistence Restore**
+| After registry warmup (if enabled)
+| Depends on number of interrupted workflows and database latency
+
+| **Lease Acquisition**
+| Before WorkflowApplication init (if Durable K8s enabled)
+| Up to 30s timeout (typically <5s in healthy cluster)
+|===
+
+== Troubleshooting Initialization Issues
+
+=== Workflow Not Found
+
+**Symptom**: `WorkflowDefinition` bean not found at runtime
+
+**Possible causes:**
+
+1. **Class not extending Flow**: Ensure your workflow class extends `Flow`
+2. **YAML file not in scanned location**: Check `quarkus.flow.definitions.location`
+3. **Build-time error**: Check build logs for errors during workflow discovery
+
+**Solution**: Enable debug logging to see discovered workflows:
+
+[source,properties]
+----
+quarkus.log.category."io.quarkiverse.flow.deployment".level=DEBUG
+----
+
+=== Slow Startup
+
+**Symptom**: Application takes a long time to start
+
+**Possible causes:**
+
+1. **Synchronous warmup in production**: Warmup should be async in production
+2. **Many workflows**: Each workflow requires instantiation and caching
+3. **Persistence restore**: Restoring many interrupted workflows
+
+**Solution**: 
+
+* Verify async warmup: Check logs for "Warmup configured as ASYNC"
+* Disable auto-restore temporarily: `quarkus.flow.persistence.autoRestore=false`
+* Profile startup: Use `-Dquarkus.profile.record-startup-method-times=true`
+
+=== Lease Acquisition Timeout (Kubernetes)
+
+**Symptom**: Pod never becomes ready, logs show "Failed to acquire lease"
+
+**Possible causes:**
+
+1. **Insufficient RBAC permissions**: Pod can't create/update Leases
+2. **Lease already held**: Another pod holds the lease and hasn't released it
+3. **Network issues**: Can't reach Kubernetes API server
+
+**Solution**:
+
+* Verify RBAC: `kubectl auth can-i create leases --as=system:serviceaccount:NAMESPACE:SERVICE_ACCOUNT`
+* Check existing leases: `kubectl get lease -l io.quarkiverse.flow.durable.k8s/pool=POOL_NAME`
+* Increase timeout: `quarkus.flow.durable.kube.member.lease.acquire-timeout=60s`
+
+=== Persistence Not Working
+
+**Symptom**: Workflows don't resume after restart
+
+**Possible causes:**
+
+1. **No persistence extension**: Must include `quarkus-flow-jpa`, `quarkus-flow-redis`, or `quarkus-flow-mvstore`
+2. **Application ID mismatch**: Application ID changed between restarts
+3. **Auto-restore disabled**: Check `quarkus.flow.persistence.autoRestore`
+
+**Solution**:
+
+* Verify persistence bean: Check logs for "Flow: Persistence enabled"
+* Check application ID: Should be stable (use `quarkus.application.name` or Durable Kubernetes)
+* Enable restore: `quarkus.flow.persistence.autoRestore=true`
+
+== Extension Points for Custom Initialization
+
+Developers can hook into the initialization process:
+
+=== 1. WorkflowApplicationBuilderCustomizer
+
+Customize the `WorkflowApplication` before it's built:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyCustomizer 
+    implements WorkflowApplicationBuilderCustomizer {
+    
+    @Override
+    public int priority() {
+        return 100;
+    }
+    
+    @Override
+    public void customize(WorkflowApplication.Builder builder) {
+        // Add custom configuration
+    }
+}
+----
+
+=== 2. WorkflowApplicationReady Event
+
+React when the application is fully initialized:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyInitializer {
+    
+    void onReady(@Observes WorkflowApplicationReady event) {
+        String appId = event.applicationId();
+        // Perform post-initialization tasks
+    }
+}
+----
+
+=== 3. Custom WorkflowExecutionListener
+
+Monitor workflow execution:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyListener implements WorkflowExecutionListener {
+    
+    @Override
+    public void onWorkflowStart(WorkflowContext context) {
+        // Called when a workflow starts
+    }
+    
+    @Override
+    public void onWorkflowEnd(WorkflowContext context) {
+        // Called when a workflow completes
+    }
+}
+----
+
+== See Also
+
+* xref:concepts-architecture.adoc[Engine Architecture] — High-level architecture overview
+* xref:persistence.adoc[Configure State Persistence] — Persistence setup guide
+* xref:concepts-durable-workflow-k8s.adoc[Durable Workflows in Kubernetes] — Kubernetes deployment patterns
+* xref:custom-listeners.adoc[Listen to Workflow Events] — Custom listener guide
+* link:https://quarkus.io/guides/cdi-reference#startup_event[Quarkus CDI Reference] — Understanding Quarkus startup events
