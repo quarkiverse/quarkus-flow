@@ -63,6 +63,11 @@ public class FlowPlanner implements Planner, AutoCloseable {
 
     @Override
     public Action firstAction(PlanningContext planningContext) {
+        if (planningContext.previousAgentInvocation() != null) {
+            planningContext.previousAgentInvocation().input()
+                    .forEach(planningContext.agenticScope()::writeState);
+        }
+
         final WorkflowInstance instance = definition.instance(planningContext.agenticScope());
         workflowInstanceId = instance.id();
         FlowPlannerSessions.getInstance().open(workflowInstanceId, this, planningContext.agenticScope());

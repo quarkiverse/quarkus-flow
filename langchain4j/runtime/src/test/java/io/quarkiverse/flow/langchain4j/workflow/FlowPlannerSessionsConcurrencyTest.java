@@ -121,7 +121,10 @@ class FlowPlannerSessionsConcurrencyTest {
             }
 
             // If any async cleanup finishes slightly after futures complete:
-            FlowPlannerSessionsAwait.awaitNoSessions(10);
+            await()
+                    .atMost(Duration.ofSeconds(10))
+                    .pollInterval(Duration.ofMillis(250))
+                    .until(() -> FlowPlannerSessions.getInstance().activeSessionCount() <= baselineSessions);
 
             long total = ok.sum() + failed.sum();
             double avgMs = (nanos.sum() / 1_000_000.0) / Math.max(1, total);
