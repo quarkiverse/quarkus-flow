@@ -1,6 +1,7 @@
 # Quarkus Flow
 
 [![Version](https://img.shields.io/maven-central/v/io.quarkiverse.flow/quarkus-flow?logo=apache-maven&style=flat-square)](https://central.sonatype.com/artifact/io.quarkiverse.flow/quarkus-flow-parent)
+[![Documentation](https://img.shields.io/badge/docs-DeepWiki-blue)](https://deepwiki.com/quarkiverse/quarkus-flow)
 
 **Quarkus Flow** is a lightweight, low-dependency, production-grade workflow engine for Quarkus, built on the CNCF [Serverless Workflow](https://serverlessworkflow.io/) specification.
 

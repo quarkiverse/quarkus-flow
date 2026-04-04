@@ -1,0 +1,369 @@
+# Quarkus Flow - Project Skills
+
+This file provides context for AI code agents to better understand the Quarkus Flow project structure, conventions, and capabilities.
+
+## Project Overview
+
+**Name**: Quarkus Flow
+**Type**: Quarkus Extension / Workflow Engine
+**Language**: Java 17+
+**Build Tool**: Maven
+**Framework**: Quarkus 3.x
+**Specification**: CNCF Serverless Workflow
+
+Quarkus Flow is a lightweight, production-grade workflow engine for Quarkus applications, built on the CNCF Serverless Workflow specification. It supports both classic orchestration workflows and Agentic AI workflows with LangChain4j integration.
+
+## Architecture
+
+### Multi-Module Structure
+
+```
+quarkus-flow/
+├── core/                      # Core workflow engine
+│   ├── deployment/           # Build-time processing (Quarkus deployment)
+│   ├── runtime/              # Runtime components
+│   ├── runtime-dev/          # Dev UI and development mode features
+│   └── integration-tests/    # Integration tests
+├── langchain4j/              # LangChain4j agentic workflow integration
+├── messaging/                # Messaging support (Kafka, AMQP)
+├── persistence/              # Persistence layer
+│   ├── common/              # Common abstractions
+│   ├── jpa/                 # JPA implementation
+│   ├── mvstore/             # H2 MVStore implementation
+│   ├── redis/               # Redis implementation
+│   └── test-common/         # Shared test utilities
+├── scheduler/                # Quartz scheduler integration
+├── durable-kubernetes/       # Kubernetes durable workflows
+├── bom/                      # Bill of Materials
+├── docs/                     # Antora documentation
+└── examples/                 # Example applications
+```
+
+### Key Design Patterns
+
+1. **Quarkus Extension Pattern**: Deployment + Runtime modules
+2. **CDI-First**: Build-time discovery and injection
+3. **Fluent DSL**: Java-based workflow definition
+4. **Specification Compliance**: Maps to CNCF Serverless Workflow
+
+## Core Concepts
+
+### Workflow Definition
+
+```java
+@ApplicationScoped
+public class MyWorkflow extends Flow {
+    @Override
+    public Workflow descriptor() {
+        return WorkflowBuilder
+                .workflow("my-workflow", "namespace", "v1")
+                .tasks(t -> t.set("result", "${ .input }"))
+                .build();
+    }
+}
+```
+
+### Key Classes
+
+- `Flow`: Base class for workflow definitions
+- `WorkflowDefinition`: Compiled workflow ready for execution
+- `WorkflowModel`: Runtime workflow instance
+- `Flowable`: Interface for flowable beans
+- `FlowMetadata`: Workflow metadata and context
+
+### Build-Time Processing
+
+- `FlowProcessor`: Main deployment processor
+- `FlowCollectorProcessor`: Discovers and registers workflows
+- `DiscoveredWorkflowBuildItem`: Build item for discovered workflows
+- `FlowIdentifierBuildItem`: Build item for workflow identifiers
+
+## Technology Stack
+
+### Core Dependencies
+
+- **Quarkus**: 3.34.2
+- **Serverless Workflow**: 7.15.2.Final
+- **CloudEvents**: 4.0.1
+- **Jackson JQ**: 2.4.0 (for jq expressions)
+- **LangChain4j**: 1.8.4 (optional, for agentic workflows)
+
+### Testing Stack
+
+- **JUnit 5**: Test framework
+- **AssertJ**: 3.27.7 - Fluent assertions
+- **Quarkus Test**: `@QuarkusTest`, `@QuarkusUnitTest`
+- **REST Assured**: REST API testing
+- **Mockito**: Mocking framework
+- **Testcontainers**: Via Quarkus Dev Services
+- **JaCoCo**: Code coverage (minimum 40%)
+
+### Build Tools
+
+- **Maven**: 3.9+
+- **formatter-maven-plugin**: Automatic code formatting
+- **impsort-maven-plugin**: Import sorting
+- **jacoco-maven-plugin**: Code coverage
+
+## Code Conventions
+
+### Naming
+
+- Classes: `PascalCase` (e.g., `HelloWorldWorkflow`)
+- Methods/Variables: `camelCase` (e.g., `executeWorkflow`)
+- Constants: `UPPER_SNAKE_CASE` (e.g., `DEFAULT_TIMEOUT`)
+- Packages: lowercase (e.g., `io.quarkiverse.flow`)
+
+### CDI Scopes
+
+- `@ApplicationScoped`: Stateless beans, workflows
+- `@Dependent`: Stateful beans
+- `@RequestScoped`: Rarely used, only when needed
+
+### Code Style
+
+- **Automatic formatting**: Run `mvn formatter:format impsort:sort`
+- **Immutability**: Prefer `final` for variables
+- **Javadoc**: Required for public APIs
+- **Single Responsibility**: Keep methods focused
+
+## Testing Patterns
+
+### Unit Tests
+
+```java
+@QuarkusUnitTest
+public class MyTest {
+    @RegisterExtension
+    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(MyWorkflow.class));
+    
+    @Test
+    public void testWorkflow() {
+        // Test implementation
+    }
+}
+```
+
+### Integration Tests
+
+```java
+@QuarkusTest
+public class MyIntegrationTest {
+    @Inject
+    WorkflowDefinition workflow;
+    
+    @Test
+    public void testWorkflowExecution() {
+        WorkflowModel model = workflow.instance(Map.of("input", "value"))
+                .start()
+                .join();
+        
+        assertThat(model.as(String.class)).isPresent();
+    }
+}
+```
+
+### Test Naming
+
+- Test classes: `*Test` for unit tests, `*IT` for integration tests
+- Test methods: Descriptive names (e.g., `testWorkflowExecutesSuccessfully`)
+
+## Build Commands
+
+### Common Commands
+
+```bash
+# Full build
+./mvnw clean install
+
+# Skip tests
+./mvnw clean install -DskipTests
+
+# Skip integration tests only
+./mvnw clean install -DskipITs=true
+
+# With code coverage
+./mvnw clean install -Pcode-coverage
+
+# Format code
+./mvnw formatter:format impsort:sort
+
+# Run specific test
+./mvnw test -Dtest=MyTest
+
+# Build documentation
+./mvnw -pl docs -am quarkus:dev
+```
+
+### Profiles
+
+- `code-coverage`: Enable JaCoCo coverage
+- `integration-tests`: Run integration tests
+- `docs`: Build documentation
+
+## CI/CD
+
+### GitHub Actions Workflows
+
+1. **build.yml**: Main build (Ubuntu/Windows, Java 17/21/25)
+2. **coverage.yml**: Code coverage reporting (40% minimum)
+3. **build-it.yml**: Integration tests
+4. **native-nigthly-ci.yaml**: Native image builds
+5. **quarkus-snapshot.yaml**: Test against Quarkus snapshots
+
+### CI Requirements
+
+- ✅ All tests pass
+- ✅ Code coverage ≥ 40%
+- ✅ Code formatted correctly
+- ✅ No merge conflicts
+
+## Documentation
+
+### Structure
+
+- **Format**: AsciiDoc (Antora)
+- **Location**: `docs/modules/ROOT/pages/`
+- **Examples**: `docs/modules/ROOT/examples/`
+- **Preview**: `./mvnw -pl docs -am quarkus:dev` (press 'w')
+
+### External Documentation
+
+- Main docs: https://docs.quarkiverse.io/quarkus-flow/dev/
+- DeepWiki: https://deepwiki.com/quarkiverse/quarkus-flow
+- GitHub: https://github.com/quarkiverse/quarkus-flow
+
+## Common Tasks
+
+### Adding a New Workflow
+
+1. Create class extending `Flow`
+2. Annotate with `@ApplicationScoped`
+3. Implement `descriptor()` method
+4. Add tests
+5. Update documentation
+
+### Adding a New Feature
+
+1. Create feature branch
+2. Implement in appropriate module (deployment/runtime)
+3. Add unit and integration tests
+4. Update documentation
+5. Format code
+6. Submit PR
+
+### Debugging
+
+- Use Quarkus Dev Mode: `./mvnw quarkus:dev`
+- Dev UI available at: http://localhost:8080/q/dev
+- Flow-specific Dev UI: Workflow execution, definitions, lifecycle management
+
+## Integration Points
+
+### Messaging
+
+- Auto-activates with Kafka/AMQP connectors
+- Uses SmallRye Reactive Messaging
+- Configuration: `quarkus.flow.messaging.*`
+
+### Persistence
+
+- JPA: Relational databases
+- MVStore: Embedded H2 database
+- Redis: Distributed caching
+- Common interface: `WorkflowInstanceStore`
+
+### LangChain4j
+
+- Agentic workflows: `@SequenceAgent`, `@ParallelAgent`, `@LoopAgent`
+- AI Services: `@RegisterAiService`
+- Integration: `quarkus-flow-langchain4j` module
+
+### HTTP
+
+- RESTEasy Reactive for HTTP calls
+- OpenAPI integration
+- Correlation metadata support
+
+## Performance Considerations
+
+- **Native Image**: GraalVM compatible
+- **Startup Time**: Optimized for fast startup
+- **Memory**: Low footprint design
+- **Build Time**: CDI discovery at build time
+
+## Security
+
+- Report vulnerabilities privately to maintainers
+- Follow responsible disclosure
+- No public issues for security problems
+
+## Version Information
+
+- **Current Version**: 1.0.0-SNAPSHOT (see `.github/project.yml`)
+- **Quarkus Version**: 3.34.2
+- **Java Version**: 17+ (tested on 17, 21, 25)
+- **License**: Apache-2.0
+
+## Useful Patterns
+
+### Workflow with HTTP Call
+
+```java
+.tasks(t -> t
+    .call("fetchData", "https://api.example.com/data")
+    .set("result", "${ .fetchData.body }"))
+```
+
+### Workflow with Branching
+
+```java
+.tasks(t -> t
+    .switch_("checkLanguage")
+    .when("${ .language == 'en' }", w -> w.set("greeting", "Hello"))
+    .when("${ .language == 'es' }", w -> w.set("greeting", "Hola"))
+    .default_(d -> d.set("greeting", "Hi")))
+```
+
+### Workflow with Retry
+
+```java
+.tasks(t -> t
+    .call("unreliableService", "https://api.example.com/data")
+    .retry(r -> r.maxAttempts(3).delay("PT1S")))
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Build fails**: Run `./mvnw clean install -DskipTests` first
+2. **Tests fail**: Check Dev Services (Docker) is running
+3. **Format errors**: Run `./mvnw formatter:format impsort:sort`
+4. **Coverage too low**: Add more tests or adjust thresholds
+
+### Getting Help
+
+- GitHub Discussions: General questions
+- GitHub Issues: Bug reports, feature requests
+- Documentation: Check docs first
+- CONTRIBUTING.md: Detailed contribution guide
+
+## Code Agent Tips
+
+1. **Always format code** before committing
+2. **Run tests** after changes
+3. **Update documentation** for new features
+4. **Follow CDI patterns** for bean management
+5. **Use build-time processing** when possible (deployment module)
+6. **Leverage Quarkus Dev Services** for testing
+7. **Check CI workflows** for validation requirements
+8. **Reference existing tests** for patterns
+9. **Keep PRs focused** and reasonably sized
+10. **Write descriptive commit messages** (conventional commits)
+
+---
+
+This skills file is maintained to help AI code agents understand the Quarkus Flow project. For human contributors, see CONTRIBUTING.md.
