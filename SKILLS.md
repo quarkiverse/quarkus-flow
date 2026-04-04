@@ -1,3 +1,91 @@
+---
+name: Quarkus Flow
+type: quarkus-extension
+category: workflow-engine
+language: java
+min_java_version: 17
+build_tool: maven
+framework: quarkus
+framework_version: 3.34.2
+specification: cncf-serverless-workflow
+license: Apache-2.0
+repository: https://github.com/quarkiverse/quarkus-flow
+documentation: https://docs.quarkiverse.io/quarkus-flow/dev/
+deepwiki: https://deepwiki.com/quarkiverse/quarkus-flow
+
+project:
+  group_id: io.quarkiverse.flow
+  artifact_id: quarkus-flow-parent
+  version: 1.0.0-SNAPSHOT
+
+technologies:
+  core:
+    - quarkus: 3.34.2
+    - serverless-workflow: 7.15.2.Final
+    - cloudevents: 4.0.1
+    - jackson-jq: 2.4.0
+  optional:
+    - langchain4j: 1.8.4
+    - kafka: via quarkus-messaging-kafka
+    - redis: via quarkus-redis-client
+  testing:
+    - junit: 5
+    - assertj: 3.27.7
+    - rest-assured: latest
+    - testcontainers: via quarkus-dev-services
+    - jacoco: 0.8.14
+
+build:
+  command: ./mvnw clean install
+  skip_tests: ./mvnw clean install -DskipTests
+  skip_its: ./mvnw clean install -DskipITs=true
+  coverage: ./mvnw clean install -Pcode-coverage
+  format: ./mvnw formatter:format impsort:sort
+
+ci:
+  platforms: [ubuntu-latest, windows-latest]
+  java_versions: [17, 21, 25]
+  coverage_minimum: 40
+  workflows:
+    - build.yml
+    - coverage.yml
+    - build-it.yml
+    - native-nigthly-ci.yaml
+    - quarkus-snapshot.yaml
+
+conventions:
+  naming:
+    classes: PascalCase
+    methods: camelCase
+    variables: camelCase
+    constants: UPPER_SNAKE_CASE
+    packages: lowercase
+  cdi_scopes:
+    stateless: ApplicationScoped
+    stateful: Dependent
+    request: RequestScoped (rarely used)
+  formatting:
+    automatic: true
+    plugins: [formatter-maven-plugin, impsort-maven-plugin]
+
+modules:
+  core:
+    - deployment
+    - runtime
+    - runtime-dev
+    - integration-tests
+  extensions:
+    - langchain4j
+    - messaging
+    - persistence
+    - scheduler
+    - durable-kubernetes
+  support:
+    - bom
+    - docs
+    - examples
+---
+
 # Quarkus Flow - Project Skills
 
 This file provides context for AI code agents to better understand the Quarkus Flow project structure, conventions, and capabilities.
