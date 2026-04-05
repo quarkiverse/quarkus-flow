@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
 import io.quarkiverse.flow.devui.FlowInstance.LifecycleEventSummary;
+import io.serverlessworkflow.impl.jackson.JsonUtils;
 
 public class FlowInstanceSerializer extends StdSerializer<FlowInstance> {
 
@@ -48,15 +49,14 @@ public class FlowInstanceSerializer extends StdSerializer<FlowInstance> {
             gen.writeNullField("errorMessage");
         }
 
-        // Serialize WorkflowModel as its Java object representation
         if (value.getInput() != null) {
-            gen.writeObjectField("input", value.getInput().asJavaObject());
+            gen.writeObjectField("input", JsonUtils.modelToJson(value.getInput()));
         } else {
             gen.writeNullField("input");
         }
 
         if (value.getOutput() != null) {
-            gen.writeObjectField("output", value.getOutput().asJavaObject());
+            gen.writeObjectField("output", JsonUtils.modelToJson(value.getOutput()));
         } else {
             gen.writeNullField("output");
         }

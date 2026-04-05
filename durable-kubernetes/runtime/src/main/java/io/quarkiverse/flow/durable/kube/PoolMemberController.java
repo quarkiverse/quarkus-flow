@@ -1,21 +1,22 @@
 package io.quarkiverse.flow.durable.kube;
 
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.fabric8.kubernetes.api.model.coordination.v1.Lease;
-import io.quarkus.runtime.Startup;
+import io.quarkiverse.flow.durable.kube.config.LeaseGroupConfig;
+import io.quarkiverse.flow.durable.kube.config.PoolConfig;
 
-@Singleton
-@Startup
+@ApplicationScoped
 public class PoolMemberController extends PoolController {
 
     private static final String POOL_MEMBER_SCHEDULER_FMT = "flow-pool-member-scheduler-%s-%s";
@@ -47,10 +48,16 @@ public class PoolMemberController extends PoolController {
             return;
 
         try {
-            if (!acquireLease())
+            if (!acquireLease()) {
                 LOG.warn(
                         "Flow: Failed to acquire lease on {}, waiting for next scheduled cycle to try again. Won't process any new workflows until there",
                         kubeInfo.podName());
+                // If the app hasn't successfully bound a lease yet, retry quickly
+                // in case the Leader Controller is currently generating the lease.
+                if (!hasLease() && executorService != null && !executorService.isShutdown()) {
+                    executorService.schedule(this, 2, TimeUnit.SECONDS);
+                }
+            }
         } catch (Exception e) {
             LOG.warn("Lease acquisition failed on pod {}", kubeInfo.podName(), e);
         } finally {

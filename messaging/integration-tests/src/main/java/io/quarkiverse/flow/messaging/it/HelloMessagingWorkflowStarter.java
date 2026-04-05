@@ -9,9 +9,9 @@ import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.quarkiverse.flow.internal.WorkflowApplicationReady;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.Quarkus;
-import io.quarkus.runtime.StartupEvent;
 
 /**
  * Application handler to start the workflow when the application starts.
@@ -36,7 +36,7 @@ public class HelloMessagingWorkflowStarter {
     @Inject
     HelloMessagingFlow workflow;
 
-    void onStart(@Observes StartupEvent ev) {
+    void onStart(@Observes WorkflowApplicationReady ev) {
         workflow.instance(Map.of()).start().whenComplete((result, err) -> {
             if (err != null)
                 LOG.error("Workflow failed", err);

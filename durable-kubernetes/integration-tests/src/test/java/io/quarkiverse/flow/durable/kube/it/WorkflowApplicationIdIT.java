@@ -2,8 +2,11 @@ package io.quarkiverse.flow.durable.kube.it;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.wildfly.common.Assert.assertNotNull;
+import static org.wildfly.common.Assert.assertTrue;
 
 import java.time.Duration;
+import java.util.Map;
+import java.util.Optional;
 
 import jakarta.inject.Inject;
 
@@ -22,6 +25,9 @@ public class WorkflowApplicationIdIT {
     @Inject
     MemberLeaseCoordinator memberLeaseCoordinator;
 
+    @Inject
+    GreetingsFlow flow;
+
     @Test
     void workflowApplicationIdMatchesLease() {
         // This will block until the controller fires ACQUIRED
@@ -32,6 +38,11 @@ public class WorkflowApplicationIdIT {
 
         // Replace with the actual getter name:
         assertEquals(lease, app.id());
+
+        Optional<Map<String, Object>> output = flow.instance(Map.of()).start().join().asMap();
+        assertNotNull(output);
+        assertTrue(output.isPresent());
+        assertNotNull(output.orElse(Map.of()).get("message"));
     }
 
 }

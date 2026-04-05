@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.durable.kube;
+package io.quarkiverse.flow.durable.kube.config;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;

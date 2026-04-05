@@ -334,7 +334,7 @@
         {
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum by (workflow) (\n  rate(quarkus_flow_workflow_duration_seconds_sum[5m])\n)\n/\nsum by (workflow) (\n  rate(quarkus_flow_workflow_duration_seconds_count[5m])\n)\n",
+          "expr": "sum by (workflow) (\n  rate(quarkus_flow_workflow_duration_seconds_sum[$__rate_interval])\n)\n/\nsum by (workflow) (\n  rate(quarkus_flow_workflow_duration_seconds_count[$__rate_interval])\n)\n",
           "format": "time_series",
           "legendFormat": "{{workflow}}",
           "range": true,
@@ -431,7 +431,7 @@
         {
           "editorMode": "code",
           "exemplar": false,
-          "expr": "max by (workflow) (\n  quarkus_flow_workflow_duration_seconds_max\n)\n",
+          "expr": "max by (workflow) (\n  quarkus_flow_workflow_duration_seconds_max\n) > 0\n",
           "format": "time_series",
           "legendFormat": "{{workflow}}",
           "range": true,
@@ -553,7 +553,7 @@
         {
           "editorMode": "code",
           "exemplar": false,
-          "expr": "histogram_quantile(\n  0.95,\n  sum by (le, workflow) (\n    rate(quarkus_flow_workflow_duration_seconds_bucket[5m])\n  )\n)\n",
+          "expr": "histogram_quantile(\n  0.95,\n  sum by (le, workflow) (\n    rate(quarkus_flow_workflow_duration_seconds_bucket[$__rate_interval])\n  )\n)\n",
           "format": "time_series",
           "legendFormat": "{{workflow}}",
           "range": true,

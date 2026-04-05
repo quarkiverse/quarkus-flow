@@ -11,11 +11,14 @@ import jakarta.enterprise.event.Observes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.quarkus.runtime.Startup;
+
 /**
  * Observes {@link MemberLeaseEvent} to coordinate {@link io.serverlessworkflow.impl.WorkflowApplication} beans which workflow
  * instances shard identification.
  */
 @ApplicationScoped
+@Startup
 public class MemberLeaseCoordinator {
     private static final Logger LOG = LoggerFactory.getLogger(MemberLeaseCoordinator.class.getName());
     private final AtomicReference<String> current = new AtomicReference<>();
@@ -36,7 +39,6 @@ public class MemberLeaseCoordinator {
                 } else {
                     LOG.debug("Lease '{}' has been lost ", evt.leaseName());
                 }
-
             }
         }
     }

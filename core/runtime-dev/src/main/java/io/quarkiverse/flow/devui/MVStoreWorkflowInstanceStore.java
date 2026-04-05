@@ -6,8 +6,8 @@ import java.util.Objects;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
 import org.slf4j.Logger;
@@ -15,9 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 
-import io.quarkiverse.flow.config.FlowDevUIConfig;
 import io.serverlessworkflow.impl.WorkflowStatus;
 
 @ApplicationScoped
@@ -26,45 +24,45 @@ public class MVStoreWorkflowInstanceStore implements WorkflowInstanceStore {
     private static final Logger log = LoggerFactory.getLogger(MVStoreWorkflowInstanceStore.class);
     private static final String MAP_NAME = "flowInstances";
 
-    @Inject
-    FlowDevUIConfig config;
-
-    private static final ObjectMapper objectMapper;
-
-    static {
-        SimpleModule module = new SimpleModule();
-        module.addSerializer(FlowInstance.class, new FlowInstanceSerializer());
-        module.addDeserializer(FlowInstance.class, new FlowInstanceDeserializer());
-
-        objectMapper = new ObjectMapper()
-                .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
-                .registerModule(module);
-    }
+    private final ObjectMapper objectMapper;
+    private final String dbPath;
 
     private MVStore store;
     private MVMap<String, String> flowInstancesMap;
 
+    public MVStoreWorkflowInstanceStore(
+            @ConfigProperty(name = "quarkus.flow.devui.mvstore.db-path", defaultValue = "flow-devui.mv.db") String dbPath,
+            ObjectMapper objectMapper) {
+        this.dbPath = dbPath;
+        this.objectMapper = objectMapper;
+    }
+
     @PostConstruct
     void init() {
-        String path = config.mvstore().dbPath();
+        if (flowInstancesMap != null) {
+            return;
+        }
         try {
-            store = MVStore.open(path);
+            store = MVStore.open(dbPath);
             flowInstancesMap = store.openMap(MAP_NAME);
-            log.debug("MVStore initialized at: {}", path);
+            log.debug("MVStore initialized at: {}", dbPath);
         } catch (Exception e) {
-            log.error("Failed to initialize MVStore at: {}", path, e);
+            log.error("Failed to initialize MVStore at: {}", dbPath, e);
             throw new RuntimeException("Failed to initialize MVStore", e);
         }
     }
 
     @PreDestroy
-    void close() {
+    public void close() {
         if (store != null) {
             try {
                 store.close();
                 log.info("MVStore closed");
             } catch (Exception e) {
                 log.warn("Error closing MVStore", e);
+            } finally {
+                store = null;
+                flowInstancesMap = null;
             }
         }
     }

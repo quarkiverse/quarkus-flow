@@ -10,8 +10,6 @@ In Kubernetes, Pod names and IPs are ephemeral. If a `WorkflowApplication` ID is
 
 This guide explains how to solve this using **Kubernetes Lease-based Coordination** to maintain stable worker identities across pod disruptions.
 
-
-
 == 1. The Architecture: Lease-Based Coordination
 
 To decouple the workflow engine's identity from the ephemeral Pod identity, Quarkus Flow binds the `WorkflowApplication` ID to a **Kubernetes Lease** name (e.g., `flow-pool-member-durable-flow-00`).
@@ -104,7 +102,58 @@ quarkus.kubernetes.rbac.role-bindings.durable-flow-sa.subjects.durable-flow-sa.k
 quarkus.kubernetes.rbac.role-bindings.durable-flow-sa.role-name=durable-flow-sa
 ----
 
-== 5. Verify the Architecture in Production
+== 5. Configure Deployment Strategy (Deadlock Prevention)
+
+Because Quarkus Flow relies on exclusive Leases, it fundamentally conflicts with Kubernetes' default `RollingUpdate` behavior. By default, Kubernetes starts a new Pod (V2) before killing the old Pod (V1). Because V2 requires a Lease to become `Ready`, and V1 still holds that Lease, the deployment will deadlock.
+
+To prevent this, you must configure your deployment to terminate old Pods *before* starting new ones.
+
+=== Single Replica Deployments (`replicas: 1`)
+If you are running a single instance, you must change the deployment strategy to `Recreate`. This immediately terminates the old Pod, freeing the lease so the new Pod can successfully acquire it on startup.
+
+*Note: This will result in a brief period of downtime during deployments while the old pod shuts down and the new one boots up.*
+
+If you use the Quarkus Kubernetes extension, set this in your `application.properties`:
+[source,properties]
+----
+# Changes the strategy from RollingUpdate to Recreate
+quarkus.kubernetes.strategy=recreate
+----
+
+If you write your own YAML:
+[source,yaml]
+----
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+----
+
+=== Multi-Replica Deployments (`replicas: > 1`)
+If you are running multiple replicas, you can keep the `RollingUpdate` strategy, but you must set `maxUnavailable` to at least `1`. This instructs Kubernetes to kill an old Pod first, releasing its lease for the new Pod to claim.
+
+If you use the Quarkus Kubernetes extension, set this in your `application.properties`:
+
+[source,properties]
+----
+# Ensures one pod is killed first to release the lease
+quarkus.kubernetes.rolling-update.max-unavailable=1
+quarkus.kubernetes.rolling-update.max-surge=1
+----
+
+If you write your own YAML:
+[source,yaml]
+----
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+----
+
+== 6. Verify the Architecture in Production
 
 Once deployed, you can use `kubectl` to verify the leader election and sharding is working correctly.
 

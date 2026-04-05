@@ -9,7 +9,6 @@ import java.util.Map;
 
 import org.assertj.core.api.SoftAssertions;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -29,12 +28,7 @@ public class MVStoreWorkflowInstanceStoreDevModeTest extends DevUIJsonRPCTest {
     static final QuarkusDevModeTest devMode = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(GreetingResource.class, DevUIWorkflow.class, Message.class)
-                    .addAsResource(new StringAsset(
-                            """
-                                    quarkus.flow.devui.storage-type=MVSTORE
-                                    quarkus.flow.devui.mvstore.db-path=%s
-                                    """.formatted(DB_PATH)),
-                            "application.properties"));
+                    .addAsResource("application-backend-devui.properties", "application.properties"));
 
     public MVStoreWorkflowInstanceStoreDevModeTest() {
         super("quarkus-flow", "http://localhost:8080");
@@ -141,6 +135,8 @@ public class MVStoreWorkflowInstanceStoreDevModeTest extends DevUIJsonRPCTest {
                     JsonNode result = super.executeJsonRPCMethod("findByWorkflowInstanceId", Map.of(
                             "instanceId", instanceId));
                     assertThat(result).isNotNull();
+                    assertThat(result.isNull()).as("Result should not be a null node").isFalse();
+                    assertThat(result.has("status")).as("Result should have status field").isTrue();
                     assertThat(result.get("status").asText()).isEqualTo("COMPLETED");
                 });
 
