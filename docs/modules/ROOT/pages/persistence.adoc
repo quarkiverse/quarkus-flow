@@ -85,22 +85,6 @@ Configure the local file path in your `application.properties`:
 quarkus.flow.persistence.mvstore.db-path=${user.home}/testFlowMVStore.db
 ----
 
-== 3. Data Serialization
-
-To safely write and read your workflow's state to and from the persistence store, Quarkus Flow needs to know how to serialize your workflow data context.
-
-Because the underlying `WorkflowModel` is evaluated as JSON, you must provide a Jackson-based marshaller. This dependency provides an implementation of the `CustomObjectMarshaller` interface, which automatically translates your in-memory workflow data into a format the database can store.
-
-Add the following dependency to your `pom.xml` alongside your chosen persistence provider:
-
-[source,xml]
-----
-<dependency>
-  <groupId>io.serverlessworkflow</groupId>
-  <artifactId>serverlessworkflow-persistence-jackson-marshaller</artifactId>
-</dependency>
-----
-
 == See also
 * xref:concepts-durable-workflow-k8s.adoc[Durable Workflows in Kubernetes] — architecture and concepts for distributed execution.
 * link:https://quarkus.io/guides/redis[Using the Quarkus Redis Client] — advanced Redis configuration.

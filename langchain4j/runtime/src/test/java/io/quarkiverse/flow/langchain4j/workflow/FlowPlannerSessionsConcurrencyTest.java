@@ -1,5 +1,6 @@
 package io.quarkiverse.flow.langchain4j.workflow;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
@@ -21,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dev.langchain4j.agentic.AgenticServices;
+import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
 import dev.langchain4j.service.V;
 import io.quarkiverse.flow.internal.WorkflowRegistry;
@@ -30,7 +32,6 @@ import io.quarkus.test.junit.QuarkusTest;
 class FlowPlannerSessionsConcurrencyTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FlowPlannerSessionsConcurrencyTest.class.getName());
-    private static final int MAX_RESIDUAL_SESSIONS = 4;
 
     @Inject
     WorkflowRegistry registry;
@@ -50,14 +51,7 @@ class FlowPlannerSessionsConcurrencyTest {
         await()
                 .atMost(Duration.ofSeconds(120))
                 .pollInterval(Duration.ofMillis(250))
-                .until(() -> FlowPlannerSessions.getInstance().activeSessionCount() <= baselineSessions
-                        + MAX_RESIDUAL_SESSIONS);
-
-        int activeSessions = FlowPlannerSessions.getInstance().activeSessionCount();
-        if (activeSessions > baselineSessions) {
-            LOGGER.warn("Residual sessions detected after test cleanup: baseline={} active={} residual={}",
-                    baselineSessions, activeSessions, activeSessions - baselineSessions);
-        }
+                .until(() -> FlowPlannerSessions.getInstance().activeSessionCount() <= baselineSessions);
     }
 
     @Test
@@ -102,7 +96,11 @@ class FlowPlannerSessionsConcurrencyTest {
 
                     long t0 = System.nanoTime();
                     try {
-                        agent.run(input);
+                        ResultWithAgenticScope<String> result = agent.run(input);
+                        AgenticScope scope = result.agenticScope();
+                        assertThat(scope.readState("calledA", false)).isTrue();
+                        assertThat(scope.readState("calledB", false)).isTrue();
+                        assertThat(scope.readState("calledC", false)).isTrue();
                         ok.increment();
                     } catch (Exception e) {
                         failed.increment();
@@ -121,6 +119,8 @@ class FlowPlannerSessionsConcurrencyTest {
             for (Future<Void> f : futures) {
                 f.get(60, TimeUnit.SECONDS);
             }
+
+            FlowPlannerSessionsAwait.awaitNoSessions(10);
 
             long total = ok.sum() + failed.sum();
             double avgMs = (nanos.sum() / 1_000_000.0) / Math.max(1, total);
