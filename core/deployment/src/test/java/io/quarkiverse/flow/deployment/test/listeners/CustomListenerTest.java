@@ -15,7 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.serverlessworkflow.impl.WorkflowApplication;
-import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener;
+import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionCompletableListener;
 
 public class CustomListenerTest {
 
@@ -32,7 +32,7 @@ public class CustomListenerTest {
     void should_register_custom_listener_without_duplicates() {
         assertNotNull(workflowApp, "WorkflowApplication bean should be available in the container");
 
-        Collection<WorkflowExecutionListener> registeredListeners = workflowApp.listeners();
+        Collection<WorkflowExecutionCompletableListener> registeredListeners = workflowApp.listeners();
 
         boolean customFound = registeredListeners.stream()
                 .anyMatch(l -> l instanceof CustomExecutionListener);
