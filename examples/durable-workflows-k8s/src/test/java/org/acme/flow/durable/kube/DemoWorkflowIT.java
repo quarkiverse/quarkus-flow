@@ -25,7 +25,8 @@ public class DemoWorkflowIT {
 
     @Test
     public void testWorkflow() {
-        Optional<Map<String, Object>> output = workflow.startInstance(Map.of()).await().atMost(Duration.ofSeconds(5)).asMap();
+        Optional<Map<String, Object>> output = workflow.startInstance(Map.of()).await().atMost(Duration.ofSeconds(5))
+                .asMap();
         assertTrue(output.isPresent());
         assertEquals("OK", output.get().get("httpResult"));
         assertNotNull(output.get().get("durationMillis"));

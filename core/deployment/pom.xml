@@ -46,6 +46,10 @@
             <artifactId>quarkus-proxy-registry</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-fault-tolerance-deployment</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow-messaging-deployment</artifactId>
             <version>${project.version}</version>
@@ -101,6 +105,11 @@
             <groupId>io.quarkiverse.playwright</groupId>
             <artifactId>quarkus-playwright</artifactId>
             <version>${io.quarkiverse.playwright}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye</groupId>
+            <artifactId>smallrye-fault-tolerance-standalone</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
