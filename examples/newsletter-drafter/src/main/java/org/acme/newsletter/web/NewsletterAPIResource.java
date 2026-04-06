@@ -52,7 +52,7 @@ public class NewsletterAPIResource {
     public Response newNewsletter(NewsletterRequest request) {
         final WorkflowInstance instance = newsletterWorkflow.instance(request);
         // fire and forget (agents will be called on a thread within the engine)
-        CompletableFuture.runAsync(instance::start);
+        instance.start();
         return Response.accepted(Map.of("instanceId", instance.id())).build();
     }
 
