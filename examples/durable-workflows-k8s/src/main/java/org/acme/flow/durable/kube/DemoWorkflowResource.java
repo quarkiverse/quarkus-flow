@@ -40,21 +40,19 @@ public class DemoWorkflowResource {
         try {
             LOGGER.info("Starting durable workflow execution remotely...");
 
-            Optional<Map<String, Object>> output = workflow.startInstance(input)
-                    .await().atMost(Duration.ofSeconds(delaySeconds + 5))
-                    .asMap();
+            Optional<Map<String, Object>> output = workflow.startInstance(input).await()
+                    .atMost(Duration.ofSeconds(delaySeconds + 5)).asMap();
 
             if (output.isPresent()) {
                 LOGGER.info("Workflow completed successfully in {} ms", output.get().get("durationMillis"));
                 return Response.ok(output.get()).build();
             } else {
-                return Response.status(Response.Status.NO_CONTENT).entity(Map.of("message", "No output returned")).build();
+                return Response.status(Response.Status.NO_CONTENT).entity(Map.of("message", "No output returned"))
+                        .build();
             }
         } catch (Exception e) {
             LOGGER.error("Workflow execution failed", e);
-            return Response.serverError()
-                    .entity(Map.of("error", "Workflow failed", "details", e.getMessage()))
-                    .build();
+            return Response.serverError().entity(Map.of("error", "Workflow failed", "details", e.getMessage())).build();
         }
     }
 }
