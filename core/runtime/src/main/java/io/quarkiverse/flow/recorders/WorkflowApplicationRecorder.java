@@ -41,6 +41,7 @@ import io.serverlessworkflow.impl.executors.CallableTask;
 import io.serverlessworkflow.impl.executors.CallableTaskProxyBuilder;
 import io.serverlessworkflow.impl.executors.http.HttpClientResolver;
 import io.serverlessworkflow.impl.expressions.jq.JQExpressionFactory;
+import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionCompletableListener;
 import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener;
 import io.serverlessworkflow.impl.model.func.JavaModelFactory;
 import io.serverlessworkflow.impl.model.jackson.JacksonModelFactory;
@@ -101,6 +102,14 @@ public class WorkflowApplicationRecorder {
                 .forEach(listener -> {
                     builder.withListener(listener);
                     LOG.debug("Flow: Bound WorkflowExecutionListener bean: {}", listener.getClass().getName());
+                });
+
+        container
+                .select(WorkflowExecutionCompletableListener.class, Any.Literal.INSTANCE)
+                .stream()
+                .forEach(listener -> {
+                    builder.withListener(listener);
+                    LOG.debug("Flow: Bound WorkflowExecutionCompletableListener bean: {}", listener.getClass().getName());
                 });
     }
 

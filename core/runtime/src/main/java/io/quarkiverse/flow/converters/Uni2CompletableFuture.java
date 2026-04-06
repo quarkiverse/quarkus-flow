@@ -17,4 +17,8 @@ public class Uni2CompletableFuture implements DataTypeConverter<Uni, Completable
     public Class<Uni> sourceType() {
         return Uni.class;
     }
+
+    public Class<CompletableFuture> targetType() {
+        return CompletableFuture.class;
+    }
 }

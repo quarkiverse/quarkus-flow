@@ -63,6 +63,7 @@ import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowException;
 import io.serverlessworkflow.impl.events.EventConsumer;
 import io.serverlessworkflow.impl.events.EventPublisher;
+import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionCompletableListener;
 import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener;
 import io.smallrye.common.annotation.Identifier;
 
@@ -119,7 +120,7 @@ class FlowProcessor {
 
     @BuildStep
     UnremovableBeanBuildItem keepCustomExecutionListeners() {
-        return UnremovableBeanBuildItem.beanTypes(WorkflowExecutionListener.class);
+        return UnremovableBeanBuildItem.beanTypes(WorkflowExecutionListener.class, WorkflowExecutionCompletableListener.class);
     }
 
     /**
