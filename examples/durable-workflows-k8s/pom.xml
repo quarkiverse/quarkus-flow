@@ -14,7 +14,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.34.1</quarkus.platform.version>
+        <quarkus.platform.version>3.34.2</quarkus.platform.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.5</surefire-plugin.version>
 
@@ -36,17 +36,15 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest</artifactId>
+            <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
-        </dependency>
-
-        <!-- Health endpoints (optional but handy on k8s) -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-health</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-websockets</artifactId>
         </dependency>
 
         <!-- Quarkus Flow core -->
@@ -60,6 +58,13 @@
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow-durable-kubernetes</artifactId>
+            <version>${quarkus.flow.version}</version>
+        </dependency>
+
+        <!-- Persistence to actually have persisted state across restarts / pod drain -->
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-redis</artifactId>
             <version>${quarkus.flow.version}</version>
         </dependency>
 
@@ -140,6 +145,8 @@
         <profile>
             <id>kind</id>
             <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
                 <quarkus.profile>kind</quarkus.profile>
             </properties>
             <dependencies>

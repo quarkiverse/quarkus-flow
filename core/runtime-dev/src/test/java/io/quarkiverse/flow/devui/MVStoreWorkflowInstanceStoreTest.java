@@ -2,7 +2,6 @@ package io.quarkiverse.flow.devui;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -14,10 +13,24 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import io.quarkiverse.flow.config.FlowDevUIConfig;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 import io.serverlessworkflow.impl.WorkflowStatus;
 
 public class MVStoreWorkflowInstanceStoreTest {
+
+    private static final ObjectMapper objectMapper;
+    static {
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(FlowInstance.class, new FlowInstanceSerializer());
+        module.addDeserializer(FlowInstance.class, new FlowInstanceDeserializer());
+
+        objectMapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .registerModule(module);
+    }
 
     @TempDir
     Path tempDir;
@@ -39,25 +52,7 @@ public class MVStoreWorkflowInstanceStoreTest {
     }
 
     private MVStoreWorkflowInstanceStore createStore(String path) {
-        MVStoreWorkflowInstanceStore store = new MVStoreWorkflowInstanceStore();
-
-        // Create a mock config
-        store.config = new FlowDevUIConfig() {
-            @Override
-            public StorageType storageType() {
-                return StorageType.MVSTORE;
-            }
-
-            @Override
-            public FlowDevUIConfig.MVStore mvstore() {
-                return new FlowDevUIConfig.MVStore() {
-                    @Override
-                    public String dbPath() {
-                        return path;
-                    }
-                };
-            }
-        };
+        MVStoreWorkflowInstanceStore store = new MVStoreWorkflowInstanceStore(path, objectMapper);
 
         store.init();
         return store;
@@ -171,7 +166,7 @@ public class MVStoreWorkflowInstanceStoreTest {
     }
 
     @Test
-    void should_persist_data_across_store_restarts() throws IOException {
+    void should_persist_data_across_store_restarts() {
         // Save some data
         store.saveOrUpdate(createWorkflowInstance("id1", WorkflowStatus.RUNNING,
                 Instant.parse("2024-01-01T10:00:00Z"), Instant.parse("2024-01-01T10:05:00Z")));

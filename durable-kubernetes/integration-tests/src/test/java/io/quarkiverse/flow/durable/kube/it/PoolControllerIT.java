@@ -36,12 +36,12 @@ public class PoolControllerIT {
         String pod = kubeInfo.podName();
 
         // Leader lease should exist and be held by this pod
-        Lease leader = awaitLeaseHeldBy(ns, pod, Duration.ofSeconds(30));
+        Lease leader = awaitLeaseHeldBy(ns, pod, Duration.ofSeconds(5));
         assertNotNull(leader.getSpec());
         assertEquals(pod, leader.getSpec().getHolderIdentity());
 
         // Member leases should exist (fixtures replicas=3)
-        List<Lease> members = awaitMemberLeases(ns, Duration.ofSeconds(30));
+        List<Lease> members = awaitMemberLeases(ns, Duration.ofSeconds(5));
 
         // Verify expected member names exist (exact set)
         Set<String> names = members.stream()
@@ -77,16 +77,16 @@ public class PoolControllerIT {
         String pod = kubeInfo.podName();
 
         // leader held
-        Lease leader = awaitLeaseHeldBy(ns, pod, Duration.ofSeconds(30));
+        Lease leader = awaitLeaseHeldBy(ns, pod, Duration.ofSeconds(5));
         assertNotNull(leader.getSpec());
         assertEquals(pod, leader.getSpec().getHolderIdentity());
 
         // member leases exist
-        List<Lease> members = awaitMemberLeases(ns, Duration.ofSeconds(30));
+        List<Lease> members = awaitMemberLeases(ns, Duration.ofSeconds(5));
         assertTrue(members.size() >= 3);
 
         // leader is also a member: at least one member lease must be held by the same pod
-        Lease myMemberLease = awaitAnyMemberLeaseHeldBy(ns, pod, Duration.ofSeconds(30));
+        Lease myMemberLease = awaitAnyMemberLeaseHeldBy(ns, pod, Duration.ofSeconds(5));
         assertNotNull(myMemberLease, "expected at least one member lease held by leader pod");
         assertEquals(pod, myMemberLease.getSpec().getHolderIdentity());
 

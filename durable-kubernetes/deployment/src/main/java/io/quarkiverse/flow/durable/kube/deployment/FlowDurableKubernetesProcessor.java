@@ -1,20 +1,22 @@
 package io.quarkiverse.flow.durable.kube.deployment;
 
 import io.quarkiverse.flow.durable.kube.DeploymentPoolTopologyResolver;
-import io.quarkiverse.flow.durable.kube.DevModeKubeInfoStrategy;
-import io.quarkiverse.flow.durable.kube.DevPoolTopologyResolver;
+import io.quarkiverse.flow.durable.kube.DevModeStrategy;
 import io.quarkiverse.flow.durable.kube.Fabric8KubeInfoStrategy;
-import io.quarkiverse.flow.durable.kube.FlowDurableKubeConfig;
 import io.quarkiverse.flow.durable.kube.InjectLeaseWorkflowApplicationBuilderCustomizer;
 import io.quarkiverse.flow.durable.kube.LeaseAcquisitionHealthCheck;
 import io.quarkiverse.flow.durable.kube.LeaseService;
 import io.quarkiverse.flow.durable.kube.MemberLeaseCoordinator;
 import io.quarkiverse.flow.durable.kube.PoolLeaderController;
 import io.quarkiverse.flow.durable.kube.PoolMemberController;
+import io.quarkiverse.flow.durable.kube.config.DevModeConfig;
+import io.quarkiverse.flow.durable.kube.config.FlowDurableKubeConfig;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.scheduler.deployment.ForceStartSchedulerBuildItem;
 
 class FlowDurableKubernetesProcessor {
@@ -32,8 +34,15 @@ class FlowDurableKubernetesProcessor {
      * @see <a href="https://quarkus.io/guides/all-builditems#scheduler">Build Items - Scheduler</a>
      */
     @BuildStep
-    ForceStartSchedulerBuildItem forceStartSchedulerBuildItem() {
-        return new ForceStartSchedulerBuildItem();
+    void forceStartSchedulerBuildItem(LaunchModeBuildItem launchMode, DevModeConfig devModeConfig,
+            BuildProducer<ForceStartSchedulerBuildItem> forceScheduler) {
+        boolean isDevOrTest = launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ||
+                launchMode.getLaunchMode() == LaunchMode.TEST;
+        // Skip our schedulers by default
+        boolean bypassActive = isDevOrTest && devModeConfig.devModeStrategyEnabled();
+        if (!bypassActive) {
+            forceScheduler.produce(new ForceStartSchedulerBuildItem());
+        }
     }
 
     @BuildStep
@@ -48,17 +57,10 @@ class FlowDurableKubernetesProcessor {
                         MemberLeaseCoordinator.class,
                         InjectLeaseWorkflowApplicationBuilderCustomizer.class,
                         DeploymentPoolTopologyResolver.class,
-                        LeaseAcquisitionHealthCheck.class)
+                        LeaseAcquisitionHealthCheck.class,
+                        DevModeStrategy.class)
                 .setUnremovable()
                 .build();
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
-    AdditionalBeanBuildItem devModeKubeInfoStrategy() {
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClasses(
-                        DevModeKubeInfoStrategy.class, DevPoolTopologyResolver.class)
-                .setUnremovable()
-                .build();
-    }
 }

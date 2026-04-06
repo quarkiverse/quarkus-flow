@@ -2,9 +2,11 @@ package io.quarkiverse.flow.deployment;
 
 import io.quarkiverse.flow.config.FlowDevUIConfig;
 import io.quarkiverse.flow.devui.InMemoryWorkflowInstanceStore;
+import io.quarkiverse.flow.devui.LifecycleManagementBackendObjectMapperCustomizer;
 import io.quarkiverse.flow.devui.MVStoreWorkflowInstanceStore;
 import io.quarkiverse.flow.devui.ManagementLifecycleListener;
 import io.quarkiverse.flow.devui.ManagementLifecycleRPCService;
+import io.quarkiverse.flow.devui.RuntimeDevApplicationBuilderCustomizer;
 import io.quarkiverse.flow.devui.WorkflowRPCService;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.IsDevelopment;
@@ -35,25 +37,33 @@ public class FlowDevUIProcessor {
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    void createJsonRPCProviders(BuildProducer<JsonRPCProvidersBuildItem> rpcProviders) {
+    void createJsonRPCProviders(BuildProducer<JsonRPCProvidersBuildItem> rpcProviders, FlowDevUIConfig flowDevUIConfig) {
         rpcProviders.produce(new JsonRPCProvidersBuildItem(WorkflowRPCService.class));
-        rpcProviders.produce(new JsonRPCProvidersBuildItem(ManagementLifecycleRPCService.class));
+        if (flowDevUIConfig.backend().storage().enabled()) {
+            rpcProviders.produce(new JsonRPCProvidersBuildItem(ManagementLifecycleRPCService.class));
+        }
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     AdditionalBeanBuildItem additionalBeans(FlowDevUIConfig flowDevUIConfig) {
 
+        if (!flowDevUIConfig.backend().storage().enabled()) {
+            return null;
+        }
+
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder()
                 .addBeanClasses(
-                        ManagementLifecycleListener.class);
+                        RuntimeDevApplicationBuilderCustomizer.class,
+                        ManagementLifecycleListener.class,
+                        ManagementLifecycleRPCService.class,
+                        LifecycleManagementBackendObjectMapperCustomizer.class)
+                .setUnremovable();
 
         switch (flowDevUIConfig.storageType()) {
             case MVSTORE -> builder.addBeanClass(MVStoreWorkflowInstanceStore.class);
             case IN_MEMORY -> builder.addBeanClass(InMemoryWorkflowInstanceStore.class);
         }
 
-        return builder
-                .setUnremovable()
-                .build();
+        return builder.build();
     }
 }
