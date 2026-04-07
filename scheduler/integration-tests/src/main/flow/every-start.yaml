@@ -5,7 +5,7 @@ document:
   version: '0.1.0'
 schedule:
   every:
-      milliseconds: 10
+      seconds: 1
 do: 
   - recovered:
       set:
