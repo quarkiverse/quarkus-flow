@@ -51,9 +51,9 @@ All submissions require review by at least one maintainer before being merged. W
 
 ### Building the Project
 
-Standard build (skip integration tests for speed):
+Standard build (includes unit tests, skips integration tests):
 ```bash
-./mvnw clean install -DskipITs=true
+./mvnw clean install
 ```
 
 **Full build with integration tests** (required before PR):
@@ -65,6 +65,8 @@ Build specific module:
 ```bash
 ./mvnw clean install -pl core -am
 ```
+
+**Note**: `./mvnw clean install` automatically runs unit tests. Integration tests are skipped by default for faster builds.
 
 ### Project Structure
 
@@ -105,27 +107,16 @@ Why this matters:
 
 ### Test Conventions
 
-- **Unit tests**: `*Test.java` (run via Surefire)
-- **Integration tests**: `*IT.java` (run via Failsafe)
+- **Unit tests**: `*Test.java` (run via Surefire, included in `./mvnw clean install`)
+- **Integration tests**: `*IT.java` (run via Failsafe, requires `-DskipITs=false`)
 - Use **AssertJ** for assertions (preferred in this project)
 - Follow existing test patterns in each module
 
-### Running Tests
+### Important Testing Notes
 
-Single test:
-```bash
-./mvnw test -Dtest=MyTest
-```
+**Mocked LLM Calls**: Integration tests mock Ollama/LLM model calls to avoid resource-intensive operations in CI. Do not make real LLM API calls in tests.
 
-Single module tests:
-```bash
-./mvnw test -pl core/runtime
-```
-
-Integration tests for specific module:
-```bash
-./mvnw verify -pl core/integration-tests
-```
+**Parallel Execution**: Tests run in parallel. **Never use fixed ports** in your tests. If you need a port, use an unusual/random port or let the framework assign one (e.g., `@QuarkusTest` auto-assigns ports).
 
 ## Code Conventions
 

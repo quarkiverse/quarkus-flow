@@ -48,19 +48,15 @@ quarkus-flow/
 
 ## Build & Test Commands
 
-### Standard build
+### Standard build (includes unit tests)
 ```bash
 ./mvnw clean install
 ```
+This automatically runs unit tests. Integration tests are skipped by default.
 
-### Quick build (skip tests)
+### Quick build (skip all tests)
 ```bash
 ./mvnw clean install -DskipTests
-```
-
-### Skip only integration tests
-```bash
-./mvnw clean install -DskipITs=true
 ```
 
 ### Build specific module
@@ -90,15 +86,22 @@ quarkus-flow/
 
 ## Testing
 
-- **Unit tests**: Run via Surefire (`**/src/test/**/*Test.java`)
-- **Integration tests**: Run via Failsafe (`**/src/test/**/*IT.java`)
+- **Unit tests**: Run via Surefire (`**/src/test/**/*Test.java`) - automatically included in `./mvnw clean install`
+- **Integration tests**: Run via Failsafe (`**/src/test/**/*IT.java`) - require `-DskipITs=false`
 - **Test matrix**: Ubuntu + Windows, JDK 17/21/25
-- Integration tests may use Quarkus Dev Services (Testcontainers)
+- Integration tests use Quarkus Dev Services (Testcontainers)
+
+### Important Testing Rules
+
+**Mocked LLM Calls**: Integration tests mock Ollama/LLM model calls to avoid resource-intensive operations in CI. Never make real LLM API calls in tests.
+
+**Parallel Execution**: Tests run in parallel. **Never use fixed ports** (e.g., 8080). Use unusual/random ports or let Quarkus assign them automatically.
 
 When writing tests:
 - Use AssertJ for assertions (preferred in this project)
 - Follow existing test patterns in each module
 - Integration tests go in `integration-tests/` submodules
+- Mock external services (LLMs, APIs) to keep tests fast and reliable
 
 ## Code Conventions
 
