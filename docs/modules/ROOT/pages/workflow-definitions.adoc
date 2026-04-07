@@ -43,7 +43,7 @@ During the Quarkus build, the engine parses your YAML files and generates `Workf
 
 Quarkus Flow uses the `document.namespace` and `document.name` fields from your YAML file to create a unique identifier for the bean. It generates two formats you can use:
 
-* **Fully Qualified Class Name (Recommended):** `namespace.name` (e.g., if your YAML has `namespace: org.acme` and `name: EchoWorkflow`, the identifier is `org.acme.EchoWorkflow`).
+* **Fully Qualified Class Name (Recommended):** `namespace.name` (e.g., if your YAML has `namespace: org.acme` and `name: EchoWorkflow`, the identifier is `org.acme.EchoWorkflow`. If your YAML has `namespace: org.acme` and `name: echo-workflow`, the identifier is also `org.acme.EchoWorkflow`).
 * **Regular:** `namespace:name` (e.g., `org.acme:EchoWorkflow`).
 
 Create a JAX-RS resource that injects and runs the workflow using the generated identifier:
