@@ -220,6 +220,7 @@ However, to maintain a healthy community and high-quality contributions, the fol
 
 - **Issues**: [GitHub Issues](https://github.com/quarkiverse/quarkus-flow/issues)
 - **Documentation**: https://docs.quarkiverse.io/quarkus-flow/dev/
+- **Quarkus Zulip Chat**: Join the [#dev channel](https://quarkusio.zulipchat.com/#narrow/stream/187038-dev) and mention "Quarkus Flow" in your message
 - **Quarkiverse Community**: https://github.com/quarkiverse
 
 ## License
