@@ -28,7 +28,12 @@ If you're using Claude Code to contribute to this project:
 
 1. **CLAUDE.md is automatically loaded** - it contains our project conventions and workflows
 2. **Hooks enforce quality gates** - they prevent common mistakes like creating PRs without passing tests
-3. **You can add personal preferences** in `~/.claude/settings.json` (not committed to Git)
+3. **You can add personal preferences** in `.claude/settings.local.json` (gitignored, not committed)
+
+**Settings hierarchy**:
+- `.claude/settings.json` - Project settings (committed to Git, shared with team)
+- `.claude/settings.local.json` - Your personal project overrides (gitignored)
+- `~/.claude/settings.json` - Your global settings (applies to all projects)
 
 ## For Maintainers
 
