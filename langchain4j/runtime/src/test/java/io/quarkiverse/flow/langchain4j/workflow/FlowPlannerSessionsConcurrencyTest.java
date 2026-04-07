@@ -123,8 +123,7 @@ class FlowPlannerSessionsConcurrencyTest {
             }
 
             // Explicitly wait for async cleanup to complete for sessions created by this test
-            var currentSessionIds = new ArrayList<>(FlowPlannerSessions.getInstance().activeSessionIds());
-            var testSessionIds = new ArrayList<>(currentSessionIds);
+            var testSessionIds = new ArrayList<>(FlowPlannerSessions.getInstance().activeSessionIds());
             testSessionIds.removeAll(baselineSessionIds);
 
             for (String sessionId : testSessionIds) {
