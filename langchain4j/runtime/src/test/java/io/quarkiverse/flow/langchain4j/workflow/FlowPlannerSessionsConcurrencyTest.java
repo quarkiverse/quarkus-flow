@@ -120,6 +120,17 @@ class FlowPlannerSessionsConcurrencyTest {
                 f.get(60, TimeUnit.SECONDS);
             }
 
+            // Explicitly wait for async cleanup to complete for all active sessions
+            var activeSessionIds = new ArrayList<>(FlowPlannerSessions.getInstance().activeSessionIds());
+            for (String sessionId : activeSessionIds) {
+                try {
+                    FlowPlanner planner = FlowPlannerSessions.getInstance().get(sessionId);
+                    planner.awaitCleanup();
+                } catch (IllegalArgumentException e) {
+                    // Session already cleaned up - ignore
+                }
+            }
+
             // If any async cleanup finishes slightly after futures complete:
             FlowPlannerSessionsAwait.awaitNoSessions(10);
 
