@@ -1,8 +1,12 @@
 package io.quarkiverse.flow.deployment;
 
+import java.util.Set;
+
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.serverlessworkflow.impl.WorkflowError;
 import io.serverlessworkflow.impl.WorkflowModelFactory;
 import io.serverlessworkflow.impl.auth.JWTConverter;
 import io.serverlessworkflow.impl.events.EventConsumer;
@@ -11,6 +15,7 @@ import io.serverlessworkflow.impl.executors.CallableTaskBuilder;
 import io.serverlessworkflow.impl.executors.TaskExecutorFactory;
 import io.serverlessworkflow.impl.executors.func.DataTypeConverter;
 import io.serverlessworkflow.impl.executors.http.HttpRequestDecorator;
+import io.serverlessworkflow.impl.executors.openapi.UnifiedOpenAPI;
 import io.serverlessworkflow.impl.expressions.ExpressionFactory;
 
 final class FlowNativeProcessor {
@@ -32,5 +37,22 @@ final class FlowNativeProcessor {
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(JWTConverter.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(DataTypeConverter.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(CallableTaskBuilder.class.getName()));
+    }
+
+    @BuildStep
+    ReflectiveClassBuildItem registerForReflection() {
+        return ReflectiveClassBuildItem.builder(
+                Set.of(WorkflowError.class.getName(),
+                        UnifiedOpenAPI.class.getName(),
+                        UnifiedOpenAPI.Server.class.getName(),
+                        UnifiedOpenAPI.PathItem.class.getName(),
+                        UnifiedOpenAPI.Operation.class.getName(),
+                        UnifiedOpenAPI.Parameter.class.getName(),
+                        UnifiedOpenAPI.Components.class.getName()))
+                .constructors(true)
+                .methods(true)
+                .fields(true)
+                .classes()
+                .build();
     }
 }
