@@ -1,31 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
     <groupId>org.acme</groupId>
-    <artifactId>petstore-openapi</artifactId>
+    <artifactId>suspend-resume-abort</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <name>Quarkus Flow :: Examples :: Petstore OpenAPI</name>
+    <name>Quarkus Flow :: Examples :: Suspend Resume Abort</name>
 
     <properties>
         <compiler-plugin.version>3.15.0</compiler-plugin.version>
         <maven.compiler.release>17</maven.compiler.release>
-        <maven.deploy.skip>true</maven.deploy.skip>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-
-        <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+        <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.version>3.34.2</quarkus.platform.version>
-
-        <quarkus.flow.version>1.0.0-SNAPSHOT</quarkus.flow.version>
-        <surefire-plugin.version>3.5.5</surefire-plugin.version>
-        <failsafe-plugin.version>3.5.4</failsafe-plugin.version>
-
-        <version.assertj>3.27.7</version.assertj>
-        <version.wiremock-jre8-standalone>2.35.2</version.wiremock-jre8-standalone>
-
         <skipITs>true</skipITs>
+        <surefire-plugin.version>3.5.5</surefire-plugin.version>
+        <quarkus.flow.version>1.0.0-SNAPSHOT</quarkus.flow.version>
     </properties>
 
     <dependencyManagement>
@@ -41,35 +32,17 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- REST + JSON -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
-
-        <!-- Qute templating for the small web UI -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-qute</artifactId>
-        </dependency>
-
-        <!-- Quarkus Flow runtime -->
-        <dependency>
-            <groupId>io.quarkiverse.flow</groupId>
-            <artifactId>quarkus-flow</artifactId>
-            <version>${quarkus.flow.version}</version>
-        </dependency>
-
-        <!-- Tests -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.github.tomakehurst</groupId>
-            <artifactId>wiremock-jre8-standalone</artifactId>
-            <version>${version.wiremock-jre8-standalone}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -78,20 +51,15 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <version>${version.assertj}</version>
-            <scope>test</scope>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow</artifactId>
+            <version>${quarkus.flow.version}</version>
         </dependency>
-
-
-        <!-- Can be ignored / Used to run Quarkus Flow project in parallel -->
-        <!-- On real use cases this can be safely removed -->
+        
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>
-            <artifactId>quarkus-flow-deployment</artifactId>
+            <artifactId>quarkus-flow-mvstore</artifactId>
             <version>${quarkus.flow.version}</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -113,7 +81,6 @@
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${compiler-plugin.version}</version>
@@ -121,21 +88,20 @@
                     <parameters>true</parameters>
                 </configuration>
             </plugin>
-
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${surefire-plugin.version}</version>
                 <configuration>
+                    <argLine>--add-opens java.base/java.lang=ALL-UNNAMED</argLine>
                     <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
-
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <version>${failsafe-plugin.version}</version>
+                <version>${surefire-plugin.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -145,16 +111,12 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <includes>
-                        <include>**/*IT.java</include>
-                    </includes>
+                    <argLine>--add-opens java.base/java.lang=ALL-UNNAMED</argLine>
                     <systemPropertyVariables>
                         <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
                     </systemPropertyVariables>
-                    <!-- We won't add external petstore tests to CI for reliability -->
-                    <skipITs>${skipITs}</skipITs>
                 </configuration>
             </plugin>
         </plugins>

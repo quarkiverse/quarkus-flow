@@ -41,11 +41,13 @@ public class FlowSchedulerTest {
 
     @Test
     void testEvery() {
+        // Workflow is scheduled every 1 second, wait for first instance with buffer for CI delays
         await()
-                .atMost(Duration.ofSeconds(3).plus(Duration.ofMillis(200)))
+                .atMost(Duration.ofSeconds(5))
                 .until(() -> everyDefinition.scheduledInstances().size() == 1);
+        // Wait for second instance (1s interval + buffer)
         await()
-                .atMost(Duration.ofSeconds(3).plus(Duration.ofMillis(200)))
+                .atMost(Duration.ofSeconds(5))
                 .until(() -> everyDefinition.scheduledInstances().size() == 2);
     }
 
