@@ -23,6 +23,7 @@
         <module>langchain4j-agentic-workflow</module>
         <module>micrometer-prometheus</module>
         <module>durable-workflows-k8s</module>
+        <module>suspend-resume-abort</module>
     </modules>
 
     <build>

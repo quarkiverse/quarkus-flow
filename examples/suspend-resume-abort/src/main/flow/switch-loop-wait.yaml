@@ -1,0 +1,22 @@
+document:
+  dsl: 1.0.0-alpha5
+  namespace: example
+  name: SwitchLoopWait
+  version: 0.1.0
+do:
+  - inc:
+     set:
+        count: ${.count+1}
+     then: looping
+  - looping:
+       switch:
+         - loopCount:
+             when: .count < (.maxCount // 10000)
+             then: waitABit
+         - default:
+             then: exit
+  - waitABit:
+       wait:
+         milliseconds: 1000
+       then: inc
+
