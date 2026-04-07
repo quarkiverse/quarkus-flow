@@ -37,12 +37,14 @@ class FlowPlannerSessionsConcurrencyTest {
     WorkflowRegistry registry;
 
     private int baselineSessions;
+    private List<String> baselineSessionIds;
 
     @BeforeEach
     void captureBaseline() {
         // Record how many sessions exist BEFORE this test starts.
         // This isolates the test from other parallel executions in the same JVM.
         baselineSessions = FlowPlannerSessions.getInstance().activeSessionCount();
+        baselineSessionIds = new ArrayList<>(FlowPlannerSessions.getInstance().activeSessionIds());
         LOGGER.info("Baseline sessions: {}", baselineSessions);
     }
 
@@ -118,6 +120,19 @@ class FlowPlannerSessionsConcurrencyTest {
 
             for (Future<Void> f : futures) {
                 f.get(60, TimeUnit.SECONDS);
+            }
+
+            // Explicitly wait for async cleanup to complete for sessions created by this test
+            var testSessionIds = new ArrayList<>(FlowPlannerSessions.getInstance().activeSessionIds());
+            testSessionIds.removeAll(baselineSessionIds);
+
+            for (String sessionId : testSessionIds) {
+                try {
+                    FlowPlanner planner = FlowPlannerSessions.getInstance().get(sessionId);
+                    planner.awaitCleanup();
+                } catch (IllegalArgumentException e) {
+                    // Session already cleaned up - ignore
+                }
             }
 
             // If any async cleanup finishes slightly after futures complete:

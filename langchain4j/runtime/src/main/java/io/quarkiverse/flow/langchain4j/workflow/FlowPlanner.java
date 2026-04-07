@@ -35,6 +35,7 @@ public class FlowPlanner implements Planner, AutoCloseable {
     private WorkflowDefinition definition;
     private String workflowInstanceId;
     private Throwable terminationCause;
+    private CompletableFuture<?> cleanupFuture;
 
     public FlowPlanner(FlowAgentWorkflowBuilder workflowBuilder, AgenticSystemTopology topology) {
         this.workflowBuilder = workflowBuilder;
@@ -69,7 +70,7 @@ public class FlowPlanner implements Planner, AutoCloseable {
 
         // Starts workflow on a different thread
         // Despite returning a CompletableFuture, the start() method executes on the same thread by design.
-        CompletableFuture.completedFuture(null)
+        cleanupFuture = CompletableFuture.completedFuture(null)
                 .thenComposeAsync(t -> instance.start())
                 .whenComplete((r, e) -> {
                     if (e != null) {
@@ -185,6 +186,20 @@ public class FlowPlanner implements Planner, AutoCloseable {
         currentExchanges.clear();
         parallelAgents.set(0);
         this.signalTermination();
+    }
+
+    /**
+     * Waits for the async cleanup to complete. This method is package-protected and intended for testing only.
+     * It ensures that session cleanup completes before assertions on session count.
+     */
+    void awaitCleanup() {
+        if (cleanupFuture != null) {
+            try {
+                cleanupFuture.join();
+            } catch (Exception e) {
+                LOG.debug("Exception during cleanup await (expected if workflow failed)", e);
+            }
+        }
     }
 
     /**
