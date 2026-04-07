@@ -3,9 +3,9 @@ name: Build with Integration Tests
 on:
   push:
     branches: [ "main" ]
-    paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "**.md", "**.adoc", "**.txt", ".all-contributorsrc", ".github/project.yml" ]
+    paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "**.md", "**.adoc", "**.txt", ".all-contributorsrc", ".github/project.yml", ".claude/**" ]
   pull_request:
-    paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "**.md", "**.adoc", "**.txt", ".all-contributorsrc" ]
+    paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "**.md", "**.adoc", "**.txt", ".all-contributorsrc", ".claude/**" ]
 
 permissions:
   contents: read
