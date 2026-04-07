@@ -12,9 +12,11 @@ import org.junit.jupiter.api.Test;
 import dev.langchain4j.agentic.scope.AgentInvocation;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
+@QuarkusTestResource(FlowAgentOllamaMockResource.class)
 public class FlowAgentsBuilderIT {
 
     @Inject
