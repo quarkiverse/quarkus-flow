@@ -3,9 +3,9 @@ name: Durable Workflows (Kubernetes Lease) - Kind Verification
 on:
   push:
     branches: [ "main" ]
-    paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "**.md", "**.adoc", "**.txt", ".all-contributorsrc", ".github/project.yml" ]
+    paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "**.md", "**.adoc", "**.txt", ".all-contributorsrc", ".github/project.yml", ".claude/**" ]
   pull_request:
-    paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "**.md", "**.adoc", "**.txt", ".all-contributorsrc" ]
+    paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "**.md", "**.adoc", "**.txt", ".all-contributorsrc", ".claude/**" ]
 
 concurrency:
   group: durable-k8s-kind-${{ github.ref }}
