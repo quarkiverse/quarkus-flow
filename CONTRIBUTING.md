@@ -22,6 +22,7 @@ Please include:
 - Expected vs. actual behavior
 - Quarkus, Java, and Maven versions
 - Relevant logs or stack traces
+- [Link a pull request with an issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue)
 
 ## Before You Contribute
 

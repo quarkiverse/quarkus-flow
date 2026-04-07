@@ -101,6 +101,9 @@ When writing tests:
 - Use AssertJ for assertions (preferred in this project)
 - Follow existing test patterns in each module
 - Integration tests go in `integration-tests/` submodules
+- **Examples tests**: Mock using `quarkus-mockito`
+- **Integration tests**: Mock using `WireMock` for external services
+- **Test naming**: Use `snake_case` with `@DisplayName` annotation (e.g., `@DisplayName("test_workflow_execution_completes")`)
 - Mock external services (LLMs, APIs) to keep tests fast and reliable
 
 ## Code Conventions
@@ -169,6 +172,7 @@ This must pass completely before creating a PR. Do not skip this step.
 
 ### Commit messages
 - Follow conventional commits style (see git log for examples)
+- Use imperative mood and keep commits atomic
 - Reference issues: `Fix #123` or `Closes #456`
 - Keep commits focused and atomic
 
@@ -186,6 +190,8 @@ When adding dependencies:
 - Check if already in `quarkus-bom` (Quarkus version: see `pom.xml`)
 - Check if in `serverlessworkflow-bom`
 - For new deps, add to parent `<dependencyManagement>` first
+- Use `<properties>` to define dependency versions
+- If a dependency is used by multiple modules, the property must live in their parent module's `pom.xml`
 - Avoid version conflicts with Quarkus core
 
 ## Helpful Context for AI Assistance
