@@ -38,11 +38,10 @@ import io.smallrye.mutiny.Uni;
  *     @Override
  *     public Workflow descriptor() {
  *         return workflow("customer-profile")
- *             .tasks(
- *                 get(URI.create("https://api.example.com/customer"))
- *                     .outputAs("${ { customer: .body } }")
- *             )
- *             .build();
+ *                 .tasks(
+ *                         get(URI.create("https://api.example.com/customer"))
+ *                                 .outputAs("${ { customer: .body } }"))
+ *                 .build();
  *     }
  * }
  * }
@@ -129,10 +128,9 @@ public abstract class Flow implements Flowable {
      * @Override
      * public Workflow descriptor() {
      *     return workflow("customer-profile")
-     *         .tasks(
-     *             get(URI.create(apiBaseUrl + "/customer"))
-     *         )
-     *         .build();
+     *             .tasks(
+     *                     get(URI.create(apiBaseUrl + "/customer")))
+     *             .build();
      * }
      * }
      * </pre>
