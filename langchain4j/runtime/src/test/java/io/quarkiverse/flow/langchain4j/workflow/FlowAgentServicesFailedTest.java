@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 
+import java.util.HashSet;
+
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
@@ -41,6 +43,10 @@ public class FlowAgentServicesFailedTest {
         service.subAgents(a, b, c);
 
         TestParallelAgent agent = service.build();
+
+        // Capture active sessions before running to identify which one is ours
+        var sessionsBefore = FlowPlannerSessions.getInstance().activeSessionIds();
+
         try {
             agent.run("boom");
             fail("Should have failed");
@@ -48,8 +54,30 @@ public class FlowAgentServicesFailedTest {
             LOG.info("Agent failed as expected: {}", e.getMessage());
         }
 
+        // Find the new session that was created (might be already cleaned up)
+        var sessionsAfter = FlowPlannerSessions.getInstance().activeSessionIds();
+        var newSessions = new HashSet<>(sessionsAfter);
+        newSessions.removeAll(sessionsBefore);
+
+        // If session still exists, explicitly wait for its cleanup
+        for (String sessionId : newSessions) {
+            try {
+                FlowPlanner planner = FlowPlannerSessions.getInstance().get(sessionId);
+                planner.awaitCleanup();
+            } catch (IllegalArgumentException e) {
+                // Session already cleaned up, which is fine
+            }
+        }
+
+        // Verify our session(s) are cleaned up - don't check absolute count since other tests may be running in parallel
         await().atMost(2, SECONDS)
-                .untilAsserted(() -> assertThat(FlowPlannerSessions.getInstance().activeSessionCount()).isEqualTo(0));
+                .untilAsserted(() -> {
+                    var currentSessions = FlowPlannerSessions.getInstance().activeSessionIds();
+                    for (String sessionId : newSessions) {
+                        assertThat(currentSessions).as("Session %s should be cleaned up", sessionId)
+                                .doesNotContain(sessionId);
+                    }
+                });
     }
 
     interface TestParallelAgent {

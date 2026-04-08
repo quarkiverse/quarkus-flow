@@ -2,11 +2,13 @@ package org.acme.langchain4j;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
+@QuarkusTestResource(WorkflowAgentsOllamaMockResource.class)
 class WorkflowAgentsIT {
 
     @Inject

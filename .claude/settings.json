@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "if": "Bash(gh pr create*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '🔍 Running pre-PR validation: mvn clean install -DskipITs=false' && mvn clean install -DskipITs=false -q && echo '✅ Build passed - PR creation allowed' || (echo '❌ Build failed - cannot create PR until all tests pass' && exit 1)"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -63,3 +63,6 @@ pom.xml.releaseBackup
 pom.xml.versionsBackup
 release.properties
 .m2/
+
+# Claude Code
+.claude/settings.local.json
