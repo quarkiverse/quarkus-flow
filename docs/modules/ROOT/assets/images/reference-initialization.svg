@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">Quarkus Flow initialization sequence</title>
+  <desc id="desc">Diagram showing build-time discovery, runtime initialization, registry warmup, and optional extension integration points.</desc>
+  <defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .box { fill: #f4f4f4; stroke: #1f1f1f; stroke-width: 1.5; rx: 12; ry: 12; }
+      .step { fill: #ffffff; stroke: #1f1f1f; stroke-width: 1.5; rx: 12; ry: 12; }
+      .label { font-family: sans-serif; font-size: 23px; fill: #111111; font-weight: 700; }
+      .small { font-family: sans-serif; font-size: 17px; fill: #333333; }
+      .tag { font-family: sans-serif; font-size: 18px; fill: #111111; font-weight: 700; }
+      .arrow { stroke: #1f1f1f; stroke-width: 2.5; fill: none; marker-end: url(#arrowhead); }
+      .dashed { stroke-dasharray: 9 8; }
+      .lane { fill: #fbfbfb; stroke: #e2e2e2; stroke-width: 1; rx: 16; ry: 16; }
+      .title { font-family: sans-serif; font-size: 28px; fill: #111111; font-weight: 700; }
+    </style>
+    <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1f1f1f"/>
+    </marker>
+  </defs>
+  <rect class="bg" x="0" y="0" width="1200" height="360"/>
+  <text class="title" x="600" y="38" text-anchor="middle">Quarkus Flow initialization sequence</text>
+
+  <rect class="lane" x="50" y="58" width="1100" height="82"/>
+  <text class="tag" x="600" y="88" text-anchor="middle">Optional extensions</text>
+  <text class="small" x="600" y="114" text-anchor="middle">Persistence, Durable Kubernetes coordination, and agentic workflows plug into the lifecycle without changing it.</text>
+
+  <rect class="box" x="85" y="180" width="230" height="88"/>
+  <text class="label" x="200" y="214" text-anchor="middle">Build-time</text>
+  <text class="small" x="200" y="240" text-anchor="middle">Discovery and registration</text>
+
+  <rect class="step" x="345" y="180" width="230" height="88"/>
+  <text class="label" x="460" y="214" text-anchor="middle">Runtime</text>
+  <text class="small" x="460" y="240" text-anchor="middle">Application bootstrap</text>
+
+  <rect class="step" x="605" y="180" width="230" height="88"/>
+  <text class="label" x="720" y="214" text-anchor="middle">Warmup</text>
+  <text class="small" x="720" y="240" text-anchor="middle">Registry cache load</text>
+
+  <rect class="step" x="865" y="180" width="230" height="88"/>
+  <text class="label" x="980" y="214" text-anchor="middle">Ready</text>
+  <text class="small" x="980" y="240" text-anchor="middle">Workflow execution</text>
+
+  <path class="arrow" d="M 316 224 L 336 224"/>
+  <path class="arrow" d="M 576 224 L 596 224"/>
+  <path class="arrow" d="M 836 224 L 856 224"/>
+
+  <path class="arrow dashed" d="M 460 158 L 460 178"/>
+  <text class="small" x="460" y="150" text-anchor="middle">Customizers and providers</text>
+
+  <path class="arrow dashed" d="M 980 158 L 980 178"/>
+  <text class="small" x="980" y="150" text-anchor="middle">Ready event is internal</text>
+</svg>
