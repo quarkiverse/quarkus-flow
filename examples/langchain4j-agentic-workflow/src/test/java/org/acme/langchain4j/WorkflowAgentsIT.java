@@ -7,6 +7,11 @@ import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Integration tests for LangChain4j agentic workflows.
+ *
+ * Uses WireMock to mock LLM responses from Ollama, avoiding dependency on a real LLM server.
+ */
 @QuarkusTest
 @QuarkusTestResource(WorkflowAgentsOllamaMockResource.class)
 class WorkflowAgentsIT {
@@ -24,6 +29,7 @@ class WorkflowAgentsIT {
         String story = storyCreator.write("a dragon that learns to code in Java", "fantasy", "software developers");
 
         assertThat(story).isNotBlank();
+        assertThat(story).contains("Dependency Injection");
     }
 
     @Test
@@ -33,15 +39,8 @@ class WorkflowAgentsIT {
         Agents.EveningPlan plan = eveningPlanner.plan("Toronto", Agents.Mood.ROMANTIC);
 
         assertThat(plan).isNotNull();
-        assertThat(plan.dinner()).isNotBlank();
-        assertThat(plan.drinks()).isNotBlank();
-        assertThat(plan.activity()).isNotBlank();
-
-        plan = eveningPlanner.plan("New York", Agents.Mood.ROMANTIC);
-        assertThat(plan).isNotNull();
-        assertThat(plan.dinner()).isNotBlank();
-        assertThat(plan.drinks()).isNotBlank();
-        assertThat(plan.activity()).isNotBlank();
-
+        assertThat(plan.dinner()).contains("Canoe Restaurant");
+        assertThat(plan.drinks()).contains("Bar Raval");
+        assertThat(plan.activity()).contains("Harbourfront");
     }
 }

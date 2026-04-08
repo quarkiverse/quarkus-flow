@@ -77,7 +77,6 @@
             <scope>test</scope>
         </dependency>
 
-
         <!-- Can be ignored / Used to run Quarkus Flow project in parallel -->
         <!-- On real use cases this can be safely removed -->
         <dependency>
