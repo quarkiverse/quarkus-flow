@@ -2,6 +2,7 @@ package org.acme.langchain4j;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
+import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
@@ -21,68 +22,74 @@ public class WorkflowAgentsOllamaMockResource implements QuarkusTestResourceLife
         wireMock.start();
         WireMock.configureFor("localhost", wireMock.port());
 
-        // CreativeWriter
+        // CreativeWriter - unique phrase: "creative fiction writer"
         wireMock.stubFor(post(urlEqualTo("/api/chat"))
-                .withRequestBody(containing("creative"))
+                .withRequestBody(containing("creative fiction writer"))
+                .atPriority(1)
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(ollamaResponse(
                                 "In the misty peaks of the Codex Mountains, a young dragon named Pyra discovered an ancient tome titled 'Head First Java'. "
                                         + "Unlike her fire-breathing kin, she breathed syntax errors and compiled her thoughts in bytecode. "
-                                        + "Day after day, she practiced her loops and conditionals, dreaming of the day she'd mass refactor the dragon realm's legacy COBOL systems."))));
+                                        + "Day after day, she practiced her loops and conditionals, dreaming of the day she'd refactor the dragon realm's legacy COBOL systems."))));
 
-        // AudienceEditor
+        // AudienceEditor - unique phrase: "Rewrite the story below so it is ideal for this audience"
         wireMock.stubFor(post(urlEqualTo("/api/chat"))
-                .withRequestBody(containing("audience"))
+                .withRequestBody(containing("Rewrite the story below so it is ideal for this audience"))
+                .atPriority(2)
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(ollamaResponse(
                                 "Pyra the dragon debugged her first NullPointerException with the tenacity of a senior engineer facing a production outage. "
-                                        + "She mass refactored her hoard from gold coins to mass Stack Overflow reputation points, mass mass mass understanding that mass true mass mass mass treasure mass mass lay in mass clean, mass well-documented code. "
-                                        + "Her mass mass IntelliJ mass mass mass shortcuts became mass legendary mass across the mass realm."))));
+                                        + "She refactored her hoard from gold coins to Stack Overflow reputation points, understanding that true treasure lay in clean, well-documented code. "
+                                        + "Her IntelliJ shortcuts became legendary across the realm."))));
 
-        // StyleEditor
+        // StyleEditor - unique phrase: "Rewrite the story below with this style"
         wireMock.stubFor(post(urlEqualTo("/api/chat"))
-                .withRequestBody(containing("style"))
+                .withRequestBody(containing("Rewrite the story below with this style"))
+                .atPriority(3)
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(ollamaResponse(
                                 "In realms where semicolons held magical power and curly braces warded off evil spirits, "
                                         + "the dragon Pyra embarked on an epic quest to master the arcane arts of object-oriented programming. "
-                                        + "Armed with her enchanted mechanical keyboard and a mass mass mass mass cloak woven from mass mass mass Ethernet cables, "
-                                        + "she mass mass ventured into the mass treacherous Dungeons of mass Dependency Injection."))));
+                                        + "Armed with her enchanted mechanical keyboard and a cloak woven from Ethernet cables, "
+                                        + "she ventured into the treacherous Dungeons of Dependency Injection."))));
 
-        // DinnerAgent
+        // DinnerAgent - unique phrase: "Suggest where to have dinner"
         wireMock.stubFor(post(urlEqualTo("/api/chat"))
-                .withRequestBody(containing("dinner"))
+                .withRequestBody(containing("Suggest where to have dinner"))
+                .atPriority(4)
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(ollamaResponse(
                                 "Try Canoe Restaurant on Wellington Street for an upscale Canadian dinner with stunning views of the Toronto skyline."))));
 
-        // DrinksAgent
+        // DrinksAgent - unique phrase: "Suggest where to have a drink"
         wireMock.stubFor(post(urlEqualTo("/api/chat"))
-                .withRequestBody(containing("drink"))
+                .withRequestBody(containing("Suggest where to have a drink"))
+                .atPriority(5)
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(ollamaResponse(
                                 "Head to Bar Raval on College Street for creative cocktails in a cozy, artistic atmosphere perfect for a romantic evening."))));
 
-        // ActivityAgent
+        // ActivityAgent - unique phrase: "Suggest one activity, after dinner and drinks"
         wireMock.stubFor(post(urlEqualTo("/api/chat"))
-                .withRequestBody(containing("activity"))
+                .withRequestBody(containing("Suggest one activity, after dinner and drinks"))
+                .atPriority(6)
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(ollamaResponse(
                                 "Take a moonlit stroll along the Harbourfront boardwalk to cap off your romantic evening with beautiful waterfront views."))));
 
-        // Fallback for any other requests
+        // Fallback for any unmatched requests
         wireMock.stubFor(post(urlEqualTo("/api/chat"))
                 .atPriority(10)
                 .willReturn(aResponse()
