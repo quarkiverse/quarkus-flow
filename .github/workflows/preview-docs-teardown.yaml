@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
+      contents: write # Token write contents permission
     steps:
       - name: Teardown surge preview
         id: deploy
