@@ -18,6 +18,7 @@ jobs:
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.name == 'Build website'
     permissions:
+      contents: write # Token write contents permission
       pull-requests: write # Required to update PR status comment
     steps:
       - name: Download PR Artifact
