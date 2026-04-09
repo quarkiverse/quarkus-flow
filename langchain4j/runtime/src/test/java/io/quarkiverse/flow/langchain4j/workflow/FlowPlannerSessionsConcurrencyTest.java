@@ -16,8 +16,9 @@ import java.util.concurrent.atomic.LongAdder;
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +29,15 @@ import dev.langchain4j.service.V;
 import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkus.test.junit.QuarkusTest;
 
+/**
+ * Tests concurrent workflow execution with session management.
+ * <p>
+ * This test MUST run in isolation because it verifies global FlowPlannerSessions state,
+ * which is a singleton shared across the JVM. Running concurrently with other tests
+ * would cause race conditions in session counting.
+ */
 @QuarkusTest
+@Execution(ExecutionMode.SAME_THREAD)
 class FlowPlannerSessionsConcurrencyTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FlowPlannerSessionsConcurrencyTest.class.getName());
@@ -36,24 +45,14 @@ class FlowPlannerSessionsConcurrencyTest {
     @Inject
     WorkflowRegistry registry;
 
-    private int baselineSessions;
-    private List<String> baselineSessionIds;
-
-    @BeforeEach
-    void captureBaseline() {
-        // Record how many sessions exist BEFORE this test starts.
-        // This isolates the test from other parallel executions in the same JVM.
-        baselineSessions = FlowPlannerSessions.getInstance().activeSessionCount();
-        baselineSessionIds = new ArrayList<>(FlowPlannerSessions.getInstance().activeSessionIds());
-        LOGGER.info("Baseline sessions: {}", baselineSessions);
-    }
-
     @AfterEach
-    void noLeaks() {
+    void ensureNoLeakedSessions() {
         await()
                 .atMost(Duration.ofSeconds(120))
                 .pollInterval(Duration.ofMillis(250))
-                .until(() -> FlowPlannerSessions.getInstance().activeSessionCount() <= baselineSessions);
+                .untilAsserted(() -> assertThat(FlowPlannerSessions.getInstance().activeSessionCount())
+                        .withFailMessage("Leaked sessions: %s", FlowPlannerSessions.getInstance().activeSessionIds())
+                        .isZero());
     }
 
     @Test
@@ -95,17 +94,31 @@ class FlowPlannerSessionsConcurrencyTest {
                     start.await();
 
                     String input = (idx % everyNthFails == 0) ? ("boom-" + idx) : ("ok-" + idx);
+                    boolean expectFailure = input.startsWith("boom");
 
                     long t0 = System.nanoTime();
                     try {
                         ResultWithAgenticScope<String> result = agent.run(input);
-                        AgenticScope scope = result.agenticScope();
-                        assertThat(scope.readState("calledA", false)).isTrue();
-                        assertThat(scope.readState("calledB", false)).isTrue();
-                        assertThat(scope.readState("calledC", false)).isTrue();
-                        ok.increment();
+
+                        // If we expected failure but got success, that's wrong
+                        if (expectFailure) {
+                            failed.increment();
+                            LOGGER.warn("Expected failure for input {} but got success", input);
+                        } else {
+                            // Only assert agent states for successful workflows
+                            AgenticScope scope = result.agenticScope();
+                            assertThat(scope.readState("calledA", false)).isTrue();
+                            assertThat(scope.readState("calledB", false)).isTrue();
+                            assertThat(scope.readState("calledC", false)).isTrue();
+                            ok.increment();
+                        }
                     } catch (Exception e) {
-                        failed.increment();
+                        if (expectFailure) {
+                            ok.increment(); // Expected failure
+                        } else {
+                            failed.increment();
+                            LOGGER.warn("Unexpected failure for input {}: {}", input, e.getMessage());
+                        }
                     } finally {
                         nanos.add(System.nanoTime() - t0);
                     }
@@ -122,27 +135,20 @@ class FlowPlannerSessionsConcurrencyTest {
                 f.get(60, TimeUnit.SECONDS);
             }
 
-            // Explicitly wait for async cleanup to complete for sessions created by this test
-            var testSessionIds = new ArrayList<>(FlowPlannerSessions.getInstance().activeSessionIds());
-            testSessionIds.removeAll(baselineSessionIds);
-
-            for (String sessionId : testSessionIds) {
-                try {
-                    FlowPlanner planner = FlowPlannerSessions.getInstance().get(sessionId);
-                    planner.awaitCleanup();
-                } catch (IllegalArgumentException e) {
-                    // Session already cleaned up - ignore
-                }
-            }
-
-            // If any async cleanup finishes slightly after futures complete:
-            FlowPlannerSessionsAwait.awaitNoSessions(10);
-
             long total = ok.sum() + failed.sum();
             double avgMs = (nanos.sum() / 1_000_000.0) / Math.max(1, total);
 
-            LOGGER.info("Parallel run completed: total={} ok={} failed={} avgMs={} activeSessions={}", total, ok.sum(),
-                    failed.sum(), avgMs, FlowPlannerSessions.getInstance().activeSessionCount());
+            int activeSessions = FlowPlannerSessions.getInstance().activeSessionCount();
+            LOGGER.info("Parallel run completed: total={} ok={} failed={} avgMs={} activeSessions={}",
+                    total, ok.sum(), failed.sum(), avgMs, activeSessions);
+
+            if (activeSessions > 0) {
+                LOGGER.warn("Still have {} active sessions after all futures completed: {}",
+                        activeSessions, FlowPlannerSessions.getInstance().activeSessionIds());
+            }
+
+            // Session cleanup verification happens in @AfterEach
+            // We don't check it here because sessions may still be cleaning up asynchronously
 
         } finally {
             pool.shutdown();
