@@ -24,7 +24,7 @@ public class CronWorkflowTest {
     WorkflowDefinition cronFlowDefinition;
 
     @Test
-    void testCronWorkflow() throws ExecutionException, InterruptedException, TimeoutException {
+    void testCronWorkflow() {
         long start = System.currentTimeMillis();
         long elapsed = System.currentTimeMillis() - start;
         while (elapsed < 4000) {
