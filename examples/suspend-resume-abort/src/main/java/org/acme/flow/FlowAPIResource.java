@@ -1,12 +1,10 @@
 package org.acme.flow;
 
-import io.quarkiverse.flow.Flow;
 import io.quarkiverse.flow.internal.WorkflowApplicationReady;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.persistence.PersistenceInstanceHandlers;
 import io.smallrye.common.annotation.Identifier;
-import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
