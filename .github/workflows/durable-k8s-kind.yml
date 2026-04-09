@@ -45,10 +45,10 @@ jobs:
 
       - name: Build + deploy example to Kind (from repo root)
         run: |
-          mvn -DskipTests -Dquarkus.log.level=OFF -ntp \
+          mvn -T 15C -DskipTests -Dquarkus.log.level=OFF -ntp \
               -pl :quarkus-flow,:quarkus-flow-deployment,:quarkus-flow-durable-kubernetes,:quarkus-flow-durable-kubernetes-deployment,:quarkus-flow-redis,:quarkus-flow-redis-deployment \
               -am install
-          mvn  -Dquarkus.log.level=OFF -ntp -pl examples/durable-workflows-k8s -DskipTests -am -Pkind clean package
+          mvn -T 15C -Dquarkus.log.level=OFF -ntp -pl examples/durable-workflows-k8s -DskipTests -am -Pkind clean package
 
       - name: Wait for deployment
         run: |
