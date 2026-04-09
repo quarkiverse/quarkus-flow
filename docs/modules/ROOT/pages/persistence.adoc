@@ -53,6 +53,8 @@ Configure the Redis connection in your `application.properties`:
 quarkus.redis.hosts=redis://localhost:6379
 ----
 
+Note: Our integration tests use Valkey image instead.
+
 === Option B: JPA (Relational Databases)
 JPA allows you to store workflow state in a standard relational database (e.g., PostgreSQL, MySQL). This is ideal if your enterprise architecture already relies heavily on a relational database.
 
