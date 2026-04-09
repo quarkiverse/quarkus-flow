@@ -20,7 +20,7 @@ import io.smallrye.common.annotation.Identifier;
 class EchoYamlWorkflowTest {
 
     @Inject
-    @Identifier("flow:echo-name") // namespace:name from document section
+    @Identifier("company:echo-name") // namespace:name from document section
     WorkflowDefinition definition;
 
     @Test
