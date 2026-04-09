@@ -8,6 +8,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -101,15 +102,25 @@ public class FlowPlanner implements Planner, AutoCloseable {
     private Action internalNextAction() {
         List<AgentInstance> agents = new ArrayList<>();
         try {
-            do {
-                AgentExchange currentExchange = agentExchangeQueue.take();
+            // Take first agent (blocking)
+            AgentExchange currentExchange = agentExchangeQueue.take();
+            if (currentExchange.agent == null) {
+                LOG.debug("Workflow terminated");
+                return done();
+            }
+            currentExchanges.put(currentExchange.agent.agentId(), currentExchange);
+            agents.add(currentExchange.agent);
+
+            // Drain any remaining agents with timeout to handle parallel enqueuing
+            // The timeout handles race conditions in parallel workflows where branches enqueue concurrently
+            while ((currentExchange = agentExchangeQueue.poll(100, TimeUnit.MILLISECONDS)) != null) {
                 if (currentExchange.agent == null) {
                     LOG.debug("Workflow terminated");
                     break;
                 }
                 currentExchanges.put(currentExchange.agent.agentId(), currentExchange);
                 agents.add(currentExchange.agent);
-            } while (!agentExchangeQueue.isEmpty());
+            }
 
             parallelAgents.set(agents.size());
 
