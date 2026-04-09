@@ -11,7 +11,7 @@ do:
   - looping:
        switch:
          - loopCount:
-             when: .count < (.maxCount // 10000)
+             when: .count < ($workflow.input.maxCount // 10000)
              then: waitABit
          - default:
              then: exit
