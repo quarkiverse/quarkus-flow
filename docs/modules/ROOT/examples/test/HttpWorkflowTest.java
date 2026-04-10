@@ -13,16 +13,14 @@ import io.quarkus.test.common.QuarkusTestResource;
 import jakarta.inject.Inject;
 
 import org.acme.HttpWorkflow;
-import org.acme.SwApiWireMockResource;
+import org.acme.ExampleWorkflowsWireMockResource;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowModel;
-import io.smallrye.common.annotation.Identifier;
 
 @QuarkusTest
-@QuarkusTestResource(SwApiWireMockResource.class)
+@QuarkusTestResource(ExampleWorkflowsWireMockResource.class)
 public class HttpWorkflowTest {
 
     @Inject
@@ -30,7 +28,8 @@ public class HttpWorkflowTest {
 
     @Test
     void testHttpWorkflow() throws ExecutionException, InterruptedException, TimeoutException {
-        Map<String, Object> input = Map.of("searchQuery", "luke", "acceptHeaderValue", "application/json");
+        Map<String, Object> input = Map.of("searchQuery", "luke",
+                                           "acceptHeaderValue", "application/json");
 
         WorkflowModel result = httpWorkflow.instance(input)
                 .start()
