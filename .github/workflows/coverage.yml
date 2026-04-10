@@ -5,9 +5,6 @@ on:
     branches: [ main ]
     paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "**.md", "**.adoc", "**.txt", ".all-contributorsrc", ".claude/**" ]
 
-env:
-  QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID: llama3.2
-
 permissions:
   contents: read
   checks: write
@@ -30,19 +27,8 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Setup Ollama
-        uses: ai-action/setup-ollama@v2
-
-      - uses: actions/cache@v5
-        with:
-          path: ~/.ollama
-          key: ${{ runner.os }}-ollama
-
-      - name: Run ${{ env.QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID }} model
-        run: ollama run ${{ env.QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID }}
-
-      - name: Build with Maven (skip docs, we only need coverage)
-        run: mvn -B clean install -T 2C -Dno-format -Pcode-coverage -ntp -pl '!docs'
+      - name: Build with Maven (skip docs, disable Ollama for coverage)
+        run: mvn -B clean install -T 2C -Dno-format -Pcode-coverage -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp -pl '!docs'
 
       - name: Publish Failed Test Report
         uses: mikepenz/action-junit-report@v6

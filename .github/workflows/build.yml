@@ -35,7 +35,7 @@ jobs:
           cache: maven
 
       - name: Run build to validate formatting and generate docs
-        run: mvn -B clean install -T 2C -DskipTests -DskipITs=true -Dquarkus.log.level=OFF -ntp
+        run: mvn -B clean install -T 2C -DskipTests -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp
 
       - name: Check for uncommitted changes
         id: check-changes
@@ -98,7 +98,7 @@ jobs:
 
       - name: Build with Maven (Linux, full tests, skip docs)
         if: matrix.os == 'ubuntu-latest'
-        run: mvn -B clean install -T 2C -Dno-format -DskipITs=true -Dquarkus.log.level=OFF -ntp -pl '!docs'
+        run: mvn -B clean install -T 2C -Dno-format -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp -pl '!docs'
 
       - name: Build with Maven (Windows, skip ITs and docs)
         if: matrix.os == 'windows-latest'
