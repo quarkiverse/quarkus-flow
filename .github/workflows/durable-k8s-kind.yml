@@ -43,9 +43,9 @@ jobs:
           kubectl apply -f examples/durable-workflows-k8s/manifests/redis.yaml
           kubectl wait --for=condition=Ready pod -l app=redis --timeout=120s -n default
 
-      - name: Build + deploy example to Kind (from repo root)
+      - name: Build + deploy example to Kind (from repo root, skip docs)
         run: |
-          mvn -T 2C -DskipTests -Dquarkus.log.level=OFF -ntp \
+          mvn -T 2C -DskipTests -Dquarkus.log.level=OFF -ntp -pl '!docs' \
               -pl :quarkus-flow,:quarkus-flow-deployment,:quarkus-flow-durable-kubernetes,:quarkus-flow-durable-kubernetes-deployment,:quarkus-flow-redis,:quarkus-flow-redis-deployment \
               -am install
           mvn -T 2C -Dquarkus.log.level=OFF -ntp -pl examples/durable-workflows-k8s -DskipTests -am -Pkind clean package

@@ -21,6 +21,59 @@ defaults:
     shell: bash
 
 jobs:
+  validate:
+    name: Quick validation (formatting & doc generation)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - name: Run build to validate formatting and generate docs
+        run: mvn -B clean install -T 2C -DskipTests -DskipITs=true -Dquarkus.log.level=OFF -ntp
+
+      - name: Check for uncommitted changes
+        id: check-changes
+        run: |
+          if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "::warning::Build generated uncommitted changes"
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Show what changed
+        if: steps.check-changes.outputs.has_changes == 'true'
+        run: |
+          echo "::error::❌ The build modified files that weren't committed!"
+          echo ""
+          echo "Modified files:"
+          git status --short
+          echo ""
+          echo "This usually means:"
+          echo ""
+          echo "1. **Code formatting issues**"
+          echo "   The formatter automatically fixed formatting violations."
+          echo ""
+          echo "2. **Missing generated documentation**"
+          echo "   Config reference docs were regenerated from @ConfigRoot classes."
+          echo ""
+          echo "🔧 How to fix:"
+          echo "   Run locally: mvn clean install -DskipTests"
+          echo "   Review and commit the changes"
+          echo "   Push again"
+          echo ""
+          echo "💡 Tip: Always run 'mvn clean install -DskipTests' before pushing."
+          echo ""
+          echo "Diff of changes:"
+          git diff
+          exit 1
+
   build:
     name: Build & test (${{ matrix.os }} / JDK ${{ matrix.java-version }})
     runs-on: ${{ matrix.os }}
@@ -43,13 +96,13 @@ jobs:
           java-version: ${{ matrix.java-version }}
           cache: maven
 
-      - name: Build with Maven (Linux, full tests)
+      - name: Build with Maven (Linux, full tests, skip docs)
         if: matrix.os == 'ubuntu-latest'
-        run: mvn -B clean install -T 2C -Dno-format -DskipITs=true -Dquarkus.log.level=OFF -ntp
+        run: mvn -B clean install -T 2C -Dno-format -DskipITs=true -Dquarkus.log.level=OFF -ntp -pl '!docs'
 
-      - name: Build with Maven (Windows, skip ITs)
+      - name: Build with Maven (Windows, skip ITs and docs)
         if: matrix.os == 'windows-latest'
-        run: mvn -B clean install -T 2C -Dno-format -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp
+        run: mvn -B clean install -T 2C -Dno-format -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp -pl '!docs'
 
       - name: Publish Failed Test Report
         uses: mikepenz/action-junit-report@v6

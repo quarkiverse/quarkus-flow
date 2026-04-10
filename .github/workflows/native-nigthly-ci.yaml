@@ -32,11 +32,11 @@ jobs:
           java-version: 25
           cache: maven
       
-      - name: Build with Maven (Native, Mandrel on JDK 25)
+      - name: Build with Maven (Native, Mandrel on JDK 25, skip docs)
         id: native-build
         continue-on-error: true
         run: >
-          mvn -B install -T 2C -Dnative -ntp
+          mvn -B install -T 2C -Dnative -ntp -pl '!docs'
           -Dquarkus.native.container-build
           -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25
           -Dquarkus.langchain4j.timeout=60000

@@ -41,8 +41,8 @@ jobs:
       - name: Run ${{ env.QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID }} model
         run: ollama run ${{ env.QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID }}
 
-      - name: Build with Maven
-        run: mvn -B clean install -T 2C -Dno-format -Pcode-coverage -ntp
+      - name: Build with Maven (skip docs, we only need coverage)
+        run: mvn -B clean install -T 2C -Dno-format -Pcode-coverage -ntp -pl '!docs'
 
       - name: Publish Failed Test Report
         uses: mikepenz/action-junit-report@v6

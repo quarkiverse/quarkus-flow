@@ -52,8 +52,8 @@ jobs:
       - name: Run ${{ env.QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID }} model
         run: ollama run ${{ env.QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID }}
 
-      - name: Build with Maven (Linux, full tests)
-        run: mvn clean install -T 2C -Dquarkus.log.level=OFF -DskipITs=false -Dquarkus.langchain4j.ollama.chat-model.model-id=${{ env.QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID }} -Dquarkus.langchain4j.timeout=60000 -ntp
+      - name: Build with Maven (Linux, full tests, skip docs)
+        run: mvn clean install -T 2C -Dquarkus.log.level=OFF -DskipITs=false -Dquarkus.langchain4j.ollama.chat-model.model-id=${{ env.QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID }} -Dquarkus.langchain4j.timeout=60000 -ntp -pl '!docs'
 
       - name: Publish Failed Test Report
         uses: mikepenz/action-junit-report@v6
