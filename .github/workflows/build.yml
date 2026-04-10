@@ -102,13 +102,21 @@ jobs:
           java-version: ${{ matrix.java-version }}
           cache: maven
 
+      - name: Generate exclusion list for Windows
+        if: matrix.os == 'windows-latest'
+        id: exclusions
+        run: |
+          EXAMPLE_MODULES=$(find examples -maxdepth 1 -mindepth 1 -type d ! -name 'target' -exec basename {} \; | sed 's/^/:/' | tr '\n' ',' | sed 's/,$//')
+          echo "examples=$EXAMPLE_MODULES" >> $GITHUB_OUTPUT
+          echo "Excluding docs and examples: docs,$EXAMPLE_MODULES"
+
       - name: Build with Maven (Linux, full tests, skip docs, reduced parallelism)
         if: matrix.os == 'ubuntu-latest'
         run: mvn -B clean install -T 1C -Dno-format -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp -pl '!docs'
 
       - name: Build with Maven (Windows, skip ITs, docs, and examples, single-threaded)
         if: matrix.os == 'windows-latest'
-        run: mvn -B clean install -Dno-format -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp -pl '!docs,!examples'
+        run: mvn -B clean install -Dno-format -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp -pl '!docs,!${{ steps.exclusions.outputs.examples }}'
 
       - name: Publish Failed Test Report
         uses: mikepenz/action-junit-report@v6
