@@ -1,11 +1,12 @@
 package org.acme;
 
-import com.github.tomakehurst.wiremock.WireMockServer;
-import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
 import java.util.Map;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import com.github.tomakehurst.wiremock.WireMockServer;
+
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class ExampleWorkflowsWireMockResource implements QuarkusTestResourceLifecycleManager {
 

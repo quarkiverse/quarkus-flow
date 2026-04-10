@@ -1,5 +1,6 @@
 = Quarkus Flow & CNCF Serverless Workflow Java Cookbook
 :page-role: reference
+:examples-dir: ../main/java
 include::includes/attributes.adoc[]
 
 
@@ -65,18 +66,7 @@ Trigger workflows on a schedule by defining a `schedule` within the builder.
 
 [source,java]
 ----
-@ApplicationScoped
-public class CronWorkflow extends Flow {
-    @Override
-    public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("cron-schedule")
-            .schedule(cron("0 0 * * *")) // Runs daily at midnight
-            .tasks(
-                // Workflow tasks
-            )
-            .build();
-    }
-}
+include::{examples-dir}/org/acme/CronWorkflow.java[]
 ----
 
 [#external_api_interaction]
@@ -85,26 +75,7 @@ Use the `call` task with `http` to interact with REST endpoints, managing header
 
 [source,java]
 ----
-@ApplicationScoped
-public class HttpWorkflow extends Flow {
-    @Override
-    public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("http-with-query-headers")
-                .tasks(
-                        call("searchStarWarsCharacters",
-                                http()
-                                    .GET()
-                                    // query(...) is not supported yet, include the query in the URI
-                                    // engine will replace  values in {} if they match the task input
-                                    .endpoint("http://localhost:8089/api/people/?search={searchQuery}")
-                                    // Accept value is taken from workflow input, jq expression is used
-                                    .header("Accept", "${ .acceptHeaderValue }")
-                                    // export the results of the GET request as taskOutput
-                                    .exportAsTaskOutput())
-                )
-                .build();
-    }
-}
+include::{examples-dir}/org/acme/HttpWorkflow.java[]
 ----
 
 [#openapi_invocation]
@@ -113,20 +84,7 @@ Invoke OpenAPI endpoints by referencing the specification and the `operationId`.
 
 [source,java]
 ----
-@ApplicationScoped
-public class OpenApiWorkflow extends Flow {
-    @Override
-    public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("openapi-example")
-            .tasks(
-                call("findPet")
-                    .openapi("https://petstore.swagger.io/v2/swagger.json")
-                        .operationId("findPetsByStatus")
-                        .parameters(Map.of("status", "available"))
-            )
-            .build();
-    }
-}
+include::{examples-dir}/org/acme/OpenApiWorkflow.java[]
 ----
 
 [#authentication]
@@ -135,25 +93,7 @@ Define authentication mechanisms for secure outbound communication.
 
 [source,java]
 ----
-@ApplicationScoped
-public class SecureHttpWorkflow extends Flow {
-    @Override
-    public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("oauth2-authentication")
-            .tasks(
-                call("getPet")
-                    .http(Method.GET, "https://petstore.swagger.io/v2/pet/{petId}")
-                    .authentication(oauth2()
-                        .authority("http://keycloak/realms/fake-authority")
-                        .tokenEndpoint("/auth/token")
-                        .grant(GrantType.CLIENT_CREDENTIALS)
-                        .clientId("workflow-runtime-id")
-                        .clientSecret("workflow-runtime-secret")
-                    )
-            )
-            .build();
-    }
-}
+include::{examples-dir}/org/acme/HttpOauth2Workflow.java[]
 ----
 
 [#events]
