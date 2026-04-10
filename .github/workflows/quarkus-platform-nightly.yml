@@ -33,12 +33,12 @@ jobs:
           cache: maven
       
       - name: Build Quarkus Flow SNAPSHOT
-        run: mvn -B clean install -T 15C -Dno-format -DskipTests -DskipITs=true -Dquarkus.log.level=OFF -ntp
+        run: mvn -B clean install -T 2C -Dno-format -DskipTests -DskipITs=true -Dquarkus.log.level=OFF -ntp
 
       - name: Run Quarkus Flow tests in Quarkus Platform with the SNAPSHOT
         id: platform-build
         continue-on-error: true
-        run: mvn -B clean install -T 15C -f quarkus-platform-checks/pom.xml -Pquarkus-platform-build-and-test -Dno-format -Dquarkus.log.level=OFF -ntp
+        run: mvn -B clean install -T 2C -f quarkus-platform-checks/pom.xml -Pquarkus-platform-build-and-test -Dno-format -Dquarkus.log.level=OFF -ntp
 
       - name: Publish Failed Test Report
         uses: mikepenz/action-junit-report@v6

@@ -36,7 +36,7 @@ jobs:
         id: native-build
         continue-on-error: true
         run: >
-          mvn -B install -T 15C -Dnative -ntp
+          mvn -B install -T 2C -Dnative -ntp
           -Dquarkus.native.container-build
           -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25
           -Dquarkus.langchain4j.timeout=60000
