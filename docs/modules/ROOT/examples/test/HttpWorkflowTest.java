@@ -29,7 +29,7 @@ public class HttpWorkflowTest {
     @Test
     void testHttpWorkflow() throws ExecutionException, InterruptedException, TimeoutException {
         Map<String, Object> input = Map.of("searchQuery", "luke",
-                                           "acceptHeaderValue", "application/json");
+                "acceptHeaderValue", "application/json");
 
         WorkflowModel result = httpWorkflow.instance(input)
                 .start()
