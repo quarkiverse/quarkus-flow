@@ -338,6 +338,10 @@ do:
 == 11. Invoking Subflows
 To keep your definitions clean and modular, complex logic can be broken down into smaller, reusable workflows using the `run` directive.
 
+[tabs]
+====
+YAML::
++
 [source,yaml]
 ----
 document:
@@ -355,6 +359,22 @@ do:
           input:
             customer: .user
 ----
+
+Java::
++
+[source,java]
+----
+import io.serverlessworkflow.api.fluent.FuncWorkflowBuilder;
+
+var workflow = FuncWorkflowBuilder.newWorkflow("run-subflow")
+    .startWith(
+        step("registerCustomer")
+            .runWorkflow("test", "register-customer", "0.1.0")
+            .input("customer", from(".user"))
+    )
+    .build();
+----
+====
 
 == 12. Business Logic Error Handling (`try` / `catch`)
 While transient infrastructure errors are handled by Quarkus Flow's built-in Fault Tolerance, the workflow DSL's `try` and `catch` constructs are specifically designed for compensatory business logic.
