@@ -21,10 +21,8 @@
         <quarkus.flow.version>1.0.0-SNAPSHOT</quarkus.flow.version>
         <surefire-plugin.version>3.5.5</surefire-plugin.version>
         <failsafe-plugin.version>3.5.4</failsafe-plugin.version>
-
         <version.assertj>3.27.7</version.assertj>
-        <version.wiremock-jre8-standalone>2.35.2</version.wiremock-jre8-standalone>
-
+        <org.wiremock.version>3.13.2</org.wiremock.version>
         <skipITs>true</skipITs>
     </properties>
 
@@ -67,9 +65,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.tomakehurst</groupId>
-            <artifactId>wiremock-jre8-standalone</artifactId>
-            <version>${version.wiremock-jre8-standalone}</version>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock</artifactId>
+            <version>${org.wiremock.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
