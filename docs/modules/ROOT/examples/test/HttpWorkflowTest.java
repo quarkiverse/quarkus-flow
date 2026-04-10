@@ -9,13 +9,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import io.quarkus.test.common.QuarkusTestResource;
 import jakarta.inject.Inject;
 
-import org.acme.HttpWorkflow;
 import org.acme.ExampleWorkflowsWireMockResource;
+import org.acme.HttpWorkflow;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.serverlessworkflow.impl.WorkflowModel;
 

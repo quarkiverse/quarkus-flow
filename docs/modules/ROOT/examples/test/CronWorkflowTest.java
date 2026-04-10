@@ -1,8 +1,5 @@
 package test;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-
 import jakarta.inject.Inject;
 
 import org.acme.CronWorkflow;

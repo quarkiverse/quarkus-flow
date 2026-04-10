@@ -1,20 +1,23 @@
 package test;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.junit.QuarkusTest;
-import io.serverlessworkflow.impl.WorkflowModel;
-import jakarta.inject.Inject;
-import org.acme.ExampleWorkflowsWireMockResource;
-import org.acme.OpenApiWorkflow;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import jakarta.inject.Inject;
+
+import org.acme.ExampleWorkflowsWireMockResource;
+import org.acme.OpenApiWorkflow;
+import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.QuarkusTest;
+import io.serverlessworkflow.impl.WorkflowModel;
 
 @QuarkusTest
 @QuarkusTestResource(ExampleWorkflowsWireMockResource.class)
