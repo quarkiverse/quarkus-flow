@@ -33,21 +33,26 @@ public class FlowSchedulerTest {
     void testAfter() {
         afterStartDefinition.instance(Map.of()).start().join();
         assertThat(afterStartDefinition.scheduledInstances().isEmpty());
+        // Allow extra time for CI with parallel builds
         await()
                 .pollDelay(Duration.ofMillis(50))
-                .atMost(Duration.ofMillis(500))
+                .pollInterval(Duration.ofMillis(100))
+                .atMost(Duration.ofSeconds(2))
                 .until(() -> !afterStartDefinition.scheduledInstances().isEmpty());
     }
 
     @Test
     void testEvery() {
-        // Workflow is scheduled every 1 second, wait for first instance with buffer for CI delays
+        // Workflow is scheduled every 1 second
+        // Generous timeout for CI with parallel builds - scheduler threads can be starved under heavy CPU load
         await()
-                .atMost(Duration.ofSeconds(5))
+                .pollInterval(Duration.ofMillis(250))
+                .atMost(Duration.ofSeconds(15))
                 .until(() -> everyDefinition.scheduledInstances().size() == 1);
-        // Wait for second instance (1s interval + buffer)
+        // Wait for second instance (1s interval + buffer for CI delays)
         await()
-                .atMost(Duration.ofSeconds(5))
+                .pollInterval(Duration.ofMillis(250))
+                .atMost(Duration.ofSeconds(15))
                 .until(() -> everyDefinition.scheduledInstances().size() == 2);
     }
 
