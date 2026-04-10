@@ -8,9 +8,14 @@ We welcome all contributions — bug reports, fixes, documentation, examples, an
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/my-feature`
 3. Make your changes
-4. **Run the full build with integration tests**: `./mvnw clean install -DskipITs=false`
+4. **Verify your changes**:
+   - Quick: `make quick-check` (unit tests only, ~2-3 min)
+   - Full: `make verify` (all tests, required before PR, ~5 min)
+   - Or: `./mvnw clean install -T 15C -DskipITs=false`
 5. Commit your changes
 6. Push and create a pull request
+
+💡 **Tip**: See [CONTRIBUTING-MAKEFILE.md](CONTRIBUTING-MAKEFILE.md) for all available Make targets and tips.
 
 ## Reporting Issues
 
@@ -52,22 +57,43 @@ All submissions require review by at least one maintainer before being merged. W
 
 ### Building the Project
 
+#### Using Make (Recommended)
+
+The easiest way to build and test:
+
+```bash
+# Quick unit tests only (~2-3 min)
+make quick-check
+
+# Full verification before PR (~5 min, required)
+make verify
+
+# Show all available targets
+make help
+```
+
+See [CONTRIBUTING-MAKEFILE.md](CONTRIBUTING-MAKEFILE.md) for complete Makefile documentation.
+
+#### Using Maven Directly
+
 Standard build (includes unit tests, skips integration tests):
 ```bash
-./mvnw clean install
+./mvnw clean install -T 15C
 ```
 
 **Full build with integration tests** (required before PR):
 ```bash
-./mvnw clean install -DskipITs=false
+./mvnw clean install -T 15C -DskipITs=false
 ```
 
 Build specific module:
 ```bash
-./mvnw clean install -pl core -am
+./mvnw clean install -T 15C -pl core -am
 ```
 
-**Note**: `./mvnw clean install` automatically runs unit tests. Integration tests are skipped by default for faster builds.
+**Note**: 
+- `-T 15C` enables parallel execution (15 threads per CPU core) for faster builds
+- Unit tests run automatically; integration tests are skipped by default for faster builds
 
 ### Project Structure
 
