@@ -21,19 +21,19 @@ public class ExampleWorkflowsWireMockResource implements QuarkusTestResourceLife
         // STUBS FOR HTTP WORKFLOW TESTS
         // ---------------------------------------------------------
         wireMockServer.stubFor(get(urlEqualTo("/api/people/%3Fsearch=luke"))
-                                       .withHeader("Accept", equalTo("application/json"))
-                                       .willReturn(aResponse()
-                                                           .withHeader("Content-Type", "application/json")
-                                                           .withBody("""
-                            {
-                                "count": 1,
-                                "results": [
-                                    {
-                                        "name": "Luke Skywalker Mock"
-                                    }
-                                ]
-                            }
-                            """)));
+                .withHeader("Accept", equalTo("application/json"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {
+                                    "count": 1,
+                                    "results": [
+                                        {
+                                            "name": "Luke Skywalker Mock"
+                                        }
+                                    ]
+                                }
+                                """)));
 
         // ---------------------------------------------------------
         // STUBS FOR OPENAPI WORKFLOW TESTS
@@ -41,44 +41,44 @@ public class ExampleWorkflowsWireMockResource implements QuarkusTestResourceLife
 
         // 1. Stub the Swagger Document
         String mockedSwaggerDoc = """
-            {
-              "swagger": "2.0",
-              "info": { "version": "1.0.0", "title": "Mock Petstore" },
-              "host": "localhost:8089",
-              "basePath": "/v2",
-              "schemes": [ "http" ],
-              "paths": {
-                "/pet/findByStatus": {
-                  "get": {
-                    "operationId": "findPetsByStatus",
-                    "parameters": [
-                      {
-                        "name": "status",
-                        "in": "query",
-                        "required": true,
-                        "type": "string"
+                {
+                  "swagger": "2.0",
+                  "info": { "version": "1.0.0", "title": "Mock Petstore" },
+                  "host": "localhost:8089",
+                  "basePath": "/v2",
+                  "schemes": [ "http" ],
+                  "paths": {
+                    "/pet/findByStatus": {
+                      "get": {
+                        "operationId": "findPetsByStatus",
+                        "parameters": [
+                          {
+                            "name": "status",
+                            "in": "query",
+                            "required": true,
+                            "type": "string"
+                          }
+                        ],
+                        "responses": { "200": { "description": "OK" } }
                       }
-                    ],
-                    "responses": { "200": { "description": "OK" } }
+                    }
                   }
                 }
-              }
-            }
-            """;
+                """;
 
         // Use any as the workflow first query with HEAD and the GET
         wireMockServer.stubFor(any(urlEqualTo("/v2/swagger.json"))
-                                       .willReturn(aResponse()
-                                                           .withHeader("Content-Type", "application/json")
-                                                           .withBody(mockedSwaggerDoc)));
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(mockedSwaggerDoc)));
 
         // 2. Stub the actual Petstore Endpoint defined in the document above
         wireMockServer.stubFor(get(urlPathEqualTo("/v2/pet/findByStatus"))
-                                       .withQueryParam("status", equalTo("available"))
-                                       .willReturn(aResponse()
-                                                           .withHeader("Content-Type", "application/json")
-                                                           // The Petstore API returns a JSON array
-                                                           .withBody("[{\"id\": 101, \"name\": \"Mocked Doggo\", \"status\": \"available\"}]")));
+                .withQueryParam("status", equalTo("available"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        // The Petstore API returns a JSON array
+                        .withBody("[{\"id\": 101, \"name\": \"Mocked Doggo\", \"status\": \"available\"}]")));
 
         return Map.of(); // No properties to override
     }
