@@ -18,15 +18,14 @@ public class HttpWorkflow extends Flow {
                 .tasks(
                         call("searchStarWarsCharacters",
                                 http()
-                                    .GET()
-                                    // query(...) is not supported yet, include the query in the URI
-                                    // engine will replace  values in {} if they match the task input
-                                    .endpoint("http://localhost:8089/api/people/?search={searchQuery}")
-                                    // Accept value is taken from workflow input, jq expression is used
-                                    .header("Accept", "${ .acceptHeaderValue }")
-                                    // export the results of the GET request as taskOutput
-                                    .exportAsTaskOutput())
-                )
+                                        .GET()
+                                        // query(...) is not supported yet, include the query in the URI
+                                        // engine will replace  values in {} if they match the task input
+                                        .endpoint("http://localhost:8089/api/people/?search={searchQuery}")
+                                        // Accept value is taken from workflow input, jq expression is used
+                                        .header("Accept", "${ .acceptHeaderValue }")
+                                        // export the results of the GET request as taskOutput
+                                        .exportAsTaskOutput()))
                 .build();
     }
 }

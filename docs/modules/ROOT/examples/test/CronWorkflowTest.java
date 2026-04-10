@@ -32,7 +32,7 @@ public class CronWorkflowTest {
         }
 
         // Check that the cron in descriptor is not replaced
-        Assertions.assertSame("* * * * * ?" , cronWorkflow.descriptor().getSchedule().getCron());
+        Assertions.assertSame("* * * * * ?", cronWorkflow.descriptor().getSchedule().getCron());
 
         // At least 2 should be run, since the test is using 4 second wait
         Assertions.assertTrue(cronFlowDefinition.scheduledInstances().size() > 2);
