@@ -1,11 +1,15 @@
 package io.quarkiverse.flow.deployment.test.http;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static io.quarkiverse.flow.providers.MetadataPropagationRequestDecorator.X_FLOW_INSTANCE_ID;
 import static io.quarkiverse.flow.providers.MetadataPropagationRequestDecorator.X_FLOW_TASK_ID;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
 import java.util.Map;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -15,31 +19,37 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.smallrye.common.annotation.Identifier;
-import mockwebserver3.MockResponse;
-import mockwebserver3.MockWebServer;
-import mockwebserver3.RecordedRequest;
-import okhttp3.Headers;
 
 public class HttpFlowClientConfigTest {
 
-    private static MockWebServer mockServer;
+    private static WireMockServer wireMockServer;
 
     @BeforeAll
-    static void startMockServer() throws IOException {
-        // Use a fixed port so we can wire it via overrideConfigKey
-        mockServer = new MockWebServer();
-        mockServer.start(1080);
+    static void startMockServer() {
+        wireMockServer = new WireMockServer(options().port(1080));
+        wireMockServer.start();
+
+        wireMockServer.stubFor(post(urlEqualTo("/echo"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{ \"message\": \"ok\" }")));
     }
 
     @AfterAll
     static void stopMockServer() {
-        mockServer.close();
+        if (wireMockServer != null) {
+            wireMockServer.stop();
+        }
     }
 
     @RegisterExtension
@@ -53,11 +63,7 @@ public class HttpFlowClientConfigTest {
             .overrideConfigKey("quarkus.flow.http.client.user-agent", "HttpFlowClientConfigTest");
 
     @Test
-    void http_client_uses_flow_http_config() throws InterruptedException {
-        mockServer.enqueue(new MockResponse(200, Headers.of(Map.of("Content-Type", "application/json")), """
-                { "message": "ok" }
-                """));
-
+    void http_client_uses_flow_http_config() {
         WorkflowDefinition definition = Arc.container()
                 .instance(WorkflowDefinition.class, Identifier.Literal.of(HttpRestFlow.class.getName()))
                 .get();
@@ -68,20 +74,19 @@ public class HttpFlowClientConfigTest {
         WorkflowModel model = instance.start().join();
 
         String out = model.as(String.class).orElseThrow();
-        assertEquals("{\"message\":\"ok\"}", out);
+        assertThat(out).isEqualTo("{\"message\":\"ok\"}");
 
-        RecordedRequest recordedRequest = mockServer.takeRequest();
-        assertEquals("POST", recordedRequest.getMethod());
-        assertEquals("/echo", recordedRequest.getUrl().uri().getPath());
+        // Verify the request was made with the correct method and path
+        wireMockServer.verify(1, postRequestedFor(urlEqualTo("/echo"))
+                .withHeader("X-Flow-Client", equalTo("flow-default")));
 
-        assertEquals(1, mockServer.getRequestCount());
-        assertEquals("flow-default", recordedRequest.getHeaders().get("X-Flow-Client"));
+        // Get the logged request to verify additional headers
+        LoggedRequest recordedRequest = wireMockServer.findAll(postRequestedFor(urlEqualTo("/echo"))).get(0);
 
-        String xFlowInstanceId = recordedRequest.getHeaders().get(X_FLOW_INSTANCE_ID);
-        assertEquals(instance.id(), xFlowInstanceId);
+        String xFlowInstanceId = recordedRequest.getHeader(X_FLOW_INSTANCE_ID);
+        assertThat(xFlowInstanceId).isEqualTo(instance.id());
 
-        String xFlowTaskId = recordedRequest.getHeaders().get(X_FLOW_TASK_ID);
-        assertNotNull(xFlowTaskId);
-
+        String xFlowTaskId = recordedRequest.getHeader(X_FLOW_TASK_ID);
+        assertThat(xFlowTaskId).isNotNull();
     }
 }

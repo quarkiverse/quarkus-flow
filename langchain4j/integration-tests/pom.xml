@@ -11,7 +11,6 @@
 
     <properties>
         <skipITs>true</skipITs>
-        <version.wiremock-jre8-standalone>2.35.2</version.wiremock-jre8-standalone>
     </properties>
 
     <dependencies>
@@ -42,9 +41,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.tomakehurst</groupId>
-            <artifactId>wiremock-jre8-standalone</artifactId>
-            <version>${version.wiremock-jre8-standalone}</version>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock</artifactId>
             <scope>test</scope>
         </dependency>
         <!-- Forced dependency to run mvn in parallel -->
