@@ -1,0 +1,308 @@
+= Quarkus Flow & CNCF Serverless Workflow Java Cookbook
+:page-role: reference
+:examples-dir: ../main/java
+include::includes/attributes.adoc[]
+
+
+This cookbook provides a comprehensive collection of practical, copy-and-paste examples for building modern workflows using the Serverless Workflow Java SDK Fluent API.
+
+All workflows in Quarkus Flow are defined as CDI beans by extending the `Flow` class and overriding the `descriptor()` method.
+
+== Essential Setup
+Every workflow should follow this structure.
+
+[source,java]
+----
+package org.acme;
+
+import io.quarkiverse.flow.Flow;
+import io.serverlessworkflow.api.types.Workflow;
+import io.serverlessworkflow.fluent.func.spec.FuncWorkflowBuilder;
+import jakarta.enterprise.context.ApplicationScoped;
+
+// Recommended Static Imports
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+import static io.serverlessworkflow.fluent.func.spec.FuncWorkflowBuilder.workflow;
+
+@ApplicationScoped
+public class MyWorkflow extends Flow {
+    @Override
+    public Workflow descriptor() {
+        return workflow("my-workflow-id")
+            .tasks(
+                // tasks go here
+            )
+            .build();
+    }
+}
+----
+////
+
+TODO: Not implemented in Java DSL
+
+[#pausing_execution]
+== 1. Pausing Execution (Wait State)
+To pause a workflow for a specific duration (ISO 8601), use the `wait` task.
+
+[source,java]
+----
+@ApplicationScoped
+public class WaitWorkflow extends Flow {
+    @Override
+    public Workflow descriptor() {
+        return FuncWorkflowBuilder.workflow("wait-duration-8601")
+            .tasks(
+                waitTask("wait30Seconds").duration("PT30S")
+            )
+            .build();
+    }
+}
+----
+////
+
+[#scheduled_execution]
+== 2. Scheduled Executions (CRON)
+Trigger workflows on a schedule by defining a `schedule` within the builder.
+
+[source,java]
+----
+include::{examples-dir}/org/acme/CronWorkflow.java[]
+----
+
+[#external_api_interaction]
+== 3. External API Integrations (HTTP REST)
+Use the `call` task with `http` to interact with REST endpoints, managing headers and query parameters dynamically.
+
+[source,java]
+----
+include::{examples-dir}/org/acme/HttpWorkflow.java[]
+----
+
+[#openapi_invocation]
+== 4. OpenAPI Services
+Invoke OpenAPI endpoints by referencing the specification and the `operationId`.
+
+[source,java]
+----
+include::{examples-dir}/org/acme/OpenApiWorkflow.java[]
+----
+
+[#authentication]
+== 5. Authentication (OAuth2)
+Define authentication mechanisms for secure outbound communication.
+
+[source,java]
+----
+include::{examples-dir}/org/acme/HttpOauth2Workflow.java[]
+----
+
+[#events]
+== 6. Event Consumption and Production
+To integrate the workflow with CloudEvents. Use `listen` to pause for events and `emit` to publish them.
+
+Listening for an Event:
+[source,java]
+----
+@ApplicationScoped
+public class ListenWorkflow extends Flow {
+    @Override
+    public Workflow descriptor() {
+        return FuncWorkflowBuilder.workflow("listen-to-one")
+            .tasks(
+                listen("waitForStartup", to().one(event("race.started.v1"))),
+                post("startup", "https://api.race.com/start")
+            )
+            .build();
+    }
+}
+----
+
+Emitting an Event:
+[source,java]
+----
+@ApplicationScoped
+public class EmitWorkflow extends Flow {
+    @Override
+    public Workflow descriptor() {
+        return FuncWorkflowBuilder.workflow("emit-event")
+            .tasks(
+                emitJson("orderPlaced", "com.petstore.order.placed.v1")
+                    .source("https://petstore.com")
+                    .data(Map.of("id", "${ .orderId }", "status", "placed"))
+            )
+            .build();
+    }
+}
+----
+
+[#data_transformation]
+== 7. Event Consumption and Production
+Use the `set` task to initialize or modify the workflow state without external calls
+
+[source,java]
+----
+@ApplicationScoped
+public class SetWorkflow extends Flow {
+    @Override
+    public Workflow descriptor() {
+        return FuncWorkflowBuilder.workflow("set-example")
+            .tasks(
+                set("initialize",
+                    Map.of("processed", true,
+                           "timestamp", "${ now() }"
+                    )
+                )
+            )
+            .build();
+    }
+}
+----
+
+[#conditional_logic]
+== 8. Conditional Logic (`if` and `switch`)
+Branch execution based on data state using `ifCondition` or `switchTask`.
+
+[source,java]
+----
+@ApplicationScoped
+public class SwitchWorkflow extends Flow {
+    @Override
+    public Workflow descriptor() {
+        return FuncWorkflowBuilder.workflow("switch-example")
+            .tasks(
+                switchTask("processOrder")
+                    .caseOf(".orderType == 'electronic'", "processElectronic")
+                    .caseOf(".orderType == 'physical'", "processPhysical")
+                    .defaultCase("handleUnknown"),
+
+                set("processElectronic", Map.of("status", "fulfilled")).then(exit()),
+                set("processPhysical", Map.of("status", "pending-shipping")).then(exit()),
+                set("handleUnknown", Map.of("error", "invalid-type"))
+            )
+            .build();
+    }
+}
+----
+
+[#interation]
+== 9. Iteration (`for` loops)
+Execute logic over arrays of data using the `forTask`.
+
+[source,java]
+----
+@ApplicationScoped
+public class ForWorkflow extends Flow {
+    @Override
+    public Workflow descriptor() {
+        return FuncWorkflowBuilder.workflow("for-example")
+            .tasks(
+                forTask("checkup")
+                    .each("pet").in(".pets")
+                    .doTasks(
+                        listen("waitForCheckup", to().one(event("pet.checkup.completed")))
+                    )
+            )
+            .build();
+    }
+}
+----
+
+[#parallel]
+== 10. Parallel Execution (`fork`)
+Execute independent branches simultaneously to reduce total execution time.
+
+[source,java]
+----
+@ApplicationScoped
+public class ForkWorkflow extends Flow {
+    @Override
+    public Workflow descriptor() {
+        return FuncWorkflowBuilder.workflow("fork-example")
+            .tasks(
+                fork("raiseAlarm")
+                    .branch(call("callNurse").http(Method.PUT, "https://hospital.com/nurse"))
+                    .branch(call("callDoctor").http(Method.PUT, "https://hospital.com/doctor"))
+            )
+            .build();
+    }
+}
+----
+
+[#invoking_subflows]
+== 11. Invoking Subflows
+Keep definitions modular by invoking other workflows using the `run` directive.
+
+[source,java]
+----
+@ApplicationScoped
+public class ForkWorkflow extends Flow {
+    @Override
+    public Workflow descriptor() {
+        return FuncWorkflowBuilder.workflow("fork-example")
+            .tasks(
+                fork("raiseAlarm")
+                    .branch(call("callNurse").http(Method.PUT, "https://hospital.com/nurse"))
+                    .branch(call("callDoctor").http(Method.PUT, "https://hospital.com/doctor"))
+            )
+            .build();
+    }
+}
+----
+
+[#error_handling]
+== 12. Error Handling (`try` / `catch`)
+Define compensatory logic for business-level errors using `tryTask`.
+
+[source,java]
+----
+@ApplicationScoped
+public class TryCatchWorkflow extends Flow {
+    @Override
+    public Workflow descriptor() {
+        return FuncWorkflowBuilder.workflow("try-catch")
+            .tasks(
+                tryTask("tryGetPet")
+                    .doTasks(
+                        call("getPet").http(Method.GET, "https://api.com/pet/{id}")
+                    )
+                    .catchError(errors -> errors
+                        .withType("communication-error")
+                        .doTasks(
+                            emitJson("notifySupport", "pet.notfound.v1")
+                        )
+                    )
+            )
+            .build();
+    }
+}
+----
+
+[#raising_error]
+== 13. Raising Explicit Errors
+Halt execution and throw specific errors using the `raise` task.
+
+[source,java]
+----
+@ApplicationScoped
+public class GuardWorkflow extends Flow {
+    @Override
+    public Workflow descriptor() {
+        return FuncWorkflowBuilder.workflow("age-gate")
+            .tasks(
+
+               switchTask("validateAge")
+                   .when(".age < 18", "denyAccess")
+                   .defaultTo("proceed"),
+
+               raise("denyAccess")
+                   .error(e -> e
+                   .type("AccessForbidden")
+                   .status(403)
+                   .title("Underage Access Attempt")),
+
+               set("proceed", Map.of("authorized", true))
+             )
+             .build();
+    }
+}
+----
