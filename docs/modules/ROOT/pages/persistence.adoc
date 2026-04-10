@@ -85,7 +85,6 @@ Configure the local file path in your `application.properties`:
 quarkus.flow.persistence.mvstore.db-path=${user.home}/testFlowMVStore.db
 ----
 
-
 == See also
 * xref:concepts-durable-workflow-k8s.adoc[Durable Workflows in Kubernetes] — architecture and concepts for distributed execution.
 * link:https://quarkus.io/guides/redis[Using the Quarkus Redis Client] — advanced Redis configuration.

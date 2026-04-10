@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -25,7 +24,6 @@ import io.fabric8.kubernetes.api.model.coordination.v1.LeaseBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkiverse.flow.durable.kube.config.LeaseGroupConfig;
 import io.quarkiverse.flow.durable.kube.config.PoolConfig;
-import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kubernetes.client.WithKubernetesTestServer;
 
@@ -39,9 +37,6 @@ public class LeaseServiceTest {
     @Inject
     LeaseService leaseService;
 
-    @InjectMock
-    KubeInfoStrategy kubeInfo;
-
     @Inject
     PoolConfig poolConfig;
 
@@ -50,9 +45,6 @@ public class LeaseServiceTest {
 
     @BeforeEach
     void setup() {
-        when(kubeInfo.namespace()).thenReturn("default");
-        when(kubeInfo.podName()).thenReturn("pod-1");
-
         // Clean for test isolation
         client.leases().inNamespace("default").delete();
         client.pods().inNamespace("default").delete();
