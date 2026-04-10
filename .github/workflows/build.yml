@@ -11,6 +11,9 @@ permissions:
   contents: read
   pull-requests: read
 
+env:
+  # RestAssured socket timeout for slow GHA runners (in milliseconds)
+  RESTASSURED_TIMEOUT_MS: 60000
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -112,7 +115,7 @@ jobs:
 
       - name: Build with Maven (Linux, full tests, skip docs, reduced parallelism)
         if: matrix.os == 'ubuntu-latest'
-        run: mvn -B clean install -T 1C -Dno-format -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp -pl '!docs'
+        run: mvn -B clean install -T 1C -Dno-format -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -Drestassured.config.http.client.params.SO_TIMEOUT=${{ env.RESTASSURED_TIMEOUT_MS }} -ntp -pl '!docs'
 
       - name: Build with Maven (Windows, skip ITs, docs, and examples, single-threaded)
         if: matrix.os == 'windows-latest'

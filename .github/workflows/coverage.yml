@@ -5,6 +5,10 @@ on:
     branches: [ main ]
     paths-ignore: [ ".gitignore", "CODEOWNERS", "LICENSE", "**.md", "**.adoc", "**.txt", ".all-contributorsrc", ".claude/**" ]
 
+env:
+  # RestAssured socket timeout for slow GHA runners (in milliseconds)
+  RESTASSURED_TIMEOUT_MS: 60000
+
 permissions:
   contents: read
   checks: write
@@ -28,7 +32,7 @@ jobs:
           cache: 'maven'
 
       - name: Build with Maven (skip docs, disable Ollama for coverage, single-threaded)
-        run: mvn -B clean install -Dno-format -Pcode-coverage -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp -pl '!docs'
+        run: mvn -B clean install -Dno-format -Pcode-coverage -Dquarkus.langchain4j.ollama.devservices.enabled=false -Drestassured.config.http.client.params.SO_TIMEOUT=${{ env.RESTASSURED_TIMEOUT_MS }} -ntp -pl '!docs'
 
       - name: Publish Failed Test Report
         uses: mikepenz/action-junit-report@v6

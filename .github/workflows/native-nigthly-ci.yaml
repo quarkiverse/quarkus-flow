@@ -10,6 +10,10 @@ defaults:
   run:
     shell: bash
 
+env:
+  # RestAssured socket timeout for slow GHA runners (in milliseconds)
+  RESTASSURED_TIMEOUT_MS: 60000
+
 permissions:
   contents: read
   checks: write
@@ -52,6 +56,7 @@ jobs:
           -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25
           -Dquarkus.langchain4j.timeout=60000
           -Dquarkus.langchain4j.ollama.chat-model.model-id=llama3.2
+          -Drestassured.config.http.client.params.SO_TIMEOUT=${{ env.RESTASSURED_TIMEOUT_MS }}
           -DskipITs=false
 
       - name: Publish Failed Test Report
