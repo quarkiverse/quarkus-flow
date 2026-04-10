@@ -1,9 +1,9 @@
 package org.acme;
 
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+
 // Static imports recommended for brevity:
 import java.util.Map;
-
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -24,7 +24,7 @@ public class OpenApiWorkflow extends Flow {
                                 .parameters(Map.of("status", "available"))
                 // Wrap the JQ object constructor in ${ } so the engine evaluates it correctly
                 // Just {pets: .} does not behave as expected
-                // .exportAs("${ {pets: .} }")
+                // .exportAs("${ {pets: .} }") - also does not help
                 )
                 .build();
     }
