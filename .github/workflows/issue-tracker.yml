@@ -40,7 +40,7 @@ jobs:
     steps:
       - name: Check if issue exists
         id: check-issue
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const issues = await github.rest.issues.listForRepo({
@@ -58,7 +58,7 @@ jobs:
       
       - name: Close issue on success
         if: inputs.build_outcome == 'success' && steps.check-issue.outputs.issue_number != '' && steps.check-issue.outputs.issue_state == 'open'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const issueNumber = parseInt('${{ steps.check-issue.outputs.issue_number }}');
@@ -73,7 +73,7 @@ jobs:
       
       - name: Create or update issue on failure
         if: inputs.build_outcome == 'failure'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const issueNumber = '${{ steps.check-issue.outputs.issue_number }}';
