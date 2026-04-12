@@ -145,26 +145,12 @@ include::{examples-dir}/org/acme/ConditionalWorkflow.java[]
 ----
 
 [#interation]
-== 9. Iteration (`for` loops)
-Execute logic over arrays of data using the `forTask`.
+== 9. Iteration
+Execute logic over collections of data using the `forEach(...)`.
 
 [source,java]
 ----
-@ApplicationScoped
-public class ForWorkflow extends Flow {
-    @Override
-    public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("for-example")
-            .tasks(
-                forTask("checkup")
-                    .each("pet").in(".pets")
-                    .doTasks(
-                        listen("waitForCheckup", to().one(event("pet.checkup.completed")))
-                    )
-            )
-            .build();
-    }
-}
+include::{examples-dir}/org/acme/ForEachWorkflow.java[]
 ----
 
 [#parallel]

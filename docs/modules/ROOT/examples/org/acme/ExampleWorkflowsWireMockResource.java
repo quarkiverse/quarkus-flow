@@ -107,6 +107,15 @@ public class ExampleWorkflowsWireMockResource implements QuarkusTestResourceLife
                                                            .withHeader("Content-Type", "application/json")
                                                            .withBody("{}")));
 
+        // ---------------------------------------------------------
+        // 5. STUBS FOR ITERATION WORKFLOW
+        // ---------------------------------------------------------
+        wireMockServer.stubFor(post(urlEqualTo("/process-order"))
+                                       .willReturn(aResponse()
+                                                           .withStatus(200)
+                                                           .withHeader("Content-Type", "application/json")
+                                                           .withBody("{}")));
+
         return Map.of(); // No properties to override
     }
 
