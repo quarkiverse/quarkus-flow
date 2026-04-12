@@ -1,0 +1,53 @@
+package test;
+
+import com.github.tomakehurst.wiremock.client.WireMock;
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.QuarkusTest;
+import io.serverlessworkflow.impl.WorkflowModel;
+import jakarta.inject.Inject;
+import org.acme.ExampleWorkflowsWireMockResource;
+import org.acme.ForEachWorkflow;
+import org.acme.OrdersPayload;
+import org.acme.Order;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+@QuarkusTest
+@QuarkusTestResource(ExampleWorkflowsWireMockResource.class)
+public class ForEachWorkflowTest {
+
+    @Inject
+    ForEachWorkflow forEachWorkflow;
+
+    @BeforeEach
+    void resetWiremock() {
+        WireMock.configureFor(8089);
+        resetAllRequests();
+    }
+
+    @Test
+    void testForEachIteration() throws Exception {
+        OrdersPayload input = new OrdersPayload(List.of(
+                new Order("ORD-001"),
+                new Order("ORD-002"),
+                new Order("ORD-003")
+        ));
+
+        // 2. Execute the workflow synchronously
+        WorkflowModel result = forEachWorkflow.instance(input)
+                .start()
+                .toCompletableFuture()
+                .get(10, TimeUnit.SECONDS);
+
+        assertNotNull(result, "Workflow should complete successfully");
+
+        // 3. Verify the engine looped and executed the HTTP task exactly 3 times!
+        verify(3, postRequestedFor(urlEqualTo("/process-order")));
+    }
+}
