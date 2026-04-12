@@ -109,19 +109,7 @@ include::{examples-dir}/org/acme/ListenWorkflow.java[]
 Emitting an Event:
 [source,java]
 ----
-@ApplicationScoped
-public class EmitWorkflow extends Flow {
-    @Override
-    public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("emit-event")
-            .tasks(
-                emitJson("orderPlaced", "com.petstore.order.placed.v1")
-                    .source("https://petstore.com")
-                    .data(Map.of("id", "${ .orderId }", "status", "placed"))
-            )
-            .build();
-    }
-}
+include::{examples-dir}/org/acme/EmitWorkflow.java[]
 ----
 
 [#data_transformation]
