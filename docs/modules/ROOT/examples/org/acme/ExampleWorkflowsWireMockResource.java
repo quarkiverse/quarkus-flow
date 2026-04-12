@@ -81,6 +81,15 @@ public class ExampleWorkflowsWireMockResource implements QuarkusTestResourceLife
                         // The Petstore API returns a JSON array
                         .withBody("[{\"id\": 101, \"name\": \"Mocked Doggo\", \"status\": \"available\"}]")));
 
+        // ---------------------------------------------------------
+        // 3. STUB FOR LISTEN WORKFLOW (Event Wakeup)
+        // ---------------------------------------------------------
+        wireMockServer.stubFor(post(urlEqualTo("/start"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"status\": \"started successfully\"}")));
+
         return Map.of(); // No properties to override
     }
 

@@ -103,18 +103,7 @@ To integrate the workflow with CloudEvents. Use `listen` to pause for events and
 Listening for an Event:
 [source,java]
 ----
-@ApplicationScoped
-public class ListenWorkflow extends Flow {
-    @Override
-    public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("listen-to-one")
-            .tasks(
-                listen("waitForStartup", to().one(event("race.started.v1"))),
-                post("startup", "https://api.race.com/start")
-            )
-            .build();
-    }
-}
+include::{examples-dir}/org/acme/ListenWorkflow.java[]
 ----
 
 Emitting an Event:
@@ -136,7 +125,7 @@ public class EmitWorkflow extends Flow {
 ----
 
 [#data_transformation]
-== 7. Event Consumption and Production
+== 7. Data Transformation
 Use the `set` task to initialize or modify the workflow state without external calls
 
 [source,java]
