@@ -136,29 +136,12 @@ public class SetWorkflow extends Flow {
 ----
 
 [#conditional_logic]
-== 8. Conditional Logic (`if` and `switch`)
-Branch execution based on data state using `ifCondition` or `switchTask`.
+== 8. Conditional Logic
+Branch execution based on data state using `switchCase(...)`, `switchWhen(...)` and `switchWhenOrElse(...)``.
 
 [source,java]
 ----
-@ApplicationScoped
-public class SwitchWorkflow extends Flow {
-    @Override
-    public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("switch-example")
-            .tasks(
-                switchTask("processOrder")
-                    .caseOf(".orderType == 'electronic'", "processElectronic")
-                    .caseOf(".orderType == 'physical'", "processPhysical")
-                    .defaultCase("handleUnknown"),
-
-                set("processElectronic", Map.of("status", "fulfilled")).then(exit()),
-                set("processPhysical", Map.of("status", "pending-shipping")).then(exit()),
-                set("handleUnknown", Map.of("error", "invalid-type"))
-            )
-            .build();
-    }
-}
+include::{examples-dir}/org/acme/ConditionalWorkflow.java[]
 ----
 
 [#interation]
