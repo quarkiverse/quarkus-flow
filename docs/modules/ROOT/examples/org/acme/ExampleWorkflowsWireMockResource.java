@@ -6,7 +6,9 @@ import java.util.Map;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import org.junit.jupiter.api.BeforeEach;
 
 public class ExampleWorkflowsWireMockResource implements QuarkusTestResourceLifecycleManager {
 
@@ -89,6 +91,21 @@ public class ExampleWorkflowsWireMockResource implements QuarkusTestResourceLife
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody("{\"status\": \"started successfully\"}")));
+
+        // ---------------------------------------------------------
+        // 4. STUBS FOR CONDITIONAL WORKFLOW
+        // ---------------------------------------------------------
+        wireMockServer.stubFor(post(urlEqualTo("/approve"))
+                                       .willReturn(aResponse()
+                                                           .withStatus(200)
+                                                           .withHeader("Content-Type", "application/json")
+                                                           .withBody("{}")));
+
+        wireMockServer.stubFor(post(urlEqualTo("/reject"))
+                                       .willReturn(aResponse()
+                                                           .withStatus(200)
+                                                           .withHeader("Content-Type", "application/json")
+                                                           .withBody("{}")));
 
         return Map.of(); // No properties to override
     }
