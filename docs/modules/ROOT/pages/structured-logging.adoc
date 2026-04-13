@@ -1,0 +1,362 @@
+= Structured Logging
+:description: Learn how to enable structured logging to export workflow execution data to external databases for querying and analytics.
+
+Quarkus Flow can emit all workflow and task lifecycle events as structured JSON logs to stdout. This enables you to export complete workflow execution data to external databases, analytics platforms, or audit systems without coupling your runtime to specific storage technologies.
+
+== Overview
+
+Structured logging follows the **logs-as-transport pattern**: your workflow runtime emits JSON events to stdout, and a log forwarder (like FluentBit or Vector) routes those events to your chosen destination—PostgreSQL, Elasticsearch, S3, Kafka, or any combination.
+
+This approach provides several advantages:
+
+* **Zero transport ownership** – Your application doesn't manage database connections, retries, or buffering. The log forwarder handles all transport concerns.
+* **Flexibility** – The same log stream can feed multiple destinations simultaneously (e.g., PostgreSQL for queries + S3 for compliance archives).
+* **Clear support boundary** – If data isn't reaching your database, the issue is either "logs not being emitted" (your code) or "logs not being forwarded" (infrastructure). No ambiguity.
+* **Scalability** – Log forwarders are designed for high-volume event streaming and can scale independently of your application.
+
+== Use Cases
+
+* **Query APIs** – Build GraphQL or REST APIs on top of PostgreSQL to query workflow instances and execution history.
+* **Analytics** – Feed workflow events into data warehouses (BigQuery, Snowflake, Redshift) for business intelligence.
+* **Compliance auditing** – Maintain long-term audit trails with detailed execution history.
+* **Custom dashboards** – Power monitoring UIs with workflow execution data from Elasticsearch.
+* **Event-driven integrations** – Stream events to Kafka for downstream processing.
+
+== Configuration
+
+Structured logging is **disabled by default**. Enable it via configuration:
+
+[source,properties]
+----
+# Enable structured logging
+quarkus.flow.structured-logging.enabled=true
+
+# Event filtering (default: all events)
+quarkus.flow.structured-logging.events=workflow.*
+
+# Payload inclusion (default: workflow payloads included, task payloads excluded)
+quarkus.flow.structured-logging.include-workflow-payloads=true
+quarkus.flow.structured-logging.include-task-payloads=false
+
+# Always include full context in error events (default: true)
+quarkus.flow.structured-logging.include-error-context=true
+
+# Truncation for large payloads (default: 10KB)
+quarkus.flow.structured-logging.payload-max-size=10240
+quarkus.flow.structured-logging.truncate-preview-size=1024
+
+# Log level (default: INFO)
+quarkus.flow.structured-logging.log-level=INFO
+----
+
+=== Event Filtering
+
+Control which events are logged using glob patterns:
+
+[source,properties]
+----
+# All events (default)
+quarkus.flow.structured-logging.events=workflow.*
+
+# Only workflow-level events (no task details)
+quarkus.flow.structured-logging.events=workflow.instance.*
+
+# Workflow events + task failures (recommended for most use cases)
+quarkus.flow.structured-logging.events=workflow.instance.*,workflow.task.failed
+
+# Specific events only
+quarkus.flow.structured-logging.events=\
+  workflow.instance.started,\
+  workflow.instance.completed,\
+  workflow.instance.failed
+----
+
+=== Payload Inclusion Strategy
+
+By default, structured logging captures **execution graphs** (what executed when) but not **task payloads** (input/output data). This keeps log volume low while providing enough information for execution visualization.
+
+**Default behavior:**
+
+* Workflow events: Include input/output (needed for instance queries)
+* Task events: Only metadata (taskName, position, status, timing)
+* Error events: Always include full context (overrides task payload setting)
+
+This produces ~5KB of logs per workflow (compared to 50-500KB if all task payloads were included).
+
+**When to enable task payloads:**
+
+[source,properties]
+----
+# Enable full audit trail with all task input/output
+quarkus.flow.structured-logging.include-task-payloads=true
+----
+
+Use this for:
+
+* Compliance requirements mandating complete execution records
+* Debugging specific workflows in non-production environments
+* Workflows with small payloads where volume isn't a concern
+
+=== Large Payload Handling
+
+For agentic workflows with large contexts (conversation history, retrieved documents, etc.), payloads exceeding the configured threshold are automatically truncated:
+
+[source,json]
+----
+{
+  "input": {
+    "__truncated__": true,
+    "__originalSize__": 157000,
+    "__preview__": "First 1KB of data..."
+  }
+}
+----
+
+This prevents overwhelming log systems while preserving metadata about what was truncated.
+
+== Event Schema
+
+All events follow a consistent JSON schema:
+
+[source,json]
+----
+{
+  "eventType": "workflow.instance.started",
+  "timestamp": "2026-04-13T14:30:00.123Z",
+  "instanceId": "550e8400-e29b-41d4-a716-446655440000",
+  "workflowNamespace": "default",
+  "workflowName": "greetings",
+  "workflowVersion": "1.0.0",
+  ...event-specific fields...
+}
+----
+
+=== Workflow Instance Events
+
+* `workflow.instance.started` – Workflow execution begins
+* `workflow.instance.completed` – Workflow finishes successfully
+* `workflow.instance.failed` – Workflow fails with error
+* `workflow.instance.cancelled` – Workflow is cancelled
+* `workflow.instance.suspended` – Workflow is suspended (waiting)
+* `workflow.instance.resumed` – Workflow resumes after suspension
+* `workflow.instance.status.changed` – Workflow status changes
+
+=== Task Events
+
+* `workflow.task.started` – Task execution begins
+* `workflow.task.completed` – Task finishes successfully
+* `workflow.task.failed` – Task fails with error
+* `workflow.task.cancelled` – Task is cancelled
+* `workflow.task.suspended` – Task is suspended
+* `workflow.task.resumed` – Task resumes after suspension
+* `workflow.task.retried` – Task is retried after failure
+
+=== Example Events
+
+**Workflow Started:**
+
+[source,json]
+----
+{
+  "eventType": "workflow.instance.started",
+  "timestamp": "2026-04-13T14:30:00.123Z",
+  "instanceId": "550e8400-e29b-41d4-a716-446655440000",
+  "workflowNamespace": "default",
+  "workflowName": "greetings",
+  "workflowVersion": "1.0.0",
+  "status": "RUNNING",
+  "startTime": "2026-04-13T14:30:00.123Z",
+  "input": {
+    "name": "Alice"
+  }
+}
+----
+
+**Workflow Failed:**
+
+[source,json]
+----
+{
+  "eventType": "workflow.instance.failed",
+  "timestamp": "2026-04-13T14:30:05.789Z",
+  "instanceId": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "FAULTED",
+  "endTime": "2026-04-13T14:30:05.789Z",
+  "error": {
+    "message": "Service unavailable",
+    "type": "java.net.ConnectException",
+    "stackTrace": "..."
+  },
+  "input": {
+    "name": "Alice"
+  }
+}
+----
+
+**Task Started (no payloads):**
+
+[source,json]
+----
+{
+  "eventType": "workflow.task.started",
+  "timestamp": "2026-04-13T14:30:01.000Z",
+  "taskExecutionId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "instanceId": "550e8400-e29b-41d4-a716-446655440000",
+  "taskName": "callGreetingService",
+  "taskPosition": "do/0",
+  "status": "RUNNING",
+  "startTime": "2026-04-13T14:30:01.000Z"
+}
+----
+
+== Log Forwarder Integration
+
+=== FluentBit Example
+
+FluentBit is a lightweight, high-performance log forwarder. Here's a basic configuration to route structured logs to PostgreSQL:
+
+[source,conf]
+----
+[INPUT]
+    Name              tail
+    Path              /var/log/quarkus-flow/*.log
+    Parser            json
+    Tag               flow.events
+
+[FILTER]
+    Name              modify
+    Match             flow.events
+    Add               kubernetes.namespace ${K8S_NAMESPACE}
+    Add               kubernetes.pod ${K8S_POD_NAME}
+
+[OUTPUT]
+    Name              pgsql
+    Match             flow.events
+    Host              postgres.database.svc
+    Port              5432
+    User              flowuser
+    Password          ${DB_PASSWORD}
+    Database          workflow_data
+    Table             workflow_events
+    Timestamp_Key     timestamp
+----
+
+=== Dual Output Pattern
+
+Send the same logs to multiple destinations:
+
+[source,conf]
+----
+[OUTPUT]
+    Name              pgsql
+    Match             flow.events
+    # PostgreSQL config...
+
+[OUTPUT]
+    Name              es
+    Match             flow.events
+    Host              elasticsearch.svc
+    Port              9200
+    Index             workflow-events
+    Type              _doc
+----
+
+=== Separate Log File
+
+To make tailing easier, route structured events to a separate log file:
+
+[source,properties]
+----
+# Send structured logging to separate file
+quarkus.log.category."io.quarkiverse.flow.structuredlogging".handlers=STRUCTURED_FILE
+quarkus.log.handler.file."STRUCTURED_FILE".path=/var/log/quarkus-flow/structured-events.log
+quarkus.log.handler.file."STRUCTURED_FILE".format=%s%n
+----
+
+This allows FluentBit to tail only structured events without parsing application logs.
+
+== Production Recommendations
+
+=== What to Log
+
+**Recommended (default):**
+
+* All workflow-level events (`workflow.instance.*`)
+* Task failures (`workflow.task.failed`)
+
+This captures complete workflow state while keeping volume low.
+
+**Optional (high-volume):**
+
+* All task events (`workflow.task.*`) – Only if you need complete task execution history or are debugging specific workflows.
+
+=== Log Rotation
+
+Configure log rotation to prevent disk fill:
+
+[source,properties]
+----
+quarkus.log.handler.file."STRUCTURED_FILE".rotation.max-file-size=100M
+quarkus.log.handler.file."STRUCTURED_FILE".rotation.max-backup-index=7
+quarkus.log.handler.file."STRUCTURED_FILE".rotation.file-suffix=.yyyy-MM-dd
+quarkus.log.handler.file."STRUCTURED_FILE".rotation.rotate-on-boot=true
+----
+
+=== Retention Strategy
+
+* **Active workflows:** Hot storage (PostgreSQL/Redis)
+* **Completed workflows (<30 days):** Warm storage (PostgreSQL)
+* **Completed workflows (>30 days):** Cold storage (S3/object storage)
+* **Completed workflows (>1 year):** Archive or delete (configurable by compliance needs)
+
+Implement this via your log forwarder's routing rules or database policies.
+
+=== Security Considerations
+
+* **Sensitive data:** Configure truncation aggressively for workflows handling PII or credentials
+* **Log access controls:** Restrict access to structured log files and destination databases
+* **Encryption:** Enable encryption in transit (TLS) and at rest for your log destinations
+
+== Performance Impact
+
+Structured logging is designed to be lightweight:
+
+* **CPU overhead:** <1% (JSON serialization is fast, truncation is efficient)
+* **Memory overhead:** Negligible (events are streamed, not buffered)
+* **Log volume:**
+  ** Default (workflow + task failures): ~5KB per workflow
+  ** With task payloads: ~50-500KB per workflow (depends on data size)
+
+The logs-as-transport pattern ensures your application performance isn't affected by database connectivity issues or backpressure.
+
+== Comparison with Custom Listeners
+
+If you're considering writing a custom listener for audit logging or data export, structured logging may be a simpler alternative:
+
+|===
+|Approach |Pros |Cons
+
+|**Structured Logging**
+|✅ No code required +
+✅ Standard log infrastructure +
+✅ Multiple destinations +
+✅ Zero transport ownership
+|⚠️ Eventual consistency (log → database delay) +
+⚠️ Requires log forwarder setup
+
+|**Custom Listener**
+|✅ Synchronous writes +
+✅ Custom business logic +
+✅ Direct database access
+|❌ You own database connections +
+❌ More code to maintain +
+❌ Harder to add new destinations
+|===
+
+For most use cases, structured logging is recommended. Reserve custom listeners for scenarios requiring synchronous writes or complex business logic.
+
+== See Also
+
+* xref:custom-listeners.adoc[Custom Execution Listeners] – Write your own listeners for advanced use cases
+* xref:metrics-prometheus.adoc[Metrics & Prometheus] – Monitor workflow performance
+* xref:tracing.adoc[Distributed Tracing] – Debug cross-service workflow execution
