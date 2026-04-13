@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.config.FlowDefinitionsConfig;
 import io.quarkiverse.flow.config.FlowMetricsConfig;
+import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
 import io.quarkiverse.flow.config.FlowTracingConfig;
 import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkiverse.flow.metrics.MicrometerExecutionListener;
@@ -33,6 +34,8 @@ import io.quarkiverse.flow.recorders.SDKRecorder;
 import io.quarkiverse.flow.recorders.WorkflowApplicationRecorder;
 import io.quarkiverse.flow.recorders.WorkflowDefinitionRecorder;
 import io.quarkiverse.flow.recorders.WorkflowMicrometerRecorder;
+import io.quarkiverse.flow.recorders.WorkflowStructuredLoggingRecorder;
+import io.quarkiverse.flow.structuredlogging.StructuredLoggingListener;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
@@ -327,6 +330,25 @@ class FlowProcessor {
                                 .done());
                     }
                 });
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void configureStructuredLogging(WorkflowStructuredLoggingRecorder recorder,
+            FlowStructuredLoggingConfig structuredLoggingConfig,
+            BuildProducer<SyntheticBeanBuildItem> beans) {
+
+        if (!structuredLoggingConfig.enabled()) {
+            return;
+        }
+
+        beans.produce(SyntheticBeanBuildItem.configure(StructuredLoggingListener.class)
+                .setRuntimeInit()
+                .unremovable()
+                .scope(Singleton.class)
+                .types(WorkflowExecutionListener.class)
+                .supplier(recorder.supplyStructuredLoggingListener(structuredLoggingConfig))
+                .done());
     }
 
 }
