@@ -95,7 +95,7 @@ public class MyCustomizer
     
     @Override
     public int priority() {
-        return 100; // Higher priority runs later
+        return 1000; // Higher priority runs later
     }
     
     @Override
