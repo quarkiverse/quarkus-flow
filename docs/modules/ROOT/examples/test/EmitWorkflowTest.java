@@ -1,20 +1,23 @@
 package test;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.test.junit.QuarkusTest;
-import io.serverlessworkflow.impl.WorkflowModel;
-import io.smallrye.reactive.messaging.memory.InMemoryConnector;
-import io.smallrye.reactive.messaging.memory.InMemorySink;
-import jakarta.enterprise.inject.Any;
-import jakarta.inject.Inject;
-import org.acme.EmitWorkflow;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.*;
+import jakarta.enterprise.inject.Any;
+import jakarta.inject.Inject;
+
+import org.acme.EmitWorkflow;
+import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.quarkus.test.junit.QuarkusTest;
+import io.serverlessworkflow.impl.WorkflowModel;
+import io.smallrye.reactive.messaging.memory.InMemoryConnector;
+import io.smallrye.reactive.messaging.memory.InMemorySink;
 
 @QuarkusTest
 public class EmitWorkflowTest {
@@ -37,8 +40,7 @@ public class EmitWorkflowTest {
 
         // 2. Provide input data that perfectly maps to the fields of Message.class
         Map<String, Object> input = Map.of(
-                "message", "placed"
-        );
+                "message", "placed");
 
         // 3. Execute the workflow synchronously
         WorkflowModel result = emitWorkflow.instance(input)

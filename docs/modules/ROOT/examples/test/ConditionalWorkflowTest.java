@@ -1,20 +1,23 @@
 package test;
 
-import com.github.tomakehurst.wiremock.client.WireMock;
-import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.junit.QuarkusTest;
-import io.serverlessworkflow.impl.WorkflowModel;
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import jakarta.inject.Inject;
+
 import org.acme.ConditionalWorkflow;
 import org.acme.ExampleWorkflowsWireMockResource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import com.github.tomakehurst.wiremock.client.WireMock;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.QuarkusTest;
+import io.serverlessworkflow.impl.WorkflowModel;
 
 @QuarkusTest
 @QuarkusTestResource(ExampleWorkflowsWireMockResource.class)
