@@ -347,7 +347,9 @@ class FlowProcessor {
                 .unremovable()
                 .scope(Singleton.class)
                 .types(WorkflowExecutionListener.class)
-                .supplier(recorder.supplyStructuredLoggingListener(structuredLoggingConfig))
+                .addInjectionPoint(org.jboss.jandex.ClassType.create(
+                        DotName.createSimple(com.fasterxml.jackson.databind.ObjectMapper.class.getName())))
+                .createWith(recorder.structuredLoggingListenerCreator(structuredLoggingConfig))
                 .done());
     }
 

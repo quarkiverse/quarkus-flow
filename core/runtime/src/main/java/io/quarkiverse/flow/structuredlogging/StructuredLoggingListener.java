@@ -2,6 +2,8 @@ package io.quarkiverse.flow.structuredlogging;
 
 import org.jboss.logging.Logger;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
 import io.serverlessworkflow.impl.lifecycle.TaskCancelledEvent;
 import io.serverlessworkflow.impl.lifecycle.TaskCompletedEvent;
@@ -32,9 +34,9 @@ public class StructuredLoggingListener implements WorkflowExecutionListener {
     private final FlowStructuredLoggingConfig config;
     private final EventFormatter formatter;
 
-    public StructuredLoggingListener(FlowStructuredLoggingConfig config) {
+    public StructuredLoggingListener(FlowStructuredLoggingConfig config, ObjectMapper objectMapper) {
         this.config = config;
-        this.formatter = new EventFormatter(config);
+        this.formatter = new EventFormatter(config, objectMapper);
     }
 
     // Workflow Instance Events

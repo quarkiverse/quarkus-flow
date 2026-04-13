@@ -1,13 +1,13 @@
 package io.quarkiverse.flow.structuredlogging;
 
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.*;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
 import io.serverlessworkflow.impl.WorkflowDefinitionData;
@@ -37,17 +37,15 @@ public class EventFormatter {
     private final FlowStructuredLoggingConfig config;
     private final ObjectMapper objectMapper;
 
-    public EventFormatter(FlowStructuredLoggingConfig config) {
+    public EventFormatter(FlowStructuredLoggingConfig config, ObjectMapper objectMapper) {
         this.config = config;
-        this.objectMapper = new ObjectMapper()
-                .registerModule(new JavaTimeModule())
-                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        this.objectMapper = objectMapper;
     }
 
     // Workflow Instance Events
 
     public String formatWorkflowStarted(WorkflowStartedEvent event) {
-        Map<String, Object> json = baseWorkflowEvent("workflow.instance.started", event);
+        Map<String, Object> json = baseWorkflowEvent(WORKFLOW_INSTANCE_STARTED, event);
         WorkflowDefinitionData definition = event.workflowContext().definition();
 
         json.put("workflowNamespace", definition.workflow().getDocument().getNamespace());
@@ -58,27 +56,27 @@ public class EventFormatter {
 
         if (config.includeWorkflowPayloads()) {
             Object input = event.workflowContext().instanceData().input();
-            json.put("input", handlePayload(input, "workflow.input"));
+            json.put("input", handlePayload(input));
         }
 
         return toJson(json);
     }
 
     public String formatWorkflowCompleted(WorkflowCompletedEvent event) {
-        Map<String, Object> json = baseWorkflowEvent("workflow.instance.completed", event);
+        Map<String, Object> json = baseWorkflowEvent(WORKFLOW_INSTANCE_COMPLETED, event);
         json.put("status", WorkflowStatus.COMPLETED.name());
         json.put("endTime", event.eventDate());
 
         if (config.includeWorkflowPayloads()) {
             Object output = event.workflowContext().instanceData().output();
-            json.put("output", handlePayload(output, "workflow.output"));
+            json.put("output", handlePayload(output));
         }
 
         return toJson(json);
     }
 
     public String formatWorkflowFailed(WorkflowFailedEvent event) {
-        Map<String, Object> json = baseWorkflowEvent("workflow.instance.failed", event);
+        Map<String, Object> json = baseWorkflowEvent(WORKFLOW_INSTANCE_FAILED, event);
         json.put("status", WorkflowStatus.FAULTED.name());
         json.put("endTime", event.eventDate());
 
@@ -101,33 +99,33 @@ public class EventFormatter {
 
             // Include workflow input for debugging context
             Object input = event.workflowContext().instanceData().input();
-            json.put("input", handlePayload(input, "workflow.input"));
+            json.put("input", handlePayload(input));
         }
 
         return toJson(json);
     }
 
     public String formatWorkflowCancelled(WorkflowCancelledEvent event) {
-        Map<String, Object> json = baseWorkflowEvent("workflow.instance.cancelled", event);
+        Map<String, Object> json = baseWorkflowEvent(WORKFLOW_INSTANCE_CANCELLED, event);
         json.put("status", WorkflowStatus.CANCELLED.name());
         json.put("endTime", event.eventDate());
         return toJson(json);
     }
 
     public String formatWorkflowSuspended(WorkflowSuspendedEvent event) {
-        Map<String, Object> json = baseWorkflowEvent("workflow.instance.suspended", event);
+        Map<String, Object> json = baseWorkflowEvent(WORKFLOW_INSTANCE_SUSPENDED, event);
         json.put("status", WorkflowStatus.SUSPENDED.name());
         return toJson(json);
     }
 
     public String formatWorkflowResumed(WorkflowResumedEvent event) {
-        Map<String, Object> json = baseWorkflowEvent("workflow.instance.resumed", event);
+        Map<String, Object> json = baseWorkflowEvent(WORKFLOW_INSTANCE_RESUMED, event);
         json.put("status", WorkflowStatus.RUNNING.name());
         return toJson(json);
     }
 
     public String formatWorkflowStatusChanged(WorkflowStatusEvent event) {
-        Map<String, Object> json = baseWorkflowEvent("workflow.instance.status.changed", event);
+        Map<String, Object> json = baseWorkflowEvent(WORKFLOW_INSTANCE_STATUS_CHANGED, event);
         json.put("status", event.workflowContext().instanceData().status().name());
         json.put("lastUpdateTime", event.eventDate());
         return toJson(json);
@@ -136,33 +134,33 @@ public class EventFormatter {
     // Task Events
 
     public String formatTaskStarted(TaskStartedEvent event) {
-        Map<String, Object> json = baseTaskEvent("workflow.task.started", event);
+        Map<String, Object> json = baseTaskEvent(WORKFLOW_TASK_STARTED, event);
         json.put("status", "RUNNING");
         json.put("startTime", event.eventDate());
 
         if (config.includeTaskPayloads()) {
             Object input = event.taskContext().input();
-            json.put("input", handlePayload(input, "task.input"));
+            json.put("input", handlePayload(input));
         }
 
         return toJson(json);
     }
 
     public String formatTaskCompleted(TaskCompletedEvent event) {
-        Map<String, Object> json = baseTaskEvent("workflow.task.completed", event);
+        Map<String, Object> json = baseTaskEvent(WORKFLOW_TASK_COMPLETED, event);
         json.put("status", "COMPLETED");
         json.put("endTime", event.eventDate());
 
         if (config.includeTaskPayloads()) {
             Object output = event.taskContext().output();
-            json.put("output", handlePayload(output, "task.output"));
+            json.put("output", handlePayload(output));
         }
 
         return toJson(json);
     }
 
     public String formatTaskFailed(TaskFailedEvent event) {
-        Map<String, Object> json = baseTaskEvent("workflow.task.failed", event);
+        Map<String, Object> json = baseTaskEvent(WORKFLOW_TASK_FAILED, event);
         json.put("status", "FAILED");
         json.put("endTime", event.eventDate());
 
@@ -176,33 +174,33 @@ public class EventFormatter {
 
             // Always include input on failures
             Object input = event.taskContext().input();
-            json.put("input", handlePayload(input, "task.input"));
+            json.put("input", handlePayload(input));
         }
 
         return toJson(json);
     }
 
     public String formatTaskCancelled(TaskCancelledEvent event) {
-        Map<String, Object> json = baseTaskEvent("workflow.task.cancelled", event);
+        Map<String, Object> json = baseTaskEvent(WORKFLOW_TASK_CANCELLED, event);
         json.put("status", "CANCELLED");
         json.put("endTime", event.eventDate());
         return toJson(json);
     }
 
     public String formatTaskSuspended(TaskSuspendedEvent event) {
-        Map<String, Object> json = baseTaskEvent("workflow.task.suspended", event);
+        Map<String, Object> json = baseTaskEvent(WORKFLOW_TASK_SUSPENDED, event);
         json.put("status", "SUSPENDED");
         return toJson(json);
     }
 
     public String formatTaskResumed(TaskResumedEvent event) {
-        Map<String, Object> json = baseTaskEvent("workflow.task.resumed", event);
+        Map<String, Object> json = baseTaskEvent(WORKFLOW_TASK_RESUMED, event);
         json.put("status", "RUNNING");
         return toJson(json);
     }
 
     public String formatTaskRetried(TaskRetriedEvent event) {
-        Map<String, Object> json = baseTaskEvent("workflow.task.retried", event);
+        Map<String, Object> json = baseTaskEvent(WORKFLOW_TASK_RETRIED, event);
         // Note: retry count not available in event, would need to track separately
         return toJson(json);
     }
@@ -235,7 +233,7 @@ public class EventFormatter {
         return UUID.nameUUIDFromBytes(composite.getBytes()).toString();
     }
 
-    private Object handlePayload(Object payload, String fieldName) {
+    private Object handlePayload(Object payload) {
         if (payload == null) {
             return null;
         }
