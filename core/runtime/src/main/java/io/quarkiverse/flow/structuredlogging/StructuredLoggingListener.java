@@ -157,11 +157,12 @@ public class StructuredLoggingListener implements WorkflowExecutionListener {
 
     private boolean matchesPattern(String eventType, String pattern) {
         // Simple glob pattern matching
-        // workflow.* matches all
+        // * matches all
+        // workflow.* matches workflow.instance.started, workflow.task.failed, etc.
         // workflow.instance.* matches workflow.instance.started, etc.
         // workflow.task.failed matches exact
 
-        if (pattern.equals("*") || pattern.equals("workflow.*")) {
+        if (pattern.equals("*")) {
             return true;
         }
 
