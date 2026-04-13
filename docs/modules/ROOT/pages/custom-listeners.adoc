@@ -66,18 +66,20 @@ public class AuditLogExecutionListener implements WorkflowExecutionListener {
 
 [NOTE]
 ====
-If your primary goal is to add metrics or tracing to your application, you likely **do not** need to write a custom execution listener.
+If your primary goal is to add metrics, tracing, or export workflow data to external systems, you likely **do not** need to write a custom execution listener.
 
-Quarkus Flow already provides out-of-the-box observability features using internal listeners. For standard monitoring, please refer to:
+Quarkus Flow already provides out-of-the-box observability features using internal listeners. For standard monitoring and data export, please refer to:
 
 * xref:metrics-prometheus.adoc[Metrics & Prometheus Integration]
 * xref:tracing.adoc[Enable distributed tracing]
+* xref:structured-logging.adoc[Export workflow data via structured logs]
 
-Custom listeners should be reserved for advanced, domain-specific use cases (like the audit logger above) or when triggering specific side-effects.
+Custom listeners should be reserved for advanced, domain-specific use cases (like the audit logger above) or when triggering specific side-effects that aren't covered by the built-in features.
 ====
 
 == See also
 
+* xref:structured-logging.adoc[Export workflow data via structured logs] — Built-in listener for exporting workflow execution data to external systems.
 * xref:data-flow.adoc[Data Flow and Context Management] — Understand the context objects passed into your listener events.
 * xref:concepts-architecture.adoc[Engine Architecture] — Learn more about the underlying engine lifecycle that triggers these events.
 * xref:test-debug.adoc[Test and debug workflows] — Strategies for testing your workflows and custom listeners.

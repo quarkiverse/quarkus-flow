@@ -122,5 +122,6 @@ You can safely enable both simultaneously.
 == See also
 
 * xref:metrics-prometheus.adoc[Metrics & Prometheus Integration] — complement your logs with numeric health metrics.
+* xref:structured-logging.adoc[Export workflow data via structured logs] — export detailed workflow execution data as JSON logs for external querying.
 * xref:messaging.adoc[Use messaging and events] — publish lifecycle events to Kafka as CloudEvents.
 * link:https://quarkus.io/guides/logging[Quarkus Logging guide] — full logging configuration reference.

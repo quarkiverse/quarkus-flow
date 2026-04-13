@@ -271,4 +271,5 @@ image::quarkus-flow-dashboard.jpg[]
 
 == See also
 * xref:tracing.adoc[Enable distributed tracing] — complement your metrics with OpenTelemetry span tracing.
+* xref:structured-logging.adoc[Export workflow data via structured logs] — export detailed workflow execution data for querying and analytics.
 * xref:fault-tolerance.adoc[Fault tolerance and resilience] — configure the retry and circuit breaker logic that drives these metrics.
