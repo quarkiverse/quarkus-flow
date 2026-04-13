@@ -1,22 +1,25 @@
 package test;
 
-import com.github.tomakehurst.wiremock.client.WireMock;
-import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.junit.QuarkusTest;
-import io.serverlessworkflow.impl.WorkflowModel;
-import jakarta.inject.Inject;
-import org.acme.ExampleWorkflowsWireMockResource;
-import org.acme.ForEachWorkflow;
-import org.acme.OrdersPayload;
-import org.acme.Order;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import jakarta.inject.Inject;
+
+import org.acme.ExampleWorkflowsWireMockResource;
+import org.acme.ForEachWorkflow;
+import org.acme.Order;
+import org.acme.OrdersPayload;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.github.tomakehurst.wiremock.client.WireMock;
+
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.QuarkusTest;
+import io.serverlessworkflow.impl.WorkflowModel;
 
 @QuarkusTest
 @QuarkusTestResource(ExampleWorkflowsWireMockResource.class)
@@ -36,8 +39,7 @@ public class ForEachWorkflowTest {
         OrdersPayload input = new OrdersPayload(List.of(
                 new Order("ORD-001"),
                 new Order("ORD-002"),
-                new Order("ORD-003")
-        ));
+                new Order("ORD-003")));
 
         // 2. Execute the workflow synchronously
         WorkflowModel result = forEachWorkflow.instance(input)

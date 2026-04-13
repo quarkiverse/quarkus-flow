@@ -1,14 +1,15 @@
 package org.acme;
 
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+
 import java.util.List;
 import java.util.Map;
+
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
-import jakarta.enterprise.context.ApplicationScoped;
-
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
 
 @ApplicationScoped
 public class ForEachWorkflow extends Flow {
@@ -19,10 +20,9 @@ public class ForEachWorkflow extends Flow {
                         // OrdersPayload::orders is not working, TODO: Check why, probably the Record class I use?
                         forEach((Map<String, Object> state) -> (List<?>) state.get("orders"),
                                 tasks(
-                                    post("", "http://localhost:8089/process-order")
+                                        post("", "http://localhost:8089/process-order")
 
-                        ))
-                )
+                                )))
                 .build();
     }
 }
