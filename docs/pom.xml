@@ -63,7 +63,7 @@
         <dependency>
             <groupId>org.wiremock</groupId>
             <artifactId>wiremock</artifactId>
-            <version>3.13.2</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
