@@ -1,5 +1,7 @@
 package io.quarkiverse.flow.structuredlogging;
 
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.*;
+
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,49 +45,49 @@ public class StructuredLoggingListener implements WorkflowExecutionListener {
 
     @Override
     public void onWorkflowStarted(WorkflowStartedEvent event) {
-        if (shouldLog("workflow.instance.started")) {
+        if (shouldLog(WORKFLOW_INSTANCE_STARTED)) {
             log(formatter.formatWorkflowStarted(event));
         }
     }
 
     @Override
     public void onWorkflowCompleted(WorkflowCompletedEvent event) {
-        if (shouldLog("workflow.instance.completed")) {
+        if (shouldLog(WORKFLOW_INSTANCE_COMPLETED)) {
             log(formatter.formatWorkflowCompleted(event));
         }
     }
 
     @Override
     public void onWorkflowFailed(WorkflowFailedEvent event) {
-        if (shouldLog("workflow.instance.failed")) {
+        if (shouldLog(WORKFLOW_INSTANCE_FAILED)) {
             log(formatter.formatWorkflowFailed(event));
         }
     }
 
     @Override
     public void onWorkflowCancelled(WorkflowCancelledEvent event) {
-        if (shouldLog("workflow.instance.cancelled")) {
+        if (shouldLog(WORKFLOW_INSTANCE_CANCELLED)) {
             log(formatter.formatWorkflowCancelled(event));
         }
     }
 
     @Override
     public void onWorkflowSuspended(WorkflowSuspendedEvent event) {
-        if (shouldLog("workflow.instance.suspended")) {
+        if (shouldLog(WORKFLOW_INSTANCE_SUSPENDED)) {
             log(formatter.formatWorkflowSuspended(event));
         }
     }
 
     @Override
     public void onWorkflowResumed(WorkflowResumedEvent event) {
-        if (shouldLog("workflow.instance.resumed")) {
+        if (shouldLog(WORKFLOW_INSTANCE_RESUMED)) {
             log(formatter.formatWorkflowResumed(event));
         }
     }
 
     @Override
     public void onWorkflowStatusChanged(WorkflowStatusEvent event) {
-        if (shouldLog("workflow.instance.status.changed")) {
+        if (shouldLog(WORKFLOW_INSTANCE_STATUS_CHANGED)) {
             log(formatter.formatWorkflowStatusChanged(event));
         }
     }
@@ -94,49 +96,49 @@ public class StructuredLoggingListener implements WorkflowExecutionListener {
 
     @Override
     public void onTaskStarted(TaskStartedEvent event) {
-        if (shouldLog("workflow.task.started")) {
+        if (shouldLog(WORKFLOW_TASK_STARTED)) {
             log(formatter.formatTaskStarted(event));
         }
     }
 
     @Override
     public void onTaskCompleted(TaskCompletedEvent event) {
-        if (shouldLog("workflow.task.completed")) {
+        if (shouldLog(WORKFLOW_TASK_COMPLETED)) {
             log(formatter.formatTaskCompleted(event));
         }
     }
 
     @Override
     public void onTaskFailed(TaskFailedEvent event) {
-        if (shouldLog("workflow.task.failed")) {
+        if (shouldLog(WORKFLOW_TASK_FAILED)) {
             log(formatter.formatTaskFailed(event));
         }
     }
 
     @Override
     public void onTaskCancelled(TaskCancelledEvent event) {
-        if (shouldLog("workflow.task.cancelled")) {
+        if (shouldLog(WORKFLOW_TASK_CANCELLED)) {
             log(formatter.formatTaskCancelled(event));
         }
     }
 
     @Override
     public void onTaskSuspended(TaskSuspendedEvent event) {
-        if (shouldLog("workflow.task.suspended")) {
+        if (shouldLog(WORKFLOW_TASK_SUSPENDED)) {
             log(formatter.formatTaskSuspended(event));
         }
     }
 
     @Override
     public void onTaskResumed(TaskResumedEvent event) {
-        if (shouldLog("workflow.task.resumed")) {
+        if (shouldLog(WORKFLOW_TASK_RESUMED)) {
             log(formatter.formatTaskResumed(event));
         }
     }
 
     @Override
     public void onTaskRetried(TaskRetriedEvent event) {
-        if (shouldLog("workflow.task.retried")) {
+        if (shouldLog(WORKFLOW_TASK_RETRIED)) {
             log(formatter.formatTaskRetried(event));
         }
     }
