@@ -159,19 +159,7 @@ Execute independent branches simultaneously to reduce total execution time.
 
 [source,java]
 ----
-@ApplicationScoped
-public class ForkWorkflow extends Flow {
-    @Override
-    public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("fork-example")
-            .tasks(
-                fork("raiseAlarm")
-                    .branch(call("callNurse").http(Method.PUT, "https://hospital.com/nurse"))
-                    .branch(call("callDoctor").http(Method.PUT, "https://hospital.com/doctor"))
-            )
-            .build();
-    }
-}
+include::{examples-dir}/org/acme/ParallelWorkflow.java[]
 ----
 
 [#invoking_subflows]
