@@ -28,7 +28,7 @@ Structured logging is **disabled by default**. Enable it via configuration:
 
 [source,properties]
 ----
-# Enable structured logging
+# Enable structured logging (REQUIRED)
 quarkus.flow.structured-logging.enabled=true
 
 # Event filtering (default: all events)
@@ -49,6 +49,8 @@ quarkus.flow.structured-logging.truncate-preview-size=1024
 quarkus.flow.structured-logging.log-level=INFO
 ----
 
+IMPORTANT: When you enable structured logging, Quarkus Flow **automatically configures** a separate file handler to write workflow events to a dedicated file. Events are written to `target/quarkus-flow-events.log` in dev/test mode, and `/var/log/quarkus-flow/events.log` in production. This ensures clean separation between application logs and event streams. See xref:#integration-with-quarkus-logging-json[Integration with quarkus-logging-json] for details.
+
 === Event Filtering
 
 Control which events are logged using glob patterns:
@@ -62,13 +64,13 @@ quarkus.flow.structured-logging.events=workflow.*
 quarkus.flow.structured-logging.events=workflow.instance.*
 
 # Workflow events + task failures (recommended for most use cases)
-quarkus.flow.structured-logging.events=workflow.instance.*,workflow.task.failed
+quarkus.flow.structured-logging.events=workflow.instance.*,workflow.task.faulted
 
 # Specific events only
 quarkus.flow.structured-logging.events=\
   workflow.instance.started,\
   workflow.instance.completed,\
-  workflow.instance.failed
+  workflow.instance.faulted
 ----
 
 === Payload Inclusion Strategy
@@ -135,7 +137,7 @@ All events follow a consistent JSON schema:
 
 * `workflow.instance.started` – Workflow execution begins
 * `workflow.instance.completed` – Workflow finishes successfully
-* `workflow.instance.failed` – Workflow fails with error
+* `workflow.instance.faulted` – Workflow fails with error
 * `workflow.instance.cancelled` – Workflow is cancelled
 * `workflow.instance.suspended` – Workflow is suspended (waiting)
 * `workflow.instance.resumed` – Workflow resumes after suspension
@@ -145,7 +147,7 @@ All events follow a consistent JSON schema:
 
 * `workflow.task.started` – Task execution begins
 * `workflow.task.completed` – Task finishes successfully
-* `workflow.task.failed` – Task fails with error
+* `workflow.task.faulted` – Task fails with error
 * `workflow.task.cancelled` – Task is cancelled
 * `workflow.task.suspended` – Task is suspended
 * `workflow.task.resumed` – Task resumes after suspension
@@ -158,7 +160,7 @@ All events follow a consistent JSON schema:
 [source,json]
 ----
 {
-  "eventType": "workflow.instance.started",
+  "eventType": "io.serverlessworkflow.workflow.started.v1",
   "timestamp": "2026-04-13T14:30:00.123Z",
   "instanceId": "550e8400-e29b-41d4-a716-446655440000",
   "workflowNamespace": "default",
@@ -177,7 +179,7 @@ All events follow a consistent JSON schema:
 [source,json]
 ----
 {
-  "eventType": "workflow.instance.failed",
+  "eventType": "io.serverlessworkflow.workflow.faulted.v1",
   "timestamp": "2026-04-13T14:30:05.789Z",
   "instanceId": "550e8400-e29b-41d4-a716-446655440000",
   "status": "FAULTED",
@@ -198,7 +200,7 @@ All events follow a consistent JSON schema:
 [source,json]
 ----
 {
-  "eventType": "workflow.task.started",
+  "eventType": "io.serverlessworkflow.task.started.v1",
   "timestamp": "2026-04-13T14:30:01.000Z",
   "taskExecutionId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
   "instanceId": "550e8400-e29b-41d4-a716-446655440000",
@@ -208,6 +210,97 @@ All events follow a consistent JSON schema:
   "startTime": "2026-04-13T14:30:01.000Z"
 }
 ----
+
+== Integration with quarkus-logging-json
+
+When you use `quarkus-logging-json` in your application, Quarkus Flow **automatically configures** a separate file handler for structured events to avoid double JSON serialization.
+
+=== The Problem (and Automatic Solution)
+
+When `quarkus-logging-json` is enabled, it wraps all log messages in a JSON structure:
+
+[source,json]
+----
+{
+  "timestamp": "2026-04-13T21:00:40.475075-03:00",
+  "level": "ERROR",
+  "loggerName": "io.quarkiverse.flow.structuredlogging",
+  "message": "{\"instanceId\":\"...\",\"eventType\":\"...\"}", // ← JSON string inside JSON
+  "threadName": "pool-11-thread-1"
+}
+----
+
+Notice how the `message` field contains a JSON **string**, not a JSON **object**. This requires log consumers to:
+1. Parse the outer JSON (from quarkus-logging-json)
+2. Parse the inner JSON string (our workflow event)
+
+This "double serialization" defeats the purpose of structured logging.
+
+=== The Solution: Automatic Separate File Handler
+
+Quarkus Flow **automatically configures** a separate file handler when structured logging is enabled. No manual configuration required!
+
+**Default Configuration:**
+
+When you enable structured logging:
+[source,properties]
+----
+# Enable Quarkus Flow structured logging
+quarkus.flow.structured-logging.enabled=true
+quarkus.flow.structured-logging.events=workflow.*
+----
+
+Quarkus Flow automatically:
+- Creates a file handler named `FLOW_EVENTS`
+- Writes events to:
+  * **Dev/Test mode**: `target/quarkus-flow-events.log`
+  * **Production mode**: `/var/log/quarkus-flow/events.log`
+- Uses raw JSON format (`%s%n` - no timestamps, just the event JSON)
+- Prevents events from appearing in console (no double logging)
+
+**Customizing the Configuration:**
+
+You can override any of the defaults:
+
+[source,properties]
+----
+# Custom file path
+quarkus.log.handler.file."FLOW_EVENTS".path=/custom/path/workflow-events.log
+
+# Or disable the file handler and use console only (not recommended with quarkus-logging-json)
+quarkus.log.handler.file."FLOW_EVENTS".enable=false
+quarkus.log.category."io.quarkiverse.flow.structuredlogging".use-parent-handlers=true
+----
+
+With the default configuration:
+- **Console logs**: Application logs in JSON format (from quarkus-logging-json)
+- **Event file**: Pure workflow event JSON (one event per line)
+
+=== Why Separate Files?
+
+This follows the **logs-as-transport pattern** correctly:
+
+* **Application logs**: Diagnostic information for debugging (stdout/stderr)
+* **Event streams**: Structured data for analytics/auditing (dedicated file)
+
+Event streams and diagnostic logs serve different purposes and should be treated separately. Log forwarders can then:
+- Parse application logs with the appropriate schema
+- Parse workflow events as pure JSON
+- Route each to different destinations (e.g., Elasticsearch for logs, PostgreSQL for events)
+
+=== Automatic Detection and Configuration
+
+Quarkus Flow automatically detects `quarkus-logging-json` at build time and:
+- Emits an informational message about the auto-configured file handler
+- Shows the default file path being used
+- Reminds you that the path can be customized
+
+Check your build logs for:
+```
+INFO  [io.qua.flo.dep.FlowProcessor] Quarkus Flow structured logging file handler auto-configured.
+      Events will be written to: target/quarkus-flow-events.log
+      (override with quarkus.log.handler.file."FLOW_EVENTS".path)
+```
 
 == Log Forwarder Integration
 
@@ -219,7 +312,7 @@ FluentBit is a lightweight, high-performance log forwarder. Here's a basic confi
 ----
 [INPUT]
     Name              tail
-    Path              /var/log/quarkus-flow/*.log
+    Path              /var/log/quarkus-flow/events.log  # Default production path
     Parser            json
     Tag               flow.events
 
@@ -261,19 +354,22 @@ Send the same logs to multiple destinations:
     Type              _doc
 ----
 
-=== Separate Log File
+=== Separate Log File (Auto-Configured)
 
-To make tailing easier, route structured events to a separate log file:
+Quarkus Flow **automatically configures** a separate file handler for structured events. This is enabled by default when structured logging is turned on.
 
-[source,properties]
-----
-# Send structured logging to separate file
-quarkus.log.category."io.quarkiverse.flow.structuredlogging".handlers=STRUCTURED_FILE
-quarkus.log.handler.file."STRUCTURED_FILE".path=/var/log/quarkus-flow/structured-events.log
-quarkus.log.handler.file."STRUCTURED_FILE".format=%s%n
-----
+**Default behavior:**
+- Events write to `target/quarkus-flow-events.log` (dev/test) or `/var/log/quarkus-flow/events.log` (production)
+- Events do NOT appear in console output (preventing duplication)
+- File format is raw JSON (`%s%n`)
 
-This allows FluentBit to tail only structured events without parsing application logs.
+**Why this approach?**
+- ✅ Separates event streams from diagnostic logs
+- ✅ Avoids double JSON serialization with `quarkus-logging-json`
+- ✅ Simplifies log forwarder configuration
+- ✅ Works out-of-the-box (zero configuration required)
+
+See xref:#integration-with-quarkus-logging-json[Integration with quarkus-logging-json] for customization options.
 
 == Production Recommendations
 
@@ -282,7 +378,7 @@ This allows FluentBit to tail only structured events without parsing application
 **Recommended (default):**
 
 * All workflow-level events (`workflow.instance.*`)
-* Task failures (`workflow.task.failed`)
+* Task failures (`workflow.task.faulted`)
 
 This captures complete workflow state while keeping volume low.
 

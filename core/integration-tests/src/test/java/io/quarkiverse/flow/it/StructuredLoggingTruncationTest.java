@@ -35,7 +35,7 @@ public class StructuredLoggingTruncationTest {
         helloWorkflow.startInstance().await().indefinitely();
 
         // Manual verification: Check build logs for JSON events with truncation markers:
-        // INFO [io.quarkiverse.flow.structuredlogging] {"eventType":"workflow.task.completed",
+        // INFO [io.quarkiverse.flow.structuredlogging] {"eventType":"io.serverlessworkflow.task.completed.v1",
         //   "output":{"__truncated__":true,"__originalSize__":123,"__preview__":"..."}, ...}
     }
 

@@ -50,7 +50,7 @@ public class StructuredLoggingListenerTest {
         return Stream.of(
                 // Pattern "*" matches everything
                 arguments("*", "workflow.instance.started", true),
-                arguments("*", "workflow.task.failed", true),
+                arguments("*", "workflow.task.faulted", true),
                 arguments("*", "anything.else", true),
 
                 // Pattern "workflow.*" matches all workflow events
@@ -61,24 +61,24 @@ public class StructuredLoggingListenerTest {
                 // Pattern "workflow.instance.*" matches only workflow instance events
                 arguments("workflow.instance.*", "workflow.instance.started", true),
                 arguments("workflow.instance.*", "workflow.instance.completed", true),
-                arguments("workflow.instance.*", "workflow.instance.failed", true),
+                arguments("workflow.instance.*", "workflow.instance.faulted", true),
                 arguments("workflow.instance.*", "workflow.task.started", false),
-                arguments("workflow.instance.*", "workflow.task.failed", false),
+                arguments("workflow.instance.*", "workflow.task.faulted", false),
 
                 // Pattern "workflow.task.*" matches only task events
                 arguments("workflow.task.*", "workflow.task.started", true),
                 arguments("workflow.task.*", "workflow.task.completed", true),
-                arguments("workflow.task.*", "workflow.task.failed", true),
+                arguments("workflow.task.*", "workflow.task.faulted", true),
                 arguments("workflow.task.*", "workflow.instance.started", false),
 
                 // Exact match
-                arguments("workflow.task.failed", "workflow.task.failed", true),
-                arguments("workflow.task.failed", "workflow.task.completed", false),
-                arguments("workflow.task.failed", "workflow.instance.failed", false),
+                arguments("workflow.task.faulted", "workflow.task.faulted", true),
+                arguments("workflow.task.faulted", "workflow.task.completed", false),
+                arguments("workflow.task.faulted", "workflow.instance.faulted", false),
 
                 // Multiple specific events
-                arguments("workflow.instance.failed", "workflow.instance.failed", true),
-                arguments("workflow.instance.failed", "workflow.instance.started", false));
+                arguments("workflow.instance.faulted", "workflow.instance.faulted", true),
+                arguments("workflow.instance.faulted", "workflow.instance.started", false));
     }
 
     @ParameterizedTest(name = "{index} => pattern=''{0}'', eventType=''{1}'', shouldMatch={2}")
@@ -108,11 +108,11 @@ public class StructuredLoggingListenerTest {
     @Test
     @DisplayName("shouldLog should match against multiple patterns")
     void testMultiplePatterns() throws Exception {
-        when(config.events()).thenReturn(List.of("workflow.instance.failed", "workflow.task.failed"));
+        when(config.events()).thenReturn(List.of("workflow.instance.faulted", "workflow.task.faulted"));
         listener = new StructuredLoggingListener(config, objectMapper);
 
-        assertThat(invokeShouldLog(listener, "workflow.instance.failed")).isTrue();
-        assertThat(invokeShouldLog(listener, "workflow.task.failed")).isTrue();
+        assertThat(invokeShouldLog(listener, "workflow.instance.faulted")).isTrue();
+        assertThat(invokeShouldLog(listener, "workflow.task.faulted")).isTrue();
         assertThat(invokeShouldLog(listener, "workflow.instance.started")).isFalse();
         assertThat(invokeShouldLog(listener, "workflow.task.started")).isFalse();
     }
@@ -120,7 +120,7 @@ public class StructuredLoggingListenerTest {
     @Test
     @DisplayName("shouldLog should match if any pattern matches")
     void testAnyPatternMatches() throws Exception {
-        when(config.events()).thenReturn(List.of("workflow.instance.*", "workflow.task.failed"));
+        when(config.events()).thenReturn(List.of("workflow.instance.*", "workflow.task.faulted"));
         listener = new StructuredLoggingListener(config, objectMapper);
 
         // Matches first pattern
@@ -128,7 +128,7 @@ public class StructuredLoggingListenerTest {
         assertThat(invokeShouldLog(listener, "workflow.instance.completed")).isTrue();
 
         // Matches second pattern
-        assertThat(invokeShouldLog(listener, "workflow.task.failed")).isTrue();
+        assertThat(invokeShouldLog(listener, "workflow.task.faulted")).isTrue();
 
         // Matches neither
         assertThat(invokeShouldLog(listener, "workflow.task.started")).isFalse();
@@ -153,8 +153,8 @@ public class StructuredLoggingListenerTest {
                 .isEqualTo("workflow.instance.started");
         assertThat(StructuredLoggingEventTypes.WORKFLOW_INSTANCE_COMPLETED)
                 .isEqualTo("workflow.instance.completed");
-        assertThat(StructuredLoggingEventTypes.WORKFLOW_INSTANCE_FAILED)
-                .isEqualTo("workflow.instance.failed");
+        assertThat(StructuredLoggingEventTypes.WORKFLOW_INSTANCE_FAULTED)
+                .isEqualTo("workflow.instance.faulted");
         assertThat(StructuredLoggingEventTypes.WORKFLOW_INSTANCE_CANCELLED)
                 .isEqualTo("workflow.instance.cancelled");
         assertThat(StructuredLoggingEventTypes.WORKFLOW_INSTANCE_SUSPENDED)
@@ -168,8 +168,8 @@ public class StructuredLoggingListenerTest {
                 .isEqualTo("workflow.task.started");
         assertThat(StructuredLoggingEventTypes.WORKFLOW_TASK_COMPLETED)
                 .isEqualTo("workflow.task.completed");
-        assertThat(StructuredLoggingEventTypes.WORKFLOW_TASK_FAILED)
-                .isEqualTo("workflow.task.failed");
+        assertThat(StructuredLoggingEventTypes.WORKFLOW_TASK_FAULTED)
+                .isEqualTo("workflow.task.faulted");
         assertThat(StructuredLoggingEventTypes.WORKFLOW_TASK_CANCELLED)
                 .isEqualTo("workflow.task.cancelled");
         assertThat(StructuredLoggingEventTypes.WORKFLOW_TASK_SUSPENDED)

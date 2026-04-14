@@ -13,9 +13,9 @@ import io.quarkus.test.junit.TestProfile;
 /**
  * Test that structured logging captures error context when workflows fail.
  * <p>
- * Manual verification: Check test logs for workflow.instance.failed event with error details.
+ * Manual verification: Check test logs for workflow.instance.faulted event with error details.
  * Expected log entry should include:
- * - "eventType": "workflow.instance.failed"
+ * - "eventType": "io.serverlessworkflow.workflow.faulted.v1"
  * - "status": "FAULTED"
  * - "error": { "message": "...", "type": "...", "stackTrace": "..." }
  * - "input": { ... } (for debugging context)
@@ -37,7 +37,7 @@ public class StructuredLoggingErrorTest {
         }
 
         // Manual verification: Check build logs for JSON event like:
-        // INFO [io.quarkiverse.flow.structuredlogging] {"eventType":"workflow.instance.failed",
+        // INFO [io.quarkiverse.flow.structuredlogging] {"eventType":"io.serverlessworkflow.workflow.faulted.v1",
         //   "status":"FAULTED", "error":{"message":"...","type":"...","stackTrace":"..."},
         //   "input":{...}, ...}
     }

@@ -279,7 +279,7 @@ Supports glob patterns:
 
  - `workflow.++*++` - All workflow and task events
  - `workflow.instance.++*++` - Only workflow-level events
- - `workflow.task.failed` - Only task failures
+ - `workflow.task.faulted` - Only task failures
 
 
 

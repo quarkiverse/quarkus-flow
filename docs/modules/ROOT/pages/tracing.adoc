@@ -37,6 +37,8 @@ To make your tracing logs searchable in centralized logging platforms, you shoul
 quarkus.log.console.json.enabled=true
 ----
 
+WARNING: If you also use xref:structured-logging.adoc[Structured Logging] for workflow events, `quarkus-logging-json` will cause double JSON serialization. Quarkus Flow automatically configures a separate file handler for workflow events to avoid this. See xref:structured-logging.adoc#integration-with-quarkus-logging-json[Integration with quarkus-logging-json] for details.
+
 [TIP]
 ====
 If you prefer pattern logging (plain text) over JSON, you must manually reference the MDC keys in your log format string using `%X\{key}`:
@@ -57,7 +59,7 @@ Every trace log emitted by the engine includes the following MDC fields:
 
 | `quarkus.flow.event`
 | `workflow.started`
-| The normalized lifecycle event name (e.g., `task.started`, `task.failed`).
+| The normalized lifecycle event name (e.g., `task.started`, `task.faulted`).
 
 | `quarkus.flow.time`
 | `2026-03-12T19:20:59.120Z`

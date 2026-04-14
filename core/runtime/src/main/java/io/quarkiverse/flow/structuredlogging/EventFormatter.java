@@ -107,7 +107,7 @@ public class EventFormatter {
     }
 
     public String formatWorkflowFailed(WorkflowFailedEvent event) {
-        Map<String, Object> json = baseWorkflowEvent(WORKFLOW_INSTANCE_FAILED, event);
+        Map<String, Object> json = baseWorkflowEvent(WORKFLOW_INSTANCE_FAULTED, event);
         json.put(FIELD_STATUS, WorkflowStatus.FAULTED.name());
         json.put(FIELD_END_TIME, event.eventDate());
 
@@ -191,7 +191,7 @@ public class EventFormatter {
     }
 
     public String formatTaskFailed(TaskFailedEvent event) {
-        Map<String, Object> json = baseTaskEvent(WORKFLOW_TASK_FAILED, event);
+        Map<String, Object> json = baseTaskEvent(WORKFLOW_TASK_FAULTED, event);
         json.put(FIELD_STATUS, TASK_STATUS_FAILED);
         json.put(FIELD_END_TIME, event.eventDate());
 
@@ -238,16 +238,17 @@ public class EventFormatter {
 
     // Helper Methods
 
-    private Map<String, Object> baseWorkflowEvent(String eventType, WorkflowEvent event) {
+    private Map<String, Object> baseWorkflowEvent(String filterKey, WorkflowEvent event) {
         Map<String, Object> json = new HashMap<>();
-        json.put(FIELD_EVENT_TYPE, eventType);
+        // Use official CloudEvent type from SW specification
+        json.put(FIELD_EVENT_TYPE, StructuredLoggingEventTypes.toCloudEventType(filterKey));
         json.put(FIELD_TIMESTAMP, event.eventDate());
         json.put(FIELD_INSTANCE_ID, event.workflowContext().instanceData().id());
         return json;
     }
 
-    private Map<String, Object> baseTaskEvent(String eventType, TaskEvent event) {
-        Map<String, Object> json = baseWorkflowEvent(eventType, event);
+    private Map<String, Object> baseTaskEvent(String filterKey, TaskEvent event) {
+        Map<String, Object> json = baseWorkflowEvent(filterKey, event);
         json.put(FIELD_TASK_EXECUTION_ID, generateTaskExecutionId(event));
         json.put(FIELD_TASK_NAME, event.taskContext().taskName());
         json.put(FIELD_TASK_POSITION, event.taskContext().position().jsonPointer());

@@ -1,6 +1,19 @@
 package io.quarkiverse.flow.structuredlogging;
 
-import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.*;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_CANCELLED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_COMPLETED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_FAULTED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_RESUMED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_STARTED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_STATUS_CHANGED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_SUSPENDED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_CANCELLED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_COMPLETED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_FAULTED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_RESUMED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_RETRIED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_STARTED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_SUSPENDED;
 
 import org.jboss.logging.Logger;
 
@@ -59,7 +72,7 @@ public class StructuredLoggingListener implements WorkflowExecutionListener {
 
     @Override
     public void onWorkflowFailed(WorkflowFailedEvent event) {
-        if (shouldLog(WORKFLOW_INSTANCE_FAILED)) {
+        if (shouldLog(WORKFLOW_INSTANCE_FAULTED)) {
             log(formatter.formatWorkflowFailed(event));
         }
     }
@@ -110,7 +123,7 @@ public class StructuredLoggingListener implements WorkflowExecutionListener {
 
     @Override
     public void onTaskFailed(TaskFailedEvent event) {
-        if (shouldLog(WORKFLOW_TASK_FAILED)) {
+        if (shouldLog(WORKFLOW_TASK_FAULTED)) {
             log(formatter.formatTaskFailed(event));
         }
     }
@@ -146,9 +159,8 @@ public class StructuredLoggingListener implements WorkflowExecutionListener {
     // Helper Methods
 
     private boolean shouldLog(String eventType) {
-        if (!config.enabled()) {
+        if (!config.enabled())
             return false;
-        }
 
         // Check if event matches any configured patterns
         return config.events().stream()
@@ -162,14 +174,11 @@ public class StructuredLoggingListener implements WorkflowExecutionListener {
         // workflow.instance.* matches workflow.instance.started, etc.
         // workflow.task.failed matches exact
 
-        if (pattern.equals("*")) {
+        if (pattern.equals("*"))
             return true;
-        }
 
-        if (pattern.endsWith(".*")) {
-            String prefix = pattern.substring(0, pattern.length() - 2);
-            return eventType.startsWith(prefix + ".");
-        }
+        if (pattern.endsWith(".*"))
+            return eventType.startsWith(pattern.substring(0, pattern.length() - 2) + ".");
 
         return eventType.equals(pattern);
     }
@@ -192,7 +201,6 @@ public class StructuredLoggingListener implements WorkflowExecutionListener {
             case "INFO":
             default:
                 LOG.info(json);
-                break;
         }
     }
 }

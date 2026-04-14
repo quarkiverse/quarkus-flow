@@ -29,7 +29,7 @@ public interface FlowStructuredLoggingConfig {
      * <ul>
      * <li>{@code workflow.*} - All workflow and task events</li>
      * <li>{@code workflow.instance.*} - Only workflow-level events</li>
-     * <li>{@code workflow.task.failed} - Only task failures</li>
+     * <li>{@code workflow.task.faulted} - Only task failures</li>
      * </ul>
      * <p>
      * Default: {@code workflow.*} (all events)
