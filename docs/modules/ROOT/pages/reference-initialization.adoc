@@ -1,0 +1,295 @@
+= Quarkus Flow Initialization Process
+:page-role: reference
+include::includes/attributes.adoc[]
+
+This reference guide describes the initialization flow at a high level. It focuses on the lifecycle phases and the extension points that users can rely on, while intentionally avoiding low-level implementation details that may change over time.
+
+== Overview
+
+Quarkus Flow follows Quarkus's build-time optimization philosophy, performing as much work as possible during compilation to minimize runtime overhead. The initialization process is divided into distinct phases:
+
+1. **Build-Time Phase**: Discovery and registration of workflows
+2. **Runtime Initialization Phase**: WorkflowApplication setup with providers
+3. **Registry Warmup Phase**: Loading and caching workflow definitions
+4. **Optional Extensions**: Persistence, Durable Kubernetes, and Agentic Workflows
+
+== Initialization Sequence Diagram
+
+image::reference-initialization.svg[Quarkus Flow initialization sequence,align="center"]
+
+The diagram shows how build-time discovery flows into runtime bootstrap, registry warmup, and the ready state. Optional extensions plug into the same lifecycle without changing the overall sequence.
+
+== Build-Time Phase
+
+The build-time phase is where Quarkus Flow discovers workflows and prepares them for runtime execution. This happens during Maven or Gradle compilation.
+
+=== 1. Workflow Discovery
+
+The extension scans for workflows in two ways:
+
+* Java DSL workflows are discovered from classes that extend `Flow`.
+* YAML and JSON definitions are discovered from the configured workflow location.
+* Each discovery is converted into internal build metadata so runtime startup stays fast.
+
+=== 2. WorkflowDefinition Bean Registration
+
+Discovered workflows are turned into CDI-managed `WorkflowDefinition` beans.
+
+* Java DSL workflows are registered directly.
+* YAML and JSON workflows are compiled into generated flow classes before they are exposed to CDI.
+* The result is a consistent workflow abstraction at runtime, regardless of the source format.
+
+=== 3. WorkflowApplication Bean Configuration
+
+During augmentation, the extension prepares the `WorkflowApplication` bean and wires in the capabilities available in the current build.
+
+* Tracing is enabled when configured.
+* Metrics support is attached when the platform provides it.
+* The bean is declared for CDI so the runtime can finish assembly during application startup.
+
+== Runtime Initialization Phase
+
+When the Quarkus application starts, CDI initializes the `WorkflowApplication` and the supporting runtime services.
+
+=== 1. WorkflowApplication Builder Setup
+
+At startup, Quarkus Flow assembles the `WorkflowApplication` with the providers needed for execution.
+
+* Tracing listeners are attached when enabled.
+* Model factories are registered for Java and JSON workflow payloads.
+* The application ID is applied when available.
+* Event adapters, secret resolution, config access, HTTP clients, metrics, and fault tolerance are wired in.
+* Registered customizers are applied before the application is built and the shutdown hook is installed.
+
+=== 2. Provider Injection Details
+
+==== Application ID
+
+The application ID is derived from `quarkus.application.name` when present. Persistence and distributed coordination features rely on this stable identifier.
+
+==== HTTP Client Provider
+
+HTTP clients are resolved per workflow and per task, so the runtime can apply the right configuration for each external call.
+
+==== Fault Tolerance Provider
+
+HTTP and OpenAPI calls can be wrapped with retry, circuit breaker, and timeout behavior when fault tolerance support is enabled.
+
+==== Secret Manager
+
+The runtime selects the highest-priority available `SecretManager` so workflow secrets can be resolved consistently.
+
+==== Event Consumers and Publishers
+
+Event consumers and publishers are injected from CDI so event-driven workflows can connect to the surrounding messaging layer.
+
+=== 3. WorkflowApplicationBuilderCustomizer Extension Point
+
+Extensions can customize the `WorkflowApplication` before it is built:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyCustomizer 
+    implements WorkflowApplicationBuilderCustomizer {
+    
+    @Override
+    public int priority() {
+        return 1000; // Higher priority runs later
+    }
+    
+    @Override
+    public void customize(WorkflowApplication.Builder builder) {
+        // Add custom configuration
+        builder.withAdditionalObject("my-key", myValue);
+    }
+}
+----
+
+Customizers are executed in priority order, with lower numbers running first.
+
+== Registry Warmup Phase
+
+After the `WorkflowApplication` is initialized, the registry warmup step loads workflow definitions into cache.
+
+=== 1. Startup Event Observation
+
+The warmup step runs after application startup. In development mode it is synchronous for immediate feedback; in production it is asynchronous so startup is not delayed. Internally, the extension emits `WorkflowApplicationReady` after warmup so supporting extensions can react to the initialized application state. We do not recommend user code listening to that event directly.
+
+=== 2. Registry Warmup Process
+
+The registry iterates over the available `WorkflowDefinition` beans, resolves their descriptors, and caches them for fast lookup during execution.
+
+* Available workflow definitions are discovered from CDI.
+* Each definition is resolved into a workflow descriptor.
+* The descriptor cache is populated so workflow execution can start quickly after boot.
+
+== Optional Extensions Initialization
+
+=== Persistence (JPA/Redis/MVStore)
+
+When persistence support is available, the extension contributes a persistence handler and an application customizer that attach it to the `WorkflowApplication`. That allows workflow state to be stored in the configured persistence backend.
+
+==== Auto-Restore on Startup
+
+If `quarkus.flow.persistence.autoRestore=true`, interrupted workflows are restored automatically after the application becomes ready. The restore step looks up workflows owned by the current application ID and resumes them from their last checkpoint.
+
+=== Durable Kubernetes Lease Coordination
+
+When durable Kubernetes support is enabled, the extension acquires a lease before the application becomes active and uses that lease name as the application ID. This keeps the identity stable across restarts and allows one active worker identity per lease.
+
+=== Agentic Workflows (LangChain4j)
+
+When LangChain4j support is present, the extension registers the workflow agent builder service so agentic workflows can be discovered through Java service loading and integrated into the same registry as other workflows.
+
+== Initialization Timing
+
+Understanding when each phase occurs:
+
+[cols="1,2,3",options="header"]
+|===
+| Phase
+| When
+| Duration Impact
+
+| **Build-Time Discovery**
+| Maven/Gradle compile
+| Increases build time slightly (typically <1s for dozens of workflows)
+
+| **Bean Generation**
+| Maven/Gradle compile
+| Minimal impact (bytecode generation is fast)
+
+| **WorkflowApplication Init**
+| Application startup (CDI initialization)
+| ~50-200ms depending on number of providers
+
+| **Registry Warmup**
+| After CDI initialization (async in prod, sync in dev)
+| ~10-50ms per workflow (depends on complexity)
+
+| **Persistence Restore**
+| After registry warmup (if enabled)
+| Depends on number of interrupted workflows and database latency
+
+| **Lease Acquisition**
+| Before WorkflowApplication init (if Durable K8s enabled)
+| Up to 30s timeout (typically <5s in healthy cluster)
+|===
+
+== Troubleshooting Initialization Issues
+
+=== Workflow Not Found
+
+*Symptom*: `WorkflowDefinition` bean not found at runtime.
+
+*Possible causes*:
+
+* The class does not extend `Flow`.
+* The YAML file is not in the scanned location.
+* A build-time error occurred during workflow discovery.
+
+*Solution*: Enable debug logging with `quarkus.log.category."io.quarkiverse.flow.deployment".level=DEBUG`.
+
+=== Slow Startup
+
+*Symptom*: Application takes a long time to start.
+
+*Possible causes*:
+
+* Warmup is synchronous in production.
+* There are many workflows to instantiate and cache.
+* Persistence restore is loading interrupted workflows.
+
+*Solution*:
+
+* Verify async warmup in production.
+* Temporarily disable auto-restore with `quarkus.flow.persistence.autoRestore=false`.
+* Profile startup with `-Dquarkus.profile.record-startup-method-times=true`.
+
+=== Lease Acquisition Timeout (Kubernetes)
+
+*Symptom*: Pod never becomes ready, and logs show a lease acquisition failure.
+
+*Possible causes*:
+
+* The pod lacks RBAC permissions to manage Leases.
+* Another pod already holds the lease.
+* The Kubernetes API server is unreachable.
+
+*Solution*:
+
+* Verify RBAC with `kubectl auth can-i create leases --as=system:serviceaccount:NAMESPACE:SERVICE_ACCOUNT`.
+* Check existing leases with `kubectl get lease -l io.quarkiverse.flow.durable.k8s/pool=POOL_NAME`.
+* Increase the timeout with `quarkus.flow.durable.kube.member.lease.acquire-timeout=60s`.
+
+=== Persistence Not Working
+
+*Symptom*: Workflows do not resume after restart.
+
+*Possible causes*:
+
+* No persistence extension is present.
+* The application ID changed between restarts.
+* Auto-restore is disabled.
+
+*Solution*:
+
+* Verify the persistence extension is installed.
+* Keep the application ID stable with `quarkus.application.name` or Durable Kubernetes.
+* Enable restore with `quarkus.flow.persistence.autoRestore=true`.
+
+== Extension Points for Custom Initialization
+
+Developers can hook into the initialization process:
+
+=== 1. WorkflowApplicationBuilderCustomizer
+
+Customize the `WorkflowApplication` before it's built:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyCustomizer 
+    implements WorkflowApplicationBuilderCustomizer {
+    
+    @Override
+    public int priority() {
+        return 100;
+    }
+    
+    @Override
+    public void customize(WorkflowApplication.Builder builder) {
+        // Add custom configuration
+    }
+}
+----
+
+=== 2. Custom WorkflowExecutionListener
+
+Monitor workflow execution:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyListener implements WorkflowExecutionListener {
+    
+    @Override
+    public void onWorkflowStart(WorkflowContext context) {
+        // Called when a workflow starts
+    }
+    
+    @Override
+    public void onWorkflowEnd(WorkflowContext context) {
+        // Called when a workflow completes
+    }
+}
+----
+
+== See Also
+
+* xref:concepts-architecture.adoc[Engine Architecture] - High-level architecture overview
+* xref:persistence.adoc[Configure State Persistence] - Persistence setup guide
+* xref:concepts-durable-workflow-k8s.adoc[Durable Workflows in Kubernetes] - Kubernetes deployment patterns
+* xref:custom-listeners.adoc[Listen to Workflow Events] - Custom listener guide
+* link:https://quarkus.io/guides/cdi-reference#startup_event[Quarkus CDI Reference] - Understanding Quarkus startup events
