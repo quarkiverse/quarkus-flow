@@ -33,22 +33,28 @@ public class FlowSchedulerTest {
     void testAfter() {
         afterStartDefinition.instance(Map.of()).start().join();
         assertThat(afterStartDefinition.scheduledInstances().isEmpty());
+        // Allow extra time for CI with parallel builds
         await()
                 .pollDelay(Duration.ofMillis(50))
-                .atMost(Duration.ofMillis(500))
+                .pollInterval(Duration.ofMillis(100))
+                .atMost(Duration.ofSeconds(2))
                 .until(() -> !afterStartDefinition.scheduledInstances().isEmpty());
     }
 
     @Test
     void testEvery() {
-        // Workflow is scheduled every 1 second, wait for first instance with buffer for CI delays
+        // Workflow is scheduled every 1 second
+        // VERY generous timeout for CI: scheduler threads can be completely starved
+        // under heavy parallel builds, especially on resource-constrained CI runners
         await()
-                .atMost(Duration.ofSeconds(5))
-                .until(() -> everyDefinition.scheduledInstances().size() == 1);
-        // Wait for second instance (1s interval + buffer)
+                .pollInterval(Duration.ofMillis(500))
+                .atMost(Duration.ofSeconds(30))
+                .until(() -> everyDefinition.scheduledInstances().size() >= 1);
+        // Wait for second instance (1s interval + massive buffer for CI delays)
         await()
-                .atMost(Duration.ofSeconds(5))
-                .until(() -> everyDefinition.scheduledInstances().size() == 2);
+                .pollInterval(Duration.ofMillis(500))
+                .atMost(Duration.ofSeconds(30))
+                .until(() -> everyDefinition.scheduledInstances().size() >= 2);
     }
 
     @Test

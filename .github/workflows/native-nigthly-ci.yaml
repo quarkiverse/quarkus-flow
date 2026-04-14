@@ -10,6 +10,10 @@ defaults:
   run:
     shell: bash
 
+env:
+  # RestAssured socket timeout for slow GHA runners (in milliseconds)
+  RESTASSURED_TIMEOUT_MS: 60000
+
 permissions:
   contents: read
   checks: write
@@ -32,14 +36,27 @@ jobs:
           java-version: 25
           cache: maven
       
-      - name: Build with Maven (Native, Mandrel on JDK 25)
+      - name: Setup Ollama
+        uses: ai-action/setup-ollama@v2
+
+      - uses: actions/cache@v5
+        with:
+          path: ~/.ollama
+          key: ${{ runner.os }}-ollama
+
+      - name: Run llama3.2 model
+        run: ollama run llama3.2
+
+      - name: Build with Maven (Native, Mandrel on JDK 25, skip docs, single-threaded)
         id: native-build
         continue-on-error: true
         run: >
-          mvn -B install -Dnative -ntp
+          mvn -B install -Dnative -ntp -pl '!docs'
           -Dquarkus.native.container-build
           -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25
           -Dquarkus.langchain4j.timeout=60000
+          -Dquarkus.langchain4j.ollama.chat-model.model-id=llama3.2
+          -Drestassured.config.http.client.params.SO_TIMEOUT=${{ env.RESTASSURED_TIMEOUT_MS }}
           -DskipITs=false
 
       - name: Publish Failed Test Report
