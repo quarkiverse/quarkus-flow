@@ -15,7 +15,11 @@ import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.
 import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_STARTED;
 import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_SUSPENDED;
 
+import java.util.logging.Handler;
+
 import org.jboss.logging.Logger;
+import org.jboss.logmanager.ExtHandler;
+import org.jboss.logmanager.formatters.PatternFormatter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -38,20 +42,22 @@ import io.serverlessworkflow.impl.lifecycle.WorkflowSuspendedEvent;
 
 /**
  * Workflow execution listener that emits structured JSON logs for all lifecycle events.
- * <p>
- * Events are logged to the {@code io.quarkiverse.flow.structuredlogging} logger category,
- * allowing users to configure separate log handlers for structured events.
  */
 public class StructuredLoggingListener implements WorkflowExecutionListener {
 
-    private static final Logger LOG = Logger.getLogger("io.quarkiverse.flow.structuredlogging");
+    private static final String LOG_CATEGORY = "io.quarkiverse.flow.structuredlogging";
+    private static final Logger LOG = Logger.getLogger(LOG_CATEGORY);
 
     private final FlowStructuredLoggingConfig config;
     private final EventFormatter formatter;
 
+    // Volatile flag to ensure we only override the formatters once
+    private volatile boolean formatterOverridden = false;
+
     public StructuredLoggingListener(FlowStructuredLoggingConfig config, ObjectMapper objectMapper) {
         this.config = config;
         this.formatter = new EventFormatter(config, objectMapper);
+        // Note: No formatter logic in the constructor anymore!
     }
 
     // Workflow Instance Events
@@ -158,22 +164,51 @@ public class StructuredLoggingListener implements WorkflowExecutionListener {
 
     // Helper Methods
 
+    private void overrideFormatterIfNeeded() {
+        if (!formatterOverridden) {
+            synchronized (this) {
+                if (!formatterOverridden) {
+                    java.util.logging.Logger julLogger = java.util.logging.Logger.getLogger(LOG_CATEGORY);
+                    Handler[] handlers = julLogger.getHandlers();
+
+                    if (handlers != null && handlers.length > 0) {
+                        PatternFormatter pureJsonFormatter = new PatternFormatter("%s%n");
+                        for (Handler handler : handlers) {
+                            overrideHandlerFormatter(handler, pureJsonFormatter);
+                        }
+                    }
+
+                    // Mark as complete. By the time the first workflow event hits,
+                    // Quarkus logging is fully initialized.
+                    formatterOverridden = true;
+                }
+            }
+        }
+    }
+
+    private void overrideHandlerFormatter(Handler handler, java.util.logging.Formatter formatter) {
+        handler.setFormatter(formatter);
+
+        // Pierce through Quarkus's AsyncHandler wrapper to update the actual FileHandler inside
+        if (handler instanceof ExtHandler) {
+            Handler[] children = ((ExtHandler) handler).getHandlers();
+            if (children != null) {
+                for (Handler child : children) {
+                    overrideHandlerFormatter(child, formatter);
+                }
+            }
+        }
+    }
+
     private boolean shouldLog(String eventType) {
         if (!config.enabled())
             return false;
 
-        // Check if event matches any configured patterns
         return config.events().stream()
                 .anyMatch(pattern -> matchesPattern(eventType, pattern));
     }
 
     private boolean matchesPattern(String eventType, String pattern) {
-        // Simple glob pattern matching
-        // * matches all
-        // workflow.* matches workflow.instance.started, workflow.task.failed, etc.
-        // workflow.instance.* matches workflow.instance.started, etc.
-        // workflow.task.failed matches exact
-
         if (pattern.equals("*"))
             return true;
 
@@ -184,6 +219,9 @@ public class StructuredLoggingListener implements WorkflowExecutionListener {
     }
 
     private void log(String json) {
+        // Intercept right before logging to ensure handlers are firmly attached
+        overrideFormatterIfNeeded();
+
         // Log according to configured level
         switch (config.logLevel().toUpperCase()) {
             case "TRACE":

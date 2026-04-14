@@ -37,7 +37,7 @@ To make your tracing logs searchable in centralized logging platforms, you shoul
 quarkus.log.console.json.enabled=true
 ----
 
-WARNING: If you also use xref:structured-logging.adoc[Structured Logging] for workflow events, `quarkus-logging-json` will cause double JSON serialization. Quarkus Flow automatically configures a separate file handler for workflow events to avoid this. See xref:structured-logging.adoc#integration-with-quarkus-logging-json[Integration with quarkus-logging-json] for details.
+NOTE: If you also use xref:structured-logging.adoc[Structured Logging] for workflow events alongside `quarkus-logging-json`, Quarkus Flow automatically routes those events to a separate file handler with pure JSON formatting. This safely isolates your event streams and prevents double JSON serialization without any extra configuration. See xref:structured-logging.adoc#integration-with-quarkus-logging-json[Integration with quarkus-logging-json] for details.
 
 [TIP]
 ====

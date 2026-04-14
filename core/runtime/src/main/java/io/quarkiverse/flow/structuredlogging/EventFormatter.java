@@ -116,11 +116,11 @@ public class EventFormatter {
             if (event.cause() != null) {
                 error.put(FIELD_ERROR_MESSAGE, event.cause().getMessage());
                 error.put(FIELD_ERROR_TYPE, event.cause().getClass().getName());
-                // Include first 10 stack trace elements
+
                 StackTraceElement[] stackTrace = event.cause().getStackTrace();
                 if (stackTrace != null && stackTrace.length > 0) {
                     StringBuilder stack = new StringBuilder();
-                    for (int i = 0; i < Math.min(10, stackTrace.length); i++) {
+                    for (int i = 0; i < Math.min(config.stackTraceMaxLines(), stackTrace.length); i++) {
                         stack.append(stackTrace[i].toString()).append("\n");
                     }
                     error.put(FIELD_ERROR_STACK_TRACE, stack.toString());

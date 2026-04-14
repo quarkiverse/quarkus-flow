@@ -231,6 +231,7 @@ When `quarkus-logging-json` is enabled, it wraps all log messages in a JSON stru
 ----
 
 Notice how the `message` field contains a JSON **string**, not a JSON **object**. This requires log consumers to:
+
 1. Parse the outer JSON (from quarkus-logging-json)
 2. Parse the inner JSON string (our workflow event)
 
@@ -272,9 +273,13 @@ quarkus.log.handler.file."FLOW_EVENTS".enable=false
 quarkus.log.category."io.quarkiverse.flow.structuredlogging".use-parent-handlers=true
 ----
 
+IMPORTANT: Quarkus Flow handles formatting programmatically at runtime. Even if `quarkus-logging-json` takes over the global loggers, Quarkus Flow automatically pierces through the logging wrappers to strictly enforce raw string formatting for the `FLOW_EVENTS` file handler.
+This guarantees that your event stream remains pure, single-level JSON without any configuration effort on your part.
+
 With the default configuration:
-- **Console logs**: Application logs in JSON format (from quarkus-logging-json)
-- **Event file**: Pure workflow event JSON (one event per line)
+
+- **Console logs**: Application logs in JSON format (from `quarkus-logging-json`)
+- **Event file**: Pure workflow event JSON (one event per line, safe from double-wrapping)
 
 === Why Separate Files?
 
@@ -354,23 +359,6 @@ Send the same logs to multiple destinations:
     Type              _doc
 ----
 
-=== Separate Log File (Auto-Configured)
-
-Quarkus Flow **automatically configures** a separate file handler for structured events. This is enabled by default when structured logging is turned on.
-
-**Default behavior:**
-- Events write to `target/quarkus-flow-events.log` (dev/test) or `/var/log/quarkus-flow/events.log` (production)
-- Events do NOT appear in console output (preventing duplication)
-- File format is raw JSON (`%s%n`)
-
-**Why this approach?**
-- ✅ Separates event streams from diagnostic logs
-- ✅ Avoids double JSON serialization with `quarkus-logging-json`
-- ✅ Simplifies log forwarder configuration
-- ✅ Works out-of-the-box (zero configuration required)
-
-See xref:#integration-with-quarkus-logging-json[Integration with quarkus-logging-json] for customization options.
-
 == Production Recommendations
 
 === What to Log
@@ -392,10 +380,10 @@ Configure log rotation to prevent disk fill:
 
 [source,properties]
 ----
-quarkus.log.handler.file."STRUCTURED_FILE".rotation.max-file-size=100M
-quarkus.log.handler.file."STRUCTURED_FILE".rotation.max-backup-index=7
-quarkus.log.handler.file."STRUCTURED_FILE".rotation.file-suffix=.yyyy-MM-dd
-quarkus.log.handler.file."STRUCTURED_FILE".rotation.rotate-on-boot=true
+quarkus.log.handler.file."FLOW_EVENTS".rotation.max-file-size=100M
+quarkus.log.handler.file."FLOW_EVENTS".rotation.max-backup-index=7
+quarkus.log.handler.file."FLOW_EVENTS".rotation.file-suffix=.yyyy-MM-dd
+quarkus.log.handler.file."FLOW_EVENTS".rotation.rotate-on-boot=true
 ----
 
 === Retention Strategy

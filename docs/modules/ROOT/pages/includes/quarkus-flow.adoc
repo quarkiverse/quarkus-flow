@@ -375,6 +375,31 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |`+++true+++`
 
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-structured-logging-stack-trace-max-lines]] [.property-path]##link:#quarkus-flow_quarkus-flow-structured-logging-stack-trace-max-lines[`+++quarkus.flow.structured-logging.stack-trace-max-lines+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.structured-logging.stack-trace-max-lines+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Max stack trace lines to include in error events.
+
+Only read when `include-error-context()` is `true`.
+
+Default: `10`
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_STRUCTURED_LOGGING_STACK_TRACE_MAX_LINES+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_STRUCTURED_LOGGING_STACK_TRACE_MAX_LINES+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++10+++`
+
 a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-structured-logging-payload-max-size]] [.property-path]##link:#quarkus-flow_quarkus-flow-structured-logging-payload-max-size[`+++quarkus.flow.structured-logging.payload-max-size+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.structured-logging.payload-max-size+++[]

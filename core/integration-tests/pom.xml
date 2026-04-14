@@ -92,6 +92,12 @@
             <groupId>org.wiremock</groupId>
             <artifactId>wiremock</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-logging-json</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -140,6 +146,20 @@
     </build>
 
     <profiles>
+        <!-- Profile for testing quarkus-logging-json integration -->
+        <!-- Only activated when explicitly requested to avoid affecting other tests -->
+        <!-- Usage: mvn test -Ptest-logging-json -Dtest=StructuredLoggingWithQuarkusLoggingJsonTest -->
+        <profile>
+            <id>test-logging-json</id>
+            <dependencies>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-logging-json</artifactId>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+
         <profile>
             <id>native-image</id>
             <activation>

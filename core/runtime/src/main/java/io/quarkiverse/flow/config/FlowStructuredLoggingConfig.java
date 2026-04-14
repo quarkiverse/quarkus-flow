@@ -78,6 +78,16 @@ public interface FlowStructuredLoggingConfig {
     boolean includeErrorContext();
 
     /**
+     * Max stack trace lines to include in error events.
+     * <p>
+     * Only read when {@link #includeErrorContext()} is {@code true}.
+     * <p>
+     * Default: {@code 10}
+     */
+    @WithDefault("10")
+    int stackTraceMaxLines();
+
+    /**
      * Maximum size (in bytes) for payloads before truncation.
      * <p>
      * Large payloads (e.g., agentic contexts with conversation history) are truncated

@@ -97,6 +97,13 @@ This automatically runs unit tests. Integration tests are skipped by default.
 
 **Parallel Execution**: Tests run in parallel. **Never use fixed ports** (e.g., 8080). Use unusual/random ports or let Quarkus assign them automatically.
 
+**Special Test Profiles**: Some tests require optional dependencies that are isolated with Maven profiles to avoid affecting other tests:
+
+```bash
+# Test quarkus-logging-json integration (adds dependency only for this test)
+./mvnw test -pl core/integration-tests -Ptest-logging-json -Dtest=StructuredLoggingWithQuarkusLoggingJsonTest
+```
+
 When writing tests:
 - Use AssertJ for assertions (preferred in this project)
 - Follow existing test patterns in each module
