@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkiverse.flow.metrics.FlowMetrics;
-import io.quarkus.logging.Log;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.component.QuarkusComponentTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
@@ -78,7 +77,6 @@ public class FlowMetricsWithCustomTypeGuardTest {
                 .withRetry()
                 .whenException(throwable -> {
                     WorkflowException workflowException = (WorkflowException) throwable;
-                    Log.info("Handling WorkflowException class: " + workflowException.getWorkflowError());
                     registry.counter(FlowMetrics.FAULT_TOLERANCE_TASK_RETRY_TOTAL.prefixedWith("quarkus.flow"))
                             .increment();
 
