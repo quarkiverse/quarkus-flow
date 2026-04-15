@@ -142,10 +142,6 @@ public class FlowCircuitBreakerMetricsTest {
             }
         }
 
-        List<Tag> commonTags = List.of(
-                Tag.of("workflow", "for-cb-workflow"),
-                Tag.of("task", "findNothing"));
-
         softly.assertThat(globalRegistry.counter(FAULT_TOLERANCE_CIRCUIT_BREAKER_PREVENTED_TOTAL,
                 "workflow", "for-cb-workflow", "task", "findNothing").count())
                 .as("Fault Tolerance Circuit Breaker Prevented incremented")
@@ -157,7 +153,9 @@ public class FlowCircuitBreakerMetricsTest {
                 .as("Fault Tolerance Circuit Breaker Failure incremented")
                 .isEqualTo(2.0);
 
-        Gauge gauge = globalRegistry.find(FAULT_TOLERANCE_CIRCUIT_BREAKER_OPEN).tags(commonTags).gauge();
+        Gauge gauge = globalRegistry.find(FAULT_TOLERANCE_CIRCUIT_BREAKER_OPEN)
+                .tags(List.of(Tag.of("workflow", "for-cb-workflow"), Tag.of("task", "findNothing")))
+                .gauge();
 
         softly.assertThat(gauge).isNotNull();
 
@@ -188,7 +186,7 @@ public class FlowCircuitBreakerMetricsTest {
         public Map<String, String> getConfigOverrides() {
             return Map.of(
                     "quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold", "2",
-                    "quarkus.flow.http.client.resilience.circuit.breaker.delay", "30s" // the circuit breaker must be open
+                    "quarkus.flow.http.client.resilience.circuit-breaker.delay", "30s" // the circuit breaker must be open
             );
         }
     }
