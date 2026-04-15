@@ -39,7 +39,7 @@
         <quarkus.log.level>OFF</quarkus.log.level>
 
         <quarkus.version>3.34.3</quarkus.version>
-        <io.serverlessworkflow.version>7.17.0.Final</io.serverlessworkflow.version>
+        <io.serverlessworkflow.version>7.17.1.Final</io.serverlessworkflow.version>
         <io.cloudevents.version>4.0.2</io.cloudevents.version>
 
         <io.quarkiverse.jackson-jq.version>2.4.0</io.quarkiverse.jackson-jq.version>
