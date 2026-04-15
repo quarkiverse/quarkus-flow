@@ -26,10 +26,10 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkiverse.flow.durable.kube.config.LeaseGroupConfig;
 import io.quarkiverse.flow.durable.kube.config.PoolConfig;
 import io.quarkus.test.InjectMock;
-import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.component.QuarkusComponentTest;
 import io.quarkus.test.kubernetes.client.WithKubernetesTestServer;
 
-@QuarkusTest
+@QuarkusComponentTest
 @WithKubernetesTestServer
 public class LeaseServiceTest {
 

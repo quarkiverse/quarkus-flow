@@ -17,9 +17,9 @@ import org.junit.jupiter.api.Test;
 
 import io.fabric8.kubernetes.api.model.coordination.v1.LeaseBuilder;
 import io.quarkus.test.InjectMock;
-import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.component.QuarkusComponentTest;
 
-@QuarkusTest
+@QuarkusComponentTest
 class PoolLeaderControllerTest {
 
     @Inject

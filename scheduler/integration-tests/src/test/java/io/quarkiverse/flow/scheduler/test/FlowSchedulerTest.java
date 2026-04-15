@@ -6,8 +6,6 @@ import static org.awaitility.Awaitility.await;
 import java.time.Duration;
 import java.util.Map;
 
-import jakarta.inject.Inject;
-
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -17,15 +15,15 @@ import io.smallrye.common.annotation.Identifier;
 
 @QuarkusTest
 public class FlowSchedulerTest {
-    @Inject
+    @jakarta.inject.Inject
     @Identifier("test:after-driven-schedule")
     WorkflowDefinition afterStartDefinition;
 
-    @Inject
+    @jakarta.inject.Inject
     @Identifier("test:cron-driven-schedule")
     WorkflowDefinition cronDefinition;
 
-    @Inject
+    @jakarta.inject.Inject
     @Identifier("test:every-driven-schedule")
     WorkflowDefinition everyDefinition;
 
