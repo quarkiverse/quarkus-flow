@@ -1,12 +1,9 @@
 package org.acme.flow;
 
-import io.quarkiverse.flow.internal.WorkflowApplicationReady;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowInstance;
-import io.serverlessworkflow.impl.persistence.PersistenceInstanceHandlers;
 import io.smallrye.common.annotation.Identifier;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -16,32 +13,14 @@ import jakarta.ws.rs.core.Response.Status;
 
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Path("/api/flow")
 @ApplicationScoped
 public class FlowAPIResource {
 
-    private final static Logger logger = LoggerFactory.getLogger(FlowAPIResource.class);
-
     @Inject
     @Identifier("example.SwitchLoopWait")
     WorkflowDefinition flow;
-
-    @Inject
-    PersistenceInstanceHandlers handlers;
-
-    private Map<String, WorkflowInstance> instances;
-
-    void init(@Observes WorkflowApplicationReady event) {
-        instances = handlers.reader().scanAll(flow).collect(Collectors.toMap(WorkflowInstance::id, v -> v));
-        logger.info("Restored instances for application {} and definition {} are {}", flow.application().id(), flow.id(),
-                instances);
-        instances.values().forEach(WorkflowInstance::start);
-    }
 
     /**
      * Start a new workflow instance. The instance id is returned in the response.
@@ -54,7 +33,6 @@ public class FlowAPIResource {
     @Path("/start")
     public Response start(FlowRequest request) {
         final WorkflowInstance instance = flow.instance(request);
-        instances.put(instance.id(), instance);
         instance.start();
         return Response.accepted(Map.of("instanceId", instance.id())).build();
     }
@@ -99,12 +77,9 @@ public class FlowAPIResource {
     }
 
     private Response instanceOperation(String instanceId, Function<WorkflowInstance, Boolean> function) {
-        WorkflowInstance instance = instances.get(instanceId);
-        if (instance == null) {
-            return notFoundResponse(instanceId);
-        } else {
-            return function.apply(instance) ? Response.ok().build() : Response.notModified().build();
-        }
+        return flow.activeInstance(instanceId)
+                .map(instance -> function.apply(instance) ? Response.ok().build() : Response.notModified().build())
+                .orElseGet(() -> notFoundResponse(instanceId));
     }
 
     private Response notFoundResponse(String instanceId) {
