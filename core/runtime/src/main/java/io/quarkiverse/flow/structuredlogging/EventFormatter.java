@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
 import io.serverlessworkflow.impl.WorkflowDefinitionData;
+import io.serverlessworkflow.impl.WorkflowError;
+import io.serverlessworkflow.impl.WorkflowException;
 import io.serverlessworkflow.impl.WorkflowStatus;
 import io.serverlessworkflow.impl.lifecycle.TaskCancelledEvent;
 import io.serverlessworkflow.impl.lifecycle.TaskCompletedEvent;
@@ -54,10 +56,13 @@ public class EventFormatter {
     private static final String FIELD_LAST_UPDATE_TIME = "lastUpdateTime";
     private static final String FIELD_INPUT = "input";
     private static final String FIELD_OUTPUT = "output";
+    // See https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#properties-53
     private static final String FIELD_ERROR = "error";
-    private static final String FIELD_ERROR_MESSAGE = "message";
+    private static final String FIELD_ERROR_TITLE = "title";
     private static final String FIELD_ERROR_TYPE = "type";
-    private static final String FIELD_ERROR_STACK_TRACE = "stackTrace";
+    private static final String FIELD_ERROR_DETAIL = "detail";
+    private static final String FIELD_ERROR_STATUS = "status";
+    private static final String FIELD_ERROR_INSTANCE = "instance";
     private static final String FIELD_WORKFLOW_NAMESPACE = "workflowNamespace";
     private static final String FIELD_WORKFLOW_NAME = "workflowName";
     private static final String FIELD_WORKFLOW_VERSION = "workflowVersion";
@@ -114,16 +119,17 @@ public class EventFormatter {
         if (config.includeErrorContext()) {
             Map<String, Object> error = new HashMap<>();
             if (event.cause() != null) {
-                error.put(FIELD_ERROR_MESSAGE, event.cause().getMessage());
-                error.put(FIELD_ERROR_TYPE, event.cause().getClass().getName());
-
-                StackTraceElement[] stackTrace = event.cause().getStackTrace();
-                if (stackTrace != null && stackTrace.length > 0) {
-                    StringBuilder stack = new StringBuilder();
-                    for (int i = 0; i < Math.min(config.stackTraceMaxLines(), stackTrace.length); i++) {
-                        stack.append(stackTrace[i].toString()).append("\n");
-                    }
-                    error.put(FIELD_ERROR_STACK_TRACE, stack.toString());
+                if (event.cause() instanceof WorkflowException) {
+                    final WorkflowError workflowError = ((WorkflowException) event.cause()).getWorkflowError();
+                    error.put(FIELD_ERROR_TITLE, workflowError.title());
+                    error.put(FIELD_ERROR_DETAIL, truncateErrorDetail(workflowError.details()));
+                    error.put(FIELD_ERROR_INSTANCE, workflowError.instance());
+                    error.put(FIELD_ERROR_STATUS, workflowError.status());
+                    error.put(FIELD_ERROR_TYPE, workflowError.type());
+                } else {
+                    error.put(FIELD_ERROR_TITLE, event.cause().getMessage());
+                    error.put(FIELD_ERROR_TYPE, event.cause().getClass().getName());
+                    error.put(FIELD_ERROR_DETAIL, formatStackTrace(event.cause().getStackTrace()));
                 }
             }
             json.put(FIELD_ERROR, error);
@@ -134,6 +140,35 @@ public class EventFormatter {
         }
 
         return toJson(json);
+    }
+
+    private String formatStackTrace(StackTraceElement[] stackTrace) {
+        if (stackTrace != null && stackTrace.length > 0) {
+            StringBuilder stack = new StringBuilder();
+            for (int i = 0; i < Math.min(config.stackTraceMaxLines(), stackTrace.length); i++) {
+                stack.append(stackTrace[i].toString()).append("\n");
+            }
+            return stack.toString();
+        }
+        return "";
+    }
+
+    private String truncateErrorDetail(String detail) {
+        if (detail == null || detail.isEmpty()) {
+            return detail;
+        }
+
+        // Split by standard or carriage-return newlines
+        String[] lines = detail.split("\r?\n");
+        if (lines.length <= config.stackTraceMaxLines()) {
+            return detail;
+        }
+
+        StringBuilder truncated = new StringBuilder();
+        for (int i = 0; i < config.stackTraceMaxLines(); i++) {
+            truncated.append(lines[i]).append("\n");
+        }
+        return truncated.toString();
     }
 
     public String formatWorkflowCancelled(WorkflowCancelledEvent event) {
@@ -198,7 +233,7 @@ public class EventFormatter {
         if (config.includeErrorContext()) {
             Map<String, Object> error = new HashMap<>();
             if (event.cause() != null) {
-                error.put(FIELD_ERROR_MESSAGE, event.cause().getMessage());
+                error.put(FIELD_ERROR_TITLE, event.cause().getMessage());
                 error.put(FIELD_ERROR_TYPE, event.cause().getClass().getName());
             }
             json.put(FIELD_ERROR, error);
