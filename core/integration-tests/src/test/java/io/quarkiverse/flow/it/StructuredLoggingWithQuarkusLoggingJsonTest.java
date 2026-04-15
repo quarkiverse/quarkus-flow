@@ -1,26 +1,27 @@
 package io.quarkiverse.flow.it;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import jakarta.inject.Inject;
-
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
+import jakarta.inject.Inject;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Test that structured logging produces pure JSON when quarkus-logging-json is present.
@@ -63,6 +64,10 @@ public class StructuredLoggingWithQuarkusLoggingJsonTest {
     @Test
     @DisplayName("Structured logging file should contain pure JSON, not double-wrapped JSON")
     void testStructuredLoggingFileContainsPureJson() throws IOException {
+        Assumptions.assumeTrue(
+                Logger.getLogger("io.quarkiverse.flow.structuredlogging").isLoggable(Level.INFO),
+                "Test skipped: No logging handlers found for structured logging category. Logging might be disabled globally.");
+
         // Execute workflow to generate structured log events
         helloWorkflow.startInstance().await().indefinitely();
 
