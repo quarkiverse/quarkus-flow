@@ -44,3 +44,4 @@
 ** xref:reference-initialization.adoc[Initialization Process]
 ** xref:quarkus-flow-cookbook.adoc[]
 ** xref:configuration.adoc[Extension Configuration Reference]
+** xref:performance-benchmarks.adoc[Performance Benchmark]
