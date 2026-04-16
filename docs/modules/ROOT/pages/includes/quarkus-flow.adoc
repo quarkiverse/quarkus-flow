@@ -240,6 +240,239 @@ endif::add-copy-button-to-env-var[]
 |list of string
 |
 
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-structured-logging-enabled]] [.property-path]##link:#quarkus-flow_quarkus-flow-structured-logging-enabled[`+++quarkus.flow.structured-logging.enabled+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.structured-logging.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enables or disables structured logging for Quarkus Flow.
+
+When enabled, all workflow lifecycle events are emitted as structured JSON logs to stdout. This allows exporting workflow execution data to external databases for querying and analytics.
+
+Default: `false` (users must opt-in)
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_STRUCTURED_LOGGING_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_STRUCTURED_LOGGING_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++false+++`
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-structured-logging-events]] [.property-path]##link:#quarkus-flow_quarkus-flow-structured-logging-events[`+++quarkus.flow.structured-logging.events+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.structured-logging.events+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Events to capture and log.
+
+Supports glob patterns:
+
+ - `workflow.++*++` - All workflow and task events
+ - `workflow.instance.++*++` - Only workflow-level events
+ - `workflow.task.faulted` - Only task failures
+
+
+
+Default: `workflow.++*++` (all events)
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_STRUCTURED_LOGGING_EVENTS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_STRUCTURED_LOGGING_EVENTS+++`
+endif::add-copy-button-to-env-var[]
+--
+|list of string
+|`+++workflow.*+++`
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-structured-logging-include-task-payloads]] [.property-path]##link:#quarkus-flow_quarkus-flow-structured-logging-include-task-payloads[`+++quarkus.flow.structured-logging.include-task-payloads+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.structured-logging.include-task-payloads+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Include task input/output payloads in task events.
+
+When `false` (default), task events only include execution metadata (taskName, status, timing) but not input/output data. This keeps logs small and is sufficient for execution graph visualization.
+
+When `true`, task events include full input/output data, useful for detailed auditing or debugging.
+
+Default: `false`
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_STRUCTURED_LOGGING_INCLUDE_TASK_PAYLOADS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_STRUCTURED_LOGGING_INCLUDE_TASK_PAYLOADS+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++false+++`
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-structured-logging-include-workflow-payloads]] [.property-path]##link:#quarkus-flow_quarkus-flow-structured-logging-include-workflow-payloads[`+++quarkus.flow.structured-logging.include-workflow-payloads+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.structured-logging.include-workflow-payloads+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Include workflow input/output payloads in workflow events.
+
+When `false`, workflow events only include execution metadata. When `true` (default), workflow events include full input/output data.
+
+Default: `true`
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_STRUCTURED_LOGGING_INCLUDE_WORKFLOW_PAYLOADS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_STRUCTURED_LOGGING_INCLUDE_WORKFLOW_PAYLOADS+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-structured-logging-include-error-context]] [.property-path]##link:#quarkus-flow_quarkus-flow-structured-logging-include-error-context[`+++quarkus.flow.structured-logging.include-error-context+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.structured-logging.include-error-context+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Always include full context in error events.
+
+When `true` (default), task failure and workflow failure events include full input data and error details, regardless of `include-task-payloads()` setting.
+
+This ensures errors are fully debuggable even when payload logging is disabled.
+
+Default: `true`
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_STRUCTURED_LOGGING_INCLUDE_ERROR_CONTEXT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_STRUCTURED_LOGGING_INCLUDE_ERROR_CONTEXT+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-structured-logging-stack-trace-max-lines]] [.property-path]##link:#quarkus-flow_quarkus-flow-structured-logging-stack-trace-max-lines[`+++quarkus.flow.structured-logging.stack-trace-max-lines+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.structured-logging.stack-trace-max-lines+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Max stack trace lines to include in error events.
+
+Only read when `include-error-context()` is `true`.
+
+Default: `10`
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_STRUCTURED_LOGGING_STACK_TRACE_MAX_LINES+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_STRUCTURED_LOGGING_STACK_TRACE_MAX_LINES+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++10+++`
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-structured-logging-payload-max-size]] [.property-path]##link:#quarkus-flow_quarkus-flow-structured-logging-payload-max-size[`+++quarkus.flow.structured-logging.payload-max-size+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.structured-logging.payload-max-size+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Maximum size (in bytes) for payloads before truncation.
+
+Large payloads (e.g., agentic contexts with conversation history) are truncated to prevent overwhelming log systems. Truncated data includes metadata about original size and a preview.
+
+Default: `10240` (10KB)
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_STRUCTURED_LOGGING_PAYLOAD_MAX_SIZE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_STRUCTURED_LOGGING_PAYLOAD_MAX_SIZE+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++10240+++`
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-structured-logging-truncate-preview-size]] [.property-path]##link:#quarkus-flow_quarkus-flow-structured-logging-truncate-preview-size[`+++quarkus.flow.structured-logging.truncate-preview-size+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.structured-logging.truncate-preview-size+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Size (in bytes) of preview included in truncated payloads.
+
+When a payload exceeds `payload-max-size()`, a preview of this size is included to give context about the truncated data.
+
+Default: `1024` (1KB)
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_STRUCTURED_LOGGING_TRUNCATE_PREVIEW_SIZE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_STRUCTURED_LOGGING_TRUNCATE_PREVIEW_SIZE+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++1024+++`
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-structured-logging-log-level]] [.property-path]##link:#quarkus-flow_quarkus-flow-structured-logging-log-level[`+++quarkus.flow.structured-logging.log-level+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.structured-logging.log-level+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Log level for structured events.
+
+Default: `INFO`
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_STRUCTURED_LOGGING_LOG_LEVEL+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_STRUCTURED_LOGGING_LOG_LEVEL+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|`+++INFO+++`
+
 a| [[quarkus-flow_quarkus-flow-http-client-connect-timeout]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-connect-timeout[`+++quarkus.flow.http.client.connect-timeout+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.http.client.connect-timeout+++[]

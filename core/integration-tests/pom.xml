@@ -92,6 +92,8 @@
             <groupId>org.wiremock</groupId>
             <artifactId>wiremock</artifactId>
         </dependency>
+
+
     </dependencies>
 
     <build>
@@ -140,6 +142,16 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>test-json-logging</id>
+            <dependencies>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-logging-json</artifactId>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
         <profile>
             <id>native-image</id>
             <activation>

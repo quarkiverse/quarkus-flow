@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.config.FlowDefinitionsConfig;
 import io.quarkiverse.flow.config.FlowMetricsConfig;
+import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
 import io.quarkiverse.flow.config.FlowTracingConfig;
 import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkiverse.flow.metrics.MicrometerExecutionListener;
@@ -33,6 +34,9 @@ import io.quarkiverse.flow.recorders.SDKRecorder;
 import io.quarkiverse.flow.recorders.WorkflowApplicationRecorder;
 import io.quarkiverse.flow.recorders.WorkflowDefinitionRecorder;
 import io.quarkiverse.flow.recorders.WorkflowMicrometerRecorder;
+import io.quarkiverse.flow.recorders.WorkflowStructuredLoggingRecorder;
+import io.quarkiverse.flow.structuredlogging.EventFormatter;
+import io.quarkiverse.flow.structuredlogging.StructuredLoggingListener;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
@@ -45,10 +49,12 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.gizmo.ClassCreator;
@@ -72,6 +78,7 @@ class FlowProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(FlowProcessor.class); // NEW
 
     private static final String FEATURE = "flow";
+    private static final String DEFAULT_STRUCTURED_LOG_HANDLER = "FLOW_EVENTS";
 
     FlowDefinitionsConfig flowDefinitionsConfig;
 
@@ -327,6 +334,74 @@ class FlowProcessor {
                                 .done());
                     }
                 });
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void configureStructuredLogging(WorkflowStructuredLoggingRecorder recorder,
+            FlowStructuredLoggingConfig structuredLoggingConfig,
+            BuildProducer<SyntheticBeanBuildItem> beans) {
+
+        if (!structuredLoggingConfig.enabled()) {
+            return;
+        }
+
+        beans.produce(SyntheticBeanBuildItem.configure(StructuredLoggingListener.class)
+                .setRuntimeInit()
+                .unremovable()
+                .scope(Singleton.class)
+                .types(WorkflowExecutionListener.class)
+                .addInjectionPoint(org.jboss.jandex.ClassType.create(
+                        DotName.createSimple(com.fasterxml.jackson.databind.ObjectMapper.class.getName())))
+                .createWith(recorder.structuredLoggingListenerCreator(structuredLoggingConfig))
+                .done());
+    }
+
+    @BuildStep
+    void detectQuarkusLoggingJson(CombinedIndexBuildItem index,
+            FlowStructuredLoggingConfig structuredLoggingConfig,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> configDefaults,
+            LaunchModeBuildItem launchMode) {
+
+        if (!structuredLoggingConfig.enabled())
+            return;
+
+        // Provide sensible defaults for the structured logging file handler
+        // Users can override these in application.properties if needed
+        String loggerCategory = EventFormatter.class.getPackageName();
+
+        // Enable file handler by default when structured logging is enabled
+        configDefaults.produce(new RunTimeConfigurationDefaultBuildItem(
+                "quarkus.log.handler.file.\"" + DEFAULT_STRUCTURED_LOG_HANDLER + "\".enable",
+                "true"));
+
+        // Set raw JSON format (no timestamps, just the event JSON)
+        configDefaults.produce(new RunTimeConfigurationDefaultBuildItem(
+                "quarkus.log.handler.file.\"" + DEFAULT_STRUCTURED_LOG_HANDLER + "\".format",
+                "%s%n"));
+
+        // Set default path based on launch mode
+        String defaultPath = launchMode.getLaunchMode().isDevOrTest()
+                ? "target/quarkus-flow-events.log" // Dev/test: use target directory
+                : "/var/log/quarkus-flow/events.log"; // Prod: use standard location
+
+        configDefaults.produce(new RunTimeConfigurationDefaultBuildItem(
+                "quarkus.log.handler.file.\"" + DEFAULT_STRUCTURED_LOG_HANDLER + "\".path",
+                defaultPath));
+
+        // Assign this handler to the structured logging category
+        configDefaults.produce(new RunTimeConfigurationDefaultBuildItem(
+                "quarkus.log.category.\"" + loggerCategory + "\".handlers",
+                DEFAULT_STRUCTURED_LOG_HANDLER));
+
+        // Prevent workflow events from appearing in console (to avoid double logging)
+        configDefaults.produce(new RunTimeConfigurationDefaultBuildItem(
+                "quarkus.log.category.\"" + loggerCategory + "\".use-parent-handlers",
+                "false"));
+
+        LOG.info("Quarkus Flow structured logging file handler auto-configured. " +
+                "Events will be written to: {} (override with quarkus.log.handler.file.{}.path)", defaultPath,
+                DEFAULT_STRUCTURED_LOG_HANDLER);
     }
 
 }

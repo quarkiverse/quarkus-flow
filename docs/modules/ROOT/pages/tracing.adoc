@@ -37,6 +37,8 @@ To make your tracing logs searchable in centralized logging platforms, you shoul
 quarkus.log.console.json.enabled=true
 ----
 
+NOTE: If you also use xref:structured-logging.adoc[Structured Logging] for workflow events alongside `quarkus-logging-json`, Quarkus Flow automatically routes those events to a separate file handler with pure JSON formatting. This safely isolates your event streams and prevents double JSON serialization without any extra configuration. See xref:structured-logging.adoc#integration-with-quarkus-logging-json[Integration with quarkus-logging-json] for details.
+
 [TIP]
 ====
 If you prefer pattern logging (plain text) over JSON, you must manually reference the MDC keys in your log format string using `%X\{key}`:
@@ -57,7 +59,7 @@ Every trace log emitted by the engine includes the following MDC fields:
 
 | `quarkus.flow.event`
 | `workflow.started`
-| The normalized lifecycle event name (e.g., `task.started`, `task.failed`).
+| The normalized lifecycle event name (e.g., `task.started`, `task.faulted`).
 
 | `quarkus.flow.time`
 | `2026-03-12T19:20:59.120Z`
@@ -122,5 +124,6 @@ You can safely enable both simultaneously.
 == See also
 
 * xref:metrics-prometheus.adoc[Metrics & Prometheus Integration] — complement your logs with numeric health metrics.
+* xref:structured-logging.adoc[Export workflow data via structured logs] — export detailed workflow execution data as JSON logs for external querying.
 * xref:messaging.adoc[Use messaging and events] — publish lifecycle events to Kafka as CloudEvents.
 * link:https://quarkus.io/guides/logging[Quarkus Logging guide] — full logging configuration reference.
