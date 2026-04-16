@@ -4,9 +4,12 @@ Quick access to project documentation and resources.
 
 ## Project Documentation
 
-- **Main Guide**: @CLAUDE.md - Complete guide for working with Quarkus Flow
-- **Contributing**: @CONTRIBUTING.md - Contribution guidelines
-- **README**: @README.md - Project overview and quick start
+For complete project information, refer to these files in the project root:
+- **CLAUDE.md** - Complete guide for working with Quarkus Flow (build commands, testing, conventions, etc.)
+- **CONTRIBUTING.md** - Contribution guidelines
+- **README.md** - Project overview and quick start
+
+When the user asks about project conventions, testing, or build processes, read the relevant sections from CLAUDE.md.
 
 ## Key Commands
 
@@ -34,7 +37,7 @@ Quick access to project documentation and resources.
 
 ## Quick Reference
 
-For detailed information on:
+For detailed information, read the corresponding sections in CLAUDE.md:
 - **Testing**: See CLAUDE.md "Testing" section
 - **Code Conventions**: See CLAUDE.md "Code Conventions" section
 - **Git & PR Guidelines**: See CLAUDE.md "Git & PR Guidelines" section
