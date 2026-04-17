@@ -9,6 +9,6 @@ do:
         event:
           with:
             source: https://org.acme.quarkus.flow.io
-            type: org.acme.message.received.v1.Message
+            type: org.acme.approval.decision.v1
             data:
-              message: ${.message}
+              approved: ${.approved}

@@ -2,7 +2,6 @@ package org.acme;
 
 import io.quarkiverse.flow.Flow;
 import io.quarkus.logging.Log;
-import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.smallrye.common.annotation.Blocking;
@@ -41,7 +40,7 @@ public class TryWorkflowsResource {
     Flow emitWorkflow;
 
     @Inject
-    WorkflowApplication app;
+    WorkflowWebSocket webSocket;
 
     @POST
     @Path("/simple")
@@ -57,37 +56,85 @@ public class TryWorkflowsResource {
         instance.resume();
 
         return Uni.createFrom().completionStage(start.toCompletableFuture()).onItem()
-                .transform(workflowModel -> workflowModel.as(Message.class).orElseThrow());
+                .transform(workflowModel -> {
+                    Message message = workflowModel.as(Message.class).orElseThrow();
+                    webSocket.broadcast(
+                            "{\"type\":\"simple\",\"status\":\"completed\",\"message\":\"" + message.message() + "\"}");
+                    return message;
+                });
     }
 
     @POST
     @Path("/faulted")
     public Uni<Void> faulted() {
-        return faultedWorkflow.startInstance().onItem().transformToUni(workflowModel -> Uni.createFrom().voidItem());
+        return faultedWorkflow.startInstance()
+                .onItem().invoke(() -> webSocket.broadcast("{\"type\":\"faulted\",\"status\":\"completed\"}"))
+                .onFailure()
+                .invoke(throwable -> webSocket
+                        .broadcast("{\"type\":\"faulted\",\"status\":\"failed\",\"error\":\"" + throwable.getMessage() + "\"}"))
+                .onItem().transformToUni(workflowModel -> Uni.createFrom().voidItem());
     }
 
     @POST
     @Path("/retryable")
     public Uni<Void> retryable() {
-        return retryable.startInstance().onItem().transformToUni(workflowModel -> Uni.createFrom().voidItem());
+        return retryable.startInstance()
+                .onItem().invoke(() -> webSocket.broadcast("{\"type\":\"retryable\",\"status\":\"completed\"}"))
+                .onFailure()
+                .invoke(throwable -> webSocket.broadcast(
+                        "{\"type\":\"retryable\",\"status\":\"failed\",\"error\":\"" + throwable.getMessage() + "\"}"))
+                .onItem().transformToUni(workflowModel -> Uni.createFrom().voidItem());
     }
 
     @POST
     @Path("/wait-event")
-    public Uni<Void> waitEvent() {
+    @Produces(MediaType.APPLICATION_JSON)
+    public Uni<CallForPapers> waitEvent() {
+        CallForPapers cfp = CallForPapers.createMock();
+
+        // Broadcast CFP data to WebSocket clients
+        try {
+            String cfpJson = new com.fasterxml.jackson.databind.ObjectMapper()
+                    .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
+                    .writeValueAsString(cfp);
+            webSocket.broadcast("{\"type\":\"wait-event\",\"status\":\"waiting\",\"callForPapers\":" + cfpJson + "}");
+        } catch (Exception e) {
+            Log.error("Error serializing CFP", e);
+        }
+
         eventWorkflow.startInstance().onItem().transformToUni(workflowModel -> Uni.createFrom().item(workflowModel))
                 .subscribe().with(workflowModel -> {
-                    Log.info("GET /wait-event finalized successfully: " + workflowModel);
-                }, Log::error);
+                    Map<String, Object> result = workflowModel.as(Map.class).orElse(Map.of());
+                    Log.info("Approval decision received: " + result);
 
-        return Uni.createFrom().voidItem();
+                    try {
+                        String resultJson = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(result);
+                        webSocket.broadcast("{\"type\":\"wait-event\",\"status\":\"completed\",\"result\":" + resultJson + "}");
+                    } catch (Exception e) {
+                        Log.error("Error serializing result", e);
+                    }
+                }, throwable -> {
+                    Log.error("Approval workflow failed", throwable);
+                    webSocket.broadcast(
+                            "{\"type\":\"wait-event\",\"status\":\"failed\",\"error\":\"" + throwable.getMessage() + "\"}");
+                });
+
+        return Uni.createFrom().item(cfp);
     }
 
     @POST
     @Path("/send-event")
-    public Uni<Void> sendEvent() {
-        return emitWorkflow.startInstance(Map.of("message", "Emitted from Quarkus Flow")).onItem()
-                .transformToUni(workflowModel -> Uni.createFrom().voidItem());
+    @Produces(MediaType.APPLICATION_JSON)
+    public Uni<Map<String, Object>> sendEvent(Map<String, Object> approval) {
+        return emitWorkflow.startInstance(approval)
+                .onItem().invoke(() -> {
+                    boolean approved = (boolean) approval.getOrDefault("approved", true);
+                    webSocket.broadcast("{\"type\":\"send-event\",\"status\":\"completed\",\"approved\":" + approved + "}");
+                })
+                .onFailure()
+                .invoke(throwable -> webSocket.broadcast(
+                        "{\"type\":\"send-event\",\"status\":\"failed\",\"error\":\"" + throwable.getMessage() + "\"}"))
+                .onItem().transform(workflowModel -> approval);
     }
 
     @GET
