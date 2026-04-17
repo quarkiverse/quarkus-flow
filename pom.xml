@@ -38,7 +38,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.log.level>OFF</quarkus.log.level>
 
-        <quarkus.version>3.34.4</quarkus.version>
+        <quarkus.version>3.34.5</quarkus.version>
         <io.serverlessworkflow.version>7.17.1.Final</io.serverlessworkflow.version>
         <io.cloudevents.version>4.0.2</io.cloudevents.version>
 

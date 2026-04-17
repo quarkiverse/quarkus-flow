@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quarkus Flow - Micrometer + Prometheus + Grafana</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'quarkus-blue': '#4695EB',
+                        'quarkus-dark-blue': '#0d1b2a',
+                        'quarkus-red': '#FF004A',
+                        'quarkus-dark-red': '#c20030',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .workflow-card {
+            transition: all 0.3s ease;
+        }
+
+        .workflow-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(70, 149, 235, 0.2);
+        }
+
+        .loading {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .status-success {
+            background-color: #10b981;
+        }
+
+        .status-error {
+            background-color: #ef4444;
+        }
+
+        .status-pending {
+            background-color: #f59e0b;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-quarkus-dark-blue via-gray-900 to-black min-h-screen text-white">
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <header class="text-center mb-12">
+        <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-quarkus-blue to-quarkus-red bg-clip-text text-transparent">
+            Quarkus Flow
+        </h1>
+        <p class="text-xl text-gray-300">Micrometer + Prometheus + Grafana</p>
+        <p class="text-sm text-gray-400 mt-2">Test your workflows and monitor Prometheus metrics</p>
+    </header>
+
+    <!-- Global Status Bar -->
+    <div id="globalStatus" class="mb-8 p-4 rounded-lg bg-gray-800 border border-gray-700 hidden">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div id="statusIndicator" class="w-3 h-3 rounded-full"></div>
+                <span id="statusMessage" class="text-sm"></span>
+            </div>
+            <button onclick="clearStatus()" class="text-gray-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div id="responseDetails" class="mt-3 text-xs text-gray-400 font-mono hidden"></div>
+    </div>
+
+    <!-- Call for Papers Approval Banner -->
+    <div id="approvalBanner"
+         class="mb-8 p-6 rounded-xl bg-gradient-to-r from-purple-900/50 to-indigo-900/50 border-2 border-purple-500 hidden">
+        <div class="flex items-start space-x-4">
+            <div class="relative flex-shrink-0">
+                <div class="w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+                <div class="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full animate-ping"></div>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-2xl font-bold text-white mb-2">Call for Papers - Approval Required</h3>
+                <div id="cfpDetails" class="bg-gray-900/50 rounded-lg p-4 mb-4">
+                    <h4 class="text-lg font-semibold text-purple-300 mb-2" id="cfpTitle">Loading...</h4>
+                    <p class="text-sm text-gray-300 mb-2"><strong>Conference:</strong> <span id="cfpConference"></span>
+                    </p>
+                    <p class="text-sm text-gray-300 mb-2"><strong>Location:</strong> <span id="cfpLocation"></span></p>
+                    <p class="text-sm text-gray-300 mb-2"><strong>Deadline:</strong> <span id="cfpDeadline"></span></p>
+                    <p class="text-sm text-gray-300 mb-3" id="cfpDescription"></p>
+                    <div class="mb-2">
+                        <strong class="text-sm text-purple-300">Topics:</strong>
+                        <div id="cfpTopics" class="flex flex-wrap gap-2 mt-2"></div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="sendApproval(true)"
+                            class="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center space-x-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                        </svg>
+                        <span>Approve</span>
+                    </button>
+                    <button onclick="sendApproval(false)"
+                            class="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center space-x-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        <span>Reject</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approval Result Banner -->
+    <div id="approvalResultBanner" class="mb-8 p-6 rounded-xl hidden">
+        <div class="flex items-center space-x-4">
+            <div class="relative">
+                <div id="resultIcon" class="w-12 h-12 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <div class="absolute inset-0 rounded-full animate-ping opacity-75"></div>
+            </div>
+            <div>
+                <h3 id="resultTitle" class="text-xl font-bold text-white mb-1"></h3>
+                <p id="resultMessage" class="text-sm"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Broadcasted Banner -->
+    <div id="broadcastBanner"
+         class="mb-8 p-6 rounded-xl bg-gradient-to-r from-green-900/50 to-emerald-900/50 border-2 border-green-500 hidden">
+        <div class="flex items-center space-x-4">
+            <div class="relative">
+                <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <div class="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-75"></div>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-white mb-1">Event Broadcasted</h3>
+                <p class="text-green-200 text-sm">All waiting workflows have been notified and are processing the
+                    event...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Simple Workflow -->
+        <div class="workflow-card bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-semibold text-quarkus-blue">Simple Workflow</h3>
+                <svg class="w-6 h-6 text-quarkus-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+            </div>
+            <p class="text-gray-400 text-sm mb-4">Tests a simple delayed workflow with suspend/resume operations.</p>
+            <button onclick="executeWorkflow('simple', this)"
+                    class="w-full bg-quarkus-blue hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center">
+                <span class="button-text">Execute</span>
+                <svg class="loading w-5 h-5 ml-2 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Faulted Workflow -->
+        <div class="workflow-card bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-semibold text-quarkus-red">Faulted Workflow</h3>
+                <svg class="w-6 h-6 text-quarkus-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <p class="text-gray-400 text-sm mb-4">Tests error handling and fault tolerance in workflows.</p>
+            <button onclick="executeWorkflow('faulted', this)"
+                    class="w-full bg-quarkus-red hover:bg-quarkus-dark-red text-white font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center">
+                <span class="button-text">Execute</span>
+                <svg class="loading w-5 h-5 ml-2 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Retryable Workflow -->
+        <div class="workflow-card bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-semibold text-yellow-400">Retryable Workflow</h3>
+                <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+            </div>
+            <p class="text-gray-400 text-sm mb-4">Tests retry mechanisms and resilience patterns.</p>
+            <button onclick="executeWorkflow('retryable', this)"
+                    class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center">
+                <span class="button-text">Execute</span>
+                <svg class="loading w-5 h-5 ml-2 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Approval Workflow -->
+        <div id="waitEventCard"
+             class="workflow-card bg-gray-800 rounded-xl p-6 border border-gray-700 relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/10 to-purple-500/0 opacity-0 transition-opacity duration-500"
+                 id="waitEventGlow"></div>
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold text-purple-400">Human-in-the-Loop</h3>
+                    <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+                <p class="text-gray-400 text-sm mb-4">Request approval for a Call for Papers submission.</p>
+                <button onclick="executeWorkflow('wait-event', this)"
+                        class="w-full bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center">
+                    <span class="button-text">Request Approval</span>
+                    <svg class="loading w-5 h-5 ml-2 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metrics Links -->
+    <div class="text-center flex justify-center gap-4">
+        <a href="/q/metrics" target="_blank"
+           class="inline-flex items-center px-6 py-3 bg-gray-800 hover:bg-gray-700 text-orange-400 border border-orange-400 rounded-lg transition duration-200">
+            <img src="prometheus.svg" alt="Prometheus" class="w-5 h-5 mr-2">
+            Prometheus
+        </a>
+        <a id="grafanaLink" href="#" target="_blank"
+           class="inline-flex items-center px-6 py-3 bg-gray-800 hover:bg-gray-700 text-orange-500 border border-orange-500 rounded-lg transition duration-200">
+            <img src="grafana.svg" alt="Grafana" class="w-5 h-5 mr-2">
+            Grafana
+        </a>
+    </div>
+
+    <!-- WebSocket Status Indicator -->
+    <div class="fixed bottom-4 right-4 flex items-center space-x-2 bg-gray-800 px-4 py-2 rounded-lg border border-gray-700">
+        <div id="wsIndicator" class="w-2 h-2 rounded-full bg-gray-500"></div>
+        <span id="wsStatus" class="text-xs text-gray-400">Connecting...</span>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-12 text-center text-gray-500 text-sm">
+        <p>Powered by <span class="text-quarkus-blue font-semibold">Quarkus</span> and <span
+                class="text-quarkus-blue font-semibold"> Quarkus Flow</span></p>
+    </footer>
+</div>
+
+<script>
+    // WebSocket connection
+    let ws = null;
+    let reconnectInterval = null;
+
+    function connectWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/workflow-events`;
+
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+            console.log('WebSocket connected');
+            updateWebSocketStatus(true);
+            if (reconnectInterval) {
+                clearInterval(reconnectInterval);
+                reconnectInterval = null;
+            }
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                handleWorkflowEvent(data);
+            } catch (error) {
+                console.error('Error parsing WebSocket message:', error);
+            }
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+
+        ws.onclose = () => {
+            console.log('WebSocket disconnected, attempting to reconnect...');
+            updateWebSocketStatus(false);
+            if (!reconnectInterval) {
+                reconnectInterval = setInterval(() => {
+                    if (ws.readyState === WebSocket.CLOSED) {
+                        connectWebSocket();
+                    }
+                }, 3000);
+            }
+        };
+    }
+
+    function updateWebSocketStatus(connected) {
+        const indicator = document.getElementById('wsIndicator');
+        const status = document.getElementById('wsStatus');
+
+        if (connected) {
+            indicator.className = 'w-2 h-2 rounded-full bg-green-500';
+            status.textContent = 'Connected';
+            status.className = 'text-xs text-green-400';
+        } else {
+            indicator.className = 'w-2 h-2 rounded-full bg-red-500';
+            status.textContent = 'Disconnected';
+            status.className = 'text-xs text-red-400';
+        }
+    }
+
+    function handleWorkflowEvent(data) {
+        const workflowName = data.type.replace('-', ' ');
+        let message = '';
+        let status = 'success';
+        let showMessage = true;
+
+        if (data.status === 'completed') {
+            message = `${workflowName} workflow completed successfully`
+            if (data.message) {
+                message += ` - ${data.message}`;
+            }
+            status = 'success';
+
+            // Show approval result if wait-event completed
+            if (data.type === 'wait-event' && data.result) {
+                hideApprovalBanner();
+                showApprovalResult(data.result);
+                showMessage = false;
+            }
+
+            // Show decision feedback for send-event
+            if (data.type === 'send-event') {
+                showMessage = false; // Visual feedback handled in sendApproval
+            }
+        } else if (data.status === 'waiting') {
+            message = `${workflowName}: ${data.message}`;
+            status = 'pending';
+
+            // Show approval banner for wait-event
+            if (data.type === 'wait-event' && data.callForPapers) {
+                showApprovalBanner(data.callForPapers);
+                animateCard('waitEventCard', 'waitEventGlow', true);
+                showMessage = false;
+            }
+        } else if (data.status === 'failed') {
+            message = `${workflowName} workflow failed`;
+            if (data.error) {
+                message += `: ${data.error}`;
+            }
+            status = 'error';
+
+            // Hide approval banner on failure
+            if (data.type === 'wait-event') {
+                hideApprovalBanner();
+            }
+        }
+
+        // Only show status message if not using visual feedback
+        if (showMessage) {
+            showStatus(status, message);
+        }
+
+        // Play a subtle notification sound (optional)
+        if (data.status === 'completed') {
+            playNotificationSound();
+        }
+    }
+
+    function showApprovalBanner(cfp) {
+        const banner = document.getElementById('approvalBanner');
+
+        // Populate CFP details
+        document.getElementById('cfpTitle').textContent = cfp.title;
+        document.getElementById('cfpConference').textContent = cfp.conference;
+        document.getElementById('cfpLocation').textContent = cfp.location;
+        document.getElementById('cfpDeadline').textContent = new Date(cfp.deadline).toLocaleDateString();
+        document.getElementById('cfpDescription').textContent = cfp.description;
+
+        // Populate topics
+        const topicsContainer = document.getElementById('cfpTopics');
+        topicsContainer.innerHTML = '';
+        cfp.topics.forEach(topic => {
+            const badge = document.createElement('span');
+            badge.className = 'px-3 py-1 bg-purple-600 text-white text-xs rounded-full';
+            badge.textContent = topic;
+            topicsContainer.appendChild(badge);
+        });
+
+        banner.classList.remove('hidden');
+    }
+
+    function hideApprovalBanner() {
+        const banner = document.getElementById('approvalBanner');
+        banner.classList.add('hidden');
+    }
+
+    function showApprovalResult(result) {
+        const banner = document.getElementById('approvalResultBanner');
+        const icon = document.getElementById('resultIcon');
+        const title = document.getElementById('resultTitle');
+        const message = document.getElementById('resultMessage');
+
+        const approved = result.approved === true || result.approved === 'true';
+
+        if (approved) {
+            banner.className = 'mb-8 p-6 rounded-xl bg-gradient-to-r from-green-900/50 to-emerald-900/50 border-2 border-green-500';
+            icon.className = 'w-12 h-12 rounded-full bg-green-500 flex items-center justify-center';
+            icon.style.backgroundColor = '#10b981';
+            title.textContent = 'Call for Papers Approved';
+            message.textContent = 'The submission has been approved and will proceed to the next stage.';
+            message.className = 'text-green-200 text-sm';
+        } else {
+            banner.className = 'mb-8 p-6 rounded-xl bg-gradient-to-r from-red-900/50 to-red-900/50 border-2 border-red-500';
+            icon.className = 'w-12 h-12 rounded-full bg-red-500 flex items-center justify-center';
+            icon.style.backgroundColor = '#ef4444';
+            icon.innerHTML = '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            title.textContent = 'Call for Papers Rejected';
+            message.textContent = 'The submission has been rejected and will not proceed.';
+            message.className = 'text-red-200 text-sm';
+        }
+
+        banner.classList.remove('hidden');
+        playNotificationSound();
+
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            banner.classList.add('hidden');
+        }, 5000);
+    }
+
+    function animateCard(cardId, glowId, continuous = false) {
+        const card = document.getElementById(cardId);
+        const glow = document.getElementById(glowId);
+
+        if (continuous) {
+            // Continuous pulsing animation
+            glow.style.opacity = '1';
+            card.style.borderColor = cardId.includes('wait') ? '#a855f7' : '#10b981';
+            card.style.boxShadow = cardId.includes('wait')
+                ? '0 0 30px rgba(168, 85, 247, 0.5)'
+                : '0 0 30px rgba(16, 185, 129, 0.5)';
+        } else {
+            // One-time flash animation
+            glow.style.opacity = '1';
+            card.style.borderColor = cardId.includes('send') ? '#10b981' : '#a855f7';
+            card.style.boxShadow = cardId.includes('send')
+                ? '0 0 30px rgba(16, 185, 129, 0.8)'
+                : '0 0 30px rgba(168, 85, 247, 0.8)';
+
+            setTimeout(() => {
+                glow.style.opacity = '0';
+                card.style.borderColor = '';
+                card.style.boxShadow = '';
+            }, 1000);
+        }
+    }
+
+    async function sendApproval(approved) {
+        const approval = {
+            approved: approved
+        };
+
+        try {
+            const response = await fetch('/try-workflows/send-event', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(approval)
+            });
+
+            if (response.ok) {
+                // Visual feedback is handled by WebSocket event
+                console.log('Approval sent:', approval);
+            } else {
+                showStatus('error', `Failed to send approval decision (${response.status})`);
+            }
+        } catch (error) {
+            showStatus('error', `Error sending approval: ${error.message}`);
+        }
+    }
+
+    function playNotificationSound() {
+        // Create a subtle beep sound using Web Audio API
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        } catch (error) {
+            // Silently fail if audio is not supported
+        }
+    }
+
+    // Load Grafana endpoint configuration
+    async function loadGrafanaEndpoint() {
+        try {
+            const response = await fetch('/config/endpoints');
+            if (response.ok) {
+                const config = await response.json();
+                const grafanaLink = document.getElementById('grafanaLink');
+                if (config.grafana) {
+                    grafanaLink.href = config.grafana;
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load Grafana endpoint:', error);
+        }
+    }
+
+    // Connect WebSocket on page load
+    window.addEventListener('load', () => {
+        connectWebSocket();
+        loadGrafanaEndpoint();
+    });
+
+    // Clean up on page unload
+    window.addEventListener('beforeunload', () => {
+        if (ws) {
+            ws.close();
+        }
+        if (reconnectInterval) {
+            clearInterval(reconnectInterval);
+        }
+    });
+
+    async function executeWorkflow(workflow, button) {
+        const buttonText = button.querySelector('.button-text');
+        const loadingIcon = button.querySelector('.loading');
+
+        // Disable button and show loading
+        button.disabled = true;
+        buttonText.textContent = 'Executing...';
+        loadingIcon.classList.remove('hidden');
+
+        // Don't show status for wait-event as it will be handled by WebSocket
+        if (workflow !== 'wait-event') {
+            showStatus('pending', `Executing ${workflow} workflow...`);
+        }
+
+        try {
+            const response = await fetch(`/try-workflows/${workflow}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            let responseData = null;
+            const contentType = response.headers.get('content-type');
+
+            if (contentType && contentType.includes('application/json')) {
+                responseData = await response.json();
+            }
+
+            if (response.ok) {
+                // Don't show success message for wait-event, it will be handled by WebSocket
+                if (workflow !== 'wait-event') {
+                    showStatus('success', `${workflow} workflow completed successfully`, responseData);
+                }
+            } else {
+                showStatus('error', `${workflow} workflow failed (${response.status})`, responseData);
+            }
+        } catch (error) {
+            showStatus('error', `Error executing ${workflow}: ${error.message}`);
+        } finally {
+            // Re-enable button
+            button.disabled = false;
+            buttonText.textContent = workflow === 'wait-event' ? 'Request Approval' : 'Execute';
+            loadingIcon.classList.add('hidden');
+        }
+    }
+
+    function showStatus(type, message, data = null) {
+        const statusBar = document.getElementById('globalStatus');
+        const indicator = document.getElementById('statusIndicator');
+        const statusMessage = document.getElementById('statusMessage');
+        const responseDetails = document.getElementById('responseDetails');
+
+        statusBar.classList.remove('hidden');
+        indicator.className = `w-3 h-3 rounded-full status-${type}`;
+        statusMessage.textContent = message;
+
+        if (data) {
+            responseDetails.textContent = JSON.stringify(data, null, 2);
+            responseDetails.classList.remove('hidden');
+        } else {
+            responseDetails.classList.add('hidden');
+        }
+    }
+
+    function clearStatus() {
+        document.getElementById('globalStatus').classList.add('hidden');
+    }
+</script>
+</body>
+</html>
