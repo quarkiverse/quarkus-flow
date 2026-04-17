@@ -95,7 +95,7 @@ public class WorkflowApplicationRecorder {
     private void injectExecutorServiceFactory(ArcContainer container, Builder builder) {
         ExecutorServiceFactory factory = container.instance(QuarkusManagedExecutorServiceFactory.class).get();
         builder.withExecutorFactory(factory);
-        LOG.info("Flow: Bound ExecutorServiceFactory bean: {}", factory.getClass().getName());
+        LOG.debug("Flow: Bound ExecutorServiceFactory bean: {}", factory.getClass().getName());
     }
 
     private void injectCustomListeners(ArcContainer container, Builder builder) {

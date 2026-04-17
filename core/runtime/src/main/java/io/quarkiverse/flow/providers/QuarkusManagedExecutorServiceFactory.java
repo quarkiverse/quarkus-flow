@@ -28,7 +28,6 @@ public class QuarkusManagedExecutorServiceFactory implements ExecutorServiceFact
 
     @Override
     public ExecutorService get() {
-        // Use ManagedExecutor if available, otherwise fall back to default
         if (managedExecutor.isResolvable())
             return managedExecutor.get();
         throw new IllegalStateException(
