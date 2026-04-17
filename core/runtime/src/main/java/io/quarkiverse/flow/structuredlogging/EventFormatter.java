@@ -103,10 +103,8 @@ public class EventFormatter {
         json.put(FIELD_STATUS, WorkflowStatus.COMPLETED.name());
         json.put(FIELD_END_TIME, event.eventDate());
 
-        if (config.includeWorkflowPayloads()) {
-            Object output = event.workflowContext().instanceData().output();
-            json.put(FIELD_OUTPUT, handlePayload(output));
-        }
+        if (config.includeWorkflowPayloads())
+            json.put(FIELD_OUTPUT, handlePayload(event.output()));
 
         return toJson(json);
     }
