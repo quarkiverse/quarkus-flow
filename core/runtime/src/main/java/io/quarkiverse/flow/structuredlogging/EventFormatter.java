@@ -104,7 +104,7 @@ public class EventFormatter {
         json.put(FIELD_END_TIME, event.eventDate());
 
         if (config.includeWorkflowPayloads()) {
-            Object output = event.workflowContext().instanceData().output();
+            Object output = event.output();
             json.put(FIELD_OUTPUT, handlePayload(output));
         }
 

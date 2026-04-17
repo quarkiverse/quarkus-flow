@@ -19,6 +19,7 @@ import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
 import io.quarkiverse.flow.providers.FaultToleranceProvider;
 import io.quarkiverse.flow.providers.HttpClientProvider;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
+import io.quarkiverse.flow.providers.QuarkusManagedExecutorServiceFactory;
 import io.quarkiverse.flow.providers.WorkflowTaskContext;
 import io.quarkiverse.flow.tracing.TraceLoggerExecutionListener;
 import io.quarkus.arc.Arc;
@@ -30,6 +31,7 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.serverlessworkflow.api.types.CallHTTP;
 import io.serverlessworkflow.api.types.CallOpenAPI;
 import io.serverlessworkflow.api.types.TaskBase;
+import io.serverlessworkflow.impl.ExecutorServiceFactory;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowApplication.Builder;
 import io.serverlessworkflow.impl.WorkflowModel;
@@ -64,6 +66,7 @@ public class WorkflowApplicationRecorder {
             final ArcContainer container = Arc.container();
 
             this.injectAppId(builder);
+            this.injectExecutorServiceFactory(container, builder);
             this.injectJQExpressionFactory(builder, container);
             this.injectEventConsumers(container, builder);
             this.injectEventPublishers(container, builder);
@@ -87,6 +90,12 @@ public class WorkflowApplicationRecorder {
 
     private void injectAppId(final Builder builder) {
         ConfigProvider.getConfig().getOptionalValue("quarkus.application.name", String.class).ifPresent(builder::withId);
+    }
+
+    private void injectExecutorServiceFactory(ArcContainer container, Builder builder) {
+        ExecutorServiceFactory factory = container.instance(QuarkusManagedExecutorServiceFactory.class).get();
+        builder.withExecutorFactory(factory);
+        LOG.info("Flow: Bound ExecutorServiceFactory bean: {}", factory.getClass().getName());
     }
 
     private void injectCustomListeners(ArcContainer container, Builder builder) {

@@ -1,0 +1,15 @@
+document:
+  dsl: '1.0.1'
+  namespace: flow
+  name: http-async-completion
+  version: '0.1.0'
+do:
+  - fetchData:
+      call: http
+      with:
+        method: get
+        endpoint: '${ .baseUrl + "/api/data" }'
+  - processResponse:
+      set:
+        message: '${ "Received: " + .title }'
+        status: '${ .status }'
