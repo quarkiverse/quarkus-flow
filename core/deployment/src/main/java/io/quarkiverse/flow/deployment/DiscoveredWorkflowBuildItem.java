@@ -25,13 +25,15 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
     }
 
     private Path workflowPath;
+    private String relativeFlowPath;
     private WorkflowDefinitionId workflowDefinitionId;
     private String regularIdentifier;
     private String className;
     private final From from;
 
-    private DiscoveredWorkflowBuildItem(Path workflowPath, Workflow workflow) {
+    private DiscoveredWorkflowBuildItem(Path workflowPath, Workflow workflow, String relativeFlowPath) {
         this.workflowPath = workflowPath;
+        this.relativeFlowPath = relativeFlowPath;
         this.workflowDefinitionId = WorkflowDefinitionId.of(workflow);
         this.regularIdentifier = WorkflowNameUtils.yamlDescriptorIdentifier(
                 workflowDefinitionId.namespace(),
@@ -49,10 +51,11 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
      *
      * @param workflowPath the path to the workflow specification file
      * @param workflow the parsed workflow model
+     * @param relativeFlowPath the relative path from the flow directory
      * @return a new {@link DiscoveredWorkflowBuildItem}
      */
-    public static DiscoveredWorkflowBuildItem fromSpec(Path workflowPath, Workflow workflow) {
-        return new DiscoveredWorkflowBuildItem(workflowPath, workflow);
+    public static DiscoveredWorkflowBuildItem fromSpec(Path workflowPath, Workflow workflow, String relativeFlowPath) {
+        return new DiscoveredWorkflowBuildItem(workflowPath, workflow, relativeFlowPath);
     }
 
     /**
@@ -111,5 +114,17 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
      */
     public boolean fromSpec() {
         return From.SPEC == this.from;
+    }
+
+    /**
+     * Returns the relative path of the workflow specification file from the flow directory.
+     * <p>
+     * This is used for test resource override: a test workflow file overrides
+     * a main workflow file only if they have the same relative path.
+     *
+     * @return the relative flow path, or {@code null} if discovered from source
+     */
+    public String relativeFlowPath() {
+        return relativeFlowPath;
     }
 }
