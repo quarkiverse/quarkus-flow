@@ -91,7 +91,7 @@ public class FlowCollectorProcessor {
             return flowDir;
         }
         Path moduleRoot = findModuleRootFromTarget(outputDir);
-        
+
         // Convert main resources path to test resources path
         // e.g., src/main/flow -> src/test/flow
         //       src/main/workflows/custom -> src/test/workflows/custom
