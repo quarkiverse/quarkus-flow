@@ -37,6 +37,20 @@ You can customize the discovery directory by setting the xref:configuration.adoc
 It accepts an absolute path or a path relative to the Maven module root. All `*.yaml` and `*.yml` files in the resolved directory are discovered automatically.
 ====
 
+[IMPORTANT]
+====
+In test mode, if the same workflow file exists in both `src/main/flow` and `src/test/flow` with the same relative path, the `src/test/flow` file takes precedence.
+
+Example:
+
+* `src/main/flow/echo.yaml`
+* `src/test/flow/echo.yaml`
+
+In this case, Quarkus Flow uses `src/test/flow/echo.yaml` during tests.
+
+Only exact relative-path matches are overridden. For example, `src/test/flow/echo.yaml` does *not* override `src/main/flow/workflows/echo.yaml`.
+====
+
 == 2. Inject the `Flow` bean
 
 During the Quarkus build, the engine parses your YAML files and generates `WorkflowDefinition` and `Flow` CDI beans for them.
