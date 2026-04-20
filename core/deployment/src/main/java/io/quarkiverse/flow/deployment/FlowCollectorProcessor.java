@@ -58,33 +58,48 @@ public class FlowCollectorProcessor {
     }
 
     /**
-     * Resolves the flow resource path based on the configured path and whether we want test or main resources.
+     * Resolves the main flow resource path based on the output directory and configured path.
      * <p>
-     * The configured path (e.g., {@code src/main/flow}) is relative to main resources.
-     * When {@code isTestResources=true}, the equivalent test resources path is computed
-     * by replacing {@code src/main/} with {@code src/test/} (e.g., {@code src/test/flow}).
+     * If the configured path is absolute, it is returned as-is. Otherwise, it is resolved
+     * relative to the module root directory (derived from the output directory).
      *
      * @param outputDir the output directory from OutputTargetBuildItem
      * @param flowDir the configured flow directory path (relative to main resources)
-     * @param launchMode the current launch mode to determine if we are in test mode
-     * @return the resolved flow resource path
+     * @return the resolved main flow resource path
      */
-    private static Path resolveFlowResourceDir(Path outputDir, Path flowDir, LaunchMode launchMode) {
+    private static Path resolveMainFlowResourceDir(Path outputDir, Path flowDir) {
         if (flowDir.isAbsolute()) {
             return flowDir;
         }
         Path moduleRoot = findModuleRootFromTarget(outputDir);
+        return moduleRoot.resolve(flowDir).normalize();
+    }
 
-        if (launchMode == LaunchMode.TEST) {
-            // Convert main resources path to test resources path
-            // e.g., src/main/flow -> src/test/flow
-            //       src/main/workflows/custom -> src/test/workflows/custom
-            Path flowDirNormalized = flowDir.normalize();
-            Path srcMain = Paths.get("src", "main");
-            if (flowDirNormalized.startsWith(srcMain)) {
-                Path relative = srcMain.relativize(flowDirNormalized);
-                return moduleRoot.resolve(Paths.get("src", "test").resolve(relative)).normalize();
-            }
+    /**
+     * Resolves the test flow resource path based on the output directory and configured path.
+     * <p>
+     * If the configured path is absolute, it is returned as-is. Otherwise, it is resolved
+     * relative to the module root directory and converted to test resources path
+     * by replacing {@code src/main/} with {@code src/test/} (e.g., {@code src/test/flow}).
+     *
+     * @param outputDir the output directory from OutputTargetBuildItem
+     * @param flowDir the configured flow directory path (relative to main resources)
+     * @return the resolved test flow resource path
+     */
+    private static Path resolveTestFlowResourceDir(Path outputDir, Path flowDir) {
+        if (flowDir.isAbsolute()) {
+            return flowDir;
+        }
+        Path moduleRoot = findModuleRootFromTarget(outputDir);
+        
+        // Convert main resources path to test resources path
+        // e.g., src/main/flow -> src/test/flow
+        //       src/main/workflows/custom -> src/test/workflows/custom
+        Path flowDirNormalized = flowDir.normalize();
+        Path srcMain = Paths.get("src", "main");
+        if (flowDirNormalized.startsWith(srcMain)) {
+            Path relative = srcMain.relativize(flowDirNormalized);
+            return moduleRoot.resolve(Paths.get("src", "test").resolve(relative)).normalize();
         }
 
         return moduleRoot.resolve(flowDir).normalize();
@@ -143,8 +158,8 @@ public class FlowCollectorProcessor {
         Set<String> collectedInTest = new HashSet<>();
 
         if (launchMode.getLaunchMode() == LaunchMode.TEST) {
-            Path testFlowDir = resolveFlowResourceDir(
-                    outputTarget.getOutputDirectory(), flowDir, launchMode.getLaunchMode());
+            Path testFlowDir = resolveTestFlowResourceDir(
+                    outputTarget.getOutputDirectory(), flowDir);
 
             if (Files.exists(testFlowDir)) {
                 for (DiscoveredWorkflowBuildItem item : collectWorkflowFileData(testFlowDir)) {
@@ -155,8 +170,8 @@ public class FlowCollectorProcessor {
         }
 
         // Scan main resources (lower priority - skip files that exist in test resources with same relative path)
-        Path mainFlowDir = resolveFlowResourceDir(
-                outputTarget.getOutputDirectory(), flowDir, LaunchMode.NORMAL);
+        Path mainFlowDir = resolveMainFlowResourceDir(
+                outputTarget.getOutputDirectory(), flowDir);
 
         if (Files.exists(mainFlowDir)) {
             for (DiscoveredWorkflowBuildItem collectedInMain : collectWorkflowFileData(mainFlowDir)) {
