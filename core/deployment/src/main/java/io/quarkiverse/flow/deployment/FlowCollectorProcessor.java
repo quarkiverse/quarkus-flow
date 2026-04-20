@@ -65,28 +65,29 @@ public class FlowCollectorProcessor {
      * by replacing {@code src/main/} with {@code src/test/} (e.g., {@code src/test/flow}).
      *
      * @param outputDir the output directory from OutputTargetBuildItem
-     * @param configuredPath the configured flow directory path (relative to main resources)
-     * @param isTestResources whether to resolve test resources path instead of main
+     * @param flowDir the configured flow directory path (relative to main resources)
+     * @param launchMode the current launch mode to determine if we are in test mode
      * @return the resolved flow resource path
      */
-    private static Path resolveFlowResourcePath(Path outputDir, Path configuredPath, boolean isTestResources) {
-        if (configuredPath.isAbsolute()) {
-            return configuredPath;
+    private static Path resolveFlowResourceDir(Path outputDir, Path flowDir, LaunchMode launchMode) {
+        if (flowDir.isAbsolute()) {
+            return flowDir;
         }
         Path moduleRoot = findModuleRootFromTarget(outputDir);
 
-        if (isTestResources) {
+        if (launchMode == LaunchMode.TEST) {
             // Convert main resources path to test resources path
             // e.g., src/main/flow -> src/test/flow
             //       src/main/workflows/custom -> src/test/workflows/custom
-            // Normalize to forward slashes for cross-platform compatibility
-            String pathStr = configuredPath.toString().replace('\\', '/');
-            if (pathStr.startsWith("src/main/")) {
-                return moduleRoot.resolve(Paths.get(pathStr.replace("src/main/", "src/test/"))).normalize();
+            Path flowDirNormalized = flowDir.normalize();
+            Path srcMain = Paths.get("src", "main");
+            if (flowDirNormalized.startsWith(srcMain)) {
+                Path relative = srcMain.relativize(flowDirNormalized);
+                return moduleRoot.resolve(Paths.get("src", "test").resolve(relative)).normalize();
             }
         }
 
-        return moduleRoot.resolve(configuredPath).normalize();
+        return moduleRoot.resolve(flowDir).normalize();
     }
 
     private static List<DiscoveredWorkflowBuildItem> collectWorkflowFileData(Path flowDir) {
@@ -98,8 +99,8 @@ public class FlowCollectorProcessor {
                     .forEach(file -> {
                         try {
                             Workflow workflow = WorkflowReader.readWorkflow(file);
-                            String relativePath = flowDir.relativize(file).toString();
-                            items.add(DiscoveredWorkflowBuildItem.fromSpec(file, workflow, relativePath));
+                            items.add(
+                                    DiscoveredWorkflowBuildItem.fromSpec(file, workflow, flowDir.relativize(file).toString()));
                         } catch (IOException e) {
                             LOG.error("Failed to parse workflow file at path: {}", file, e);
                             throw new UncheckedIOException("Error while parsing workflow file: " + file, e);
@@ -136,50 +137,52 @@ public class FlowCollectorProcessor {
             FlowDefinitionsConfig flowDefinitionsConfig,
             BuildProducer<DiscoveredWorkflowBuildItem> workflows) {
 
-        final Path configuredPath = Paths.get(flowDefinitionsConfig.dir().orElse(FlowDefinitionsConfig.DEFAULT_FLOW_DIR));
+        final Path flowDir = Paths.get(flowDefinitionsConfig.dir().orElse(FlowDefinitionsConfig.DEFAULT_FLOW_DIR));
 
-        Map<String, DiscoveredWorkflowBuildItem> uniqueWorkflows = new HashMap<>();
-        Set<String> testRelativePaths = new HashSet<>();
+        Map<String, DiscoveredWorkflowBuildItem> workflowsMap = new HashMap<>();
+        Set<String> collectedInTest = new HashSet<>();
 
-        // In test mode, scan test resources first (higher priority)
         if (launchMode.getLaunchMode() == LaunchMode.TEST) {
-            Path testResourcesPath = resolveFlowResourcePath(
-                    outputTarget.getOutputDirectory(), configuredPath, true);
-            if (Files.exists(testResourcesPath)) {
-                for (DiscoveredWorkflowBuildItem testItem : collectWorkflowFileData(testResourcesPath)) {
-                    String identifier = testItem.regularIdentifier();
-                    if (uniqueWorkflows.containsKey(identifier)) {
-                        throw new IllegalStateException(String.format(
-                                "Duplicate workflow detected %s", testItem.workflowDefinitionId()));
-                    }
-                    uniqueWorkflows.put(identifier, testItem);
-                    testRelativePaths.add(testItem.relativeFlowPath());
+            Path testFlowDir = resolveFlowResourceDir(
+                    outputTarget.getOutputDirectory(), flowDir, launchMode.getLaunchMode());
+
+            if (Files.exists(testFlowDir)) {
+                for (DiscoveredWorkflowBuildItem item : collectWorkflowFileData(testFlowDir)) {
+                    tryAddUniqueWorkflow(item, workflowsMap);
+                    collectedInTest.add(item.relativeFlowPath());
                 }
             }
         }
 
         // Scan main resources (lower priority - skip files that exist in test resources with same relative path)
-        Path mainResourcesPath = resolveFlowResourcePath(
-                outputTarget.getOutputDirectory(), configuredPath, false);
+        Path mainFlowDir = resolveFlowResourceDir(
+                outputTarget.getOutputDirectory(), flowDir, LaunchMode.NORMAL);
 
-        if (Files.exists(mainResourcesPath)) {
-            for (DiscoveredWorkflowBuildItem mainItem : collectWorkflowFileData(mainResourcesPath)) {
-                // Skip if same relative path exists in test resources
-                if (testRelativePaths.contains(mainItem.relativeFlowPath())) {
+        if (Files.exists(mainFlowDir)) {
+            for (DiscoveredWorkflowBuildItem collectedInMain : collectWorkflowFileData(mainFlowDir)) {
+                if (skipIfSameRelativePath(collectedInMain, collectedInTest)) {
                     LOG.debug("Skipping workflow from src/main/* {} (overridden by test resource with same relative path)",
-                            mainItem.location());
+                            collectedInMain.location());
                     continue;
                 }
-                // Check for duplicate regularIdentifier
-                String identifier = mainItem.regularIdentifier();
-                if (uniqueWorkflows.containsKey(identifier)) {
-                    throw new IllegalStateException(String.format(
-                            "Duplicate workflow detected %s", mainItem.workflowDefinitionId()));
-                }
-                uniqueWorkflows.put(identifier, mainItem);
+
+                tryAddUniqueWorkflow(collectedInMain, workflowsMap);
             }
         }
 
-        uniqueWorkflows.values().forEach(workflows::produce);
+        workflowsMap.values().forEach(workflows::produce);
+    }
+
+    private static boolean skipIfSameRelativePath(DiscoveredWorkflowBuildItem collectedInMain, Set<String> collectedInTest) {
+        return collectedInTest.contains(collectedInMain.relativeFlowPath());
+    }
+
+    private static void tryAddUniqueWorkflow(DiscoveredWorkflowBuildItem item,
+            Map<String, DiscoveredWorkflowBuildItem> uniqueWorkflows) {
+        String identifier = item.regularIdentifier();
+        if (uniqueWorkflows.put(identifier, item) != null) {
+            throw new IllegalStateException(String.format(
+                    "Duplicate workflow detected %s", item.workflowDefinitionId()));
+        }
     }
 }
