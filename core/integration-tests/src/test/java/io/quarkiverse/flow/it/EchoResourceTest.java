@@ -16,7 +16,7 @@ public class EchoResourceTest {
                 .get("/echo/from-flow")
                 .then()
                 .statusCode(200)
-                .body(Matchers.containsString("Anakin Skywalker"));
+                .body(Matchers.containsString("Echo from test: Anakin Skywalker"));
     }
 
     @Test
@@ -26,7 +26,7 @@ public class EchoResourceTest {
                 .get("/echo/from-workflow-def")
                 .then()
                 .statusCode(200)
-                .body(Matchers.containsString("Anakin Skywalker"));
+                .body(Matchers.containsString("Echo from test: Anakin Skywalker"));
     }
 
 }
