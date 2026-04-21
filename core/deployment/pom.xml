@@ -56,6 +56,11 @@
             <optional>true</optional>
         </dependency>
         <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-testing</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.serverlessworkflow</groupId>
             <artifactId>serverlessworkflow-fluent-spec</artifactId>
             <scope>test</scope>
