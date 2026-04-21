@@ -214,7 +214,10 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
             return;
         }
         let img = new Image(svgData.width.baseVal.value, svgData.height.baseVal.value);
-        img.src = `data:image/svg+xml;base64,${btoa(new XMLSerializer().serializeToString(svgData))}`;
+        const svgString = new XMLSerializer().serializeToString(svgData);
+        const utf8Bytes = new TextEncoder().encode(svgString);
+        const base64 = btoa(String.fromCharCode(...utf8Bytes));
+        img.src = `data:image/svg+xml;base64,${base64}`;
         img.onload = function () {
             let cnv = document.createElement('canvas');
             cnv.width = img.width;
