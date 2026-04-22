@@ -47,9 +47,64 @@ quarkus.flow.structured-logging.truncate-preview-size=1024
 
 # Log level (default: INFO)
 quarkus.flow.structured-logging.log-level=INFO
+
+# Timestamp format (default: ISO8601)
+quarkus.flow.structured-logging.timestamp-format=iso8601
+# For custom format, specify the pattern (java.time.format.DateTimeFormatter)
+# quarkus.flow.structured-logging.timestamp-pattern=yyyy-MM-dd'T'HH:mm:ss.SSSXXX
 ----
 
 IMPORTANT: When you enable structured logging, Quarkus Flow **automatically configures** a separate file handler to write workflow events to a dedicated file. Events are written to `target/quarkus-flow-events.log` in dev/test mode, and `/var/log/quarkus-flow/events.log` in production. This ensures clean separation between application logs and event streams. See xref:#integration-with-quarkus-logging-json[Integration with quarkus-logging-json] for details.
+
+=== Timestamp Format Configuration
+
+Different log processors and downstream systems have varying requirements for timestamp formats. Quarkus Flow allows you to configure how timestamps are formatted in structured logging events.
+
+[source,properties]
+----
+# ISO 8601 format (default) - human-readable, widely compatible
+quarkus.flow.structured-logging.timestamp-format=iso8601
+
+# Unix epoch seconds with fractional nanoseconds (e.g., 1776807366.427833)
+# Best for: PostgreSQL TIMESTAMP WITH TIME ZONE, InfluxDB
+quarkus.flow.structured-logging.timestamp-format=epoch-seconds
+
+# Unix epoch milliseconds as long (e.g., 1776807366428)
+# Best for: Elasticsearch date fields, Kafka
+quarkus.flow.structured-logging.timestamp-format=epoch-millis
+
+# Unix epoch nanoseconds as long (e.g., 1776807366427832969)
+# Best for: High-precision time-series databases
+quarkus.flow.structured-logging.timestamp-format=epoch-nanos
+
+# Custom format using java.time.format.DateTimeFormatter pattern
+quarkus.flow.structured-logging.timestamp-format=custom
+quarkus.flow.structured-logging.timestamp-pattern=yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+----
+
+**Format Examples:**
+
+[cols="1,2"]
+|===
+|Format |Example Value
+
+|`iso8601`
+|`"2026-04-21T21:36:06.427832969Z"`
+
+|`epoch-seconds`
+|`1776807366.427833`
+
+|`epoch-millis`
+|`1776807366428`
+
+|`epoch-nanos`
+|`1776807366427832969`
+
+|`custom`
+|`"2026-04-21T21:36:06.427-03:00"`
+|===
+
+IMPORTANT: The timestamp format applies to **all** timestamp fields in events: `timestamp`, `startTime`, `endTime`, and `lastUpdateTime`.
 
 === Event Filtering
 
@@ -124,7 +179,7 @@ All events follow a consistent JSON schema:
 ----
 {
   "eventType": "workflow.instance.started",
-  "timestamp": "2026-04-13T14:30:00.123Z",
+  "timestamp": "2026-04-13T14:30:00.123Z",  // Format depends on configuration
   "instanceId": "550e8400-e29b-41d4-a716-446655440000",
   "workflowNamespace": "default",
   "workflowName": "greetings",
@@ -132,6 +187,8 @@ All events follow a consistent JSON schema:
   ...event-specific fields...
 }
 ----
+
+NOTE: Timestamp fields can be formatted as ISO 8601 strings, Unix epoch values, or custom formats depending on your xref:#timestamp-format-configuration[timestamp format configuration].
 
 === Workflow Instance Events
 
@@ -155,7 +212,7 @@ All events follow a consistent JSON schema:
 
 === Example Events
 
-**Workflow Started:**
+**Workflow Started (ISO 8601 format):**
 
 [source,json]
 ----
@@ -168,6 +225,25 @@ All events follow a consistent JSON schema:
   "workflowVersion": "1.0.0",
   "status": "RUNNING",
   "startTime": "2026-04-13T14:30:00.123Z",
+  "input": {
+    "name": "Alice"
+  }
+}
+----
+
+**Workflow Started (epoch-seconds format):**
+
+[source,json]
+----
+{
+  "eventType": "io.serverlessworkflow.workflow.started.v1",
+  "timestamp": 1744642200.123,
+  "instanceId": "550e8400-e29b-41d4-a716-446655440000",
+  "workflowNamespace": "default",
+  "workflowName": "greetings",
+  "workflowVersion": "1.0.0",
+  "status": "RUNNING",
+  "startTime": 1744642200.123,
   "input": {
     "name": "Alice"
   }
@@ -252,6 +328,7 @@ quarkus.flow.structured-logging.events=workflow.*
 ----
 
 Quarkus Flow automatically:
+
 - Creates a file handler named `FLOW_EVENTS`
 - Writes events to:
   * **Dev/Test mode**: `target/quarkus-flow-events.log`
