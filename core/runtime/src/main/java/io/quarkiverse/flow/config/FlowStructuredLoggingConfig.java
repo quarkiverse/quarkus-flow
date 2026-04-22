@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.config;
 
 import java.util.List;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -117,4 +118,38 @@ public interface FlowStructuredLoggingConfig {
      */
     @WithDefault("INFO")
     String logLevel();
+
+    /**
+     * Timestamp format for structured logging events.
+     * <p>
+     * Controls the format of all timestamp fields (timestamp, startTime, endTime, lastUpdateTime).
+     * <ul>
+     * <li>{@code iso8601} - ISO 8601 with nanosecond precision (default, backward compatible)</li>
+     * <li>{@code epoch-seconds} - Unix epoch as double with fractional seconds (PostgreSQL via FluentBit)</li>
+     * <li>{@code epoch-millis} - Unix epoch milliseconds as long (Elasticsearch)</li>
+     * <li>{@code epoch-nanos} - Unix epoch nanoseconds as long (high-precision time-series)</li>
+     * <li>{@code custom} - Custom DateTimeFormatter pattern (requires timestamp-pattern)</li>
+     * </ul>
+     * <p>
+     * Default: {@code iso8601}
+     */
+    @WithDefault("iso8601")
+    TimestampFormat timestampFormat();
+
+    /**
+     * Custom timestamp pattern for DateTimeFormatter.
+     * <p>
+     * Only used when {@link #timestampFormat()} is {@code CUSTOM}.
+     * <p>
+     * Example patterns:
+     * <ul>
+     * <li>{@code yyyy-MM-dd'T'HH:mm:ss.SSSXXX} - ISO 8601 with millisecond precision</li>
+     * <li>{@code yyyy-MM-dd HH:mm:ss} - Simple datetime without timezone</li>
+     * <li>{@code EEE, dd MMM yyyy HH:mm:ss Z} - RFC 1123 format</li>
+     * </ul>
+     * <p>
+     * If timestamp-format is {@code CUSTOM} and this is not set or invalid,
+     * the application will fail at startup with {@link IllegalArgumentException}.
+     */
+    Optional<String> timestampPattern();
 }

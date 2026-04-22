@@ -1,7 +1,22 @@
 package io.quarkiverse.flow.structuredlogging;
 
-import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.*;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_CANCELLED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_COMPLETED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_FAULTED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_RESUMED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_STARTED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_STATUS_CHANGED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_SUSPENDED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_CANCELLED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_COMPLETED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_FAULTED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_RESUMED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_RETRIED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_STARTED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_SUSPENDED;
 
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -10,6 +25,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
+import io.quarkiverse.flow.config.TimestampFormat;
 import io.serverlessworkflow.impl.WorkflowDefinitionData;
 import io.serverlessworkflow.impl.WorkflowError;
 import io.serverlessworkflow.impl.WorkflowException;
@@ -76,6 +92,21 @@ public class EventFormatter {
     public EventFormatter(FlowStructuredLoggingConfig config, ObjectMapper objectMapper) {
         this.config = config;
         this.objectMapper = objectMapper;
+
+        // Validate custom pattern if CUSTOM format is selected
+        if (config.timestampFormat() == TimestampFormat.CUSTOM) {
+            if (config.timestampPattern().isEmpty()) {
+                throw new IllegalArgumentException(
+                        "quarkus.flow.structured-logging.timestamp-pattern must be set when timestamp-format is 'custom'");
+            }
+            try {
+                DateTimeFormatter.ofPattern(config.timestampPattern().get());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException(
+                        "Invalid timestamp pattern '" + config.timestampPattern().get() + "': " + e.getMessage(),
+                        e);
+            }
+        }
     }
 
     // Workflow Instance Events
@@ -88,7 +119,7 @@ public class EventFormatter {
         json.put(FIELD_WORKFLOW_NAME, definition.workflow().getDocument().getName());
         json.put(FIELD_WORKFLOW_VERSION, definition.workflow().getDocument().getVersion());
         json.put(FIELD_STATUS, WorkflowStatus.RUNNING.name());
-        json.put(FIELD_START_TIME, event.eventDate());
+        json.put(FIELD_START_TIME, formatTimestamp(event.eventDate()));
 
         if (config.includeWorkflowPayloads()) {
             Object input = event.workflowContext().instanceData().input();
@@ -101,7 +132,7 @@ public class EventFormatter {
     public String formatWorkflowCompleted(WorkflowCompletedEvent event) {
         Map<String, Object> json = baseWorkflowEvent(WORKFLOW_INSTANCE_COMPLETED, event);
         json.put(FIELD_STATUS, WorkflowStatus.COMPLETED.name());
-        json.put(FIELD_END_TIME, event.eventDate());
+        json.put(FIELD_END_TIME, formatTimestamp(event.eventDate()));
 
         if (config.includeWorkflowPayloads())
             json.put(FIELD_OUTPUT, handlePayload(event.output()));
@@ -112,7 +143,7 @@ public class EventFormatter {
     public String formatWorkflowFailed(WorkflowFailedEvent event) {
         Map<String, Object> json = baseWorkflowEvent(WORKFLOW_INSTANCE_FAULTED, event);
         json.put(FIELD_STATUS, WorkflowStatus.FAULTED.name());
-        json.put(FIELD_END_TIME, event.eventDate());
+        json.put(FIELD_END_TIME, formatTimestamp(event.eventDate()));
 
         if (config.includeErrorContext()) {
             Map<String, Object> error = new HashMap<>();
@@ -172,7 +203,7 @@ public class EventFormatter {
     public String formatWorkflowCancelled(WorkflowCancelledEvent event) {
         Map<String, Object> json = baseWorkflowEvent(WORKFLOW_INSTANCE_CANCELLED, event);
         json.put(FIELD_STATUS, WorkflowStatus.CANCELLED.name());
-        json.put(FIELD_END_TIME, event.eventDate());
+        json.put(FIELD_END_TIME, formatTimestamp(event.eventDate()));
         return toJson(json);
     }
 
@@ -191,7 +222,7 @@ public class EventFormatter {
     public String formatWorkflowStatusChanged(WorkflowStatusEvent event) {
         Map<String, Object> json = baseWorkflowEvent(WORKFLOW_INSTANCE_STATUS_CHANGED, event);
         json.put(FIELD_STATUS, event.workflowContext().instanceData().status().name());
-        json.put(FIELD_LAST_UPDATE_TIME, event.eventDate());
+        json.put(FIELD_LAST_UPDATE_TIME, formatTimestamp(event.eventDate()));
         return toJson(json);
     }
 
@@ -200,7 +231,7 @@ public class EventFormatter {
     public String formatTaskStarted(TaskStartedEvent event) {
         Map<String, Object> json = baseTaskEvent(WORKFLOW_TASK_STARTED, event);
         json.put(FIELD_STATUS, TASK_STATUS_RUNNING);
-        json.put(FIELD_START_TIME, event.eventDate());
+        json.put(FIELD_START_TIME, formatTimestamp(event.eventDate()));
 
         if (config.includeTaskPayloads()) {
             Object input = event.taskContext().input();
@@ -213,7 +244,7 @@ public class EventFormatter {
     public String formatTaskCompleted(TaskCompletedEvent event) {
         Map<String, Object> json = baseTaskEvent(WORKFLOW_TASK_COMPLETED, event);
         json.put(FIELD_STATUS, TASK_STATUS_COMPLETED);
-        json.put(FIELD_END_TIME, event.eventDate());
+        json.put(FIELD_END_TIME, formatTimestamp(event.eventDate()));
 
         if (config.includeTaskPayloads()) {
             Object output = event.taskContext().output();
@@ -226,7 +257,7 @@ public class EventFormatter {
     public String formatTaskFailed(TaskFailedEvent event) {
         Map<String, Object> json = baseTaskEvent(WORKFLOW_TASK_FAULTED, event);
         json.put(FIELD_STATUS, TASK_STATUS_FAILED);
-        json.put(FIELD_END_TIME, event.eventDate());
+        json.put(FIELD_END_TIME, formatTimestamp(event.eventDate()));
 
         if (config.includeErrorContext()) {
             Map<String, Object> error = new HashMap<>();
@@ -247,7 +278,7 @@ public class EventFormatter {
     public String formatTaskCancelled(TaskCancelledEvent event) {
         Map<String, Object> json = baseTaskEvent(WORKFLOW_TASK_CANCELLED, event);
         json.put(FIELD_STATUS, TASK_STATUS_CANCELLED);
-        json.put(FIELD_END_TIME, event.eventDate());
+        json.put(FIELD_END_TIME, formatTimestamp(event.eventDate()));
         return toJson(json);
     }
 
@@ -275,7 +306,7 @@ public class EventFormatter {
         Map<String, Object> json = new HashMap<>();
         // Use official CloudEvent type from SW specification
         json.put(FIELD_EVENT_TYPE, StructuredLoggingEventTypes.toCloudEventType(filterKey));
-        json.put(FIELD_TIMESTAMP, event.eventDate());
+        json.put(FIELD_TIMESTAMP, formatTimestamp(event.eventDate()));
         json.put(FIELD_INSTANCE_ID, event.workflowContext().instanceData().id());
         return json;
     }
@@ -296,6 +327,30 @@ public class EventFormatter {
                 ":" + event.taskContext().position().jsonPointer() +
                 ":" + event.eventDate().toInstant().toEpochMilli();
         return UUID.nameUUIDFromBytes(composite.getBytes()).toString();
+    }
+
+    private Object formatTimestamp(OffsetDateTime timestamp) {
+        if (timestamp == null)
+            return null;
+
+        return switch (config.timestampFormat()) {
+            case EPOCH_SECONDS -> {
+                java.time.Instant instant = timestamp.toInstant();
+                yield instant.getEpochSecond() + (instant.getNano() / 1_000_000_000.0);
+            }
+            case EPOCH_MILLIS -> timestamp.toInstant().toEpochMilli();
+            case EPOCH_NANOS -> {
+                java.time.Instant inst = timestamp.toInstant();
+                yield inst.getEpochSecond() * 1_000_000_000L + inst.getNano();
+            }
+            case CUSTOM -> {
+                // we already checked the optional in the constructor
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern(
+                        config.timestampPattern().get());
+                yield timestamp.format(formatter);
+            }
+            default -> timestamp.toString();
+        };
     }
 
     private Object handlePayload(Object payload) {
