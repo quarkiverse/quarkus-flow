@@ -42,7 +42,7 @@
         <io.serverlessworkflow.version>7.17.1.Final</io.serverlessworkflow.version>
         <io.cloudevents.version>4.0.2</io.cloudevents.version>
 
-        <io.quarkiverse.jackson-jq.version>2.4.0</io.quarkiverse.jackson-jq.version>
+        <io.quarkiverse.jackson-jq.version>2.5.0</io.quarkiverse.jackson-jq.version>
         <io.quarkiverse.langchain4j.version>1.8.4</io.quarkiverse.langchain4j.version>
 
         <!-- Tests and Docs -->
