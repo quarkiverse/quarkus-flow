@@ -473,6 +473,72 @@ endif::add-copy-button-to-env-var[]
 |string
 |`+++INFO+++`
 
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-structured-logging-timestamp-format]] [.property-path]##link:#quarkus-flow_quarkus-flow-structured-logging-timestamp-format[`+++quarkus.flow.structured-logging.timestamp-format+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.structured-logging.timestamp-format+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Timestamp format for structured logging events.
+
+Controls the format of all timestamp fields (timestamp, startTime, endTime, lastUpdateTime).
+
+ - `iso8601` - ISO 8601 with nanosecond precision (default, backward compatible)
+ - `epoch-seconds` - Unix epoch as double with fractional seconds (PostgreSQL via FluentBit)
+ - `epoch-millis` - Unix epoch milliseconds as long (Elasticsearch)
+ - `epoch-nanos` - Unix epoch nanoseconds as long (high-precision time-series)
+ - `custom` - Custom DateTimeFormatter pattern (requires timestamp-pattern)
+
+
+
+Default: `iso8601`
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_STRUCTURED_LOGGING_TIMESTAMP_FORMAT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_STRUCTURED_LOGGING_TIMESTAMP_FORMAT+++`
+endif::add-copy-button-to-env-var[]
+--
+a|`iso8601`, `epoch-seconds`, `epoch-millis`, `epoch-nanos`, `custom`
+|`+++iso8601+++`
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-structured-logging-timestamp-pattern]] [.property-path]##link:#quarkus-flow_quarkus-flow-structured-logging-timestamp-pattern[`+++quarkus.flow.structured-logging.timestamp-pattern+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.structured-logging.timestamp-pattern+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Custom timestamp pattern for DateTimeFormatter.
+
+Only used when `timestamp-format()` is `CUSTOM`.
+
+Example patterns:
+
+ - `yyyy-MM-dd'T'HH:mm:ss.SSSXXX` - ISO 8601 with millisecond precision
+ - `yyyy-MM-dd HH:mm:ss` - Simple datetime without timezone
+ - `EEE, dd MMM yyyy HH:mm:ss Z` - RFC 1123 format
+
+
+
+If timestamp-format is `CUSTOM` and this is not set or invalid, the application will fail at startup with `IllegalArgumentException`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_STRUCTURED_LOGGING_TIMESTAMP_PATTERN+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_STRUCTURED_LOGGING_TIMESTAMP_PATTERN+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
 a| [[quarkus-flow_quarkus-flow-http-client-connect-timeout]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-connect-timeout[`+++quarkus.flow.http.client.connect-timeout+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.http.client.connect-timeout+++[]
