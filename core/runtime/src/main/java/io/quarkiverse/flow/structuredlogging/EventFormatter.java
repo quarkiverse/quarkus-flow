@@ -1,8 +1,22 @@
 package io.quarkiverse.flow.structuredlogging;
 
-import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.*;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_CANCELLED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_COMPLETED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_FAULTED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_RESUMED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_STARTED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_STATUS_CHANGED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_INSTANCE_SUSPENDED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_CANCELLED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_COMPLETED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_FAULTED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_RESUMED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_RETRIED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_STARTED;
+import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_SUSPENDED;
 
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -86,7 +100,7 @@ public class EventFormatter {
                         "quarkus.flow.structured-logging.timestamp-pattern must be set when timestamp-format is 'custom'");
             }
             try {
-                java.time.format.DateTimeFormatter.ofPattern(config.timestampPattern().get());
+                DateTimeFormatter.ofPattern(config.timestampPattern().get());
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException(
                         "Invalid timestamp pattern '" + config.timestampPattern().get() + "': " + e.getMessage(),
@@ -316,34 +330,27 @@ public class EventFormatter {
     }
 
     private Object formatTimestamp(OffsetDateTime timestamp) {
-        if (timestamp == null) {
+        if (timestamp == null)
             return null;
-        }
 
-        switch (config.timestampFormat()) {
-            case ISO8601:
-                return timestamp.toString();
-
-            case EPOCH_SECONDS:
+        return switch (config.timestampFormat()) {
+            case EPOCH_SECONDS -> {
                 java.time.Instant instant = timestamp.toInstant();
-                double seconds = instant.getEpochSecond() + (instant.getNano() / 1_000_000_000.0);
-                return seconds;
-
-            case EPOCH_MILLIS:
-                return timestamp.toInstant().toEpochMilli();
-
-            case EPOCH_NANOS:
+                yield instant.getEpochSecond() + (instant.getNano() / 1_000_000_000.0);
+            }
+            case EPOCH_MILLIS -> timestamp.toInstant().toEpochMilli();
+            case EPOCH_NANOS -> {
                 java.time.Instant inst = timestamp.toInstant();
-                return inst.getEpochSecond() * 1_000_000_000L + inst.getNano();
-
-            case CUSTOM:
-                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern(
+                yield inst.getEpochSecond() * 1_000_000_000L + inst.getNano();
+            }
+            case CUSTOM -> {
+                // we already checked the optional in the constructor
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern(
                         config.timestampPattern().get());
-                return timestamp.format(formatter);
-
-            default:
-                return timestamp.toString();
-        }
+                yield timestamp.format(formatter);
+            }
+            default -> timestamp.toString();
+        };
     }
 
     private Object handlePayload(Object payload) {
