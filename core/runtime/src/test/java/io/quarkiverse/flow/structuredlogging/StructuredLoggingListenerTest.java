@@ -19,6 +19,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
+import io.quarkiverse.flow.config.TimestampFormat;
+import io.serverlessworkflow.impl.TaskContext;
+import io.serverlessworkflow.impl.WorkflowContext;
+import io.serverlessworkflow.impl.WorkflowInstance;
+import io.serverlessworkflow.impl.WorkflowPosition;
+import io.serverlessworkflow.impl.lifecycle.TaskFailedEvent;
 
 /**
  * Unit tests for {@link StructuredLoggingListener} pattern matching logic.
@@ -185,5 +191,26 @@ public class StructuredLoggingListenerTest {
         Method method = StructuredLoggingListener.class.getDeclaredMethod("shouldLog", String.class);
         method.setAccessible(true);
         return (boolean) method.invoke(listener, eventType);
+    }
+
+    @Test
+    @DisplayName("check that exception is truncated")
+    void testExceptionTruncate() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        FlowStructuredLoggingConfig config = mock(FlowStructuredLoggingConfig.class);
+        when(config.stackTraceMaxLines()).thenReturn(2);
+        when(config.timestampFormat()).thenReturn(TimestampFormat.ISO8601);
+        when(config.includeErrorContext()).thenReturn(true);
+        WorkflowContext context = mock(WorkflowContext.class);
+        WorkflowPosition position = mock(WorkflowPosition.class);
+        when(position.jsonPointer()).thenReturn("do/1/doSomething");
+        TaskContext taskContext = mock(TaskContext.class);
+        when(taskContext.position()).thenReturn(position);
+        WorkflowInstance instance = mock(WorkflowInstance.class);
+        when(instance.id()).thenReturn("theFinalInstance");
+        when(context.instanceData()).thenReturn(instance);
+        Exception ex = new IllegalArgumentException("Javierito was here");
+        assertThat(new EventFormatter(config, objectMapper).formatTaskFailed(new TaskFailedEvent(context, taskContext, ex)))
+                .contains("testExceptionTruncate").doesNotContain("org.junit");
     }
 }

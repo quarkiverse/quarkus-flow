@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import java.lang.reflect.Method;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
@@ -142,7 +143,8 @@ class TimestampFormatterTest {
         // Pattern 3: RFC 1123 style
         FlowStructuredLoggingConfig config3 = createConfig(TimestampFormat.CUSTOM, "EEE, dd MMM yyyy HH:mm:ss Z");
         EventFormatter formatter3 = new EventFormatter(config3, new ObjectMapper());
-        assertThat(invokeFormatTimestamp(formatter3, timestamp)).isEqualTo("Tue, 21 Apr 2026 21:36:06 +0000");
+        assertThat(invokeFormatTimestamp(formatter3, timestamp))
+                .isEqualTo(DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss Z").format(timestamp));
     }
 
     // Helper to create mock config

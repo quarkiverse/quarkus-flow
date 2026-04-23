@@ -15,6 +15,7 @@ import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.
 import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_STARTED;
 import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_SUSPENDED;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -28,7 +29,6 @@ import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
 import io.quarkiverse.flow.config.TimestampFormat;
 import io.serverlessworkflow.impl.WorkflowDefinitionData;
 import io.serverlessworkflow.impl.WorkflowError;
-import io.serverlessworkflow.impl.WorkflowException;
 import io.serverlessworkflow.impl.WorkflowStatus;
 import io.serverlessworkflow.impl.lifecycle.TaskCancelledEvent;
 import io.serverlessworkflow.impl.lifecycle.TaskCompletedEvent;
@@ -74,11 +74,6 @@ public class EventFormatter {
     private static final String FIELD_OUTPUT = "output";
     // See https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#properties-53
     private static final String FIELD_ERROR = "error";
-    private static final String FIELD_ERROR_TITLE = "title";
-    private static final String FIELD_ERROR_TYPE = "type";
-    private static final String FIELD_ERROR_DETAIL = "detail";
-    private static final String FIELD_ERROR_STATUS = "status";
-    private static final String FIELD_ERROR_INSTANCE = "instance";
     private static final String FIELD_WORKFLOW_NAMESPACE = "workflowNamespace";
     private static final String FIELD_WORKFLOW_NAME = "workflowName";
     private static final String FIELD_WORKFLOW_VERSION = "workflowVersion";
@@ -89,24 +84,26 @@ public class EventFormatter {
     private final FlowStructuredLoggingConfig config;
     private final ObjectMapper objectMapper;
 
+    private final DateTimeFormatter customDateFormat;
+
     public EventFormatter(FlowStructuredLoggingConfig config, ObjectMapper objectMapper) {
         this.config = config;
         this.objectMapper = objectMapper;
 
         // Validate custom pattern if CUSTOM format is selected
-        if (config.timestampFormat() == TimestampFormat.CUSTOM) {
-            if (config.timestampPattern().isEmpty()) {
-                throw new IllegalArgumentException(
-                        "quarkus.flow.structured-logging.timestamp-pattern must be set when timestamp-format is 'custom'");
-            }
-            try {
-                DateTimeFormatter.ofPattern(config.timestampPattern().get());
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException(
-                        "Invalid timestamp pattern '" + config.timestampPattern().get() + "': " + e.getMessage(),
-                        e);
-            }
-        }
+        customDateFormat = config.timestampFormat() == TimestampFormat.CUSTOM
+                ? config.timestampPattern().map(pattern -> {
+                    try {
+                        return DateTimeFormatter.ofPattern(pattern);
+                    } catch (IllegalArgumentException e) {
+                        throw new IllegalArgumentException(
+                                "Invalid timestamp pattern '" + config.timestampPattern().get() + "': " + e.getMessage(),
+                                e);
+                    }
+                }).orElseThrow(
+                        () -> new IllegalArgumentException(
+                                "quarkus.flow.structured-logging.timestamp-pattern must be set when timestamp-format is 'custom'"))
+                : null;
     }
 
     // Workflow Instance Events
@@ -146,58 +143,12 @@ public class EventFormatter {
         json.put(FIELD_END_TIME, formatTimestamp(event.eventDate()));
 
         if (config.includeErrorContext()) {
-            Map<String, Object> error = new HashMap<>();
-            if (event.cause() != null) {
-                if (event.cause() instanceof WorkflowException) {
-                    final WorkflowError workflowError = ((WorkflowException) event.cause()).getWorkflowError();
-                    error.put(FIELD_ERROR_TITLE, workflowError.title());
-                    error.put(FIELD_ERROR_DETAIL, truncateErrorDetail(workflowError.details()));
-                    error.put(FIELD_ERROR_INSTANCE, workflowError.instance());
-                    error.put(FIELD_ERROR_STATUS, workflowError.status());
-                    error.put(FIELD_ERROR_TYPE, workflowError.type());
-                } else {
-                    error.put(FIELD_ERROR_TITLE, event.cause().getMessage());
-                    error.put(FIELD_ERROR_TYPE, event.cause().getClass().getName());
-                    error.put(FIELD_ERROR_DETAIL, formatStackTrace(event.cause().getStackTrace()));
-                }
-            }
-            json.put(FIELD_ERROR, error);
-
+            json.put(FIELD_ERROR, truncateError(WorkflowError.error(event)));
             // Include workflow input for debugging context
             Object input = event.workflowContext().instanceData().input();
             json.put(FIELD_INPUT, handlePayload(input));
         }
-
         return toJson(json);
-    }
-
-    private String formatStackTrace(StackTraceElement[] stackTrace) {
-        if (stackTrace != null && stackTrace.length > 0) {
-            StringBuilder stack = new StringBuilder();
-            for (int i = 0; i < Math.min(config.stackTraceMaxLines(), stackTrace.length); i++) {
-                stack.append(stackTrace[i].toString()).append("\n");
-            }
-            return stack.toString();
-        }
-        return "";
-    }
-
-    private String truncateErrorDetail(String detail) {
-        if (detail == null || detail.isEmpty()) {
-            return detail;
-        }
-
-        // Split by standard or carriage-return newlines
-        String[] lines = detail.split("\r?\n");
-        if (lines.length <= config.stackTraceMaxLines()) {
-            return detail;
-        }
-
-        StringBuilder truncated = new StringBuilder();
-        for (int i = 0; i < config.stackTraceMaxLines(); i++) {
-            truncated.append(lines[i]).append("\n");
-        }
-        return truncated.toString();
     }
 
     public String formatWorkflowCancelled(WorkflowCancelledEvent event) {
@@ -260,12 +211,7 @@ public class EventFormatter {
         json.put(FIELD_END_TIME, formatTimestamp(event.eventDate()));
 
         if (config.includeErrorContext()) {
-            Map<String, Object> error = new HashMap<>();
-            if (event.cause() != null) {
-                error.put(FIELD_ERROR_TITLE, event.cause().getMessage());
-                error.put(FIELD_ERROR_TYPE, event.cause().getClass().getName());
-            }
-            json.put(FIELD_ERROR, error);
+            json.put(FIELD_ERROR, truncateError(WorkflowError.error(event)));
 
             // Always include input on failures
             Object input = event.taskContext().input();
@@ -330,25 +276,18 @@ public class EventFormatter {
     }
 
     private Object formatTimestamp(OffsetDateTime timestamp) {
-        if (timestamp == null)
-            return null;
-
-        return switch (config.timestampFormat()) {
+        return timestamp == null ? null : switch (config.timestampFormat()) {
             case EPOCH_SECONDS -> {
-                java.time.Instant instant = timestamp.toInstant();
+                Instant instant = timestamp.toInstant();
                 yield instant.getEpochSecond() + (instant.getNano() / 1_000_000_000.0);
             }
             case EPOCH_MILLIS -> timestamp.toInstant().toEpochMilli();
             case EPOCH_NANOS -> {
-                java.time.Instant inst = timestamp.toInstant();
+                Instant inst = timestamp.toInstant();
                 yield inst.getEpochSecond() * 1_000_000_000L + inst.getNano();
             }
-            case CUSTOM -> {
-                // we already checked the optional in the constructor
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern(
-                        config.timestampPattern().get());
-                yield timestamp.format(formatter);
-            }
+            // customDateFormat not null when timestamp format is custom has been already checked in constructor
+            case CUSTOM -> timestamp.format(customDateFormat);
             default -> timestamp.toString();
         };
     }
@@ -377,6 +316,22 @@ public class EventFormatter {
             }
             return str;
         }
+    }
+
+    private WorkflowError truncateError(WorkflowError error) {
+        String detail = error.detail();
+        if (detail != null && !detail.isBlank()) {
+            // Split by standard or carriage-return newlines
+            String[] lines = detail.split("\r?\n");
+            if (lines.length > config.stackTraceMaxLines()) {
+                StringBuilder truncated = new StringBuilder();
+                for (int i = 0; i < config.stackTraceMaxLines(); i++) {
+                    truncated.append(lines[i]).append("\n");
+                }
+                return new WorkflowError(error.type(), error.status(), error.instance(), error.title(), truncated.toString());
+            }
+        }
+        return error;
     }
 
     private Map<String, Object> truncatePayload(String json, int originalSize) {
