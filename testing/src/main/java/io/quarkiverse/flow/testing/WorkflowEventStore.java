@@ -12,18 +12,47 @@ import io.quarkiverse.flow.testing.events.RecordedWorkflowEvent;
 
 /**
  * Thread-safe storage for workflow events recorded during test execution.
- * Uses ThreadLocal storage to ensure test isolation when tests run in parallel.
- * Events are stored per thread and automatically isolated between test methods.
+ * <p>
+ * Supports two modes:
+ * <ul>
+ * <li><b>ThreadLocal mode (default)</b>: Uses ThreadLocal storage for test isolation in parallel execution</li>
+ * <li><b>Shared mode</b>: Uses a shared list for cross-thread event recording (needed for async workflows)</li>
+ * </ul>
+ * <p>
+ * Use shared mode when testing asynchronous workflows that run in different threads.
  */
 @ApplicationScoped
 public class WorkflowEventStore {
 
     // Thread-local storage ensures test isolation in parallel execution
-    private final ThreadLocal<List<RecordedWorkflowEvent>> events = ThreadLocal
+    private final ThreadLocal<List<RecordedWorkflowEvent>> threadLocalEvents = ThreadLocal
             .withInitial(CopyOnWriteArrayList::new);
 
+    // Shared storage for cross-thread scenarios (async workflows)
+    private final List<RecordedWorkflowEvent> sharedEvents = new CopyOnWriteArrayList<>();
+
+    // Flag to determine which storage to use
+    private final boolean useSharedStorage;
+
     /**
-     * Records a workflow event in the thread-local storage.
+     * Creates a WorkflowEventStore with ThreadLocal storage (default).
+     */
+    public WorkflowEventStore() {
+        this(false);
+    }
+
+    /**
+     * Creates a WorkflowEventStore with specified storage mode.
+     *
+     * @param useSharedStorage if true, uses shared storage for cross-thread access;
+     *        if false, uses ThreadLocal storage for test isolation
+     */
+    public WorkflowEventStore(boolean useSharedStorage) {
+        this.useSharedStorage = useSharedStorage;
+    }
+
+    /**
+     * Records a workflow event in the storage.
      *
      * @param event the event to record
      */
@@ -31,20 +60,28 @@ public class WorkflowEventStore {
         if (event == null) {
             throw new IllegalArgumentException("Event cannot be null");
         }
-        events.get().add(event);
+        if (useSharedStorage) {
+            sharedEvents.add(event);
+        } else {
+            threadLocalEvents.get().add(event);
+        }
     }
 
     /**
-     * Returns all recorded events for the current thread.
+     * Returns all recorded events.
      *
      * @return immutable list of all recorded events
      */
     public List<RecordedWorkflowEvent> getAll() {
-        return new ArrayList<>(events.get());
+        if (useSharedStorage) {
+            return new ArrayList<>(sharedEvents);
+        } else {
+            return new ArrayList<>(threadLocalEvents.get());
+        }
     }
 
     /**
-     * Returns all events of a specific type for the current thread.
+     * Returns all events of a specific type.
      *
      * @param type the event type to filter by
      * @return immutable list of events matching the type
@@ -53,7 +90,8 @@ public class WorkflowEventStore {
         if (type == null) {
             throw new IllegalArgumentException("EventType cannot be null");
         }
-        return events.get().stream()
+        List<RecordedWorkflowEvent> allEvents = useSharedStorage ? sharedEvents : threadLocalEvents.get();
+        return allEvents.stream()
                 .filter(e -> e.getType() == type)
                 .collect(Collectors.toList());
     }
@@ -68,7 +106,8 @@ public class WorkflowEventStore {
         if (instanceId == null) {
             throw new IllegalArgumentException("InstanceId must not be null");
         }
-        return events.get().stream()
+        List<RecordedWorkflowEvent> allEvents = useSharedStorage ? sharedEvents : threadLocalEvents.get();
+        return allEvents.stream()
                 .filter(e -> instanceId.equals(e.getInstanceId()))
                 .collect(Collectors.toList());
     }
@@ -90,7 +129,8 @@ public class WorkflowEventStore {
      * @return immutable list of workflow events
      */
     public List<RecordedWorkflowEvent> getWorkflowEvents() {
-        return events.get().stream()
+        List<RecordedWorkflowEvent> allEvents = useSharedStorage ? sharedEvents : threadLocalEvents.get();
+        return allEvents.stream()
                 .filter(RecordedWorkflowEvent::isWorkflowEvent)
                 .collect(Collectors.toList());
     }
@@ -101,7 +141,8 @@ public class WorkflowEventStore {
      * @return immutable list of task events
      */
     public List<RecordedWorkflowEvent> getTaskEvents() {
-        return events.get().stream()
+        List<RecordedWorkflowEvent> allEvents = useSharedStorage ? sharedEvents : threadLocalEvents.get();
+        return allEvents.stream()
                 .filter(RecordedWorkflowEvent::isTaskEvent)
                 .collect(Collectors.toList());
     }
@@ -116,42 +157,76 @@ public class WorkflowEventStore {
         if (taskName == null) {
             throw new IllegalArgumentException("taskName must not be null");
         }
-        return events.get().stream()
+        List<RecordedWorkflowEvent> allEvents = useSharedStorage ? sharedEvents : threadLocalEvents.get();
+        return allEvents.stream()
                 .filter(e -> e.getTaskName().map(taskName::equals).orElse(false))
                 .collect(Collectors.toList());
     }
 
     /**
-     * Clears all recorded events for the current thread.
+     * Clears all recorded events.
      * This should be called after each test to ensure test isolation.
      */
     public void clear() {
-        events.get().clear();
+        if (useSharedStorage) {
+            sharedEvents.clear();
+        } else {
+            threadLocalEvents.get().clear();
+        }
     }
 
     /**
-     * Returns the number of recorded events for the current thread.
+     * Returns the number of recorded events.
      *
      * @return the event count
      */
     public int size() {
-        return events.get().size();
+        return useSharedStorage ? sharedEvents.size() : threadLocalEvents.get().size();
     }
 
     /**
-     * Checks if any events have been recorded for the current thread.
+     * Checks if any events have been recorded.
      *
      * @return true if no events recorded, false otherwise
      */
     public boolean isEmpty() {
-        return events.get().isEmpty();
+        return useSharedStorage ? sharedEvents.isEmpty() : threadLocalEvents.get().isEmpty();
     }
 
     /**
      * Removes the thread-local storage for the current thread.
+     * Only applicable when using ThreadLocal mode.
      * This is useful for cleanup in long-running test scenarios.
      */
     public void remove() {
-        events.remove();
+        if (!useSharedStorage) {
+            threadLocalEvents.remove();
+        }
+    }
+
+    /**
+     * Creates an AsyncFluentEventAssertions instance for waiting on events
+     * before making assertions. This is the entry point for async event waiting.
+     * <p>
+     * Example usage:
+     *
+     * <pre>
+     * eventStore.waitFor()
+     *         .timeout(Duration.ofSeconds(10))
+     *         .workflowCompleted()
+     *         .taskCompleted("task1")
+     *         .thenAssert()
+     *         .inOrder()
+     *         .workflowStarted()
+     *         .taskStarted("task1")
+     *         .taskCompleted("task1")
+     *         .workflowCompleted()
+     *         .assertAll();
+     * </pre>
+     *
+     * @return AsyncFluentEventAssertions for waiting on events
+     */
+    public AsyncFluentEventAssertions waitFor() {
+        return new AsyncFluentEventAssertions(this);
     }
 }

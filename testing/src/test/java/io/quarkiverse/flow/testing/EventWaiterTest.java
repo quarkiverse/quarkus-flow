@@ -1,22 +1,22 @@
 package io.quarkiverse.flow.testing;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+
+import org.junit.jupiter.api.Test;
+
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowInstance;
-import io.serverlessworkflow.impl.WorkflowModel;
-import org.junit.jupiter.api.Test;
-
-import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Comprehensive tests for EventWaiter functionality.
+ * Comprehensive tests for AsyncFluentEventAssertions (EventWaiter) functionality.
  */
 public class EventWaiterTest {
 
@@ -24,11 +24,10 @@ public class EventWaiterTest {
     void should_wait_for_workflow_started() {
         Workflow workflow = FuncWorkflowBuilder.workflow()
                 .tasks(
-                        FuncDSL.function("task1", (number) -> number + 1, Long.class)
-                )
+                        FuncDSL.function("task1", (number) -> number + 1, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore();
+        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -40,9 +39,10 @@ public class EventWaiterTest {
             // Start workflow asynchronously
             CompletableFuture.runAsync(() -> workflowInstance.start().join());
 
-            // Wait for workflow to start using integrated method
-            FluentEventAssertions.assertThat(workflowEventStore)
-                    .waitForWorkflowStarted()
+            // Wait for workflow to start using new API
+            workflowEventStore.waitFor()
+                    .workflowStarted()
+                    .thenAssert()
                     .workflowStarted()
                     .assertAll();
 
@@ -64,11 +64,10 @@ public class EventWaiterTest {
                                 Thread.currentThread().interrupt();
                             }
                             return number + 1;
-                        }, Long.class)
-                )
+                        }, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore();
+        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -80,9 +79,10 @@ public class EventWaiterTest {
             // Start workflow asynchronously
             CompletableFuture.runAsync(() -> workflowInstance.start().join());
 
-            // Wait for specific task to start using integrated method
-            FluentEventAssertions.assertThat(workflowEventStore)
-                    .waitForTaskStarted("myTask")
+            // Wait for specific task to start using new API
+            workflowEventStore.waitFor()
+                    .taskStarted("myTask")
+                    .thenAssert()
                     .taskStarted("myTask")
                     .assertAll();
 
@@ -97,11 +97,10 @@ public class EventWaiterTest {
     void should_wait_for_task_completed() {
         Workflow workflow = FuncWorkflowBuilder.workflow()
                 .tasks(
-                        FuncDSL.function("task1", (number) -> number + 1, Long.class)
-                )
+                        FuncDSL.function("task1", (number) -> number + 1, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore();
+        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -113,9 +112,10 @@ public class EventWaiterTest {
             // Start workflow asynchronously
             CompletableFuture.runAsync(() -> workflowInstance.start().join());
 
-            // Wait for task to complete using integrated method
-            FluentEventAssertions.assertThat(workflowEventStore)
-                    .waitForTaskCompleted("task1")
+            // Wait for task to complete using new API
+            workflowEventStore.waitFor()
+                    .taskCompleted("task1")
+                    .thenAssert()
                     .taskCompleted("task1")
                     .assertAll();
 
@@ -130,11 +130,10 @@ public class EventWaiterTest {
     void should_wait_for_workflow_completed() {
         Workflow workflow = FuncWorkflowBuilder.workflow()
                 .tasks(
-                        FuncDSL.function("task1", (number) -> number + 1, Long.class)
-                )
+                        FuncDSL.function("task1", (number) -> number + 1, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore();
+        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -146,9 +145,10 @@ public class EventWaiterTest {
             // Start workflow asynchronously
             CompletableFuture.runAsync(() -> workflowInstance.start().join());
 
-            // Wait for workflow to complete using integrated method
-            FluentEventAssertions.assertThat(workflowEventStore)
-                    .waitForWorkflowCompleted()
+            // Wait for workflow to complete using new API
+            workflowEventStore.waitFor()
+                    .workflowCompleted()
+                    .thenAssert()
                     .workflowCompleted()
                     .assertAll();
 
@@ -163,11 +163,10 @@ public class EventWaiterTest {
         Workflow workflow = FuncWorkflowBuilder.workflow()
                 .tasks(
                         FuncDSL.function("task1", (number) -> number + 1, Long.class),
-                        FuncDSL.function("task2", (number) -> number * 2, Long.class)
-                )
+                        FuncDSL.function("task2", (number) -> number * 2, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore();
+        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -179,14 +178,15 @@ public class EventWaiterTest {
             // Start workflow asynchronously
             CompletableFuture.runAsync(() -> workflowInstance.start().join());
 
-            // Wait for events in sequence using integrated methods
-            FluentEventAssertions.assertThat(workflowEventStore)
-                    .waitForWorkflowStarted()
-                    .waitForTaskStarted("task1")
-                    .waitForTaskCompleted("task1")
-                    .waitForTaskStarted("task2")
-                    .waitForTaskCompleted("task2")
-                    .waitForWorkflowCompleted()
+            // Wait for events in sequence using new API
+            workflowEventStore.waitFor()
+                    .workflowStarted()
+                    .taskStarted("task1")
+                    .taskCompleted("task1")
+                    .taskStarted("task2")
+                    .taskCompleted("task2")
+                    .workflowCompleted()
+                    .thenAssert()
                     .assertAll();
 
             // Verify all events were recorded
@@ -205,11 +205,10 @@ public class EventWaiterTest {
                                 Thread.currentThread().interrupt();
                             }
                             return number + 1;
-                        }, Long.class)
-                )
+                        }, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore();
+        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -222,11 +221,11 @@ public class EventWaiterTest {
             CompletableFuture.runAsync(() -> workflowInstance.start().join());
 
             // This should timeout because the task takes 5 seconds but we only wait 100ms
-            assertThatThrownBy(() -> 
-                    FluentEventAssertions.assertThat(workflowEventStore)
-                            .waitTimeout(Duration.ofMillis(100))
-                            .waitForTaskCompleted("slowTask")
-                            .assertAll())
+            assertThatThrownBy(() -> workflowEventStore.waitFor()
+                    .timeout(Duration.ofMillis(100))
+                    .taskCompleted("slowTask")
+                    .thenAssert()
+                    .assertAll())
                     .isInstanceOf(AssertionError.class)
                     .hasMessageContaining("Timeout");
         }
@@ -237,11 +236,10 @@ public class EventWaiterTest {
         Workflow workflow = FuncWorkflowBuilder.workflow()
                 .tasks(
                         FuncDSL.function("task1", (number) -> number + 1, Long.class),
-                        FuncDSL.function("task2", (number) -> number * 2, Long.class)
-                )
+                        FuncDSL.function("task2", (number) -> number * 2, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore();
+        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -254,8 +252,9 @@ public class EventWaiterTest {
             CompletableFuture.runAsync(() -> workflowInstance.start().join());
 
             // Wait for workflow to complete and verify the complete event sequence
-            FluentEventAssertions.assertThat(workflowEventStore)
-                    .waitForWorkflowCompleted()
+            workflowEventStore.waitFor()
+                    .workflowCompleted()
+                    .thenAssert()
                     .inOrder()
                     .workflowStarted()
                     .taskStarted("task1")

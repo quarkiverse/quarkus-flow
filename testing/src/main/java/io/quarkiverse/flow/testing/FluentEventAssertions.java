@@ -19,54 +19,72 @@ import io.serverlessworkflow.impl.WorkflowModel;
  * Provides a chainable interface for verifying workflow execution order, task completion,
  * and event properties in tests.
  * <p>
- * Example usage:
+ * This class focuses on assertions only. For waiting on asynchronous events before asserting,
+ * use {@link AsyncFluentEventAssertions} via {@link WorkflowEventStore#waitFor()}.
+ * <p>
+ * Supports two assertion modes:
+ * <ul>
+ * <li><b>Unordered (default)</b>: Verifies events exist anywhere in the list</li>
+ * <li><b>Ordered (via inOrder())</b>: Verifies events occur in exact sequence</li>
+ * </ul>
+ * <p>
+ * Example usage for synchronous assertions:
  *
  * <pre>
- * eventRecorder.assertThat()
+ * // Unordered assertions (default)
+ * FluentEventAssertions.assertThat(eventStore)
  *         .workflowStarted()
  *         .taskStarted("task1")
  *         .taskCompleted("task1")
- *         .workflowCompleted();
+ *         .workflowCompleted()
+ *         .assertAll();
+ *
+ * // Ordered assertions
+ * FluentEventAssertions.assertThat(eventStore)
+ *         .inOrder()
+ *         .workflowStarted()
+ *         .taskStarted("task1")
+ *         .taskCompleted("task1")
+ *         .workflowCompleted()
+ *         .assertAll();
  * </pre>
+ * <p>
+ * For asynchronous workflows, use {@link AsyncFluentEventAssertions}:
+ *
+ * <pre>
+ * // Wait for events, then assert
+ * eventStore.waitFor()
+ *         .workflowCompleted()
+ *         .thenAssert()
+ *         .inOrder()
+ *         .workflowStarted()
+ *         .taskStarted("task1")
+ *         .taskCompleted("task1")
+ *         .workflowCompleted()
+ *         .assertAll();
+ * </pre>
+ *
+ * @see AsyncFluentEventAssertions
+ * @see WorkflowEventStore#waitFor()
  */
 public class FluentEventAssertions {
 
-    private List<RecordedWorkflowEvent> events;
-    private final WorkflowEventStore eventStore;
+    private final List<RecordedWorkflowEvent> events;
     private int currentIndex = 0;
     private boolean strictOrder = false;
-    private EventWaiter eventWaiter;
 
     SoftAssertions softAssertions = new SoftAssertions();
 
     public static FluentEventAssertions assertThat(List<RecordedWorkflowEvent> events) {
-        return new FluentEventAssertions(events, null);
+        return new FluentEventAssertions(events);
     }
 
     public static FluentEventAssertions assertThat(WorkflowEventStore eventStore) {
-        return new FluentEventAssertions(eventStore.getAll(), eventStore);
+        return new FluentEventAssertions(eventStore.getAll());
     }
 
     public FluentEventAssertions(List<RecordedWorkflowEvent> events) {
-        this(events, null);
-    }
-
-    public FluentEventAssertions(List<RecordedWorkflowEvent> events, WorkflowEventStore eventStore) {
         this.events = events;
-        this.eventStore = eventStore;
-        if (eventStore != null) {
-            this.eventWaiter = new EventWaiter(eventStore);
-        }
-    }
-
-    /**
-     * Refreshes the events list from the event store.
-     * This is automatically called after wait operations.
-     */
-    private void refreshEvents() {
-        if (eventStore != null) {
-            this.events = eventStore.getAll();
-        }
     }
 
     /**
@@ -79,146 +97,6 @@ public class FluentEventAssertions {
     public FluentEventAssertions inOrder() {
         this.strictOrder = true;
         return this;
-    }
-
-    // EventWaiter Integration
-
-    /**
-     * Waits for a workflow started event before continuing with assertions.
-     * Requires that FluentEventAssertions was created with a WorkflowEventStore.
-     *
-     * @return this for method chaining
-     * @throws IllegalStateException if no EventWaiter is available
-     */
-    public FluentEventAssertions waitForWorkflowStarted() {
-        ensureEventWaiterAvailable();
-        eventWaiter.workflowStarted();
-        refreshEvents();
-        return this;
-    }
-
-    /**
-     * Waits for a workflow completed event before continuing with assertions.
-     * Requires that FluentEventAssertions was created with a WorkflowEventStore.
-     *
-     * @return this for method chaining
-     * @throws IllegalStateException if no EventWaiter is available
-     */
-    public FluentEventAssertions waitForWorkflowCompleted() {
-        ensureEventWaiterAvailable();
-        eventWaiter.workflowCompleted();
-        refreshEvents();
-        return this;
-    }
-
-    /**
-     * Waits for a workflow completed event with custom timeout before continuing with assertions.
-     * Requires that FluentEventAssertions was created with a WorkflowEventStore.
-     *
-     * @param timeout the maximum time to wait
-     * @return this for method chaining
-     * @throws IllegalStateException if no EventWaiter is available
-     */
-    public FluentEventAssertions waitForWorkflowCompleted(Duration timeout) {
-        ensureEventWaiterAvailable();
-        eventWaiter.timeout(timeout).workflowCompleted();
-        refreshEvents();
-        return this;
-    }
-
-    /**
-     * Waits for a workflow failed event before continuing with assertions.
-     * Requires that FluentEventAssertions was created with a WorkflowEventStore.
-     *
-     * @return this for method chaining
-     * @throws IllegalStateException if no EventWaiter is available
-     */
-    public FluentEventAssertions waitForWorkflowFailed() {
-        ensureEventWaiterAvailable();
-        eventWaiter.workflowFailed();
-        refreshEvents();
-        return this;
-    }
-
-    /**
-     * Waits for a task started event before continuing with assertions.
-     * Requires that FluentEventAssertions was created with a WorkflowEventStore.
-     *
-     * @param taskName the task name to wait for
-     * @return this for method chaining
-     * @throws IllegalStateException if no EventWaiter is available
-     */
-    public FluentEventAssertions waitForTaskStarted(String taskName) {
-        ensureEventWaiterAvailable();
-        eventWaiter.taskStarted(taskName);
-        refreshEvents();
-        return this;
-    }
-
-    /**
-     * Waits for a task completed event before continuing with assertions.
-     * Requires that FluentEventAssertions was created with a WorkflowEventStore.
-     *
-     * @param taskName the task name to wait for
-     * @return this for method chaining
-     * @throws IllegalStateException if no EventWaiter is available
-     */
-    public FluentEventAssertions waitForTaskCompleted(String taskName) {
-        ensureEventWaiterAvailable();
-        eventWaiter.taskCompleted(taskName);
-        refreshEvents();
-        return this;
-    }
-
-    /**
-     * Waits for a task failed event before continuing with assertions.
-     * Requires that FluentEventAssertions was created with a WorkflowEventStore.
-     *
-     * @param taskName the task name to wait for
-     * @return this for method chaining
-     * @throws IllegalStateException if no EventWaiter is available
-     */
-    public FluentEventAssertions waitForTaskFailed(String taskName) {
-        ensureEventWaiterAvailable();
-        eventWaiter.taskFailed(taskName);
-        refreshEvents();
-        return this;
-    }
-
-    /**
-     * Configures the timeout for wait operations.
-     * Requires that FluentEventAssertions was created with a WorkflowEventStore.
-     *
-     * @param timeout the maximum time to wait
-     * @return this for method chaining
-     * @throws IllegalStateException if no EventWaiter is available
-     */
-    public FluentEventAssertions waitTimeout(Duration timeout) {
-        ensureEventWaiterAvailable();
-        eventWaiter.timeout(timeout);
-        return this;
-    }
-
-    /**
-     * Configures the poll interval for wait operations.
-     * Requires that FluentEventAssertions was created with a WorkflowEventStore.
-     *
-     * @param pollInterval the interval between checks
-     * @return this for method chaining
-     * @throws IllegalStateException if no EventWaiter is available
-     */
-    public FluentEventAssertions waitPollInterval(Duration pollInterval) {
-        ensureEventWaiterAvailable();
-        eventWaiter.pollInterval(pollInterval);
-        return this;
-    }
-
-    private void ensureEventWaiterAvailable() {
-        if (eventWaiter == null) {
-            throw new IllegalStateException(
-                    "EventWaiter functionality requires FluentEventAssertions to be created with a WorkflowEventStore. " +
-                    "Use FluentEventAssertions.assertThat(workflowEventStore) instead of assertThat(events).");
-        }
     }
 
     /**

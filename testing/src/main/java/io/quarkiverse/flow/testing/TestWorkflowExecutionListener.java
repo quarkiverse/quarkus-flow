@@ -1,7 +1,6 @@
 package io.quarkiverse.flow.testing;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
@@ -19,7 +18,6 @@ import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener;
 import io.serverlessworkflow.impl.lifecycle.WorkflowFailedEvent;
 import io.serverlessworkflow.impl.lifecycle.WorkflowResumedEvent;
 import io.serverlessworkflow.impl.lifecycle.WorkflowStartedEvent;
-import io.serverlessworkflow.impl.lifecycle.WorkflowStatusEvent;
 import io.serverlessworkflow.impl.lifecycle.WorkflowSuspendedEvent;
 
 /**
@@ -36,11 +34,9 @@ public class TestWorkflowExecutionListener implements WorkflowExecutionListener 
     WorkflowEventStore eventStore;
 
     public TestWorkflowExecutionListener(
-            WorkflowEventStore eventStore
-    ) {
+            WorkflowEventStore eventStore) {
         this.eventStore = eventStore;
     }
-
 
     @Override
     public int priority() {

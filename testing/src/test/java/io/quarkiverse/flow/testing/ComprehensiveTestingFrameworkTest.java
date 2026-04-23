@@ -1,5 +1,11 @@
 package io.quarkiverse.flow.testing;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.Duration;
+
+import org.junit.jupiter.api.Test;
+
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
@@ -7,11 +13,6 @@ import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.WorkflowModel;
-import org.junit.jupiter.api.Test;
-
-import java.time.Duration;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Comprehensive test suite demonstrating all features of the testing framework.
@@ -22,11 +23,10 @@ public class ComprehensiveTestingFrameworkTest {
     void should_demonstrate_basic_event_recording() {
         Workflow workflow = FuncWorkflowBuilder.workflow()
                 .tasks(
-                        FuncDSL.function("increment", (number) -> number + 1, Long.class)
-                )
+                        FuncDSL.function("increment", (number) -> number + 1, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore();
+        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -47,11 +47,10 @@ public class ComprehensiveTestingFrameworkTest {
         Workflow workflow = FuncWorkflowBuilder.workflow()
                 .tasks(
                         FuncDSL.function("task1", (number) -> number + 1, Long.class),
-                        FuncDSL.function("task2", (number) -> number * 2, Long.class)
-                )
+                        FuncDSL.function("task2", (number) -> number * 2, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore();
+        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -80,11 +79,10 @@ public class ComprehensiveTestingFrameworkTest {
                 .tasks(
                         FuncDSL.function("taskA", (number) -> number + 1, Long.class),
                         FuncDSL.function("taskB", (number) -> number * 2, Long.class),
-                        FuncDSL.function("taskC", (number) -> number - 3, Long.class)
-                )
+                        FuncDSL.function("taskC", (number) -> number - 3, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore();
+        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -97,7 +95,7 @@ public class ComprehensiveTestingFrameworkTest {
             // No inOrder() - just verify events exist, order doesn't matter
             FluentEventAssertions.assertThat(workflowEventStore.getAll())
                     .workflowStarted()
-                    .taskStarted("taskC")  // Can check in any order
+                    .taskStarted("taskC") // Can check in any order
                     .taskStarted("taskA")
                     .taskCompleted("taskB")
                     .taskStarted("taskB")
@@ -114,11 +112,10 @@ public class ComprehensiveTestingFrameworkTest {
                 .tasks(
                         FuncDSL.function("task1", (number) -> number + 1, Long.class),
                         FuncDSL.function("task2", (number) -> number * 2, Long.class),
-                        FuncDSL.function("task3", (number) -> number - 5, Long.class)
-                )
+                        FuncDSL.function("task3", (number) -> number - 5, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore();
+        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -143,11 +140,10 @@ public class ComprehensiveTestingFrameworkTest {
         Workflow workflow = FuncWorkflowBuilder.workflow()
                 .tasks(
                         FuncDSL.function("firstTask", (number) -> number + 1, Long.class),
-                        FuncDSL.function("secondTask", (number) -> number * 2, Long.class)
-                )
+                        FuncDSL.function("secondTask", (number) -> number * 2, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore();
+        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -168,11 +164,10 @@ public class ComprehensiveTestingFrameworkTest {
     void should_verify_workflow_completion_time() {
         Workflow workflow = FuncWorkflowBuilder.workflow()
                 .tasks(
-                        FuncDSL.function("quickTask", (number) -> number + 1, Long.class)
-                )
+                        FuncDSL.function("quickTask", (number) -> number + 1, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore();
+        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -193,11 +188,10 @@ public class ComprehensiveTestingFrameworkTest {
     void should_verify_all_events_for_specific_instance() {
         Workflow workflow = FuncWorkflowBuilder.workflow()
                 .tasks(
-                        FuncDSL.function("task1", (number) -> number + 1, Long.class)
-                )
+                        FuncDSL.function("task1", (number) -> number + 1, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore();
+        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -218,11 +212,10 @@ public class ComprehensiveTestingFrameworkTest {
     void should_verify_output_of_completed_workflow() {
         Workflow workflow = FuncWorkflowBuilder.workflow()
                 .tasks(
-                        FuncDSL.function("doubleIt", (number) -> number * 2, Long.class)
-                )
+                        FuncDSL.function("doubleIt", (number) -> number * 2, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore();
+        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -250,11 +243,10 @@ public class ComprehensiveTestingFrameworkTest {
     void should_reset_and_reuse_assertions() {
         Workflow workflow = FuncWorkflowBuilder.workflow()
                 .tasks(
-                        FuncDSL.function("task1", (number) -> number + 1, Long.class)
-                )
+                        FuncDSL.function("task1", (number) -> number + 1, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore();
+        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -287,11 +279,10 @@ public class ComprehensiveTestingFrameworkTest {
         Workflow workflow = FuncWorkflowBuilder.workflow()
                 .tasks(
                         FuncDSL.function("task1", (number) -> number + 1, Long.class),
-                        FuncDSL.function("task2", (number) -> number * 2, Long.class)
-                )
+                        FuncDSL.function("task2", (number) -> number * 2, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore();
+        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -304,10 +295,11 @@ public class ComprehensiveTestingFrameworkTest {
             java.util.concurrent.CompletableFuture.runAsync(() -> workflowInstance.start().join());
 
             // Wait for specific events and verify the complete sequence in one chain
-            FluentEventAssertions.assertThat(workflowEventStore)
-                    .waitForTaskStarted("task1")
-                    .waitForTaskCompleted("task1")
-                    .waitForWorkflowCompleted()
+            workflowEventStore.waitFor()
+                    .taskStarted("task1")
+                    .taskCompleted("task1")
+                    .workflowCompleted()
+                    .thenAssert()
                     .inOrder()
                     .workflowStarted()
                     .taskStarted("task1")
@@ -323,11 +315,10 @@ public class ComprehensiveTestingFrameworkTest {
     void should_verify_multiple_workflows_in_same_store() {
         Workflow workflow = FuncWorkflowBuilder.workflow()
                 .tasks(
-                        FuncDSL.function("task1", (number) -> number + 1, Long.class)
-                )
+                        FuncDSL.function("task1", (number) -> number + 1, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore();
+        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))

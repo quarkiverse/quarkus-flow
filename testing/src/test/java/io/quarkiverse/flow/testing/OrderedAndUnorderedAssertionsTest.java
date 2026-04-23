@@ -1,5 +1,7 @@
 package io.quarkiverse.flow.testing;
 
+import org.junit.jupiter.api.Test;
+
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
@@ -7,7 +9,6 @@ import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.WorkflowModel;
-import org.junit.jupiter.api.Test;
 
 /**
  * Test demonstrating both ordered and unordered event assertions using the inOrder() method.
@@ -19,8 +20,7 @@ public class OrderedAndUnorderedAssertionsTest {
         Workflow workflow = FuncWorkflowBuilder.workflow()
                 .tasks(
                         FuncDSL.function("task1", (number) -> number + 1, Long.class),
-                        FuncDSL.function("task2", (number) -> number * 2, Long.class)
-                )
+                        FuncDSL.function("task2", (number) -> number * 2, Long.class))
                 .build();
 
         WorkflowEventStore workflowEventStore = new WorkflowEventStore();
@@ -35,7 +35,7 @@ public class OrderedAndUnorderedAssertionsTest {
 
             // Ordered assertions - events must occur in this exact sequence
             FluentEventAssertions.assertThat(workflowEventStore.getAll())
-                    .inOrder()  // Enable strict ordering
+                    .inOrder() // Enable strict ordering
                     .workflowStarted()
                     .taskStarted("task1")
                     .taskCompleted("task1")
@@ -50,8 +50,7 @@ public class OrderedAndUnorderedAssertionsTest {
         Workflow workflow = FuncWorkflowBuilder.workflow()
                 .tasks(
                         FuncDSL.function("task1", (number) -> number + 1, Long.class),
-                        FuncDSL.function("task2", (number) -> number * 2, Long.class)
-                )
+                        FuncDSL.function("task2", (number) -> number * 2, Long.class))
                 .build();
 
         WorkflowEventStore workflowEventStore = new WorkflowEventStore();
@@ -83,8 +82,7 @@ public class OrderedAndUnorderedAssertionsTest {
                 .tasks(
                         FuncDSL.function("task1", (number) -> number + 1, Long.class),
                         FuncDSL.function("task2", (number) -> number * 2, Long.class),
-                        FuncDSL.function("task3", (number) -> number - 5, Long.class)
-                )
+                        FuncDSL.function("task3", (number) -> number - 5, Long.class))
                 .build();
 
         WorkflowEventStore workflowEventStore = new WorkflowEventStore();
@@ -99,9 +97,9 @@ public class OrderedAndUnorderedAssertionsTest {
 
             // Just verify that specific tasks started, without caring about order
             FluentEventAssertions.assertThat(workflowEventStore.getAll())
-                    .taskStarted("task2")  // Check task2 started (anywhere in the event list)
-                    .taskStarted("task1")  // Check task1 started (anywhere in the event list)
-                    .taskCompleted("task3")  // Check task3 completed (anywhere in the event list)
+                    .taskStarted("task2") // Check task2 started (anywhere in the event list)
+                    .taskStarted("task1") // Check task1 started (anywhere in the event list)
+                    .taskCompleted("task3") // Check task3 completed (anywhere in the event list)
                     .assertAll();
         }
     }

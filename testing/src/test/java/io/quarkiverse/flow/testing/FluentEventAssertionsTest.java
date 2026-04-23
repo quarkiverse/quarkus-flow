@@ -1,5 +1,7 @@
 package io.quarkiverse.flow.testing;
 
+import org.junit.jupiter.api.Test;
+
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
@@ -7,19 +9,14 @@ import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.WorkflowModel;
-import org.junit.jupiter.api.Test;
-
-import java.util.Map;
 
 public class FluentEventAssertionsTest {
-
 
     @Test
     void should_wait_for_workflow_completion() {
         Workflow workflow = FuncWorkflowBuilder.workflow()
                 .tasks(
-                        FuncDSL.function("inc", (number) -> number + 1, Long.class)
-                )
+                        FuncDSL.function("inc", (number) -> number + 1, Long.class))
                 .build();
 
         WorkflowEventStore workflowEventStore = new WorkflowEventStore();
