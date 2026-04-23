@@ -2,7 +2,6 @@ package io.quarkiverse.flow.recorders;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Paths;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Any;
@@ -12,6 +11,7 @@ import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.annotations.Recorder;
+import io.serverlessworkflow.api.WorkflowFormat;
 import io.serverlessworkflow.api.WorkflowReader;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowDefinition;
@@ -44,14 +44,15 @@ public class WorkflowDefinitionRecorder {
         };
     }
 
-    public Supplier<WorkflowDefinition> workflowDefinitionFromFileSupplier(String location) {
+    public Supplier<WorkflowDefinition> workflowDefinitionFromFileSupplier(String filename, byte[] content,
+            WorkflowFormat workflowFormat) {
         return () -> {
             final WorkflowRegistry registry = Arc.container().instance(WorkflowRegistry.class).get();
             try {
-                Workflow workflow = WorkflowReader.readWorkflow(Paths.get(location));
+                Workflow workflow = WorkflowReader.readWorkflow(content, workflowFormat);
                 return registry.register(workflow);
             } catch (IOException e) {
-                throw new UncheckedIOException("Failed to create WorkflowDefinition for workflow at " + location, e);
+                throw new UncheckedIOException("Failed to create WorkflowDefinition for workflow at " + filename, e);
             }
         };
     }

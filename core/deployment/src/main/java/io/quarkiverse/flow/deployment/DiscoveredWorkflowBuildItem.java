@@ -24,20 +24,22 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
         SPEC
     }
 
-    private Path workflowPath;
-    private String relativeFlowPath;
+    private Path absolute;
+    private Path relativeToFlowDir;
     private WorkflowDefinitionId workflowDefinitionId;
     private String regularIdentifier;
     private String className;
     private final From from;
+    private byte[] content;
 
-    private DiscoveredWorkflowBuildItem(Path workflowPath, Workflow workflow, String relativeFlowPath) {
-        this.workflowPath = workflowPath;
-        this.relativeFlowPath = relativeFlowPath;
+    private DiscoveredWorkflowBuildItem(Path absolute, Path relativeToFlowDir, Workflow workflow, byte[] content) {
+        this.absolute = absolute;
+        this.relativeToFlowDir = relativeToFlowDir;
         this.workflowDefinitionId = WorkflowDefinitionId.of(workflow);
         this.regularIdentifier = WorkflowNameUtils.yamlDescriptorIdentifier(
                 workflowDefinitionId.namespace(),
                 workflowDefinitionId.name());
+        this.content = content;
         this.from = From.SPEC;
     }
 
@@ -49,13 +51,16 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
     /**
      * Creates a build item for a workflow discovered from a specification file.
      *
-     * @param workflowPath the path to the workflow specification file
+     * @param absolute the path to the workflow specification file
      * @param workflow the parsed workflow model
-     * @param relativeFlowPath the relative path from the flow directory
+     * @param relativeToFlowDir the relative path from the flow directory
+     * @param content the workflow file content
+     *
      * @return a new {@link DiscoveredWorkflowBuildItem}
      */
-    public static DiscoveredWorkflowBuildItem fromSpec(Path workflowPath, Workflow workflow, String relativeFlowPath) {
-        return new DiscoveredWorkflowBuildItem(workflowPath, workflow, relativeFlowPath);
+    public static DiscoveredWorkflowBuildItem fromSpec(Path absolute, Path relativeToFlowDir, Workflow workflow,
+            byte[] content) {
+        return new DiscoveredWorkflowBuildItem(absolute, relativeToFlowDir, workflow, content);
     }
 
     /**
@@ -69,12 +74,12 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
     }
 
     /**
-     * Returns the location of the workflow specification on disk.
+     * Returns the absolute location of the workflow specification on disk.
      *
      * @return the workflow file location
      */
-    public String location() {
-        return this.workflowPath.toString();
+    public String absolutePath() {
+        return this.absolute.toString();
     }
 
     public String namespace() {
@@ -124,7 +129,11 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
      *
      * @return the relative flow path, or {@code null} if discovered from source
      */
-    public String relativeFlowPath() {
-        return relativeFlowPath;
+    public String relativeToFlowDir() {
+        return relativeToFlowDir.toString();
+    }
+
+    public byte[] content() {
+        return content;
     }
 }

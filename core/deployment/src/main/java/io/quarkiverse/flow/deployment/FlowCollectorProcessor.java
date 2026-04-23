@@ -43,7 +43,7 @@ public class FlowCollectorProcessor {
      */
     private static Path findModuleRootFromTarget(Path outputDir) {
         Path targetDir = outputDir;
-        while (targetDir != null && !"target".equals(targetDir.getFileName().toString())) {
+        while (targetDir != null && targetDir.getFileName() != null && !"target".equals(targetDir.getFileName().toString())) {
             targetDir = targetDir.getParent();
         }
 
@@ -114,8 +114,10 @@ public class FlowCollectorProcessor {
                     .forEach(file -> {
                         try {
                             Workflow workflow = WorkflowReader.readWorkflow(file);
+                            byte[] content = Files.readAllBytes(file);
                             items.add(
-                                    DiscoveredWorkflowBuildItem.fromSpec(file, workflow, flowDir.relativize(file).toString()));
+                                    DiscoveredWorkflowBuildItem.fromSpec(file, flowDir.relativize(file), workflow,
+                                            content));
                         } catch (IOException e) {
                             LOG.error("Failed to parse workflow file at path: {}", file, e);
                             throw new UncheckedIOException("Error while parsing workflow file: " + file, e);
@@ -164,7 +166,7 @@ public class FlowCollectorProcessor {
             if (Files.exists(testFlowDir)) {
                 for (DiscoveredWorkflowBuildItem item : collectWorkflowFileData(testFlowDir)) {
                     tryAddUniqueWorkflow(item, workflowsMap);
-                    collectedInTest.add(item.relativeFlowPath());
+                    collectedInTest.add(item.relativeToFlowDir());
                 }
             }
         }
@@ -177,7 +179,7 @@ public class FlowCollectorProcessor {
             for (DiscoveredWorkflowBuildItem collectedInMain : collectWorkflowFileData(mainFlowDir)) {
                 if (skipIfSameRelativePath(collectedInMain, collectedInTest)) {
                     LOG.debug("Skipping workflow from src/main/* {} (overridden by test resource with same relative path)",
-                            collectedInMain.location());
+                            collectedInMain.absolutePath());
                     continue;
                 }
 
@@ -189,7 +191,7 @@ public class FlowCollectorProcessor {
     }
 
     private static boolean skipIfSameRelativePath(DiscoveredWorkflowBuildItem collectedInMain, Set<String> collectedInTest) {
-        return collectedInTest.contains(collectedInMain.relativeFlowPath());
+        return collectedInTest.contains(collectedInMain.relativeToFlowDir());
     }
 
     private static void tryAddUniqueWorkflow(DiscoveredWorkflowBuildItem item,
