@@ -63,6 +63,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.runtime.metrics.MetricsFactory;
+import io.serverlessworkflow.api.WorkflowFormat;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
@@ -195,7 +196,8 @@ class FlowProcessor {
                 .addValue("value", workflow.regularIdentifier()).done()
                 .addQualifier().annotation(DotNames.IDENTIFIER)
                 .addValue("value", flowSubclassIdentifier).done()
-                .supplier(recorder.workflowDefinitionFromFileSupplier(workflow.location()))
+                .supplier(recorder.workflowDefinitionFromFileSupplier(
+                        workflow.name(), workflow.content(), WorkflowFormat.fromFileName(workflow.name())))
                 .done());
 
         identifiers.produce(new FlowIdentifierBuildItem(
@@ -292,11 +294,11 @@ class FlowProcessor {
     public void watchChanges(List<DiscoveredWorkflowBuildItem> workflows,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) {
 
-        List<String> specLocations = workflows.stream().filter(DiscoveredWorkflowBuildItem::fromSpec)
-                .map(DiscoveredWorkflowBuildItem::location)
+        List<String> locations = workflows.stream().filter(DiscoveredWorkflowBuildItem::fromSpec)
+                .map(DiscoveredWorkflowBuildItem::absolutePath)
                 .toList();
 
-        for (String location : specLocations) {
+        for (String location : locations) {
             watchedFiles.produce(HotDeploymentWatchedFileBuildItem.builder()
                     .setLocation(location)
                     .setRestartNeeded(true)
