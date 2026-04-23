@@ -66,11 +66,22 @@ public class WorkflowEventStore {
      */
     public List<RecordedWorkflowEvent> getByInstanceId(String instanceId) {
         if (instanceId == null) {
-            throw new IllegalArgumentException("InstanceId cannot be null");
+            throw new IllegalArgumentException("InstanceId must not be null");
         }
         return events.get().stream()
                 .filter(e -> instanceId.equals(e.getInstanceId()))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns all events for a specific workflow instance.
+     * Alias for getByInstanceId() for better API consistency.
+     *
+     * @param instanceId the workflow instance ID
+     * @return immutable list of events for the instance
+     */
+    public List<RecordedWorkflowEvent> getEventsForInstance(String instanceId) {
+        return getByInstanceId(instanceId);
     }
 
     /**
@@ -103,7 +114,7 @@ public class WorkflowEventStore {
      */
     public List<RecordedWorkflowEvent> getByTaskName(String taskName) {
         if (taskName == null) {
-            throw new IllegalArgumentException("TaskName cannot be null");
+            throw new IllegalArgumentException("taskName must not be null");
         }
         return events.get().stream()
                 .filter(e -> e.getTaskName().map(taskName::equals).orElse(false))

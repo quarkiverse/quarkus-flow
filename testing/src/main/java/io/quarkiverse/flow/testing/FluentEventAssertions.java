@@ -6,12 +6,12 @@ import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 
-import io.serverlessworkflow.impl.WorkflowInstance;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.SoftAssertions;
 
 import io.quarkiverse.flow.testing.events.EventType;
 import io.quarkiverse.flow.testing.events.RecordedWorkflowEvent;
+import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.WorkflowModel;
 
 /**
@@ -31,123 +31,388 @@ import io.serverlessworkflow.impl.WorkflowModel;
  */
 public class FluentEventAssertions {
 
-    private final List<RecordedWorkflowEvent> events;
+    private List<RecordedWorkflowEvent> events;
+    private final WorkflowEventStore eventStore;
     private int currentIndex = 0;
+    private boolean strictOrder = false;
+    private EventWaiter eventWaiter;
 
     SoftAssertions softAssertions = new SoftAssertions();
 
     public static FluentEventAssertions assertThat(List<RecordedWorkflowEvent> events) {
-        return new FluentEventAssertions(events);
+        return new FluentEventAssertions(events, null);
+    }
+
+    public static FluentEventAssertions assertThat(WorkflowEventStore eventStore) {
+        return new FluentEventAssertions(eventStore.getAll(), eventStore);
     }
 
     public FluentEventAssertions(List<RecordedWorkflowEvent> events) {
-        this.events = events;
+        this(events, null);
     }
 
-    // Workflow Lifecycle Assertions
+    public FluentEventAssertions(List<RecordedWorkflowEvent> events, WorkflowEventStore eventStore) {
+        this.events = events;
+        this.eventStore = eventStore;
+        if (eventStore != null) {
+            this.eventWaiter = new EventWaiter(eventStore);
+        }
+    }
 
     /**
-     * Asserts that the next event is a workflow started event.
+     * Refreshes the events list from the event store.
+     * This is automatically called after wait operations.
+     */
+    private void refreshEvents() {
+        if (eventStore != null) {
+            this.events = eventStore.getAll();
+        }
+    }
+
+    /**
+     * Enables strict ordering mode. When enabled, all subsequent assertions will verify
+     * that events occur in the exact order specified. When disabled (default), assertions
+     * only verify that events exist somewhere in the event list.
+     *
+     * @return this for method chaining
+     */
+    public FluentEventAssertions inOrder() {
+        this.strictOrder = true;
+        return this;
+    }
+
+    // EventWaiter Integration
+
+    /**
+     * Waits for a workflow started event before continuing with assertions.
+     * Requires that FluentEventAssertions was created with a WorkflowEventStore.
+     *
+     * @return this for method chaining
+     * @throws IllegalStateException if no EventWaiter is available
+     */
+    public FluentEventAssertions waitForWorkflowStarted() {
+        ensureEventWaiterAvailable();
+        eventWaiter.workflowStarted();
+        refreshEvents();
+        return this;
+    }
+
+    /**
+     * Waits for a workflow completed event before continuing with assertions.
+     * Requires that FluentEventAssertions was created with a WorkflowEventStore.
+     *
+     * @return this for method chaining
+     * @throws IllegalStateException if no EventWaiter is available
+     */
+    public FluentEventAssertions waitForWorkflowCompleted() {
+        ensureEventWaiterAvailable();
+        eventWaiter.workflowCompleted();
+        refreshEvents();
+        return this;
+    }
+
+    /**
+     * Waits for a workflow completed event with custom timeout before continuing with assertions.
+     * Requires that FluentEventAssertions was created with a WorkflowEventStore.
+     *
+     * @param timeout the maximum time to wait
+     * @return this for method chaining
+     * @throws IllegalStateException if no EventWaiter is available
+     */
+    public FluentEventAssertions waitForWorkflowCompleted(Duration timeout) {
+        ensureEventWaiterAvailable();
+        eventWaiter.timeout(timeout).workflowCompleted();
+        refreshEvents();
+        return this;
+    }
+
+    /**
+     * Waits for a workflow failed event before continuing with assertions.
+     * Requires that FluentEventAssertions was created with a WorkflowEventStore.
+     *
+     * @return this for method chaining
+     * @throws IllegalStateException if no EventWaiter is available
+     */
+    public FluentEventAssertions waitForWorkflowFailed() {
+        ensureEventWaiterAvailable();
+        eventWaiter.workflowFailed();
+        refreshEvents();
+        return this;
+    }
+
+    /**
+     * Waits for a task started event before continuing with assertions.
+     * Requires that FluentEventAssertions was created with a WorkflowEventStore.
+     *
+     * @param taskName the task name to wait for
+     * @return this for method chaining
+     * @throws IllegalStateException if no EventWaiter is available
+     */
+    public FluentEventAssertions waitForTaskStarted(String taskName) {
+        ensureEventWaiterAvailable();
+        eventWaiter.taskStarted(taskName);
+        refreshEvents();
+        return this;
+    }
+
+    /**
+     * Waits for a task completed event before continuing with assertions.
+     * Requires that FluentEventAssertions was created with a WorkflowEventStore.
+     *
+     * @param taskName the task name to wait for
+     * @return this for method chaining
+     * @throws IllegalStateException if no EventWaiter is available
+     */
+    public FluentEventAssertions waitForTaskCompleted(String taskName) {
+        ensureEventWaiterAvailable();
+        eventWaiter.taskCompleted(taskName);
+        refreshEvents();
+        return this;
+    }
+
+    /**
+     * Waits for a task failed event before continuing with assertions.
+     * Requires that FluentEventAssertions was created with a WorkflowEventStore.
+     *
+     * @param taskName the task name to wait for
+     * @return this for method chaining
+     * @throws IllegalStateException if no EventWaiter is available
+     */
+    public FluentEventAssertions waitForTaskFailed(String taskName) {
+        ensureEventWaiterAvailable();
+        eventWaiter.taskFailed(taskName);
+        refreshEvents();
+        return this;
+    }
+
+    /**
+     * Configures the timeout for wait operations.
+     * Requires that FluentEventAssertions was created with a WorkflowEventStore.
+     *
+     * @param timeout the maximum time to wait
+     * @return this for method chaining
+     * @throws IllegalStateException if no EventWaiter is available
+     */
+    public FluentEventAssertions waitTimeout(Duration timeout) {
+        ensureEventWaiterAvailable();
+        eventWaiter.timeout(timeout);
+        return this;
+    }
+
+    /**
+     * Configures the poll interval for wait operations.
+     * Requires that FluentEventAssertions was created with a WorkflowEventStore.
+     *
+     * @param pollInterval the interval between checks
+     * @return this for method chaining
+     * @throws IllegalStateException if no EventWaiter is available
+     */
+    public FluentEventAssertions waitPollInterval(Duration pollInterval) {
+        ensureEventWaiterAvailable();
+        eventWaiter.pollInterval(pollInterval);
+        return this;
+    }
+
+    private void ensureEventWaiterAvailable() {
+        if (eventWaiter == null) {
+            throw new IllegalStateException(
+                    "EventWaiter functionality requires FluentEventAssertions to be created with a WorkflowEventStore. " +
+                    "Use FluentEventAssertions.assertThat(workflowEventStore) instead of assertThat(events).");
+        }
+    }
+
+    /**
+     * Asserts that a workflow started event exists.
+     * Behavior depends on whether inOrder() was called:
+     * - With inOrder(): Verifies the event is at the current position in sequence
+     * - Without inOrder(): Verifies the event exists anywhere in the event list
      *
      * @return this for method chaining
      */
     public FluentEventAssertions workflowStarted() {
-        assertNextEventType(EventType.WORKFLOW_STARTED);
+        if (strictOrder) {
+            assertNextEventType(EventType.WORKFLOW_STARTED);
+        } else {
+            softAssertions.assertThat(events.stream()
+                    .anyMatch(e -> e.getType() == EventType.WORKFLOW_STARTED))
+                    .as("At least one WORKFLOW_STARTED event")
+                    .isTrue();
+        }
         return this;
     }
 
     /**
-     * Asserts that the next event is a workflow completed event.
+     * Asserts that a workflow completed event exists.
+     * Behavior depends on whether inOrder() was called:
+     * - With inOrder(): Verifies the event is at the current position in sequence
+     * - Without inOrder(): Verifies the event exists anywhere in the event list
      *
      * @return this for method chaining
      */
     public FluentEventAssertions workflowCompleted(WorkflowInstance instance) {
-        softAssertions.assertThat(events.stream().filter(e -> e.getType() == EventType.WORKFLOW_COMPLETED &&
-                        e.getInstanceId().equals(instance.id())).count())
-                .as("At least one WORKFLOW_COMPLETED event for instance '%s'", instance.id())
-                .isGreaterThan(0);
+        if (strictOrder) {
+            RecordedWorkflowEvent event = assertNextEventType(EventType.WORKFLOW_COMPLETED);
+            Assertions.assertThat(event.getInstanceId())
+                    .as("Instance ID for WORKFLOW_COMPLETED event")
+                    .isEqualTo(instance.id());
+        } else {
+            softAssertions.assertThat(events.stream().filter(e -> e.getType() == EventType.WORKFLOW_COMPLETED &&
+                    e.getInstanceId().equals(instance.id())).count())
+                    .as("At least one WORKFLOW_COMPLETED event for instance '%s'", instance.id())
+                    .isGreaterThan(0);
+        }
         return this;
     }
 
     /**
-     * Asserts that the next event is a workflow failed event.
+     * Asserts that a workflow completed event exists, regardless of instance.
+     * Behavior depends on whether inOrder() was called:
+     * - With inOrder(): Verifies the event is at the current position in sequence
+     * - Without inOrder(): Verifies the event exists anywhere in the event list
+     *
+     * @return this for method chaining
+     */
+    public FluentEventAssertions workflowCompleted() {
+        if (strictOrder) {
+            assertNextEventType(EventType.WORKFLOW_COMPLETED);
+        } else {
+            softAssertions.assertThat(events.stream()
+                    .anyMatch(e -> e.getType() == EventType.WORKFLOW_COMPLETED))
+                    .as("At least one WORKFLOW_COMPLETED event")
+                    .isTrue();
+        }
+        return this;
+    }
+
+    /**
+     * Asserts that a workflow failed event exists.
+     * Behavior depends on whether inOrder() was called:
+     * - With inOrder(): Verifies the event is at the current position in sequence
+     * - Without inOrder(): Verifies the event exists anywhere in the event list
      *
      * @return this for method chaining
      */
     public FluentEventAssertions workflowFailed() {
-        assertNextEventType(EventType.WORKFLOW_FAILED);
+        if (strictOrder) {
+            assertNextEventType(EventType.WORKFLOW_FAILED);
+        } else {
+            softAssertions.assertThat(events.stream()
+                    .anyMatch(e -> e.getType() == EventType.WORKFLOW_FAILED))
+                    .as("At least one WORKFLOW_FAILED event")
+                    .isTrue();
+        }
         return this;
     }
 
     /**
-     * Asserts that the next event is a workflow cancelled event.
+     * Asserts that a workflow cancelled event exists.
+     * Behavior depends on whether inOrder() was called:
+     * - With inOrder(): Verifies the event is at the current position in sequence
+     * - Without inOrder(): Verifies the event exists anywhere in the event list
      *
      * @return this for method chaining
      */
     public FluentEventAssertions workflowCancelled() {
-        assertNextEventType(EventType.WORKFLOW_CANCELLED);
+        if (strictOrder) {
+            assertNextEventType(EventType.WORKFLOW_CANCELLED);
+        } else {
+            softAssertions.assertThat(events.stream()
+                    .anyMatch(e -> e.getType() == EventType.WORKFLOW_CANCELLED))
+                    .as("At least one WORKFLOW_CANCELLED event")
+                    .isTrue();
+        }
         return this;
     }
 
     /**
-     * Asserts that the next event is a workflow suspended event.
+     * Asserts that a workflow suspended event exists.
+     * Behavior depends on whether inOrder() was called:
+     * - With inOrder(): Verifies the event is at the current position in sequence
+     * - Without inOrder(): Verifies the event exists anywhere in the event list
      *
      * @return this for method chaining
      */
     public FluentEventAssertions workflowSuspended() {
-        assertNextEventType(EventType.WORKFLOW_SUSPENDED);
+        if (strictOrder) {
+            assertNextEventType(EventType.WORKFLOW_SUSPENDED);
+        } else {
+            softAssertions.assertThat(events.stream()
+                    .anyMatch(e -> e.getType() == EventType.WORKFLOW_SUSPENDED))
+                    .as("At least one WORKFLOW_SUSPENDED event")
+                    .isTrue();
+        }
         return this;
     }
 
     /**
-     * Asserts that the next event is a workflow resumed event.
+     * Asserts that a workflow resumed event exists.
+     * Behavior depends on whether inOrder() was called:
+     * - With inOrder(): Verifies the event is at the current position in sequence
+     * - Without inOrder(): Verifies the event exists anywhere in the event list
      *
      * @return this for method chaining
      */
     public FluentEventAssertions workflowResumed() {
-        assertNextEventType(EventType.WORKFLOW_RESUMED);
+        if (strictOrder) {
+            assertNextEventType(EventType.WORKFLOW_RESUMED);
+        } else {
+            softAssertions.assertThat(events.stream()
+                    .anyMatch(e -> e.getType() == EventType.WORKFLOW_RESUMED))
+                    .as("At least one WORKFLOW_RESUMED event")
+                    .isTrue();
+        }
         return this;
     }
 
     /**
-     * Asserts that the next event is a workflow status changed event.
-     *
-     * @return this for method chaining
-     */
-    public FluentEventAssertions workflowStatusChanged() {
-        assertNextEventType(EventType.WORKFLOW_STATUS_CHANGED);
-        return this;
-    }
-
-    // Task Lifecycle Assertions
-
-    /**
-     * Asserts that the next event is a task started event with the specified task name.
+     * Asserts that a task started event exists for the specified task name.
+     * Behavior depends on whether inOrder() was called:
+     * - With inOrder(): Verifies the event is at the current position in sequence
+     * - Without inOrder(): Verifies the event exists anywhere in the event list
      *
      * @param taskName the expected task name
      * @return this for method chaining
      */
     public FluentEventAssertions taskStarted(String taskName) {
-        RecordedWorkflowEvent event = assertNextEventType(EventType.TASK_STARTED);
-        Assertions.assertThat(event.getTaskName())
-                .as("Task name for TASK_STARTED event")
-                .hasValue(taskName);
+        if (strictOrder) {
+            RecordedWorkflowEvent event = assertNextEventType(EventType.TASK_STARTED);
+            Assertions.assertThat(event.getTaskName())
+                    .as("Task name for TASK_STARTED event")
+                    .hasValue(taskName);
+        } else {
+            softAssertions.assertThat(events.stream()
+                    .filter(e -> e.getType() == EventType.TASK_STARTED)
+                    .filter(e -> e.getTaskName().map(taskName::equals).orElse(false))
+                    .anyMatch(event -> event.getType() == EventType.TASK_STARTED))
+                    .as("At least one TASK_STARTED event for task '%s'", taskName)
+                    .isTrue();
+        }
         return this;
     }
 
     /**
-     * Asserts that the next event is a task completed event with the specified task name.
+     * Asserts that a task completed event exists for the specified task name.
+     * Behavior depends on whether inOrder() was called:
+     * - With inOrder(): Verifies the event is at the current position in sequence
+     * - Without inOrder(): Verifies the event exists anywhere in the event list
      *
      * @param taskName the expected task name
      * @return this for method chaining
      */
     public FluentEventAssertions taskCompleted(String taskName) {
-        softAssertions.assertThat(events.stream()
-                        .filter(e -> e.getType() == EventType.TASK_COMPLETED)
-                        .filter(e -> e.getTaskName().map(taskName::equals).orElse(false))
-                        .anyMatch(event -> event.getType() == EventType.TASK_COMPLETED))
-                .as("At least one TASK_COMPLETED event for task '%s'", taskName)
-                .isTrue();
+        if (strictOrder) {
+            RecordedWorkflowEvent event = assertNextEventType(EventType.TASK_COMPLETED);
+            Assertions.assertThat(event.getTaskName())
+                    .as("Task name for TASK_COMPLETED event")
+                    .hasValue(taskName);
+        } else {
+            softAssertions.assertThat(events.stream()
+                    .filter(e -> e.getType() == EventType.TASK_COMPLETED)
+                    .filter(e -> e.getTaskName().map(taskName::equals).orElse(false))
+                    .anyMatch(event -> event.getType() == EventType.TASK_COMPLETED))
+                    .as("At least one TASK_COMPLETED event for task '%s'", taskName)
+                    .isTrue();
+        }
         return this;
     }
 
@@ -156,72 +421,132 @@ public class FluentEventAssertions {
     }
 
     /**
-     * Asserts that the next event is a task failed event with the specified task name.
+     * Asserts that a task failed event exists for the specified task name.
+     * Behavior depends on whether inOrder() was called:
+     * - With inOrder(): Verifies the event is at the current position in sequence
+     * - Without inOrder(): Verifies the event exists anywhere in the event list
      *
      * @param taskName the expected task name
      * @return this for method chaining
      */
     public FluentEventAssertions taskFailed(String taskName) {
-        RecordedWorkflowEvent event = assertNextEventType(EventType.TASK_FAILED);
-        Assertions.assertThat(event.getTaskName())
-                .as("Task name for TASK_FAILED event")
-                .hasValue(taskName);
+        if (strictOrder) {
+            RecordedWorkflowEvent event = assertNextEventType(EventType.TASK_FAILED);
+            Assertions.assertThat(event.getTaskName())
+                    .as("Task name for TASK_FAILED event")
+                    .hasValue(taskName);
+        } else {
+            softAssertions.assertThat(events.stream()
+                    .filter(e -> e.getType() == EventType.TASK_FAILED)
+                    .filter(e -> e.getTaskName().map(taskName::equals).orElse(false))
+                    .anyMatch(event -> event.getType() == EventType.TASK_FAILED))
+                    .as("At least one TASK_FAILED event for task '%s'", taskName)
+                    .isTrue();
+        }
         return this;
     }
 
     /**
-     * Asserts that the next event is a task cancelled event with the specified task name.
+     * Asserts that a task cancelled event exists for the specified task name.
+     * Behavior depends on whether inOrder() was called:
+     * - With inOrder(): Verifies the event is at the current position in sequence
+     * - Without inOrder(): Verifies the event exists anywhere in the event list
      *
      * @param taskName the expected task name
      * @return this for method chaining
      */
     public FluentEventAssertions taskCancelled(String taskName) {
-        RecordedWorkflowEvent event = assertNextEventType(EventType.TASK_CANCELLED);
-        Assertions.assertThat(event.getTaskName())
-                .as("Task name for TASK_CANCELLED event")
-                .hasValue(taskName);
+        if (strictOrder) {
+            RecordedWorkflowEvent event = assertNextEventType(EventType.TASK_CANCELLED);
+            Assertions.assertThat(event.getTaskName())
+                    .as("Task name for TASK_CANCELLED event")
+                    .hasValue(taskName);
+        } else {
+            softAssertions.assertThat(events.stream()
+                    .filter(e -> e.getType() == EventType.TASK_CANCELLED)
+                    .filter(e -> e.getTaskName().map(taskName::equals).orElse(false))
+                    .anyMatch(event -> event.getType() == EventType.TASK_CANCELLED))
+                    .as("At least one TASK_CANCELLED event for task '%s'", taskName)
+                    .isTrue();
+        }
         return this;
     }
 
     /**
-     * Asserts that the next event is a task suspended event with the specified task name.
+     * Asserts that a task suspended event exists for the specified task name.
+     * Behavior depends on whether inOrder() was called:
+     * - With inOrder(): Verifies the event is at the current position in sequence
+     * - Without inOrder(): Verifies the event exists anywhere in the event list
      *
      * @param taskName the expected task name
      * @return this for method chaining
      */
     public FluentEventAssertions taskSuspended(String taskName) {
-        RecordedWorkflowEvent event = assertNextEventType(EventType.TASK_SUSPENDED);
-        Assertions.assertThat(event.getTaskName())
-                .as("Task name for TASK_SUSPENDED event")
-                .hasValue(taskName);
+        if (strictOrder) {
+            RecordedWorkflowEvent event = assertNextEventType(EventType.TASK_SUSPENDED);
+            Assertions.assertThat(event.getTaskName())
+                    .as("Task name for TASK_SUSPENDED event")
+                    .hasValue(taskName);
+        } else {
+            softAssertions.assertThat(events.stream()
+                    .filter(e -> e.getType() == EventType.TASK_SUSPENDED)
+                    .filter(e -> e.getTaskName().map(taskName::equals).orElse(false))
+                    .anyMatch(event -> event.getType() == EventType.TASK_SUSPENDED))
+                    .as("At least one TASK_SUSPENDED event for task '%s'", taskName)
+                    .isTrue();
+        }
         return this;
     }
 
     /**
-     * Asserts that the next event is a task resumed event with the specified task name.
+     * Asserts that a task resumed event exists for the specified task name.
+     * Behavior depends on whether inOrder() was called:
+     * - With inOrder(): Verifies the event is at the current position in sequence
+     * - Without inOrder(): Verifies the event exists anywhere in the event list
      *
      * @param taskName the expected task name
      * @return this for method chaining
      */
     public FluentEventAssertions taskResumed(String taskName) {
-        RecordedWorkflowEvent event = assertNextEventType(EventType.TASK_RESUMED);
-        Assertions.assertThat(event.getTaskName())
-                .as("Task name for TASK_RESUMED event")
-                .hasValue(taskName);
+        if (strictOrder) {
+            RecordedWorkflowEvent event = assertNextEventType(EventType.TASK_RESUMED);
+            Assertions.assertThat(event.getTaskName())
+                    .as("Task name for TASK_RESUMED event")
+                    .hasValue(taskName);
+        } else {
+            softAssertions.assertThat(events.stream()
+                    .filter(e -> e.getType() == EventType.TASK_RESUMED)
+                    .filter(e -> e.getTaskName().map(taskName::equals).orElse(false))
+                    .anyMatch(event -> event.getType() == EventType.TASK_RESUMED))
+                    .as("At least one TASK_RESUMED event for task '%s'", taskName)
+                    .isTrue();
+        }
         return this;
     }
 
     /**
-     * Asserts that the next event is a task retried event with the specified task name.
+     * Asserts that a task retried event exists for the specified task name.
+     * Behavior depends on whether inOrder() was called:
+     * - With inOrder(): Verifies the event is at the current position in sequence
+     * - Without inOrder(): Verifies the event exists anywhere in the event list
      *
      * @param taskName the expected task name
      * @return this for method chaining
      */
     public FluentEventAssertions taskRetried(String taskName) {
-        RecordedWorkflowEvent event = assertNextEventType(EventType.TASK_RETRIED);
-        Assertions.assertThat(event.getTaskName())
-                .as("Task name for TASK_RETRIED event")
-                .hasValue(taskName);
+        if (strictOrder) {
+            RecordedWorkflowEvent event = assertNextEventType(EventType.TASK_RETRIED);
+            Assertions.assertThat(event.getTaskName())
+                    .as("Task name for TASK_RETRIED event")
+                    .hasValue(taskName);
+        } else {
+            softAssertions.assertThat(events.stream()
+                    .filter(e -> e.getType() == EventType.TASK_RETRIED)
+                    .filter(e -> e.getTaskName().map(taskName::equals).orElse(false))
+                    .anyMatch(event -> event.getType() == EventType.TASK_RETRIED))
+                    .as("At least one TASK_RETRIED event for task '%s'", taskName)
+                    .isTrue();
+        }
         return this;
     }
 
@@ -333,7 +658,7 @@ public class FluentEventAssertions {
     /**
      * Asserts the number of events of a specific type.
      *
-     * @param type     the event type
+     * @param type the event type
      * @param expected the expected count
      * @return this for method chaining
      */
@@ -347,12 +672,10 @@ public class FluentEventAssertions {
         return this;
     }
 
-    // Timing Assertions
-
     /**
      * Asserts that a task completed before another task.
      *
-     * @param firstTask  the task that should complete first
+     * @param firstTask the task that should complete first
      * @param secondTask the task that should complete second
      * @return this for method chaining
      */
@@ -406,8 +729,6 @@ public class FluentEventAssertions {
         return this;
     }
 
-    // Instance and Workflow ID Assertions
-
     /**
      * Asserts that all events belong to the specified workflow instance.
      *
@@ -433,8 +754,6 @@ public class FluentEventAssertions {
                 .allMatch(e -> workflowId.equals(e.getWorkflowId()));
         return this;
     }
-
-    // Helper Methods
 
     private RecordedWorkflowEvent assertNextEventType(EventType expectedType) {
         if (currentIndex >= events.size()) {

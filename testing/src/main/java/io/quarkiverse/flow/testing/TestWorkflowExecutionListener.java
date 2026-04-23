@@ -1,7 +1,6 @@
 package io.quarkiverse.flow.testing;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Alternative;
 import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
@@ -28,16 +27,20 @@ import io.serverlessworkflow.impl.lifecycle.WorkflowSuspendedEvent;
  * This listener is automatically registered in test scope and captures all workflow and task events
  * into a thread-safe event store for later verification.
  * <p>
- * The listener uses {@link Alternative} with high priority to ensure it runs before other listeners
- * and captures events in the correct order.
  */
 @ApplicationScoped
 public class TestWorkflowExecutionListener implements WorkflowExecutionListener {
 
     private static final Logger LOG = Logger.getLogger(TestWorkflowExecutionListener.class);
 
-    @Inject
     WorkflowEventStore eventStore;
+
+    public TestWorkflowExecutionListener(
+            WorkflowEventStore eventStore
+    ) {
+        this.eventStore = eventStore;
+    }
+
 
     @Override
     public int priority() {
@@ -107,17 +110,6 @@ public class TestWorkflowExecutionListener implements WorkflowExecutionListener 
             LOG.debugf("Recorded workflow resumed event: %s", recordedEvent);
         } catch (Exception e) {
             LOG.errorf(e, "Failed to record workflow resumed event");
-        }
-    }
-
-    @Override
-    public void onWorkflowStatusChanged(WorkflowStatusEvent event) {
-        try {
-            RecordedWorkflowEvent recordedEvent = RecordedWorkflowEvent.from(event);
-            eventStore.record(recordedEvent);
-            LOG.debugf("Recorded workflow status changed event: %s", recordedEvent);
-        } catch (Exception e) {
-            LOG.errorf(e, "Failed to record workflow status changed event");
         }
     }
 

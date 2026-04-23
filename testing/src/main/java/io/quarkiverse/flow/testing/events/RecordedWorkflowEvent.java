@@ -294,7 +294,6 @@ public class RecordedWorkflowEvent {
     }
 
     // Builder
-
     public static Builder builder() {
         return new Builder();
     }

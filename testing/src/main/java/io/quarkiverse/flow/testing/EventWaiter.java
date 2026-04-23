@@ -38,7 +38,7 @@ public class EventWaiter {
      */
     public EventWaiter timeout(Duration timeout) {
         if (timeout == null || timeout.isNegative()) {
-            throw new IllegalArgumentException("Timeout must be positive");
+            throw new IllegalArgumentException("timeout must be positive");
         }
         this.timeout = timeout;
         return this;
@@ -203,7 +203,6 @@ public class EventWaiter {
     }
 
     // Core Waiting Logic
-
     private EventWaiter waitForEvent(EventType type) {
         return waitForEvent(type, e -> true);
     }
