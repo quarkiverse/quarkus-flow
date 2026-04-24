@@ -10,6 +10,7 @@ import jakarta.inject.Inject;
 
 import org.acme.ConditionalWorkflow;
 import org.acme.ExampleWorkflowsWireMockResource;
+import org.acme.ScorePayload;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +39,7 @@ public class ConditionalWorkflowTest {
     @Test
     void testApprovedPath() throws Exception {
         // 1. Provide a passing score
-        Map<String, Object> input = Map.of("score", 85);
+        ScorePayload input = new ScorePayload(85);
 
         // 2. Execute
         WorkflowModel result = conditionalWorkflow.instance(input)
@@ -56,7 +57,7 @@ public class ConditionalWorkflowTest {
     @Test
     void testRejectedPath() throws Exception {
         // 1. Provide a failing score
-        Map<String, Object> input = Map.of("score", 60);
+        ScorePayload input = new ScorePayload(60);
 
         // 2. Execute
         WorkflowModel result = conditionalWorkflow.instance(input)
