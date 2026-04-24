@@ -21,9 +21,6 @@ public class OpenApiWorkflow extends Flow {
                                 .document("http://localhost:8089/v2/swagger.json")
                                 .operation("findPetsByStatus")
                                 .parameters(Map.of("status", "available"))
-                // Wrap the JQ object constructor in ${ } so the engine evaluates it correctly
-                // Just {pets: .} does not behave as expected
-                // .exportAs("${ {pets: .} }") - also does not help
                 )
                 .build();
     }
