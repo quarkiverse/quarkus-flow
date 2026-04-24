@@ -7,19 +7,19 @@ import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 
 @ApplicationScoped
-public class ParallelWorkflow extends Flow {
+public class ParallelWorkflowBranches extends Flow {
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("parallel-execution-workflow")
+        return FuncWorkflowBuilder.workflow("parallel-workflow-using-branches")
                 .tasks(
                         funcTaskItemListBuilder -> funcTaskItemListBuilder.fork(
                                 funcForkTaskBuilder -> funcForkTaskBuilder.branches(
                                         inner -> {
                                             inner.http("checkInventory",
-                                                    h -> h.method("POST")
+                                                    h -> h.method("POST").body("")
                                                             .endpoint("http://localhost:8089/inventory-check"));
                                             inner.http("checkCredit",
-                                                    h -> h.method("POST")
+                                                    h -> h.method("POST").body("")
                                                             .endpoint("http://localhost:8089/credit-check"));
                                         })
 
