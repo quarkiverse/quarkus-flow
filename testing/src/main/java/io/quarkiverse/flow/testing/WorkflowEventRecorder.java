@@ -43,16 +43,6 @@ public class WorkflowEventRecorder {
     WorkflowEventStore eventStore;
 
     /**
-     * Returns a fluent assertion API for verifying workflow events.
-     * This is the primary method for asserting on event sequences in tests.
-     *
-     * @return fluent assertion API
-     */
-    public FluentEventAssertions assertThat() {
-        return new FluentEventAssertions(eventStore.getAll());
-    }
-
-    /**
      * Returns all recorded events for the current thread.
      *
      * @return immutable list of all recorded events

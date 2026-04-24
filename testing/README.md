@@ -140,6 +140,36 @@ store.waitFor()
     .assertAll();
 ```
 
+### 7. Filter by Instance ID
+
+When testing multiple workflow instances, you can filter events by instance ID:
+
+```java
+// Start multiple workflow instances
+WorkflowInstance instance1 = def.instance(10L);
+WorkflowInstance instance2 = def.instance(20L);
+
+CompletableFuture.runAsync(() -> instance1.start().join());
+CompletableFuture.runAsync(() -> instance2.start().join());
+
+// Wait for and assert on specific instance
+store.waitFor()
+    .forInstance(instance1.id())
+    .workflowCompleted()
+    .thenAssert()
+    .forInstance(instance1.id())
+    .workflowStarted()
+    .workflowCompleted()
+    .assertAll();
+
+// Assert on another instance
+FluentEventAssertions.assertThat(store)
+    .forInstance(instance2.id())
+    .workflowStarted()
+    .workflowCompleted()
+    .assertAll();
+```
+
 ## API Reference
 
 ### WorkflowEventStore
@@ -172,6 +202,7 @@ store.waitFor()  // Returns AsyncFluentEventAssertions
 - `pollInterval(Duration)` - Set poll interval (default: 50ms)
 - `polling()` - Use polling mode (default)
 - `streaming()` - Use streaming mode (future)
+- `forInstance(String)` - Filter events by workflow instance ID
 
 **Wait Methods:**
 - `workflowStarted()` - Wait for workflow start
@@ -194,6 +225,9 @@ store.waitFor()  // Returns AsyncFluentEventAssertions
 FluentEventAssertions.assertThat(store)           // From store
 FluentEventAssertions.assertThat(events)          // From event list
 ```
+
+**Filtering:**
+- `forInstance(String)` - Filter events by workflow instance ID
 
 **Mode:**
 - `inOrder()` - Enable strict sequential verification
@@ -355,6 +389,54 @@ void should_handle_slow_workflow() {
         .thenAssert()
         .workflowCompleted()
         .assertAll();
+}
+```
+
+### Example 6: Filter by Instance ID
+
+```java
+@Test
+void should_filter_events_by_instance() {
+    Workflow workflow = FuncWorkflowBuilder.workflow()
+        .tasks(FuncDSL.function("task1", (n) -> n + 1, Long.class))
+        .build();
+
+    WorkflowEventStore store = new WorkflowEventStore(true); // Shared storage
+
+    try (WorkflowApplication app = WorkflowApplication.builder()
+            .withListener(new TestWorkflowExecutionListener(store))
+            .build()) {
+
+        WorkflowDefinition def = app.workflowDefinition(workflow);
+        
+        // Start multiple instances
+        WorkflowInstance instance1 = def.instance(10L);
+        WorkflowInstance instance2 = def.instance(20L);
+
+        CompletableFuture.runAsync(() -> instance1.start().join());
+        CompletableFuture.runAsync(() -> instance2.start().join());
+
+        // Wait for and assert on specific instance
+        store.waitFor()
+            .forInstance(instance1.id())
+            .workflowCompleted()
+            .thenAssert()
+            .forInstance(instance1.id())
+            .inOrder()
+            .workflowStarted()
+            .taskStarted("task1")
+            .taskCompleted("task1")
+            .workflowCompleted()
+            .assertAll();
+
+        // Assert on another instance
+        FluentEventAssertions.assertThat(store)
+            .forInstance(instance2.id())
+            .workflowStarted()
+            .taskCompleted("task1")
+            .workflowCompleted()
+            .assertAll();
+    }
 }
 ```
 

@@ -36,7 +36,7 @@ public class IntegratedWaitAndAssertTest {
                         FuncDSL.function("task2", (number) -> number * 2, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
+        WorkflowEventStore workflowEventStore = WorkflowEventStore.shared();
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -75,7 +75,7 @@ public class IntegratedWaitAndAssertTest {
                         FuncDSL.function("quickTask", (number) -> number + 1, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
+        WorkflowEventStore workflowEventStore = WorkflowEventStore.shared(); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -106,7 +106,7 @@ public class IntegratedWaitAndAssertTest {
                         FuncDSL.function("task3", (number) -> number - 5, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
+        WorkflowEventStore workflowEventStore = WorkflowEventStore.shared(); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -136,7 +136,7 @@ public class IntegratedWaitAndAssertTest {
                         FuncDSL.function("taskC", (number) -> number - 3, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
+        WorkflowEventStore workflowEventStore = WorkflowEventStore.shared(); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -169,7 +169,7 @@ public class IntegratedWaitAndAssertTest {
                         FuncDSL.function("multiply", (number) -> number * 3, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
+        WorkflowEventStore workflowEventStore = WorkflowEventStore.shared(); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -205,7 +205,7 @@ public class IntegratedWaitAndAssertTest {
                         FuncDSL.function("task1", (number) -> number + 1, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
+        WorkflowEventStore workflowEventStore = WorkflowEventStore.shared(); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -239,7 +239,7 @@ public class IntegratedWaitAndAssertTest {
                         FuncDSL.function("task1", (number) -> number + 1, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
+        WorkflowEventStore workflowEventStore = WorkflowEventStore.shared(); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))
@@ -270,7 +270,7 @@ public class IntegratedWaitAndAssertTest {
                         FuncDSL.function("task1", (number) -> number + 1, Long.class))
                 .build();
 
-        WorkflowEventStore workflowEventStore = new WorkflowEventStore(true); // Use shared storage for async
+        WorkflowEventStore workflowEventStore = WorkflowEventStore.shared(); // Use shared storage for async
 
         try (WorkflowApplication app = WorkflowApplication.builder()
                 .withListener(new TestWorkflowExecutionListener(workflowEventStore))

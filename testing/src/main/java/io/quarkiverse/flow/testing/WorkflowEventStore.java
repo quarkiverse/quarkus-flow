@@ -47,8 +47,12 @@ public class WorkflowEventStore {
      * @param useSharedStorage if true, uses shared storage for cross-thread access;
      *        if false, uses ThreadLocal storage for test isolation
      */
-    public WorkflowEventStore(boolean useSharedStorage) {
+    private WorkflowEventStore(boolean useSharedStorage) {
         this.useSharedStorage = useSharedStorage;
+    }
+
+    public static WorkflowEventStore shared() {
+        return new WorkflowEventStore(true);
     }
 
     /**

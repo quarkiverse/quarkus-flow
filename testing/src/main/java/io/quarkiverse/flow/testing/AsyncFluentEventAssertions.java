@@ -45,6 +45,7 @@ public class AsyncFluentEventAssertions {
     private Duration timeout = Duration.ofSeconds(5);
     private Duration pollInterval = Duration.ofMillis(100);
     private boolean useStreaming = false;
+    private String instanceIdFilter = null;
 
     public AsyncFluentEventAssertions(WorkflowEventStore eventStore) {
         this.eventStore = Objects.requireNonNull(eventStore, "eventStore cannot be null");
@@ -99,6 +100,22 @@ public class AsyncFluentEventAssertions {
      */
     public AsyncFluentEventAssertions polling() {
         this.useStreaming = false;
+        return this;
+    }
+
+    /**
+     * Filters events to only wait for those from the specified workflow instance.
+     * This is useful when testing multiple workflow instances and you want to wait
+     * for events from a specific instance.
+     *
+     * @param instanceId the workflow instance ID to filter by
+     * @return this for method chaining
+     */
+    public AsyncFluentEventAssertions forInstance(String instanceId) {
+        if (instanceId == null) {
+            throw new IllegalArgumentException("instanceId cannot be null");
+        }
+        this.instanceIdFilter = instanceId;
         return this;
     }
 
@@ -278,21 +295,21 @@ public class AsyncFluentEventAssertions {
     // Transition to Assertions
 
     /**
-     * Completes the waiting phase and returns a FluentEventAssertions instance
+     * Completes the waiting phase and returns an OrderableFluentEventAssertions instance
      * for making assertions on the collected events.
      *
-     * @return FluentEventAssertions for making assertions
+     * @return ConfigurableAssertions for making assertions (allows inOrder())
      */
-    public FluentEventAssertions thenAssert() {
+    public ConfigurableAssertions thenAssert() {
         return FluentEventAssertions.assertThat(eventStore);
     }
 
     /**
      * Alias for thenAssert() - completes waiting and returns assertions.
      *
-     * @return FluentEventAssertions for making assertions
+     * @return ConfigurableAssertions for making assertions (allows inOrder())
      */
-    public FluentEventAssertions assertThat() {
+    public ConfigurableAssertions assertThat() {
         return thenAssert();
     }
 
@@ -316,6 +333,7 @@ public class AsyncFluentEventAssertions {
 
         while (Instant.now().isBefore(deadline)) {
             Optional<RecordedWorkflowEvent> event = eventStore.getAll().stream()
+                    .filter(e -> instanceIdFilter == null || instanceIdFilter.equals(e.getInstanceId()))
                     .filter(e -> type == null || e.getType() == type)
                     .filter(condition)
                     .findFirst();
@@ -333,9 +351,10 @@ public class AsyncFluentEventAssertions {
         }
 
         String eventDescription = type != null ? type.toString() : "matching condition";
+        String instanceInfo = instanceIdFilter != null ? " for instance " + instanceIdFilter : "";
         throw new AssertionError(
-                String.format("Timeout waiting for event %s after %s. Current events: %d",
-                        eventDescription, timeout, eventStore.size()));
+                String.format("Timeout waiting for event %s%s after %s. Current events: %d",
+                        eventDescription, instanceInfo, timeout, eventStore.size()));
     }
 
     private RecordedWorkflowEvent waitForEventStreaming(EventType type, Predicate<RecordedWorkflowEvent> condition) {

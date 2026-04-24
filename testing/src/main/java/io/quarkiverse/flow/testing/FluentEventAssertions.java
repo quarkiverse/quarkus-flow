@@ -3,6 +3,7 @@ package io.quarkiverse.flow.testing;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -75,16 +76,34 @@ public class FluentEventAssertions {
 
     SoftAssertions softAssertions = new SoftAssertions();
 
-    public static FluentEventAssertions assertThat(List<RecordedWorkflowEvent> events) {
-        return new FluentEventAssertions(events);
+    public static ConfigurableAssertions assertThat(List<RecordedWorkflowEvent> events) {
+        return new DefaultConfigurableAssertions(events);
     }
 
-    public static FluentEventAssertions assertThat(WorkflowEventStore eventStore) {
-        return new FluentEventAssertions(eventStore.getAll());
+    public static ConfigurableAssertions assertThat(WorkflowEventStore eventStore) {
+        return new DefaultConfigurableAssertions(eventStore.getAll());
     }
 
-    public FluentEventAssertions(List<RecordedWorkflowEvent> events) {
-        this.events = events;
+    FluentEventAssertions(List<RecordedWorkflowEvent> events) {
+        this.events = Collections.unmodifiableList(events);
+    }
+
+    /**
+     * Filters events to only include those for the specified workflow instance.
+     * This is useful when testing multiple workflow instances, and you want to assert
+     * on events from a specific instance.
+     *
+     * @param instanceId the workflow instance ID to filter by
+     * @return a new ConfigurableAssertions instance with filtered events
+     */
+    public ConfigurableAssertions forInstance(String instanceId) {
+        if (instanceId == null) {
+            throw new IllegalArgumentException("instanceId cannot be null");
+        }
+        List<RecordedWorkflowEvent> filteredEvents = events.stream()
+                .filter(e -> instanceId.equals(e.getInstanceId()))
+                .collect(java.util.stream.Collectors.toList());
+        return new DefaultConfigurableAssertions(filteredEvents);
     }
 
     /**
