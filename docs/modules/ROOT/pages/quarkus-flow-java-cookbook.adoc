@@ -157,9 +157,16 @@ include::{examples-dir}/org/acme/ForEachWorkflow.java[]
 == 10. Parallel Execution (`fork`)
 Execute independent branches simultaneously to reduce total execution time.
 
+Using `funcForkTaskBuilder.branch(...).branch(...)`
 [source,java]
 ----
-include::{examples-dir}/org/acme/ParallelWorkflow.java[]
+include::{examples-dir}/org/acme/ParallelWorkflowBranch.java[]
+----
+
+Using `funcForkTaskBuilder.branches(...)`
+[source,java]
+----
+include::{examples-dir}/org/acme/ParallelWorkflowBranches.java[]
 ----
 
 [#with_context]

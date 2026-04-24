@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 import jakarta.inject.Inject;
 
 import org.acme.ExampleWorkflowsWireMockResource;
-import org.acme.ParallelWorkflow;
+import org.acme.ParallelWorkflowBranch;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -20,10 +20,10 @@ import io.serverlessworkflow.impl.WorkflowModel;
 
 @QuarkusTest
 @QuarkusTestResource(ExampleWorkflowsWireMockResource.class)
-public class ParallelWorkflowTest {
+public class ParallelWorkflowBranchTest {
 
     @Inject
-    ParallelWorkflow parallelWorkflow;
+    ParallelWorkflowBranch parallelWorkflow;
 
     @BeforeEach
     void resetWiremock() {
@@ -32,7 +32,7 @@ public class ParallelWorkflowTest {
     }
 
     @Test
-    void testParallelBranchesExecute() throws Exception {
+    void testParallelWorkflowBranchExecute() throws Exception {
         // 1. Start the workflow
         WorkflowModel result = parallelWorkflow.instance()
                 .start()
