@@ -152,7 +152,7 @@ include::{examples-dir}/org/acme/ParallelWorkflowBranches.java[]
 ----
 
 [#with_context]
-== Context-aware Execution (`withContext`)
+== Context-aware execution (`withContext`)
 Execute workflow with access to engine metadata.
 
 [source,java]
