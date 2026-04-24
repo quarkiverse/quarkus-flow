@@ -18,8 +18,7 @@ public class OpenApiWorkflow extends Flow {
         return FuncWorkflowBuilder.workflow("openapi-call-workflow")
                 .tasks(
                         openapi()
-                                // "http://localhost:8089/v2/swagger.json" can't be parsed -> JsonQueryException
-                                .document("${ \"http://localhost:8089/v2/swagger.json\" }")
+                                .document("http://localhost:8089/v2/swagger.json")
                                 .operation("findPetsByStatus")
                                 .parameters(Map.of("status", "available"))
                 // Wrap the JQ object constructor in ${ } so the engine evaluates it correctly
