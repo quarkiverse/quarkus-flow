@@ -17,8 +17,7 @@ public class ContextWorkflow extends Flow {
                         withContext((p, c) -> {
                             System.out.println("Instance ID: " + c.instanceData().id());
                             return "Processed " + p;
-                        }, String.class)
-                )
+                        }, String.class))
                 .build();
     }
 }
