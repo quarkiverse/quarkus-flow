@@ -3,7 +3,6 @@ package test;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
