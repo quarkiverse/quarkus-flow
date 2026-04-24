@@ -21,7 +21,7 @@ public class ExampleWorkflowsWireMockResource implements QuarkusTestResourceLife
         // ---------------------------------------------------------
         // STUBS FOR HTTP WORKFLOW TESTS
         // ---------------------------------------------------------
-        wireMockServer.stubFor(get(urlEqualTo("/api/people/%3Fsearch=luke"))
+        wireMockServer.stubFor(get(urlEqualTo("/api/people?search=luke"))
                 .withHeader("Accept", equalTo("application/json"))
                 .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json")
