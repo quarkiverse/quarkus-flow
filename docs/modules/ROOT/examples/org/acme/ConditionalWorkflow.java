@@ -16,7 +16,7 @@ public class ConditionalWorkflow extends Flow {
         return FuncWorkflowBuilder.workflow("conditional-routing")
                 .tasks(
                         // 1. Evaluate the condition and branch
-                        switchWhenOrElse(".score >= 80", "approveTask", "rejectTask"),
+                        switchWhenOrElse((ScorePayload p) -> p.score() >= 80, "approveTask", "rejectTask"),
 
                         // 2. Branch A: Score is 80 or higher
                         post("approveTask", "", "http://localhost:8089/approve")
