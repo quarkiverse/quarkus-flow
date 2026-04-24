@@ -17,7 +17,8 @@ public class ForEachWorkflow extends Flow {
     public Workflow descriptor() {
         return FuncWorkflowBuilder.workflow("foreach-workflow")
                 .tasks(
-                        // OrdersPayload::orders is not working, TODO: Check why, probably the Record class I use?
+                        // OrdersPayload::orders is not working
+                        // See https://github.com/quarkiverse/quarkus-flow/issues/486
                         forEach((Map<String, Object> state) -> (List<?>) state.get("orders"),
                                 tasks(
                                         post("", "http://localhost:8089/process-order")
