@@ -162,6 +162,15 @@ Execute independent branches simultaneously to reduce total execution time.
 include::{examples-dir}/org/acme/ParallelWorkflow.java[]
 ----
 
+[#with_context]
+== 11. Context-aware Execution (`withContext`)
+Execute workflow with access to engine metadata.
+
+[source,java]
+----
+include::{examples-dir}/org/acme/ContextWorkflow.java[]
+----
+
 ////
  TODO: Not implemented in the spec
 [#invoking_subflows]
