@@ -18,7 +18,6 @@ public class ContextWorkflow extends Flow {
                             System.out.println("Instance ID: " + c.instanceData().id());
                             return "Processed " + p;
                         }, String.class)
-                //.exportAsTaskOutput()
                 )
                 .build();
     }
