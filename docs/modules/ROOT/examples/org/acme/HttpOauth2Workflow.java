@@ -19,9 +19,8 @@ public class HttpOauth2Workflow extends Flow {
                         call("getPets",
                                 http()
                                         .GET()
-                                        // Hardcoded 99 should be {petId}, but this can't be
-                                        // resolved properly by the engine
-                                        .uri("http://localhost:8090/v2/pet/99",
+                                        .query("petId", "${ .petId }")
+                                        .uri("http://localhost:8090/v2/pet",
                                                 oauth2("http://localhost:8090/realms/fake-authority",
                                                         OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS,
                                                         "workflow-runtime-id",
