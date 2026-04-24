@@ -19,7 +19,7 @@ public class CronWorkflow extends Flow {
         return FuncWorkflowBuilder.workflow("cron-workflow")
                 .schedule(cron("* * * * * ?")) // Every second
                 .tasks(
-                        set(Map.of("message", "Executed Cron Workflow at:" + new Date())))
+                        set(Map.of("message", "Executed Cron Workflow at: " + new Date())))
                 .build();
     }
 }
