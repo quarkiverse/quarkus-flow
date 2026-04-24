@@ -52,7 +52,7 @@ public class SecureWireMockResource implements QuarkusTestResourceLifecycleManag
                                 """.formatted(FAKE_JWT))));
 
         // 4. Mock Petstore requiring the exact valid JWT
-        wireMockServer.stubFor(get(urlEqualTo("/v2/pet/99"))
+        wireMockServer.stubFor(get(urlEqualTo("/v2/pet?petId=99"))
                 .withHeader("Authorization", equalTo("Bearer " + FAKE_JWT))
                 .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json")

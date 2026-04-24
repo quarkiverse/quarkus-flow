@@ -20,8 +20,7 @@ public class OpenApiWorkflow extends Flow {
                         openapi()
                                 .document("http://localhost:8089/v2/swagger.json")
                                 .operation("findPetsByStatus")
-                                .parameters(Map.of("status", "available"))
-                )
+                                .parameters(Map.of("status", "available")))
                 .build();
     }
 }
