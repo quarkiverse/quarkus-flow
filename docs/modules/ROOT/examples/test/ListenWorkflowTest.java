@@ -38,9 +38,7 @@ public class ListenWorkflowTest {
         var workflowInstance = listenWorkflow.instance(Map.of());
         String instanceId = workflowInstance.id();
 
-        CompletableFuture<WorkflowModel> futureResult = workflowInstance
-                .start()
-                .toCompletableFuture();
+        CompletableFuture<WorkflowModel> futureResult = workflowInstance.start();
 
         // 2. Grab the simulated 'flow-in' channel
         InMemorySource<byte[]> source = connector.source("flow-in");

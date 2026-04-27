@@ -3,7 +3,6 @@ package test;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
 
@@ -25,15 +24,12 @@ public class HttpOauth2WorkflowTest {
     HttpOauth2Workflow httpOauth2Workflow;
 
     @Test
-    void testOAuth2SecuredCall() throws Exception {
+    void testOAuth2SecuredCall() {
         // 1. Map input to resolve {petId}
         Map<String, Object> input = Map.of("petId", 99);
 
         // 2. Execute workflow
-        WorkflowModel result = httpOauth2Workflow.instance(input)
-                .start()
-                .toCompletableFuture()
-                .get(10, TimeUnit.SECONDS);
+        WorkflowModel result = httpOauth2Workflow.instance(input).start().join();
 
         // 3. Extract the native Jackson JsonNode
         JsonNode rootNode = result.as(JsonNode.class)

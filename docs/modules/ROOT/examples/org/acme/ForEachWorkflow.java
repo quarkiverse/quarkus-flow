@@ -21,9 +21,7 @@ public class ForEachWorkflow extends Flow {
                         // See https://github.com/quarkiverse/quarkus-flow/issues/486
                         forEach((Map<String, Object> state) -> (List<?>) state.get("orders"),
                                 tasks(
-                                        post("", "http://localhost:8089/process-order")
-
-                                )))
+                                        post("", "http://localhost:8089/process-order"))))
                 .build();
     }
 }

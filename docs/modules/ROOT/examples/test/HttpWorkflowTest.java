@@ -5,9 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import jakarta.inject.Inject;
 
@@ -27,14 +24,11 @@ public class HttpWorkflowTest {
     HttpWorkflow httpWorkflow;
 
     @Test
-    void testHttpWorkflow() throws ExecutionException, InterruptedException, TimeoutException {
+    void testHttpWorkflow() {
         Map<String, Object> input = Map.of("searchQuery", "luke",
                 "acceptHeaderValue", "application/json");
 
-        WorkflowModel result = httpWorkflow.instance(input)
-                .start()
-                .toCompletableFuture()
-                .get(10, TimeUnit.SECONDS);
+        WorkflowModel result = httpWorkflow.instance(input).start().join();
 
         assertTrue((Integer) result.asMap().orElseThrow().get("count") > 0,
                 "Should find at least one character");

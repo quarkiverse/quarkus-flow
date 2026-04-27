@@ -4,7 +4,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
 
@@ -35,17 +34,14 @@ public class ForEachWorkflowTest {
     }
 
     @Test
-    void testForEachIteration() throws Exception {
+    void testForEachIteration() {
         OrdersPayload input = new OrdersPayload(List.of(
                 new Order("ORD-001"),
                 new Order("ORD-002"),
                 new Order("ORD-003")));
 
         // 2. Execute the workflow synchronously
-        WorkflowModel result = forEachWorkflow.instance(input)
-                .start()
-                .toCompletableFuture()
-                .get(10, TimeUnit.SECONDS);
+        WorkflowModel result = forEachWorkflow.instance(input).start().join();
 
         assertNotNull(result, "Workflow should complete successfully");
 

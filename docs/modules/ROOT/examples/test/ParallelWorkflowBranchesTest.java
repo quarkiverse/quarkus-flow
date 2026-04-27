@@ -3,8 +3,6 @@ package test;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import java.util.concurrent.TimeUnit;
-
 import jakarta.inject.Inject;
 
 import org.acme.ExampleWorkflowsWireMockResource;
@@ -32,12 +30,9 @@ public class ParallelWorkflowBranchesTest {
     }
 
     @Test
-    void testParallelWorkflowBranchesExecute() throws Exception {
+    void testParallelWorkflowBranchesExecute() {
         // 1. Start the workflow
-        WorkflowModel result = parallelWorkflowBranches.instance()
-                .start()
-                .toCompletableFuture()
-                .get(10, TimeUnit.SECONDS);
+        WorkflowModel result = parallelWorkflowBranches.instance().start().join();
 
         assertNotNull(result, "Workflow should complete successfully after joining parallel branches");
 

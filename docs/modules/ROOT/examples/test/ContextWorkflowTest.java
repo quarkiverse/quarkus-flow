@@ -4,8 +4,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import java.util.concurrent.TimeUnit;
-
 import jakarta.inject.Inject;
 
 import org.acme.ContextWorkflow;
@@ -26,10 +24,7 @@ public class ContextWorkflowTest {
         String input = "Test-Data-123";
 
         // 2. Execute the workflow synchronously
-        WorkflowModel result = contextWorkflow.instance(input)
-                .start()
-                .toCompletableFuture()
-                .get(10, TimeUnit.SECONDS);
+        WorkflowModel result = contextWorkflow.instance(input).start().join();
 
         // 3. Verify the engine completed the execution
         assertNotNull(result, "Workflow should complete successfully");

@@ -3,9 +3,6 @@ package test;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import jakarta.inject.Inject;
 
@@ -27,12 +24,9 @@ public class OpenApiWorkflowTest {
     OpenApiWorkflow openApiWorkflow;
 
     @Test
-    void testOpenApiWorkflow() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenApiWorkflow() {
         // Execute workflow (no inputs required for this hardcoded example)
-        WorkflowModel result = openApiWorkflow.instance(Map.of())
-                .start()
-                .toCompletableFuture()
-                .get(10, TimeUnit.SECONDS);
+        WorkflowModel result = openApiWorkflow.instance(Map.of()).start().join();
 
         // 2. Unpack the state directly as a Jackson JsonNode
         JsonNode rootNode = result.as(JsonNode.class)

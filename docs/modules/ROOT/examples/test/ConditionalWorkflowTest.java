@@ -3,8 +3,6 @@ package test;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import java.util.concurrent.TimeUnit;
-
 import jakarta.inject.Inject;
 
 import org.acme.ConditionalWorkflow;
@@ -41,10 +39,7 @@ public class ConditionalWorkflowTest {
         ScorePayload input = new ScorePayload(85);
 
         // 2. Execute
-        WorkflowModel result = conditionalWorkflow.instance(input)
-                .start()
-                .toCompletableFuture()
-                .get(10, TimeUnit.SECONDS);
+        WorkflowModel result = conditionalWorkflow.instance(input).start().join();
 
         assertNotNull(result, "Workflow should complete successfully");
 
@@ -59,10 +54,7 @@ public class ConditionalWorkflowTest {
         ScorePayload input = new ScorePayload(60);
 
         // 2. Execute
-        WorkflowModel result = conditionalWorkflow.instance(input)
-                .start()
-                .toCompletableFuture()
-                .get(10, TimeUnit.SECONDS);
+        WorkflowModel result = conditionalWorkflow.instance(input).start().join();
 
         assertNotNull(result, "Workflow should complete successfully");
 

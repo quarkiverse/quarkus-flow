@@ -3,7 +3,6 @@ package test;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.enterprise.inject.Any;
 import jakarta.inject.Inject;
@@ -43,10 +42,7 @@ public class EmitWorkflowTest {
                 "message", "placed");
 
         // 3. Execute the workflow synchronously
-        WorkflowModel result = emitWorkflow.instance(input)
-                .start()
-                .toCompletableFuture()
-                .get(10, TimeUnit.SECONDS);
+        WorkflowModel result = emitWorkflow.instance(input).start().join();
 
         assertNotNull(result, "Workflow should complete successfully");
 
