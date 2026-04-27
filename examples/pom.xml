@@ -24,6 +24,7 @@
         <module>micrometer-prometheus</module>
         <module>durable-workflows-k8s</module>
         <module>suspend-resume-abort</module>
+        <module>resilient-task-orchestrator</module>
     </modules>
 
     <build>
