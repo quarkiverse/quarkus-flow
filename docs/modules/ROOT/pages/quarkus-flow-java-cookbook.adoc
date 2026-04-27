@@ -130,12 +130,18 @@ include::{examples-dir}/org/acme/ParallelWorkflowBranches.java[]
 ----
 
 [#with_context]
-== Context-aware execution (`withContext`)
-Execute workflow with access to engine metadata.
+== Context-aware execution
+Execute workflow with access to engine metadata using `withContext(...)`
 
 [source,java]
 ----
 include::{examples-dir}/org/acme/ContextWorkflow.java[]
+----
+
+Execute workflow with access to task metadata using `withFilter(...)`
+[source,java]
+----
+include::{examples-dir}/org/acme/TaskContextWorkflow.java[]
 ----
 
 :sectnums!:
