@@ -16,6 +16,7 @@ import io.serverlessworkflow.impl.executors.TaskExecutorFactory;
 import io.serverlessworkflow.impl.executors.func.DataTypeConverter;
 import io.serverlessworkflow.impl.executors.http.HttpRequestDecorator;
 import io.serverlessworkflow.impl.executors.openapi.UnifiedOpenAPI;
+import io.serverlessworkflow.impl.executors.openapi.UnifiedOpenAPIReader;
 import io.serverlessworkflow.impl.expressions.ExpressionFactory;
 
 final class FlowNativeProcessor {
@@ -37,6 +38,7 @@ final class FlowNativeProcessor {
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(JWTConverter.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(DataTypeConverter.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(CallableTaskBuilder.class.getName()));
+        sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(UnifiedOpenAPIReader.class.getName()));
     }
 
     @BuildStep
