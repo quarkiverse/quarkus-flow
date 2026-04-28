@@ -46,7 +46,7 @@ public class IntegratedWaitAndAssertTest {
             WorkflowInstance workflowInstance = def.instance(10L);
 
             // Start workflow asynchronously
-            CompletableFuture.runAsync(() -> workflowInstance.start().join());
+            CompletableFuture.completedFuture(workflowInstance.start());
 
             // Wait for events using AsyncFluentEventAssertions, then assert
             workflowEventStore.waitFor()
@@ -253,7 +253,6 @@ public class IntegratedWaitAndAssertTest {
 
             // Use polling mode explicitly with custom poll interval
             workflowEventStore.waitFor()
-                    .polling()
                     .pollInterval(Duration.ofMillis(10))
                     .timeout(Duration.ofSeconds(5))
                     .workflowCompleted()
@@ -284,7 +283,6 @@ public class IntegratedWaitAndAssertTest {
 
             // Streaming mode (currently falls back to polling)
             workflowEventStore.waitFor()
-                    .streaming()
                     .workflowCompleted()
                     .thenAssert()
                     .workflowCompleted()

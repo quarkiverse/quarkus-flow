@@ -44,7 +44,6 @@ public class AsyncFluentEventAssertions {
     private final WorkflowEventStore eventStore;
     private Duration timeout = Duration.ofSeconds(5);
     private Duration pollInterval = Duration.ofMillis(100);
-    private boolean useStreaming = false;
     private String instanceIdFilter = null;
 
     public AsyncFluentEventAssertions(WorkflowEventStore eventStore) {
@@ -78,28 +77,6 @@ public class AsyncFluentEventAssertions {
             throw new IllegalArgumentException("Poll interval must be positive");
         }
         this.pollInterval = pollInterval;
-        return this;
-    }
-
-    /**
-     * Enables streaming mode where events are processed as they arrive.
-     * This is more efficient than polling for long-running workflows.
-     * Note: Streaming mode is a future enhancement and currently falls back to polling.
-     *
-     * @return this for method chaining
-     */
-    public AsyncFluentEventAssertions streaming() {
-        this.useStreaming = true;
-        return this;
-    }
-
-    /**
-     * Enables polling mode (default) where events are checked periodically.
-     *
-     * @return this for method chaining
-     */
-    public AsyncFluentEventAssertions polling() {
-        this.useStreaming = false;
         return this;
     }
 
@@ -320,11 +297,7 @@ public class AsyncFluentEventAssertions {
     }
 
     private RecordedWorkflowEvent waitForEventAndReturn(EventType type, Predicate<RecordedWorkflowEvent> condition) {
-        if (useStreaming) {
-            return waitForEventStreaming(type, condition);
-        } else {
-            return waitForEventPolling(type, condition);
-        }
+        return waitForEventPolling(type, condition);
     }
 
     private RecordedWorkflowEvent waitForEventPolling(EventType type, Predicate<RecordedWorkflowEvent> condition) {
