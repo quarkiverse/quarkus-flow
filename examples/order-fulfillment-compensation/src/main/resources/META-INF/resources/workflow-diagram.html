@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Diagram - Order Fulfillment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'quarkus-blue': '#4695EB',
+                        'quarkus-dark-blue': '#0d1b2a',
+                        'quarkus-red': '#FF004A',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .flow-arrow {
+            stroke: #4695EB;
+            stroke-width: 2;
+            fill: none;
+            marker-end: url(#arrowhead);
+        }
+        .flow-arrow-error {
+            stroke: #FF004A;
+            stroke-width: 2;
+            fill: none;
+            stroke-dasharray: 5,5;
+            marker-end: url(#arrowhead-error);
+        }
+        .flow-arrow-compensation {
+            stroke: #f59e0b;
+            stroke-width: 2;
+            fill: none;
+            stroke-dasharray: 3,3;
+            marker-end: url(#arrowhead-compensation);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-quarkus-dark-blue via-gray-900 to-black min-h-screen text-white p-8">
+    <div class="container mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-2 bg-gradient-to-r from-quarkus-blue to-quarkus-red bg-clip-text text-transparent">
+                Order Fulfillment Workflow
+            </h1>
+            <p class="text-gray-400">Behind the Scenes - Compensation Pattern</p>
+            <a href="index.html" class="inline-block mt-4 px-4 py-2 bg-quarkus-blue hover:bg-blue-600 rounded-lg text-sm">
+                ← Back to Demo
+            </a>
+        </div>
+
+        <!-- Legend -->
+        <div class="mb-8 p-6 bg-gray-800 rounded-xl border border-gray-700">
+            <h3 class="text-xl font-bold mb-4">Legend</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="flex items-center space-x-2">
+                    <svg width="40" height="20">
+                        <line x1="0" y1="10" x2="40" y2="10" class="flow-arrow"/>
+                    </svg>
+                    <span class="text-sm">Normal Flow</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <svg width="40" height="20">
+                        <line x1="0" y1="10" x2="40" y2="10" class="flow-arrow-error"/>
+                    </svg>
+                    <span class="text-sm">Error Path</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <svg width="40" height="20">
+                        <line x1="0" y1="10" x2="40" y2="10" class="flow-arrow-compensation"/>
+                    </svg>
+                    <span class="text-sm">Compensation</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Workflow Diagram -->
+        <div class="mb-8 p-6 bg-gray-800 rounded-xl border border-gray-700">
+            <h3 class="text-xl font-bold mb-6">Main Workflow Flow</h3>
+            
+            <svg viewBox="0 0 1000 400" class="w-full">
+                <!-- Arrow markers -->
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                        <polygon points="0 0, 10 3, 0 6" fill="#4695EB"/>
+                    </marker>
+                    <marker id="arrowhead-error" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                        <polygon points="0 0, 10 3, 0 6" fill="#FF004A"/>
+                    </marker>
+                    <marker id="arrowhead-compensation" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                        <polygon points="0 0, 10 3, 0 6" fill="#f59e0b"/>
+                    </marker>
+                </defs>
+
+                <!-- Start -->
+                <circle cx="50" cy="200" r="30" fill="#10b981" stroke="#059669" stroke-width="2"/>
+                <text x="50" y="205" text-anchor="middle" fill="white" font-size="12" font-weight="bold">START</text>
+
+                <!-- Stock Reservation -->
+                <rect x="150" y="170" width="140" height="60" rx="8" fill="#1e40af" stroke="#3b82f6" stroke-width="2"/>
+                <text x="220" y="195" text-anchor="middle" fill="white" font-size="13" font-weight="bold">Stock</text>
+                <text x="220" y="212" text-anchor="middle" fill="white" font-size="13" font-weight="bold">Reservation</text>
+                <line x1="80" y1="200" x2="150" y2="200" class="flow-arrow"/>
+
+                <!-- Payment Processing -->
+                <rect x="360" y="170" width="140" height="60" rx="8" fill="#1e40af" stroke="#3b82f6" stroke-width="2"/>
+                <text x="430" y="195" text-anchor="middle" fill="white" font-size="13" font-weight="bold">Payment</text>
+                <text x="430" y="212" text-anchor="middle" fill="white" font-size="13" font-weight="bold">Processing</text>
+                <line x1="290" y1="200" x2="360" y2="200" class="flow-arrow"/>
+
+                <!-- Shipping -->
+                <rect x="570" y="170" width="140" height="60" rx="8" fill="#1e40af" stroke="#3b82f6" stroke-width="2"/>
+                <text x="640" y="195" text-anchor="middle" fill="white" font-size="13" font-weight="bold">Schedule</text>
+                <text x="640" y="212" text-anchor="middle" fill="white" font-size="13" font-weight="bold">Shipping</text>
+                <line x1="500" y1="200" x2="570" y2="200" class="flow-arrow"/>
+
+                <!-- End -->
+                <circle cx="780" cy="200" r="30" fill="#10b981" stroke="#059669" stroke-width="2"/>
+                <text x="780" y="205" text-anchor="middle" fill="white" font-size="12" font-weight="bold">END</text>
+                <line x1="710" y1="200" x2="750" y2="200" class="flow-arrow"/>
+
+                <!-- Compensation boxes -->
+                <rect x="150" y="280" width="140" height="50" rx="8" fill="#92400e" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,4"/>
+                <text x="220" y="310" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="bold">Cancel Stock</text>
+
+                <rect x="360" y="280" width="140" height="50" rx="8" fill="#92400e" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,4"/>
+                <text x="430" y="310" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="bold">Cancel Payment</text>
+
+                <rect x="570" y="280" width="140" height="50" rx="8" fill="#92400e" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,4"/>
+                <text x="640" y="310" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="bold">Cancel Shipping</text>
+
+                <!-- Error paths -->
+                <line x1="220" y1="230" x2="220" y2="280" class="flow-arrow-error"/>
+                <line x1="430" y1="230" x2="430" y2="280" class="flow-arrow-error"/>
+                <line x1="640" y1="230" x2="640" y2="280" class="flow-arrow-error"/>
+
+                <!-- Compensation chain arrows -->
+                <!-- cancelShipping -> cancelPayment -->
+                <line x1="570" y1="305" x2="500" y2="305" class="flow-arrow-compensation"/>
+                <!-- cancelPayment -> cancelStock -->
+                <line x1="360" y1="305" x2="290" y2="305" class="flow-arrow-compensation"/>
+
+                <!-- Labels -->
+                <text x="220" y="260" text-anchor="middle" fill="#FF004A" font-size="11">ORDER#001</text>
+                <text x="430" y="260" text-anchor="middle" fill="#FF004A" font-size="11">ORDER#002</text>
+                <text x="640" y="260" text-anchor="middle" fill="#FF004A" font-size="11">ORDER#003</text>
+            </svg>
+        </div>
+
+        <!-- Order Scenarios -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- ORDER#001 -->
+            <div class="bg-gray-800 rounded-xl p-6 border-2 border-blue-500">
+                <h3 class="text-xl font-bold text-blue-400 mb-4">ORDER#001 Scenario</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex items-start space-x-2">
+                        <span class="text-green-400">1.</span>
+                        <span>Workflow starts</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span class="text-red-400">2.</span>
+                        <span><strong>Stock Reservation FAILS</strong> (ERR_001, status 409)</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span class="text-yellow-400">3.</span>
+                        <span>Compensation: Cancel Stock Reservation</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span class="text-gray-400">4.</span>
+                        <span>Workflow ends (compensated)</span>
+                    </div>
+                </div>
+                <div class="mt-4 p-3 bg-gray-900 rounded text-xs">
+                    <code class="text-blue-300">throw WorkflowException(ERR_001, 409)</code>
+                </div>
+            </div>
+
+            <!-- ORDER#002 -->
+            <div class="bg-gray-800 rounded-xl p-6 border-2 border-yellow-500">
+                <h3 class="text-xl font-bold text-yellow-400 mb-4">ORDER#002 Scenario</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex items-start space-x-2">
+                        <span class="text-green-400">1.</span>
+                        <span>Workflow starts</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span class="text-green-400">2.</span>
+                        <span>Stock Reservation succeeds</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span class="text-red-400">3.</span>
+                        <span><strong>Payment Processing FAILS</strong> (ERR_002, status 503)</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span class="text-yellow-400">4.</span>
+                        <span>Compensation: Cancel Payment → Cancel Stock</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span class="text-gray-400">5.</span>
+                        <span>Workflow ends (compensated)</span>
+                    </div>
+                </div>
+                <div class="mt-4 p-3 bg-gray-900 rounded text-xs">
+                    <code class="text-yellow-300">throw WorkflowException(ERR_002, 503)</code>
+                </div>
+            </div>
+
+            <!-- ORDER#003 -->
+            <div class="bg-gray-800 rounded-xl p-6 border-2 border-red-500">
+                <h3 class="text-xl font-bold text-red-400 mb-4">ORDER#003 Scenario</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex items-start space-x-2">
+                        <span class="text-green-400">1.</span>
+                        <span>Workflow starts</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span class="text-green-400">2.</span>
+                        <span>Stock Reservation succeeds</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span class="text-green-400">3.</span>
+                        <span>Payment Processing succeeds</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span class="text-red-400">4.</span>
+                        <span><strong>Shipping FAILS</strong> (ERR_003, status 500)</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span class="text-yellow-400">5.</span>
+                        <span>Compensation: Cancel Shipping → Cancel Stock</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span class="text-gray-400">6.</span>
+                        <span>Workflow ends (compensated)</span>
+                    </div>
+                </div>
+                <div class="mt-4 p-3 bg-gray-900 rounded text-xs">
+                    <code class="text-red-300">throw WorkflowException(ERR_003, 500)</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technical Details -->
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <h3 class="text-xl font-bold mb-4">Technical Implementation</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="text-lg font-semibold text-quarkus-blue mb-3">Workflow Pattern</h4>
+                    <ul class="space-y-2 text-sm text-gray-300">
+                        <li>• <strong>Try-Catch Blocks:</strong> Each step wrapped in error handling</li>
+                        <li>• <strong>Compensation Logic:</strong> Automatic rollback on failures</li>
+                        <li>• <strong>Error Types:</strong> Specific error codes (ERR_001, ERR_002, ERR_003)</li>
+                        <li>• <strong>Status Codes:</strong> HTTP-like status codes (409, 503, 500)</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold text-quarkus-blue mb-3">Real-time Updates</h4>
+                    <ul class="space-y-2 text-sm text-gray-300">
+                        <li>• <strong>WebSocket:</strong> Bidirectional communication</li>
+                        <li>• <strong>Events:</strong> started, completed, failed</li>
+                        <li>• <strong>Broadcasting:</strong> All connected clients notified</li>
+                        <li>• <strong>Auto-reconnect:</strong> Resilient connection handling</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
