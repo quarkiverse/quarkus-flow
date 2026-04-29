@@ -38,7 +38,7 @@ public class StructuredLoggingFileModeTest {
 
     @Test
     @DisplayName("test_file_mode_does_not_break_workflow_execution")
-    void testFileModeDoesNotBreakWorkflowExecution() {
+    void test_file_mode_does_not_break_workflow_execution() {
         // Execute workflow with structured logging in FILE mode (explicit)
         // If this doesn't throw, FILE mode is working
         var result = helloWorkflow.startInstance().await().indefinitely();

@@ -54,7 +54,7 @@ public class StructuredLoggingContainerModeTest {
 
     @Test
     @DisplayName("test_container_mode_writes_to_stdout_not_file")
-    void testContainerModeWritesToStdoutNotFile() {
+    void test_container_mode_writes_to_stdout_not_file() {
         // Execute workflow with structured logging in CONTAINER mode
         // Events should be written to console (stdout) instead of a file
         var result = helloWorkflow.startInstance().await().indefinitely();

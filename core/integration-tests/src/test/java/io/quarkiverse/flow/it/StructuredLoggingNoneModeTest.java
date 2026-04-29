@@ -51,7 +51,7 @@ public class StructuredLoggingNoneModeTest {
 
     @Test
     @DisplayName("test_none_mode_workflow_execution_succeeds_without_handler")
-    void testNoneModeWorkflowExecutionSucceedsWithoutHandler() {
+    void test_none_mode_workflow_execution_succeeds_without_handler() {
         // Execute workflow with structured logging in NONE mode
         // No automatic handler should be created, but workflow should execute successfully
         var result = helloWorkflow.startInstance().await().indefinitely();
