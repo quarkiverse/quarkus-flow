@@ -34,4 +34,8 @@ public abstract class TaskInfoEntity {
     public String jsonPointer() {
         return taskInfoKey.getJsonPointer();
     }
+
+    public int iteration() {
+        return taskInfoKey.getIteration();
+    }
 }

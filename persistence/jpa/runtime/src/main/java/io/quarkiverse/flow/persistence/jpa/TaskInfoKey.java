@@ -19,8 +19,12 @@ public class TaskInfoKey implements Serializable {
         key.jsonPointer = task.position().jsonPointer();
         key.applicationId = workflow.definition().application().id();
         key.processInstanceId = workflow.instanceData().id();
+        key.iteration = task.iteration();
         return key;
     }
+
+    @Column
+    private int iteration;
 
     @Column
     private String jsonPointer;
@@ -55,9 +59,17 @@ public class TaskInfoKey implements Serializable {
         this.processInstanceId = processInstanceId;
     }
 
+    public int getIteration() {
+        return iteration;
+    }
+
+    public void setIteration(int iteration) {
+        this.iteration = iteration;
+    }
+
     @Override
     public int hashCode() {
-        return Objects.hash(applicationId, jsonPointer, processInstanceId);
+        return Objects.hash(applicationId, iteration, jsonPointer, processInstanceId);
     }
 
     @Override
@@ -69,7 +81,8 @@ public class TaskInfoKey implements Serializable {
         if (getClass() != obj.getClass())
             return false;
         TaskInfoKey other = (TaskInfoKey) obj;
-        return Objects.equals(applicationId, other.applicationId) && Objects.equals(jsonPointer, other.jsonPointer)
+        return Objects.equals(applicationId, other.applicationId) && iteration == other.iteration
+                && Objects.equals(jsonPointer, other.jsonPointer)
                 && Objects.equals(processInstanceId, other.processInstanceId);
     }
 }
