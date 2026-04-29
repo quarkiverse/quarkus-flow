@@ -1,13 +1,17 @@
 package io.quarkiverse.flow.deployment;
 
-import java.util.Set;
+import org.jboss.jandex.ClassInfo;
 
+import io.quarkiverse.flow.Flowable;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.LambdaCapturingTypeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.serverlessworkflow.impl.WorkflowError;
 import io.serverlessworkflow.impl.WorkflowModelFactory;
+import io.serverlessworkflow.impl.additional.NamedWorkflowAdditionalObject;
 import io.serverlessworkflow.impl.auth.JWTConverter;
 import io.serverlessworkflow.impl.events.EventConsumer;
 import io.serverlessworkflow.impl.events.EventPublisher;
@@ -16,7 +20,6 @@ import io.serverlessworkflow.impl.executors.TaskExecutorFactory;
 import io.serverlessworkflow.impl.executors.func.DataTypeConverter;
 import io.serverlessworkflow.impl.executors.http.HttpRequestDecorator;
 import io.serverlessworkflow.impl.executors.openapi.UnifiedOpenAPI;
-import io.serverlessworkflow.impl.executors.openapi.UnifiedOpenAPIReader;
 import io.serverlessworkflow.impl.expressions.ExpressionFactory;
 
 final class FlowNativeProcessor {
@@ -26,9 +29,6 @@ final class FlowNativeProcessor {
      */
     @BuildStep
     void registerSDKServiceProviders(BuildProducer<ServiceProviderBuildItem> sp) {
-
-        // TODO: make all of them @DefaultBeans so users can easily replace
-        // TODO: these providers must be compatible with Quarkus Ecosystem
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(ExpressionFactory.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(TaskExecutorFactory.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(EventConsumer.class.getName()));
@@ -38,19 +38,26 @@ final class FlowNativeProcessor {
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(JWTConverter.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(DataTypeConverter.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(CallableTaskBuilder.class.getName()));
-        sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(UnifiedOpenAPIReader.class.getName()));
+        sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(NamedWorkflowAdditionalObject.class.getName()));
+    }
+
+    @BuildStep
+    void registerSerializableFunctions(CombinedIndexBuildItem indexedClasses,
+            BuildProducer<LambdaCapturingTypeBuildItem> producer) {
+        indexedClasses.getIndex().getAllKnownImplementations(Flowable.class).stream().map(ClassInfo::toString)
+                .map(LambdaCapturingTypeBuildItem::new).forEach(producer::produce);
     }
 
     @BuildStep
     ReflectiveClassBuildItem registerForReflection() {
         return ReflectiveClassBuildItem.builder(
-                Set.of(WorkflowError.class.getName(),
-                        UnifiedOpenAPI.class.getName(),
-                        UnifiedOpenAPI.Server.class.getName(),
-                        UnifiedOpenAPI.PathItem.class.getName(),
-                        UnifiedOpenAPI.Operation.class.getName(),
-                        UnifiedOpenAPI.Parameter.class.getName(),
-                        UnifiedOpenAPI.Components.class.getName()))
+                WorkflowError.class,
+                UnifiedOpenAPI.class,
+                UnifiedOpenAPI.Server.class,
+                UnifiedOpenAPI.PathItem.class,
+                UnifiedOpenAPI.Operation.class,
+                UnifiedOpenAPI.Parameter.class,
+                UnifiedOpenAPI.Components.class)
                 .constructors(true)
                 .methods(true)
                 .fields(true)
