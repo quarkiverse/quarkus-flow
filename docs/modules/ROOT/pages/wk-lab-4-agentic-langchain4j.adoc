@@ -74,6 +74,13 @@ Now we wire them together. This is the "Aha!" moment where the workflow coordina
 include::{examples-dir}org/acme/agentic/InvestmentMemoFlow.java[]
 ----
 
+Next, let's set the `org.acme.agentic.market-data.url` property in `application.properties` to point to our `MarketDataResource`:
+
+[source,properties]
+----
+org.acme.agentic.market-data.url=http://localhost:${quarkus.http.port}/market-data/{ticker}
+----
+
 === Understanding the Data Bridge (`outputAs`)
 Inside the `fetchMarketData` task, we use a lambda to bridge the tool and the agent:
 
