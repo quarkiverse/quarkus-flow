@@ -25,7 +25,7 @@ public class InvestmentMemoFlow extends Flow {
 
     private final InvestmentAnalystAgent analyst;
 
-    @ConfigProperty(name = "org.acme.agentic.market-data.url")
+    @ConfigProperty(name = "org.acme.agentic.market-data.url", defaultValue = "http://localhost:8080/market-data/{ticker}")
     String marketDataUrl;
 
     @Inject
