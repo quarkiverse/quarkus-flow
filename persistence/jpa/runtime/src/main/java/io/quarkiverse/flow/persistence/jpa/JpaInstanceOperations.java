@@ -47,7 +47,7 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     @Override
     @Transactional
     public void writeRetryTask(WorkflowContextData workflowContext, TaskContextData taskContext) {
-        em.merge(new RetriedTaskEntity(TaskInfoKey.from(workflowContext, taskContext),
+        em.persist(new RetriedTaskEntity(TaskInfoKey.from(workflowContext, taskContext),
                 ((TaskContext) taskContext).retryAttempt()));
     }
 
@@ -56,7 +56,7 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     public void writeCompletedTask(WorkflowContextData workflowContext, TaskContextData taskContext) {
         TransitionInfo transition = ((TaskContext) taskContext).transition();
         AbstractTaskExecutor<?> next = (AbstractTaskExecutor<?>) transition.next();
-        em.merge(
+        em.persist(
                 new CompletedTaskEntity(
                         TaskInfoKey.from(workflowContext, taskContext), taskContext.completedAt(), taskContext.output(),
                         workflowContext.context(),
@@ -102,7 +102,8 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
 
     private PersistenceTaskInfo from(TaskInfoEntity taskEntity) {
         if (taskEntity instanceof CompletedTaskEntity c) {
-            return new CompletedTaskInfo(c.getInstant(), c.getModel(), c.getContext(), c.isEndNode(), c.getNextPosition());
+            return new CompletedTaskInfo(c.getInstant(), c.getModel(), c.getContext(), c.isEndNode(), c.getNextPosition(),
+                    c.iteration());
         } else if (taskEntity instanceof RetriedTaskEntity r) {
             return new RetriedTaskInfo(r.getRetryAttempt());
         }
