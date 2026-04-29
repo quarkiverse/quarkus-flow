@@ -54,7 +54,97 @@ quarkus.flow.structured-logging.timestamp-format=iso8601
 # quarkus.flow.structured-logging.timestamp-pattern=yyyy-MM-dd'T'HH:mm:ss.SSSXXX
 ----
 
-IMPORTANT: When you enable structured logging, Quarkus Flow **automatically configures** a separate file handler to write workflow events to a dedicated file. Events are written to `target/quarkus-flow-events.log` in dev/test mode, and `/var/log/quarkus-flow/events.log` in production. This ensures clean separation between application logs and event streams. See xref:#integration-with-quarkus-logging-json[Integration with quarkus-logging-json] for details.
+IMPORTANT: When you enable structured logging, Quarkus Flow **automatically configures** a log handler based on the `handler.mode` setting. By default, events are written to a file (`target/quarkus-flow-events.log` in dev/test mode, `/var/log/quarkus-flow/events.log` in production). For containerized deployments, use `handler.mode=container` to write to stdout instead. See xref:#handler-mode-configuration[Handler Mode Configuration] for details.
+
+=== Handler Mode Configuration
+
+Quarkus Flow provides three handler modes to control where structured logging events are written. This allows you to adapt the logging output to your deployment environment.
+
+==== FILE Mode (Default)
+
+Writes events to a dedicated file, separate from application logs:
+
+[source,properties]
+----
+quarkus.flow.structured-logging.enabled=true
+quarkus.flow.structured-logging.handler.mode=file  # Default, can be omitted
+----
+
+**File locations:**
+
+* **Dev/Test mode:** `target/quarkus-flow-events.log`
+* **Production mode:** `/var/log/quarkus-flow/events.log`
+
+**When to use FILE mode:**
+
+* Running on traditional servers or VMs
+* You want events in a separate file from application logs
+* Using file-based log forwarders (Filebeat, FluentBit with file input)
+* File system is writable and persistent
+
+==== CONTAINER Mode
+
+Writes events to stdout for containerized deployments (Kubernetes, Docker, Podman):
+
+[source,properties]
+----
+quarkus.flow.structured-logging.enabled=true
+quarkus.flow.structured-logging.handler.mode=container
+quarkus.flow.structured-logging.timestamp-format=epoch-seconds  # Recommended for container environments
+----
+
+**Benefits:**
+
+* No file write permissions needed
+* Logs automatically captured by container runtime (`kubectl logs`, `docker logs`)
+* Compatible with log aggregation tools (FluentBit, Fluentd, Promtail, Vector)
+* Works with read-only filesystems
+* Follows cloud-native logging best practices
+* Simpler configuration (3 lines vs 8 lines for manual workaround)
+
+**When to use CONTAINER mode:**
+
+* Running in containers (Docker, Kubernetes, Podman, OpenShift)
+* Using container runtime log collection
+* Log aggregation tools collect from stdout
+* File systems are ephemeral or read-only
+* Following twelve-factor app principles
+
+**Example Kubernetes deployment:**
+
+With CONTAINER mode, your logs flow like this:
+
+1. Quarkus Flow writes JSON events to stdout
+2. Container runtime captures stdout → `/var/log/containers/*.log`
+3. Log forwarder (FluentBit, Fluentd) reads from `/var/log/containers/`
+4. Events routed to destination (PostgreSQL, Elasticsearch, S3, Kafka)
+
+No special volume mounts or file permissions needed!
+
+==== NONE Mode
+
+Disables automatic handler creation for advanced use cases:
+
+[source,properties]
+----
+quarkus.flow.structured-logging.enabled=true
+quarkus.flow.structured-logging.handler.mode=none
+
+# You must manually configure handlers
+quarkus.log.handler.console."CUSTOM_FLOW".enable=true
+quarkus.log.handler.console."CUSTOM_FLOW".format=%s%n
+quarkus.log.category."io.quarkiverse.flow.structuredlogging".handlers=CUSTOM_FLOW
+quarkus.log.category."io.quarkiverse.flow.structuredlogging".use-parent-handlers=false
+----
+
+**When to use NONE mode:**
+
+* You need full control over logging configuration
+* Using custom handlers (syslog, GELF, custom formatters)
+* Integrating with specialized logging infrastructure
+* Default handlers don't fit your deployment requirements
+
+The logger category for structured events is `io.quarkiverse.flow.structuredlogging`.
 
 === Timestamp Format Configuration
 
@@ -313,11 +403,11 @@ Notice how the `message` field contains a JSON **string**, not a JSON **object**
 
 This "double serialization" defeats the purpose of structured logging.
 
-=== The Solution: Automatic Separate File Handler
+=== The Solution: Automatic Handler Configuration
 
-Quarkus Flow **automatically configures** a separate file handler when structured logging is enabled. No manual configuration required!
+Quarkus Flow **automatically configures** a log handler when structured logging is enabled. No manual configuration required!
 
-**Default Configuration:**
+**Default Configuration (FILE mode):**
 
 When you enable structured logging:
 [source,properties]
@@ -325,6 +415,7 @@ When you enable structured logging:
 # Enable Quarkus Flow structured logging
 quarkus.flow.structured-logging.enabled=true
 quarkus.flow.structured-logging.events=workflow.*
+# handler.mode=file is the default
 ----
 
 Quarkus Flow automatically:
@@ -335,6 +426,18 @@ Quarkus Flow automatically:
   * **Production mode**: `/var/log/quarkus-flow/events.log`
 - Uses raw JSON format (`%s%n` - no timestamps, just the event JSON)
 - Prevents events from appearing in console (no double logging)
+
+**Alternative: CONTAINER mode for containerized deployments:**
+
+If you're running in containers and want events in stdout instead:
+
+[source,properties]
+----
+quarkus.flow.structured-logging.enabled=true
+quarkus.flow.structured-logging.handler.mode=container
+----
+
+This writes events to stdout instead of a file. See xref:#handler-mode-configuration[Handler Mode Configuration] for details.
 
 **Customizing the Configuration:**
 
@@ -388,7 +491,11 @@ INFO  [io.qua.flo.dep.FlowProcessor] Quarkus Flow structured logging file handle
 
 === FluentBit Example
 
-FluentBit is a lightweight, high-performance log forwarder. Here's a basic configuration to route structured logs to PostgreSQL:
+FluentBit is a lightweight, high-performance log forwarder. Configuration depends on your handler mode:
+
+==== FILE Mode Configuration
+
+When using `handler.mode=file` (default), FluentBit reads from the log file:
 
 [source,conf]
 ----
@@ -415,6 +522,51 @@ FluentBit is a lightweight, high-performance log forwarder. Here's a basic confi
     Table             workflow_events
     Timestamp_Key     timestamp
 ----
+
+==== CONTAINER Mode Configuration (Recommended for Kubernetes/Docker)
+
+When using `handler.mode=container`, FluentBit collects logs from stdout via the container runtime:
+
+[source,conf]
+----
+[INPUT]
+    Name              tail
+    Path              /var/log/containers/*_${NAMESPACE}_${POD_NAME}-*.log
+    Parser            docker  # Or cri/containerd depending on runtime
+    Tag               kube.*
+
+[FILTER]
+    Name              kubernetes
+    Match             kube.*
+    Kube_URL          https://kubernetes.default.svc:443
+    Merge_Log         On
+    Keep_Log          Off
+
+[FILTER]
+    Name              grep
+    Match             kube.*
+    Regex             log {"eventType":"io.serverlessworkflow.*
+
+[OUTPUT]
+    Name              pgsql
+    Match             kube.*
+    Host              postgres.database.svc
+    Port              5432
+    User              flowuser
+    Password          ${DB_PASSWORD}
+    Database          workflow_data
+    Table             workflow_events
+    Timestamp_Key     timestamp
+----
+
+This configuration:
+
+1. Collects all container logs from `/var/log/containers/`
+2. Enriches with Kubernetes metadata (namespace, pod, labels)
+3. Filters for Quarkus Flow events using the `eventType` field
+4. Routes to PostgreSQL
+
+TIP: For container mode, the structured events are already JSON in the log stream, so FluentBit can parse them directly without additional processing.
 
 === Dual Output Pattern
 
