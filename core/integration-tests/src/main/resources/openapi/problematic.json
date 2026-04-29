@@ -7,7 +7,7 @@
     },
       "servers": [
     {
-      "url": "https://petstore3.swagger.io/api/v3/"
+      "url": "http://localhost:9876"
     }
   ],
     "paths": {
