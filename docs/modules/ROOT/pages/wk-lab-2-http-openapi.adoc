@@ -20,7 +20,7 @@ For your reference, this lab has a full working example here: https://github.com
 
 == Prereqs
 
-This step of the workshop relies on Quarkus REST Jackson to create and expose JAX-RS resources.
+This step of the workshop relies on Quarkus REST Jackson and Quarkus Security to create and expose JAX-RS resources.
 You must add the following dependency to your `pom.xml` before proceeding. Without it, the workflow will fail.
 
 [source,xml]
@@ -29,6 +29,10 @@ You must add the following dependency to your `pom.xml` before proceeding. Witho
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-rest-jackson</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-elytron-security-properties-file</artifactId>
 </dependency>
 ----
 
@@ -42,6 +46,7 @@ First, let's configure the HTTP client timeouts, enable wire logging to see the 
 .application.properties
 ----
 # HTTP Client Tuning
+quarkus.http.auth.basic=true
 quarkus.flow.http.client.connect-timeout=5000
 quarkus.flow.http.client.read-timeout=10000
 
@@ -55,6 +60,8 @@ demo.username=alice
 demo.password=s3cr3t!
 
 # Define the Quarkus Security test user for the downstream endpoint to validate against
+quarkus.security.users.embedded.enabled=true
+quarkus.security.users.embedded.plain-text=true
 quarkus.security.users.embedded.users.alice=s3cr3t!
 quarkus.security.users.embedded.roles.alice=user
 ----

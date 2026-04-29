@@ -30,6 +30,15 @@ quarkus extension add io.quarkiverse.flow:quarkus-flow
 
 *(If you are not using the CLI, you can manually add the `quarkus-flow` dependency to your `pom.xml`).*
 
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkiverse.flow</groupId>
+    <artifactId>quarkus-flow</artifactId>
+    <version>{project-version}</version>
+</dependency>
+----
+
 == 2. Create a minimal workflow
 
 Workflows in Quarkus are simply Java classes that extend `Flow`.
