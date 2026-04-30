@@ -49,7 +49,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -360,8 +359,7 @@ class FlowProcessor {
     }
 
     @BuildStep
-    void detectQuarkusLoggingJson(CombinedIndexBuildItem index,
-            FlowStructuredLoggingConfig structuredLoggingConfig,
+    void detectQuarkusLoggingJson(FlowStructuredLoggingConfig structuredLoggingConfig,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> configDefaults,
             LaunchModeBuildItem launchMode) {
 
@@ -372,6 +370,17 @@ class FlowProcessor {
         // Users can override these in application.properties if needed
         String loggerCategory = EventFormatter.class.getPackageName();
 
+        switch (structuredLoggingConfig.handler().mode()) {
+            case NONE -> LOG.info("Structured Logging enabled, but automatic logging handler disabled. " +
+                    "You have to configure the output via quarkus.log.* configuration for the category {}", loggerCategory);
+            case FILE -> createStructuredLoggingFileHandler(configDefaults, launchMode, loggerCategory);
+            case CONTAINER -> createStructuredLoggingStdoutHandler(configDefaults, loggerCategory);
+        }
+    }
+
+    private void createStructuredLoggingFileHandler(BuildProducer<RunTimeConfigurationDefaultBuildItem> configDefaults,
+            LaunchModeBuildItem launchMode,
+            String loggerCategory) {
         // Enable file handler by default when structured logging is enabled
         configDefaults.produce(new RunTimeConfigurationDefaultBuildItem(
                 "quarkus.log.handler.file.\"" + DEFAULT_STRUCTURED_LOG_HANDLER + "\".enable",
@@ -406,4 +415,26 @@ class FlowProcessor {
                 DEFAULT_STRUCTURED_LOG_HANDLER);
     }
 
+    private void createStructuredLoggingStdoutHandler(BuildProducer<RunTimeConfigurationDefaultBuildItem> configDefaults,
+            String loggerCategory) {
+        // Enable console handler
+        configDefaults.produce(new RunTimeConfigurationDefaultBuildItem(
+                "quarkus.log.handler.console.\"" + DEFAULT_STRUCTURED_LOG_HANDLER + "\".enable",
+                "true"));
+        // Set raw JSON format (no timestamps, just the event JSON)
+        configDefaults.produce(new RunTimeConfigurationDefaultBuildItem(
+                "quarkus.log.handler.console.\"" + DEFAULT_STRUCTURED_LOG_HANDLER + "\".format",
+                "%s%n"));
+        // Assign this handler to the structured logging category
+        configDefaults.produce(new RunTimeConfigurationDefaultBuildItem(
+                "quarkus.log.category.\"" + loggerCategory + "\".handlers",
+                DEFAULT_STRUCTURED_LOG_HANDLER));
+        // Prevent workflow events from appearing in parent console handler
+        configDefaults.produce(new RunTimeConfigurationDefaultBuildItem(
+                "quarkus.log.category.\"" + loggerCategory + "\".use-parent-handlers",
+                "false"));
+
+        LOG.info("Quarkus Flow structured logging console handler auto-configured. " +
+                "Events will be written to stdout (containers mode)");
+    }
 }
