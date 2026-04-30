@@ -41,14 +41,18 @@ public class OrderResource {
             future.thenAccept(model -> {
                 var output = model.as(OrderFulfillmentWorkflow.WorkflowOutput.class).orElseThrow();
                 if ("error".equals(output.status())) {
-                    broadcast("{\"orderId\":\"%s\",\"status\":\"failed\",\"message\":\"Compensation completed: Order cancelled\"}", orderId);
+                    broadcast(
+                            "{\"orderId\":\"%s\",\"status\":\"failed\",\"message\":\"Compensation completed: Order cancelled\"}",
+                            orderId);
                 } else {
-                    broadcast("{\"orderId\":\"%s\",\"status\":\"completed\",\"message\":\"Order fulfilled successfully\"}", orderId);
+                    broadcast("{\"orderId\":\"%s\",\"status\":\"completed\",\"message\":\"Order fulfilled successfully\"}",
+                            orderId);
                 }
 
             }).exceptionally(throwable -> {
                 log.error("Order failed: {}", orderId, throwable);
-                broadcast("{\"orderId\":\"%s\",\"status\":\"failed\",\"message\":\"Compensation completed: Order cancelled\"}", orderId);
+                broadcast("{\"orderId\":\"%s\",\"status\":\"failed\",\"message\":\"Compensation completed: Order cancelled\"}",
+                        orderId);
                 return null;
             });
 

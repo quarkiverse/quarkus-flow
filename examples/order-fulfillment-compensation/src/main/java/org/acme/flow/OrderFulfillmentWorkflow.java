@@ -12,7 +12,6 @@ import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.tryCatch;
 
@@ -39,27 +38,24 @@ public class OrderFulfillmentWorkflow extends Flow {
                 .tasks(
                         tryCatch(
                                 "tryStockReservation",
-                                t ->
-                                        t.tryCatch(function("stockReservation", this::reserveStock))
-                                                .catchError(
-                                                        err -> err.type(STOCK_ORDER_ERROR),
-                                                        function("cancelStockReservation", this::cancelReservation).then(FlowDirectiveEnum.END)
-                                                )),
+                                t -> t.tryCatch(function("stockReservation", this::reserveStock))
+                                        .catchError(
+                                                err -> err.type(STOCK_ORDER_ERROR),
+                                                function("cancelStockReservation", this::cancelReservation)
+                                                        .then(FlowDirectiveEnum.END))),
                         tryCatch(
                                 "tryPaymentProcessing",
-                                t ->
-                                        t.tryCatch(function("paymentProcessing", this::processPayment))
-                                                .catchWhen(
-                                                        "${ .status == 503 }",
-                                                        function("cancelPayment", this::cancelPayment).then(FlowDirectiveEnum.END))),
+                                t -> t.tryCatch(function("paymentProcessing", this::processPayment))
+                                        .catchWhen(
+                                                "${ .status == 503 }",
+                                                function("cancelPayment", this::cancelPayment).then(FlowDirectiveEnum.END))),
                         tryCatch(
                                 "tryShipping",
-                                t ->
-                                        t.tryCatch(function("scheduleShipping", this::scheduleShipping))
-                                                .catchType(
-                                                        SHIPPING_ERROR, function("cancelPayment", this::cancelShipping).then(FlowDirectiveEnum.END))),
-                        function("endFlow", this::endFlow)
-                )
+                                t -> t.tryCatch(function("scheduleShipping", this::scheduleShipping))
+                                        .catchType(
+                                                SHIPPING_ERROR,
+                                                function("cancelPayment", this::cancelShipping).then(FlowDirectiveEnum.END))),
+                        function("endFlow", this::endFlow))
                 .build();
     }
 
@@ -73,7 +69,7 @@ public class OrderFulfillmentWorkflow extends Flow {
             broadcastStep(order, "stockReservation", "failed", "Stock reservation failed - Out of stock");
             throw new WorkflowException(WorkflowError.error(STOCK_ORDER_ERROR, 409).build());
         }
-        
+
         broadcastStep(order, "stockReservation", "completed", "Stock reserved successfully");
         return new OrderStep(order, "reserved");
     }
@@ -95,7 +91,7 @@ public class OrderFulfillmentWorkflow extends Flow {
             broadcastStep(order.orderId(), "paymentProcessing", "failed", "Payment processing failed - Service unavailable");
             throw new WorkflowException(WorkflowError.error(PAYMENT_PROCESSING_ERROR, 503).build());
         }
-        
+
         broadcastStep(order.orderId(), "paymentProcessing", "completed", "Payment processed successfully");
 
         return new OrderStep(order.orderId(), "paid");
@@ -131,7 +127,7 @@ public class OrderFulfillmentWorkflow extends Flow {
             broadcastStep(order.orderId(), "shipping", "failed", "Shipping failed - Carrier unavailable");
             throw new WorkflowException(WorkflowError.error(SHIPPING_ERROR, 500).build());
         }
-        
+
         broadcastStep(order.orderId(), "shipping", "completed", "Shipping scheduled successfully");
 
         return new OrderStep(order.orderId(), "shipping");
@@ -161,15 +157,15 @@ public class OrderFulfillmentWorkflow extends Flow {
 
     private void broadcastStep(String orderId, String step, String status, String message) {
         String json = String.format(
-            "{\"orderId\":\"%s\",\"step\":\"%s\",\"status\":\"%s\",\"message\":\"%s\"}",
-            orderId, step, status, message
-        );
+                "{\"orderId\":\"%s\",\"step\":\"%s\",\"status\":\"%s\",\"message\":\"%s\"}",
+                orderId, step, status, message);
         webSocket.broadcast(json);
     }
 
     @RegisterForReflection
     public record OrderStep(String orderId, String status) {
     }
+
     @RegisterForReflection
     public record WorkflowOutput(String status) {
     }
