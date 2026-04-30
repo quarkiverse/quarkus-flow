@@ -539,6 +539,56 @@ endif::add-copy-button-to-env-var[]
 |string
 |
 
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-structured-logging-handler-mode]] [.property-path]##link:#quarkus-flow_quarkus-flow-structured-logging-handler-mode[`+++quarkus.flow.structured-logging.handler.mode+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.structured-logging.handler.mode+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The log handler mode to use for structured logging events.
+
+Determines where workflow and task execution events are written:
+
+ - `file` - Writes to a dedicated file (`/var/log/quarkus-flow/events.log` in production, `target/quarkus-flow-events.log` in dev/test)
+ - `container` - Writes to stdout for containerized deployments (Kubernetes, Docker, cloud-native environments)
+ - `none` - Disables automatic handler creation; you must manually configure handlers via `quarkus.log.++*++` properties
+
+
+
+*Example configurations:*
+
+```
+# File mode (default) - traditional deployments
+quarkus.flow.structured-logging.enabled=true
+quarkus.flow.structured-logging.handler.mode=file
+
+# Container mode - Kubernetes/Docker deployments
+quarkus.flow.structured-logging.enabled=true
+quarkus.flow.structured-logging.handler.mode=container
+
+# Custom mode - advanced users
+quarkus.flow.structured-logging.enabled=true
+quarkus.flow.structured-logging.handler.mode=none
+# Then manually configure via quarkus.log.* properties
+```
+
+
+
+Default: `file`
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_STRUCTURED_LOGGING_HANDLER_MODE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_STRUCTURED_LOGGING_HANDLER_MODE+++`
+endif::add-copy-button-to-env-var[]
+--
+a|`file`, `container`, `none`
+|`+++file+++`
+
 a| [[quarkus-flow_quarkus-flow-http-client-connect-timeout]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-connect-timeout[`+++quarkus.flow.http.client.connect-timeout+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.http.client.connect-timeout+++[]

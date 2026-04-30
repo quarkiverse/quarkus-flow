@@ -1,5 +1,7 @@
 package io.quarkiverse.flow.persistence.redis;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,6 +33,8 @@ import io.serverlessworkflow.impl.executors.TransitionInfo;
 import io.serverlessworkflow.impl.marshaller.MarshallingUtils;
 import io.serverlessworkflow.impl.marshaller.TaskStatus;
 import io.serverlessworkflow.impl.marshaller.WorkflowBufferFactory;
+import io.serverlessworkflow.impl.marshaller.WorkflowInputBuffer;
+import io.serverlessworkflow.impl.marshaller.WorkflowOutputBuffer;
 import io.serverlessworkflow.impl.persistence.CompletedTaskInfo;
 import io.serverlessworkflow.impl.persistence.PersistenceInstanceTransaction;
 import io.serverlessworkflow.impl.persistence.PersistenceTaskInfo;
@@ -47,6 +51,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     private final static String RETRY_ATTEMPT = "retryAttempt";
     private final static String END_NODE = "endNode";
     private final static String NEXT = "next";
+    private final static String ITERATION = "iteration";
     private final static String SEPARATOR = ":";
 
     private final RedisDataSource ds;
@@ -119,6 +124,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
             operations.add(tx -> hashCommands(tx).hset(key, NEXT,
                     MarshallingUtils.writeString(factory, next.position().jsonPointer())));
         }
+        operations.add(tx -> hashCommands(tx).hset(key, ITERATION, writeInt(factory, taskContext.iteration())));
     }
 
     @Override
@@ -206,7 +212,8 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
                     MarshallingUtils.readModel(factory, data.get(OUTPUT)),
                     MarshallingUtils.readModel(factory, data.get(CONTEXT)),
                     MarshallingUtils.readBoolean(factory, data.get(END_NODE)),
-                    MarshallingUtils.readString(factory, data.get(NEXT)));
+                    MarshallingUtils.readString(factory, data.get(NEXT)),
+                    readInt(factory, data.get(ITERATION)));
         } else if (status == TaskStatus.RETRIED) {
             return new RetriedTaskInfo(MarshallingUtils.readShort(factory, data.get(RETRY_ATTEMPT)));
         } else {
@@ -252,5 +259,23 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
 
     private String taskPrefix(String instanceId) {
         return instanceId + SEPARATOR;
+    }
+
+    private static byte[] writeInt(WorkflowBufferFactory factory, int iteration) {
+        ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
+        try (WorkflowOutputBuffer buffer = factory.output(bytesOut)) {
+            buffer.writeInt(iteration);
+        }
+        return bytesOut.toByteArray();
+    }
+
+    private int readInt(WorkflowBufferFactory factory, byte[] bytes) {
+        if (bytes == null) {
+            return 0;
+        }
+        ByteArrayInputStream bytesIn = new ByteArrayInputStream(bytes);
+        try (WorkflowInputBuffer buffer = factory.input(bytesIn)) {
+            return buffer.readInt();
+        }
     }
 }
