@@ -7,6 +7,7 @@ import io.serverlessworkflow.api.types.Workflow;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.orchestrator.model.BuildTask;
+import org.acme.orchestrator.model.TaskExecutionContext;
 import org.acme.orchestrator.model.TaskResult;
 import org.acme.orchestrator.model.TaskStatus;
 import org.acme.orchestrator.service.StateReconciliationService;
@@ -47,16 +48,13 @@ public class TaskWorkflow extends Flow {
     @Override
     public Workflow descriptor() {
         return workflow("build-task")
+                // 1. Listen for task start event from coordinator
+                .schedule(on(one("org.acme.build.task.started")))
                 .tasks(
-                        // 1. Listen for task start event from coordinator
-                        listen("awaitTaskStart", toOne("org.acme.build.task.started"))
-                                .outputAs((JsonNode node) -> node.isArray() ? node.get(0) : node),
-
-                        // 2. Reconcile state before execution
-                        function("reconcile", (BuildTask task) -> {
+                        // 2. Extract BuildTask from CloudEvent and reconcile state
+                        function("extractAndReconcile", (BuildTask task) -> {
                             LOG.info("Reconciling state for task: {}", task.id());
-                            StateReconciliationService.ReconciliationResult result =
-                                    reconciliationService.reconcile(task.id());
+                            StateReconciliationService.ReconciliationResult result = reconciliationService.reconcile(task.id());
 
                             if (!result.canResume()) {
                                 LOG.error("Cannot resume task {}: {}", task.id(), result.message());
@@ -66,7 +64,8 @@ public class TaskWorkflow extends Flow {
 
                             LOG.info("Task {} reconciliation successful: {}", task.id(), result.message());
                             return task;
-                        }, BuildTask.class),
+                        })// Extract BuildTask from CloudEvent structure: schedule() returns array of CloudEvents
+                                .inputFrom((JsonNode node) -> node.isArray() ? node.get(0).get("data") : node.get("data")),
 
                         // 3. Execute task (idempotent, can retry)
                         function("execute", (BuildTask task) -> {
@@ -74,40 +73,69 @@ public class TaskWorkflow extends Flow {
                             try {
                                 TaskResult result = taskExecutor.executeTask(task);
                                 LOG.info("Task {} completed: {}", task.id(), result.message());
-                                return result;
+                                return new TaskExecutionContext(task, result);
                             } catch (TaskExecutor.TaskExecutionException e) {
                                 LOG.error("Task {} failed: {}", task.id(), e.getMessage());
-                                return new TaskResult(task.id(), TaskStatus.FAILED, e.getMessage(), 1);
+                                TaskResult result = new TaskResult(task.id(), TaskStatus.FAILED, e.getMessage(), 1);
+                                return new TaskExecutionContext(task, result);
                             }
-                        }, BuildTask.class),
+                        }),
 
                         // 4. Check if task succeeded or needs retry
                         switchWhenOrElse(
-                                (TaskResult result) -> result.status() == TaskStatus.COMPLETED,
+                                (TaskExecutionContext ctx) -> ctx.result().status() == TaskStatus.COMPLETED,
                                 "taskCompleted",
-                                "checkRetry",
-                                TaskResult.class),
+                                "checkRetry"),
 
-                        // 5. Retry logic
-                        consume("checkRetry", (TaskResult result) -> {
-                            if (result.attemptNumber() >= MAX_RETRIES) {
+                        // 5. Check retry limit
+                        consume("checkRetry", (TaskExecutionContext ctx) -> {
+                            if (ctx.result().attemptNumber() >= MAX_RETRIES) {
                                 LOG.error("Task {} exhausted retries ({}/{}), giving up",
-                                        result.taskId(), result.attemptNumber(), MAX_RETRIES);
+                                        ctx.result().taskId(), ctx.result().attemptNumber(), MAX_RETRIES);
                                 throw new RuntimeException(
                                         "Task failed after " + MAX_RETRIES + " attempts");
                             }
                             LOG.info("Task {} failed, will retry (attempt {}/{})",
-                                    result.taskId(), result.attemptNumber(), MAX_RETRIES);
-                        }, TaskResult.class)
-                                .then("reconcile"), // Jump back to reconcile step
+                                    ctx.result().taskId(), ctx.result().attemptNumber(), MAX_RETRIES);
+                        }).then("retryExecute"),
 
-                        // 6. Task completed successfully - publish completion event
-                        consume("taskCompleted", (TaskResult result) -> {
+                        // 6. Retry execution - reconcile and execute again
+                        function("retryExecute", (TaskExecutionContext ctx) -> {
+                            BuildTask task = ctx.task();
+
+                            // Reconcile before retry
+                            LOG.info("Reconciling state before retry for task: {}", task.id());
+                            StateReconciliationService.ReconciliationResult reconcileResult = reconciliationService
+                                    .reconcile(task.id());
+
+                            if (!reconcileResult.canResume()) {
+                                LOG.error("Cannot retry task {}: {}", task.id(), reconcileResult.message());
+                                throw new IllegalStateException(
+                                        "State reconciliation failed on retry: " + reconcileResult.message());
+                            }
+
+                            // Execute task
+                            try {
+                                TaskResult result = taskExecutor.executeTask(task);
+                                LOG.info("Retry execution for task {}: {}", task.id(), result.message());
+                                return new TaskExecutionContext(task, result);
+                            } catch (TaskExecutor.TaskExecutionException e) {
+                                LOG.error("Retry failed for task {}: {}", task.id(), e.getMessage());
+                                throw new RuntimeException("Retry execution failed", e);
+                            }
+                        }).then("switch-2"), // Jump back to status check
+
+                        // 7. Task completed successfully - log and emit completion event
+                        consume("taskCompleted", (TaskExecutionContext ctx) -> {
                             LOG.info("Task {} completed successfully after {} attempt(s)",
-                                    result.taskId(), result.attemptNumber());
-                        }, TaskResult.class),
+                                    ctx.result().taskId(), ctx.result().attemptNumber());
+                        }),
 
-                        emitJson("taskCompleted", "org.acme.build.task.completed", TaskResult.class)
+                        // 8. Extract TaskResult for emission
+                        function("extractResult", TaskExecutionContext::result),
+
+                        // 9. Emit completion event
+                        emitJson("emitCompletion", "org.acme.build.task.completed", TaskResult.class)
                                 .then(FlowDirectiveEnum.END))
                 .build();
     }

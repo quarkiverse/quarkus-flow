@@ -11,6 +11,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -30,6 +33,8 @@ import static org.awaitility.Awaitility.await;
  */
 @QuarkusTest
 class BuildPipelineIT {
+
+    private static final Logger LOG = LoggerFactory.getLogger(BuildPipelineIT.class);
 
     @Inject
     TaskStateStore stateStore;
@@ -121,7 +126,7 @@ class BuildPipelineIT {
                             .as("Task %s should have external state", state.getTaskId())
                             .isNotBlank();
 
-                    System.out.printf("Task %s completed phases: %s%n",
+                    LOG.info("Task {} completed phases: {}",
                             state.getTaskId(), state.getCompletedPhases());
                 });
     }
@@ -163,7 +168,7 @@ class BuildPipelineIT {
                 .filter(s -> s.getAttemptCount() > 1)
                 .count();
 
-        System.out.printf("Tasks with retries: %d/%d%n",
+        LOG.info("Tasks with retries: {}/{}",
                 tasksWithRetries, allStates.size());
 
         // Verify that failed tasks have error tracking
@@ -174,7 +179,7 @@ class BuildPipelineIT {
                             .as("Failed task %s should have error message", state.getTaskId())
                             .isNotBlank();
 
-                    System.out.printf("Task %s failed after %d attempts: %s%n",
+                    LOG.info("Task {} failed after {} attempts: {}",
                             state.getTaskId(), state.getAttemptCount(), state.getLastError());
                 });
     }
@@ -208,6 +213,6 @@ class BuildPipelineIT {
 
         // Then
         assertThat(statusResponse).isNotEmpty();
-        System.out.println("Task statuses: " + statusResponse);
+        LOG.info("Task statuses: {}", statusResponse);
     }
 }

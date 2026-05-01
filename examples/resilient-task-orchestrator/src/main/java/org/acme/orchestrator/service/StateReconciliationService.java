@@ -38,7 +38,6 @@ public class StateReconciliationService {
             LOG.info("External state exists for task {}: {}", taskId, state.getExternalState());
 
             // Validate that external state matches completed phases
-            int expectedPhases = state.getCompletedPhases().size();
             if (state.getExternalState().startsWith("phase_")) {
                 LOG.info("External state matches workflow state for task {}", taskId);
             } else {

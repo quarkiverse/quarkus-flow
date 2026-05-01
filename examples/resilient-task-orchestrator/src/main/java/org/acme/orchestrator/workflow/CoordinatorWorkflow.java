@@ -1,28 +1,31 @@
 package org.acme.orchestrator.workflow;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkiverse.flow.Flow;
-import io.serverlessworkflow.api.types.Workflow;
-import jakarta.enterprise.context.ApplicationScoped;
+import java.util.Collection;
+import java.util.List;
+
 import org.acme.orchestrator.model.BuildSpec;
 import org.acme.orchestrator.model.BuildTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.List;
+import io.quarkiverse.flow.Flow;
+import io.serverlessworkflow.api.types.Workflow;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.emitJson;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.forEach;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.forEachItem;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
 
 /**
  * Coordinator Workflow - orchestrates the build pipeline.
- *
+ * <p>
  * Pattern: Thin orchestrator that:
  * 1. Decomposes build spec into tasks
  * 2. Emits task events for each task (choreography, not orchestration)
  * 3. Each task is handled by separate TaskWorkflow instance
- *
+ * <p>
  * This design enables:
  * - Independent task execution (fault isolation)
  * - Parallel task processing
@@ -36,8 +39,8 @@ public class CoordinatorWorkflow extends Flow {
     public Workflow descriptor() {
         return workflow("build-coordinator")
                 .tasks(
-                        // 1. Decompose build spec into individual tasks and emit events
-                        function("decomposeAndEmit", (BuildSpec spec) -> {
+                        // 1. Decompose build spec into individual tasks
+                        function("decompose", (BuildSpec spec) -> {
                             LOG.info("Decomposing build spec for project: {}", spec.projectName());
                             List<BuildTask> tasks = spec.tasks().stream()
                                     .map(taskName -> new BuildTask(
@@ -50,18 +53,9 @@ public class CoordinatorWorkflow extends Flow {
                                     tasks.stream().map(BuildTask::id).toList());
                             return tasks;
                         }, BuildSpec.class),
-
-                        // 2. ForEach task, emit event (handled by separate TaskWorkflow instances)
-                        list -> list.forEach(j -> j
-                                .collection((Collection<?> tasks) -> tasks)
-                                .each("task")
-                                .tasks(
-                                        emitJson("taskStarted", "org.acme.build.task.started", BuildTask.class))),
-
-                        // 3. Done - tasks run independently
-                        consume("done", (Object ignored) -> {
-                            LOG.info("All task events emitted, coordinator workflow complete");
-                        }, Object.class))
+                        forEach((Collection<BuildTask> buildTasks) -> buildTasks,
+                                emitJson("org.acme.build.task.started", BuildTask.class)
+                                        .inputFrom("$item")))
                 .build();
     }
 }
