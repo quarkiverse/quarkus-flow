@@ -15,7 +15,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.emitJson;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.forEach;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.forEachItem;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
 
 /**
