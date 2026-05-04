@@ -30,7 +30,9 @@ Quarkus Flow is designed to be non-blocking. When a workflow hits a wait task (l
 === Event Filtering
 A major strength of the engine is its ability to route asynchronous events to the correct, paused workflow instance.
 
-When a workflow enters an event-waiting (listen) state, it defines an **Event Filter**. This allows you to describe exactly how you want to filter incoming events directly within the listen task. You can filter based on the CloudEvent type, specific CloudEvent extensions, or the underlying CloudEvent data. When a message arrives via your messaging broker (like Kafka) that matches your defined filter criteria, the engine routes the payload directly to the correct execution and wakes it up.
+When a workflow enters an event-waiting (listen) state, it defines an **Event Filter** that matches incoming events and wakes the paused instance when a message arrives through your messaging broker.
+
+For callback-driven resume flows, the workflow instance ID is usually captured from the outbound event and sent back on the callback CloudEvent so the paused instance can be resumed deterministically. See xref:idempotency-correlation.adoc#correlating-callbacks-to-a-waiting-instance[Correlating Callbacks to a Waiting Instance].
 
 == Agentic AI Topology
 Quarkus Flow treats LangChain4j Agents as native task workers. Conceptually, an AI orchestration is not a separate engine; it is integrated directly into the standard workflow lifecycle.

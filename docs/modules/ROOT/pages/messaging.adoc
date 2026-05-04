@@ -76,6 +76,8 @@ In your Quarkus Flow definitions, you interact with these Kafka topics using two
 * **`emitJson("event.type", Pojo.class)`**: Takes a standard Java POJO from your workflow data, wraps it in a CloudEvent envelope with the specified type, and publishes it to `flow-out`.
 * **`listen("taskName", toOne("event.type"))`**: Pauses the workflow instance and releases the execution thread. The engine defines an **Event Filter** waiting for a CloudEvent of `event.type` to arrive on `flow-in`. When it does, the engine automatically correlates it to the paused instance, extracts the payload, and resumes execution.
 
+For callback or resume flows, the `listen(...)` task is only half of the story. The workflow instance ID is usually carried on the outbound event as `flowinstanceid`, persisted by the external system, and then sent back on the callback CloudEvent so the engine can wake the correct waiting instance. See xref:idempotency-correlation.adoc#correlating-callbacks-to-a-waiting-instance[Correlating Callbacks to a Waiting Instance].
+
 Here is a complete example of an event-driven workflow:
 
 [source,java]
@@ -116,7 +118,7 @@ For idempotency and end-to-end distributed traceability, Quarkus Flow automatica
 
 By default, every event published to `flow-out` will include:
 
-* `flowinstanceid`: The UUID of the executing `WorkflowInstance`.
+* `flowinstanceid`: The ULID of the executing `WorkflowInstance`.
 * `flowtaskid`: The JSON Pointer of the specific task that emitted the event (e.g., `do/0/task`).
 
 If you are writing a custom consumer downstream, you can extract these attributes directly from the `CloudEvent`:
@@ -142,8 +144,10 @@ quarkus.flow.messaging.metadata.instance-id.key=mycompany-instance-id
 quarkus.flow.messaging.metadata.task-id.key=mycompany-task-id
 
 # To disable injection entirely:
-# quarkus.flow.messaging.enable-metadata-propagation=false
+# quarkus.flow.messaging.enable-metadata-correlation=false
 ----
+
+The same `flowinstanceid` metadata is what supports the callback pattern described in xref:idempotency-correlation.adoc#correlating-callbacks-to-a-waiting-instance[Correlating Callbacks to a Waiting Instance].
 
 == 6. Bring your own messaging (Advanced)
 
