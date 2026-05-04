@@ -167,8 +167,6 @@ forEach((Collection<BuildTask> buildTasks) -> buildTasks,
 
 **Key insight**: The `forEach` task passes the original input (entire collection) to sub-tasks, while individual items are stored in context variables (default: `$item`). The `.inputFrom("$item")` reads from the context variable instead of the input.
 
-**See also**: [FOR-TASK-PATTERNS.md](FOR-TASK-PATTERNS.md) for comprehensive forEach usage patterns and troubleshooting.
-
 ### Why Event-Driven Choreography?
 
 **Problem**: Monolithic workflows have issues:
