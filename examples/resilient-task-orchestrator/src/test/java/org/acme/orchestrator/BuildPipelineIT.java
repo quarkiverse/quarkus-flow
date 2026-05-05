@@ -116,8 +116,7 @@ class BuildPipelineIT {
                             .hasSize(2)
                             .containsExactlyInAnyOrder(
                                     projectName + "-lint",
-                                    projectName + "-test"
-                            );
+                                    projectName + "-test");
                 });
 
         // Wait for tasks to appear in state store
@@ -142,8 +141,7 @@ class BuildPipelineIT {
         // Verify both specific tasks exist
         assertThat(allStates).containsKeys(
                 projectName + "-lint",
-                projectName + "-test"
-        );
+                projectName + "-test");
     }
 
     @Test
@@ -173,8 +171,7 @@ class BuildPipelineIT {
                                     projectName + "-lint",
                                     projectName + "-test",
                                     projectName + "-build",
-                                    projectName + "-deploy"
-                            );
+                                    projectName + "-deploy");
                 });
 
         // Wait for ALL 4 tasks to appear in state store
@@ -190,8 +187,7 @@ class BuildPipelineIT {
                                     projectName + "-lint",
                                     projectName + "-test",
                                     projectName + "-build",
-                                    projectName + "-deploy"
-                            );
+                                    projectName + "-deploy");
                 });
 
         // Wait for ALL 4 tasks to complete
@@ -262,8 +258,7 @@ class BuildPipelineIT {
                             .containsExactlyInAnyOrder(
                                     projectName + "-lint",
                                     projectName + "-test",
-                                    projectName + "-build"
-                            );
+                                    projectName + "-build");
                 });
 
         // Wait for task execution attempts

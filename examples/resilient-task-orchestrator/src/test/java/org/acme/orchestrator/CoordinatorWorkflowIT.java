@@ -206,8 +206,7 @@ class CoordinatorWorkflowIT {
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
-                    "mp.messaging.incoming.flow-in.broadcast", "true"
-            );
+                    "mp.messaging.incoming.flow-in.broadcast", "true");
         }
     }
 }
