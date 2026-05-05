@@ -38,9 +38,9 @@ jobs:
           kubectl cluster-info
           kubectl get nodes -o wide
 
-      - name: Deploy Redis
+      - name: Deploy Valkey
         run: |
-          kubectl apply -f examples/durable-workflows-k8s/manifests/redis.yaml
+          kubectl apply -f examples/durable-workflows-k8s/manifests/valkey.yaml
           kubectl wait --for=condition=Ready pod -l app=redis --timeout=120s -n default
 
       - name: Build + deploy example to Kind (from repo root, single-threaded)
