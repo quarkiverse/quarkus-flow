@@ -152,7 +152,9 @@ public class NewsletterWorkflowIT {
     private void sendHumanReview(String instanceId, HumanReview review) {
         // REST wrapper sends CloudEvent to flow-in.
         // We pass the instanceId so the API can attach it as the 'flowinstanceid' CE extension.
-        given().contentType("application/json").body(review).when().put("/api/newsletter").then().statusCode(202);
+        given()
+                .header("X-Flow-Instance-Id", instanceId)
+                .contentType("application/json").body(review).when().put("/api/newsletter").then().statusCode(202);
     }
 
     private NewsletterDraft parseNewsletterDraft(CloudEvent ce) {

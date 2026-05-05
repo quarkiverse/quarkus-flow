@@ -2,6 +2,7 @@ package org.acme.newsletter;
 
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.agent;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.consume;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.consumed;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.emitJson;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.listen;
@@ -39,7 +40,8 @@ public class NewsletterWorkflow extends Flow {
         return FuncWorkflowBuilder.workflow("intelligent-newsletter")
                 .tasks(agent("draftAgent", draftAgent::write, NewsletterRequest.class),
                         emitJson("draftReady", "org.acme.email.review.required", NewsletterDraft.class),
-                        listen("waitHumanReview", toOne("org.acme.newsletter.review.done"))
+                        listen("waitHumanReview",
+                                toOne(consumed("org.acme.newsletter.review.done").extensionByInstanceId("flowinstanceid")))
                                 .outputAs((JsonNode node) -> node.isArray() ? node.get(0) : node),
                         switchWhenOrElse(h -> HumanReview.ReviewStatus.NEEDS_REVISION.equals(h.status()),
                                 "humanEditorAgent", "sendNewsletter", HumanReview.class),
