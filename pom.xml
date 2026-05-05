@@ -50,7 +50,7 @@
         <org.assertj.version>3.27.7</org.assertj.version>
         <quarkus-antora.version>3.25.0</quarkus-antora.version>
         <version.org.jacoco>0.8.14</version.org.jacoco>
-        <io.quarkiverse.playwright>2.3.3</io.quarkiverse.playwright>
+        <io.quarkiverse.playwright>2.3.4</io.quarkiverse.playwright>
         <com.h2database.version>2.4.240</com.h2database.version>
         <org.wiremock.version>3.13.2</org.wiremock.version>
     </properties>
