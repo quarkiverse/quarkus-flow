@@ -40,7 +40,7 @@
 
         <quarkus.version>3.35.2</quarkus.version>
         <jandex.version>3.5.3</jandex.version>
-        <io.serverlessworkflow.version>7.19.0.Final</io.serverlessworkflow.version>
+        <io.serverlessworkflow.version>7.20.0.Final</io.serverlessworkflow.version>
         <io.cloudevents.version>4.0.2</io.cloudevents.version>
 
         <io.quarkiverse.jackson-jq.version>2.5.1</io.quarkiverse.jackson-jq.version>
