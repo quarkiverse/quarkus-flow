@@ -8,6 +8,7 @@ import io.cloudevents.core.provider.EventFormatProvider;
 import io.cloudevents.jackson.JsonFormat;
 import io.serverlessworkflow.impl.WorkflowInstance;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -58,10 +59,12 @@ public class NewsletterAPIResource {
 
     @PUT
     @Path("/newsletter")
-    public Response sendReview(HumanReview review) throws JsonProcessingException {
+    public Response sendReview(HumanReview review, @HeaderParam("X-Flow-Instance-Id") String instanceId)
+            throws JsonProcessingException {
         byte[] body = objectMapper.writeValueAsBytes(review);
 
         CloudEvent ce = CloudEventBuilder.v1().withId(UUID.randomUUID().toString())
+                .withExtension("flowinstanceid", instanceId)
                 .withSource(URI.create("api:/newsletter")).withType("org.acme.newsletter.review.done")
                 .withDataContentType("application/json").withData(body).build();
 

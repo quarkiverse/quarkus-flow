@@ -20,6 +20,10 @@
             <artifactId>quarkus-messaging-deployment</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson-deployment</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow-messaging</artifactId>
             <version>${project.version}</version>
