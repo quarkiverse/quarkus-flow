@@ -166,14 +166,6 @@
                         <span class="text-red-400">2.</span>
                         <span><strong>Stock Reservation FAILS</strong> (ERR_001, status 409)</span>
                     </div>
-                    <div class="flex items-start space-x-2">
-                        <span class="text-yellow-400">3.</span>
-                        <span>Compensation: Cancel Stock Reservation</span>
-                    </div>
-                    <div class="flex items-start space-x-2">
-                        <span class="text-gray-400">4.</span>
-                        <span>Workflow ends (compensated)</span>
-                    </div>
                 </div>
                 <div class="mt-4 p-3 bg-gray-900 rounded text-xs">
                     <code class="text-blue-300">throw WorkflowException(ERR_001, 409)</code>
@@ -198,7 +190,7 @@
                     </div>
                     <div class="flex items-start space-x-2">
                         <span class="text-yellow-400">4.</span>
-                        <span>Compensation: Cancel Payment → Cancel Stock</span>
+                        <span>Compensation: Cancel Stock</span>
                     </div>
                     <div class="flex items-start space-x-2">
                         <span class="text-gray-400">5.</span>
@@ -232,7 +224,7 @@
                     </div>
                     <div class="flex items-start space-x-2">
                         <span class="text-yellow-400">5.</span>
-                        <span>Compensation: Cancel Shipping → Cancel Stock</span>
+                        <span>Compensation: Cancel Payment → Cancel Stock</span>
                     </div>
                     <div class="flex items-start space-x-2">
                         <span class="text-gray-400">6.</span>
