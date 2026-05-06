@@ -72,7 +72,7 @@ Runtime → Client calls /runner/exec
 
 ```properties
 # Enable/disable definition management endpoints
-quarkus.flow.runner.definition.enabled=true|false  # Default: true
+quarkus.flow.runner.endpoints.definition.enabled=true|false  # Default: true
 # When false, POST/PUT/DELETE /runner/definition endpoints are excluded from build
 ```
 
@@ -126,7 +126,7 @@ For immutable cloud deployments:
 
 ```properties
 quarkus.flow.runner.enabled=true
-quarkus.flow.runner.definition.enabled=false  # Build-time: exclude definition endpoints
+quarkus.flow.runner.endpoints.definition.enabled=false  # Build-time: exclude definition endpoints
 quarkus.flow.runner.source=path
 quarkus.flow.runner.source.path=/deployments/workflows  # ConfigMap mount
 quarkus.flow.runner.security.type=api-key
@@ -182,7 +182,7 @@ public class WorkflowDefinitionLoader {
 
 **Class:** `RunnerDefinitionResource`  
 **Path:** `/runner/definition`  
-**Conditional Inclusion:** Only when `quarkus.flow.runner.definition.enabled=true`
+**Conditional Inclusion:** Only when `quarkus.flow.runner.endpoints.definition.enabled=true`
 
 **Endpoints:**
 
@@ -267,7 +267,7 @@ public class RunnerDefinitionResource {
 - Only return workflows the user can execute
 
 **Build-time Exclusion:**
-- When `quarkus.flow.runner.definition.enabled=false`, POST/PUT/DELETE endpoints are not included in the native image/JAR
+- When `quarkus.flow.runner.endpoints.definition.enabled=false`, POST/PUT/DELETE endpoints are not included in the native image/JAR
 - GET endpoint remains available (discovery is needed even in immutable mode)
 - Achieved via build step that conditionally adds write operations
 
