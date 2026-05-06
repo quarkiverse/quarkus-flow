@@ -29,6 +29,8 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
             padding: 0px 8px;
             display: flex;
             flex-direction: column;
+            gap: 12px;
+            min-height: 0;
         }
 
         .fmt-combo {
@@ -37,15 +39,23 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
         }
 
         .code-block {
+            display: block;
             max-height: 90%;
+            min-height: 0;
         }
 
         .layout-container {
             height: 100%;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow: hidden;
         }
 
         .button-container {
-            margin-top: auto;
+            display: flex;
+            justify-content: flex-start;
         }
 
         .workflow-name {
@@ -155,14 +165,14 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
     _renderForm() {
         return html`
             ${this._renderTopBar()}
-            <vaadin-split-layout orientation="vertical" style="min-height: 600px; max-height: 600px;">
-                <master-content class="layout-container" style="heigh: 50%;">
+            <vaadin-split-layout class="workflow-split" orientation="vertical" style="min-height: 600px; max-height: 600px; flex: 1 1 auto;">
+                <div class="layout-container" style="height: 50%;">
                     <qui-badge level='info' small><span>Input</span></qui-badge>
                     ${this._inputSchema
                             ? this._renderSchemaForm()
                             : this._renderRawInputEditor()}
-                </master-content>
-                <detail-content class="layout-container" style="heigh: 50%;" >
+                </div>
+                <div class="layout-container" style="height: 50%;">
                     <qui-badge level="info" small><span>Output</span></qui-badge>
                     <qui-themed-code-block
                             class="code-block"
@@ -170,7 +180,7 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
                             theme="${themeState.theme.name}"
                             content="${this._output}">
                     </qui-themed-code-block>
-                </detail-content>
+                </div>
             </vaadin-split-layout>
             <div class="button-container">
                 ${this._loading

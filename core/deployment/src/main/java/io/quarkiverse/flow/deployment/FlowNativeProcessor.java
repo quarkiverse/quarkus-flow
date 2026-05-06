@@ -9,7 +9,6 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.LambdaCapturingTypeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.serverlessworkflow.impl.WorkflowError;
 import io.serverlessworkflow.impl.WorkflowModelFactory;
 import io.serverlessworkflow.impl.additional.NamedWorkflowAdditionalObject;
 import io.serverlessworkflow.impl.auth.JWTConverter;
@@ -19,7 +18,6 @@ import io.serverlessworkflow.impl.executors.CallableTaskBuilder;
 import io.serverlessworkflow.impl.executors.TaskExecutorFactory;
 import io.serverlessworkflow.impl.executors.func.DataTypeConverter;
 import io.serverlessworkflow.impl.executors.http.HttpRequestDecorator;
-import io.serverlessworkflow.impl.executors.openapi.UnifiedOpenAPI;
 import io.serverlessworkflow.impl.expressions.ExpressionFactory;
 
 final class FlowNativeProcessor {
@@ -51,13 +49,8 @@ final class FlowNativeProcessor {
     @BuildStep
     ReflectiveClassBuildItem registerForReflection() {
         return ReflectiveClassBuildItem.builder(
-                WorkflowError.class,
-                UnifiedOpenAPI.class,
-                UnifiedOpenAPI.Server.class,
-                UnifiedOpenAPI.PathItem.class,
-                UnifiedOpenAPI.Operation.class,
-                UnifiedOpenAPI.Parameter.class,
-                UnifiedOpenAPI.Components.class)
+                "org.hibernate.validator.internal.constraintvalidators.bv.PatternValidator",
+                "org.hibernate.validator.internal.constraintvalidators.bv.NotNullValidator")
                 .constructors(true)
                 .methods(true)
                 .fields(true)

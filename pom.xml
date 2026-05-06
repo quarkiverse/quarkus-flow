@@ -38,19 +38,19 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.log.level>OFF</quarkus.log.level>
 
-        <quarkus.version>3.35.0</quarkus.version>
+        <quarkus.version>3.35.2</quarkus.version>
         <jandex.version>3.5.3</jandex.version>
-        <io.serverlessworkflow.version>7.19.0.Final</io.serverlessworkflow.version>
+        <io.serverlessworkflow.version>7.20.0.Final</io.serverlessworkflow.version>
         <io.cloudevents.version>4.0.2</io.cloudevents.version>
 
-        <io.quarkiverse.jackson-jq.version>2.5.0</io.quarkiverse.jackson-jq.version>
-        <io.quarkiverse.langchain4j.version>1.9.1</io.quarkiverse.langchain4j.version>
+        <io.quarkiverse.jackson-jq.version>2.5.1</io.quarkiverse.jackson-jq.version>
+        <io.quarkiverse.langchain4j.version>1.9.2</io.quarkiverse.langchain4j.version>
 
         <!-- Tests and Docs -->
         <org.assertj.version>3.27.7</org.assertj.version>
         <quarkus-antora.version>3.25.0</quarkus-antora.version>
         <version.org.jacoco>0.8.14</version.org.jacoco>
-        <io.quarkiverse.playwright>2.3.3</io.quarkiverse.playwright>
+        <io.quarkiverse.playwright>2.3.4</io.quarkiverse.playwright>
         <com.h2database.version>2.4.240</com.h2database.version>
         <org.wiremock.version>3.13.2</org.wiremock.version>
     </properties>

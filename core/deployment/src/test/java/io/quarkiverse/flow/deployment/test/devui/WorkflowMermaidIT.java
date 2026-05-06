@@ -18,6 +18,7 @@ import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.options.BoundingBox;
 import com.microsoft.playwright.options.WaitForSelectorState;
 
 import io.quarkiverse.flow.deployment.test.HelloWorldWorkflow;
@@ -70,6 +71,43 @@ public class WorkflowMermaidIT {
                 page.waitForTimeout(8000);
 
                 Assertions.assertTrue(dialog.innerText().contains("set: setMessage")); // the name of the set task
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Should keep the execution output and action button separated")
+    void shouldRenderWorkflowExecutionWithoutOverlappingControls() {
+        final Map<String, String> env = new HashMap<>(System.getenv());
+        env.put("DEBUG", "pw:api");
+
+        try (Playwright playwright = Playwright.create(new Playwright.CreateOptions().setEnv(env))) {
+            try (Browser browser = playwright.chromium().launch(launchOptions)) {
+                Page page = browser.newPage();
+                page.navigate("http://localhost:8080/q/dev-ui/quarkus-flow/workflows");
+
+                String mermaidId = "mermaid-devui-hello-world-v1";
+                String playButtonSelector = "#play-" + mermaidId;
+
+                page.waitForSelector(playButtonSelector);
+                page.locator(playButtonSelector).click();
+
+                Locator execution = page.locator("qwc-flow-workflow-execution");
+                execution.waitFor();
+
+                Locator outputBadge = execution.locator("qui-badge").nth(1);
+                Locator startButton = execution.locator("#execute-workflow");
+
+                outputBadge.waitFor();
+                startButton.waitFor();
+
+                BoundingBox outputBox = outputBadge.boundingBox();
+                BoundingBox buttonBox = startButton.boundingBox();
+
+                Assertions.assertNotNull(outputBox, "Output badge should be visible");
+                Assertions.assertNotNull(buttonBox, "Start workflow button should be visible");
+                Assertions.assertTrue(outputBox.y + outputBox.height <= buttonBox.y,
+                        "Start workflow button should appear below the output section");
             }
         }
     }

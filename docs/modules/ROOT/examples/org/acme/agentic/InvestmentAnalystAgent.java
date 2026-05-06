@@ -25,14 +25,7 @@ import io.quarkiverse.langchain4j.RegisterAiService;
         - a stock ticker
         - a description of the investment objective
         - an investment horizon
-        - and a compact JSON snapshot of market data,
-
-        you MUST respond with a short JSON document that can be mapped to:
-          InvestmentMemo {
-            String summary;
-            String stance;      // BUY, HOLD or AVOID
-            List<String> keyRisks;
-          }
+        - and a compact JSON snapshot of market data
 
         Be concise and avoid marketing language.
         """)

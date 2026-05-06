@@ -118,6 +118,8 @@
 
 <script>
     // --- State Management ---
+    let currentInstanceId = null;
+
     function showView(viewId) {
         // Add d-none to all sections to hide them completely
         document.querySelectorAll('.view-section').forEach(el => el.classList.add('d-none'));
@@ -174,8 +176,11 @@
             body: JSON.stringify(requestData)
         }).then(response => {
             if(response.ok) {
-                document.getElementById('loading-text').innerText = "AI Agents are crafting your newsletter...";
-                showView('loading-view');
+                return response.json().then(body => {
+                    currentInstanceId = body.instanceId;
+                    document.getElementById('loading-text').innerText = "AI Agents are crafting your newsletter...";
+                    showView('loading-view');
+                });
             } else {
                 alert("Failed to start workflow! Check server logs for Jackson mapping errors.");
                 console.error("Payload rejected:", requestData);
@@ -197,7 +202,10 @@
 
         fetch('/api/newsletter', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Flow-Instance-Id': currentInstanceId
+            },
             body: JSON.stringify(reviewData)
         }).then(response => {
             if(response.ok) {
@@ -219,6 +227,7 @@
 
     // 4. Reset App
     document.getElementById('btn-reset').addEventListener('click', () => {
+        currentInstanceId = null;
         document.getElementById('request-form').reset();
         showView('request-view');
     });
