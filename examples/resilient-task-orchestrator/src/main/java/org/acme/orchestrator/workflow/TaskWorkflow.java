@@ -12,6 +12,7 @@ import org.acme.orchestrator.model.TaskResult;
 import org.acme.orchestrator.model.TaskStatus;
 import org.acme.orchestrator.service.StateReconciliationService;
 import org.acme.orchestrator.service.TaskExecutor;
+import org.acme.orchestrator.service.TaskStateStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +44,10 @@ public class TaskWorkflow extends Flow {
     @Inject
     TaskExecutor taskExecutor;
 
-    private static final int MAX_RETRIES = 3;
+    @Inject
+    TaskStateStore stateStore;
+
+    private static final int MAX_RETRIES = 5;
 
     @Override
     public Workflow descriptor() {
@@ -110,8 +114,10 @@ public class TaskWorkflow extends Flow {
 
                             if (!reconcileResult.canResume()) {
                                 LOG.error("Cannot retry task {}: {}", task.id(), reconcileResult.message());
-                                throw new IllegalStateException(
-                                        "State reconciliation failed on retry: " + reconcileResult.message());
+                                TaskResult result = new TaskResult(task.id(), TaskStatus.FAILED,
+                                        "Reconciliation failed: " + reconcileResult.message(),
+                                        stateStore.get(task.id()).getAttemptCount());
+                                return new TaskExecutionContext(task, result);
                             }
 
                             // Execute task
@@ -121,7 +127,9 @@ public class TaskWorkflow extends Flow {
                                 return new TaskExecutionContext(task, result);
                             } catch (TaskExecutor.TaskExecutionException e) {
                                 LOG.error("Retry failed for task {}: {}", task.id(), e.getMessage());
-                                throw new RuntimeException("Retry execution failed", e);
+                                TaskResult result = new TaskResult(task.id(), TaskStatus.FAILED,
+                                        e.getMessage(), stateStore.get(task.id()).getAttemptCount());
+                                return new TaskExecutionContext(task, result);
                             }
                         }).then("switch-2"), // Jump back to status check
 

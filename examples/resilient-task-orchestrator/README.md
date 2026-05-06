@@ -1,8 +1,10 @@
 # Resilient Task Orchestrator (Quarkus Flow + Event-Driven Choreography)
 
-A production-ready example demonstrating **resilient, event-driven task orchestration** patterns using Quarkus Flow. This example shows how to build workflows that can handle failures gracefully, resume after interruptions, and maintain consistency between workflow state and external systems.
+An educational example demonstrating **event-driven task choreography** patterns using Quarkus Flow. This example shows how to build workflows where independent tasks communicate via events, execute idempotently, and retry on failure.
 
-**Use case**: Build pipeline orchestration with multiple independent tasks (lint, test, build, deploy) that can fail, retry, and resume.
+**Use case**: Build pipeline orchestration with multiple independent tasks (lint, test, build, deploy) that can fail and retry automatically.
+
+> **Note**: This is a learning example that demonstrates foundational patterns. For production use, you would need to add: durable state persistence, exponential backoff, completion tracking, and proper resume logic (see [Limitations](#-limitations) section).
 
 ## 🎯 Key Patterns Demonstrated
 
@@ -25,16 +27,18 @@ if (state.isPhaseCompleted("compile")) {
 
 **Why**: Safe resume after failures without duplicate work.
 
-### 3. **State Reconciliation**
-Before resuming a task, we reconcile workflow state with external state:
+### 3. **State Reconciliation (Simulated)**
+Before resuming a task, we check the persisted task state:
 ```java
 reconciliationService.reconcile(taskId);
-// Validates: workflow state matches external reality (files, git, etc.)
+// Checks: Can this task be safely resumed? Was it previously failed?
 ```
 
-**Why**: Prevents corruption when workflow state and external state diverge.
+**Why**: Demonstrates the reconciliation pattern - in production, this would validate external state like git commits, filesystem artifacts, etc.
 
-### 4. **Automatic Retry with Backoff**
+**Note**: This example uses simulated reconciliation (checking status fields). Real reconciliation would verify actual external systems (see [Limitations](#-limitations)).
+
+### 4. **Automatic Retry**
 Failed tasks automatically retry up to a configured limit:
 ```java
 if (result.status() == FAILED && attempts < MAX_RETRIES) {
@@ -43,6 +47,8 @@ if (result.status() == FAILED && attempts < MAX_RETRIES) {
 ```
 
 **Why**: Handles transient failures without manual intervention.
+
+**Note**: Currently retries happen immediately. Production systems should add exponential backoff (see [Limitations](#-limitations)).
 
 ## 🏗 Architecture
 
@@ -66,11 +72,12 @@ if (result.status() == FAILED && attempts < MAX_RETRIES) {
               +---------------+---------------+
                               |
                               v
-                   +-------------------------+
-                   |  CoordinatorWorkflow    |
-                   |  (Wait for all tasks)   |
-                   +-------------------------+
+                        (consumed by
+                     other workflows that
+                     need task results)
 ```
+
+**Note**: Current implementation doesn't track completion in the coordinator. Tasks run independently and emit completion events. See [Limitations](#-limitations) for how to add completion tracking.
 
 ### Components
 
@@ -108,10 +115,10 @@ Quarkus Dev Services automatically starts Kafka in a container.
 ### Trigger a Build
 
 ```bash
-# Start a build with default tasks (lint, test, build, deploy)
+# Option 1: Start a build with default tasks (lint, test, build, deploy)
 curl -X POST http://localhost:8080/api/builds/start/my-project
 
-# Or customize the tasks
+# Option 2: Customize the tasks
 curl -X POST http://localhost:8080/api/builds/start \
   -H "Content-Type: application/json" \
   -d '{
@@ -119,6 +126,14 @@ curl -X POST http://localhost:8080/api/builds/start \
     "gitRef": "feature/new-feature",
     "tasks": ["lint", "test", "build"]
   }'
+
+# Response:
+# {
+#   "buildId": "01ABC123...",
+#   "status": "STARTED",
+#   "project": "my-app",
+#   "tasks": ["lint", "test", "build"]
+# }
 ```
 
 ### Check Task Status
@@ -179,13 +194,15 @@ forEach((Collection<BuildTask> buildTasks) -> buildTasks,
 - Coordinator emits events, tasks react
 - Tasks can fail/retry independently
 
-### How Resume Works
+### How Idempotent Execution Works
 
-1. **Task fails** → State is persisted with completed phases
-2. **Workflow restarts** → TaskWorkflow listens for task event again
-3. **Reconciliation** → Check if task can resume safely
-4. **Execution** → TaskExecutor skips completed phases (idempotent)
-5. **Retry** → Continue from where it left off
+1. **Task starts** → TaskWorkflow receives `task.started` event
+2. **Reconciliation** → Check if task can be safely executed
+3. **Phase Execution** → TaskExecutor checks each phase:
+   - If phase already completed → Skip (idempotent)
+   - If phase not done → Execute and mark as completed
+4. **Retry on Failure** → If execution fails, retry from last completed phase
+5. **Completion** → Emit `task.completed` event
 
 ## 🔍 Comparison with Monolithic Workflow
 
@@ -220,15 +237,148 @@ workflow("task")
 
 After studying this example, you'll understand:
 
-1. **How to build resilient workflows** that survive failures
-2. **Event-driven choreography** vs monolithic orchestration
-3. **Idempotent task design** for safe retries
-4. **State reconciliation** patterns for resume
-5. **Quarkus Flow + Messaging** integration
+1. **Event-driven choreography** - How to build workflows that communicate via events
+2. **Idempotent task design** - How to make tasks safely re-executable
+3. **Phase-level execution** - How to resume from partial completion
+4. **Automatic retry patterns** - How to handle transient failures
+5. **Quarkus Flow + Messaging** integration - How to use Kafka with workflows
+
+## ⚠️ Limitations
+
+This is a **learning example** that demonstrates foundational patterns. Before using in production, you would need to address:
+
+### Critical Gaps
+
+1. **No Completion Tracking**
+   - Coordinator emits task events but doesn't wait for completion
+   - No way to know "is the build done?"
+   - **Solution**: Add listener for `task.completed` events in coordinator
+
+2. **Resume Not Implemented**
+   - The `/resume` endpoint clears state (same as `/start`)
+   - State is lost on application restart (in-memory only)
+   - **Solution**: Persist state to database, don't clear on resume
+
+3. **No Exponential Backoff**
+   - Retries happen immediately without delay
+   - Can overwhelm downstream systems
+   - **Solution**: Add `Thread.sleep()` with exponential delay (100ms, 200ms, 400ms...)
+
+4. **Simulated State Reconciliation**
+   - Only checks status fields, not real external state
+   - Doesn't validate git commits, filesystem, etc.
+   - **Solution**: Implement actual validation of external systems
+
+### What's Missing for Production
+
+| Feature | Current State | Production Needs |
+|---------|--------------|------------------|
+| State Persistence | In-memory (ConcurrentHashMap) | Database (PostgreSQL, etc.) |
+| Retry Strategy | Fixed 5 attempts, no backoff | Exponential backoff + jitter |
+| State Reconciliation | Simulated (string checks) | Real validation (git, files, DB) |
+| Completion Tracking | None | Coordinator waits for all tasks |
+| Circuit Breaker | None | Prevent cascading failures |
+| Dead Letter Queue | None | Failed tasks go to DLQ |
+| Observability | Basic logging | Metrics, tracing, dashboards |
+| Resume Capability | Broken (clears state) | Load previous state and resume |
+
+### Design Decisions (Intentional Limitations)
+
+These are **intentional** simplifications for learning:
+
+- **In-Memory State**: Makes example easy to run without database setup
+- **Simulated Failures**: `failure-rate` config allows testing retry logic
+- **No Real External Systems**: Example doesn't require git, Docker, etc.
 
 ## 📖 Next Steps
 
-1. **Add persistence**: Replace `TaskStateStore` with a database
-2. **Add observability**: Integrate Micrometer metrics
-3. **Add human approval gates**: Use newsletter-drafter pattern
-4. **Add workflow versioning**: Handle schema changes across restarts
+To make this production-ready, implement in this order:
+
+### 1. Fix Critical Issues (High Priority)
+
+**Remove stateStore.clear() from startBuild():**
+```java
+@POST
+@Path("/start")
+public Response startBuild(BuildSpec spec) {
+    // DON'T clear state - let tasks resume idempotently
+    // stateStore.clear(); ← REMOVE THIS LINE
+    
+    WorkflowInstance instance = coordinatorWorkflow.instance(spec);
+    instance.start();
+    return Response.accepted()...;
+}
+```
+
+**Add exponential backoff to retry:**
+```java
+consume("checkRetry", (TaskExecutionContext ctx) -> {
+    int attempt = ctx.result().attemptNumber();
+    if (attempt >= MAX_RETRIES) {
+        throw new RuntimeException("Max retries exhausted");
+    }
+    
+    // Exponential backoff: 100ms, 200ms, 400ms, 800ms, 1600ms
+    long backoffMs = (long) (100 * Math.pow(2, attempt));
+    Thread.sleep(backoffMs);
+}).then("retryExecute")
+```
+
+### 2. Add Persistence (Medium Priority)
+
+**Replace TaskStateStore with JPA:**
+```java
+@Entity
+@Table(name = "task_states")
+public class TaskState {
+    @Id
+    private String taskId;
+    
+    @Enumerated(EnumType.STRING)
+    private TaskStatus status;
+    
+    @ElementCollection
+    @CollectionTable(name = "completed_phases")
+    private List<String> completedPhases = new ArrayList<>();
+    
+    @Version
+    private Long version; // Optimistic locking
+    
+    // ...
+}
+```
+
+### 3. Add Real State Reconciliation (Medium Priority)
+
+Check actual external state:
+```java
+public ReconciliationResult reconcile(String taskId) {
+    TaskState state = stateStore.get(taskId);
+    
+    // Validate git commits
+    if (state.isPhaseCompleted("git-commit")) {
+        String actualCommit = gitService.getLatestCommit();
+        if (!state.getExternalState().equals(actualCommit)) {
+            return new ReconciliationResult(false, "Git state mismatch");
+        }
+    }
+    
+    // Validate build artifacts
+    if (state.isPhaseCompleted("build")) {
+        if (!Files.exists(Path.of("/builds/" + taskId + "/artifact.jar"))) {
+            return new ReconciliationResult(false, "Artifact missing");
+        }
+    }
+    
+    return new ReconciliationResult(true, "External state validated");
+}
+```
+
+### 4. Nice-to-Have Improvements
+
+- **Add observability**: Micrometer metrics, distributed tracing
+- **Add circuit breaker**: Resilience4j integration
+- **Add dead letter queue**: Route failed tasks after max retries
+- **Add human approval gates**: Wait for manual approval before deploy
+- **Add workflow versioning**: Handle schema changes across restarts
+- **Add API to query build status**: `GET /api/builds/{buildId}/status`

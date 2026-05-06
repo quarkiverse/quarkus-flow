@@ -142,6 +142,16 @@ class BuildPipelineIT {
         assertThat(allStates).containsKeys(
                 projectName + "-lint",
                 projectName + "-test");
+
+        // Wait for all workflows to complete before test ends
+        await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofMillis(500))
+                .untilAsserted(() -> {
+                    Map<String, TaskState> states = stateStore.getAll();
+                    assertThat(states.values()).allMatch(
+                            s -> s.getStatus() == TaskStatus.COMPLETED || s.getStatus() == TaskStatus.FAILED);
+                });
     }
 
     @Test
@@ -295,6 +305,16 @@ class BuildPipelineIT {
                     LOG.info("Task {} failed after {} attempts: {}",
                             state.getTaskId(), state.getAttemptCount(), state.getLastError());
                 });
+
+        // Wait for all workflows to complete before test ends
+        await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofMillis(500))
+                .untilAsserted(() -> {
+                    Map<String, TaskState> states = stateStore.getAll();
+                    assertThat(states.values()).allMatch(
+                            s -> s.getStatus() == TaskStatus.COMPLETED || s.getStatus() == TaskStatus.FAILED);
+                });
     }
 
     @Test
@@ -338,6 +358,17 @@ class BuildPipelineIT {
         // Then
         assertThat(statusResponse).hasSize(4);
         LOG.info("Task statuses: {}", statusResponse);
+
+        // Wait for all workflows to complete before test ends
+        // This prevents workflows from writing state after the next test's @BeforeEach clears the store
+        await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofMillis(500))
+                .untilAsserted(() -> {
+                    Map<String, TaskState> allStates = stateStore.getAll();
+                    assertThat(allStates.values()).allMatch(
+                            s -> s.getStatus() == TaskStatus.COMPLETED || s.getStatus() == TaskStatus.FAILED);
+                });
     }
 
     /**
