@@ -24,6 +24,16 @@ This specification defines the design for the Quarkus Flow Runner REST API, a ne
 - Custom workflow DSL (use existing CNCF Serverless Workflow spec)
 - Kubernetes-specific features in the extension (operator handles those)
 
+## Scope Limitations
+
+The following limitations apply to the initial release:
+
+1. **Callback Persistence:** Callback configurations are stored in-memory only and will be lost on application restart. Running workflows will complete, but their callback delivery cannot be guaranteed across restarts. Future releases may add durable callback storage.
+
+2. **Sync Execution Timeouts:** Synchronous executions (`?wait=true`) use Quarkus HTTP handler timeouts. There is no per-execution custom timeout configuration in this release. Users needing fine-grained timeout control should use async execution with client-side polling or rely on the built-in callbacks.
+
+3. **Execution Status History:** The status endpoint only tracks active (non-completed) executions in memory. Once an execution completes, is aborted, or fails, it is removed from memory and status queries will return 404. Users needing execution history should integrate with observability platforms for historical queries.
+
 ## Architecture Overview
 
 ### High-Level Structure
@@ -300,7 +310,8 @@ public class RunnerExecutionResource {
         @PathParam String namespace, 
         @PathParam String name, 
         @PathParam String id);
-    // Returns 200 with status details or 404 if not found/completed
+    // Returns 200 with status details for active executions
+    // Returns 404 if execution not found (never existed, or completed/aborted and removed from memory)
     
     @PUT
     @Path("/{namespace}/{name}/{id}/resume")
