@@ -219,14 +219,10 @@ See the [Messaging doc](https://docs.quarkiverse.io/quarkus-flow/dev/messaging.h
 
 ## Examples
 
-* [`examples/agentic-http`](https://github.com/quarkiverse/quarkus-flow/tree/main/examples/agentic-http) – workshop example combining LangChain4j agents with HTTP-enriched prompts
-* [`examples/durable-workflows-k8s`](https://github.com/quarkiverse/quarkus-flow/tree/main/examples/durable-workflows-k8s) – durable workflows on Kubernetes with lease-based failover, Redis persistence, and a live control center UI
-* [`examples/http-basic-auth`](https://github.com/quarkiverse/quarkus-flow/tree/main/examples/http-basic-auth) – plain HTTP workflow calls secured with Basic Auth and secret-backed credentials
-* [`examples/langchain4j-agentic-workflow`](https://github.com/quarkiverse/quarkus-flow/tree/main/examples/langchain4j-agentic-workflow) – annotation-driven LangChain4j agentic workflows, runnable and inspectable in the Dev UI
-* [`examples/micrometer-prometheus`](https://github.com/quarkiverse/quarkus-flow/tree/main/examples/micrometer-prometheus) – workflow and task metrics exported with Micrometer, Prometheus, and Grafana
-* [`examples/newsletter-drafter`](https://github.com/quarkiverse/quarkus-flow/tree/main/examples/newsletter-drafter) – human-in-the-loop newsletter drafting with LangChain4j, Kafka CloudEvents, and a live UI
-* [`examples/petstore-openapi`](https://github.com/quarkiverse/quarkus-flow/tree/main/examples/petstore-openapi) – OpenAPI-driven workflow calling the Petstore API and rendering the result in a small web UI
-* [`examples/suspend-resume-abort`](https://github.com/quarkiverse/quarkus-flow/tree/main/examples/suspend-resume-abort) – persisted workflow lifecycle control with start, suspend, resume, and cancel operations
+This repository contains a growing list of end-to-end examples in the `examples/` directory, 
+covering various use cases and integrations.
+To see the full list, check the [examples/](examples/README.md) directory.
+
 * Docs snippets under `docs/modules/ROOT/examples/`
 
 ## Contributing

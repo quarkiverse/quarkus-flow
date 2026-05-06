@@ -10,6 +10,7 @@ Directory of end-to-end use case examples.
 - [Micrometer Prometheus](micrometer-prometheus/README.md): Example showing case how to configure, export, and visualize **workflow and task metrics**.
 - [Newsletter Drafter](newsletter-drafter/README.md): Human-in-the-loop Agentic Workflow example with LangChain4j.
 - [Petstore OpenAPI](petstore-openapi/README.md): The famous Petstore Demo calling HTTP services via an OpenAPI specification file descriptor.
+- [Suspend Resume and Abort](suspend-resume-abort/README.md): A minimal example that illustrate suspend, resume and cancel workflow capabilities, plus durability.
 
 ## How to add new examples
 
