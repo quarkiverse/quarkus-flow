@@ -6,7 +6,7 @@
 
 ## Overview
 
-This specification defines the design for the Quarkus Flow Runner REST API, a new optional extension (`quarkus-flow-runner`) that enables runtime workflow definition loading and REST-based workflow execution. The feature targets development, testing, and cloud deployment scenarios (particularly OpenShift Serverless Logic operator integration) where workflows need to be loaded dynamically without application rebuilds.
+This specification defines the design for the Quarkus Flow Runner REST API, a new optional extension (`quarkus-flow-runner`) that enables runtime workflow definition loading and REST-based workflow execution. The feature targets development, testing, and cloud deployment scenarios where workflows need to be loaded dynamically without application rebuilds.
 
 ## Goals
 
