@@ -1,12 +1,14 @@
 package io.quarkiverse.flow.internal;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
+import org.eclipse.microprofile.context.ManagedExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +33,9 @@ public class WorkflowRegistryInitializer {
     @Inject
     LaunchMode launchMode;
 
+    @Inject
+    ManagedExecutor executor;
+
     private volatile WorkflowApplicationInfo appInfo = new WorkflowApplicationInfo();
 
     void onStart(@Observes StartupEvent ev) {
@@ -40,7 +45,7 @@ public class WorkflowRegistryInitializer {
             doStart();
         } else {
             LOG.debug("Flow: {} mode detected. Warmup configured as ASYNC.", launchMode);
-            CompletableFuture.runAsync(this::doStart);
+            CompletableFuture.runAsync(this::doStart, executor);
         }
     }
 
