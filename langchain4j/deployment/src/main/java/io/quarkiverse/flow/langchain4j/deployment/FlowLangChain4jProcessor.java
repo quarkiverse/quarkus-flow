@@ -24,6 +24,7 @@ import io.quarkiverse.flow.langchain4j.recorders.FlowLangChain4jWorkflowRecorder
 import io.quarkiverse.flow.langchain4j.workflow.FlowAgentsBuilderService;
 import io.quarkiverse.langchain4j.agentic.deployment.DetectedAiAgentBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -101,7 +102,8 @@ public class FlowLangChain4jProcessor {
     @BuildStep(onlyIfNot = IsProduction.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void registerAgenticWorkflowsAtRuntime(FlowLangChain4jWorkflowRecorder recorder,
-            List<FlowAgenticWorkflowBuildItem> agenticWorkflows) {
+            List<FlowAgenticWorkflowBuildItem> agenticWorkflows,
+            BeanContainerBuildItem beanContainer) {
 
         if (agenticWorkflows == null || agenticWorkflows.isEmpty()) {
             return;
@@ -121,7 +123,7 @@ public class FlowLangChain4jProcessor {
                         bi.parameterTypeNames()))
                 .collect(toList());
 
-        recorder.registerAgenticWorkflows(descriptors);
+        recorder.registerAgenticWorkflows(descriptors, beanContainer.getValue());
     }
 
     /**

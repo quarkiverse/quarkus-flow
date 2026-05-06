@@ -11,7 +11,7 @@ import io.quarkiverse.flow.internal.WorkflowNameUtils;
 import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkiverse.flow.langchain4j.schema.MethodInputJsonSchema;
 import io.quarkiverse.flow.langchain4j.workflow.FlowAgentServiceUtil;
-import io.quarkus.arc.Arc;
+import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.annotations.Recorder;
 import io.serverlessworkflow.api.types.Document;
 import io.serverlessworkflow.api.types.Workflow;
@@ -26,14 +26,14 @@ public class FlowLangChain4jWorkflowRecorder {
      * Register a "placeholder" workflow for each LC4J agentic method so that
      * DevUI can see and invoke them even before any agent service is actually used.
      */
-    public void registerAgenticWorkflows(List<AgenticWorkflowDescriptor> descriptors) {
+    public void registerAgenticWorkflows(List<AgenticWorkflowDescriptor> descriptors, BeanContainer beanContainer) {
         if (descriptors == null || descriptors.isEmpty()) {
             return;
         }
 
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
 
-        WorkflowRegistry registry = Arc.container().instance(WorkflowRegistry.class).get();
+        WorkflowRegistry registry = beanContainer.beanInstance(WorkflowRegistry.class);
 
         for (AgenticWorkflowDescriptor d : descriptors) {
             try {

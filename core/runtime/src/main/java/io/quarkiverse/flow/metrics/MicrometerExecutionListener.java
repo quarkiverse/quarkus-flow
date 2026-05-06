@@ -9,6 +9,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.DoublePredicate;
 
+import jakarta.inject.Inject;
+
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -37,6 +39,7 @@ public class MicrometerExecutionListener implements WorkflowExecutionListener {
     private final double[] percentiles;
     private final ConcurrentHashMap<WorkflowMetadata, WorkflowInstanceCounters> countersForGauge = new ConcurrentHashMap<>();
 
+    @Inject
     public MicrometerExecutionListener(MeterRegistry meterRegistry, FlowMetricsConfig flowMetricsConfig) {
         this.meterRegistry = meterRegistry;
         this.prefix = flowMetricsConfig.prefix().orElse(DEFAULT_PREFIX);

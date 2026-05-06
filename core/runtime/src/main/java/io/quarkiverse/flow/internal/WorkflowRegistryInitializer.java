@@ -1,7 +1,6 @@
 package io.quarkiverse.flow.internal;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
