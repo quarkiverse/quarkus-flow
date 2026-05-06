@@ -86,7 +86,7 @@ public class TaskWorkflow extends Flow {
                         }),
 
                         // 4. Check if task succeeded or needs retry
-                        switchWhenOrElse(
+                        switchWhenOrElse("isTaskCompleted?",
                                 (TaskExecutionContext ctx) -> ctx.result().status() == TaskStatus.COMPLETED,
                                 "taskCompleted",
                                 "checkRetry"),
@@ -131,7 +131,7 @@ public class TaskWorkflow extends Flow {
                                         e.getMessage(), stateStore.get(task.id()).getAttemptCount());
                                 return new TaskExecutionContext(task, result);
                             }
-                        }).then("switch-2"), // Jump back to status check
+                        }).then("isTaskCompleted?"), // Jump back to status check
 
                         // 7. Task completed successfully - log and emit completion event
                         consume("taskCompleted", (TaskExecutionContext ctx) -> {
