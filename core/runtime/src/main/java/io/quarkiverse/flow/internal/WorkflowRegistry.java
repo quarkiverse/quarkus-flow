@@ -40,7 +40,7 @@ public class WorkflowRegistry {
     @Inject
     WorkflowApplication app;
 
-    private Map<WorkflowDefinitionId, Workflow> descriptorCache = new ConcurrentHashMap<>();
+    private final Map<WorkflowDefinitionId, Workflow> descriptorCache = new ConcurrentHashMap<>();
 
     public static WorkflowRegistry current() {
         return Arc.container().instance(WorkflowRegistry.class).get();
