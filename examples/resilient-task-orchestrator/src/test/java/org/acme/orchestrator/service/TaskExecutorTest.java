@@ -9,6 +9,8 @@ import org.acme.orchestrator.model.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @QuarkusTest
 class TaskExecutorTest {
+    private static final Logger LOG = LoggerFactory.getLogger(TaskExecutorTest.class);
 
     @Inject
     TaskExecutor taskExecutor;
@@ -72,7 +75,7 @@ class TaskExecutorTest {
             TaskState stateAfter = stateStore.get(task.id());
             assertThat(stateAfter.getCompletedPhases()).contains("setup");
 
-            System.out.println("✓ Phase 'setup' was idempotent - skipped on second execution");
+            LOG.info("✓ Phase 'setup' was idempotent - skipped on second execution");
         }
     }
 
@@ -107,11 +110,11 @@ class TaskExecutorTest {
                             .as("External state should be updated for phase '%s'", phase)
                             .contains(phase);
 
-                    System.out.printf("✓ Phase '%s' completed and tracked in state%n", phase);
+                    LOG.info("✓ Phase '{}' completed and tracked in state", phase);
                 }
             } catch (TaskExecutor.TaskExecutionException e) {
                 // Phase failed - this is expected due to simulated failures
-                System.out.printf("✗ Phase '%s' failed: %s%n", phase, e.getMessage());
+                LOG.info("✗ Phase '{}' failed: {}", phase, e.getMessage());
                 break;
             }
         }
@@ -120,7 +123,7 @@ class TaskExecutorTest {
         TaskState finalState = stateStore.get(task.id());
         assertThat(finalState.getCompletedPhases().size()).isEqualTo(completedCount);
 
-        System.out.printf("Total phases completed: %d/%d%n", completedCount, phases.length);
+        LOG.info("Total phases completed: {}/{}", completedCount, phases.length);
     }
 
     @Test
@@ -142,32 +145,32 @@ class TaskExecutorTest {
                 TaskResult result = taskExecutor.executePhase(task, phases[i]);
                 if (result.status() == TaskStatus.COMPLETED) {
                     lastCompletedPhase = i;
-                    System.out.printf("Phase '%s' completed%n", phases[i]);
+                    LOG.info("Phase '{}' completed", phases[i]);
                 } else {
-                    System.out.printf("Phase '%s' failed, stopping%n", phases[i]);
+                    LOG.info("Phase '{}' failed, stopping", phases[i]);
                     break;
                 }
             } catch (TaskExecutor.TaskExecutionException e) {
-                System.out.printf("Phase '%s' threw exception, stopping%n", phases[i]);
+                LOG.info("Phase '{}' threw exception, stopping", phases[i]);
                 break;
             }
         }
 
         if (lastCompletedPhase >= 0) {
             // Simulate workflow restart - resume from where we left off
-            System.out.println("\n--- Simulating workflow restart ---");
+            LOG.info("\n--- Simulating workflow restart ---");
 
             // Then - resume execution from next uncompleted phase
             for (int i = 0; i < phases.length; i++) {
                 TaskState state = stateStore.get(task.id());
 
                 if (state.isPhaseCompleted(phases[i])) {
-                    System.out.printf("Skipping phase '%s' (already completed)%n", phases[i]);
+                    LOG.info("Skipping phase '{}' (already completed)", phases[i]);
                     continue;
                 }
 
                 // This is the resume point
-                System.out.printf("Resuming from phase '%s'%n", phases[i]);
+                LOG.info("Resuming from phase '{}'", phases[i]);
 
                 try {
                     taskExecutor.executePhase(task, phases[i]);
@@ -180,7 +183,7 @@ class TaskExecutorTest {
 
         // Verify idempotent resume
         TaskState finalState = stateStore.get(task.id());
-        System.out.printf("\nFinal state: %d phases completed%n",
+        LOG.info("\nFinal state: {} phases completed",
                 finalState.getCompletedPhases().size());
     }
 
@@ -206,15 +209,15 @@ class TaskExecutorTest {
                 if (result.status() == TaskStatus.COMPLETED) {
                     successfulAttempts++;
                     if (result.message().contains("already completed")) {
-                        System.out.printf("Attempt %d: skipped (already completed)%n", i + 1);
+                        LOG.info("Attempt {}: skipped (already completed)", i + 1);
                     } else {
-                        System.out.printf("Attempt %d: succeeded%n", i + 1);
+                        LOG.info("Attempt {}: succeeded", i + 1);
                     }
                     break; // Success, stop attempting
                 }
             } catch (TaskExecutor.TaskExecutionException e) {
                 failedAttempts++;
-                System.out.printf("Attempt %d: failed - %s%n", i + 1, e.getMessage());
+                LOG.info("Attempt {}: failed - {}", i + 1, e.getMessage());
 
                 // Check state tracks the failure
                 TaskState state = stateStore.get(task.id());
@@ -227,7 +230,7 @@ class TaskExecutorTest {
         TaskState finalState = stateStore.get(task.id());
         assertThat(finalState.getAttemptCount()).isGreaterThan(0);
 
-        System.out.printf("\nAttempt summary: %d successful, %d failed, total tracked: %d%n",
+        LOG.info("\nAttempt summary: {} successful, {} failed, total tracked: {}",
                 successfulAttempts, failedAttempts, finalState.getAttemptCount());
     }
 
@@ -255,7 +258,7 @@ class TaskExecutorTest {
                             .as("External state should reflect phase '%s'", phase)
                             .contains(phase);
 
-                    System.out.printf("Phase '%s': external state = %s%n",
+                    LOG.info("Phase '{}': external state = {}",
                             phase, state.getExternalState());
                 }
             } catch (TaskExecutor.TaskExecutionException e) {
