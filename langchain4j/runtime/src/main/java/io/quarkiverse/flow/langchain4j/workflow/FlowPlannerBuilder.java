@@ -1,8 +1,5 @@
 package io.quarkiverse.flow.langchain4j.workflow;
 
-import dev.langchain4j.agentic.agent.ErrorRecoveryResult;
-import dev.langchain4j.agentic.internal.AbstractServiceBuilder;
-
 final class FlowPlannerBuilder {
 
     private final FlowAgentService<?> agentService;
@@ -14,11 +11,6 @@ final class FlowPlannerBuilder {
                 agentService.description(),
                 agentService.tasksDefinition(),
                 agentService.workflowRegistry());
-        // Close all the sessions for the given workflow instance id in case of an exception
-        ((AbstractServiceBuilder<?, ?>) agentService).errorHandler((ctx -> {
-            FlowPlannerSessions.getInstance().close(ctx.agenticScope(), ctx.exception());
-            return ErrorRecoveryResult.throwException();
-        }));
     }
 
     /**
