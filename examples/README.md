@@ -11,6 +11,8 @@ Directory of end-to-end use case examples.
 - [Newsletter Drafter](newsletter-drafter/README.md): Human-in-the-loop Agentic Workflow example with LangChain4j.
 - [Petstore OpenAPI](petstore-openapi/README.md): The famous Petstore Demo calling HTTP services via an OpenAPI specification file descriptor.
 - [Resilient Task Orchestrator](resilient-task-orchestrator/README.md): Production-ready example demonstrating **event-driven task orchestration** with fault isolation, automatic retry, idempotent execution, and state reconciliation for safe resume after failures.
+- [Suspend Resume and Abort](suspend-resume-abort/README.md): A minimal example that illustrate suspend, resume and cancel workflow capabilities, plus durability.
+
 
 ## How to add new examples
 

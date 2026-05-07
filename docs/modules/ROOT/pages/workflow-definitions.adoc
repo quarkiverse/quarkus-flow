@@ -55,10 +55,35 @@ Only exact relative-path matches are overridden. For example, `src/test/flow/ech
 
 During the Quarkus build, the engine parses your YAML files and generates `WorkflowDefinition` and `Flow` CDI beans for them.
 
-Quarkus Flow uses the `document.namespace` and `document.name` fields from your YAML file to create a unique identifier for the bean. It generates two formats you can use:
+Quarkus Flow uses the `document.namespace` and `document.name` fields from your YAML file to create a unique identifier for the bean.
 
-* **Fully Qualified Class Name (Recommended):** `namespace.name` (e.g., if your YAML has `namespace: org.acme` and `name: EchoWorkflow`, the identifier is `org.acme.EchoWorkflow`. If your YAML has `namespace: org.acme` and `name: echo-workflow`, the identifier is also `org.acme.EchoWorkflow`).
-* **Regular:** `namespace:name` (e.g., `org.acme:EchoWorkflow`).
+=== 2.1. Naming Strategy
+
+You can choose between two identifier formats using the xref:configuration.adoc#quarkus-flow_quarkus-flow-definitions-naming-strategy[`quarkus.flow.definitions.naming-strategy`] property:
+
+[cols="1,2,3"]
+|===
+|Strategy |Format |Example
+
+|`regular` (default)
+|`namespace:name`
+|Given `namespace: company` and `name: echo-name`, the identifier is `company:echo-name`
+
+|`class`
+|`namespace.ClassName`
+|Given `namespace: company` and `name: echo-name`, the identifier is `company.EchoName` (name is converted to PascalCase)
+|===
+
+The `spec` strategy preserves the exact workflow name as defined in your YAML, while the `class` strategy converts the name to PascalCase for a Java class-like identifier.
+
+To use the `class` strategy, add this to your `application.properties`:
+
+[source,properties]
+----
+quarkus.flow.definitions.naming-strategy=class
+----
+
+=== 2.2. Inject and Execute the Workflow
 
 Create a JAX-RS resource that injects and runs the workflow using the generated identifier:
 
@@ -66,7 +91,7 @@ Create a JAX-RS resource that injects and runs the workflow using the generated 
 ----
 include::{examples-dir}org/acme/EchoResource.java[]
 ----
-<1> Use the `@Identifier` annotation with the *Fully Qualified Class Name* derived from your YAML file.
+<1> Use the `@Identifier` annotation with the identifier derived from your YAML file. With the default `spec` naming strategy, this follows the `namespace:name` format.
 
 [IMPORTANT]
 ====

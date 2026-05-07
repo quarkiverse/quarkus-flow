@@ -46,7 +46,7 @@ public class NamedHttpMetadataPropagationTest {
             """;
 
     @Inject
-    @Identifier("flow.QuarkusFlow")
+    @Identifier("flow:quarkus-flow")
     Flow quarkusFlowFlow;
 
     @Inject

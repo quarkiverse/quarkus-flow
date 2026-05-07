@@ -15,6 +15,22 @@ import io.smallrye.config.WithDefault;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public interface FlowDefinitionsConfig {
 
+    enum NamingStrategy {
+        SPEC("spec"),
+        CLASS("class");
+
+        private final String configValue;
+
+        NamingStrategy(String configValue) {
+            this.configValue = configValue;
+        }
+
+        @Override
+        public String toString() {
+            return configValue;
+        }
+    }
+
     String DEFAULT_FLOW_DIR = "src/main/flow";
     String ROOT_KEY = "quarkus.flow.definitions";
 
@@ -28,6 +44,19 @@ public interface FlowDefinitionsConfig {
      */
     @WithDefault(DEFAULT_FLOW_DIR)
     Optional<String> dir();
+
+    /**
+     * Naming strategy to be used when generating {@link Identifier#value()} for {@link io.quarkiverse.flow.Flow} and
+     * {@link io.serverlessworkflow.impl.WorkflowDefinition} beans generated from YAML/JSON DSL.
+     * <p>
+     * Given a workflow definition with namespace (<code>namespace: foo</code>) name (<code>name: bar</code>):
+     * <ul>
+     * <li>If the naming strategy is <code>class</code>, the generated identifier will be <code>foo.Bar</code>.</li>
+     * <li>If the naming strategy is <code>spec</code>, the generated identifier will be <code>foo:bar</code>.</li>
+     * </ul>
+     */
+    @WithDefault("spec")
+    NamingStrategy namingStrategy();
 
     NamespaceConfig namespace();
 

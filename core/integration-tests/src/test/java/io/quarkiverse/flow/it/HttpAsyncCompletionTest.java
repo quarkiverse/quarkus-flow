@@ -43,7 +43,7 @@ public class HttpAsyncCompletionTest {
             """;
 
     @Inject
-    @Identifier("flow.HttpAsyncCompletion")
+    @Identifier("flow:http-async-completion")
     Flow httpAsyncCompletionFlow;
 
     @BeforeEach

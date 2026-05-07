@@ -17,6 +17,7 @@ public class FlowWorkflowFromFileDevModeTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource(new StringAsset("""
                             quarkus.flow.definitions.dir=src/main/resources/flow
+                            quarkus.flow.definitions.naming-strategy=spec
                             quarkus.flow.tracing.enabled=false
                             quarkus.http.test-port=0
                             """), "application.properties")
@@ -54,7 +55,7 @@ public class FlowWorkflowFromFileDevModeTest {
     @Test
     void should_reload_flow_identifier() {
 
-        String oldIdentifier = "default.WaitDurationInline";
+        String oldIdentifier = "default:wait-duration-inline";
         String path = "/identifier/flow";
 
         identifierMustMatch(path, oldIdentifier);
@@ -63,7 +64,7 @@ public class FlowWorkflowFromFileDevModeTest {
                 // replace name wait-duration-inline to wait-please
                 content -> content.replace("wait-duration-inline", "wait-please"));
 
-        identifierMustMatch(path, "default.WaitPlease");
+        identifierMustMatch(path, "default:wait-please");
 
         // Old identifier should no longer be available
         shouldNoLongerBeAvailable(path, oldIdentifier);

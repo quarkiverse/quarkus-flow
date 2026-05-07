@@ -1,20 +1,20 @@
 package io.quarkiverse.flow.deployment;
 
 import static io.quarkiverse.flow.deployment.FlowLoggingUtils.logWorkflowList;
+import static io.quarkus.arc.processor.DotNames.SINGLETON;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.inject.Any;
 import jakarta.ws.rs.Priorities;
 
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
-import org.objectweb.asm.Opcodes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,14 +31,14 @@ import io.quarkiverse.flow.providers.JQScopeSupplier;
 import io.quarkiverse.flow.providers.MicroprofileConfigManager;
 import io.quarkiverse.flow.providers.WorkflowExceptionMapper;
 import io.quarkiverse.flow.recorders.SDKRecorder;
+import io.quarkiverse.flow.recorders.WorkflowApplicationCreator;
 import io.quarkiverse.flow.recorders.WorkflowApplicationRecorder;
 import io.quarkiverse.flow.recorders.WorkflowDefinitionRecorder;
-import io.quarkiverse.flow.recorders.WorkflowMicrometerRecorder;
-import io.quarkiverse.flow.recorders.WorkflowStructuredLoggingRecorder;
 import io.quarkiverse.flow.structuredlogging.EventFormatter;
 import io.quarkiverse.flow.structuredlogging.StructuredLoggingListener;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -52,18 +52,14 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.serverlessworkflow.api.WorkflowFormat;
-import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowException;
@@ -114,6 +110,7 @@ class FlowProcessor {
                 .addBeanClass(HttpClientProvider.class)
                 .addBeanClass(FaultToleranceProvider.class)
                 .addBeanClass(WorkflowRegistry.class)
+                .addBeanClass(WorkflowApplicationCreator.class)
                 .setUnremovable()
                 .build();
     }
@@ -164,7 +161,7 @@ class FlowProcessor {
                 .filter(DiscoveredWorkflowBuildItem::fromSpec)
                 .toList();
         for (DiscoveredWorkflowBuildItem d : fromSpec) {
-            produceWorkflowBeanFromSpec(recorder, beans, identifiers, d);
+            produceWorkflowDefinitionBeanFromSpec(recorder, beans, identifiers, d);
         }
     }
 
@@ -176,72 +173,40 @@ class FlowProcessor {
                 .unremovable()
                 .setRuntimeInit()
                 .addQualifier().annotation(DotNames.IDENTIFIER).addValue("value", it.className()).done()
-                .supplier(recorder.workflowDefinitionSupplier(it.className()))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(it.className())),
+                        AnnotationInstance.builder(DotName.createSimple(Any.class)).build())
+                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowRegistry.class)))
+                .createWith(recorder.workflowDefinitionCreator(it.className()))
                 .done());
         identifiers.produce(new FlowIdentifierBuildItem(Set.of(it.className())));
     }
 
-    private void produceWorkflowBeanFromSpec(WorkflowDefinitionRecorder recorder,
+    private void produceWorkflowDefinitionBeanFromSpec(WorkflowDefinitionRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> beans, BuildProducer<FlowIdentifierBuildItem> identifiers,
             DiscoveredWorkflowBuildItem workflow) {
         String flowSubclassIdentifier = WorkflowNamingConverter.generateFlowClassIdentifier(
                 workflow.namespace(), workflow.name(), this.flowDefinitionsConfig.namespace().prefix());
 
-        beans.produce(SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
-                .scope(ApplicationScoped.class)
-                .unremovable()
-                .setRuntimeInit()
-                .addQualifier().annotation(DotNames.IDENTIFIER)
-                .addValue("value", workflow.regularIdentifier()).done()
-                .addQualifier().annotation(DotNames.IDENTIFIER)
-                .addValue("value", flowSubclassIdentifier).done()
-                .supplier(recorder.workflowDefinitionFromFileSupplier(
-                        workflow.name(), workflow.content(), WorkflowFormat.fromFileName(workflow.name())))
-                .done());
+        String identifier = this.flowDefinitionsConfig.namingStrategy() == FlowDefinitionsConfig.NamingStrategy.SPEC
+                ? workflow.specIdentifier()
+                : flowSubclassIdentifier;
+
+        beans.produce(produceSyntheticWorkflowDefinitionBean(identifier, recorder, workflow));
 
         identifiers.produce(new FlowIdentifierBuildItem(
-                Set.of(flowSubclassIdentifier, workflow.regularIdentifier())));
+                Set.of(identifier)));
     }
 
     @BuildStep
     void produceGeneratedFlows(List<DiscoveredWorkflowBuildItem> workflows,
-            BuildProducer<GeneratedBeanBuildItem> classes,
-            FlowDefinitionsConfig definitionsConfig) {
+            BuildProducer<GeneratedBeanBuildItem> classes) {
 
         List<DiscoveredWorkflowBuildItem> fromSpec = workflows.stream().filter(DiscoveredWorkflowBuildItem::fromSpec)
                 .toList();
 
         GeneratedBeanGizmoAdaptor gizmo = new GeneratedBeanGizmoAdaptor(classes);
         for (DiscoveredWorkflowBuildItem workflow : fromSpec) {
-            String flowSubclassIdentifier = WorkflowNamingConverter.generateFlowClassIdentifier(
-                    workflow.namespace(), workflow.name(), definitionsConfig.namespace().prefix());
-
-            try (ClassCreator creator = ClassCreator.builder()
-                    .className(flowSubclassIdentifier)
-                    .superClass(DotNames.FLOW.toString())
-                    .classOutput(gizmo)
-                    .build()) {
-
-                creator.addAnnotation(Unremovable.class);
-                creator.addAnnotation(ApplicationScoped.class);
-                creator.addAnnotation(Identifier.class).add("value", flowSubclassIdentifier);
-
-                // workflowDefinition field
-                FieldCreator fieldCreator = creator.getFieldCreator("workflowDefinition",
-                        WorkflowDefinition.class.getName());
-                fieldCreator.setModifiers(Opcodes.ACC_PUBLIC);
-                fieldCreator.addAnnotation(Inject.class);
-                fieldCreator.addAnnotation(Identifier.class)
-                        .add("value", flowSubclassIdentifier);
-
-                // descriptor() method
-                var method = creator.getMethodCreator("descriptor", Workflow.class);
-                method.setModifiers(Opcodes.ACC_PUBLIC);
-                method.returnValue(
-                        method.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(WorkflowDefinition.class, "workflow", Workflow.class),
-                                method.readInstanceField(fieldCreator.getFieldDescriptor(), method.getThis())));
-            }
+            produceFlowGizmoBean(workflow, gizmo);
         }
 
     }
@@ -263,7 +228,8 @@ class FlowProcessor {
                 .scope(ApplicationScoped.class)
                 .unremovable()
                 .setRuntimeInit()
-                .supplier(recorder.workflowAppSupplier(shutdown, isTracingEnabled, isMicrometerSupported))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowApplicationCreator.class)))
+                .createWith(recorder.workflowAppCreator(shutdown, isTracingEnabled, isMicrometerSupported))
                 .done());
         LOG.info("Flow: Registering Workflow Application bean: {}", WorkflowApplication.class.getName());
     }
@@ -285,8 +251,8 @@ class FlowProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void overrideObjectMapper(SDKRecorder recorder) {
-        recorder.injectQuarkusObjectMapper();
+    void overrideObjectMapper(SDKRecorder recorder, BeanContainerBuildItem beanContainer) {
+        recorder.injectQuarkusObjectMapper(beanContainer.getValue());
     }
 
     @BuildStep(onlyIf = { IsDevelopment.class })
@@ -306,56 +272,32 @@ class FlowProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void configureRegistryPrometheusIntegration(WorkflowMicrometerRecorder recorder, FlowMetricsConfig metricsConfig,
+    void configureRegistryPrometheusIntegration(FlowMetricsConfig metricsConfig,
             Optional<MetricsCapabilityBuildItem> metricsCapability,
-            BuildProducer<SyntheticBeanBuildItem> beans,
-            BuildProducer<RemovedResourceBuildItem> removeResource,
-            LaunchModeBuildItem launchModeBuildItem) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
-        if (!launchModeBuildItem.getLaunchMode().isDevOrTest()) {
-            removeResource.produce(new RemovedResourceBuildItem(
-                    ArtifactKey.fromString("io.quarkiverse.flow:quarkus-flow"),
-                    Collections.singleton("META-INF/grafana/grafana-dashboard-quarkus-flow.json")));
+        boolean micrometerExecutionListenerNeeded = metricsConfig.enabled()
+                && metricsCapability.map(capability -> capability.metricsSupported(MetricsFactory.MICROMETER)).orElse(false);
+        if (micrometerExecutionListenerNeeded) {
+            additionalBeans.produce(AdditionalBeanBuildItem.builder()
+                    .addBeanClasses(MicrometerExecutionListener.class).setUnremovable()
+                    .setDefaultScope(SINGLETON)
+                    .build());
         }
-
-        if (!metricsConfig.enabled()) {
-            return;
-        }
-
-        metricsCapability.map(capability -> capability.metricsSupported(MetricsFactory.MICROMETER))
-                .ifPresent(isMicrometerSupported -> {
-                    if (isMicrometerSupported) {
-                        beans.produce(SyntheticBeanBuildItem.configure(MicrometerExecutionListener.class)
-                                .setRuntimeInit()
-                                .unremovable()
-                                .scope(Singleton.class)
-                                .types(WorkflowExecutionListener.class)
-                                .supplier(recorder.supplyMicrometerExecutionListener(metricsConfig))
-                                .done());
-                    }
-                });
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void configureStructuredLogging(WorkflowStructuredLoggingRecorder recorder,
-            FlowStructuredLoggingConfig structuredLoggingConfig,
-            BuildProducer<SyntheticBeanBuildItem> beans) {
+    void configureStructuredLogging(FlowStructuredLoggingConfig structuredLoggingConfig,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
         if (!structuredLoggingConfig.enabled()) {
             return;
         }
 
-        beans.produce(SyntheticBeanBuildItem.configure(StructuredLoggingListener.class)
-                .setRuntimeInit()
-                .unremovable()
-                .scope(Singleton.class)
-                .types(WorkflowExecutionListener.class)
-                .addInjectionPoint(org.jboss.jandex.ClassType.create(
-                        DotName.createSimple(com.fasterxml.jackson.databind.ObjectMapper.class.getName())))
-                .createWith(recorder.structuredLoggingListenerCreator(structuredLoggingConfig))
-                .done());
+        additionalBeans.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClasses(StructuredLoggingListener.class).setUnremovable()
+                .setDefaultScope(SINGLETON)
+                .build());
     }
 
     @BuildStep
@@ -436,5 +378,78 @@ class FlowProcessor {
 
         LOG.info("Quarkus Flow structured logging console handler auto-configured. " +
                 "Events will be written to stdout (containers mode)");
+    }
+
+    private static SyntheticBeanBuildItem produceSyntheticWorkflowDefinitionBean(String identifier,
+            WorkflowDefinitionRecorder recorder, DiscoveredWorkflowBuildItem workflow) {
+        return SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
+                .scope(ApplicationScoped.class)
+                .unremovable()
+                .setRuntimeInit()
+                .addQualifier().annotation(DotNames.IDENTIFIER)
+                .addValue("value", identifier).done()
+                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowRegistry.class)))
+                .createWith(recorder.workflowDefinitionFromFileCreator(
+                        workflow.name(), workflow.content(), WorkflowFormat.fromFileName(workflow.name())))
+                .done();
+    }
+
+    /**
+     * Generates a CDI-managed subclass of {@code Flow} using Gizmo.
+     *
+     * <p>
+     * The generated class has this effective structure:
+     *
+     * <pre>
+     * {@code
+     * &#64;Unremovable
+     * &#64;ApplicationScoped
+     * &#64;Identifier(identifier)
+     * class {className} extends Flow {
+     *
+     *     &#64;Inject
+     *     &#64;Identifier(identifier)
+     *     public WorkflowDefinition workflowDefinition;
+     *
+     *     public Workflow descriptor() {
+     *         return this.workflowDefinition.workflow();
+     *     }
+     * }
+     * }
+     * </pre>
+     * <p>
+     * When {@code specIdentifier} is {@code false}, the CDI bean identifier is prefixed with
+     * {@code Normal}, but the injected {@code workflowDefinition} field still uses {@code className}
+     * as its {@code @Identifier} value.
+     */
+    private void produceFlowGizmoBean(DiscoveredWorkflowBuildItem workflow,
+            GeneratedBeanGizmoAdaptor gizmo) {
+
+        String flowSubclassIdentifier = WorkflowNamingConverter.generateFlowClassIdentifier(
+                workflow.namespace(), workflow.name(), this.flowDefinitionsConfig.namespace().prefix());
+
+        String identifier = flowDefinitionsConfig.namingStrategy() == FlowDefinitionsConfig.NamingStrategy.SPEC
+                ? workflow.specIdentifier()
+                : flowSubclassIdentifier;
+
+        try (ClassCreator creator = ClassCreator.builder()
+                .className(flowSubclassIdentifier)
+                .superClass(DotNames.FLOW.toString())
+                .classOutput(gizmo)
+                .build()) {
+
+            creator.addAnnotation(Unremovable.class);
+            creator.addAnnotation(ApplicationScoped.class);
+            creator.addAnnotation(Identifier.class).add("value", identifier);
+
+            // @Inject @Identifier(identifier) public WorkflowDefinition workflowDefinition;
+            FieldCreator fieldCreator = GizmoFlowHelper.addWorkflowDefinitionField(creator, identifier);
+
+            // public String identifier() { return identifier; }
+            GizmoFlowHelper.addIdentifierMethod(creator, identifier);
+
+            // public Workflow descriptor() method
+            GizmoFlowHelper.addDescriptorMethod(creator, fieldCreator);
+        }
     }
 }
