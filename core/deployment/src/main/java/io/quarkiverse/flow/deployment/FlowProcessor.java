@@ -1,18 +1,20 @@
 package io.quarkiverse.flow.deployment;
 
 import static io.quarkiverse.flow.deployment.FlowLoggingUtils.logWorkflowList;
+import static io.quarkus.arc.processor.DotNames.SINGLETON;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Any;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 import jakarta.ws.rs.Priorities;
 
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.objectweb.asm.Opcodes;
 import org.slf4j.Logger;
@@ -31,14 +33,14 @@ import io.quarkiverse.flow.providers.JQScopeSupplier;
 import io.quarkiverse.flow.providers.MicroprofileConfigManager;
 import io.quarkiverse.flow.providers.WorkflowExceptionMapper;
 import io.quarkiverse.flow.recorders.SDKRecorder;
+import io.quarkiverse.flow.recorders.WorkflowApplicationCreator;
 import io.quarkiverse.flow.recorders.WorkflowApplicationRecorder;
 import io.quarkiverse.flow.recorders.WorkflowDefinitionRecorder;
-import io.quarkiverse.flow.recorders.WorkflowMicrometerRecorder;
-import io.quarkiverse.flow.recorders.WorkflowStructuredLoggingRecorder;
 import io.quarkiverse.flow.structuredlogging.EventFormatter;
 import io.quarkiverse.flow.structuredlogging.StructuredLoggingListener;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -52,14 +54,12 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.serverlessworkflow.api.WorkflowFormat;
@@ -114,6 +114,7 @@ class FlowProcessor {
                 .addBeanClass(HttpClientProvider.class)
                 .addBeanClass(FaultToleranceProvider.class)
                 .addBeanClass(WorkflowRegistry.class)
+                .addBeanClass(WorkflowApplicationCreator.class)
                 .setUnremovable()
                 .build();
     }
@@ -176,7 +177,10 @@ class FlowProcessor {
                 .unremovable()
                 .setRuntimeInit()
                 .addQualifier().annotation(DotNames.IDENTIFIER).addValue("value", it.className()).done()
-                .supplier(recorder.workflowDefinitionSupplier(it.className()))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(it.className())),
+                        AnnotationInstance.builder(DotName.createSimple(Any.class)).build())
+                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowRegistry.class)))
+                .createWith(recorder.workflowDefinitionCreator(it.className()))
                 .done());
         identifiers.produce(new FlowIdentifierBuildItem(Set.of(it.className())));
     }
@@ -195,7 +199,8 @@ class FlowProcessor {
                 .addValue("value", workflow.regularIdentifier()).done()
                 .addQualifier().annotation(DotNames.IDENTIFIER)
                 .addValue("value", flowSubclassIdentifier).done()
-                .supplier(recorder.workflowDefinitionFromFileSupplier(
+                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowRegistry.class)))
+                .createWith(recorder.workflowDefinitionFromFileCreator(
                         workflow.name(), workflow.content(), WorkflowFormat.fromFileName(workflow.name())))
                 .done());
 
@@ -263,7 +268,8 @@ class FlowProcessor {
                 .scope(ApplicationScoped.class)
                 .unremovable()
                 .setRuntimeInit()
-                .supplier(recorder.workflowAppSupplier(shutdown, isTracingEnabled, isMicrometerSupported))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowApplicationCreator.class)))
+                .createWith(recorder.workflowAppCreator(shutdown, isTracingEnabled, isMicrometerSupported))
                 .done());
         LOG.info("Flow: Registering Workflow Application bean: {}", WorkflowApplication.class.getName());
     }
@@ -285,8 +291,8 @@ class FlowProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void overrideObjectMapper(SDKRecorder recorder) {
-        recorder.injectQuarkusObjectMapper();
+    void overrideObjectMapper(SDKRecorder recorder, BeanContainerBuildItem beanContainer) {
+        recorder.injectQuarkusObjectMapper(beanContainer.getValue());
     }
 
     @BuildStep(onlyIf = { IsDevelopment.class })
@@ -306,56 +312,32 @@ class FlowProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void configureRegistryPrometheusIntegration(WorkflowMicrometerRecorder recorder, FlowMetricsConfig metricsConfig,
+    void configureRegistryPrometheusIntegration(FlowMetricsConfig metricsConfig,
             Optional<MetricsCapabilityBuildItem> metricsCapability,
-            BuildProducer<SyntheticBeanBuildItem> beans,
-            BuildProducer<RemovedResourceBuildItem> removeResource,
-            LaunchModeBuildItem launchModeBuildItem) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
-        if (!launchModeBuildItem.getLaunchMode().isDevOrTest()) {
-            removeResource.produce(new RemovedResourceBuildItem(
-                    ArtifactKey.fromString("io.quarkiverse.flow:quarkus-flow"),
-                    Collections.singleton("META-INF/grafana/grafana-dashboard-quarkus-flow.json")));
+        boolean micrometerExecutionListenerNeeded = metricsConfig.enabled()
+                && metricsCapability.map(capability -> capability.metricsSupported(MetricsFactory.MICROMETER)).orElse(false);
+        if (micrometerExecutionListenerNeeded) {
+            additionalBeans.produce(AdditionalBeanBuildItem.builder()
+                    .addBeanClasses(MicrometerExecutionListener.class).setUnremovable()
+                    .setDefaultScope(SINGLETON)
+                    .build());
         }
-
-        if (!metricsConfig.enabled()) {
-            return;
-        }
-
-        metricsCapability.map(capability -> capability.metricsSupported(MetricsFactory.MICROMETER))
-                .ifPresent(isMicrometerSupported -> {
-                    if (isMicrometerSupported) {
-                        beans.produce(SyntheticBeanBuildItem.configure(MicrometerExecutionListener.class)
-                                .setRuntimeInit()
-                                .unremovable()
-                                .scope(Singleton.class)
-                                .types(WorkflowExecutionListener.class)
-                                .supplier(recorder.supplyMicrometerExecutionListener(metricsConfig))
-                                .done());
-                    }
-                });
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void configureStructuredLogging(WorkflowStructuredLoggingRecorder recorder,
-            FlowStructuredLoggingConfig structuredLoggingConfig,
-            BuildProducer<SyntheticBeanBuildItem> beans) {
+    void configureStructuredLogging(FlowStructuredLoggingConfig structuredLoggingConfig,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
         if (!structuredLoggingConfig.enabled()) {
             return;
         }
 
-        beans.produce(SyntheticBeanBuildItem.configure(StructuredLoggingListener.class)
-                .setRuntimeInit()
-                .unremovable()
-                .scope(Singleton.class)
-                .types(WorkflowExecutionListener.class)
-                .addInjectionPoint(org.jboss.jandex.ClassType.create(
-                        DotName.createSimple(com.fasterxml.jackson.databind.ObjectMapper.class.getName())))
-                .createWith(recorder.structuredLoggingListenerCreator(structuredLoggingConfig))
-                .done());
+        additionalBeans.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClasses(StructuredLoggingListener.class).setUnremovable()
+                .setDefaultScope(SINGLETON)
+                .build());
     }
 
     @BuildStep
