@@ -22,15 +22,32 @@ Use it to model **classic workflows** *and* **Agentic AI orchestrations**, with 
 
 ## Quick start (classic workflow)
 
-Add the dependency:
+Add the BOM to manage versions:
 
 ```xml
-<dependency>
-  <groupId>io.quarkiverse.flow</groupId>
-  <artifactId>quarkus-flow</artifactId>
-  <version>RELEASE</version>
-</dependency>
-````
+<dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>io.quarkiverse.flow</groupId>
+      <artifactId>quarkus-flow-bom</artifactId>
+      <version>RELEASE</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+  </dependencies>
+</dependencyManagement>
+```
+
+Then add the dependency (version managed by BOM):
+
+```xml
+<dependencies>
+  <dependency>
+    <groupId>io.quarkiverse.flow</groupId>
+    <artifactId>quarkus-flow</artifactId>
+  </dependency>
+</dependencies>
+```
 
 Create a workflow (extend `io.quarkiverse.flow.Flow`):
 
@@ -82,7 +99,6 @@ Docs:
 <dependency>
   <groupId>io.quarkiverse.flow</groupId>
   <artifactId>quarkus-flow</artifactId>
-  <version>RELEASE</version>
 </dependency>
 
 <!-- Choose ONE LangChain4j provider (Ollama, OpenAI, …) -->
@@ -131,14 +147,12 @@ Then orchestrate it from a Flow using regular tasks:
 <dependency>
   <groupId>io.quarkiverse.flow</groupId>
   <artifactId>quarkus-flow</artifactId>
-  <version>RELEASE</version>
 </dependency>
 
 <!-- Quarkus Flow ↔ LangChain4j agentic integration -->
 <dependency>
   <groupId>io.quarkiverse.flow</groupId>
   <artifactId>quarkus-flow-langchain4j</artifactId>
-  <version>RELEASE</version>
 </dependency>
 
 <!-- LangChain4j Agentic (workflow API + annotations like @SequenceAgent/@ParallelAgent) -->
