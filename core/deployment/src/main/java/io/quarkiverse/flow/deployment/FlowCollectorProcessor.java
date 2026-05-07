@@ -196,8 +196,7 @@ public class FlowCollectorProcessor {
 
     private static void tryAddUniqueWorkflow(DiscoveredWorkflowBuildItem item,
             Map<String, DiscoveredWorkflowBuildItem> uniqueWorkflows) {
-        String identifier = item.regularIdentifier();
-        if (uniqueWorkflows.put(identifier, item) != null) {
+        if (uniqueWorkflows.put(item.specIdentifier(), item) != null) {
             throw new IllegalStateException(String.format(
                     "Duplicate workflow detected %s", item.workflowDefinitionId()));
         }

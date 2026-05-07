@@ -27,7 +27,7 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
     private Path absolute;
     private Path relativeToFlowDir;
     private WorkflowDefinitionId workflowDefinitionId;
-    private String regularIdentifier;
+    private String specIdentifier;
     private String className;
     private final From from;
     private byte[] content;
@@ -36,7 +36,7 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
         this.absolute = absolute;
         this.relativeToFlowDir = relativeToFlowDir;
         this.workflowDefinitionId = WorkflowDefinitionId.of(workflow);
-        this.regularIdentifier = WorkflowNameUtils.yamlDescriptorIdentifier(
+        this.specIdentifier = WorkflowNameUtils.yamlDescriptorIdentifier(
                 workflowDefinitionId.namespace(),
                 workflowDefinitionId.name());
         this.content = content;
@@ -90,8 +90,8 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
         return workflowDefinitionId.name();
     }
 
-    public String regularIdentifier() {
-        return regularIdentifier;
+    public String specIdentifier() {
+        return specIdentifier;
     }
 
     public WorkflowDefinitionId workflowDefinitionId() {

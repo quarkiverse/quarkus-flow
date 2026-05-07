@@ -16,7 +16,7 @@ import io.smallrye.mutiny.Uni;
 public class EchoResource {
 
     @Inject
-    @Identifier("company.EchoName") // <1>
+    @Identifier("company:echo-name") // <1>
     Flow flow;
 
     @GET

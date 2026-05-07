@@ -58,7 +58,7 @@ public class StructuredLoggingHttpAsyncTest {
             """;
 
     @Inject
-    @Identifier("flow.HttpAsyncCompletion")
+    @Identifier("flow:http-async-completion")
     Flow httpAsyncCompletionFlow;
 
     @BeforeEach

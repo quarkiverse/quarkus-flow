@@ -10,13 +10,11 @@ import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Any;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
-import org.objectweb.asm.Opcodes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,11 +57,9 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldCreator;
-import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.serverlessworkflow.api.WorkflowFormat;
-import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowException;
@@ -165,7 +161,7 @@ class FlowProcessor {
                 .filter(DiscoveredWorkflowBuildItem::fromSpec)
                 .toList();
         for (DiscoveredWorkflowBuildItem d : fromSpec) {
-            produceWorkflowBeanFromSpec(recorder, beans, identifiers, d);
+            produceWorkflowDefinitionBeanFromSpec(recorder, beans, identifiers, d);
         }
     }
 
@@ -185,68 +181,32 @@ class FlowProcessor {
         identifiers.produce(new FlowIdentifierBuildItem(Set.of(it.className())));
     }
 
-    private void produceWorkflowBeanFromSpec(WorkflowDefinitionRecorder recorder,
+    private void produceWorkflowDefinitionBeanFromSpec(WorkflowDefinitionRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> beans, BuildProducer<FlowIdentifierBuildItem> identifiers,
             DiscoveredWorkflowBuildItem workflow) {
         String flowSubclassIdentifier = WorkflowNamingConverter.generateFlowClassIdentifier(
                 workflow.namespace(), workflow.name(), this.flowDefinitionsConfig.namespace().prefix());
 
-        beans.produce(SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
-                .scope(ApplicationScoped.class)
-                .unremovable()
-                .setRuntimeInit()
-                .addQualifier().annotation(DotNames.IDENTIFIER)
-                .addValue("value", workflow.regularIdentifier()).done()
-                .addQualifier().annotation(DotNames.IDENTIFIER)
-                .addValue("value", flowSubclassIdentifier).done()
-                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowRegistry.class)))
-                .createWith(recorder.workflowDefinitionFromFileCreator(
-                        workflow.name(), workflow.content(), WorkflowFormat.fromFileName(workflow.name())))
-                .done());
+        String identifier = this.flowDefinitionsConfig.namingStrategy() == FlowDefinitionsConfig.NamingStrategy.SPEC
+                ? workflow.specIdentifier()
+                : flowSubclassIdentifier;
+
+        beans.produce(produceSyntheticWorkflowDefinitionBean(identifier, recorder, workflow));
 
         identifiers.produce(new FlowIdentifierBuildItem(
-                Set.of(flowSubclassIdentifier, workflow.regularIdentifier())));
+                Set.of(identifier)));
     }
 
     @BuildStep
     void produceGeneratedFlows(List<DiscoveredWorkflowBuildItem> workflows,
-            BuildProducer<GeneratedBeanBuildItem> classes,
-            FlowDefinitionsConfig definitionsConfig) {
+            BuildProducer<GeneratedBeanBuildItem> classes) {
 
         List<DiscoveredWorkflowBuildItem> fromSpec = workflows.stream().filter(DiscoveredWorkflowBuildItem::fromSpec)
                 .toList();
 
         GeneratedBeanGizmoAdaptor gizmo = new GeneratedBeanGizmoAdaptor(classes);
         for (DiscoveredWorkflowBuildItem workflow : fromSpec) {
-            String flowSubclassIdentifier = WorkflowNamingConverter.generateFlowClassIdentifier(
-                    workflow.namespace(), workflow.name(), definitionsConfig.namespace().prefix());
-
-            try (ClassCreator creator = ClassCreator.builder()
-                    .className(flowSubclassIdentifier)
-                    .superClass(DotNames.FLOW.toString())
-                    .classOutput(gizmo)
-                    .build()) {
-
-                creator.addAnnotation(Unremovable.class);
-                creator.addAnnotation(ApplicationScoped.class);
-                creator.addAnnotation(Identifier.class).add("value", flowSubclassIdentifier);
-
-                // workflowDefinition field
-                FieldCreator fieldCreator = creator.getFieldCreator("workflowDefinition",
-                        WorkflowDefinition.class.getName());
-                fieldCreator.setModifiers(Opcodes.ACC_PUBLIC);
-                fieldCreator.addAnnotation(Inject.class);
-                fieldCreator.addAnnotation(Identifier.class)
-                        .add("value", flowSubclassIdentifier);
-
-                // descriptor() method
-                var method = creator.getMethodCreator("descriptor", Workflow.class);
-                method.setModifiers(Opcodes.ACC_PUBLIC);
-                method.returnValue(
-                        method.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(WorkflowDefinition.class, "workflow", Workflow.class),
-                                method.readInstanceField(fieldCreator.getFieldDescriptor(), method.getThis())));
-            }
+            produceFlowGizmoBean(workflow, gizmo);
         }
 
     }
@@ -418,5 +378,78 @@ class FlowProcessor {
 
         LOG.info("Quarkus Flow structured logging console handler auto-configured. " +
                 "Events will be written to stdout (containers mode)");
+    }
+
+    private static SyntheticBeanBuildItem produceSyntheticWorkflowDefinitionBean(String identifier,
+            WorkflowDefinitionRecorder recorder, DiscoveredWorkflowBuildItem workflow) {
+        return SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
+                .scope(ApplicationScoped.class)
+                .unremovable()
+                .setRuntimeInit()
+                .addQualifier().annotation(DotNames.IDENTIFIER)
+                .addValue("value", identifier).done()
+                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowRegistry.class)))
+                .createWith(recorder.workflowDefinitionFromFileCreator(
+                        workflow.name(), workflow.content(), WorkflowFormat.fromFileName(workflow.name())))
+                .done();
+    }
+
+    /**
+     * Generates a CDI-managed subclass of {@code Flow} using Gizmo.
+     *
+     * <p>
+     * The generated class has this effective structure:
+     *
+     * <pre>
+     * {@code
+     * &#64;Unremovable
+     * &#64;ApplicationScoped
+     * &#64;Identifier(identifier)
+     * class {className} extends Flow {
+     *
+     *     &#64;Inject
+     *     &#64;Identifier(identifier)
+     *     public WorkflowDefinition workflowDefinition;
+     *
+     *     public Workflow descriptor() {
+     *         return this.workflowDefinition.workflow();
+     *     }
+     * }
+     * }
+     * </pre>
+     * <p>
+     * When {@code specIdentifier} is {@code false}, the CDI bean identifier is prefixed with
+     * {@code Normal}, but the injected {@code workflowDefinition} field still uses {@code className}
+     * as its {@code @Identifier} value.
+     */
+    private void produceFlowGizmoBean(DiscoveredWorkflowBuildItem workflow,
+            GeneratedBeanGizmoAdaptor gizmo) {
+
+        String flowSubclassIdentifier = WorkflowNamingConverter.generateFlowClassIdentifier(
+                workflow.namespace(), workflow.name(), this.flowDefinitionsConfig.namespace().prefix());
+
+        String identifier = flowDefinitionsConfig.namingStrategy() == FlowDefinitionsConfig.NamingStrategy.SPEC
+                ? workflow.specIdentifier()
+                : flowSubclassIdentifier;
+
+        try (ClassCreator creator = ClassCreator.builder()
+                .className(flowSubclassIdentifier)
+                .superClass(DotNames.FLOW.toString())
+                .classOutput(gizmo)
+                .build()) {
+
+            creator.addAnnotation(Unremovable.class);
+            creator.addAnnotation(ApplicationScoped.class);
+            creator.addAnnotation(Identifier.class).add("value", identifier);
+
+            // @Inject @Identifier(identifier) public WorkflowDefinition workflowDefinition;
+            FieldCreator fieldCreator = GizmoFlowHelper.addWorkflowDefinitionField(creator, identifier);
+
+            // public String identifier() { return identifier; }
+            GizmoFlowHelper.addIdentifierMethod(creator, identifier);
+
+            // public Workflow descriptor() method
+            GizmoFlowHelper.addDescriptorMethod(creator, fieldCreator);
+        }
     }
 }
