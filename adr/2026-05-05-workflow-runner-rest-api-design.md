@@ -34,6 +34,8 @@ The following limitations apply to the initial release:
 
 3. **Execution Status History:** The status endpoint only tracks active (non-completed) executions in memory. Once an execution completes, is aborted, or fails, it is removed from memory and status queries will return 404. Users needing execution history should integrate with observability platforms for historical queries.
 
+4. **Workflow Versioning:** The API supports both versioned and unversioned paths. When no version is specified in the path (e.g., `/runner/exec/{namespace}/{name}`), the system routes to the **latest** version of the workflow based on semantic version ordering. Explicit version paths (e.g., `/runner/exec/{namespace}/{name}/{version}`) route to that specific version. The system allows multiple versions of the same workflow (identified by `namespace:name:version`) to coexist. Version resolution follows semantic versioning rules (e.g., `1.2.3` > `1.2.2` > `1.1.0`).
+
 ## Architecture Overview
 
 ### High-Level Structure
@@ -186,7 +188,10 @@ public class WorkflowDefinitionLoader {
 - `source=classpath`: Scan `META-INF/workflows/` (or configurable path)
 - `source=path`: Read all `.yaml`, `.yml`, `.json` from filesystem path
 - Recursive directory scanning supported
-- Duplicate workflow (same namespace+name) → fail-fast
+- Workflows are uniquely identified by `namespace:name:version` (all three fields required)
+- Multiple versions of the same workflow (same `namespace:name`, different `version`) can coexist
+- Duplicate workflow (same `namespace:name:version` tuple) → fail-fast
+- Version must be present in the workflow definition; workflows without a version field fail validation
 
 ### 2. Definition Management Resource
 
@@ -215,22 +220,25 @@ public class RunnerDefinitionResource {
     // Returns 201 Created or 409 Conflict if exists
     
     @PUT
-    @Path("/{namespace}/{name}")
+    @Path("/{namespace}/{name}/{version}")
     @RolesAllowed("flow-admin")
     @Consumes({MediaType.APPLICATION_JSON, "application/yaml"})
     Response updateDefinition(
         @PathParam String namespace, 
-        @PathParam String name, 
+        @PathParam String name,
+        @PathParam String version,
         String workflowContent);
     // Returns 200 OK or 404 Not Found
+    // Version in path must match version in workflow definition
     
     @DELETE
-    @Path("/{namespace}/{name}")
+    @Path("/{namespace}/{name}/{version}")
     @RolesAllowed("flow-admin")
     Response deleteDefinition(
         @PathParam String namespace, 
-        @PathParam String name);
-    // Unloads definition, allows running executions to complete
+        @PathParam String name,
+        @PathParam String version);
+    // Unloads specific version, allows running executions to complete
     // Returns 204 No Content or 404 Not Found
 }
 ```
@@ -301,35 +309,44 @@ public class RunnerExecutionResource {
         @PathParam String name,
         @QueryParam("wait") @DefaultValue("false") boolean wait,
         ExecutionRequest request);
+    // Executes the LATEST version of the workflow (based on semantic versioning)
+    // wait=true: Sync execution, returns result (200 OK)
+    // wait=false: Async execution, returns execution ID (202 Accepted)
+    
+    @POST
+    @Path("/{namespace}/{name}/{version}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    Response executeWorkflowVersion(
+        @PathParam String namespace,
+        @PathParam String name,
+        @PathParam String version,
+        @QueryParam("wait") @DefaultValue("false") boolean wait,
+        ExecutionRequest request);
+    // Executes a SPECIFIC version of the workflow
     // wait=true: Sync execution, returns result (200 OK)
     // wait=false: Async execution, returns execution ID (202 Accepted)
     
     @GET
-    @Path("/{namespace}/{name}/{id}/status")
-    Response getStatus(
-        @PathParam String namespace, 
-        @PathParam String name, 
-        @PathParam String id);
+    @Path("/{id}/status")
+    Response getStatus(@PathParam String id);
     // Returns 200 with status details for active executions
     // Returns 404 if execution not found (never existed, or completed/aborted and removed from memory)
+    // Execution ID is globally unique, so namespace/name/version not needed
     
     @PUT
-    @Path("/{namespace}/{name}/{id}/resume")
+    @Path("/{id}/resume")
     @Consumes(MediaType.APPLICATION_JSON)
     Response resumeExecution(
-        @PathParam String namespace, 
-        @PathParam String name, 
         @PathParam String id, 
         JsonNode payload);
     // Returns 200 OK or 404
+    // Execution ID is globally unique
     
     @DELETE
-    @Path("/{namespace}/{name}/{id}")
-    Response abortExecution(
-        @PathParam String namespace, 
-        @PathParam String name, 
-        @PathParam String id);
+    @Path("/{id}")
+    Response abortExecution(@PathParam String id);
     // Returns 204 No Content or 404
+    // Execution ID is globally unique
 }
 ```
 
@@ -350,6 +367,29 @@ public class CallbackConfig {
 **Namespace Authorization (ABAC):**
 - Custom interceptor validates `{namespace}` param against user's token claims
 - Blocks requests if user not authorized for that namespace
+
+**Version Resolution Strategy:**
+
+When executing workflows without specifying a version (`/runner/exec/{namespace}/{name}`):
+
+1. Query all registered versions of the workflow matching `{namespace}:{name}`
+2. Parse each version string using semantic versioning rules
+3. Sort versions in descending order (highest version first)
+4. Select the highest version as "latest"
+5. Execute using the resolved version
+
+**Semantic Version Ordering:**
+- Versions must follow `MAJOR.MINOR.PATCH` format (e.g., `1.2.3`)
+- Pre-release versions (e.g., `1.0.0-alpha`) are supported and sorted before release versions
+- Invalid version strings cause workflow loading to fail-fast
+- Examples of correct ordering:
+  - `2.0.0` > `1.9.9` > `1.2.3` > `1.2.2` > `1.0.0` > `1.0.0-rc.1` > `1.0.0-beta` > `1.0.0-alpha`
+
+**Version Validation:**
+- Version field is **required** in all workflow definitions
+- Version must be a valid semantic version string
+- Workflows without a version or with invalid version strings fail loading with a clear error message
+- Version in path parameter (for update/delete operations) must match version in workflow definition
 
 ### 4. Security Layer
 
@@ -397,6 +437,15 @@ public class NamespaceAuthorizationFilter implements ContainerRequestFilter {
     @Override
     public void filter(ContainerRequestContext ctx) {
         String namespace = extractNamespaceFromPath(ctx);
+        
+        // For execution operations (status/resume/abort), namespace not in path
+        // Must look up execution to determine its namespace
+        if (namespace == null && isExecutionOperation(ctx)) {
+            String executionId = extractExecutionIdFromPath(ctx);
+            namespace = lookupExecutionNamespace(executionId);
+            // Returns 404 if execution not found (before authorization)
+        }
+        
         if (namespace != null && config.namespaceValidateEnabled()) {
             validateNamespaceAccess(securityIdentity, namespace);
             // Throws 403 Forbidden if user not authorized for namespace
@@ -541,34 +590,34 @@ Authorization (flow-admin role)
     ↓
 Parse workflow definition
     ↓
-Extract namespace+name
-    ↓
-Check if already exists
-    ↓  (EXISTS → 409 Conflict)
+Extract namespace+name+version (version is REQUIRED)
+    ↓  (Missing version → 400 Bad Request)
+Check if already exists (namespace:name:version tuple)
+    ↓  (EXISTS → 409 Conflict "Workflow version already exists")
 Validate definition
     ↓  (INVALID → 400 Bad Request)
 WorkflowRegistry.register(workflow)
     ↓
-201 Created
+201 Created + Location: /runner/definition/{namespace}/{name}/{version}
 ```
 
-**DELETE /runner/definition/{namespace}/{name}:**
+**DELETE /runner/definition/{namespace}/{name}/{version}:**
 
 ```
 Authentication + Authorization
     ↓
-Lookup workflow in registry
-    ↓  (NOT FOUND → 404)
+Lookup workflow in registry (specific version)
+    ↓  (NOT FOUND → 404 "Workflow version not found")
 Remove from registry (definition unloaded)
-    ↓  (Running executions continue)
-Block new executions for this workflow
+    ↓  (Running executions of this version continue)
+Block new executions for this specific version
     ↓
 204 No Content
 ```
 
 ### Execution Flow
 
-**POST /runner/exec/{namespace}/{name}?wait=false (Async with Callback):**
+**POST /runner/exec/{namespace}/{name}?wait=false (Async with Callback - Latest Version):**
 
 Request body:
 ```json
@@ -595,15 +644,16 @@ Rate limiting check
     ↓  (EXCEEDED → 429 Too Many Requests)
 Validate callback URL (if provided)
     ↓  (Invalid/blocked → 400 Bad Request)
-Lookup WorkflowDefinition
-    ↓  (NOT FOUND → 404)
+Lookup WorkflowDefinition (resolve LATEST version)
+    ↓  (Query all versions of {namespace}:{name}, select highest semantic version)
+    ↓  (NOT FOUND → 404 "No versions of workflow found")
 Start workflow execution (async)
     ↓
 Generate execution ID
     ↓
 Store callback config in-memory (if provided)
     ↓
-202 Accepted + {executionId}
+202 Accepted + {executionId, version}  // Response includes resolved version
     ↓
 --- Workflow executes in background ---
     ↓
@@ -616,6 +666,15 @@ If callback configured:
     Delete callback from memory
     ↓
 Delete execution from memory
+```
+
+**POST /runner/exec/{namespace}/{name}/{version}?wait=false (Async with Callback - Specific Version):**
+
+Same flow as above, but:
+```
+Lookup WorkflowDefinition (specific version)
+    ↓  (Query {namespace}:{name}:{version})
+    ↓  (NOT FOUND → 404 "Workflow version not found")
 ```
 
 **POST /runner/exec/{namespace}/{name}?wait=true (Sync):**
@@ -778,20 +837,27 @@ DELETE /runner/definition/{namespace}/{name}:
 POST /runner/exec/{namespace}/{name}:
   - 400 Bad Request: Invalid input JSON, invalid callback URL
   - 403 Forbidden: Namespace not authorized (ABAC)
-  - 404 Not Found: Workflow not found
+  - 404 Not Found: "No versions of workflow '{namespace}:{name}' found"
+  - 429 Too Many Requests: Rate limit exceeded
+  - 500 Internal Server Error: Workflow execution start failed
+
+POST /runner/exec/{namespace}/{name}/{version}:
+  - 400 Bad Request: Invalid input JSON, invalid callback URL
+  - 403 Forbidden: Namespace not authorized (ABAC)
+  - 404 Not Found: "Workflow version '{namespace}:{name}:{version}' not found"
   - 429 Too Many Requests: Rate limit exceeded
   - 500 Internal Server Error: Workflow execution start failed
   
-GET /runner/exec/{namespace}/{name}/{id}/status:
+GET /runner/exec/{id}/status:
   - 404 Not Found: "Execution not found. It may have completed, been aborted, 
                     or never existed. Check observability platforms for execution history."
   
-PUT /runner/exec/{namespace}/{name}/{id}/resume:
+PUT /runner/exec/{id}/resume:
   - 400 Bad Request: Invalid payload
   - 404 Not Found: Execution not found
   - 409 Conflict: Execution not in resumable state
   
-DELETE /runner/exec/{namespace}/{name}/{id}:
+DELETE /runner/exec/{id}:
   - 404 Not Found: Execution not found/already completed
 ```
 
@@ -827,7 +893,10 @@ Standard JSON error structure:
 - Parse valid YAML/JSON definitions
 - Fail-fast on invalid definitions
 - Handle missing files/paths
-- Duplicate workflow detection
+- Duplicate workflow detection (same namespace:name:version)
+- Multiple versions of same workflow (different versions coexist)
+- Version validation (missing version, invalid format)
+- Semantic version parsing and ordering
 
 **Security Tests:**
 - API Key validation and role mapping
@@ -859,6 +928,13 @@ Standard JSON error structure:
 - Resume suspended workflow
 - Abort running execution
 - Status endpoint (running vs 404)
+- **Version Resolution:**
+  - Execute without version (resolves to latest)
+  - Execute with specific version
+  - Latest version resolution with multiple versions (verify highest semantic version selected)
+  - 404 when no versions exist (unversioned path)
+  - 404 when specific version doesn't exist (versioned path)
+  - Version resolution with pre-release versions (alpha, beta, rc)
 
 **Security Integration:**
 - API Key authentication (valid/invalid keys, role enforcement)
@@ -926,6 +1002,8 @@ runner/
 - Leverage existing persistence infrastructure - no custom storage layer
 - Standard Quarkus patterns (CDI, REST, security)
 - Follow existing Quarkus Flow conventions (AssertJ, snake_case tests)
+- Use a semantic versioning library (e.g., `com.github.zafarkhaja:java-semver` or similar) for version parsing and comparison
+- Workflow registry must be enhanced to support versioned lookups (namespace:name:version) and latest-version resolution
 
 ## Future Enhancements
 
@@ -934,10 +1012,10 @@ runner/
 1. **WebSocket Streaming** - `/runner/exec/{ns}/{name}/{id}/subscribe` for real-time execution events
 2. **Storage SPI** - Pluggable storage for execution history (Redis, JDBC)
 3. **Advanced Rate Limiting** - Per-namespace, per-user quotas with sliding windows
-4. **Workflow Versioning** - Support multiple versions of same workflow
-5. **Execution History API** - Query completed executions (requires durable storage)
-6. **GraphQL API** - Alternative to REST for complex queries
-7. **Batch Execution** - Execute multiple workflows in one request
+4. **Execution History API** - Query completed executions (requires durable storage)
+5. **GraphQL API** - Alternative to REST for complex queries
+6. **Batch Execution** - Execute multiple workflows in one request
+7. **Advanced Version Resolution** - Support semantic version ranges (e.g., `~1.2.0`, `^2.0.0`) and version aliasing (e.g., `latest`, `stable`)
 
 ## Security Considerations Summary
 
