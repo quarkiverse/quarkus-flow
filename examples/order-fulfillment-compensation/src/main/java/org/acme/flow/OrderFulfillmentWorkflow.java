@@ -64,8 +64,7 @@ public class OrderFulfillmentWorkflow extends Flow {
                                                 SHIPPING_ERROR,
                                                 tasks(
                                                         cancelPayment,
-                                                        cancelStock))),
-                        function("endFlow", this::endFlow))
+                                                        cancelStock))))
                 .build();
     }
 
@@ -103,11 +102,6 @@ public class OrderFulfillmentWorkflow extends Flow {
         }
         broadcastStep(order.orderId(), "shipping", "completed", "Shipping scheduled successfully");
         return new OrderStep(order.orderId(), "shipping");
-    }
-
-    private WorkflowOutput endFlow(WorkflowOutput output) {
-        log.info("End flow for order: {}", output);
-        return output;
     }
 
     private WorkflowOutput notifyStockFailure(String order) {
