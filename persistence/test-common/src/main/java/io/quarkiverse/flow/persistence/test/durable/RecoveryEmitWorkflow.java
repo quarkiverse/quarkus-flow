@@ -12,12 +12,12 @@ import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 
 @ApplicationScoped
-public class EmitWorkflow extends Flow {
+public class RecoveryEmitWorkflow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("emitWorkflow")
-                .tasks(emit(ListenWorkflow.EVENT_NAME,
+        return FuncWorkflowBuilder.workflow("recoveryEmitWorkflow")
+                .tasks(emit(RecoveryWorkflow.EVENT_NAME,
                         (String string) -> JsonCloudEventData
                                 .wrap(JsonNodeFactory.instance.objectNode().put("message", string))))
                 .build();
