@@ -67,7 +67,7 @@ public class FlowPlanner implements Planner, AutoCloseable {
     public Action firstAction(PlanningContext planningContext) {
         final WorkflowInstance instance = definition.instance(planningContext.agenticScope());
         workflowInstanceId = instance.id();
-        FlowPlannerSessions.getInstance().open(workflowInstanceId, this, planningContext.agenticScope());
+        planningContext.agenticScope().writeExecutionContext(FlowPlanner.class, this);
 
         // Starts workflow on a different thread
         // Despite returning a CompletableFuture, the start() method executes on the same thread by design.
@@ -78,7 +78,6 @@ public class FlowPlanner implements Planner, AutoCloseable {
                         LOG.error("Workflow failed", e);
                     }
                     signalTermination();
-                    FlowPlannerSessions.getInstance().close(workflowInstanceId, e);
                 });
         return internalNextAction();
     }

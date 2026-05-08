@@ -41,8 +41,8 @@ public final class FlowAgentServiceUtil {
             tasks.function(stepName,
                     fn -> fn.function(
                             (DefaultAgenticScope scope, WorkflowContextData ctx) -> {
-                                CompletableFuture<Void> nextActionFuture = FlowPlannerSessions.getInstance()
-                                        .get(ctx.instanceData().id()).executeAgent(agent);
+                                CompletableFuture<Void> nextActionFuture = scope.executionContextAs(FlowPlanner.class)
+                                        .executeAgent(agent);
                                 return nextActionFuture.join();
                             },
                             DefaultAgenticScope.class)
