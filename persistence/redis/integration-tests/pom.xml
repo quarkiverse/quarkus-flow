@@ -38,8 +38,14 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <plugins>
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+    <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
@@ -63,12 +69,12 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <systemPropertyVariables>
-                        <native.image.path>${project.build.directory}/${project.build.finalName}-runner
-                        </native.image.path>
-                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                        <maven.home>${maven.home}</maven.home>
-                    </systemPropertyVariables>
+        <systemPropertyVariables>
+          <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
+          <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+          <maven.home>${maven.home}</maven.home>
+          <redis.test.image-name>${redis.test.image-name}</redis.test.image-name>
+        </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>
