@@ -1,0 +1,15 @@
+document:
+  dsl: '1.0.0'
+  namespace: otel
+  name: otel-emit-task
+  version: '1.0.0'
+do:
+  - emitTask:
+      emit:
+        event:
+          with:
+            source: http://otel.test.emit.task
+            type: otel.test.emit.event
+            data:
+              workflowName: otel-emit-task
+              message: Hello From Otel Emit Task

@@ -1,0 +1,17 @@
+document:
+  dsl: '1.0.0'
+  namespace: otel
+  name: otel-do-task
+  version: '1.0.0'
+do:
+  - doTask:
+      do:
+        - set1:
+            set:
+              set1-message: Set1 message
+        - set2:
+            set:
+              set2-message: Set2 message
+        - set3:
+            set:
+              set3-message: Set3 message
