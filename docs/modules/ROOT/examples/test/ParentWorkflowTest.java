@@ -20,16 +20,15 @@ public class ParentWorkflowTest {
 
     @Test
     void testParentOrchestratesChildrenSuccessfully() throws Exception {
+        // Define input, so that HttpWorkflow invoked as subflows has necesarry data
         Map<String, Object> input = Map.of("searchQuery", "luke",
                 "acceptHeaderValue", "application/json");
 
-        // 2. Execute the Parent workflow synchronously
-        // The engine will automatically pause the parent, run EmitWorkflow,
-        // resume, run ListenWorkflow, and finally complete.
+        // Execute the Parent workflow
         WorkflowModel result = parentWorkflow.instance(input)
                 .start().join();
 
-        // 3. Verify the execution finished without throwing subflow-resolution exceptions
+        // Verify the execution finished without throwing subflow-resolution exceptions
         assertNotNull(result, "Parent workflow should successfully orchestrate and complete");
     }
 }
