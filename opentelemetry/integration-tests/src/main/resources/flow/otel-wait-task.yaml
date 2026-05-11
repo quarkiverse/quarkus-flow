@@ -1,0 +1,15 @@
+document:
+  dsl: '1.0.0'
+  namespace: otel
+  name: otel-wait-task
+  version: '1.0.0'
+do:
+  - waitTask1:
+      wait:
+        seconds: 1
+  - setTask:
+      set:
+        set-task: Set task
+  - waitTask2:
+      wait:
+        seconds: 1

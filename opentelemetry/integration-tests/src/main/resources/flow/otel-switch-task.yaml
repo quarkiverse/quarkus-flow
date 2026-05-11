@@ -1,0 +1,36 @@
+document:
+  dsl: '1.0.0'
+  namespace: otel
+  name: otel-switch-task
+  version: '1.0.0'
+do:
+  - switchTask:
+      switch:
+        - case1:
+            when: .selectedCase == "case1"
+            then: processCase1Task
+        - case2:
+            when: .selectedCase == "case2"
+            then: processCase2Task
+        - default:
+            then: handleUnknownCase
+  - processCase1Task:
+      do:
+        - processCase1SetTask:
+            set:
+              message: processCase1SetTask executed!
+      then: exit
+  - processCase2Task:
+      do:
+        - processCase2SetTask:
+            set:
+              message: processCase2SetTask executed!
+      then: exit
+  - handleUnknownCase:
+      do:
+        - handleUnknownCaseSet1:
+            set:
+              message: handleUnknownCaseSet1 executed!
+        - handleUnknownCaseSet2:
+            set:
+              message: handleUnknownCaseSet2 executed!

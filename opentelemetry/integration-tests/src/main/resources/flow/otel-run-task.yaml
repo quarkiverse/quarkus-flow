@@ -1,0 +1,11 @@
+document:
+  dsl: '1.0.0'
+  namespace: otel
+  name: otel-run-task
+  version: '1.0.0'
+do:
+  - runTask:
+      run:
+        shell:
+          command: 'echo "Executing run shell task"'
+        return: all

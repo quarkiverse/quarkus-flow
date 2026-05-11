@@ -1,0 +1,9 @@
+document:
+  dsl: '1.0.0'
+  namespace: otel
+  name: otel-set-task
+  version: '1.0.0'
+do:
+  - setTask:
+      set:
+        set-message: The set message
