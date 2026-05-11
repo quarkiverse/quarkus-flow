@@ -1,6 +1,8 @@
 package test;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.List;
@@ -47,5 +49,8 @@ public class ForEachWorkflowTest {
 
         // 3. Verify the engine looped and executed the HTTP task exactly 3 times!
         verify(3, postRequestedFor(urlEqualTo("/process-order")));
+
+        // 4. Only the result of last task can should be in result
+        assertThat(result.asText().orElseThrow(), is("{\"processed_orders_status\":\"success\"}"));
     }
 }

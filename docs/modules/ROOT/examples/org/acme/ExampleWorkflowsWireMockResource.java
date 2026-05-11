@@ -112,7 +112,7 @@ public class ExampleWorkflowsWireMockResource implements QuarkusTestResourceLife
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
-                        .withBody("{}")));
+                        .withBody("{\"processed_orders_status\": \"success\"}")));
 
         // ---------------------------------------------------------
         // 7. STUBS FOR PARALLEL WORKFLOW

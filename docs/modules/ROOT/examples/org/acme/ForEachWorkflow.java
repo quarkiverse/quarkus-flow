@@ -2,9 +2,6 @@ package org.acme;
 
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
 
-import java.util.List;
-import java.util.Map;
-
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkiverse.flow.Flow;
@@ -17,11 +14,11 @@ public class ForEachWorkflow extends Flow {
     public Workflow descriptor() {
         return FuncWorkflowBuilder.workflow("foreach-workflow")
                 .tasks(
-                        // OrdersPayload::orders is not working
-                        // See https://github.com/quarkiverse/quarkus-flow/issues/486
-                        forEach((Map<String, Object> state) -> (List<?>) state.get("orders"),
+                        forEach(OrdersPayload::orders,
                                 tasks(
-                                        post("", "http://localhost:8089/process-order"))))
+                                        post("$item.id",
+                                                "http://localhost:8089/process-order")
+                                                .exportAsTaskOutput())))
                 .build();
     }
 }
