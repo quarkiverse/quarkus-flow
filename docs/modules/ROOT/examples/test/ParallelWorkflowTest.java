@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import jakarta.inject.Inject;
 
 import org.acme.ExampleWorkflowsWireMockResource;
-import org.acme.ParallelWorkflowBranches;
+import org.acme.ParallelWorkflow;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -18,10 +18,10 @@ import io.serverlessworkflow.impl.WorkflowModel;
 
 @QuarkusTest
 @QuarkusTestResource(ExampleWorkflowsWireMockResource.class)
-public class ParallelWorkflowBranchesTest {
+public class ParallelWorkflowTest {
 
     @Inject
-    ParallelWorkflowBranches parallelWorkflowBranches;
+    ParallelWorkflow parallelWorkflow;
 
     @BeforeEach
     void resetWiremock() {
@@ -32,7 +32,7 @@ public class ParallelWorkflowBranchesTest {
     @Test
     void testParallelWorkflowBranchesExecute() {
         // 1. Start the workflow
-        WorkflowModel result = parallelWorkflowBranches.instance().start().join();
+        WorkflowModel result = parallelWorkflow.instance().start().join();
 
         assertNotNull(result, "Workflow should complete successfully after joining parallel branches");
 
