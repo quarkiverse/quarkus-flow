@@ -12,7 +12,7 @@ import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 public class EmitWorkflow extends Flow {
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("emit-event")
+        return FuncWorkflowBuilder.workflow("emit-event-workflow", "org.acme", "1.0")
                 .tasks(
                         emitJson("orderPlaced", "com.petstore.order.placed.v1", Message.class))
                 .build();

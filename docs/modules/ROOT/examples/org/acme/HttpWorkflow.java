@@ -14,7 +14,7 @@ import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 public class HttpWorkflow extends Flow {
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("http-with-query-headers")
+        return FuncWorkflowBuilder.workflow("http-with-query-headers", "org.acme", "1.0")
                 .tasks(
                         call("searchStarWarsCharacters",
                                 http()

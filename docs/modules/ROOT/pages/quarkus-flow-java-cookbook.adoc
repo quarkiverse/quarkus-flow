@@ -104,13 +104,24 @@ Branch execution based on data state using `switchCase(...)`, `switchWhen(...)` 
 include::{examples-dir}/org/acme/ConditionalWorkflow.java[]
 ----
 
-[#interation]
+[#iteration]
 == Iteration
 Execute logic over collections of data using the `forEach(...)`.
 
 [source,java]
 ----
 include::{examples-dir}/org/acme/ForEachWorkflow.java[]
+----
+
+[#subflows]
+== Invoking Subflows
+Execute another workflow using `subflow(...)`
+
+Ensure the `name`, `namespace` and `version` parameters are matching the referenced workflows.
+
+[source,java]
+----
+include::{examples-dir}/org/acme/ParentWorkflow.java[]
 ----
 
 [#parallel]
