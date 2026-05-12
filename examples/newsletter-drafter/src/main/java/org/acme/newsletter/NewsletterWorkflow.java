@@ -41,8 +41,7 @@ public class NewsletterWorkflow extends Flow {
                 .tasks(agent("draftAgent", draftAgent::write, NewsletterRequest.class),
                         emitJson("draftReady", "org.acme.email.review.required", NewsletterDraft.class),
                         listen("waitHumanReview",
-                                toOne(consumed("org.acme.newsletter.review.done").extensionByInstanceId("flowinstanceid")))
-                                .outputAs((JsonNode node) -> node.isArray() ? node.get(0) : node),
+                                toOne(consumed("org.acme.newsletter.review.done").extensionByInstanceId("flowinstanceid"))),
                         switchWhenOrElse(h -> HumanReview.ReviewStatus.NEEDS_REVISION.equals(h.status()),
                                 "humanEditorAgent", "sendNewsletter", HumanReview.class),
                         function("humanEditorAgent", humanEditorAgent::edit, HumanReview.class).then("draftReady"),
