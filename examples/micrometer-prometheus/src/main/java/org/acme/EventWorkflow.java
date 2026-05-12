@@ -26,8 +26,7 @@ public class EventWorkflow extends Flow {
     @Override
     public Workflow descriptor() {
         return workflow("wait-event").tasks(
-                listen("waitApproval", toOne("org.acme.approval.decision.v1"))
-                        .outputAs((Collection<Object> c) -> c.iterator().next()),
+                listen("waitApproval", toOne("org.acme.approval.decision.v1")),
                 consume("processApproval", (Map approval) -> {
                     Log.info("Approval decision received: " + approval);
                     try {
