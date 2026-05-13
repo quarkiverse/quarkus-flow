@@ -8,6 +8,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.LambdaCapturingTypeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.serverlessworkflow.impl.WorkflowModelFactory;
 import io.serverlessworkflow.impl.additional.NamedWorkflowAdditionalObject;
@@ -39,6 +40,12 @@ final class FlowNativeProcessor {
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(CallableTaskBuilder.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(NamedWorkflowAdditionalObject.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(CloudEventPredicateFactory.class.getName()));
+    }
+
+    @BuildStep
+    void runtimeInitialization(BuildProducer<RuntimeInitializedClassBuildItem> rt) {
+        rt.produce(new RuntimeInitializedClassBuildItem(
+                "io.serverlessworkflow.impl.executors.openapi.jackson.JacksonUnifiedOpenAPIReaderFactory$JacksonUnifiedOpenAPIReaderHolder"));
     }
 
     @BuildStep
