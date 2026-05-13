@@ -136,7 +136,7 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
             this._initializeMermaid();
         }
 
-        this.jsonRpc.getWorkflows().then(({result}) => {
+        this.jsonRpc.getWorkflows().then(({ result }) => {
             this._workflows = result;
         });
     }
@@ -152,7 +152,7 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
             if (mermaidElement && !mermaidElement.hasAttribute('data-processed')) {
                 try {
                     const id = this._generateMermaidId(this._currentMermaidWorkflow.id);
-                    const {svg} = await window.mermaid.render(id, this._currentMermaid);
+                    const { svg } = await window.mermaid.render(id, this._currentMermaid);
                     mermaidElement.innerHTML = svg;
                     mermaidElement.setAttribute('data-processed', 'true');
                 } catch (error) {
@@ -179,7 +179,7 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
     };
 
     _generateMermaidId(workflowId) {
-        const {namespace, name, version} = workflowId;
+        const { namespace, name, version } = workflowId;
         return 'mermaid-' + `${namespace.replaceAll('.', '-')}-${name.replaceAll('.', '-')}-${version.replaceAll('.', '-')}`;
     }
 
@@ -209,29 +209,46 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
     }
 
     _downloadDiagramAsPng() {
-        let svgData = document.querySelector("#page > qwc-flow-workflows").shadowRoot.querySelector("svg");
-        if (!svgData) {
-            return;
-        }
-        let img = new Image(svgData.width.baseVal.value, svgData.height.baseVal.value);
-        const svgString = new XMLSerializer().serializeToString(svgData);
+        let svgData = document.querySelector("#page > qwc-flow-workflows")
+            .shadowRoot.querySelector("svg");
+        if (!svgData) return;
+
+        const scale = 3;
+        const bbox = svgData.getBBox();
+        const padding = 20;
+        const width = bbox.width + bbox.x + padding * 2;
+        const height = bbox.height + bbox.y + padding * 2;
+
+        const svgClone = svgData.cloneNode(true);
+        svgClone.setAttribute("width", width);
+        svgClone.setAttribute("height", height);
+        svgClone.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+        const svgString = new XMLSerializer().serializeToString(svgClone);
         const utf8Bytes = new TextEncoder().encode(svgString);
         const base64 = btoa(String.fromCharCode(...utf8Bytes));
+
+        let img = new Image(width, height);
         img.src = `data:image/svg+xml;base64,${base64}`;
+
         img.onload = function () {
             let cnv = document.createElement('canvas');
-            cnv.width = img.width;
-            cnv.height = img.height;
-            cnv.getContext("2d").drawImage(img, 0, 0);
+            cnv.width = width * scale;
+            cnv.height = height * scale;
+
+            const ctx = cnv.getContext("2d");
+            ctx.scale(scale, scale);
+            ctx.drawImage(img, 0, 0);
+
             cnv.toBlob((blob) => {
                 let lnk = document.createElement('a');
                 lnk.href = URL.createObjectURL(blob);
-                lnk.download = "flow-" + devuiState.applicationInfo.applicationName + "-" + new Date().toISOString().replace(/\D/g, '') + ".png";
+                lnk.download = "flow-" + devuiState.applicationInfo.applicationName
+                    + "-" + new Date().toISOString().replace(/\D/g, '') + ".png";
                 lnk.click();
-                const message = lnk.download + " downloaded.";
-                notifier.showSuccessMessage(message, 'bottom-end');
-            });
-        }
+                notifier.showSuccessMessage(lnk.download + " downloaded.", 'bottom-end');
+            }, 'image/png');
+        };
     }
 
     _mermaidDialog() {

@@ -16,18 +16,34 @@
  */
 package io.quarkiverse.flow.it;
 
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 
 import org.jboss.resteasy.reactive.ResponseStatus;
 
+import io.quarkiverse.flow.Flow;
+import io.serverlessworkflow.impl.WorkflowDefinition;
+import io.smallrye.common.annotation.Identifier;
 import io.smallrye.mutiny.Uni;
 
 @Path("/hello")
 @ApplicationScoped
 public class HelloResource {
+
+    @Inject
+    @Identifier("flow:echo-name")
+    WorkflowDefinition workflowDefEcho;
+
+    @Inject
+    @Identifier("flow:echo-name")
+    Flow flowEcho;
 
     @Inject
     HelloWorkflow helloWorldWorkflow;
@@ -49,5 +65,23 @@ public class HelloResource {
         return problematicWorkflow.startInstance()
                 .onItem()
                 .transform(wf -> wf.as(Message.class).orElseThrow());
+    }
+
+    @GET
+    @Path("/workflow-def/echo-name")
+    public CompletableFuture<Message> workflowDefEchoName(@QueryParam(value = "name") @DefaultValue("John Doe") String name) {
+        return workflowDefEcho.instance(Map.of(
+                "name", name)).start()
+                .thenApply(model -> {
+                    return model.as(Message.class).orElseThrow();
+                });
+    }
+
+    @GET
+    @Path("/flow/echo-name")
+    public CompletableFuture<Message> flowEchoName(@QueryParam(value = "name") @DefaultValue("John Doe") String name) {
+        return flowEcho.instance(Map.of(
+                "name", name)).start()
+                .thenApply(model -> model.as(Message.class).orElseThrow());
     }
 }

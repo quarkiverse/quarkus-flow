@@ -154,4 +154,74 @@ public class FlowAgentServicesMockedTest {
     interface TestLoopAgent {
         ResultWithAgenticScope<String> run(@V("topic") String topic);
     }
+
+    interface TestExecutionContextIsolationAgent {
+        ResultWithAgenticScope<String> process(@V("input") String input);
+    }
+
+    interface TestExecutionContextErrorAgent {
+        ResultWithAgenticScope<String> execute(@V("input") String input);
+    }
+
+    @Test
+    void executionContext_isolates_workflow_instances() {
+        // Test that multiple sequential workflow executions each have isolated executionContext
+        var agent = AgenticServices.agentAction(scope -> {
+            // Each workflow should have its own FlowPlanner in executionContext
+            // Store a unique marker in the state to verify isolation
+            String input = scope.readState("input", "");
+            scope.writeState("processed", input);
+        });
+
+        FlowSequentialAgentService<TestExecutionContextIsolationAgent> service = FlowSequentialAgentService
+                .builder(TestExecutionContextIsolationAgent.class, registry);
+        service.subAgents(agent);
+        TestExecutionContextIsolationAgent testAgent = service.build();
+
+        // Run multiple workflows sequentially and verify each has isolated context
+        ResultWithAgenticScope<String> result1 = testAgent.process("workflow-1");
+        assertThat(result1.agenticScope().readState("processed", "")).isEqualTo("workflow-1");
+
+        ResultWithAgenticScope<String> result2 = testAgent.process("workflow-2");
+        assertThat(result2.agenticScope().readState("processed", "")).isEqualTo("workflow-2");
+
+        // Verify first workflow's state wasn't affected by second workflow
+        assertThat(result1.agenticScope().readState("processed", "")).isEqualTo("workflow-1");
+    }
+
+    @Test
+    void executionContext_accessible_during_error_handling() {
+        // Test that executionContext remains accessible even when agents throw exceptions
+        var failingAgent = AgenticServices.agentAction(scope -> {
+            String input = scope.readState("input", "");
+            if (input.startsWith("boom")) {
+                throw new RuntimeException("Intentional test failure");
+            }
+            scope.writeState("success", true);
+        });
+
+        FlowSequentialAgentService<TestExecutionContextErrorAgent> service = FlowSequentialAgentService
+                .builder(TestExecutionContextErrorAgent.class, registry);
+        service.subAgents(failingAgent);
+        TestExecutionContextErrorAgent agent = service.build();
+
+        // Verify failure is propagated correctly (may be wrapped in CompletionException or similar)
+        try {
+            agent.execute("boom");
+            org.junit.jupiter.api.Assertions.fail("Expected exception to be thrown");
+        } catch (Exception e) {
+            // Expected - verify exception was thrown (may be wrapped)
+            Throwable rootCause = e;
+            while (rootCause.getCause() != null && rootCause.getCause() != rootCause) {
+                rootCause = rootCause.getCause();
+            }
+            assertThat(rootCause)
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("Intentional test failure");
+        }
+
+        // Verify successful execution still works after error
+        ResultWithAgenticScope<String> result = agent.execute("success");
+        assertThat(result.agenticScope().readState("success", false)).isTrue();
+    }
 }

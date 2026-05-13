@@ -40,11 +40,11 @@
 
         <quarkus.version>3.35.2</quarkus.version>
         <jandex.version>3.5.3</jandex.version>
-        <io.serverlessworkflow.version>7.20.0.Final</io.serverlessworkflow.version>
+        <io.serverlessworkflow.version>7.21.0.Final</io.serverlessworkflow.version>
         <io.cloudevents.version>4.0.2</io.cloudevents.version>
 
         <io.quarkiverse.jackson-jq.version>2.5.1</io.quarkiverse.jackson-jq.version>
-        <io.quarkiverse.langchain4j.version>1.9.2</io.quarkiverse.langchain4j.version>
+        <io.quarkiverse.langchain4j.version>1.10.0.CR2</io.quarkiverse.langchain4j.version>
 
         <!-- Tests and Docs -->
         <org.assertj.version>3.27.7</org.assertj.version>
@@ -63,6 +63,12 @@
                 <version>${quarkus.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-junit-component</artifactId>
+                <version>${quarkus.version}</version>
+                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>io.serverlessworkflow</groupId>

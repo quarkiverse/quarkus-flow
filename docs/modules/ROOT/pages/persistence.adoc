@@ -55,6 +55,76 @@ quarkus.redis.hosts=redis://localhost:6379
 
 NOTE: Our integration tests use Valkey image instead.
 
+==== Using Infinispan Server RESP
+
+Quarkus Flow can use Infinispan Server as a Redis-compatible persistence backend through the Infinispan RESP endpoint.
+
+This mode still uses the `quarkus-flow-redis` persistence implementation and the Quarkus Redis client. No Quarkus Flow Infinispan-specific runtime dependency is required.
+
+Infinispan Server exposes RESP on the default single-port endpoint. Redis clients connect to the same server port, `11222`, and Infinispan routes RESP traffic to the RESP connector.
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkiverse.flow</groupId>
+  <artifactId>quarkus-flow-redis</artifactId>
+</dependency>
+----
+
+Configure the Quarkus Redis client to point to the Infinispan Server RESP endpoint:
+
+[source,properties]
+----
+quarkus.redis.hosts=redis://admin:password@infinispan-server:11222
+----
+
+For local development with Docker:
+
+[source,bash]
+----
+docker run --rm \
+  --name infinispan \
+  -p 11222:11222 \
+  -e USER=admin \
+  -e PASS=password \
+  quay.io/infinispan/server:15.0
+----
+
+Then configure your application:
+
+[source,properties]
+----
+quarkus.redis.hosts=redis://admin:password@localhost:11222
+----
+
+For Kubernetes deployments managed by the Infinispan Operator, point `quarkus.redis.hosts` to the internal Infinispan service name:
+
+[source,properties]
+----
+quarkus.redis.hosts=redis://admin:password@infinispan:11222
+----
+
+A minimal Infinispan cluster managed by the Operator can be created with:
+
+[source,yaml]
+----
+apiVersion: infinispan.org/v1
+kind: Infinispan
+metadata:
+  name: infinispan
+spec:
+  replicas: 2
+----
+
+Use Kubernetes `Secret` or your platform secret-management mechanism to provide the username and password to the Quarkus application instead of hardcoding credentials in `application.properties`.
+
+For example:
+
+[source,properties]
+----
+quarkus.redis.hosts=redis://${INFINISPAN_USER}:${INFINISPAN_PASSWORD}@infinispan:11222
+----
+
 === Option B: JPA (Relational Databases)
 JPA allows you to store workflow state in a standard relational database (e.g., PostgreSQL, MySQL). This is ideal if your enterprise architecture already relies heavily on a relational database.
 
@@ -93,3 +163,6 @@ quarkus.flow.persistence.mvstore.db-path=${user.home}/testFlowMVStore.db
 * link:https://quarkus.io/guides/redis[Using the Quarkus Redis Client] — advanced Redis configuration.
 * link:https://www.h2database.com/html/mvstore.html[MVStore homepage] — deeper dive into the MVStore engine.
 * link:https://github.com/serverlessworkflow/sdk-java/tree/main/impl/persistence[Serverless Workflow Java SDK Persistence] — upstream SDK reference.
+* https://infinispan.org/docs/stable/titles/resp/resp-endpoint.html[Using the Infinispan RESP endpoint]
+* https://infinispan.org/docs/stable/titles/container_image/container_image.html[Infinispan Server container image]
+* https://infinispan.org/docs/infinispan-operator/main/operator.html[Infinispan Operator guide]

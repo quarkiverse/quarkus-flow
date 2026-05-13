@@ -17,6 +17,8 @@ import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.
 
 import java.util.logging.Handler;
 
+import jakarta.inject.Inject;
+
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.ExtHandler;
 import org.jboss.logmanager.formatters.PatternFormatter;
@@ -54,6 +56,7 @@ public class StructuredLoggingListener implements WorkflowExecutionListener {
     // Volatile flag to ensure we only override the formatters once
     private volatile boolean formatterOverridden = false;
 
+    @Inject
     public StructuredLoggingListener(FlowStructuredLoggingConfig config, ObjectMapper objectMapper) {
         this.config = config;
         this.formatter = new EventFormatter(config, objectMapper);

@@ -144,6 +144,25 @@ When updating features:
 2. Add/update code examples if needed
 3. Test docs locally with `./mvnw -pl docs quarkus:dev`
 
+## Architecture Decision Records (ADR)
+
+**Location**: `adr/` directory in project root
+
+This project uses ADRs to document significant architectural and design decisions. When working with Claude Code's superpowers skills (brainstorming, planning), design specifications should be saved to the `adr/` directory, NOT `docs/superpowers/specs/`.
+
+**ADR Format**:
+- Filename: `adr/YYYY-MM-DD-<topic>-design.md`
+- Use Markdown format
+- Include: context, decision, consequences, alternatives considered
+- Reference related issues/PRs
+
+**When to create an ADR**:
+- New modules or extensions (e.g., `runner/` module)
+- Significant API changes or additions
+- Architecture decisions that affect multiple modules
+- Security model changes
+- Breaking changes or major refactorings
+
 ## Common Development Tasks
 
 ### Adding a new workflow task type

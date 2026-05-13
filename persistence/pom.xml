@@ -10,6 +10,7 @@
     <name>Quarkus Flow :: Persistence</name>
     <modules>
         <module>redis</module>
+        <module>infinispan</module>
         <module>common</module>
         <module>mvstore</module>
         <module>jpa</module>

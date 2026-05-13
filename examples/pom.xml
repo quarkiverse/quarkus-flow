@@ -25,6 +25,7 @@
         <module>durable-workflows-k8s</module>
         <module>suspend-resume-abort</module>
         <module>order-fulfillment-compensation</module>
+        <module>resilient-task-orchestrator</module>
     </modules>
 
     <build>

@@ -63,7 +63,7 @@ public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> imp
                     for (AgentInstance agent : agents) {
                         final String branchName = safeName(agent.agentId() + "-" + (step++));
                         fork.branches(withInstanceId(branchName, (String instanceId, DefaultAgenticScope scope) -> {
-                            CompletableFuture<Void> nextActionFuture = FlowPlannerSessions.getInstance().get(instanceId)
+                            CompletableFuture<Void> nextActionFuture = scope.executionContextAs(FlowPlanner.class)
                                     .executeAgent(agent);
                             LOG.debug("Parallel execution of agent {} in branch {} started", agent.agentId(),
                                     branchName);

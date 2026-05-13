@@ -14,7 +14,7 @@ This guide shows how to:
 == Prerequisites
 
 * A Quarkus application with xref:getting-started.adoc[Quarkus Flow set up].
-* JUnit 5 tests using `@QuarkusTest` (or `QuarkusUnitTest` if writing extension tests).
+* JUnit 5 tests using `@QuarkusTest` (or `QuarkusExtensionTest` if writing extension tests).
 * REST Assured (included in `quarkus-junit5-mockito` or `quarkus-rest-client`) for HTTP endpoint testing.
 
 == 1. Unit-test workflow logic

@@ -17,7 +17,7 @@ import io.smallrye.common.annotation.Identifier;
 public class EchoResource {
 
     @Inject
-    @Identifier("flow.EchoName")
+    @Identifier("flow:echo-name")
     Flow flow;
 
     @Inject
