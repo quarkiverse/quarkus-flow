@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Fulfillment Workflow - Quarkus Flow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'quarkus-blue': '#4695EB',
+                        'quarkus-dark-blue': '#0d1b2a',
+                        'quarkus-red': '#FF004A',
+                        'quarkus-dark-red': '#c20030',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .order-card {
+            transition: all 0.3s ease;
+        }
+
+        .order-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(70, 149, 235, 0.2);
+        }
+
+        .loading {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .status-started {
+            background-color: #f59e0b;
+        }
+
+        .status-completed {
+            background-color: #10b981;
+        }
+
+        .status-failed {
+            background-color: #ef4444;
+        }
+
+        .status-idle {
+            background-color: #6b7280;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(70, 149, 235, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(70, 149, 235, 0.8);
+            }
+        }
+
+        .processing {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        .step-idle {
+            background-color: #374151;
+            border-color: #4b5563;
+        }
+
+        .step-processing {
+            background-color: #92400e;
+            border-color: #f59e0b;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .step-completed {
+            background-color: #065f46;
+            border-color: #10b981;
+        }
+
+        .step-failed {
+            background-color: #7f1d1d;
+            border-color: #ef4444;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        .progress-line {
+            height: 2px;
+            background-color: #4b5563;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-line::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0;
+            background-color: #10b981;
+            transition: width 0.5s ease;
+        }
+
+        .progress-line.active::after {
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-quarkus-dark-blue via-gray-900 to-black min-h-screen text-white">
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <header class="text-center mb-12">
+        <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-quarkus-blue to-quarkus-red bg-clip-text text-transparent">
+            Order Fulfillment Workflow
+        </h1>
+        <p class="text-xl text-gray-300">Compensation Pattern Demo - Live Workflow Visualization</p>
+        <p class="text-sm text-gray-400 mt-2">Watch each step execute in real-time with automatic compensation on failures</p>
+    </header>
+
+    <!-- Info Banner -->
+    <div class="mb-8 p-6 rounded-xl bg-gradient-to-r from-blue-900/50 to-indigo-900/50 border-2 border-blue-500">
+        <div class="flex items-start space-x-4">
+            <div class="flex-shrink-0">
+                <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-xl font-bold text-white">How It Works</h3>
+                    <a href="workflow-diagram.html" target="_blank" 
+                       class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition duration-200 flex items-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        <span>View Workflow Diagram</span>
+                    </a>
+                </div>
+                <ul class="text-sm text-gray-300 space-y-1">
+                    <li>• <strong>ORDER#001</strong> - Fails at stock reservation (triggers compensation)</li>
+                    <li>• <strong>ORDER#002</strong> - Fails at payment processing (triggers compensation)</li>
+                    <li>• <strong>ORDER#003</strong> - Fails at shipping (triggers compensation)</li>
+                    <li>• <strong>ORDER#004</strong> - Completes successfully (no errors)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <!-- Order 1 -->
+        <div id="order-card-1" class="order-card bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-semibold text-quarkus-blue">ORDER#001</h3>
+                <div id="status-indicator-1" class="w-3 h-3 rounded-full status-idle"></div>
+            </div>
+            <p class="text-gray-400 text-sm mb-4">Stock Reservation Failure</p>
+            
+            <!-- Live Workflow Progress -->
+            <div id="workflow-progress-1" class="mb-4 space-y-2 hidden">
+                <div class="flex items-center space-x-2">
+                    <div id="step-stock-1" class="step-idle w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold">1</div>
+                    <div class="flex-1">
+                        <div class="text-xs font-semibold text-gray-300">Stock Reservation</div>
+                        <div id="step-stock-msg-1" class="text-xs text-gray-500">Waiting...</div>
+                    </div>
+                </div>
+                <div class="progress-line ml-4" id="progress-1-2"></div>
+                
+                <div class="flex items-center space-x-2">
+                    <div id="step-payment-1" class="step-idle w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold">2</div>
+                    <div class="flex-1">
+                        <div class="text-xs font-semibold text-gray-300">Payment Processing</div>
+                        <div id="step-payment-msg-1" class="text-xs text-gray-500">Waiting...</div>
+                    </div>
+                </div>
+                <div class="progress-line ml-4" id="progress-1-3"></div>
+                
+                <div class="flex items-center space-x-2">
+                    <div id="step-shipping-1" class="step-idle w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold">3</div>
+                    <div class="flex-1">
+                        <div class="text-xs font-semibold text-gray-300">Shipping</div>
+                        <div id="step-shipping-msg-1" class="text-xs text-gray-500">Waiting...</div>
+                    </div>
+                </div>
+                
+                <div id="compensation-section-1" class="mt-3 p-2 bg-yellow-900/20 border border-yellow-600 rounded hidden">
+                    <div class="flex items-start space-x-2">
+                        <svg class="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <div class="flex-1">
+                            <div class="text-xs font-semibold text-yellow-400 mb-1">Compensation</div>
+                            <div id="compensation-log-1" class="space-y-0.5"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="status-message-1" class="mb-4 p-3 rounded-lg bg-gray-900 text-sm text-gray-300 min-h-[60px]">
+                <span class="text-gray-500">Ready to process...</span>
+            </div>
+            <button onclick="submitOrder('ORDER#001', 1)" id="btn-1"
+                    class="w-full bg-quarkus-blue hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center">
+                <span class="button-text">Submit Order</span>
+                <svg class="loading w-5 h-5 ml-2 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Order 2 -->
+        <div id="order-card-2" class="order-card bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-semibold text-yellow-400">ORDER#002</h3>
+                <div id="status-indicator-2" class="w-3 h-3 rounded-full status-idle"></div>
+            </div>
+            <p class="text-gray-400 text-sm mb-4">Payment Processing Failure</p>
+            
+            <!-- Live Workflow Progress -->
+            <div id="workflow-progress-2" class="mb-4 space-y-2 hidden">
+                <div class="flex items-center space-x-2">
+                    <div id="step-stock-2" class="step-idle w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold">1</div>
+                    <div class="flex-1">
+                        <div class="text-xs font-semibold text-gray-300">Stock Reservation</div>
+                        <div id="step-stock-msg-2" class="text-xs text-gray-500">Waiting...</div>
+                    </div>
+                </div>
+                <div class="progress-line ml-4" id="progress-2-2"></div>
+                
+                <div class="flex items-center space-x-2">
+                    <div id="step-payment-2" class="step-idle w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold">2</div>
+                    <div class="flex-1">
+                        <div class="text-xs font-semibold text-gray-300">Payment Processing</div>
+                        <div id="step-payment-msg-2" class="text-xs text-gray-500">Waiting...</div>
+                    </div>
+                </div>
+                <div class="progress-line ml-4" id="progress-2-3"></div>
+                
+                <div class="flex items-center space-x-2">
+                    <div id="step-shipping-2" class="step-idle w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold">3</div>
+                    <div class="flex-1">
+                        <div class="text-xs font-semibold text-gray-300">Shipping</div>
+                        <div id="step-shipping-msg-2" class="text-xs text-gray-500">Waiting...</div>
+                    </div>
+                </div>
+                
+                <div id="compensation-section-2" class="mt-3 p-2 bg-yellow-900/20 border border-yellow-600 rounded hidden">
+                    <div class="flex items-start space-x-2">
+                        <svg class="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <div class="flex-1">
+                            <div class="text-xs font-semibold text-yellow-400 mb-1">Compensation</div>
+                            <div id="compensation-log-2" class="space-y-0.5"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="status-message-2" class="mb-4 p-3 rounded-lg bg-gray-900 text-sm text-gray-300 min-h-[60px]">
+                <span class="text-gray-500">Ready to process...</span>
+            </div>
+            <button onclick="submitOrder('ORDER#002', 2)" id="btn-2"
+                    class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center">
+                <span class="button-text">Submit Order</span>
+                <svg class="loading w-5 h-5 ml-2 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Order 3 -->
+        <div id="order-card-3" class="order-card bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-semibold text-quarkus-red">ORDER#003</h3>
+                <div id="status-indicator-3" class="w-3 h-3 rounded-full status-idle"></div>
+            </div>
+            <p class="text-gray-400 text-sm mb-4">Shipping Failure</p>
+            
+            <!-- Live Workflow Progress -->
+            <div id="workflow-progress-3" class="mb-4 space-y-2 hidden">
+                <div class="flex items-center space-x-2">
+                    <div id="step-stock-3" class="step-idle w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold">1</div>
+                    <div class="flex-1">
+                        <div class="text-xs font-semibold text-gray-300">Stock Reservation</div>
+                        <div id="step-stock-msg-3" class="text-xs text-gray-500">Waiting...</div>
+                    </div>
+                </div>
+                <div class="progress-line ml-4" id="progress-3-2"></div>
+                
+                <div class="flex items-center space-x-2">
+                    <div id="step-payment-3" class="step-idle w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold">2</div>
+                    <div class="flex-1">
+                        <div class="text-xs font-semibold text-gray-300">Payment Processing</div>
+                        <div id="step-payment-msg-3" class="text-xs text-gray-500">Waiting...</div>
+                    </div>
+                </div>
+                <div class="progress-line ml-4" id="progress-3-3"></div>
+                
+                <div class="flex items-center space-x-2">
+                    <div id="step-shipping-3" class="step-idle w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold">3</div>
+                    <div class="flex-1">
+                        <div class="text-xs font-semibold text-gray-300">Shipping</div>
+                        <div id="step-shipping-msg-3" class="text-xs text-gray-500">Waiting...</div>
+                    </div>
+                </div>
+                
+                <div id="compensation-section-3" class="mt-3 p-2 bg-yellow-900/20 border border-yellow-600 rounded hidden">
+                    <div class="flex items-start space-x-2">
+                        <svg class="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <div class="flex-1">
+                            <div class="text-xs font-semibold text-yellow-400 mb-1">Compensation</div>
+                            <div id="compensation-log-3" class="space-y-0.5"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="status-message-3" class="mb-4 p-3 rounded-lg bg-gray-900 text-sm text-gray-300 min-h-[60px]">
+                <span class="text-gray-500">Ready to process...</span>
+            </div>
+            <button onclick="submitOrder('ORDER#003', 3)" id="btn-3"
+                    class="w-full bg-quarkus-red hover:bg-quarkus-dark-red text-white font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center">
+                <span class="button-text">Submit Order</span>
+                <svg class="loading w-5 h-5 ml-2 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Order 4 -->
+        <div id="order-card-4" class="order-card bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-semibold text-green-400">ORDER#004</h3>
+                <div id="status-indicator-4" class="w-3 h-3 rounded-full status-idle"></div>
+            </div>
+            <p class="text-gray-400 text-sm mb-4">Successful Order Completion</p>
+
+            <!-- Live Workflow Progress -->
+            <div id="workflow-progress-4" class="mb-4 space-y-2 hidden">
+                <div class="flex items-center space-x-2">
+                    <div id="step-stock-4" class="step-idle w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold">1</div>
+                    <div class="flex-1">
+                        <div class="text-xs font-semibold text-gray-300">Stock Reservation</div>
+                        <div id="step-stock-msg-4" class="text-xs text-gray-500">Waiting...</div>
+                    </div>
+                </div>
+                <div class="progress-line ml-4" id="progress-4-2"></div>
+
+                <div class="flex items-center space-x-2">
+                    <div id="step-payment-4" class="step-idle w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold">2</div>
+                    <div class="flex-1">
+                        <div class="text-xs font-semibold text-gray-300">Payment Processing</div>
+                        <div id="step-payment-msg-4" class="text-xs text-gray-500">Waiting...</div>
+                    </div>
+                </div>
+                <div class="progress-line ml-4" id="progress-4-3"></div>
+
+                <div class="flex items-center space-x-2">
+                    <div id="step-shipping-4" class="step-idle w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold">3</div>
+                    <div class="flex-1">
+                        <div class="text-xs font-semibold text-gray-300">Shipping</div>
+                        <div id="step-shipping-msg-4" class="text-xs text-gray-500">Waiting...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="status-message-4" class="mb-4 p-3 rounded-lg bg-gray-900 text-sm text-gray-300 min-h-[60px]">
+                <span class="text-gray-500">Ready to process...</span>
+            </div>
+            <button onclick="submitOrder('ORDER#004', 4)" id="btn-4"
+                    class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center">
+                <span class="button-text">Submit Order</span>
+                <svg class="loading w-5 h-5 ml-2 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- WebSocket Status Indicator -->
+    <div class="fixed bottom-4 right-4 flex items-center space-x-2 bg-gray-800 px-4 py-2 rounded-lg border border-gray-700">
+        <div id="wsIndicator" class="w-2 h-2 rounded-full bg-gray-500"></div>
+        <span id="wsStatus" class="text-xs text-gray-400">Connecting...</span>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-12 text-center text-gray-500 text-sm">
+        <p>Powered by <span class="text-quarkus-blue font-semibold">Quarkus</span> and <span
+                class="text-quarkus-blue font-semibold">Quarkus Flow</span></p>
+    </footer>
+</div>
+
+<script>
+    // WebSocket connection
+    let ws = null;
+    let reconnectInterval = null;
+
+    function connectWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/order-events`;
+
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+            console.log('WebSocket connected');
+            updateWebSocketStatus(true);
+            if (reconnectInterval) {
+                clearInterval(reconnectInterval);
+                reconnectInterval = null;
+            }
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                handleOrderEvent(data);
+            } catch (error) {
+                console.error('Error parsing WebSocket message:', error);
+            }
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+
+        ws.onclose = () => {
+            console.log('WebSocket disconnected, attempting to reconnect...');
+            updateWebSocketStatus(false);
+            if (!reconnectInterval) {
+                reconnectInterval = setInterval(() => {
+                    if (ws.readyState === WebSocket.CLOSED) {
+                        connectWebSocket();
+                    }
+                }, 3000);
+            }
+        };
+    }
+
+    function updateWebSocketStatus(connected) {
+        const indicator = document.getElementById('wsIndicator');
+        const status = document.getElementById('wsStatus');
+
+        if (connected) {
+            indicator.className = 'w-2 h-2 rounded-full bg-green-500';
+            status.textContent = 'Connected';
+            status.className = 'text-xs text-green-400';
+        } else {
+            indicator.className = 'w-2 h-2 rounded-full bg-red-500';
+            status.textContent = 'Disconnected';
+            status.className = 'text-xs text-red-400';
+        }
+    }
+
+    function handleOrderEvent(data) {
+        const orderId = data.orderId;
+        const orderNum = orderId.replace('ORDER#00', '');
+        
+        // Handle step-by-step updates
+        if (data.step) {
+            updateWorkflowStep(orderNum, data.step, data.status, data.message);
+            return;
+        }
+        
+        // Handle overall status updates
+        const status = data.status;
+        const message = data.message;
+        
+        const indicator = document.getElementById(`status-indicator-${orderNum}`);
+        const statusMessage = document.getElementById(`status-message-${orderNum}`);
+        const card = document.getElementById(`order-card-${orderNum}`);
+        const button = document.getElementById(`btn-${orderNum}`);
+
+        indicator.className = `w-3 h-3 rounded-full status-${status}`;
+
+        let icon = '';
+        let textColor = '';
+        
+        if (status === 'started') {
+            icon = '⏳';
+            textColor = 'text-yellow-400';
+            card.classList.add('processing');
+            // Show workflow progress
+            document.getElementById(`workflow-progress-${orderNum}`).classList.remove('hidden');
+        } else if (status === 'completed') {
+            icon = '✅';
+            textColor = 'text-green-400';
+            card.classList.remove('processing');
+            playNotificationSound();
+        } else if (status === 'failed') {
+            icon = '❌';
+            textColor = 'text-red-400';
+            card.classList.remove('processing');
+            playNotificationSound();
+        }
+
+        statusMessage.innerHTML = `<span class="${textColor}">${icon} ${message}</span>`;
+
+        if (status === 'completed' || status === 'failed') {
+            const buttonText = button.querySelector('.button-text');
+            const loadingIcon = button.querySelector('.loading');
+            button.disabled = false;
+            buttonText.textContent = 'Submit Order';
+            loadingIcon.classList.add('hidden');
+        }
+    }
+
+    function updateWorkflowStep(orderNum, step, status, message) {
+        let stepElement, msgElement, progressElement;
+        
+        if (step === 'stockReservation') {
+            stepElement = document.getElementById(`step-stock-${orderNum}`);
+            msgElement = document.getElementById(`step-stock-msg-${orderNum}`);
+            progressElement = document.getElementById(`progress-${orderNum}-2`);
+        } else if (step === 'paymentProcessing') {
+            stepElement = document.getElementById(`step-payment-${orderNum}`);
+            msgElement = document.getElementById(`step-payment-msg-${orderNum}`);
+            progressElement = document.getElementById(`progress-${orderNum}-3`);
+        } else if (step === 'shipping') {
+            stepElement = document.getElementById(`step-shipping-${orderNum}`);
+            msgElement = document.getElementById(`step-shipping-msg-${orderNum}`);
+        } else if (step === 'compensation') {
+            const compensationSection = document.getElementById(`compensation-section-${orderNum}`);
+            const logContainer = document.getElementById(`compensation-log-${orderNum}`);
+            compensationSection.classList.remove('hidden');
+
+            const entry = document.createElement('div');
+            entry.className = 'text-xs flex items-center space-x-1 py-0.5';
+
+            if (status === 'processing') {
+                entry.innerHTML = `<span class="text-yellow-400 inline-block" style="animation:spin 1s linear infinite">⟳</span><span class="text-yellow-300">${message}</span>`;
+            } else if (status === 'completed') {
+                entry.innerHTML = `<span class="text-green-400 font-bold">✓</span><span class="text-green-400">${message}</span>`;
+            } else if (status === 'failed') {
+                entry.innerHTML = `<span class="text-red-400 font-bold">✗</span><span class="text-red-400">${message}</span>`;
+            }
+
+            logContainer.appendChild(entry);
+            return;
+        }
+        
+        if (stepElement && msgElement) {
+            stepElement.className = `step-${status} w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold`;
+            msgElement.textContent = message;
+            msgElement.className = `text-xs ${status === 'completed' ? 'text-green-400' : status === 'failed' ? 'text-red-400' : status === 'processing' ? 'text-yellow-400' : 'text-gray-500'}`;
+            
+            if (status === 'completed' && progressElement) {
+                progressElement.classList.add('active');
+            }
+        }
+    }
+
+    async function submitOrder(orderId, orderNum) {
+        const button = document.getElementById(`btn-${orderNum}`);
+        const buttonText = button.querySelector('.button-text');
+        const loadingIcon = button.querySelector('.loading');
+
+        // Reset workflow progress
+        resetWorkflowProgress(orderNum);
+
+        button.disabled = true;
+        buttonText.textContent = 'Processing...';
+        loadingIcon.classList.remove('hidden');
+
+        try {
+            const response = await fetch('/api/orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ orderId: orderId })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+        } catch (error) {
+            console.error('Error submitting order:', error);
+            
+            const indicator = document.getElementById(`status-indicator-${orderNum}`);
+            const statusMessage = document.getElementById(`status-message-${orderNum}`);
+            const card = document.getElementById(`order-card-${orderNum}`);
+            
+            indicator.className = 'w-3 h-3 rounded-full status-failed';
+            statusMessage.innerHTML = `<span class="text-red-400">❌ Failed to submit order: ${error.message}</span>`;
+            card.classList.remove('processing');
+            
+            button.disabled = false;
+            buttonText.textContent = 'Submit Order';
+            loadingIcon.classList.add('hidden');
+        }
+    }
+
+    function resetWorkflowProgress(orderNum) {
+        // Reset all steps to idle
+        ['stock', 'payment', 'shipping'].forEach(step => {
+            const stepElement = document.getElementById(`step-${step}-${orderNum}`);
+            const msgElement = document.getElementById(`step-${step}-msg-${orderNum}`);
+            if (stepElement) {
+                stepElement.className = 'step-idle w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold';
+            }
+            if (msgElement) {
+                msgElement.textContent = 'Waiting...';
+                msgElement.className = 'text-xs text-gray-500';
+            }
+        });
+        
+        // Reset progress lines
+        ['2', '3'].forEach(num => {
+            const progressElement = document.getElementById(`progress-${orderNum}-${num}`);
+            if (progressElement) {
+                progressElement.classList.remove('active');
+            }
+        });
+        
+        // Hide compensation section and clear log
+        const compensationSection = document.getElementById(`compensation-section-${orderNum}`);
+        if (compensationSection) {
+            compensationSection.classList.add('hidden');
+        }
+        const compensationLog = document.getElementById(`compensation-log-${orderNum}`);
+        if (compensationLog) {
+            compensationLog.innerHTML = '';
+        }
+    }
+
+    function playNotificationSound() {
+        // Create a simple beep sound using Web Audio API
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        } catch (error) {
+            console.log('Audio notification not supported:', error);
+        }
+    }
+
+    // Initialize WebSocket connection on page load
+    connectWebSocket();
+</script>
+</body>
+</html>
