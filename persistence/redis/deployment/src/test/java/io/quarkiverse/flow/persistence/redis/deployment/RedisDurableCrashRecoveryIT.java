@@ -12,19 +12,19 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
-import io.quarkiverse.flow.persistence.test.AbstractDurableListenWorkflowIT;
-import io.quarkiverse.flow.persistence.test.durable.DurableResource;
-import io.quarkiverse.flow.persistence.test.durable.EmitWorkflow;
-import io.quarkiverse.flow.persistence.test.durable.ListenWorkflow;
+import io.quarkiverse.flow.persistence.test.AbstractDurableCrashRecoveryIT;
+import io.quarkiverse.flow.persistence.test.durable.RecoveryEmitWorkflow;
+import io.quarkiverse.flow.persistence.test.durable.RecoveryResource;
+import io.quarkiverse.flow.persistence.test.durable.RecoveryWorkflow;
 import io.quarkus.logging.Log;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
-@QuarkusTestResource(RedisDurableListenWorkflowIT.RedisResource.class)
+@QuarkusTestResource(RedisDurableCrashRecoveryIT.RedisResource.class)
 @DisabledOnOs(OS.WINDOWS)
-public class RedisDurableListenWorkflowIT extends AbstractDurableListenWorkflowIT {
-    private static final String REDIS_IMAGE_NAME = System.getProperty("redis.test.image-name");
+public class RedisDurableCrashRecoveryIT extends AbstractDurableCrashRecoveryIT {
+    private static final String REDIS_IMAGE_NAME = System.getProperty("redis.test.image-name", "valkey/valkey:7.2-alpine");
 
     private static String redisImageName() {
         return REDIS_IMAGE_NAME;
@@ -33,19 +33,24 @@ public class RedisDurableListenWorkflowIT extends AbstractDurableListenWorkflowI
     @RegisterExtension
     static QuarkusDevModeTest devMode = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(ListenWorkflow.class, EmitWorkflow.class, DurableResource.class)
-                    .addAsResource("durable-application.properties", "application.properties"));
+                    .addClasses(RecoveryWorkflow.class, RecoveryEmitWorkflow.class, RecoveryResource.class)
+                    .addAsResource("durable-recovery-application.properties", "application.properties"));
 
     @Override
     protected QuarkusDevModeTest getDevModeTest() {
         return devMode;
     }
 
+    @Override
+    protected void resetCounters() {
+        RecoveryResource.reset();
+    }
+
     public static class RedisResource implements QuarkusTestResourceLifecycleManager {
         private static final Logger LOGGER = LoggerFactory.getLogger(RedisResource.class);
 
         static final GenericContainer<?> REDIS = new GenericContainer<>(
-                DockerImageName.parse(RedisDurableListenWorkflowIT.redisImageName()))
+                DockerImageName.parse(RedisDurableCrashRecoveryIT.redisImageName()))
                 .withLogConsumer(outputFrame -> {
                     Log.info(outputFrame.getBytes());
                 })
