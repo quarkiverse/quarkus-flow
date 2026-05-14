@@ -1,0 +1,547 @@
+= Testing Workflows
+:page-role: howto
+include::includes/attributes.adoc[]
+
+The Quarkus Flow Testing Framework provides a comprehensive toolkit for testing workflow executions. It captures all workflow and task lifecycle events, offers fluent assertion APIs, and supports both synchronous and asynchronous testing patterns.
+
+This guide shows you how to:
+
+* Set up event recording for your tests
+* Write assertions for workflow execution
+* Test asynchronous workflows with event waiting
+* Filter events by workflow instance
+* Choose between ordered and unordered assertions
+
+== Architecture Overview
+
+The testing framework uses **composition** to separate concerns:
+
+* **`WorkflowEventStore`**: Thread-safe storage for workflow events
+* **`FluentEventAssertions`**: Synchronous assertions (ordered and unordered)
+* **`AsyncFluentEventAssertions`**: Asynchronous event waiting before asserting
+* **`TestWorkflowExecutionListener`**: Captures events during workflow execution
+
+== Quick Start
+
+=== 1. Add the Testing Dependency
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkiverse.flow</groupId>
+  <artifactId>quarkus-flow-testing</artifactId>
+  <scope>test</scope>
+</dependency>
+----
+
+=== 2. Basic Synchronous Test
+
+For workflows that execute synchronously (all events recorded in the same thread):
+
+[source,java]
+----
+@Test
+void should_execute_simple_workflow() {
+    Workflow workflow = FuncWorkflowBuilder.workflow()
+        .tasks(FuncDSL.function("task1", (n) -> n + 1, Long.class))
+        .build();
+
+    // Create event store with thread-local storage
+    WorkflowEventStore store = WorkflowEventStore.threadLocal();
+
+    try (WorkflowApplication app = WorkflowApplication.builder()
+            .withListener(new TestWorkflowExecutionListener(store))
+            .build()) {
+
+        WorkflowDefinition def = app.workflowDefinition(workflow);
+        WorkflowInstance instance = def.instance(10L);
+        instance.start().join();
+
+        // Assert on recorded events
+        FluentEventAssertions.assertThat(store)
+            .workflowStarted()
+            .taskStarted("task1")
+            .taskCompleted("task1")
+            .workflowCompleted()
+            .assertAll();
+    }
+}
+----
+
+== Storage Modes
+
+The `WorkflowEventStore` supports two storage modes:
+
+=== Thread-Local Storage (Default)
+
+Use for synchronous workflows where all events are recorded in the test thread:
+
+[source,java]
+----
+WorkflowEventStore store = WorkflowEventStore.threadLocal();
+----
+
+**Advantages:**
+- Automatic test isolation in parallel execution
+- No cross-thread concerns
+- Simpler cleanup
+
+**Use when:**
+- Workflow executes synchronously (`.join()` or `.await().indefinitely()`)
+- All tasks complete in the test thread
+
+=== Shared Storage
+
+Use for asynchronous workflows where events are recorded in different threads:
+
+[source,java]
+----
+WorkflowEventStore store = WorkflowEventStore.shared();
+----
+
+**Advantages:**
+- Events visible across threads
+- Required for async workflows
+
+**Use when:**
+- Workflow executes asynchronously (`CompletableFuture.runAsync()`)
+- Tasks run in background threads
+- Testing event-driven workflows
+
+== Assertion Modes
+
+=== Unordered Assertions (Default)
+
+Verifies events exist anywhere in the event list:
+
+[source,java]
+----
+FluentEventAssertions.assertThat(store)
+    .workflowStarted()           // Check it started (anywhere)
+    .taskStarted("task1")        // Check task1 started (anywhere)
+    .taskStarted("task2")        // Check task2 started (anywhere)
+    .taskCompleted("task1")      // Check task1 completed (anywhere)
+    .taskCompleted("task2")      // Check task2 completed (anywhere)
+    .workflowCompleted()         // Check workflow completed
+    .assertAll();                // Execute all assertions
+----
+
+**Use when:**
+- Task execution order doesn't matter
+- Testing parallel workflows
+- Verifying all tasks executed
+
+=== Ordered Assertions
+
+Verifies events occur in exact sequence:
+
+[source,java]
+----
+FluentEventAssertions.assertThat(store)
+    .inOrder()                   // Enable strict ordering (must be before assertions)
+    .workflowStarted()           // Must be first
+    .taskStarted("task1")        // Must be next
+    .taskCompleted("task1")      // Must follow task1 start
+    .taskStarted("task2")        // Must be next
+    .taskCompleted("task2")      // Must follow task2 start
+    .workflowCompleted()         // Must be last
+    .assertAll();
+----
+
+IMPORTANT: `.inOrder()` must be called immediately after `.assertThat(store)`, `.thenAssert()`, or `.forInstance(id)` - never after assertion methods like `.workflowStarted()` or `.taskCompleted()`.
+
+The API enforces this at **compile time** - once you call an assertion method, the return type changes and `.inOrder()` is no longer available.
+
+**Valid patterns:**
+[source,java]
+----
+// ✅ Correct - inOrder() before assertions
+assertThat(store).inOrder().workflowStarted()
+assertThat(store).forInstance(id).inOrder().workflowStarted()
+thenAssert().inOrder().workflowStarted()
+
+// ❌ Compile error - inOrder() not available after assertions
+assertThat(store).workflowStarted().inOrder()  // Does not compile!
+----
+
+**How it works:**
+- `assertThat(store)` returns `OrderableFluentEventAssertions` (has `inOrder()` method)
+- `inOrder()` returns `FluentEventAssertions` (no `inOrder()` method)
+- Assertion methods return `FluentEventAssertions` (no `inOrder()` method)
+- This prevents calling `inOrder()` after assertions have begun
+
+**Use when:**
+- Execution order is critical
+- Testing sequential workflows
+- Verifying task dependencies
+
+== Testing Asynchronous Workflows
+
+For workflows that execute asynchronously, use `AsyncFluentEventAssertions` to wait for events before asserting:
+
+[source,java]
+----
+@Test
+void should_wait_for_async_workflow() {
+    Workflow workflow = FuncWorkflowBuilder.workflow()
+        .tasks(
+            FuncDSL.function("task1", (n) -> n + 1, Long.class),
+            FuncDSL.function("task2", (n) -> n * 2, Long.class)
+        )
+        .build();
+
+    WorkflowEventStore store = WorkflowEventStore.shared();
+
+    try (WorkflowApplication app = WorkflowApplication.builder()
+            .withListener(new TestWorkflowExecutionListener(store))
+            .build()) {
+
+        WorkflowDefinition def = app.workflowDefinition(workflow);
+        WorkflowInstance instance = def.instance(10L);
+
+        // Start asynchronously
+        CompletableFuture.runAsync(() -> instance.start().join());
+
+        // Wait for events, then assert
+        store.waitFor()
+            .workflowStarted()
+            .taskCompleted("task1")
+            .taskCompleted("task2")
+            .workflowCompleted()
+            .thenAssert()
+            .inOrder()
+            .workflowStarted()
+            .taskStarted("task1")
+            .taskCompleted("task1")
+            .taskStarted("task2")
+            .taskCompleted("task2")
+            .workflowCompleted()
+            .assertAll();
+    }
+}
+----
+
+=== Configuring Timeouts
+
+[source,java]
+----
+store.waitFor()
+    .timeout(Duration.ofSeconds(10))      // Max wait time
+    .pollInterval(Duration.ofMillis(50))  // Check interval
+    .workflowCompleted()
+    .thenAssert()
+    .workflowCompleted()
+    .assertAll();
+----
+
+== Filtering by Instance ID
+
+When testing multiple workflow instances, filter events by instance ID:
+
+[source,java]
+----
+@Test
+void should_filter_events_by_instance() {
+    Workflow workflow = FuncWorkflowBuilder.workflow()
+        .tasks(FuncDSL.function("inc", (n) -> n + 1, Long.class))
+        .build();
+
+    WorkflowEventStore store = new WorkflowEventStore(true); // Shared storage
+
+    try (WorkflowApplication app = WorkflowApplication.builder()
+            .withListener(new TestWorkflowExecutionListener(store))
+            .build()) {
+
+        WorkflowDefinition def = app.workflowDefinition(workflow);
+
+        // Start two instances
+        WorkflowInstance instance1 = def.instance(10L);
+        WorkflowInstance instance2 = def.instance(20L);
+
+        instance1.start().join();
+        instance2.start().join();
+
+        // Filter and assert on instance1
+        FluentEventAssertions.assertThat(store)
+            .forInstance(instance1.id())
+            .workflowStarted()
+            .taskCompleted("inc")
+            .workflowCompleted()
+            .assertAll();
+
+        // Filter and assert on instance2
+        FluentEventAssertions.assertThat(store)
+            .forInstance(instance2.id())
+            .workflowStarted()
+            .taskCompleted("inc")
+            .workflowCompleted()
+            .assertAll();
+    }
+}
+----
+
+=== Sequential Instance Testing
+
+Wait for specific instances in sequence:
+
+[source,java]
+----
+@Test
+void should_wait_for_instances_sequentially() {
+    WorkflowEventStore store = new WorkflowEventStore(true);
+
+    // ... setup workflow and app ...
+
+    WorkflowInstance instance1 = def.instance(10L);
+    WorkflowInstance instance2 = def.instance(20L);
+
+    CompletableFuture.runAsync(() -> instance1.start().join());
+    CompletableFuture.runAsync(() -> instance2.start().join());
+
+    // Wait for instance1 completion
+    store.waitFor()
+        .forInstance(instance1.id())
+        .workflowCompleted()
+        .thenAssert()
+        .forInstance(instance1.id())
+        .workflowCompleted()
+        .assertAll();
+
+    // Then wait for instance2 completion
+    store.waitFor()
+        .forInstance(instance2.id())
+        .workflowCompleted()
+        .thenAssert()
+        .forInstance(instance2.id())
+        .workflowCompleted()
+        .assertAll();
+}
+----
+
+== Advanced Assertions
+
+=== Output Verification
+
+[source,java]
+----
+store.waitFor()
+    .workflowCompleted()
+    .thenAssert()
+    .workflowCompleted()
+    .withOutput(output -> {
+        assertThat(output.asNumber()).hasValue(42L);
+    })
+    .assertAll();
+----
+
+=== Error Verification
+
+[source,java]
+----
+FluentEventAssertions.assertThat(store)
+    .workflowFailed()
+    .withError(error -> {
+        assertThat(error).isInstanceOf(IllegalStateException.class);
+        assertThat(error.getMessage()).contains("Invalid state");
+    })
+    .assertAll();
+----
+
+=== Count Assertions
+
+[source,java]
+----
+FluentEventAssertions.assertThat(store)
+    .hasEventCount(10)
+    .hasWorkflowStartedEventCount(1)
+    .hasTaskCompletedEventCount(3)
+    .assertAll();
+----
+
+=== Timing Assertions
+
+[source,java]
+----
+FluentEventAssertions.assertThat(store)
+    .taskCompletedBefore("task1", "task2")
+    .workflowCompletedWithin(Duration.ofSeconds(5))
+    .assertAll();
+----
+
+== Complete Example
+
+Here's a comprehensive test demonstrating multiple features:
+
+[source,java]
+----
+@Test
+void should_test_complex_workflow() {
+    Workflow workflow = FuncWorkflowBuilder.workflow()
+        .tasks(
+            FuncDSL.function("validate", this::validate, Request.class),
+            FuncDSL.function("process", this::process, Request.class),
+            FuncDSL.function("notify", this::notify, Result.class)
+        )
+        .build();
+
+    WorkflowEventStore store = new WorkflowEventStore(true);
+
+    try (WorkflowApplication app = WorkflowApplication.builder()
+            .withListener(new TestWorkflowExecutionListener(store))
+            .build()) {
+
+        WorkflowDefinition def = app.workflowDefinition(workflow);
+        WorkflowInstance instance = def.instance(new Request("test"));
+
+        // Start asynchronously
+        CompletableFuture.runAsync(() -> instance.start().join());
+
+        // Wait and assert
+        store.waitFor()
+            .timeout(Duration.ofSeconds(10))
+            .forInstance(instance.id())
+            .workflowCompleted()
+            .thenAssert()
+            .inOrder()
+            .forInstance(instance.id())
+            .workflowStarted()
+            .taskStarted("validate")
+            .taskCompleted("validate")
+            .taskStarted("process")
+            .taskCompleted("process")
+            .taskStarted("notify")
+            .taskCompleted("notify")
+            .workflowCompleted()
+            .withOutput(output -> {
+                assertThat(output.as(Result.class))
+                    .isPresent()
+                    .get()
+                    .satisfies(result -> {
+                        assertThat(result.status()).isEqualTo("SUCCESS");
+                    });
+            })
+            .assertAll();
+    }
+}
+----
+
+== Best Practices
+
+=== 1. Use Shared Storage for Async
+
+Always use `WorkflowEventStore.shared()` when testing asynchronous workflows:
+
+[source,java]
+----
+// ✅ Correct for async workflows
+WorkflowEventStore store = WorkflowEventStore.shared();
+CompletableFuture.runAsync(() -> instance.start().join());
+
+// ❌ Wrong - events won't be visible
+WorkflowEventStore store = WorkflowEventStore.threadLocal();
+CompletableFuture.runAsync(() -> instance.start().join());
+----
+
+=== 2. Wait Before Assert
+
+Use `store.waitFor()...thenAssert()` pattern for async workflows:
+
+[source,java]
+----
+// ✅ Correct - wait then assert
+store.waitFor()
+    .workflowCompleted()
+    .thenAssert()
+    .workflowCompleted()
+    .assertAll();
+
+// ❌ Wrong - may assert before events arrive
+FluentEventAssertions.assertThat(store)
+    .workflowCompleted()
+    .assertAll();
+----
+
+=== 3. Choose the Right Mode
+
+Use `inOrder()` when sequence matters:
+
+[source,java]
+----
+// ✅ Correct - order matters
+FluentEventAssertions.assertThat(store)
+    .inOrder()
+    .workflowStarted()
+    .taskStarted("task1")
+    .taskCompleted("task1")
+    .assertAll();
+
+// ✅ Also correct - order doesn't matter
+FluentEventAssertions.assertThat(store)
+    .taskCompleted("task1")
+    .taskCompleted("task2")
+    .taskCompleted("task3")
+    .assertAll();
+----
+
+=== 4. Always Call assertAll()
+
+Assertions are collected and executed only when `assertAll()` is called:
+
+[source,java]
+----
+// ✅ Correct
+FluentEventAssertions.assertThat(store)
+    .workflowStarted()
+    .workflowCompleted()
+    .assertAll(); // Required!
+
+// ❌ Wrong - assertions never execute
+FluentEventAssertions.assertThat(store)
+    .workflowStarted()
+    .workflowCompleted();
+----
+
+=== 5. Clean Up Between Tests
+
+[source,java]
+----
+@AfterEach
+void cleanup() {
+    store.clear();
+}
+----
+
+== Troubleshooting
+
+=== Timeout Errors
+
+If you see "Timeout waiting for event" errors:
+
+1. Ensure you're using shared storage: `WorkflowEventStore.shared()`
+2. Increase timeout: `.timeout(Duration.ofSeconds(30))`
+3. Check that the workflow is actually running asynchronously
+4. Verify the listener is properly registered
+
+=== Events Not Found
+
+If assertions fail with "event not found":
+
+1. Check that `TestWorkflowExecutionListener` is registered
+2. Verify the workflow actually executed
+3. Use `store.getAll()` to inspect recorded events
+4. Ensure you're using the correct event store instance
+
+=== Thread Safety Issues
+
+If you see inconsistent results in parallel tests:
+
+1. Use thread-local storage (default) for isolated tests
+2. Use shared storage only when needed for async workflows
+3. Call `store.clear()` between tests
+4. Avoid sharing `WorkflowEventStore` instances between tests
+
+== See Also
+
+* xref:test-debug.adoc[Test and Debug Workflows] - General testing strategies
+* xref:getting-started.adoc[Getting Started] - Basic workflow setup
+* xref:data-flow.adoc[Data Flow and Context Management] - Understanding workflow data
