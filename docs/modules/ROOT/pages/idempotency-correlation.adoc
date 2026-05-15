@@ -1,0 +1,380 @@
+= Idempotency and Correlation
+:page-role: concept
+include::includes/attributes.adoc[]
+
+Distributed systems are full of duplicate messages, retries, and network hiccups. When a workflow calls an external service, emits an event, or listens for a callback, you must decide how to handle the case where the same message arrives more than once.
+
+This page explains what Quarkus Flow guarantees for idempotency and correlation, what it leaves to the application layer, and provides practical patterns to build resilient retry-safe workflows.
+
+== 1. What Flow Guarantees
+
+Quarkus Flow ensures that every workflow instance carries a **globally unique identity** that is propagated to external systems, giving them the tools they need to deduplicate on their own.
+
+=== 1.1 Unique Instance Identity
+
+Every time a workflow starts, Quarkus Flow assigns it a unique `instanceId` (a ULID). This ID is the foundation of all idempotency guarantees:
+
+[source,java]
+----
+include::{examples-dir}org/acme/IdempotencyExample.java[tags=instance-id]
+----
+
+=== 1.2 HTTP Correlation Headers
+
+By default, every HTTP or OpenAPI call made by a workflow includes two headers:
+
+* `X-Flow-Instance-Id`: The workflow instance ULID.
+* `X-Flow-Task-Id`: The JSON Pointer of the task that made the call (e.g., `do/0/processPayment`).
+
+These headers allow downstream services to implement idempotency keys — if a workflow retries the same HTTP call due to a timeout, the downstream service receives the exact same `X-Flow-Instance-Id` and `X-Flow-Task-Id`, and can recognize it as a duplicate.
+
+For more details, see xref:tracing.adoc#distributed-tracing-via-http-headers[Distributed Tracing via HTTP Headers].
+
+=== 1.3 CloudEvent Correlation Attributes
+
+When a workflow emits a CloudEvent via the messaging bridge, the engine attaches correlation metadata as link:https://github.com/cloudevents/spec/blob/v1.0/spec.md#extension-context-attributes[CloudEvent extension context attributes]:
+
+* `flowinstanceid`: The workflow instance ULID.
+* `flowtaskid`: The JSON Pointer of the emitting task.
+
+[source,properties]
+----
+# Customize the attribute key names
+quarkus.flow.messaging.metadata.instance-id.key=mycompany-instance-id
+quarkus.flow.messaging.metadata.task-id.key=mycompany-task-id
+
+# Disable correlation metadata entirely
+# quarkus.flow.messaging.enable-metadata-correlation=false
+----
+
+Downstream consumers can read these attributes to correlate events back to the exact workflow and task that produced them.
+
+For more details, see xref:messaging.adoc#cloudevent-correlation-headers[CloudEvent Correlation Headers].
+
+=== 1.4 State Persistence and Recovery
+
+When xref:persistence.adoc[state persistence] is enabled, the engine saves the workflow's execution state to a durable store after every completed task. If the JVM crashes, the engine can safely resume from the last completed checkpoint — never re-executing completed tasks.
+
+This provides **at-least-once** task execution within the workflow: every task runs at least once, and the persisted checkpoint ensures forward progress without repeating already-committed work.
+
+== 2. What Flow Does NOT Guarantee
+
+Idempotency in a distributed system has hard limits. Quarkus Flow is transparent about what it cannot guarantee, so you can design your system accordingly.
+
+=== 2.1 No Server-Side Deduplication
+
+The engine does **not** maintain a deduplication cache. If the same start event arrives twice (e.g., Kafka delivers the same message twice), Quarkus Flow will start **two separate workflow instances**, each with a different `instanceId`.
+
+[NOTE]
+====
+This is by design. The Serverless Workflow specification treats every incoming event as a unique trigger. Duplicate detection at the workflow-triggering layer is the responsibility of the messaging infrastructure or of an application-level deduplication layer.
+====
+
+=== 2.2 No Exactly-Once Execution
+
+The engine guarantees **at-least-once** semantics for task execution, not exactly-once. This means:
+
+* An HTTP call might be retried (see xref:fault-tolerance.adoc[fault tolerance]), potentially succeeding more than once from the downstream service's perspective.
+* A task that completes but whose state fails to persist before a crash will be re-executed on recovery.
+
+To achieve exactly-once semantics, you must implement idempotency at the **data receiver** — your downstream APIs and databases.
+
+=== 2.3 No Cross-Instance Deduplication
+
+Two distinct workflow instances (even of the same workflow definition) are completely independent. The engine does not correlate or deduplicate events across instances. If you need singleton semantics (only one instance of a workflow running at a time), you must implement it yourself, for example with a database lock or lease.
+
+== 3. Practical Patterns
+
+The patterns below show how to use Quarkus Flow's correlation metadata to build robust idempotent systems.
+
+=== 3.1 HTTP Idempotency with Idempotency Key Header
+
+The most common pattern: your downstream API receives the `X-Flow-Instance-Id` header and uses it as an idempotency key.
+
+**Downstream service (pseudo-code):**
+
+[source,java]
+----
+@POST
+@Path("/payments")
+public Response processPayment(@HeaderParam("X-Flow-Instance-Id") String idempotencyKey,
+                                PaymentRequest request) {
+    // Check if we've already processed this idempotency key
+    if (paymentStore.exists(idempotencyKey)) {
+        // Return the previously stored result — no double-charge
+        return Response.ok(paymentStore.get(idempotencyKey)).build();
+    }
+
+    // Process the payment (this runs at most once in effect)
+    PaymentResult result = paymentGateway.charge(request);
+
+    // Store the result keyed by the idempotency key
+    paymentStore.save(idempotencyKey, result);
+
+    return Response.ok(result).build();
+}
+----
+
+**Workflow definition:**
+
+[source,java]
+----
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+
+public class PaymentWorkflow extends Flow {
+
+    public Workflow descriptor() {
+        return workflow("paymentWorkflow")
+            .tasks(
+                call("processPayment", http("/payments")
+                    .method("POST")
+                    .body(".paymentRequest"))
+            )
+            .build();
+    }
+}
+----
+
+[NOTE]
+====
+The `X-Flow-Instance-Id` header is injected automatically — you do not need to add it manually to your HTTP task definitions. If your downstream service requires a different header name for the idempotency key, you can combine the automatic header with a custom mapping layer (e.g., an API gateway or a proxy).
+====
+
+=== 3.2 Idempotent PUT Requests
+
+The HTTP `PUT` method is naturally idempotent — calling the same PUT request multiple times has the same effect as calling it once. When combined with Quarkus Flow's correlation headers, PUT endpoints (when implemented correctly) become safe to retry without additional infrastructure.
+
+**Workflow:**
+
+[source,java]
+----
+include::{examples-dir}org/acme/UpdateInventoryWorkflow.java[]
+----
+
+The downstream endpoint simply implements PUT semantics — replacing the resource at the given URL. Retries from the workflow's xref:fault-tolerance.adoc[fault tolerance] mechanism are safe because PUT is idempotent by definition.
+
+=== 3.3 Event Deduplication Table
+
+When consuming events from a message broker (e.g., Kafka), the broker may deliver the same event multiple times. Use a deduplication table to ensure each event triggers at most one workflow instance.
+
+**Deduplication table (SQL):**
+
+[source,sql]
+----
+CREATE TABLE event_deduplication (
+    event_id VARCHAR(255) PRIMARY KEY,
+    workflow_instance_id VARCHAR(255),
+    processed_at TIMESTAMP NOT NULL
+);
+----
+
+**Event consumer with deduplication check:**
+
+[source,java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+
+@ApplicationScoped
+public class DeduplicatingEventConsumer {
+
+    @Inject
+    DataSource dataSource;
+
+    @Transactional
+    public boolean tryProcess(String eventId) {
+        try (Connection conn = dataSource.getConnection()) {
+            // Atomically insert — if the key exists, this is a duplicate
+            PreparedStatement ps = conn.prepareStatement(
+                "INSERT INTO event_deduplication (event_id, processed_at) VALUES (?, NOW())");
+            ps.setString(1, eventId);
+            try {
+                ps.executeUpdate();
+                return true; // First time seeing this event
+            } catch (java.sql.SQLIntegrityConstraintViolationException e) {
+                return false; // Duplicate event, skip
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+----
+
+**Usage before starting a workflow:**
+
+[source,java]
+----
+// In your event listener or REST endpoint:
+if (deduplicator.tryProcess(event.id())) {
+    workflowApplication.start(definition, event.payload());
+} else {
+    // Log and discard the duplicate
+}
+----
+
+[NOTE]
+====
+This pattern relies on a `UNIQUE` constraint or primary key in your database. It is the most reliable approach because the database enforces the deduplication atomically. For Cassandra or other distributed databases, use lightweight transactions or an idempotency table with TTL.
+====
+
+=== 3.4 Outbox Pattern Using Task Listeners
+
+The outbox pattern ensures that workflow-triggered side effects (e.g., sending an email, updating a ledger, publishing a message) are **guaranteed to happen at least once** without risking inconsistent state.
+
+The idea: instead of performing the side effect directly in a task, write the intent to an "outbox" table. A separate process reads the outbox table and delivers the side effects reliably.
+
+**Workflow with outbox writer:**
+
+[source,java]
+----
+include::{examples-dir}org/acme/OrderWorkflow.java[]
+----
+
+**A separate outbox relay reads and delivers:**
+
+[source,java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import io.quarkus.scheduler.Scheduled;
+
+@ApplicationScoped
+public class OutboxRelay {
+
+    @Scheduled(every = "5s")
+    void deliverOutboxMessages() {
+        // 1. Read unprocessed messages from the outbox table
+        // 2. Attempt delivery (email, HTTP call, Kafka, etc.)
+        // 3. Mark as processed on success
+        // 4. Implement retry with backoff for failures
+    }
+}
+----
+
+For stronger guarantees, combine the outbox pattern with xref:custom-listeners.adoc[custom workflow listeners] to capture task completions and write to the outbox as part of the engine's lifecycle:
+
+[source,java]
+----
+package org.acme;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener;
+import io.serverlessworkflow.impl.lifecycle.TaskCompletedEvent;
+
+@ApplicationScoped
+public class OutboxExecutionListener implements WorkflowExecutionListener {
+
+    @Inject
+    OutboxWriter outboxWriter;
+
+    @Override
+    public void onTaskCompleted(TaskCompletedEvent ev) {
+        // After certain tasks complete, write a side-effect intent to the outbox
+        String taskName = ev.taskContext().taskName();
+        if ("queueNotification".equals(taskName)) {
+            outboxWriter.write(
+                ev.workflowContext().instanceId(),
+                "send-email",
+                ev.workflowContext().currentData()
+            );
+        }
+    }
+}
+----
+
+This approach ensures the outbox entry is written *after* the task completes successfully, as part of the workflow lifecycle, eliminating the window where a task succeeds but the side effect is lost.
+
+=== 3.5 Correlating Callbacks to a Waiting Instance
+
+This is the pattern you want when a workflow pauses on a `listen(...)` task and an external system must later resume that exact workflow instance.
+
+Important distinction: this is **not** the Serverless Workflow spec's event-to-event correlation model. Here, the goal is to route an incoming callback to a specific waiting workflow instance.
+
+The practical pattern is:
+
+1. The workflow emits a request event.
+2. Quarkus Flow adds `flowinstanceid` to that outbound CloudEvent.
+3. The external system stores that instance ID alongside its business record.
+4. When the callback arrives, the external system includes the same instance ID on the event it sends back to `flow-in`.
+5. The engine uses that metadata to wake the matching paused instance.
+
+This lets you build resume/callback flows without inventing your own instance lookup table in the workflow itself.
+
+**Workflow side:**
+
+[source,java]
+----
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.consumed;
+
+public class NewsletterWorkflow extends Flow {
+
+    @Inject
+    AutoDraftCriticAgent draftAgent;
+
+    @Inject
+    HumanEditorAgent humanEditorAgent;
+
+    @Inject
+    MailService mailService;
+
+    public Workflow descriptor() {
+        return FuncWorkflowBuilder.workflow("intelligent-newsletter")
+                .tasks(agent("draftAgent", draftAgent::write, NewsletterRequest.class),
+                        emitJson("draftReady", "org.acme.email.review.required", NewsletterDraft.class),
+                        listen("waitHumanReview",
+                                toOne(consumed("org.acme.newsletter.review.done").extensionByInstanceId("flowinstanceid")))
+                                .outputAs((JsonNode node) -> node.isArray() ? node.get(0) : node),
+                        switchWhenOrElse(h -> HumanReview.ReviewStatus.NEEDS_REVISION.equals(h.status()),
+                                "humanEditorAgent", "sendNewsletter", HumanReview.class),
+                        function("humanEditorAgent", humanEditorAgent::edit, HumanReview.class).then("draftReady"),
+                        consume("sendNewsletter", draft -> mailService.send("subscribers@acme.finance.org", draft),
+                                NewsletterDraft.class).inputFrom(input -> input.get("draft"), Map.class))
+                .build();
+    }
+}
+----
+
+**Callback side:**
+
+[source,java]
+----
+@PUT
+@Path("/newsletter")
+public Response sendReview(HumanReview review, @HeaderParam("X-Flow-Instance-Id") String instanceId)
+        throws JsonProcessingException {
+    byte[] body = objectMapper.writeValueAsBytes(review);
+
+    CloudEvent ce = CloudEventBuilder.v1().withId(UUID.randomUUID().toString())
+            .withExtension("flowinstanceid", instanceId)
+            .withSource(URI.create("api:/newsletter")).withType("org.acme.newsletter.review.done")
+            .withDataContentType("application/json").withData(body).build();
+
+    flowIn.send(CE_JSON.serialize(ce));
+    return Response.accepted().build();
+}
+----
+
+[NOTE]
+====
+The callback request should carry the original `X-Flow-Instance-Id` value that was captured when the workflow first emitted the review request. Your callback endpoint can read it directly from the incoming header and turn it back into `flowinstanceid` on the CloudEvent it sends to `flow-in`.
+
+If your callback payload already contains a business correlation key, keep it too. The workflow instance ID is the routing key for the paused workflow, while your business key is the domain identifier for your own records.
+====
+
+The `listen("taskName", toOne("event.type"))` DSL line still defines the event wait itself. The instance correlation comes from the callback contract plus the instance-aware event filter.
+
+== See also
+
+* xref:tracing.adoc[Enable distributed tracing] — automatic HTTP header propagation for correlation.
+* xref:messaging.adoc#cloudevent-correlation-headers[CloudEvent Correlation Headers] — correlation metadata on emitted events.
+* xref:fault-tolerance.adoc[Fault tolerance and resilience] — retries and circuit breakers for HTTP tasks.
+* xref:persistence.adoc[Configure state persistence] — durable storage for workflow recovery.
+* xref:custom-listeners.adoc[Listen to workflow events] — lifecycle hooks for implementing the outbox pattern.
+* xref:concepts-durable-workflow-k8s.adoc[Durable Workflows in Kubernetes] — lease-based worker identity for reliable recovery.
