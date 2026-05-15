@@ -265,7 +265,6 @@ class FlowProcessor {
 
         // 2. ONE versionless Flow subclass per unique namespace:name.
         if (flowDefinitionsConfig.namingStrategy() == FlowDefinitionsConfig.NamingStrategy.SPEC) {
-
             selectLatestVersionPerWorkflow(fromSpec)
                     .forEach((versionlessId, representative) -> produceVersionlessFlowGizmoBean(versionlessId, representative,
                             gizmo));
