@@ -52,50 +52,50 @@ Below is the complete list of counter metrics emitted by Quarkus Flow to track w
 | `quarkus_flow_workflow_started_total`
 | Total number of workflows started
 | Counter
-| `workflow`
-| `quarkus_flow_workflow_started_total{workflow="simple-workflow"} 3`
+| `workflow`, `workflowVersion`
+| `quarkus_flow_workflow_started_total{workflow="simple-workflow",workflowVersion="1.0.0"} 3`
 
 | `quarkus_flow_workflow_completed_total`
 | Total number of workflows completed
 | Counter
-| `workflow`
-| `quarkus_flow_workflow_completed_total{workflow="simple-workflow"} 3`
+| `workflow`, `workflowVersion`
+| `quarkus_flow_workflow_completed_total{workflow="simple-workflow",workflowVersion="1.0.0"} 3`
 
 | `quarkus_flow_workflow_faulted_total`
 | Total number of workflows faulted
 | Counter
-| `workflow`, `errorType`
-| `quarkus_flow_workflow_faulted_total{workflow="faulted-workflow",errorType="FAULTED"} 4`
+| `workflow`, `workflowVersion`, `errorType`
+| `quarkus_flow_workflow_faulted_total{workflow="faulted-workflow",workflowVersion="1.0.0",errorType="FAULTED"} 4`
 
 | `quarkus_flow_workflow_cancelled_total`
 | Total number of workflows cancelled
 | Counter
-| `workflow`
-| `quarkus_flow_workflow_cancelled_total{workflow="simple-workflow"} 1`
+| `workflow`, `workflowVersion`
+| `quarkus_flow_workflow_cancelled_total{workflow="simple-workflow",workflowVersion="1.0.0"} 1`
 
 | `quarkus_flow_task_started_total`
 | Total number of tasks started
 | Counter
-| `workflow`, `task`
-| `quarkus_flow_task_started_total{workflow="simple-workflow",task="getPet"} 6`
+| `workflow`, `task`, `workflowVersion`
+| `quarkus_flow_task_started_total{workflow="simple-workflow",task="getPet",workflowVersion="1.0.0"} 6`
 
 | `quarkus_flow_task_completed_total`
 | Total number of tasks completed
 | Counter
-| `workflow`, `task`
-| `quarkus_flow_task_completed_total{workflow="simple-workflow",task="getPet"} 6`
+| `workflow`, `task`, `workflowVersion`
+| `quarkus_flow_task_completed_total{workflow="simple-workflow",task="getPet",workflowVersion="1.0.0"} 6`
 
 | `quarkus_flow_task_retries_total`
 | Total number of task retries
 | Counter
-| `workflow`, `task`
-| `quarkus_flow_task_retries_total{workflow="retryable-example",task="getPet"} 3`
+| `workflow`, `task`, `workflowVersion`
+| `quarkus_flow_task_retries_total{workflow="retryable-example",task="getPet",workflowVersion="1.0.0"} 3`
 
 | `quarkus_flow_task_failed_total`
 | Total number of tasks failed
 | Counter
-| `workflow`, `task`
-| `quarkus_flow_task_failed_total{workflow="retryable-example",task="tryGetPet"} 1`
+| `workflow`, `task`, `workflowVersion`
+| `quarkus_flow_task_failed_total{workflow="retryable-example",task="tryGetPet",workflowVersion="1.0.0"} 1`
 |===
 
 == What is happening now?
@@ -116,25 +116,40 @@ Below is the list of gauge metrics emitted by Quarkus Flow.
 | `quarkus_flow_instance_running`
 | Number of workflow instances currently running
 | Gauge
-| `workflow`
-| `quarkus_flow_instance_running{workflow="retryable-example"} 1`
+| `workflow`, `workflowVersion`
+| `quarkus_flow_instance_running{workflow="retryable-example",workflowVersion="1.0.0"} 1`
 
 | `quarkus_flow_instance_waiting`
 | Number of workflow instances currently waiting
 | Gauge
-| `workflow`
-| `quarkus_flow_instance_waiting{workflow="retryable-example"} 0`
+| `workflow`, `workflowVersion`
+| `quarkus_flow_instance_waiting{workflow="retryable-example",workflowVersion="1.0.0"} 0`
 
 | `quarkus_flow_instance_suspended`
 | Number of workflow instances currently suspended
 | Gauge
-| `workflow`
-| `quarkus_flow_instance_suspended{workflow="retryable-example"} 0`
+| `workflow`, `workflowVersion`
+| `quarkus_flow_instance_suspended{workflow="retryable-example",workflowVersion="1.0.0"} 0`
 |===
 
 == How long did a workflow or task take to complete?
 
 Workflow and task durations are exported using Micrometer *Timers*.
+
+[options="header"]
+|===
+| Metric name | Description | Type | Tags
+
+| `quarkus_flow_workflow_duration`
+| Duration of workflow executions
+| Timer
+| `workflow`, `workflowVersion`
+
+| `quarkus_flow_task_duration`
+| Duration of task executions
+| Timer
+| `workflow`, `task`, `workflowVersion`
+|===
 
 Example configuration in `application.properties`:
 
@@ -155,14 +170,25 @@ Example output from `/q/metrics`:
 ----
 # TYPE quarkus_flow_workflow_duration_seconds histogram
 
-# Client-side percentiles
-quarkus_flow_workflow_duration_seconds{workflow="wait-event",quantile="0.5"} 14.49
-quarkus_flow_workflow_duration_seconds{workflow="wait-event",quantile="0.95"} 14.49
-quarkus_flow_workflow_duration_seconds{workflow="wait-event",quantile="0.99"} 14.49
+# Client-side percentiles (workflow)
+quarkus_flow_workflow_duration_seconds{workflow="wait-event",workflowVersion="1.0.0",quantile="0.5"} 14.49
+quarkus_flow_workflow_duration_seconds{workflow="wait-event",workflowVersion="1.0.0",quantile="0.95"} 14.49
+quarkus_flow_workflow_duration_seconds{workflow="wait-event",workflowVersion="1.0.0",quantile="0.99"} 14.49
 
-# Histogram buckets
-quarkus_flow_workflow_duration_seconds_bucket{workflow="wait-event",le="0.001"} 0
-quarkus_flow_workflow_duration_seconds_bucket{workflow="wait-event",le="0.002"} 0
+# Histogram buckets (workflow)
+quarkus_flow_workflow_duration_seconds_bucket{workflow="wait-event",workflowVersion="1.0.0",le="0.001"} 0
+quarkus_flow_workflow_duration_seconds_bucket{workflow="wait-event",workflowVersion="1.0.0",le="0.002"} 0
+
+# TYPE quarkus_flow_task_duration_seconds histogram
+
+# Client-side percentiles (task)
+quarkus_flow_task_duration_seconds{workflow="simple-workflow",task="getPet",workflowVersion="1.0.0",quantile="0.5"} 0.12
+quarkus_flow_task_duration_seconds{workflow="simple-workflow",task="getPet",workflowVersion="1.0.0",quantile="0.95"} 0.15
+quarkus_flow_task_duration_seconds{workflow="simple-workflow",task="getPet",workflowVersion="1.0.0",quantile="0.99"} 0.18
+
+# Histogram buckets (task)
+quarkus_flow_task_duration_seconds_bucket{workflow="simple-workflow",task="getPet",workflowVersion="1.0.0",le="0.001"} 0
+quarkus_flow_task_duration_seconds_bucket{workflow="simple-workflow",task="getPet",workflowVersion="1.0.0",le="0.002"} 0
 ----
 
 [[fault-tolerance-metrics]]

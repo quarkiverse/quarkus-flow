@@ -1,0 +1,9 @@
+document:
+  dsl: '1.0.0'
+  namespace: flow
+  name: echo-name
+  version: '0.2.0'
+do:
+  - setEcho:
+      set:
+        message: '${ "Echo (v0.2.0): " + .name }'

@@ -32,11 +32,11 @@ public class TryWorkflowsResource {
     EventWorkflow eventWorkflow;
 
     @Inject
-    @Identifier("test:retryable-example")
+    @Identifier("test:retryable-example:0.1.0")
     Flow retryable;
 
     @Inject
-    @Identifier("test:emit-event")
+    @Identifier("test:emit-event:0.1.0")
     Flow emitWorkflow;
 
     @Inject

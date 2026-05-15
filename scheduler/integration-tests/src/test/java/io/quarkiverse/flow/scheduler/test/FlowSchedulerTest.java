@@ -18,15 +18,15 @@ import io.smallrye.common.annotation.Identifier;
 @QuarkusTest
 public class FlowSchedulerTest {
     @Inject
-    @Identifier("test:after-driven-schedule")
+    @Identifier("test:after-driven-schedule:0.1.0")
     WorkflowDefinition afterStartDefinition;
 
     @Inject
-    @Identifier("test:cron-driven-schedule")
+    @Identifier("test:cron-driven-schedule:0.1.0")
     WorkflowDefinition cronDefinition;
 
     @Inject
-    @Identifier("test:every-driven-schedule")
+    @Identifier("test:every-driven-schedule:0.1.0")
     WorkflowDefinition everyDefinition;
 
     @Test

@@ -37,7 +37,7 @@ public class FlowWorkflowFromFileDevModeTest {
     @Test
     void should_reload_workflow_def_identifier() {
 
-        String oldIdentifier = "default:wait-duration-inline";
+        String oldIdentifier = "default:wait-duration-inline:0.1.0";
         String path = "/identifier/workflow-def";
 
         identifierMustMatch(path, oldIdentifier);
@@ -46,7 +46,7 @@ public class FlowWorkflowFromFileDevModeTest {
                 // replace namespace: default
                 content -> content.replace("default", "quarkiverse"));
 
-        identifierMustMatch(path, "quarkiverse:wait-duration-inline");
+        identifierMustMatch(path, "quarkiverse:wait-duration-inline:0.1.0");
 
         // Old identifier should no longer be available
         shouldNoLongerBeAvailable(path, oldIdentifier);
@@ -55,7 +55,7 @@ public class FlowWorkflowFromFileDevModeTest {
     @Test
     void should_reload_flow_identifier() {
 
-        String oldIdentifier = "default:wait-duration-inline";
+        String oldIdentifier = "default:wait-duration-inline:0.1.0";
         String path = "/identifier/flow";
 
         identifierMustMatch(path, oldIdentifier);
@@ -64,7 +64,7 @@ public class FlowWorkflowFromFileDevModeTest {
                 // replace name wait-duration-inline to wait-please
                 content -> content.replace("wait-duration-inline", "wait-please"));
 
-        identifierMustMatch(path, "default:wait-please");
+        identifierMustMatch(path, "default:wait-please:0.1.0");
 
         // Old identifier should no longer be available
         shouldNoLongerBeAvailable(path, oldIdentifier);

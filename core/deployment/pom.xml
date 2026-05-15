@@ -56,6 +56,10 @@
             <optional>true</optional>
         </dependency>
         <dependency>
+            <groupId>com.github.zafarkhaja</groupId>
+            <artifactId>java-semver</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.serverlessworkflow</groupId>
             <artifactId>serverlessworkflow-fluent-spec</artifactId>
             <scope>test</scope>

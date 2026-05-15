@@ -42,7 +42,7 @@ public class FlowWorkflowFromFileProdTest {
     @Test
     void should_have_a_bean_recorded_when_running_prod_mode() {
         RestAssured.given()
-                .queryParam("identifier", "default:call-http")
+                .queryParam("identifier", "default:call-http:1.0.0")
                 .get("/identifier/workflow-def")
                 .then()
                 .statusCode(200);

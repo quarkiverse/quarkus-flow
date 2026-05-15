@@ -19,7 +19,7 @@ import java.util.function.Function;
 public class FlowAPIResource {
 
     @Inject
-    @Identifier("example:SwitchLoopWait")
+    @Identifier("example:SwitchLoopWait:0.1.0")
     WorkflowDefinition flow;
 
     /**
