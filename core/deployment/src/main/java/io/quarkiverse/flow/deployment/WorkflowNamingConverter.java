@@ -1,7 +1,8 @@
 package io.quarkiverse.flow.deployment;
 
 import java.util.Objects;
-import java.util.Optional;
+
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
 public interface WorkflowNamingConverter {
 
@@ -58,16 +59,71 @@ public interface WorkflowNamingConverter {
     }
 
     /**
+     * Converts a <a href="https://semver.org/">Semantic Versioning</a> string to a valid Java package name segment.
+     * <p>
+     * Rules applied:
+     * <ul>
+     * <li>Build metadata (everything after {@code +}) is stripped.</li>
+     * <li>Dots ({@code .}) and hyphens ({@code -}) are replaced with underscores ({@code _}).</li>
+     * <li>A {@code v} prefix is prepended so the result never starts with a digit.</li>
+     * </ul>
+     * <p>
+     * Examples:
+     *
+     * <pre>
+     *   "0.1.0"         → "v0_1_0"
+     *   "1.2.3-alpha.1" → "v1_2_3_alpha_1"
+     *   "1.0.0+build.1" → "v1_0_0"
+     * </pre>
+     *
+     * @param version a semantic version string (e.g. {@code "1.2.3"})
+     * @return a valid, lowercase Java package name segment representing the version
+     * @throws NullPointerException if {@code version} is {@code null}
+     * @throws IllegalArgumentException if {@code version} is blank
+     */
+    static String versionToPackage(String version) {
+        Objects.requireNonNull(version, "'version' must not be null");
+        if (version.isBlank()) {
+            throw new IllegalArgumentException("'version' must not be blank");
+        }
+
+        // Strip build metadata (SemVer §10: everything after '+')
+        int buildMetaIndex = version.indexOf('+');
+        String withoutBuildMeta = buildMetaIndex >= 0 ? version.substring(0, buildMetaIndex) : version;
+
+        // Replace dots and hyphens with underscores and lowercase the result
+        String sanitized = withoutBuildMeta.replace('.', '_').replace('-', '_').toLowerCase();
+
+        // Prefix with 'v' so the segment is a valid Java identifier (cannot start with a digit)
+        return "v" + sanitized;
+    }
+
+    /**
      * Generates a class identifier for {@link io.quarkiverse.flow.Flow} subclasses.
+     *
+     * @param namespace Document's namespace from specification
+     * @param name Document's name from specification
+     * @return the generated class identifier
+     */
+    static String generateFlowClassIdentifier(String namespace, String name) {
+        return namespaceToPackage(namespace) + "." + nameToClassName(name);
+    }
+
+    /**
+     * Generates a class identifier for {@link io.quarkiverse.flow.Flow} subclasses with a custom base namespace.
      *
      * @param namespace Document's namespace from specification
      * @param name Document's name from specification
      * @param namespaceFromConfig Base namespace for generating class identifiers
      * @return the generated class identifier
      */
-    static String generateFlowClassIdentifier(String namespace, String name, Optional<String> namespaceFromConfig) {
-        return namespaceFromConfig.map(s -> String.format("%s.%s.%s", s, namespaceToPackage(namespace), nameToClassName(name)))
-                .orElseGet(() -> namespaceToPackage(namespace) + "." + nameToClassName(name));
+    static String generateFlowClassIdentifier(String namespace, String name, String namespaceFromConfig) {
+        return String.format("%s.%s.%s", namespaceFromConfig, namespaceToPackage(namespace), nameToClassName(name));
     }
 
+    static String generateFlowClassIdentifier(WorkflowDefinitionId workflowDefinitionId, String namespace) {
+        return String.format("%s.%s.%s", namespace,
+                versionToPackage(workflowDefinitionId.version()),
+                nameToClassName(workflowDefinitionId.name()));
+    }
 }

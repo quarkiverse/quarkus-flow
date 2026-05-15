@@ -49,10 +49,10 @@ public class MicrometerExecutionListener implements WorkflowExecutionListener {
 
     @Override
     public void onWorkflowStarted(WorkflowStartedEvent event) {
-        String workflowName = workflowName(event);
         Counter.builder(FlowMetrics.WORKFLOW_STARTED_TOTAL.prefixedWith(prefix))
                 .description("Workflow Started Total")
-                .tag("workflow", workflowName)
+                .tag("workflow", workflowName(event))
+                .tag("workflowVersion", workflowVersion(event))
                 .register(meterRegistry)
                 .increment();
     }
@@ -65,6 +65,7 @@ public class MicrometerExecutionListener implements WorkflowExecutionListener {
         Counter.builder(FlowMetrics.WORKFLOW_COMPLETED_TOTAL.prefixedWith(prefix))
                 .description("Workflow Completed Total: The workflow/task ran to completion.")
                 .tag("workflow", workflowName)
+                .tag("workflowVersion", workflowVersion(event))
                 .register(meterRegistry)
                 .increment();
 
@@ -72,6 +73,7 @@ public class MicrometerExecutionListener implements WorkflowExecutionListener {
         Duration totalDurationInSeconds = identifyTotalDurationInSeconds(event);
         Timer.Builder builder = Timer.builder(FlowMetrics.WORKFLOW_DURATION.prefixedWith(prefix))
                 .description("Workflow Duration Total In Seconds")
+                .tag("workflowVersion", workflowVersion(event))
                 .tag("workflow", workflowName);
 
         configurePercentiles(builder);
@@ -87,6 +89,7 @@ public class MicrometerExecutionListener implements WorkflowExecutionListener {
         Counter.builder(FlowMetrics.WORKFLOW_FAULTED_TOTAL.prefixedWith(prefix))
                 .description("Workflow Faulted Total: The workflow/task execution has encountered an error.")
                 .tag("workflow", workflowName)
+                .tag("workflowVersion", workflowVersion(event))
                 .tag("errorType", event.workflowContext().instanceData().status().name())
                 .register(meterRegistry)
                 .increment();
@@ -98,6 +101,7 @@ public class MicrometerExecutionListener implements WorkflowExecutionListener {
         Counter.builder(FlowMetrics.WORKFLOW_CANCELLED_TOTAL.prefixedWith(prefix))
                 .description("Workflow Cancelled Total: The workflow/task execution has been terminated before completion.")
                 .tag("workflow", workflowName)
+                .tag("workflowVersion", workflowVersion(event))
                 .register(meterRegistry)
                 .increment();
     }
@@ -121,6 +125,7 @@ public class MicrometerExecutionListener implements WorkflowExecutionListener {
                 .description("Task Started Total")
                 .tag("task", event.taskContext().taskName())
                 .tag("workflow", workflowName)
+                .tag("workflowVersion", workflowVersion(event))
                 .register(meterRegistry)
                 .increment();
     }
@@ -135,6 +140,7 @@ public class MicrometerExecutionListener implements WorkflowExecutionListener {
                 .description("Task Execution Total")
                 .tag("workflow", workflowName)
                 .tag("task", event.taskContext().taskName())
+                .tag("workflowVersion", workflowVersion(event))
                 .register(meterRegistry)
                 .increment();
 
@@ -144,7 +150,8 @@ public class MicrometerExecutionListener implements WorkflowExecutionListener {
         Timer.Builder builder = Timer.builder(FlowMetrics.TASK_DURATION.prefixedWith(prefix))
                 .description("Task Duration In Seconds")
                 .tag("workflow", workflowName)
-                .tag("task", event.taskContext().taskName());
+                .tag("task", event.taskContext().taskName())
+                .tag("workflowVersion", workflowVersion(event));
 
         configurePercentiles(builder);
 
@@ -160,6 +167,7 @@ public class MicrometerExecutionListener implements WorkflowExecutionListener {
                 .description("Task Failed Total")
                 .tag("workflow", workflowName)
                 .tag("task", event.taskContext().taskName())
+                .tag("workflowVersion", workflowVersion(event))
                 .register(meterRegistry)
                 .increment();
     }
@@ -171,6 +179,7 @@ public class MicrometerExecutionListener implements WorkflowExecutionListener {
                 .description("Task Retries Total")
                 .tag("workflow", workflowName)
                 .tag("task", event.taskContext().taskName())
+                .tag("workflowVersion", workflowVersion(event))
                 .register(meterRegistry)
                 .increment();
     }
@@ -199,6 +208,10 @@ public class MicrometerExecutionListener implements WorkflowExecutionListener {
         return new WorkflowMetadata(namespace, name, version);
     }
 
+    private String workflowVersion(WorkflowEvent event) {
+        return event.workflowContext().definition().workflow().getDocument().getVersion();
+    }
+
     private String workflowName(WorkflowEvent event) {
         return event.workflowContext().definition().workflow().getDocument().getName();
     }
@@ -222,19 +235,22 @@ public class MicrometerExecutionListener implements WorkflowExecutionListener {
             Gauge.builder(FlowMetrics.INSTANCES_RUNNING.prefixedWith(prefix), counters.running, AtomicLong::get)
                     .description("Workflow Instances Currently Running: The workflow/task is currently in progress.")
                     .tag("workflow", workflowMetadata.name())
+                    .tag("workflowVersion", workflowMetadata.version())
                     .register(meterRegistry);
 
             Gauge.builder(FlowMetrics.INSTANCES_WAITING.prefixedWith(prefix), counters.waiting, AtomicLong::get)
                     .description("Workflow Instances Currently Waiting: The workflow/task execution is temporarily paused, " +
                             "awaiting either inbound event(s) or a specified time interval as defined by a wait task.")
                     .tag("workflow", workflowMetadata.name())
+                    .tag("workflowVersion", workflowMetadata.version())
                     .register(meterRegistry);
 
             Gauge.builder(FlowMetrics.INSTANCES_SUSPENDED.prefixedWith(prefix), counters.suspended, AtomicLong::get)
                     .description(
                             "Workflow Instances Currently Suspended: The workflow/task execution has been manually paused " +
                                     "by a user and will remain halted until explicitly resumed.")
-                    .tag("workflow", workflowName.name())
+                    .tag("workflow", workflowMetadata.name())
+                    .tag("workflowVersion", workflowMetadata.version())
                     .register(meterRegistry);
 
             return counters;

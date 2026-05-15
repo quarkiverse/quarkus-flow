@@ -25,7 +25,7 @@ public class IdentifierResource {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         var document = handle.get().workflow().getDocument();
-        return Response.ok(document.getNamespace() + ":" + document.getName()).build();
+        return Response.ok(document.getNamespace() + ":" + document.getName() + ":" + document.getVersion()).build();
     }
 
     @GET

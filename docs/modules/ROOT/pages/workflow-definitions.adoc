@@ -57,7 +57,26 @@ During the Quarkus build, the engine parses your YAML files and generates `Workf
 
 Quarkus Flow uses the `document.namespace` and `document.name` fields from your YAML file to create a unique identifier for the bean.
 
-=== 2.1. Naming Strategy
+=== 2.1. Workflow Versioning
+
+When you have multiple versions of the same workflow (same `namespace:name` but different `version`), Quarkus Flow automatically creates a **versionless bean** that points to the workflow with the highest semantic version.
+
+For example, if you have two versions of a workflow, you can inject the latest version using the versionless identifier `namespace:name` (without the version):
+
+[source,java]
+----
+@Inject
+@Identifier("company:echo-name")  // <1>
+Flow flow;
+----
+<1> Automatically points to the highest semantic version available
+
+[TIP]
+====
+If you later add a new version with a higher semantic version number, the versionless bean will automatically point to it without requiring any code changes.
+====
+
+=== 2.2. Naming Strategy
 
 You can choose between two identifier formats using the xref:configuration.adoc#quarkus-flow_quarkus-flow-definitions-naming-strategy[`quarkus.flow.definitions.naming-strategy`] property:
 
@@ -65,16 +84,19 @@ You can choose between two identifier formats using the xref:configuration.adoc#
 |===
 |Strategy |Format |Example
 
-|`regular` (default)
-|`namespace:name`
-|Given `namespace: company` and `name: echo-name`, the identifier is `company:echo-name`
+|`spec` (default)
+|`namespace:name:version` (versioned) +
+`namespace:name` (versionless)
+|Given `namespace: company`, `name: echo-name`, `version: 1.0.0`: +
+Versioned: `company:echo-name:1.0.0` +
+Versionless: `company:echo-name`
 
 |`class`
 |`namespace.ClassName`
 |Given `namespace: company` and `name: echo-name`, the identifier is `company.EchoName` (name is converted to PascalCase)
 |===
 
-The `spec` strategy preserves the exact workflow name as defined in your YAML, while the `class` strategy converts the name to PascalCase for a Java class-like identifier.
+The `spec` strategy (recommended) includes the version in the identifier and creates a versionless bean for convenience. The `class` strategy converts the name to PascalCase for a Java class-like identifier.
 
 To use the `class` strategy, add this to your `application.properties`:
 
@@ -83,7 +105,7 @@ To use the `class` strategy, add this to your `application.properties`:
 quarkus.flow.definitions.naming-strategy=class
 ----
 
-=== 2.2. Inject and Execute the Workflow
+=== 2.3. Inject and Execute the Workflow
 
 Create a JAX-RS resource that injects and runs the workflow using the generated identifier:
 
@@ -95,7 +117,7 @@ include::{examples-dir}org/acme/EchoResource.java[]
 
 [IMPORTANT]
 ====
-The `@Identifier` value must exactly match the metadata generated from your YAML specification. If you change either `document.namespace` or `document.name` in the YAML, you must update the `@Identifier` in every Java class that injects this workflow.
+The `@Identifier` value must exactly match the metadata generated from your YAML specification. If you change `document.namespace`, `document.name`, or `document.version` in the YAML, you must update the `@Identifier` in every Java class that injects this workflow.
 ====
 
 [TIP]
@@ -103,7 +125,7 @@ The `@Identifier` value must exactly match the metadata generated from your YAML
 You can define a global namespace prefix for the identifiers using the xref:configuration.adoc#quarkus-flow_quarkus-flow-definitions-namespace-prefix[`quarkus.flow.definitions.namespace.prefix`] property in your `application.properties`.
 ====
 
-=== 2.1 Reactive Execution and Error Handling
+=== 2.4. Reactive Execution and Error Handling
 
 The `EchoResource` example uses the **recommended non-blocking style** for Quarkus REST endpoints (returning a `Uni<String>`).
 

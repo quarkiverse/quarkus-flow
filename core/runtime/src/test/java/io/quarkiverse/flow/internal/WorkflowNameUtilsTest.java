@@ -112,4 +112,10 @@ public class WorkflowNameUtilsTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    @DisplayName("Versionless identifier should produce namespace colon name")
+    void versionlessIdentifier_should_produce_namespace_colon_name() {
+        assertThat(WorkflowNameUtils.versionlessIdentifier("flow", "echo-name"))
+                .isEqualTo("flow:echo-name");
+    }
 }

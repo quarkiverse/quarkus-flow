@@ -1,9 +1,11 @@
 package io.quarkiverse.flow.deployment;
 
 import static io.quarkiverse.flow.deployment.FlowLoggingUtils.logWorkflowList;
+import static io.quarkiverse.flow.deployment.WorkflowNamingConverter.*;
 import static io.quarkus.arc.processor.DotNames.SINGLETON;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -18,10 +20,14 @@ import org.jboss.jandex.DotName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.zafarkhaja.semver.ParseException;
+import com.github.zafarkhaja.semver.Version;
+
 import io.quarkiverse.flow.config.FlowDefinitionsConfig;
 import io.quarkiverse.flow.config.FlowMetricsConfig;
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
 import io.quarkiverse.flow.config.FlowTracingConfig;
+import io.quarkiverse.flow.internal.WorkflowNameUtils;
 import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkiverse.flow.metrics.MicrometerExecutionListener;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
@@ -160,8 +166,20 @@ class FlowProcessor {
         List<DiscoveredWorkflowBuildItem> fromSpec = discoveredWorkflows.stream()
                 .filter(DiscoveredWorkflowBuildItem::fromSpec)
                 .toList();
+
         for (DiscoveredWorkflowBuildItem d : fromSpec) {
-            produceWorkflowDefinitionBeanFromSpec(recorder, beans, identifiers, d);
+            produceVersionedWorkflowDefinitionBean(recorder, beans, identifiers, d);
+        }
+
+        if (this.flowDefinitionsConfig.namingStrategy() == FlowDefinitionsConfig.NamingStrategy.SPEC) {
+            selectLatestVersionPerWorkflow(fromSpec)
+                    .forEach((versionlessId, representative) -> {
+                        String displayLabel = versionlessId + "  →  " + representative.specIdentifier() + " (latest)";
+                        beans.produce(produceVersionlessSyntheticBean(versionlessId, recorder, representative));
+                        identifiers.produce(new FlowIdentifierBuildItem(
+                                Set.of(versionlessId),
+                                Map.of(versionlessId, displayLabel)));
+                    });
         }
     }
 
@@ -181,34 +199,77 @@ class FlowProcessor {
         identifiers.produce(new FlowIdentifierBuildItem(Set.of(it.className())));
     }
 
-    private void produceWorkflowDefinitionBeanFromSpec(WorkflowDefinitionRecorder recorder,
+    private void produceVersionedWorkflowDefinitionBean(WorkflowDefinitionRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> beans, BuildProducer<FlowIdentifierBuildItem> identifiers,
             DiscoveredWorkflowBuildItem workflow) {
-        String flowSubclassIdentifier = WorkflowNamingConverter.generateFlowClassIdentifier(
-                workflow.namespace(), workflow.name(), this.flowDefinitionsConfig.namespace().prefix());
+
+        String flowSubclassIdentifier = this.flowDefinitionsConfig.namespace().prefix()
+                .map(fromConfig -> generateFlowClassIdentifier(workflow.workflowDefinitionId(), namespaceToPackage(fromConfig)))
+                .orElse(generateFlowClassIdentifier(workflow.workflowDefinitionId(),
+                        namespaceToPackage(workflow.workflowDefinitionId().namespace())));
 
         String identifier = this.flowDefinitionsConfig.namingStrategy() == FlowDefinitionsConfig.NamingStrategy.SPEC
                 ? workflow.specIdentifier()
                 : flowSubclassIdentifier;
 
         beans.produce(produceSyntheticWorkflowDefinitionBean(identifier, recorder, workflow));
+        identifiers.produce(new FlowIdentifierBuildItem(Set.of(identifier)));
+    }
 
-        identifiers.produce(new FlowIdentifierBuildItem(
-                Set.of(identifier)));
+    /**
+     * Groups workflows by their versionless identifier (namespace:name) and selects
+     * the workflow with the highest semantic version for each group.
+     *
+     * @param workflows List of discovered workflows from spec files
+     * @return Map of versionless identifiers to their highest-version representative workflow
+     */
+    private static Map<String, DiscoveredWorkflowBuildItem> selectLatestVersionPerWorkflow(
+            List<DiscoveredWorkflowBuildItem> workflows) {
+        return workflows.stream()
+                .collect(Collectors.toMap(
+                        d -> WorkflowNameUtils.versionlessIdentifier(d.namespace(), d.name()),
+                        d -> d,
+                        (a, b) -> {
+                            return tryParseSemver(a.version(), a).compareTo(tryParseSemver(b.version(), b)) >= 0 ? a : b;
+                        }));
+    }
+
+    public static Version tryParseSemver(String semver, DiscoveredWorkflowBuildItem discoveredWorkflow) {
+        try {
+            return Version.parse(semver);
+        } catch (IllegalArgumentException | ParseException e) {
+            throw new IllegalArgumentException(
+                    String.format("Invalid semantic version '%s' in workflow '%s:%s' (file: %s). " +
+                            "Expected format: MAJOR.MINOR.PATCH (e.g., '1.0.0')",
+                            discoveredWorkflow.version(), discoveredWorkflow.namespace(), discoveredWorkflow.name(),
+                            discoveredWorkflow.absolutePath()),
+                    e);
+        }
     }
 
     @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
     void produceGeneratedFlows(List<DiscoveredWorkflowBuildItem> workflows,
-            BuildProducer<GeneratedBeanBuildItem> classes) {
+            BuildProducer<GeneratedBeanBuildItem> classes,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            WorkflowDefinitionRecorder recorder) {
 
         List<DiscoveredWorkflowBuildItem> fromSpec = workflows.stream().filter(DiscoveredWorkflowBuildItem::fromSpec)
                 .toList();
 
         GeneratedBeanGizmoAdaptor gizmo = new GeneratedBeanGizmoAdaptor(classes);
+
         for (DiscoveredWorkflowBuildItem workflow : fromSpec) {
-            produceFlowGizmoBean(workflow, gizmo);
+            produceVersionedFlowGizmoBean(workflow, gizmo);
         }
 
+        // 2. ONE versionless Flow subclass per unique namespace:name.
+        if (flowDefinitionsConfig.namingStrategy() == FlowDefinitionsConfig.NamingStrategy.SPEC) {
+
+            selectLatestVersionPerWorkflow(fromSpec)
+                    .forEach((versionlessId, representative) -> produceVersionlessFlowGizmoBean(versionlessId, representative,
+                            gizmo));
+        }
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -238,15 +299,15 @@ class FlowProcessor {
     @Produce(SyntheticBeanBuildItem.class)
     void logRegisteredWorkflows(
             List<FlowIdentifierBuildItem> registeredIdentifiers) {
-        List<String> allIdentifiers = registeredIdentifiers.stream().map(FlowIdentifierBuildItem::identifiers)
-                .map(set -> String.join(", ", set))
+        List<String> allDisplayLabels = registeredIdentifiers.stream()
+                .flatMap(item -> item.displayIdentifiers().values().stream())
                 .distinct()
                 .collect(Collectors.toList());
         logWorkflowList(LOG,
-                allIdentifiers,
+                allDisplayLabels,
                 "Flow: No WorkflowDefinition beans were registered.",
                 "Flow: Registered WorkflowDefinition beans",
-                "Workflow class (Qualifier)");
+                "Workflow identifier");
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -395,38 +456,36 @@ class FlowProcessor {
     }
 
     /**
-     * Generates a CDI-managed subclass of {@code Flow} using Gizmo.
-     *
+     * Produces a versionless {@code @Identifier("namespace:name")} synthetic bean that delegates
+     * to the highest-semver versioned {@link WorkflowDefinition} bean.
      * <p>
-     * The generated class has this effective structure:
-     *
-     * <pre>
-     * {@code
-     * &#64;Unremovable
-     * &#64;ApplicationScoped
-     * &#64;Identifier(identifier)
-     * class {className} extends Flow {
-     *
-     *     &#64;Inject
-     *     &#64;Identifier(identifier)
-     *     public WorkflowDefinition workflowDefinition;
-     *
-     *     public Workflow descriptor() {
-     *         return this.workflowDefinition.workflow();
-     *     }
-     * }
-     * }
-     * </pre>
-     * <p>
-     * When {@code specIdentifier} is {@code false}, the CDI bean identifier is prefixed with
-     * {@code Normal}, but the injected {@code workflowDefinition} field still uses {@code className}
-     * as its {@code @Identifier} value.
+     * An explicit injection point on the versioned bean is declared so CDI creates — and
+     * registers into {@code WorkflowApplication} — the versioned bean before this one,
+     * preventing any ordering / lookup-before-registration issues at startup.
      */
-    private void produceFlowGizmoBean(DiscoveredWorkflowBuildItem workflow,
+    private static SyntheticBeanBuildItem produceVersionlessSyntheticBean(String versionlessIdentifier,
+            WorkflowDefinitionRecorder recorder, DiscoveredWorkflowBuildItem representative) {
+        String versionedIdentifier = representative.specIdentifier();
+        return SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
+                .scope(ApplicationScoped.class)
+                .unremovable()
+                .setRuntimeInit()
+                .addQualifier().annotation(DotNames.IDENTIFIER)
+                .addValue("value", versionlessIdentifier).done()
+                .addInjectionPoint(
+                        ClassType.create(DotName.createSimple(WorkflowDefinition.class)),
+                        AnnotationInstance.builder(DotNames.IDENTIFIER).value(versionedIdentifier).build())
+                .createWith(recorder.workflowDefinitionVersionlessDelegateCreator(versionedIdentifier))
+                .done();
+    }
+
+    private void produceVersionedFlowGizmoBean(DiscoveredWorkflowBuildItem workflow,
             GeneratedBeanGizmoAdaptor gizmo) {
 
-        String flowSubclassIdentifier = WorkflowNamingConverter.generateFlowClassIdentifier(
-                workflow.namespace(), workflow.name(), this.flowDefinitionsConfig.namespace().prefix());
+        String flowSubclassIdentifier = this.flowDefinitionsConfig.namespace().prefix()
+                .map(fromConfig -> generateFlowClassIdentifier(workflow.workflowDefinitionId(), namespaceToPackage(fromConfig)))
+                .orElse(generateFlowClassIdentifier(workflow.workflowDefinitionId(),
+                        namespaceToPackage(workflow.workflowDefinitionId().namespace())));
 
         String identifier = flowDefinitionsConfig.namingStrategy() == FlowDefinitionsConfig.NamingStrategy.SPEC
                 ? workflow.specIdentifier()
@@ -442,13 +501,42 @@ class FlowProcessor {
             creator.addAnnotation(ApplicationScoped.class);
             creator.addAnnotation(Identifier.class).add("value", identifier);
 
-            // @Inject @Identifier(identifier) public WorkflowDefinition workflowDefinition;
             FieldCreator fieldCreator = GizmoFlowHelper.addWorkflowDefinitionField(creator, identifier);
-
-            // public String identifier() { return identifier; }
             GizmoFlowHelper.addIdentifierMethod(creator, identifier);
+            GizmoFlowHelper.addDescriptorMethod(creator, fieldCreator);
+        }
+    }
 
-            // public Workflow descriptor() method
+    /**
+     * Generates a single versionless {@code Flow} subclass qualified with
+     * {@code @Identifier("namespace:name")}. Only called once per unique namespace:name pair,
+     * so no duplicate class/bean is produced when multiple versions of the same workflow exist.
+     */
+    private void produceVersionlessFlowGizmoBean(String versionlessId,
+            DiscoveredWorkflowBuildItem representative,
+            GeneratedBeanGizmoAdaptor gizmo) {
+
+        // Use versionlessId (namespace:name) to generate class name, not the representative's version
+        // This ensures the class name remains stable regardless of which version is "latest"
+        String namespace = representative.namespace();
+        String name = representative.name();
+
+        String versionlessClassName = this.flowDefinitionsConfig.namespace().prefix()
+                .map(prefix -> generateFlowClassIdentifier(namespace, name, prefix))
+                .orElse(generateFlowClassIdentifier(namespace, name));
+
+        try (ClassCreator creator = ClassCreator.builder()
+                .className(versionlessClassName)
+                .superClass(DotNames.FLOW.toString())
+                .classOutput(gizmo)
+                .build()) {
+
+            creator.addAnnotation(Unremovable.class);
+            creator.addAnnotation(ApplicationScoped.class);
+            creator.addAnnotation(Identifier.class).add("value", versionlessId);
+
+            FieldCreator fieldCreator = GizmoFlowHelper.addWorkflowDefinitionField(creator, versionlessId);
+            GizmoFlowHelper.addIdentifierMethod(creator, versionlessId);
             GizmoFlowHelper.addDescriptorMethod(creator, fieldCreator);
         }
     }

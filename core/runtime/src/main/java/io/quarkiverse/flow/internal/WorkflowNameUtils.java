@@ -15,12 +15,17 @@ public final class WorkflowNameUtils {
                 WorkflowDefinitionId.DEFAULT_VERSION);
     }
 
-    public static String yamlDescriptorIdentifier(String namespace, String name) {
-        return String.format("%s:%s", namespace, name);
+    public static String yamlDescriptorIdentifier(String namespace, String name, String version) {
+        return String.format("%s:%s:%s", namespace, name, version);
     }
 
-    public static String yamlDescriptorIdentifier(WorkflowDefinitionId workflowDefinitionId) {
-        return String.format("%s:%s", workflowDefinitionId.namespace(), workflowDefinitionId.name());
+    /**
+     * Returns the versionless identifier for a workflow, i.e. {@code "namespace:name"}.
+     * This is used to inject a workflow without specifying a version; the runtime will
+     * resolve either the only available version or the latest one using semver ordering.
+     */
+    public static String versionlessIdentifier(String namespace, String name) {
+        return String.format("%s:%s", namespace, name);
     }
 
     public static String safeNameFromClass(Class<?> clazz, String defaultValue) {

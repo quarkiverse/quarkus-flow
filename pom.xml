@@ -44,8 +44,8 @@
         <io.cloudevents.version>4.0.2</io.cloudevents.version>
 
         <io.quarkiverse.jackson-jq.version>2.5.1</io.quarkiverse.jackson-jq.version>
+        <com.github.zafarkhaja.version>0.10.2</com.github.zafarkhaja.version>
         <io.quarkiverse.langchain4j.version>1.10.0</io.quarkiverse.langchain4j.version>
-
         <!-- Tests and Docs -->
         <org.assertj.version>3.27.7</org.assertj.version>
         <quarkus-antora.version>3.25.0</quarkus-antora.version>

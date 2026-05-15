@@ -38,7 +38,8 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
         this.workflowDefinitionId = WorkflowDefinitionId.of(workflow);
         this.specIdentifier = WorkflowNameUtils.yamlDescriptorIdentifier(
                 workflowDefinitionId.namespace(),
-                workflowDefinitionId.name());
+                workflowDefinitionId.name(),
+                workflowDefinitionId.version());
         this.content = content;
         this.from = From.SPEC;
     }
@@ -88,6 +89,10 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
 
     public String name() {
         return workflowDefinitionId.name();
+    }
+
+    public String version() {
+        return workflowDefinitionId.version();
     }
 
     public String specIdentifier() {

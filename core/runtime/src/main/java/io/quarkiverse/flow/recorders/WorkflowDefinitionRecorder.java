@@ -14,6 +14,7 @@ import io.serverlessworkflow.api.WorkflowFormat;
 import io.serverlessworkflow.api.WorkflowReader;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowDefinition;
+import io.smallrye.common.annotation.Identifier;
 
 /**
  * Registries all Workflow definitions found in the classpath built via the Java DSL.
@@ -50,4 +51,9 @@ public class WorkflowDefinitionRecorder {
         };
     }
 
+    public Function<SyntheticCreationalContext<WorkflowDefinition>, WorkflowDefinition> workflowDefinitionVersionlessDelegateCreator(
+            String versionedIdentifier) {
+        return context -> context.getInjectedReference(WorkflowDefinition.class,
+                Identifier.Literal.of(versionedIdentifier));
+    }
 }

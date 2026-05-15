@@ -38,11 +38,11 @@ import io.smallrye.mutiny.Uni;
 public class HelloResource {
 
     @Inject
-    @Identifier("flow:echo-name")
+    @Identifier("flow:echo-name:0.1.0")
     WorkflowDefinition workflowDefEcho;
 
     @Inject
-    @Identifier("flow:echo-name")
+    @Identifier("flow:echo-name:0.1.0")
     Flow flowEcho;
 
     @Inject
