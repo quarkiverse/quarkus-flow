@@ -1,9 +1,9 @@
 package io.quarkiverse.flow.deployment;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
@@ -24,9 +24,7 @@ public final class FlowIdentifierBuildItem extends MultiBuildItem {
     public FlowIdentifierBuildItem(Set<String> identifiers) {
         this.identifiers = Objects.requireNonNull(identifiers, "'identifiers' must not be null");
         // default: display label == CDI qualifier
-        Map<String, String> map = new LinkedHashMap<>();
-        identifiers.forEach(id -> map.put(id, id));
-        this.displayIdentifiers = Map.copyOf(map);
+        this.displayIdentifiers = identifiers.stream().collect(Collectors.toMap(id -> id, id -> id));
     }
 
     /**

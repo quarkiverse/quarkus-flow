@@ -1,7 +1,8 @@
 package io.quarkiverse.flow.deployment;
 
 import static io.quarkiverse.flow.deployment.FlowLoggingUtils.logWorkflowList;
-import static io.quarkiverse.flow.deployment.WorkflowNamingConverter.*;
+import static io.quarkiverse.flow.deployment.WorkflowNamingConverter.generateFlowClassIdentifier;
+import static io.quarkiverse.flow.deployment.WorkflowNamingConverter.namespaceToPackage;
 import static io.quarkus.arc.processor.DotNames.SINGLETON;
 
 import java.util.List;
