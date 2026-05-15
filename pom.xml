@@ -93,6 +93,11 @@
                 <version>${io.cloudevents.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.github.zafarkhaja</groupId>
+                <artifactId>java-semver</artifactId>
+                <version>${com.github.zafarkhaja.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
                 <version>${org.assertj.version}</version>

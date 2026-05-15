@@ -58,7 +58,6 @@
         <dependency>
             <groupId>com.github.zafarkhaja</groupId>
             <artifactId>java-semver</artifactId>
-            <version>${com.github.zafarkhaja.version}</version>
         </dependency>
         <dependency>
             <groupId>io.serverlessworkflow</groupId>
