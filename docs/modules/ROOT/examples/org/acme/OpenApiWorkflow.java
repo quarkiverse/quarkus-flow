@@ -7,18 +7,24 @@ import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 
 @ApplicationScoped
 public class OpenApiWorkflow extends Flow {
+
+    @ConfigProperty(name = "wiremock.url")
+    String wiremockUrl;
+
     @Override
     public Workflow descriptor() {
         return FuncWorkflowBuilder.workflow("openapi-call-workflow")
                 .tasks(
                         openapi()
-                                .document("http://localhost:8089/v2/swagger.json")
+                                .document(wiremockUrl + "/v2/swagger.json")
                                 .operation("findPetsByStatus")
                                 .parameters(Map.of("status", "available")))
                 .build();

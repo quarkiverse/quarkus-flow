@@ -20,7 +20,7 @@ public class SecureWireMockResource implements QuarkusTestResourceLifecycleManag
     public Map<String, String> start() {
         // 1. Enable WireMock's built-in verbose logging using ConsoleNotifier
         WireMockConfiguration config = WireMockConfiguration.wireMockConfig()
-                .port(8090)
+                .dynamicPort()
                 .notifier(new ConsoleNotifier(true));
 
         wireMockServer = new WireMockServer(config);
@@ -38,6 +38,10 @@ public class SecureWireMockResource implements QuarkusTestResourceLifecycleManag
         });
 
         wireMockServer.start();
+        int port = wireMockServer.port();
+        String wiremockSecureUrl = "http://localhost:" + port;
+        System.setProperty("wiremock.secure.port", String.valueOf(port));
+        System.setProperty("wiremock.secure.url", wiremockSecureUrl);
 
         // 3. Mock Keycloak returning the valid JWT format
         wireMockServer.stubFor(post(urlMatching("/realms/fake-authority.*"))
@@ -63,11 +67,15 @@ public class SecureWireMockResource implements QuarkusTestResourceLifecycleManag
                                 }
                                 """)));
 
-        return Map.of();
+        return Map.of(
+                "wiremock.secure.port", String.valueOf(port),
+                "wiremock.secure.url", wiremockSecureUrl);
     }
 
     @Override
     public void stop() {
+        System.clearProperty("wiremock.secure.port");
+        System.clearProperty("wiremock.secure.url");
         if (wireMockServer != null) {
             wireMockServer.stop();
         }

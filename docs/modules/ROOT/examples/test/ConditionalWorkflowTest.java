@@ -27,7 +27,7 @@ public class ConditionalWorkflowTest {
     @BeforeEach
     void resetWiremock() {
         // Tell the static WireMock client where our mock server actually lives!
-        WireMock.configureFor(8089);
+        WireMock.configureFor("localhost", Integer.parseInt(System.getProperty("wiremock.port")));
 
         // Now it will successfully send the reset command to port 8089
         resetAllRequests();

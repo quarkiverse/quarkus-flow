@@ -6,12 +6,18 @@ import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.call;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 
 @ApplicationScoped
 public class HttpWorkflow extends Flow {
+
+    @ConfigProperty(name = "wiremock.url")
+    String wiremockUrl;
+
     @Override
     public Workflow descriptor() {
         return FuncWorkflowBuilder.workflow("http-with-query-headers", "org.acme", "1.0")
@@ -21,7 +27,7 @@ public class HttpWorkflow extends Flow {
                                         .GET()
                                         // search value is taken from workflow input, jq expression is used
                                         .query("search", "${ .searchQuery }")
-                                        .endpoint("http://localhost:8089/api/people")
+                                        .endpoint(wiremockUrl + "/api/people")
                                         // Accept value is taken from workflow input, jq expression is used
                                         .header("Accept", "${ .acceptHeaderValue }")
                                         // export the results of the GET request as taskOutput

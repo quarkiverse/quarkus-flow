@@ -5,6 +5,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import java.util.Map;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
@@ -12,11 +13,19 @@ public class ExampleWorkflowsWireMockResource implements QuarkusTestResourceLife
 
     private WireMockServer wireMockServer;
 
+    public int getPort() {
+        return wireMockServer.port();
+    }
+
     @Override
     public Map<String, String> start() {
-        // Start WireMock on the fixed port expected by the example workflows
-        wireMockServer = new WireMockServer(8089);
+        WireMockConfiguration config = WireMockConfiguration.wireMockConfig().dynamicPort();
+        wireMockServer = new WireMockServer(config);
         wireMockServer.start();
+        int port = wireMockServer.port();
+        String wiremockUrl = "http://localhost:" + port;
+        System.setProperty("wiremock.port", String.valueOf(port));
+        System.setProperty("wiremock.url", wiremockUrl);
 
         // ---------------------------------------------------------
         // STUBS FOR HTTP WORKFLOW TESTS
@@ -45,7 +54,7 @@ public class ExampleWorkflowsWireMockResource implements QuarkusTestResourceLife
                 {
                   "swagger": "2.0",
                   "info": { "version": "1.0.0", "title": "Mock Petstore" },
-                  "host": "localhost:8089",
+                  "host": "localhost:%d",
                   "basePath": "/v2",
                   "schemes": [ "http" ],
                   "paths": {
@@ -65,7 +74,7 @@ public class ExampleWorkflowsWireMockResource implements QuarkusTestResourceLife
                     }
                   }
                 }
-                """;
+                """.formatted(port);
 
         // Use any as the workflow first query with HEAD and the GET
         wireMockServer.stubFor(any(urlEqualTo("/v2/swagger.json"))
@@ -129,11 +138,15 @@ public class ExampleWorkflowsWireMockResource implements QuarkusTestResourceLife
                         .withHeader("Content-Type", "application/json")
                         .withBody("{}")));
 
-        return Map.of(); // No properties to override
+        return Map.of(
+                "wiremock.port", String.valueOf(port),
+                "wiremock.url", wiremockUrl);
     }
 
     @Override
     public void stop() {
+        System.clearProperty("wiremock.port");
+        System.clearProperty("wiremock.url");
         if (wireMockServer != null) {
             wireMockServer.stop();
         }

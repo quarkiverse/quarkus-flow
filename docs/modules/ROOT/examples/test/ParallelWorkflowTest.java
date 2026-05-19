@@ -25,7 +25,7 @@ public class ParallelWorkflowTest {
 
     @BeforeEach
     void resetWiremock() {
-        WireMock.configureFor(8089);
+        WireMock.configureFor("localhost", Integer.parseInt(System.getProperty("wiremock.port")));
         resetAllRequests();
     }
 
