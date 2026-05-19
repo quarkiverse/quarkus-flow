@@ -31,7 +31,28 @@ If you need to disable this auto-resume behavior, add this to your `application.
 quarkus.flow.persistence.autoRestore=false
 ----
 
-== 2. Choose a Persistence Provider
+== 2. Excluding Workflows from Persistence
+
+In some scenarios, you may want to exclude specific workflows from persistence while keeping persistence enabled for others.
+
+To exclude workflows from persistence, add their IDs in `namespace:name:version` format to the exclusion list in your `application.properties`:
+
+[source,properties]
+----
+quarkus.flow.persistence.exclude-workflows=com.example:temporary-workflow:1.0.0,com.example:test-workflow:0.1.0
+----
+
+[IMPORTANT]
+====
+Excluded workflows will:
+
+* Execute entirely in-memory
+* Not be persisted to the datastore
+* Not be restored after application restart
+* Lose all state if the application crashes or restarts
+====
+
+== 3. Choose a Persistence Provider
 
 Quarkus Flow provides three drop-in persistence implementations. You should only include **one** of these dependencies in your project at a time.
 
