@@ -23,6 +23,7 @@ import io.serverlessworkflow.api.types.Document;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowContextData;
 import io.serverlessworkflow.impl.WorkflowDefinitionData;
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
 import io.serverlessworkflow.impl.persistence.PersistenceInstanceWriter;
 
 @ExtendWith(MockitoExtension.class)
@@ -55,9 +56,11 @@ class FilteredPersistenceWriterTest {
 
         when(excludedContext.definition()).thenReturn(excludedDefinition);
         when(excludedDefinition.workflow()).thenReturn(excludedWorkflow);
+        when(excludedDefinition.id()).thenReturn(new WorkflowDefinitionId("com.example", "excluded-workflow", "1.0.0"));
 
         when(includedContext.definition()).thenReturn(includedDefinition);
         when(includedDefinition.workflow()).thenReturn(includedWorkflow);
+        when(includedDefinition.id()).thenReturn(new WorkflowDefinitionId("com.example", "included-workflow", "1.0.0"));
     }
 
     @Test

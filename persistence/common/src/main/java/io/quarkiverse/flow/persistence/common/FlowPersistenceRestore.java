@@ -1,9 +1,10 @@
 package io.quarkiverse.flow.persistence.common;
 
-import java.util.Collections;
-import java.util.HashSet;
+import static io.quarkiverse.flow.persistence.common.FlowPersistenceUtils.excludedIds;
+
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -35,17 +36,13 @@ public class FlowPersistenceRestore {
 
     void restoreInstances(@Observes WorkflowApplicationReady event) {
         Map<WorkflowDefinitionId, WorkflowDefinition> definitions = application.workflowDefinitions();
-        Set<String> excludedWorkflows = config.excludeWorkflows()
-                .filter(excluded -> !excluded.isEmpty())
-                .<Set<String>> map(HashSet::new)
-                .orElse(Collections.emptySet());
 
+        Collection<WorkflowDefinitionId> excludedIds = excludedIds(config.excludeWorkflows().orElse(List.of()));
         LOG.debug("Restoring workflow instances from persistence, found {} workflow definitions", definitions.size());
 
         for (WorkflowDefinition def : definitions.values()) {
-            String workflowId = WorkflowDefinitionId.of(def.workflow()).toString(":");
-            if (excludedWorkflows.contains(workflowId)) {
-                LOG.debug("Skipping restoration for excluded workflow: {}", workflowId);
+            if (excludedIds.contains(def.id())) {
+                LOG.debug("Skipping restoration for excluded workflow: {}", def.id());
                 continue;
             }
 
