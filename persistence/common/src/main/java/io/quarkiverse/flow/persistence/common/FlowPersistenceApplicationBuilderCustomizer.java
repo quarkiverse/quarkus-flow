@@ -28,11 +28,8 @@ public class FlowPersistenceApplicationBuilderCustomizer implements WorkflowAppl
                 .instance(PersistenceInstanceHandlers.class, Any.Literal.INSTANCE);
         if (persistenceInstanceHandlers.isAvailable()) {
             PersistenceInstanceWriter actualWriter = persistenceInstanceHandlers.get().writer();
-            PersistenceInstanceWriter writer = config.excludeWorkflows()
-                    .filter(excludedWorkflow -> !excludedWorkflow.isEmpty())
-                    .<PersistenceInstanceWriter> map(
-                            excluded -> new FilteredPersistenceWriter(actualWriter, new HashSet<>(excluded)))
-                    .orElse(actualWriter);
+            PersistenceInstanceWriter writer = config.excludeWorkflows().isEmpty() ? actualWriter
+                    : new FilteredPersistenceWriter(actualWriter, new HashSet<>(config.excludeWorkflows()));
             PersistenceApplicationBuilder.builder(builder, writer);
         } else {
             throw new IllegalStateException(

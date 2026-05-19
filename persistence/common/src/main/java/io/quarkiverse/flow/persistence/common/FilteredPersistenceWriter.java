@@ -1,7 +1,8 @@
 package io.quarkiverse.flow.persistence.common;
 
-import java.util.Collections;
-import java.util.Set;
+import static io.quarkiverse.flow.persistence.common.FlowPersistenceUtils.excludedIds;
+
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
@@ -22,19 +23,19 @@ public class FilteredPersistenceWriter implements PersistenceInstanceWriter {
     private static final Logger LOG = LoggerFactory.getLogger(FilteredPersistenceWriter.class);
 
     private final PersistenceInstanceWriter delegate;
-    private final Set<String> excludedWorkflows;
+    private final Collection<WorkflowDefinitionId> excludedWorkflows;
 
-    public FilteredPersistenceWriter(PersistenceInstanceWriter delegate, Set<String> excludedWorkflows) {
+    public FilteredPersistenceWriter(PersistenceInstanceWriter delegate, Collection<String> excludedWorkflows) {
         this.delegate = delegate;
-        this.excludedWorkflows = excludedWorkflows != null ? excludedWorkflows : Collections.emptySet();
+        this.excludedWorkflows = excludedIds(excludedWorkflows);
         if (!this.excludedWorkflows.isEmpty()) {
             LOG.info("Persistence filtering enabled. Excluded workflows: {}", this.excludedWorkflows);
         }
     }
 
     private boolean isExcluded(WorkflowContextData workflowContext) {
-        String workflowId = WorkflowDefinitionId.of(workflowContext.definition().workflow()).toString(":");
-        if (excludedWorkflows.contains(workflowId)) {
+        WorkflowDefinitionId workflowId = workflowContext.definition().id();
+        if (excludedWorkflows.contains(workflowContext.definition().id())) {
             LOG.debug("Skipping persistence for excluded workflow: {}", workflowId);
             return true;
         }
