@@ -1,0 +1,155 @@
+= Quarkus Flow & CNCF Serverless Workflow Java Cookbook
+:sectnums:
+:page-role: reference
+:examples-dir: ../main/java
+include::includes/attributes.adoc[]
+
+
+This cookbook provides a comprehensive collection of practical, copy-and-paste examples for building modern workflows using the Serverless Workflow Java SDK Fluent API.
+
+All workflows in Quarkus Flow are defined as CDI beans by extending the `Flow` class and overriding the `descriptor()` method.
+
+We recommend using the `FuncWorkflowBuilder` with `FuncDSL`.
+
+:sectnums!:
+== Essential Setup
+Every workflow should follow this structure.
+
+[source,java]
+----
+package org.acme;
+
+import io.quarkiverse.flow.Flow;
+import io.serverlessworkflow.api.types.Workflow;
+import io.serverlessworkflow.fluent.func.spec.FuncWorkflowBuilder;
+import jakarta.enterprise.context.ApplicationScoped;
+
+// Recommended Static Imports
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+
+@ApplicationScoped
+public class MyWorkflow extends Flow {
+    @Override
+    public Workflow descriptor() {
+        return FuncWorkflowBuilder.workflow("my-workflow-id")
+            .tasks(
+                // tasks go here
+            )
+            .build();
+    }
+}
+----
+
+:sectnums:
+[#scheduled_execution]
+== Scheduled Executions (CRON)
+Trigger workflows on a schedule by defining a `schedule` within the builder.
+
+Check how to xref:scheduler.adoc[schedule workflow executions] for more details.
+
+[source,java]
+----
+include::{examples-dir}/org/acme/CronWorkflow.java[]
+----
+
+[#external_api_interaction]
+== External API Integrations (HTTP REST)
+Use the `call` task with `http` to interact with REST endpoints, managing headers and query parameters dynamically.
+
+[source,java]
+----
+include::{examples-dir}/org/acme/HttpWorkflow.java[]
+----
+
+[#openapi_invocation]
+== OpenAPI Services
+Invoke OpenAPI endpoints by referencing the specification and the `operationId`.
+
+[source,java]
+----
+include::{examples-dir}/org/acme/OpenApiWorkflow.java[]
+----
+
+[#authentication]
+== Authentication (OAuth2)
+Define authentication mechanisms for secure outbound communication.
+
+[source,java]
+----
+include::{examples-dir}/org/acme/HttpOauth2Workflow.java[]
+----
+
+[#events]
+== Event Consumption and Production
+To integrate the workflow with CloudEvents. Use `listen` to pause for events and `emit` to publish them.
+
+Listening for an Event:
+[source,java]
+----
+include::{examples-dir}/org/acme/ListenWorkflow.java[]
+----
+
+Emitting an Event:
+[source,java]
+----
+include::{examples-dir}/org/acme/EmitWorkflow.java[]
+----
+
+[#conditional_logic]
+== Conditional Logic
+Branch execution based on data state using `switchCase(...)`, `switchWhen(...)` and `switchWhenOrElse(...)``.
+
+[source,java]
+----
+include::{examples-dir}/org/acme/ConditionalWorkflow.java[]
+----
+
+[#iteration]
+== Iteration
+Execute logic over collections of data using the `forEach(...)`.
+
+[source,java]
+----
+include::{examples-dir}/org/acme/ForEachWorkflow.java[]
+----
+
+[#subflows]
+== Invoking Subflows
+Execute another workflow using `subflow(...)`
+
+Ensure the `name`, `namespace` and `version` parameters are matching the referenced workflows.
+
+[source,java]
+----
+include::{examples-dir}/org/acme/ParentWorkflow.java[]
+----
+
+[#parallel]
+== Parallel Execution (`fork`)
+Execute independent branches simultaneously to reduce total execution time.
+
+Using `fork(...)`
+[source,java]
+----
+include::{examples-dir}/org/acme/ParallelWorkflow.java[]
+----
+
+[#with_context]
+== Context-aware execution
+Execute workflow with access to engine metadata using `withContext(...)`
+
+[source,java]
+----
+include::{examples-dir}/org/acme/ContextWorkflow.java[]
+----
+
+Execute workflow with access to task metadata using `withFilter(...)`
+[source,java]
+----
+include::{examples-dir}/org/acme/TaskContextWorkflow.java[]
+----
+
+:sectnums!:
+== See also
+
+* xref:dsl-cheatsheet.adoc[] — a quick cheatsheet to Java DSL.
