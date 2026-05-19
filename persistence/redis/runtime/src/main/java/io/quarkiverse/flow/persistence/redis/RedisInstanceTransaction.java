@@ -2,18 +2,26 @@ package io.quarkiverse.flow.persistence.redis;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.net.URI;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import io.cloudevents.CloudEvent;
+import io.cloudevents.CloudEventData;
+import io.cloudevents.SpecVersion;
+import io.cloudevents.core.builder.CloudEventBuilder;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.hash.HashCommands;
 import io.quarkus.redis.datasource.hash.TransactionalHashCommands;
@@ -53,6 +61,19 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     private final static String NEXT = "next";
     private final static String ITERATION = "iteration";
     private final static String SEPARATOR = ":";
+
+    private static final String CE_SOURCE = "source";
+    private static final String CE_TYPE = "type";
+    private static final String CE_VERSION = "version";
+    private static final String CE_SUBJECT = "subject";
+    private static final String CE_SCHEMA = "schema";
+    private static final String CE_CONTENT_TYPE = "contentType";
+    private static final String CE_DATA = "data";
+    private static final String CE_EXTENSIONS = "extensions";
+    private static final String CE_PREFIX = "CE" + SEPARATOR;
+    private static final String CE_TIME = "time";
+    private static final String PROCESSED_FLAG = "processed";
+    private static final byte[] PROCESSED_VALUE = new byte[] { 1 };
 
     private final RedisDataSource ds;
     private final WorkflowBufferFactory factory;
@@ -154,6 +175,119 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
         PersistenceWorkflowInfoGenerator generator = new PersistenceWorkflowInfoGenerator(keyCommands
                 .scan(new KeyScanArgs().match(prefixId(applicationId, definition) + "*")));
         return Stream.generate(generator::next).takeWhile(Objects::nonNull);
+    }
+
+    @Override
+    public void storeEvent(String regId, CloudEvent event) {
+        String key = ceKey(regId, event.getId());
+        operations.add(tx -> hashCommands(tx).hset(key, CE_SOURCE,
+                MarshallingUtils.writeURI(factory, event.getSource())));
+        operations.add(tx -> hashCommands(tx).hset(key, CE_TYPE, MarshallingUtils.writeString(factory, event.getType())));
+        operations.add(tx -> hashCommands(tx).hset(key, CE_VERSION,
+                MarshallingUtils.writeEnum(factory, event.getSpecVersion())));
+        String subject = event.getSubject();
+        if (subject != null) {
+            operations.add(tx -> hashCommands(tx).hset(key, CE_SUBJECT, MarshallingUtils.writeString(factory, subject)));
+        }
+        URI dataSchema = event.getDataSchema();
+        if (dataSchema != null) {
+            operations.add(
+                    tx -> hashCommands(tx).hset(key, CE_SCHEMA, MarshallingUtils.writeURI(factory, dataSchema)));
+        }
+        String contentType = event.getDataContentType();
+        if (contentType != null) {
+            operations
+                    .add(tx -> hashCommands(tx).hset(key, CE_CONTENT_TYPE, MarshallingUtils.writeString(factory, contentType)));
+        }
+        OffsetDateTime time = event.getTime();
+        if (time != null) {
+            operations
+                    .add(tx -> hashCommands(tx).hset(key, CE_TIME, MarshallingUtils.writeOffsetDateTime(factory, time)));
+        }
+        CloudEventData data = event.getData();
+        if (data != null) {
+            operations.add(tx -> hashCommands(tx).hset(key, CE_DATA, data.toBytes()));
+        }
+        Set<String> extensionNames = event.getExtensionNames();
+        if (!extensionNames.isEmpty()) {
+            operations.add(tx -> hashCommands(tx).hset(key, CE_EXTENSIONS,
+                    MarshallingUtils.writeCloudEventExtensions(factory, event)));
+        }
+    }
+
+    @Override
+    public void retrieveEvents(Map<String, Collection<CloudEvent>> result) {
+        result.entrySet().forEach(e -> {
+            String targetRegId = e.getKey();
+            KeyScanCursor<String> cursor = keyCommands.scan(new KeyScanArgs().match(CE_PREFIX + targetRegId + SEPARATOR + "*"));
+            while (cursor.hasNext()) {
+                for (String key : cursor.next()) {
+                    Map<String, byte[]> storedInfo = hashCommands.hgetall(key);
+                    if (!storedInfo.containsKey(PROCESSED_FLAG)) {
+                        e.getValue().add(readCloudEvent(lastChunk(key), storedInfo));
+                    }
+                }
+            }
+        });
+    }
+
+    private static String ceKey(String regId, String ceId) {
+        return CE_PREFIX + regId + SEPARATOR + ceId;
+    }
+
+    private CloudEvent readCloudEvent(String id, Map<String, byte[]> storedInfo) {
+        CloudEventBuilder builder = CloudEventBuilder
+                .fromSpecVersion(MarshallingUtils.readEnum(factory, storedInfo.get(CE_VERSION), SpecVersion.class))
+                .withType(MarshallingUtils.readString(factory, storedInfo.get(CE_TYPE)))
+                .withSource(MarshallingUtils.readURI(factory, storedInfo.get(CE_SOURCE))).withId(id);
+        byte[] value = storedInfo.get(CE_DATA);
+        if (value != null) {
+            builder.withData(value);
+        }
+        value = storedInfo.get(CE_SUBJECT);
+        if (value != null) {
+            builder.withSubject(MarshallingUtils.readString(factory, value));
+        }
+        value = storedInfo.get(CE_TIME);
+        if (value != null) {
+            builder.withTime(MarshallingUtils.readOffsetDateTime(factory, value));
+        }
+        value = storedInfo.get(CE_CONTENT_TYPE);
+        if (value != null) {
+            builder.withDataContentType(MarshallingUtils.readString(factory, value));
+        }
+        value = storedInfo.get(CE_SCHEMA);
+        if (value != null) {
+            builder.withDataSchema(MarshallingUtils.readURI(factory, value));
+        }
+        MarshallingUtils.readCloudEventExtensions(factory, storedInfo.get(CE_EXTENSIONS), builder);
+        return builder.build();
+    }
+
+    @Override
+    public void markAsProcessed(Map<String, Collection<String>> regCeIds) {
+        Collection<String> keys = new HashSet<>();
+        for (Map.Entry<String, Collection<String>> entry : regCeIds.entrySet()) {
+            String regId = entry.getKey();
+            entry.getValue().forEach(ceId -> keys.add(ceKey(regId, ceId)));
+        }
+        keys.forEach(k -> operations.add(tx -> hashCommands(tx).hset(k, PROCESSED_FLAG, PROCESSED_VALUE)));
+    }
+
+    @Override
+    public void clearProcessed() {
+        KeyScanCursor<String> cursor = keyCommands.scan(new KeyScanArgs().match(CE_PREFIX));
+        while (cursor.hasNext()) {
+            cursor.next().forEach(k -> operations.add(tx -> hashCommands(tx).hdel(k, PROCESSED_FLAG)));
+        }
+    }
+
+    @Override
+    public void removeCloudEvents(Map<String, String> ids) {
+        if (!ids.isEmpty()) {
+            operations.add(tx -> keyCommands(tx)
+                    .del(ids.entrySet().stream().map(e -> ceKey(e.getKey(), e.getValue())).toArray(String[]::new)));
+        }
     }
 
     private class PersistenceWorkflowInfoGenerator {
