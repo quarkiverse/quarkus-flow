@@ -1,5 +1,9 @@
 package test;
 
+import static org.awaitility.Awaitility.await;
+
+import java.time.Duration;
+
 import jakarta.inject.Inject;
 
 import org.acme.CronWorkflow;
@@ -22,16 +26,13 @@ public class CronWorkflowTest {
 
     @Test
     void testCronWorkflow() {
-        long start = System.currentTimeMillis();
-        long elapsed = System.currentTimeMillis() - start;
-        while (elapsed < 4000) {
-            elapsed = System.currentTimeMillis() - start;
-        }
-
         // Check that the cron in descriptor is not replaced
         Assertions.assertSame("* * * * * ?", cronWorkflow.descriptor().getSchedule().getCron());
 
-        // At least 2 should be run, since the test is using 4 second wait
-        Assertions.assertTrue(cronFlowDefinition.scheduledInstances().size() > 2);
+        // Wait for at least 3 scheduled instances to be created
+        await()
+                .pollInterval(Duration.ofMillis(100))
+                .atMost(Duration.ofSeconds(6))
+                .untilAsserted(() -> Assertions.assertTrue(cronFlowDefinition.scheduledInstances().size() > 2));
     }
 }
