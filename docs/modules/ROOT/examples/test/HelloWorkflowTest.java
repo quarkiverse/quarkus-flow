@@ -5,7 +5,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
 
@@ -22,11 +21,8 @@ class HelloWorkflowTest {
     HelloWorkflow workflow;
 
     @Test
-    void should_produce_hello_message() throws Exception {
-        WorkflowModel result = workflow.instance(Map.of())
-                .start() // <2>
-                .toCompletableFuture()
-                .get(5, TimeUnit.SECONDS);
+    void should_produce_hello_message() {
+        WorkflowModel result = workflow.instance(Map.of()).start().join();
 
         // assuming the workflow writes {"message":"hello world!"}
         assertThat(result.asMap().orElseThrow().get("message"), is("hello world!"));

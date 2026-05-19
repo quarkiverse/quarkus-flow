@@ -4,7 +4,6 @@ package test;
 import static org.hamcrest.Matchers.is;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
 
@@ -20,15 +19,13 @@ import io.smallrye.common.annotation.Identifier;
 class EchoYamlWorkflowTest {
 
     @Inject
-    @Identifier("flow:echo-name") // namespace:name from document section
+    @Identifier("company:echo-name") // namespace:name from document section
     WorkflowDefinition definition;
 
     @Test
     void should_echo_name_from_yaml_workflow() throws Exception {
-        WorkflowModel result = definition.instance(Map.of("name", "Joe"))
-                .start()
-                .toCompletableFuture()
-                .get(5, TimeUnit.SECONDS);
+        Map<String, String> input = Map.of("name", "Joe");
+        WorkflowModel result = definition.instance(input).start().join();
 
         MatcherAssert.assertThat(result.asMap().orElseThrow().get("message"), is("echo: Joe"));
     }
