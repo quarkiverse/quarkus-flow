@@ -1,7 +1,5 @@
 package io.quarkiverse.flow.persistence.common;
 
-import static io.quarkiverse.flow.persistence.common.FlowPersistenceUtils.excludedIds;
-
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
@@ -25,9 +23,9 @@ public class FilteredPersistenceWriter implements PersistenceInstanceWriter {
     private final PersistenceInstanceWriter delegate;
     private final Collection<WorkflowDefinitionId> excludedWorkflows;
 
-    public FilteredPersistenceWriter(PersistenceInstanceWriter delegate, Collection<String> excludedWorkflows) {
+    public FilteredPersistenceWriter(PersistenceInstanceWriter delegate, Collection<WorkflowDefinitionId> excludedWorkflows) {
         this.delegate = delegate;
-        this.excludedWorkflows = excludedIds(excludedWorkflows);
+        this.excludedWorkflows = excludedWorkflows;
         if (!this.excludedWorkflows.isEmpty()) {
             LOG.info("Persistence filtering enabled. Excluded workflows: {}", this.excludedWorkflows);
         }

@@ -1,6 +1,6 @@
 package io.quarkiverse.flow.persistence.common;
 
-import java.util.HashSet;
+import static io.quarkiverse.flow.persistence.common.FlowPersistenceUtils.excludedIds;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Any;
@@ -29,7 +29,7 @@ public class FlowPersistenceApplicationBuilderCustomizer implements WorkflowAppl
         if (persistenceInstanceHandlers.isAvailable()) {
             PersistenceInstanceWriter actualWriter = persistenceInstanceHandlers.get().writer();
             PersistenceInstanceWriter writer = config.excludeWorkflows().isEmpty() ? actualWriter
-                    : new FilteredPersistenceWriter(actualWriter, new HashSet<>(config.excludeWorkflows().get()));
+                    : new FilteredPersistenceWriter(actualWriter, excludedIds(config.excludeWorkflows()));
             PersistenceApplicationBuilder.builder(builder, writer);
         } else {
             throw new IllegalStateException(

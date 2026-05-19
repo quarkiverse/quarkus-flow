@@ -1,5 +1,6 @@
 package io.quarkiverse.flow.persistence.common;
 
+import static io.quarkiverse.flow.persistence.common.FlowPersistenceUtils.excludedIds;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
@@ -7,7 +8,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
-import java.util.Set;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -66,7 +68,8 @@ class FilteredPersistenceWriterTest {
     @Test
     @DisplayName("Should not delegate excluded workflow (started)")
     void test_started_excluded_workflow_should_not_delegate() {
-        FilteredPersistenceWriter writer = new FilteredPersistenceWriter(delegate, Set.of(EXCLUDED_WORKFLOW_NAME));
+        FilteredPersistenceWriter writer = new FilteredPersistenceWriter(delegate,
+                excludedIds(Optional.of(List.of(EXCLUDED_WORKFLOW_NAME))));
         CompletableFuture<Void> result = writer.started(excludedContext);
         assertThat(result).isCompleted();
         verifyNoInteractions(delegate);
@@ -76,7 +79,8 @@ class FilteredPersistenceWriterTest {
     @DisplayName("Should delegate non excluded workflow (started)")
     void test_started_non_excluded_workflow_should_delegate() {
         when(delegate.started(any())).thenReturn(CompletableFuture.completedFuture(null));
-        FilteredPersistenceWriter writer = new FilteredPersistenceWriter(delegate, Set.of(EXCLUDED_WORKFLOW_NAME));
+        FilteredPersistenceWriter writer = new FilteredPersistenceWriter(delegate,
+                excludedIds(Optional.of(List.of(EXCLUDED_WORKFLOW_NAME))));
         writer.started(includedContext);
         verify(delegate).started(includedContext);
     }
@@ -84,7 +88,8 @@ class FilteredPersistenceWriterTest {
     @Test
     @DisplayName("Should not delegate excluded workflow (completed)")
     void test_completed_excluded_workflow_should_not_delegate() {
-        FilteredPersistenceWriter writer = new FilteredPersistenceWriter(delegate, Set.of(EXCLUDED_WORKFLOW_NAME));
+        FilteredPersistenceWriter writer = new FilteredPersistenceWriter(delegate,
+                excludedIds(Optional.of(List.of(EXCLUDED_WORKFLOW_NAME))));
         writer.completed(excludedContext);
         verifyNoInteractions(delegate);
     }
@@ -93,7 +98,8 @@ class FilteredPersistenceWriterTest {
     @DisplayName("Should delegate non excluded workflow (completed)")
     void test_completed_non_excluded_workflow_should_delegate() {
         when(delegate.completed(any())).thenReturn(CompletableFuture.completedFuture(null));
-        FilteredPersistenceWriter writer = new FilteredPersistenceWriter(delegate, Set.of(EXCLUDED_WORKFLOW_NAME));
+        FilteredPersistenceWriter writer = new FilteredPersistenceWriter(delegate,
+                excludedIds(Optional.of(List.of(EXCLUDED_WORKFLOW_NAME))));
         writer.completed(includedContext);
         verify(delegate).completed(includedContext);
     }
@@ -101,7 +107,8 @@ class FilteredPersistenceWriterTest {
     @Test
     @DisplayName("Should not delegate excluded workflow (failed)")
     void test_failed_excluded_workflow_should_not_delegate() {
-        FilteredPersistenceWriter writer = new FilteredPersistenceWriter(delegate, Set.of(EXCLUDED_WORKFLOW_NAME));
+        FilteredPersistenceWriter writer = new FilteredPersistenceWriter(delegate,
+                excludedIds(Optional.of(List.of(EXCLUDED_WORKFLOW_NAME))));
         writer.failed(excludedContext, new RuntimeException("test"));
         verifyNoInteractions(delegate);
     }
@@ -110,7 +117,8 @@ class FilteredPersistenceWriterTest {
     @DisplayName("Should delegate non excluded workflow (failed)")
     void test_failed_non_excluded_workflow_should_delegate() {
         when(delegate.failed(any(), any())).thenReturn(CompletableFuture.completedFuture(null));
-        FilteredPersistenceWriter writer = new FilteredPersistenceWriter(delegate, Set.of(EXCLUDED_WORKFLOW_NAME));
+        FilteredPersistenceWriter writer = new FilteredPersistenceWriter(delegate,
+                excludedIds(Optional.of(List.of(EXCLUDED_WORKFLOW_NAME))));
         RuntimeException ex = new RuntimeException("test");
         writer.failed(includedContext, ex);
         verify(delegate).failed(includedContext, ex);
@@ -119,7 +127,8 @@ class FilteredPersistenceWriterTest {
     @Test
     @DisplayName("Should delegate excluded workflow (aborted)")
     void test_aborted_excluded_workflow_should_not_delegate() {
-        FilteredPersistenceWriter writer = new FilteredPersistenceWriter(delegate, Set.of(EXCLUDED_WORKFLOW_NAME));
+        FilteredPersistenceWriter writer = new FilteredPersistenceWriter(delegate,
+                excludedIds(Optional.of(List.of(EXCLUDED_WORKFLOW_NAME))));
         writer.aborted(excludedContext);
         verifyNoInteractions(delegate);
     }
@@ -127,7 +136,8 @@ class FilteredPersistenceWriterTest {
     @Test
     @DisplayName("Should delegate excluded workflow (suspended)")
     void test_suspended_excluded_workflow_should_not_delegate() {
-        FilteredPersistenceWriter writer = new FilteredPersistenceWriter(delegate, Set.of(EXCLUDED_WORKFLOW_NAME));
+        FilteredPersistenceWriter writer = new FilteredPersistenceWriter(delegate,
+                excludedIds(Optional.of(List.of(EXCLUDED_WORKFLOW_NAME))));
         writer.suspended(excludedContext);
         verifyNoInteractions(delegate);
     }
@@ -135,7 +145,8 @@ class FilteredPersistenceWriterTest {
     @Test
     @DisplayName("Should delegate excluded workflow (resumed)")
     void test_resumed_excluded_workflow_should_not_delegate() {
-        FilteredPersistenceWriter writer = new FilteredPersistenceWriter(delegate, Set.of(EXCLUDED_WORKFLOW_NAME));
+        FilteredPersistenceWriter writer = new FilteredPersistenceWriter(delegate,
+                excludedIds(Optional.of(List.of(EXCLUDED_WORKFLOW_NAME))));
         writer.resumed(excludedContext);
         verifyNoInteractions(delegate);
     }
@@ -150,14 +161,5 @@ class FilteredPersistenceWriterTest {
         writer.completed(includedContext);
         verify(delegate).started(includedContext);
         verify(delegate).completed(includedContext);
-    }
-
-    @Test
-    @DisplayName("Should test null exclusion list")
-    void test_null_exclusion_list_delegates_all() {
-        when(delegate.started(any())).thenReturn(CompletableFuture.completedFuture(null));
-        FilteredPersistenceWriter writer = new FilteredPersistenceWriter(delegate, null);
-        writer.started(includedContext);
-        verify(delegate).started(includedContext);
     }
 }

@@ -1,6 +1,8 @@
 package io.quarkiverse.flow.persistence.common;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -11,9 +13,10 @@ class FlowPersistenceUtils {
     private FlowPersistenceUtils() {
     }
 
-    public static Collection<WorkflowDefinitionId> excludedIds(Collection<String> excludedWorkflows) {
-        return excludedWorkflows == null || excludedWorkflows.isEmpty() ? Set.of()
-                : excludedWorkflows.stream().map(FlowPersistenceUtils::parseId).collect(Collectors.toUnmodifiableSet());
+    public static Collection<WorkflowDefinitionId> excludedIds(Optional<List<String>> excludedWorkflows) {
+        return excludedWorkflows
+                .map(exc -> exc.stream().map(FlowPersistenceUtils::parseId).collect(Collectors.toUnmodifiableSet()))
+                .orElse(Set.of());
     }
 
     private static WorkflowDefinitionId parseId(String name) {
