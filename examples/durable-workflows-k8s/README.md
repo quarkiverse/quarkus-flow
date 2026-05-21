@@ -57,7 +57,7 @@ Navigate to the example directory and deploy the Redis manifests before deployin
 
 ```bash
 cd examples/durable-workflows-k8s
-kubectl apply -f manifests/redis.yaml
+kubectl apply -f manifests/valkey.yaml
 ```
 
 Wait a moment for the Redis pod to be ready:
@@ -73,7 +73,7 @@ From the **repository root**, build (and deploy) only this module plus its depen
 
 ```bash
 cd ../.. # back to repo root
-./mvnw -pl examples/durable-workflows-k8s -am -Pkind clean package
+mvn -pl examples/durable-workflows-k8s -am -Pkind clean package
 ```
 
 What this does:
@@ -88,6 +88,11 @@ kubectl -n default get deploy durable-flow-demo
 kubectl -n default get pods -l app=durable-flow-demo -o wide
 ```
 
+If the deployment is not `READY` make sure to load the image:
+```bash
+kind load docker-image local/durable-flow-demo --name quarkus-flow
+```
+
 ---
 
 ## 4) The Interactive Control Center
@@ -96,7 +101,7 @@ This demo includes a real-time UI dashboard to visualize durable workflow execut
 
 1. Port-forward the application to access the UI locally:
    ```bash
-   kubectl -n default port-forward svc/durable-flow-demo 8080:8080
+   kubectl -n default port-forward svc/durable-flow-demo 8080:80
    ```
 2. Open your browser and navigate to: `http://localhost:8080/index.html`
 3. **Demo the Durability:**
