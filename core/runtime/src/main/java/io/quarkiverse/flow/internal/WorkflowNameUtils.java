@@ -15,6 +15,25 @@ public final class WorkflowNameUtils {
                 WorkflowDefinitionId.DEFAULT_VERSION);
     }
 
+    public static WorkflowDefinitionId newId(String classFqcn) {
+        if (classFqcn == null || classFqcn.isEmpty()) {
+            throw new IllegalArgumentException("Class name cannot be null or empty");
+        }
+
+        // Extract package name from FQCN
+        int lastDot = classFqcn.lastIndexOf('.');
+        String packageName = lastDot > 0 ? classFqcn.substring(0, lastDot) : "";
+        String classNamePart = lastDot > 0 ? classFqcn.substring(lastDot + 1) : classFqcn;
+
+        // For nested classes (Outer$Inner), extract just the simple name (Inner)
+        // This matches Class.getSimpleName() behavior
+        int lastDollar = classNamePart.lastIndexOf('$');
+        String simpleName = lastDollar >= 0 ? classNamePart.substring(lastDollar + 1) : classNamePart;
+
+        return new WorkflowDefinitionId(packageName, safeName(simpleName),
+                WorkflowDefinitionId.DEFAULT_VERSION);
+    }
+
     public static String yamlDescriptorIdentifier(String namespace, String name, String version) {
         return String.format("%s:%s:%s", namespace, name, version);
     }

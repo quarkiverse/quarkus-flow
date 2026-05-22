@@ -27,20 +27,20 @@ import io.serverlessworkflow.impl.WorkflowInstance;
 public class FlowPlanner implements Planner, AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(FlowPlanner.class);
-    private final FlowAgentWorkflowBuilder workflowBuilder;
     private final AgenticSystemTopology topology;
+    private final WorkflowDefinition definition;
+    private List<AgentInstance> subAgentsList;
     private BlockingQueue<AgentExchange> agentExchangeQueue;
     private Map<String, AgentExchange> currentExchanges;
     private AtomicInteger parallelAgents;
     private AtomicBoolean closed;
-    private WorkflowDefinition definition;
     private String workflowInstanceId;
     private Throwable terminationCause;
     private CompletableFuture<?> cleanupFuture;
 
-    public FlowPlanner(FlowAgentWorkflowBuilder workflowBuilder, AgenticSystemTopology topology) {
-        this.workflowBuilder = workflowBuilder;
+    public FlowPlanner(AgenticSystemTopology topology, AgenticFlow flow) {
         this.topology = topology;
+        this.definition = flow.definition();
     }
 
     @Override
@@ -60,7 +60,9 @@ public class FlowPlanner implements Planner, AutoCloseable {
         currentExchanges = new ConcurrentHashMap<>();
         parallelAgents = new AtomicInteger(0);
         closed = new AtomicBoolean(false);
-        definition = this.workflowBuilder.buildOrGet(initPlanningContext.subagents());
+
+        // Store subagents in ordered list for index-based lookup
+        this.subAgentsList = new ArrayList<>(initPlanningContext.subagents());
     }
 
     @Override
@@ -132,6 +134,10 @@ public class FlowPlanner implements Planner, AutoCloseable {
         }
     }
 
+    public CompletableFuture<Void> executeAgent(int agentIndex) {
+        return executeAgent(getAgentByIndex(agentIndex));
+    }
+
     public CompletableFuture<Void> executeAgent(AgentInstance agent) {
         if (closed.get()) {
             return CompletableFuture.failedFuture(new CancellationException("Planner is closed"));
@@ -151,10 +157,14 @@ public class FlowPlanner implements Planner, AutoCloseable {
         return continuation;
     }
 
-    void doTermination(Throwable cause) {
-        if (cause != null && terminationCause == null) {
-            terminationCause = cause;
+    public AgentInstance getAgentByIndex(int index) {
+        if (index < 0 || index >= subAgentsList.size()) {
+            throw new IllegalStateException(
+                    "Invalid subagent index: " + index +
+                            ". Available subagents: " + subAgentsList.size() +
+                            " (IDs: " + subAgentsList.stream().map(AgentInstance::agentId).toList() + ")");
         }
+        return subAgentsList.get(index);
     }
 
     public void close() {
@@ -196,20 +206,6 @@ public class FlowPlanner implements Planner, AutoCloseable {
         currentExchanges.clear();
         parallelAgents.set(0);
         this.signalTermination();
-    }
-
-    /**
-     * Waits for the async cleanup to complete. This method is package-protected and intended for testing only.
-     * It ensures that session cleanup completes before assertions on session count.
-     */
-    void awaitCleanup() {
-        if (cleanupFuture != null) {
-            try {
-                cleanupFuture.join();
-            } catch (Exception e) {
-                LOG.debug("Exception during cleanup await (expected if workflow failed)", e);
-            }
-        }
     }
 
     /**

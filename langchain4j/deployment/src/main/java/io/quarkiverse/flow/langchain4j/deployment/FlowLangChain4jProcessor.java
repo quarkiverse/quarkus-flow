@@ -1,55 +1,54 @@
 package io.quarkiverse.flow.langchain4j.deployment;
 
-import static io.quarkiverse.flow.deployment.FlowLoggingUtils.logWorkflowList;
-import static java.util.stream.Collectors.toList;
+import static io.quarkiverse.flow.langchain4j.deployment.AgenticTopologyMapper.getFlowClass;
+import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.computeTaskNames;
+import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.generateAgentClassNameMethod;
+import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.generateAgentDescriptionMethod;
+import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.generateClassName;
+import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.generateConditionalMetadataField;
+import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.generateInputSchemaMethod;
+import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.generateLoopMetadataFields;
+import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.generateSubAgentTaskNamesMethod;
 
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import dev.langchain4j.agentic.declarative.ConditionalAgent;
-import dev.langchain4j.agentic.declarative.LoopAgent;
-import dev.langchain4j.agentic.declarative.ParallelAgent;
-import dev.langchain4j.agentic.declarative.SequenceAgent;
-import io.quarkiverse.flow.langchain4j.recorders.AgenticWorkflowDescriptor;
-import io.quarkiverse.flow.langchain4j.recorders.FlowLangChain4jWorkflowRecorder;
-import io.quarkiverse.flow.langchain4j.workflow.FlowAgentsBuilderService;
+import io.quarkiverse.flow.deployment.DiscoveredWorkflowBuildItem;
+import io.quarkiverse.flow.langchain4j.workflow.AgenticFlow;
 import io.quarkiverse.langchain4j.agentic.deployment.DetectedAiAgentBuildItem;
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.Unremovable;
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassOutput;
+import io.smallrye.common.annotation.Identifier;
 
+/**
+ * Build processor for LangChain4j agentic workflow integration.
+ * <p>
+ * Generates {@link AgenticFlow} implementations at build-time from LangChain4j agent annotations.
+ */
 public class FlowLangChain4jProcessor {
 
     private static final String FEATURE = "flow-langchain4j";
 
     private static final Logger LOG = LoggerFactory.getLogger(FlowLangChain4jProcessor.class.getName());
-
-    private static final DotName SEQUENCE_AGENT = DotName.createSimple(SequenceAgent.class.getName());
-    private static final DotName CONDITIONAL_AGENT = DotName.createSimple(ConditionalAgent.class.getName());
-    private static final DotName LOOP_AGENT = DotName.createSimple(LoopAgent.class.getName());
-    private static final DotName PARALLEL_AGENT = DotName.createSimple(ParallelAgent.class.getName());
-
-    private static boolean isWorkflowPatternMethod(MethodInfo method) {
-        return method.hasAnnotation(SEQUENCE_AGENT)
-                || method.hasAnnotation(CONDITIONAL_AGENT)
-                || method.hasAnnotation(LOOP_AGENT)
-                || method.hasAnnotation(PARALLEL_AGENT);
-    }
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -57,14 +56,6 @@ public class FlowLangChain4jProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem makeWorkflowBuilderBeansUnremovable() {
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClass(FlowAgentsBuilderService.class)
-                .setUnremovable()
-                .build();
-    }
-
-    @BuildStep(onlyIfNot = IsProduction.class)
     void collectAgenticWorkflows(List<DetectedAiAgentBuildItem> detectedAgents,
             BuildProducer<FlowAgenticWorkflowBuildItem> producer) {
 
@@ -79,51 +70,90 @@ public class FlowLangChain4jProcessor {
             }
 
             for (MethodInfo method : methods) {
-                if (!isWorkflowPatternMethod(method)) {
+                final AgenticWorkflowBlueprint blueprint = AgenticWorkflowBlueprint.fromAgenticMethod(method);
+                if (blueprint == null)
                     continue;
-                }
-
-                List<String> paramTypeNames = method.parameterTypes()
-                        .stream()
-                        .map(Type::name)
-                        .map(Object::toString) // DotName -> FQCN
-                        .collect(toList());
 
                 agenticWorkflows.add(new FlowAgenticWorkflowBuildItem(
                         iface.name().toString(),
-                        method.name(),
-                        paramTypeNames));
+                        method,
+                        blueprint));
             }
         }
 
         producer.produce(agenticWorkflows);
     }
 
-    @BuildStep(onlyIfNot = IsProduction.class)
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void registerAgenticWorkflowsAtRuntime(FlowLangChain4jWorkflowRecorder recorder,
+    @BuildStep
+    void generateAgenticFlowClasses(
+            CombinedIndexBuildItem combinedIndex,
             List<FlowAgenticWorkflowBuildItem> agenticWorkflows,
-            BeanContainerBuildItem beanContainer) {
+            BuildProducer<GeneratedBeanBuildItem> generatedClasses,
+            BuildProducer<DiscoveredWorkflowBuildItem> discoveredWorkflows) {
 
-        if (agenticWorkflows == null || agenticWorkflows.isEmpty()) {
-            return;
+        this.checkForGeneratedFlowClassesCollisions(agenticWorkflows);
+
+        for (FlowAgenticWorkflowBuildItem workflow : agenticWorkflows) {
+            final String generatedClassName = generateClassName(workflow.ifaceName());
+
+            // Get the appropriate AgenticFlow implementation class for this topology
+            Class<? extends AgenticFlow> flowInterface = getFlowClass(workflow.topology());
+
+            if (workflow.subAgents().isEmpty()) {
+                LOG.warn("Flow: Agent interface {} has no sub-agents. Generated workflow will be empty.",
+                        workflow.ifaceName());
+            }
+
+            final ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(generatedClasses);
+            try (ClassCreator classCreator = ClassCreator.builder()
+                    .classOutput(classOutput)
+                    .className(generatedClassName)
+                    .superClass(flowInterface.getName())
+                    .build()) {
+                classCreator.addAnnotation(Identifier.class).add("value", generatedClassName);
+                classCreator.addAnnotation(Unremovable.class);
+                classCreator.addAnnotation(ApplicationScoped.class);
+
+                // Generate: String agentClassName() { return "..."; }
+                generateAgentClassNameMethod(classCreator, workflow.ifaceName());
+
+                // Generate: List<String> subAgentTaskNames() { return List.of("methodName1", "methodName2"...); }
+                generateSubAgentTaskNamesMethod(classCreator, computeTaskNames(combinedIndex.getIndex(), workflow.subAgents()));
+
+                // Generate: String description() { return "..."; }
+                generateAgentDescriptionMethod(classCreator, workflow.description(), workflow.ifaceName());
+
+                // Generate: String getInputSchemaJson() { return "...json..."; }
+                generateInputSchemaMethod(classCreator, combinedIndex.getIndex(), workflow.method());
+
+                // Generate topology-specific metadata fields (if applicable)
+                if (workflow.conditionalMetadata().isPresent()) {
+                    generateConditionalMetadataField(classCreator, workflow.ifaceName(),
+                            workflow.conditionalMetadata().get(), workflow.subAgents());
+                }
+                if (workflow.loopMetadata().isPresent()) {
+                    generateLoopMetadataFields(classCreator, workflow.ifaceName(), workflow.loopMetadata().get());
+                }
+            }
+
+            // Notify core module
+            discoveredWorkflows.produce(DiscoveredWorkflowBuildItem.fromSource(generatedClassName));
         }
-        List<String> lc4jWorkflows = agenticWorkflows.stream().map(FlowAgenticWorkflowBuildItem::ifaceName).toList();
-        logWorkflowList(LOG,
-                lc4jWorkflows,
-                "Flow: No LangChain4j workflows were registered.",
-                "Flow: Registered LangChain4j Workflows",
-                "LangChain4j Agentic Workflows");
 
-        // Convert deployment build items to runtime DTOs
-        List<AgenticWorkflowDescriptor> descriptors = agenticWorkflows.stream()
-                .map(bi -> new AgenticWorkflowDescriptor(
-                        bi.ifaceName(),
-                        bi.methodName(),
-                        bi.parameterTypeNames()))
-                .collect(toList());
+    }
 
-        recorder.registerAgenticWorkflows(descriptors, beanContainer.getValue());
+    private void checkForGeneratedFlowClassesCollisions(List<FlowAgenticWorkflowBuildItem> agenticWorkflows) {
+        Set<String> generatedClassNames = new LinkedHashSet<>();
+        for (FlowAgenticWorkflowBuildItem workflow : agenticWorkflows) {
+            final String generatedClassName = generateClassName(workflow.ifaceName());
+            if (!generatedClassNames.add(generatedClassName)) {
+                throw new IllegalStateException(
+                        "Duplicate generated class name detected: " + generatedClassName +
+                                " for agent interface: " + workflow.ifaceName() +
+                                ". This should not happen - please report as a bug.");
+            }
+        }
+
     }
 
     /**

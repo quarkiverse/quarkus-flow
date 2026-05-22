@@ -83,8 +83,6 @@ class FlowProcessor {
     private static final String FEATURE = "flow";
     private static final String DEFAULT_STRUCTURED_LOG_HANDLER = "FLOW_EVENTS";
 
-    FlowDefinitionsConfig flowDefinitionsConfig;
-
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FEATURE);
@@ -155,7 +153,8 @@ class FlowProcessor {
     void produceWorkflowDefinitions(WorkflowDefinitionRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> beans,
             BuildProducer<FlowIdentifierBuildItem> identifiers,
-            List<DiscoveredWorkflowBuildItem> discoveredWorkflows) {
+            List<DiscoveredWorkflowBuildItem> discoveredWorkflows,
+            FlowDefinitionsConfig flowDefinitionsConfig) {
 
         List<DiscoveredWorkflowBuildItem> fromSource = discoveredWorkflows.stream()
                 .filter(DiscoveredWorkflowBuildItem::fromSource)
@@ -169,10 +168,10 @@ class FlowProcessor {
                 .toList();
 
         for (DiscoveredWorkflowBuildItem d : fromSpec) {
-            produceVersionedWorkflowDefinitionBean(recorder, beans, identifiers, d);
+            produceVersionedWorkflowDefinitionBean(recorder, beans, identifiers, d, flowDefinitionsConfig);
         }
 
-        if (this.flowDefinitionsConfig.namingStrategy() == FlowDefinitionsConfig.NamingStrategy.SPEC) {
+        if (flowDefinitionsConfig.namingStrategy() == FlowDefinitionsConfig.NamingStrategy.SPEC) {
             selectLatestVersionPerWorkflow(fromSpec)
                     .forEach((versionlessId, representative) -> {
                         String displayLabel = versionlessId + "  →  " + representative.specIdentifier() + " (latest)";
@@ -202,14 +201,14 @@ class FlowProcessor {
 
     private void produceVersionedWorkflowDefinitionBean(WorkflowDefinitionRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> beans, BuildProducer<FlowIdentifierBuildItem> identifiers,
-            DiscoveredWorkflowBuildItem workflow) {
+            DiscoveredWorkflowBuildItem workflow, FlowDefinitionsConfig flowDefinitionsConfig) {
 
-        String flowSubclassIdentifier = this.flowDefinitionsConfig.namespace().prefix()
+        String flowSubclassIdentifier = flowDefinitionsConfig.namespace().prefix()
                 .map(fromConfig -> generateFlowClassIdentifier(workflow.workflowDefinitionId(), namespaceToPackage(fromConfig)))
                 .orElse(generateFlowClassIdentifier(workflow.workflowDefinitionId(),
                         namespaceToPackage(workflow.workflowDefinitionId().namespace())));
 
-        String identifier = this.flowDefinitionsConfig.namingStrategy() == FlowDefinitionsConfig.NamingStrategy.SPEC
+        String identifier = flowDefinitionsConfig.namingStrategy() == FlowDefinitionsConfig.NamingStrategy.SPEC
                 ? workflow.specIdentifier()
                 : flowSubclassIdentifier;
 
@@ -253,7 +252,8 @@ class FlowProcessor {
     void produceGeneratedFlows(List<DiscoveredWorkflowBuildItem> workflows,
             BuildProducer<GeneratedBeanBuildItem> classes,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            WorkflowDefinitionRecorder recorder) {
+            WorkflowDefinitionRecorder recorder,
+            FlowDefinitionsConfig flowDefinitionsConfig) {
 
         List<DiscoveredWorkflowBuildItem> fromSpec = workflows.stream().filter(DiscoveredWorkflowBuildItem::fromSpec)
                 .toList();
@@ -261,14 +261,14 @@ class FlowProcessor {
         GeneratedBeanGizmoAdaptor gizmo = new GeneratedBeanGizmoAdaptor(classes);
 
         for (DiscoveredWorkflowBuildItem workflow : fromSpec) {
-            produceVersionedFlowGizmoBean(workflow, gizmo);
+            produceVersionedFlowGizmoBean(workflow, gizmo, flowDefinitionsConfig);
         }
 
         // 2. ONE versionless Flow subclass per unique namespace:name.
         if (flowDefinitionsConfig.namingStrategy() == FlowDefinitionsConfig.NamingStrategy.SPEC) {
             selectLatestVersionPerWorkflow(fromSpec)
                     .forEach((versionlessId, representative) -> produceVersionlessFlowGizmoBean(versionlessId, representative,
-                            gizmo));
+                            gizmo, flowDefinitionsConfig));
         }
     }
 
@@ -480,9 +480,9 @@ class FlowProcessor {
     }
 
     private void produceVersionedFlowGizmoBean(DiscoveredWorkflowBuildItem workflow,
-            GeneratedBeanGizmoAdaptor gizmo) {
+            GeneratedBeanGizmoAdaptor gizmo, FlowDefinitionsConfig flowDefinitionsConfig) {
 
-        String flowSubclassIdentifier = this.flowDefinitionsConfig.namespace().prefix()
+        String flowSubclassIdentifier = flowDefinitionsConfig.namespace().prefix()
                 .map(fromConfig -> generateFlowClassIdentifier(workflow.workflowDefinitionId(), namespaceToPackage(fromConfig)))
                 .orElse(generateFlowClassIdentifier(workflow.workflowDefinitionId(),
                         namespaceToPackage(workflow.workflowDefinitionId().namespace())));
@@ -514,14 +514,15 @@ class FlowProcessor {
      */
     private void produceVersionlessFlowGizmoBean(String versionlessId,
             DiscoveredWorkflowBuildItem representative,
-            GeneratedBeanGizmoAdaptor gizmo) {
+            GeneratedBeanGizmoAdaptor gizmo,
+            FlowDefinitionsConfig flowDefinitionsConfig) {
 
         // Use versionlessId (namespace:name) to generate class name, not the representative's version
         // This ensures the class name remains stable regardless of which version is "latest"
         String namespace = representative.namespace();
         String name = representative.name();
 
-        String versionlessClassName = this.flowDefinitionsConfig.namespace().prefix()
+        String versionlessClassName = flowDefinitionsConfig.namespace().prefix()
                 .map(prefix -> generateFlowClassIdentifier(namespace, name, prefix))
                 .orElse(generateFlowClassIdentifier(namespace, name));
 

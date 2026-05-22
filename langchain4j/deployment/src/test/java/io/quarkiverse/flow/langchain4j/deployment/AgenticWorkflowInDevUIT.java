@@ -27,7 +27,6 @@ public class AgenticWorkflowInDevUIT {
     private static final String PLAY_AGENTIC_ID = "play-mermaid-io-quarkiverse-flow-langchain4j-story-creator-with-configurable-style-editor-0-0-1";
     private static final String SEE_AGENTIC_ID = "see-mermaid-io-quarkiverse-flow-langchain4j-story-creator-with-configurable-style-editor-0-0-1";
     private static final String SEE_SIMPLE_ID = "see-mermaid-quarkus-flow-simple-workflow-0-0-1";
-    private static final String UNAVAILABLE_MERMAID_WARNING_SELECTOR = "id=unavailable-mermaid-warning";
 
     private static BrowserType.LaunchOptions launchOptions;
 
@@ -53,7 +52,7 @@ public class AgenticWorkflowInDevUIT {
     }
 
     @Test
-    void should_show_warning_message_when_looking_for_agentic_mermaid_before_execution() {
+    void should_show_mermaid_diagram_for_agentic_workflow() {
         try (Playwright playwright = createPlaywright();
                 Browser browser = playwright.chromium().launch(launchOptions)) {
 
@@ -63,10 +62,10 @@ public class AgenticWorkflowInDevUIT {
             devUI.clickOnWorkflows();
             devUI.clickOnEyeButton(SEE_AGENTIC_ID);
 
-            devUI.waitForElement(UNAVAILABLE_MERMAID_WARNING_SELECTOR);
+            devUI.waitForMermaidContainer();
 
-            assertThat(devUI.isElementVisible(UNAVAILABLE_MERMAID_WARNING_SELECTOR))
-                    .as("Warning message should be visible when mermaid diagram is not available")
+            assertThat(devUI.isMermaidContainerVisible())
+                    .as("Mermaid diagram should be visible for agentic workflow")
                     .isTrue();
         }
     }
@@ -94,44 +93,6 @@ public class AgenticWorkflowInDevUIT {
             softly.assertThat(devUI.content())
                     .as("Workflow output should be displayed")
                     .doesNotContain("# Your workflow output will be displayed here");
-        }
-
-        softly.assertAll();
-    }
-
-    @Test
-    void should_generate_mermaid_diagram_after_first_execution() {
-        SoftAssertions softly = new SoftAssertions();
-
-        try (Playwright playwright = createPlaywright();
-                Browser browser = playwright.chromium().launch(launchOptions)) {
-
-            QuarkusDevUIPage devUI = new QuarkusDevUIPage(browser.newPage());
-
-            devUI.navigateToDevUIHome();
-
-            softly.assertThat(devUI.workflowsBadgeNumber())
-                    .as("Workflows badge should show available workflows")
-                    .isGreaterThanOrEqualTo(1);
-
-            devUI.clickOnWorkflows();
-            devUI.clickOnPlayButton(PLAY_AGENTIC_ID);
-            devUI.executeWorkflow();
-            devUI.waitByAIMessage();
-
-            softly.assertThat(devUI.content())
-                    .as("Workflow output should be displayed")
-                    .doesNotContain("# Your workflow output will be displayed here");
-
-            devUI.navigateToDevUIHome();
-            devUI.clickOnWorkflows();
-            devUI.clickOnEyeButton(SEE_AGENTIC_ID);
-
-            devUI.waitForMermaidContainer();
-
-            softly.assertThat(devUI.isMermaidContainerVisible())
-                    .as("Mermaid diagram should be visible after workflow execution")
-                    .isTrue();
         }
 
         softly.assertAll();

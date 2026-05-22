@@ -1,46 +1,31 @@
 package io.quarkiverse.flow.langchain4j.workflow;
 
 import static dev.langchain4j.agentic.internal.AgentUtil.validateAgentClass;
-import static io.quarkiverse.flow.internal.WorkflowNameUtils.safeName;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.withInstanceId;
 
 import java.lang.reflect.Method;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
-import java.util.function.Function;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.agentic.declarative.ParallelAgent;
-import dev.langchain4j.agentic.planner.AgentInstance;
 import dev.langchain4j.agentic.planner.AgenticSystemTopology;
-import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import dev.langchain4j.agentic.workflow.impl.ParallelAgentServiceImpl;
-import io.quarkiverse.flow.internal.WorkflowRegistry;
-import io.serverlessworkflow.fluent.func.FuncDoTaskBuilder;
 
-public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> implements FlowAgentService<T> {
+public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(FlowParallelAgentService.class);
+    private final ParallelAgenticFlow flow;
 
-    private final WorkflowRegistry workflowRegistry;
-
-    protected FlowParallelAgentService(Class<T> agentServiceClass, Method agenticMethod, WorkflowRegistry workflowRegistry) {
+    protected FlowParallelAgentService(Class<T> agentServiceClass, Method agenticMethod, ParallelAgenticFlow flow) {
         super(agentServiceClass, agenticMethod);
-        this.workflowRegistry = workflowRegistry;
+        this.flow = flow;
     }
 
-    public static FlowParallelAgentService<UntypedAgent> builder(WorkflowRegistry workflowRegistry) {
-        return new FlowParallelAgentService<>(UntypedAgent.class, null, workflowRegistry);
+    public static FlowParallelAgentService<UntypedAgent> builder() {
+        return new FlowParallelAgentService<>(UntypedAgent.class, null, null);
     }
 
-    public static <T> FlowParallelAgentService<T> builder(Class<T> agentServiceClass, WorkflowRegistry workflowRegistry) {
+    public static <T> FlowParallelAgentService<T> builder(Class<T> agentServiceClass, ParallelAgenticFlow flow) {
         return new FlowParallelAgentService<>(agentServiceClass,
-                validateAgentClass(agentServiceClass, false, ParallelAgent.class), workflowRegistry);
+                validateAgentClass(agentServiceClass, false, ParallelAgent.class), flow);
     }
 
     @Override
@@ -51,50 +36,7 @@ public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> imp
 
     @Override
     public T build() {
-        final FlowPlannerBuilder builder = new FlowPlannerBuilder(this);
-        return build(builder::build);
+        return build(() -> new FlowPlanner(AgenticSystemTopology.PARALLEL, flow));
     }
 
-    @Override
-    public Function<List<AgentInstance>, Consumer<FuncDoTaskBuilder>> tasksDefinition() {
-        return ((agents) -> tasks -> tasks.fork("parallel",
-                fork -> {
-                    int step = 0;
-                    for (AgentInstance agent : agents) {
-                        final String branchName = safeName(agent.agentId() + "-" + (step++));
-                        fork.branches(withInstanceId(branchName, (String instanceId, DefaultAgenticScope scope) -> {
-                            CompletableFuture<Void> nextActionFuture = scope.executionContextAs(FlowPlanner.class)
-                                    .executeAgent(agent);
-                            LOG.debug("Parallel execution of agent {} in branch {} started", agent.agentId(),
-                                    branchName);
-                            nextActionFuture.join();
-                            LOG.debug("Parallel execution of agent {} in branch {} terminated", agent.agentId(),
-                                    branchName);
-                            return null;
-                        },
-                                DefaultAgenticScope.class));
-
-                    }
-                }));
-    }
-
-    @Override
-    public String description() {
-        return this.description;
-    }
-
-    @Override
-    public WorkflowRegistry workflowRegistry() {
-        return this.workflowRegistry;
-    }
-
-    @Override
-    public Class<T> agentServiceClass() {
-        return this.agentServiceClass;
-    }
-
-    @Override
-    public AgenticSystemTopology topology() {
-        return AgenticSystemTopology.PARALLEL;
-    }
 }
