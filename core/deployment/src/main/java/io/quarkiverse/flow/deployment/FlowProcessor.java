@@ -28,8 +28,8 @@ import io.quarkiverse.flow.config.FlowDefinitionsConfig;
 import io.quarkiverse.flow.config.FlowMetricsConfig;
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
 import io.quarkiverse.flow.config.FlowTracingConfig;
+import io.quarkiverse.flow.internal.WorkflowApplicationInitializer;
 import io.quarkiverse.flow.internal.WorkflowNameUtils;
-import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkiverse.flow.metrics.MicrometerExecutionListener;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
 import io.quarkiverse.flow.providers.FaultToleranceProvider;
@@ -114,8 +114,8 @@ class FlowProcessor {
                 .addBeanClass(MicroprofileConfigManager.class)
                 .addBeanClass(HttpClientProvider.class)
                 .addBeanClass(FaultToleranceProvider.class)
-                .addBeanClass(WorkflowRegistry.class)
                 .addBeanClass(WorkflowApplicationCreator.class)
+                .addBeanClass(WorkflowApplicationInitializer.class)
                 .setUnremovable()
                 .build();
     }
@@ -193,7 +193,7 @@ class FlowProcessor {
                 .addQualifier().annotation(DotNames.IDENTIFIER).addValue("value", it.className()).done()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(it.className())),
                         AnnotationInstance.builder(DotName.createSimple(Any.class)).build())
-                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowRegistry.class)))
+                .addInjectionPoint(ClassType.create(DotName.createSimple("io.serverlessworkflow.impl.WorkflowApplication")))
                 .createWith(recorder.workflowDefinitionCreator(it.className()))
                 .done());
         identifiers.produce(new FlowIdentifierBuildItem(Set.of(it.className())));
@@ -449,7 +449,7 @@ class FlowProcessor {
                 .setRuntimeInit()
                 .addQualifier().annotation(DotNames.IDENTIFIER)
                 .addValue("value", identifier).done()
-                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowRegistry.class)))
+                .addInjectionPoint(ClassType.create(DotName.createSimple("io.serverlessworkflow.impl.WorkflowApplication")))
                 .createWith(recorder.workflowDefinitionFromFileCreator(
                         workflow.name(), workflow.content(), WorkflowFormat.fromFileName(workflow.name())))
                 .done();
