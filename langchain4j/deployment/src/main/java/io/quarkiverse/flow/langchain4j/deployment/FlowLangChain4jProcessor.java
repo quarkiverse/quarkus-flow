@@ -7,6 +7,8 @@ import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.g
 import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.generateClassName;
 import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.generateConditionalMetadataField;
 import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.generateInputSchemaMethod;
+import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.generateInvokerMethodNameMethod;
+import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.generateInvokerMethodParamsMethod;
 import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.generateLoopMetadataFields;
 import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.generateSubAgentTaskNamesMethod;
 
@@ -35,6 +37,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.smallrye.common.annotation.Identifier;
@@ -87,11 +90,14 @@ public class FlowLangChain4jProcessor {
     @BuildStep
     void generateAgenticFlowClasses(
             CombinedIndexBuildItem combinedIndex,
+            LaunchModeBuildItem launchMode,
             List<FlowAgenticWorkflowBuildItem> agenticWorkflows,
             BuildProducer<GeneratedBeanBuildItem> generatedClasses,
             BuildProducer<DiscoveredWorkflowBuildItem> discoveredWorkflows) {
 
         this.checkForGeneratedFlowClassesCollisions(agenticWorkflows);
+
+        boolean isDevMode = launchMode.getLaunchMode().isDevOrTest();
 
         for (FlowAgenticWorkflowBuildItem workflow : agenticWorkflows) {
             final String generatedClassName = generateClassName(workflow.ifaceName());
@@ -125,6 +131,15 @@ public class FlowLangChain4jProcessor {
 
                 // Generate: String getInputSchemaJson() { return "...json..."; }
                 generateInputSchemaMethod(classCreator, combinedIndex.getIndex(), workflow.method());
+
+                // Generate DevUI invoker metadata methods (dev mode only)
+                if (isDevMode) {
+                    // Generate: String invokerMethodName() { return "methodName"; }
+                    generateInvokerMethodNameMethod(classCreator, workflow.method().name());
+
+                    // Generate: String[] invokerMethodParams() { return new String[] {...}; }
+                    generateInvokerMethodParamsMethod(classCreator, workflow.method());
+                }
 
                 // Generate topology-specific metadata fields (if applicable)
                 if (workflow.conditionalMetadata().isPresent()) {

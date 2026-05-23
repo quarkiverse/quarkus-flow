@@ -5,8 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
-import jakarta.inject.Inject;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -16,34 +14,21 @@ import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
 import dev.langchain4j.service.V;
 import io.quarkus.test.junit.QuarkusTest;
-import io.smallrye.common.annotation.Identifier;
 
 @QuarkusTest
 @Disabled("TODO: Agents are now generated in build time, we can't afford creating them in runtime. To be added in a future PR.")
 public class FlowAgentServicesMockedTest {
 
-    @Identifier("io.quarkiverse.flow.langchain4j.workflow.FlowAgentServicesMockedTest.TestSequentialAgent")
-    @Inject
     SequentialAgenticFlow sequentialAgentFlow;
 
-    @Identifier("io.quarkiverse.flow.langchain4j.workflow.FlowAgentServicesMockedTest.TestParallelAgent")
-    @Inject
     ParallelAgenticFlow parallelAgenticFlow;
 
-    @Identifier("io.quarkiverse.flow.langchain4j.workflow.FlowAgentServicesMockedTest.TestLoopAgent")
-    @Inject
     LoopAgenticFlow loopAgenticFlow;
 
-    @Identifier("io.quarkiverse.flow.langchain4j.workflow.FlowAgentServicesMockedTest.TestConditionalAgent")
-    @Inject
     ConditionalAgenticFlow conditionalAgenticFlow;
 
-    @Identifier("io.quarkiverse.flow.langchain4j.workflow.FlowAgentServicesMockedTest.TestExecutionContextIsolationAgent")
-    @Inject
     SequentialAgenticFlow sequentialContextIsolationFlow;
 
-    @Identifier("io.quarkiverse.flow.langchain4j.workflow.FlowAgentServicesMockedTest.TestExecutionContextErrorAgent")
-    @Inject
     SequentialAgenticFlow sequentialContextError;
 
     @Test

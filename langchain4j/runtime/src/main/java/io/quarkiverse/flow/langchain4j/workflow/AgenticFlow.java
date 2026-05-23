@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.internal.WorkflowInvocationMetadata;
 import io.quarkiverse.flow.internal.WorkflowNameUtils;
 import io.serverlessworkflow.fluent.spec.DocumentBuilder;
 import io.serverlessworkflow.fluent.spec.InputBuilder;
@@ -29,6 +30,8 @@ import io.serverlessworkflow.impl.WorkflowModel;
  * </ul>
  */
 public abstract class AgenticFlow extends Flow {
+
+    protected static final String INVOKER_KIND = "langchain4j";
 
     @Inject
     ObjectMapper objectMapper;
@@ -78,10 +81,16 @@ public abstract class AgenticFlow extends Flow {
 
     protected Consumer<DocumentBuilder> buildDocument() {
         WorkflowDefinitionId id = WorkflowNameUtils.newId(agentClassName());
-        return d -> d.name(id.name())
-                .namespace(id.namespace())
-                .version(id.version())
-                .summary(description());
+        Consumer<DocumentBuilder.WorkflowMetadataBuilder> metadata = invocationMetadata();
+        return d -> {
+            d.name(id.name())
+                    .namespace(id.namespace())
+                    .version(id.version())
+                    .summary(description());
+            if (metadata != null) {
+                d.metadata(metadata);
+            }
+        };
     }
 
     protected Object executeAgent(DefaultAgenticScope scope, int subAgentIndex) {
@@ -127,5 +136,47 @@ public abstract class AgenticFlow extends Flow {
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse input schema JSON", e);
         }
+    }
+
+    /**
+     * Returns the agent interface method name for DevUI invocation.
+     * Default implementation returns null (prod mode).
+     * Overridden by Gizmo in dev mode only.
+     *
+     * @return method name or null
+     */
+    protected String invokerMethodName() {
+        return null;
+    }
+
+    /**
+     * Returns the agent interface method parameter type names for DevUI invocation.
+     * Default implementation returns null (prod mode).
+     * Overridden by Gizmo in dev mode only.
+     *
+     * @return parameter type names array or null
+     */
+    protected String[] invokerMethodParams() {
+        return null;
+    }
+
+    /**
+     * Returns the invocation metadata consumer for DevUI integration.
+     * Returns null in prod mode (invokerMethodName() returns null).
+     * In dev mode, Gizmo overrides invokerMethodName() and invokerMethodParams(),
+     * allowing DevUI to invoke the agent interface method directly.
+     *
+     * @return Consumer for workflow metadata builder, or null if not in dev mode
+     */
+    protected Consumer<DocumentBuilder.WorkflowMetadataBuilder> invocationMetadata() {
+        String methodName = invokerMethodName();
+        if (methodName == null) {
+            return null; // Not overridden - prod mode
+        }
+        return WorkflowInvocationMetadata.beanInvokerMetadata(
+                agentClassName(),
+                methodName,
+                invokerMethodParams(),
+                INVOKER_KIND);
     }
 }

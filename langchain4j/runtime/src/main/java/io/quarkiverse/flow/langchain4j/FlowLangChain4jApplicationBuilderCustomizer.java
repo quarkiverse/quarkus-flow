@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.langchain4j.recorders;
+package io.quarkiverse.flow.langchain4j;
 
 import jakarta.enterprise.context.ApplicationScoped;
 

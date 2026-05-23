@@ -274,4 +274,44 @@ final class GizmoAgentFlowsHelper {
         }
     }
 
+    /**
+     * Generates the invokerMethodName() method for DevUI integration.
+     * <p>
+     * Generated code: {@code protected String invokerMethodName() { return "methodName"; }}
+     * <p>
+     * This method is only generated in dev mode to enable DevUI to invoke agent interfaces.
+     *
+     * @param classCreator the class creator
+     * @param methodName the method name to return
+     */
+    static void generateInvokerMethodNameMethod(ClassCreator classCreator, String methodName) {
+        try (MethodCreator mc = classCreator.getMethodCreator("invokerMethodName", String.class)
+                .setModifiers(Modifier.PROTECTED)) {
+            mc.returnValue(mc.load(methodName));
+        }
+    }
+
+    /**
+     * Generates the invokerMethodParams() method for DevUI integration.
+     * <p>
+     * Generated code: {@code protected String[] invokerMethodParams() { return new String[] {"type1", "type2"}; }}
+     * <p>
+     * This method is only generated in dev mode to enable DevUI to invoke agent interfaces.
+     *
+     * @param classCreator the class creator
+     * @param agentMethod the agent method to extract parameter types from
+     */
+    static void generateInvokerMethodParamsMethod(ClassCreator classCreator, MethodInfo agentMethod) {
+        try (MethodCreator mc = classCreator.getMethodCreator("invokerMethodParams", String[].class)
+                .setModifiers(Modifier.PROTECTED)) {
+            List<Type> paramTypes = agentMethod.parameterTypes();
+            ResultHandle array = mc.newArray(String.class, paramTypes.size());
+            for (int i = 0; i < paramTypes.size(); i++) {
+                String paramTypeName = paramTypes.get(i).name().toString();
+                mc.writeArrayValue(array, i, mc.load(paramTypeName));
+            }
+            mc.returnValue(array);
+        }
+    }
+
 }

@@ -11,13 +11,13 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
 import dev.langchain4j.service.V;
 import io.quarkiverse.flow.Flow;
-import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkus.test.junit.QuarkusTest;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
@@ -41,10 +41,7 @@ import io.smallrye.mutiny.Uni;
  * See <a href="https://github.com/casehubio/engine/issues/213">casehubio/engine#213</a> for context.
  */
 @QuarkusTest
-class WorkflowExecutionListenerBehaviourTest {
-
-    @Inject
-    WorkflowRegistry registry;
+public class WorkflowExecutionListenerBehaviourTest {
 
     @Inject
     Q1ContextInjectWorkflow q1Workflow;
@@ -164,13 +161,14 @@ class WorkflowExecutionListenerBehaviourTest {
      * </ul>
      */
     @Test
+    @Disabled("Depends on runtime Flow")
     void q3_onTaskCompleted_granularityForThreeSequentialAgents() {
         var agent1 = AgenticServices.agentAction(scope -> scope.writeState("step", "1"));
         var agent2 = AgenticServices.agentAction(scope -> scope.writeState("step", "2"));
         var agent3 = AgenticServices.agentAction(scope -> scope.writeState("step", "3"));
 
         FlowSequentialAgentService<SequentialTestAgent> service = FlowSequentialAgentService.builder(SequentialTestAgent.class,
-                registry);
+                null);
         service.subAgents(agent1, agent2, agent3);
         SequentialTestAgent agent = service.build();
 

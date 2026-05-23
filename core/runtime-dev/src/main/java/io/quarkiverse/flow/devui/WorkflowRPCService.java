@@ -5,9 +5,14 @@ import java.lang.reflect.Parameter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
 
@@ -17,9 +22,9 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import io.quarkiverse.flow.Flowable;
 import io.quarkiverse.flow.internal.WorkflowInvocationMetadata;
 import io.quarkiverse.flow.internal.WorkflowInvoker;
-import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.logging.Log;
@@ -28,7 +33,7 @@ import io.serverlessworkflow.api.types.Input;
 import io.serverlessworkflow.api.types.SchemaInline;
 import io.serverlessworkflow.api.types.SchemaUnion;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.impl.WorkflowDefinition;
+import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.serverlessworkflow.mermaid.Mermaid;
@@ -39,26 +44,39 @@ public class WorkflowRPCService {
 
     private static final Logger LOG = LoggerFactory.getLogger(WorkflowRPCService.class);
     private static final String RESULT_WITH_AGENTIC_SCOPE_CLASS = "dev.langchain4j.agentic.scope.ResultWithAgenticScope";
+    private final Map<WorkflowDefinitionId, Workflow> registryCache = new ConcurrentHashMap<>();
 
     @Inject
     ObjectMapper objectMapper;
+
     @Inject
-    WorkflowRegistry registry;
+    @Any
+    Instance<Flowable> flowRegistry;
+
+    @Inject
+    WorkflowApplication workflowApplication;
 
     public WorkflowRPCService() {
     }
 
+    @PostConstruct
+    void buildCache() {
+        flowRegistry.stream()
+                .map(Flowable::descriptor)
+                .forEach(w -> registryCache.put(WorkflowDefinitionId.of(w), w));
+    }
+
     @JsonRpcDescription("Get numbers of workflows available in the application")
     public int getNumbersOfWorkflows() {
-        return registry.count();
+        return registryCache.size();
     }
 
     @JsonRpcDescription("Get info about workflows")
     public List<WorkflowInfo> getWorkflows() {
-        return registry.all().stream()
+        return registryCache.entrySet().stream()
                 .map(w -> new WorkflowInfo(
-                        WorkflowDefinitionId.of(w),
-                        w.getDocument().getSummary()))
+                        w.getKey(),
+                        w.getValue().getDocument().getSummary()))
                 .toList();
     }
 
@@ -66,8 +84,8 @@ public class WorkflowRPCService {
     public MermaidDefinition generateMermaidDiagram(
             @JsonRpcDescription("Workflow's id") WorkflowDefinitionId id) {
         LOG.info("Generating a mermaid diagram from the workflow's definition '{}'", id.name());
-        final MermaidDefinition mermaidDefinition = new MermaidDefinition(new Mermaid().from(registry.lookupDescriptor(id)
-                .orElseThrow(() -> new IllegalStateException("Workflow with id '" + id + "' not found"))));
+        final Workflow w = Objects.requireNonNull(registryCache.get(id), "Workflow with id '" + id + "' not found");
+        final MermaidDefinition mermaidDefinition = new MermaidDefinition(new Mermaid().from(w));
         if (mermaidDefinition.mermaid.isEmpty()) {
             LOG.warn("Workflow with id '{}' has no diagram available or failed to generate it", id.name());
         }
@@ -80,8 +98,7 @@ public class WorkflowRPCService {
             @JsonRpcDescription("Workflow's id") WorkflowDefinitionId id,
             @JsonRpcDescription("Workflow's input") String input) {
 
-        Workflow workflow = registry.lookupDescriptor(id)
-                .orElseThrow(() -> new IllegalStateException("Workflow with id '" + id + "' not found"));
+        final Workflow workflow = Objects.requireNonNull(registryCache.get(id), "Workflow with id '" + id + "' not found");
         Optional<WorkflowInvoker> invoker = WorkflowInvocationMetadata.beanInvokerOf(workflow);
         Object parsedInput = parseStringIfNeeded(input);
         Object result;
@@ -89,12 +106,7 @@ public class WorkflowRPCService {
         if (invoker.isPresent()) {
             result = invokeBeanEntryPoint(invoker.get(), parsedInput);
         } else {
-            Optional<WorkflowDefinition> def = registry.lookup(id);
-            WorkflowModel wm = def
-                    .orElseThrow(() -> new IllegalStateException("WorkflowDefinition not found for workflow " + id))
-                    .instance(parsedInput)
-                    .start()
-                    .join();
+            WorkflowModel wm = workflowApplication.workflowDefinition(workflow).instance(parsedInput).start().join();
             result = wm.asJavaObject();
         }
 
@@ -107,10 +119,7 @@ public class WorkflowRPCService {
     public Map<String, Object> getInputSchema(
             @JsonRpcDescription("Workflow's id") WorkflowDefinitionId id) {
 
-        Workflow wf = registry.lookupDescriptor(id)
-                .orElseGet(() -> registry.lookup(id)
-                        .map(WorkflowDefinition::workflow)
-                        .orElseThrow(() -> new IllegalStateException("Workflow with id '" + id + "' not found")));
+        Workflow wf = Objects.requireNonNull(registryCache.get(id), "Workflow with id '" + id + "' not found");
 
         Input input = wf.getInput();
         if (input == null) {
