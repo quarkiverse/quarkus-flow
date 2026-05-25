@@ -10,7 +10,7 @@
 
 # Maven parallel threads configuration
 MAVEN_THREADS ?= 15C
-MAVEN_OPTS := -T $(MAVEN_THREADS) -Dquarkus.log.level=OFF -ntp
+MAVEN_OPTS := -T $(MAVEN_THREADS) -Dquarkus.log.level=OFF -ntp -Dquarkus.banner.enabled=false
 
 help: ## Show this help message
 	@echo "Quarkus Flow - Available Make Targets"
