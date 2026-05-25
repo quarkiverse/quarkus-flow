@@ -4,12 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -24,7 +22,7 @@ import dev.langchain4j.agentic.planner.PlanningContext;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowInstance;
 
-public class FlowPlanner implements Planner, AutoCloseable {
+public class FlowPlanner implements Planner {
 
     private static final Logger LOG = LoggerFactory.getLogger(FlowPlanner.class);
     private final AgenticSystemTopology topology;
@@ -33,10 +31,6 @@ public class FlowPlanner implements Planner, AutoCloseable {
     private BlockingQueue<AgentExchange> agentExchangeQueue;
     private Map<String, AgentExchange> currentExchanges;
     private AtomicInteger parallelAgents;
-    private AtomicBoolean closed;
-    private String workflowInstanceId;
-    private Throwable terminationCause;
-    private CompletableFuture<?> cleanupFuture;
 
     public FlowPlanner(AgenticSystemTopology topology, AgenticFlow flow) {
         this.topology = topology;
@@ -49,17 +43,11 @@ public class FlowPlanner implements Planner, AutoCloseable {
     }
 
     @Override
-    public boolean terminated() {
-        return closed.get();
-    }
-
-    @Override
     public void init(InitPlanningContext initPlanningContext) {
         // lazy creation since we are being instantiated twice upstream
         agentExchangeQueue = new LinkedBlockingQueue<>();
         currentExchanges = new ConcurrentHashMap<>();
         parallelAgents = new AtomicInteger(0);
-        closed = new AtomicBoolean(false);
 
         // Store subagents in ordered list for index-based lookup
         this.subAgentsList = new ArrayList<>(initPlanningContext.subagents());
@@ -68,13 +56,13 @@ public class FlowPlanner implements Planner, AutoCloseable {
     @Override
     public Action firstAction(PlanningContext planningContext) {
         final WorkflowInstance instance = definition.instance(planningContext.agenticScope());
-        workflowInstanceId = instance.id();
         planningContext.agenticScope().writeExecutionContext(FlowPlanner.class, this);
 
         // Starts workflow on a different thread
         // Despite returning a CompletableFuture, the start() method executes on the same thread by design.
-        cleanupFuture = CompletableFuture.completedFuture(null)
-                .thenComposeAsync(t -> instance.start())
+        // We use supplyAsync to force execution on the async executor thread, then flatten the nested future.
+        CompletableFuture.supplyAsync(instance::start)
+                .thenCompose(future -> future)
                 .whenComplete((r, e) -> {
                     if (e != null) {
                         LOG.error("Workflow failed", e);
@@ -139,9 +127,6 @@ public class FlowPlanner implements Planner, AutoCloseable {
     }
 
     public CompletableFuture<Void> executeAgent(AgentInstance agent) {
-        if (closed.get()) {
-            return CompletableFuture.failedFuture(new CancellationException("Planner is closed"));
-        }
         CompletableFuture<Void> continuation = new CompletableFuture<>();
         AgentExchange exchange = new AgentExchange(agent, continuation);
 
@@ -151,7 +136,6 @@ public class FlowPlanner implements Planner, AutoCloseable {
             Thread.currentThread().interrupt();
             LOG.error("Interrupted while queueing agent exchange", e);
             continuation.completeExceptionally(e);
-            abort(e);
         }
 
         return continuation;
@@ -167,45 +151,8 @@ public class FlowPlanner implements Planner, AutoCloseable {
         return subAgentsList.get(index);
     }
 
-    public void close() {
-        if (!closed.get()) {
-            LOG.debug("Closing planner for workflow instance {}", this.workflowInstanceId);
-            if (terminationCause != null)
-                this.abort(terminationCause);
-            else
-                this.finish();
-        }
-    }
-
     private void signalTermination() {
         agentExchangeQueue.offer(new AgentExchange(null, CompletableFuture.completedFuture(null)));
-    }
-
-    void abort(Throwable t) {
-        if (!closed.compareAndSet(false, true))
-            return;
-
-        currentExchanges.values().forEach(ex -> ex.continuation.completeExceptionally(t));
-
-        // drain
-        AgentExchange ex;
-        while ((ex = agentExchangeQueue.poll()) != null) {
-            if (ex.agent != null)
-                ex.continuation.completeExceptionally(t);
-        }
-        currentExchanges.clear();
-        parallelAgents.set(0);
-
-        this.signalTermination();
-    }
-
-    void finish() {
-        if (!closed.compareAndSet(false, true))
-            return;
-        currentExchanges.values().forEach(ex -> ex.continuation.complete(null));
-        currentExchanges.clear();
-        parallelAgents.set(0);
-        this.signalTermination();
     }
 
     /**

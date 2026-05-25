@@ -5,10 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -85,83 +82,11 @@ class FlowPlannerTest {
     }
 
     @Test
-    @DisplayName("executeAgent should fail when planner is closed")
-    void test_executeAgent_plannerClosed() {
-        FlowPlanner planner = new FlowPlanner(AgenticSystemTopology.SEQUENCE, mockFlow);
-        AgentInstance mockAgent = createMockAgent("test$0");
-        planner.init(createInitContext(List.of(mockAgent)));
-        planner.close();
-
-        CompletableFuture<Void> future = planner.executeAgent(mockAgent);
-
-        assertThat(future)
-                .failsWithin(Duration.ofSeconds(1))
-                .withThrowableThat()
-                .isInstanceOf(CancellationException.class)
-                .withStackTraceContaining("Planner is closed");
-    }
-
-    @Test
     @DisplayName("topology should return the correct topology")
     void test_topology() {
         FlowPlanner planner = new FlowPlanner(AgenticSystemTopology.PARALLEL, mockFlow);
 
         assertThat(planner.topology()).isEqualTo(AgenticSystemTopology.PARALLEL);
-    }
-
-    @Test
-    @DisplayName("terminated should return false before close")
-    void test_terminated_beforeClose() {
-        FlowPlanner planner = new FlowPlanner(AgenticSystemTopology.SEQUENCE, mockFlow);
-        planner.init(createInitContext(List.of()));
-
-        assertThat(planner.terminated()).isFalse();
-    }
-
-    @Test
-    @DisplayName("terminated should return true after close")
-    void test_terminated_afterClose() {
-        FlowPlanner planner = new FlowPlanner(AgenticSystemTopology.SEQUENCE, mockFlow);
-        planner.init(createInitContext(List.of()));
-        planner.close();
-
-        assertThat(planner.terminated()).isTrue();
-    }
-
-    @Test
-    @DisplayName("close should be idempotent")
-    void test_close_idempotent() {
-        FlowPlanner planner = new FlowPlanner(AgenticSystemTopology.SEQUENCE, mockFlow);
-        planner.init(createInitContext(List.of()));
-
-        // Should not throw when called multiple times
-        planner.close();
-        planner.close();
-        planner.close();
-
-        assertThat(planner.terminated()).isTrue();
-    }
-
-    @Test
-    @DisplayName("executeAgent should fail all pending agents when aborted")
-    void test_abort_failsPendingAgents() {
-        FlowPlanner planner = new FlowPlanner(AgenticSystemTopology.SEQUENCE, mockFlow);
-        AgentInstance mockAgent = createMockAgent("test$0");
-        planner.init(createInitContext(List.of(mockAgent)));
-
-        // Queue up an agent execution
-        CompletableFuture<Void> future = planner.executeAgent(mockAgent);
-
-        // Abort with an exception
-        RuntimeException abortCause = new RuntimeException("Test abort");
-        planner.abort(abortCause);
-
-        // The pending future should complete exceptionally
-        assertThat(future)
-                .failsWithin(Duration.ofSeconds(1))
-                .withThrowableThat()
-                .withCauseInstanceOf(RuntimeException.class)
-                .withMessageContaining("Test abort");
     }
 
     @Test
