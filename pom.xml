@@ -116,13 +116,6 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-    <dependencies>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
 
     <build>
         <pluginManagement>
@@ -148,30 +141,6 @@
                     <groupId>io.smallrye</groupId>
                     <artifactId>jandex-maven-plugin</artifactId>
                     <version>${jandex.version}</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <configuration>
-                        <argLine>-javaagent:${org.mockito:mockito-core:jar}</argLine>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-failsafe-plugin</artifactId>
-                    <configuration>
-                        <argLine>-javaagent:${org.mockito:mockito-core:jar}</argLine>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-dependency-plugin</artifactId>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>properties</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -275,19 +244,7 @@
                                     ${maven.multiModuleProjectDirectory}/target/jacoco-report
                                 </quarkus.jacoco.report-location>
                             </systemPropertyVariables>
-                            <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
                         </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-dependency-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>properties</goal>
-                                </goals>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>
@@ -306,7 +263,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <configuration>
-                            <argLine>@{argLine} -Xmx1024m -javaagent:${org.mockito:mockito-core:jar}</argLine>
+                            <argLine>@{argLine} -Xmx1024m</argLine>
                             <systemPropertyVariables>
                                 <native.image.path>${project.build.directory}/${project.build.finalName}-runner
                                 </native.image.path>
@@ -316,17 +273,6 @@
                                 <quarkus.banner.enabled>false</quarkus.banner.enabled>
                             </systemPropertyVariables>
                         </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-dependency-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>properties</goal>
-                                </goals>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>
