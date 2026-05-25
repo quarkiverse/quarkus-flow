@@ -96,8 +96,9 @@ class FlowPlannerTest {
 
         assertThat(future)
                 .failsWithin(Duration.ofSeconds(1))
-                .withThrowableOfType(CancellationException.class)
-                .withMessageContaining("Planner is closed");
+                .withThrowableThat()
+                .isInstanceOf(CancellationException.class)
+                .withStackTraceContaining("Planner is closed");
     }
 
     @Test
