@@ -2,6 +2,8 @@ package io.quarkiverse.flow.structuredlogging;
 
 import java.util.Map;
 
+import io.serverlessworkflow.impl.LifecycleEvents;
+
 /**
  * Event type constants for structured logging.
  * <p>
@@ -56,24 +58,6 @@ final class StructuredLoggingEventTypes {
     // Source: io.serverlessworkflow.impl.lifecycle.ce.AbstractLifeCyclePublisher
     // TODO: Replace with direct references once https://github.com/serverlessworkflow/sdk-java/issues/1314 is resolved
 
-    // Task CloudEvent Types
-    private static final String CE_TASK_STARTED = "io.serverlessworkflow.task.started.v1";
-    private static final String CE_TASK_COMPLETED = "io.serverlessworkflow.task.completed.v1";
-    private static final String CE_TASK_SUSPENDED = "io.serverlessworkflow.task.suspended.v1";
-    private static final String CE_TASK_RESUMED = "io.serverlessworkflow.task.resumed.v1";
-    private static final String CE_TASK_FAULTED = "io.serverlessworkflow.task.faulted.v1";
-    private static final String CE_TASK_CANCELLED = "io.serverlessworkflow.task.cancelled.v1";
-    private static final String CE_TASK_RETRIED = "io.serverlessworkflow.task.retried.v1";
-
-    // Workflow CloudEvent Types
-    private static final String CE_WORKFLOW_STARTED = "io.serverlessworkflow.workflow.started.v1";
-    private static final String CE_WORKFLOW_COMPLETED = "io.serverlessworkflow.workflow.completed.v1";
-    private static final String CE_WORKFLOW_SUSPENDED = "io.serverlessworkflow.workflow.suspended.v1";
-    private static final String CE_WORKFLOW_RESUMED = "io.serverlessworkflow.workflow.resumed.v1";
-    private static final String CE_WORKFLOW_FAULTED = "io.serverlessworkflow.workflow.faulted.v1";
-    private static final String CE_WORKFLOW_CANCELLED = "io.serverlessworkflow.workflow.cancelled.v1";
-    private static final String CE_WORKFLOW_STATUS_CHANGED = "io.serverlessworkflow.workflow.status-changed.v1";
-
     // ========================================
     // Filter Key → CloudEvent Type Mapping
     // ========================================
@@ -81,21 +65,21 @@ final class StructuredLoggingEventTypes {
 
     private static final Map<String, String> FILTER_TO_CLOUDEVENT_TYPE = Map.ofEntries(
             // Workflow Instance Events
-            Map.entry(WORKFLOW_INSTANCE_STARTED, CE_WORKFLOW_STARTED),
-            Map.entry(WORKFLOW_INSTANCE_COMPLETED, CE_WORKFLOW_COMPLETED),
-            Map.entry(WORKFLOW_INSTANCE_FAULTED, CE_WORKFLOW_FAULTED),
-            Map.entry(WORKFLOW_INSTANCE_CANCELLED, CE_WORKFLOW_CANCELLED),
-            Map.entry(WORKFLOW_INSTANCE_SUSPENDED, CE_WORKFLOW_SUSPENDED),
-            Map.entry(WORKFLOW_INSTANCE_RESUMED, CE_WORKFLOW_RESUMED),
-            Map.entry(WORKFLOW_INSTANCE_STATUS_CHANGED, CE_WORKFLOW_STATUS_CHANGED),
+            Map.entry(WORKFLOW_INSTANCE_STARTED, LifecycleEvents.WORKFLOW_STARTED),
+            Map.entry(WORKFLOW_INSTANCE_COMPLETED, LifecycleEvents.WORKFLOW_COMPLETED),
+            Map.entry(WORKFLOW_INSTANCE_FAULTED, LifecycleEvents.WORKFLOW_FAULTED),
+            Map.entry(WORKFLOW_INSTANCE_CANCELLED, LifecycleEvents.WORKFLOW_CANCELLED),
+            Map.entry(WORKFLOW_INSTANCE_SUSPENDED, LifecycleEvents.WORKFLOW_SUSPENDED),
+            Map.entry(WORKFLOW_INSTANCE_RESUMED, LifecycleEvents.WORKFLOW_RESUMED),
+            Map.entry(WORKFLOW_INSTANCE_STATUS_CHANGED, LifecycleEvents.WORKFLOW_STATUS_CHANGED),
             // Task Events
-            Map.entry(WORKFLOW_TASK_STARTED, CE_TASK_STARTED),
-            Map.entry(WORKFLOW_TASK_COMPLETED, CE_TASK_COMPLETED),
-            Map.entry(WORKFLOW_TASK_FAULTED, CE_TASK_FAULTED),
-            Map.entry(WORKFLOW_TASK_CANCELLED, CE_TASK_CANCELLED),
-            Map.entry(WORKFLOW_TASK_SUSPENDED, CE_TASK_SUSPENDED),
-            Map.entry(WORKFLOW_TASK_RESUMED, CE_TASK_RESUMED),
-            Map.entry(WORKFLOW_TASK_RETRIED, CE_TASK_RETRIED));
+            Map.entry(WORKFLOW_TASK_STARTED, LifecycleEvents.TASK_STARTED),
+            Map.entry(WORKFLOW_TASK_COMPLETED, LifecycleEvents.TASK_COMPLETED),
+            Map.entry(WORKFLOW_TASK_FAULTED, LifecycleEvents.TASK_FAULTED),
+            Map.entry(WORKFLOW_TASK_CANCELLED, LifecycleEvents.TASK_CANCELLED),
+            Map.entry(WORKFLOW_TASK_SUSPENDED, LifecycleEvents.TASK_SUSPENDED),
+            Map.entry(WORKFLOW_TASK_RESUMED, LifecycleEvents.TASK_RESUMED),
+            Map.entry(WORKFLOW_TASK_RETRIED, LifecycleEvents.TASK_RETRIED));
 
     /**
      * Maps a filter key (simplified event type) to the official Serverless Workflow CloudEvent type.
