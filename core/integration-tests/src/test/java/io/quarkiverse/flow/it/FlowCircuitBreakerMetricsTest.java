@@ -58,7 +58,6 @@ public class FlowCircuitBreakerMetricsTest {
     }
 
     @InjectMock
-    @Identifier("for-cb-workflow")
     WorkflowDefinition workflowDefinition;
 
     @Inject

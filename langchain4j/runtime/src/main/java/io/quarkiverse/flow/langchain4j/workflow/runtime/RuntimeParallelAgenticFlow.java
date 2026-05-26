@@ -10,9 +10,6 @@ import jakarta.enterprise.inject.Vetoed;
 import com.networknt.schema.utils.Strings;
 
 import io.quarkiverse.flow.langchain4j.workflow.flow.ParallelAgenticFlow;
-import io.quarkiverse.flow.langchain4j.workflow.service.*;
-
-// WorkflowApplication now accessed via RuntimeWorkflowApplicationProvider
 
 @Vetoed
 public class RuntimeParallelAgenticFlow extends ParallelAgenticFlow {
@@ -22,7 +19,6 @@ public class RuntimeParallelAgenticFlow extends ParallelAgenticFlow {
     private final RuntimeWorkflowApplicationProvider runtimeAppProvider;
 
     public RuntimeParallelAgenticFlow(String agentClassName, RuntimeWorkflowApplicationProvider runtimeAppProvider) {
-        // Add unique ID to prevent workflow definition caching conflicts between test instances
         this.agentClassName = agentClassName;
         this.runtimeAppProvider = runtimeAppProvider;
     }

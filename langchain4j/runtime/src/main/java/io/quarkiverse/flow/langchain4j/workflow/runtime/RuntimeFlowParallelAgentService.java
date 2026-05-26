@@ -20,8 +20,6 @@ public final class RuntimeFlowParallelAgentService<T> extends FlowParallelAgentS
 
     @Override
     public ParallelAgentService<T> subAgents(Collection<?> agents) {
-        // NOTE: Don't add task names here! This method is called by the parent LC4j class
-        // as a callback from the varargs overload. Adding task names here would duplicate them.
         return super.subAgents(agents);
     }
 

@@ -14,11 +14,6 @@ import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 public class ForCircuitBreakerWorkflow extends Flow {
 
     @Override
-    public String identifier() {
-        return "for-cb-workflow";
-    }
-
-    @Override
     public Workflow descriptor() {
         final URI problematic = URI.create("openapi/problematic.json");
 

@@ -12,8 +12,16 @@ import dev.langchain4j.agentic.workflow.ConditionalAgentService;
 import dev.langchain4j.agentic.workflow.LoopAgentService;
 import dev.langchain4j.agentic.workflow.ParallelAgentService;
 import dev.langchain4j.agentic.workflow.SequentialAgentService;
-import io.quarkiverse.flow.langchain4j.workflow.flow.*;
-import io.quarkiverse.flow.langchain4j.workflow.service.*;
+import io.quarkiverse.flow.langchain4j.workflow.flow.AgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.flow.ConditionalAgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.flow.LoopAgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.flow.ParallelAgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.flow.SequentialAgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.runtime.RuntimeWorkflowApplicationProvider;
+import io.quarkiverse.flow.langchain4j.workflow.service.FlowConditionalAgentService;
+import io.quarkiverse.flow.langchain4j.workflow.service.FlowLoopAgentService;
+import io.quarkiverse.flow.langchain4j.workflow.service.FlowParallelAgentService;
+import io.quarkiverse.flow.langchain4j.workflow.service.FlowSequentialAgentService;
 import io.quarkus.arc.Unremovable;
 
 /**
@@ -43,57 +51,8 @@ public class FlowAgentsBuilderService {
     @Any
     Instance<ConditionalAgenticFlow> conditionalFlows;
 
-    public SequentialAgentService<UntypedAgent> newSequential() {
-        throw new UnsupportedOperationException("Untyped agents are not supported yet");
-    }
-
-    public <T> SequentialAgentService<T> newSequential(Class<T> agentServiceClass) {
-        return FlowSequentialAgentService.builder(agentServiceClass,
-                sequentialFlows.stream()
-                        .filter(flow -> flow.agentClassName().equals(agentServiceClass.getName()))
-                        .findFirst()
-                        .orElseThrow(() -> flowNotFoundError("sequential", agentServiceClass,
-                                sequentialFlows)));
-    }
-
-    public ParallelAgentService<UntypedAgent> newParallel() {
-        throw new UnsupportedOperationException("Untyped agents are not supported yet");
-    }
-
-    public <T> ParallelAgentService<T> newParallel(Class<T> agentServiceClass) {
-        return FlowParallelAgentService.builder(agentServiceClass,
-                parallelFlows.stream()
-                        .filter(flow -> flow.agentClassName().equals(agentServiceClass.getName()))
-                        .findFirst()
-                        .orElseThrow(() -> flowNotFoundError("parallel", agentServiceClass,
-                                parallelFlows)));
-    }
-
-    public LoopAgentService<UntypedAgent> newLoop() {
-        throw new UnsupportedOperationException("Untyped agents are not supported yet");
-    }
-
-    public <T> LoopAgentService<T> newLoop(Class<T> agentServiceClass) {
-        return FlowLoopAgentService.builder(agentServiceClass,
-                loopFlows.stream()
-                        .filter(flow -> flow.agentClassName().equals(agentServiceClass.getName()))
-                        .findFirst()
-                        .orElseThrow(() -> flowNotFoundError("loop", agentServiceClass,
-                                loopFlows)));
-    }
-
-    public ConditionalAgentService<UntypedAgent> newConditional() {
-        throw new UnsupportedOperationException("Untyped agents are not supported yet");
-    }
-
-    public <T> ConditionalAgentService<T> newConditional(Class<T> agentServiceClass) {
-        return FlowConditionalAgentService.builder(agentServiceClass,
-                conditionalFlows.stream()
-                        .filter(flow -> flow.agentClassName().equals(agentServiceClass.getName()))
-                        .findFirst()
-                        .orElseThrow(() -> flowNotFoundError("conditional", agentServiceClass,
-                                conditionalFlows)));
-    }
+    @Inject
+    RuntimeWorkflowApplicationProvider workflowApplicationProvider;
 
     private static <T extends AgenticFlow> IllegalStateException flowNotFoundError(
             String topology,
@@ -115,5 +74,57 @@ public class FlowAgentsBuilderService {
             return str;
         }
         return str.substring(0, 1).toUpperCase() + str.substring(1);
+    }
+
+    public SequentialAgentService<UntypedAgent> newSequential() {
+        return FlowSequentialAgentService.builder(workflowApplicationProvider);
+    }
+
+    public <T> SequentialAgentService<T> newSequential(Class<T> agentServiceClass) {
+        return FlowSequentialAgentService.builder(agentServiceClass,
+                sequentialFlows.stream()
+                        .filter(flow -> flow.agentClassName().equals(agentServiceClass.getName()))
+                        .findFirst()
+                        .orElseThrow(() -> flowNotFoundError("sequential", agentServiceClass,
+                                sequentialFlows)));
+    }
+
+    public ParallelAgentService<UntypedAgent> newParallel() {
+        return FlowParallelAgentService.builder(workflowApplicationProvider);
+    }
+
+    public <T> ParallelAgentService<T> newParallel(Class<T> agentServiceClass) {
+        return FlowParallelAgentService.builder(agentServiceClass,
+                parallelFlows.stream()
+                        .filter(flow -> flow.agentClassName().equals(agentServiceClass.getName()))
+                        .findFirst()
+                        .orElseThrow(() -> flowNotFoundError("parallel", agentServiceClass,
+                                parallelFlows)));
+    }
+
+    public LoopAgentService<UntypedAgent> newLoop() {
+        return FlowLoopAgentService.builder(workflowApplicationProvider);
+    }
+
+    public <T> LoopAgentService<T> newLoop(Class<T> agentServiceClass) {
+        return FlowLoopAgentService.builder(agentServiceClass,
+                loopFlows.stream()
+                        .filter(flow -> flow.agentClassName().equals(agentServiceClass.getName()))
+                        .findFirst()
+                        .orElseThrow(() -> flowNotFoundError("loop", agentServiceClass,
+                                loopFlows)));
+    }
+
+    public ConditionalAgentService<UntypedAgent> newConditional() {
+        return FlowConditionalAgentService.builder(workflowApplicationProvider);
+    }
+
+    public <T> ConditionalAgentService<T> newConditional(Class<T> agentServiceClass) {
+        return FlowConditionalAgentService.builder(agentServiceClass,
+                conditionalFlows.stream()
+                        .filter(flow -> flow.agentClassName().equals(agentServiceClass.getName()))
+                        .findFirst()
+                        .orElseThrow(() -> flowNotFoundError("conditional", agentServiceClass,
+                                conditionalFlows)));
     }
 }

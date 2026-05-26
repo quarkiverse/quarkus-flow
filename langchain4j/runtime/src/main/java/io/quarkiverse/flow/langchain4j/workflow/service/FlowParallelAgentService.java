@@ -12,8 +12,6 @@ import dev.langchain4j.agentic.workflow.impl.ParallelAgentServiceImpl;
 import io.quarkiverse.flow.langchain4j.workflow.flow.*;
 import io.quarkiverse.flow.langchain4j.workflow.runtime.*;
 
-// WorkflowApplication now accessed via RuntimeWorkflowApplicationProvider
-
 public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> {
 
     protected final ParallelAgenticFlow flow;
@@ -23,8 +21,9 @@ public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> {
         this.flow = flow;
     }
 
-    public static FlowParallelAgentService<UntypedAgent> builder() {
-        return new FlowParallelAgentService<>(UntypedAgent.class, null, null);
+    public static RuntimeFlowParallelAgentService<UntypedAgent> builder(RuntimeWorkflowApplicationProvider runtimeAppProvider) {
+        return new RuntimeFlowParallelAgentService<>(UntypedAgent.class, null,
+                new RuntimeParallelAgenticFlow(UntypedAgent.class.getName(), runtimeAppProvider));
     }
 
     public static <T> FlowParallelAgentService<T> builder(Class<T> agentServiceClass, ParallelAgenticFlow flow) {
@@ -32,7 +31,7 @@ public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> {
                 validateAgentClass(agentServiceClass, false, ParallelAgent.class), flow);
     }
 
-    public static <T> FlowParallelAgentService<T> builder(Class<T> agentServiceClass,
+    public static <T> RuntimeFlowParallelAgentService<T> builder(Class<T> agentServiceClass,
             RuntimeWorkflowApplicationProvider runtimeAppProvider) {
         return new RuntimeFlowParallelAgentService<>(agentServiceClass,
                 validateAgentClass(agentServiceClass, false, ParallelAgent.class),

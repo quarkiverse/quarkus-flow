@@ -8,8 +8,10 @@ import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.agentic.declarative.SequenceAgent;
 import dev.langchain4j.agentic.planner.AgenticSystemTopology;
 import dev.langchain4j.agentic.workflow.impl.SequentialAgentServiceImpl;
-import io.quarkiverse.flow.langchain4j.workflow.flow.*;
-import io.quarkiverse.flow.langchain4j.workflow.runtime.*;
+import io.quarkiverse.flow.langchain4j.workflow.flow.SequentialAgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.runtime.RuntimeFlowSequentialAgentService;
+import io.quarkiverse.flow.langchain4j.workflow.runtime.RuntimeSequentialAgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.runtime.RuntimeWorkflowApplicationProvider;
 
 public class FlowSequentialAgentService<T> extends SequentialAgentServiceImpl<T> {
 
@@ -20,9 +22,10 @@ public class FlowSequentialAgentService<T> extends SequentialAgentServiceImpl<T>
         this.flow = flow;
     }
 
-    public static FlowSequentialAgentService<UntypedAgent> builder() {
-        // TODO: build a runtime flow for untyped agents - future PR.
-        return new FlowSequentialAgentService<>(UntypedAgent.class, null, null);
+    public static RuntimeFlowSequentialAgentService<UntypedAgent> builder(
+            RuntimeWorkflowApplicationProvider runtimeAppProvider) {
+        return new RuntimeFlowSequentialAgentService<>(UntypedAgent.class, null,
+                new RuntimeSequentialAgenticFlow(UntypedAgent.class.getName(), runtimeAppProvider));
     }
 
     public static <T> FlowSequentialAgentService<T> builder(Class<T> agentServiceClass, SequentialAgenticFlow flow) {
@@ -30,7 +33,7 @@ public class FlowSequentialAgentService<T> extends SequentialAgentServiceImpl<T>
                 validateAgentClass(agentServiceClass, false, SequenceAgent.class), flow);
     }
 
-    public static <T> FlowSequentialAgentService<T> builder(Class<T> agentServiceClass,
+    public static <T> RuntimeFlowSequentialAgentService<T> builder(Class<T> agentServiceClass,
             RuntimeWorkflowApplicationProvider runtimeAppProvider) {
         return new RuntimeFlowSequentialAgentService<>(agentServiceClass,
                 validateAgentClass(agentServiceClass, false, SequenceAgent.class),

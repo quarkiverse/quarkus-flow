@@ -16,8 +16,6 @@ import dev.langchain4j.agentic.scope.AgenticScope;
 import io.quarkiverse.flow.langchain4j.workflow.flow.ConditionalAgenticFlow;
 import io.quarkiverse.flow.langchain4j.workflow.service.*;
 
-// WorkflowApplication now accessed via RuntimeWorkflowApplicationProvider
-
 @Vetoed
 public class RuntimeConditionalAgenticFlow extends ConditionalAgenticFlow {
 

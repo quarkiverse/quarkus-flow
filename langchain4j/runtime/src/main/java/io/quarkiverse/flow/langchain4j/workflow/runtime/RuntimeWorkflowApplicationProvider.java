@@ -21,21 +21,23 @@ import io.serverlessworkflow.impl.WorkflowApplication;
 @ApplicationScoped
 public class RuntimeWorkflowApplicationProvider {
 
-    private final WorkflowApplication runtimeApplication;
+    private final WorkflowApplicationCreator creator;
 
     @Inject
     public RuntimeWorkflowApplicationProvider(WorkflowApplicationCreator creator) {
-        // Create a separate WorkflowApplication instance for runtime workflows
-        // This uses the same infrastructure but has its own workflow definition cache
-        this.runtimeApplication = creator.create(false, false);
+        this.creator = creator;
     }
 
     /**
-     * Returns the dedicated WorkflowApplication instance for runtime-created workflows.
+     * Creates a new WorkflowApplication instance for runtime-created workflows.
+     * <p>
+     * Each call returns a fresh instance with its own workflow definition cache,
+     * preventing cache conflicts between different runtime workflow instances.
      *
-     * @return the runtime workflow application
+     * @return a new runtime workflow application
      */
     public WorkflowApplication getRuntimeApplication() {
-        return runtimeApplication;
+        // Create a NEW instance each time to ensure isolation between workflows
+        return creator.create(false, false);
     }
 }

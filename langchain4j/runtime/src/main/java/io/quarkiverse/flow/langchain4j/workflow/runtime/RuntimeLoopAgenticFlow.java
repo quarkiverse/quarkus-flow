@@ -14,20 +14,17 @@ import dev.langchain4j.agentic.scope.AgenticScope;
 import io.quarkiverse.flow.langchain4j.workflow.flow.LoopAgenticFlow;
 import io.quarkiverse.flow.langchain4j.workflow.service.*;
 
-// WorkflowApplication now accessed via RuntimeWorkflowApplicationProvider
-
 @Vetoed
 public class RuntimeLoopAgenticFlow extends LoopAgenticFlow {
 
     private final String agentClassName;
     private final List<String> agentTaskNames = new ArrayList<>();
     private final RuntimeWorkflowApplicationProvider runtimeAppProvider;
-    private int maxIterations = 0;
-    private BiPredicate<AgenticScope, Integer> exitCondition = null;
-    private boolean testExitAtLoopEnd = false;
+    protected int maxIterations = Integer.MAX_VALUE;
+    protected BiPredicate<AgenticScope, Integer> exitCondition = (scope, loopCounter) -> false;
+    protected boolean testExitAtLoopEnd = false;
 
     public RuntimeLoopAgenticFlow(String agentClassName, RuntimeWorkflowApplicationProvider runtimeAppProvider) {
-        // Add unique ID to prevent workflow definition caching conflicts between test instances
         this.agentClassName = agentClassName;
         this.runtimeAppProvider = runtimeAppProvider;
     }

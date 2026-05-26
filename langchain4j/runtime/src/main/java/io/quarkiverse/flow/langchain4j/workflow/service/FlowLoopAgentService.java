@@ -8,10 +8,10 @@ import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.agentic.declarative.LoopAgent;
 import dev.langchain4j.agentic.planner.AgenticSystemTopology;
 import dev.langchain4j.agentic.workflow.impl.LoopAgentServiceImpl;
-import io.quarkiverse.flow.langchain4j.workflow.flow.*;
-import io.quarkiverse.flow.langchain4j.workflow.runtime.*;
-
-// WorkflowApplication now accessed via RuntimeWorkflowApplicationProvider
+import io.quarkiverse.flow.langchain4j.workflow.flow.LoopAgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.runtime.RuntimeFlowLoopAgentService;
+import io.quarkiverse.flow.langchain4j.workflow.runtime.RuntimeLoopAgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.runtime.RuntimeWorkflowApplicationProvider;
 
 public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> {
 
@@ -22,8 +22,9 @@ public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> {
         this.flow = flow;
     }
 
-    public static FlowLoopAgentService<UntypedAgent> builder() {
-        return new FlowLoopAgentService<>(UntypedAgent.class, null, null);
+    public static RuntimeFlowLoopAgentService<UntypedAgent> builder(RuntimeWorkflowApplicationProvider runtimeAppProvider) {
+        return new RuntimeFlowLoopAgentService<>(UntypedAgent.class, null,
+                new RuntimeLoopAgenticFlow(UntypedAgent.class.getName(), runtimeAppProvider));
     }
 
     public static <T> FlowLoopAgentService<T> builder(Class<T> agentServiceClass, LoopAgenticFlow flow) {
@@ -31,7 +32,7 @@ public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> {
                 flow);
     }
 
-    public static <T> FlowLoopAgentService<T> builder(Class<T> agentServiceClass,
+    public static <T> RuntimeFlowLoopAgentService<T> builder(Class<T> agentServiceClass,
             RuntimeWorkflowApplicationProvider runtimeAppProvider) {
         return new RuntimeFlowLoopAgentService<>(agentServiceClass,
                 validateAgentClass(agentServiceClass, false, LoopAgent.class),

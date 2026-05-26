@@ -8,10 +8,10 @@ import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.agentic.declarative.ConditionalAgent;
 import dev.langchain4j.agentic.planner.AgenticSystemTopology;
 import dev.langchain4j.agentic.workflow.impl.ConditionalAgentServiceImpl;
-import io.quarkiverse.flow.langchain4j.workflow.flow.*;
-import io.quarkiverse.flow.langchain4j.workflow.runtime.*;
-
-// WorkflowApplication now accessed via RuntimeWorkflowApplicationProvider
+import io.quarkiverse.flow.langchain4j.workflow.flow.ConditionalAgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.runtime.RuntimeConditionalAgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.runtime.RuntimeFlowConditionalAgentService;
+import io.quarkiverse.flow.langchain4j.workflow.runtime.RuntimeWorkflowApplicationProvider;
 
 public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<T> {
 
@@ -22,8 +22,10 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
         this.flow = flow;
     }
 
-    public static FlowConditionalAgentService<UntypedAgent> builder() {
-        return new FlowConditionalAgentService<>(UntypedAgent.class, null, null);
+    public static RuntimeFlowConditionalAgentService<UntypedAgent> builder(
+            RuntimeWorkflowApplicationProvider runtimeAppProvider) {
+        return new RuntimeFlowConditionalAgentService<>(UntypedAgent.class, null,
+                new RuntimeConditionalAgenticFlow(UntypedAgent.class.getName(), runtimeAppProvider));
     }
 
     public static <T> FlowConditionalAgentService<T> builder(Class<T> agentServiceClass, ConditionalAgenticFlow flow) {
@@ -31,7 +33,7 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
                 validateAgentClass(agentServiceClass, false, ConditionalAgent.class), flow);
     }
 
-    public static <T> FlowConditionalAgentService<T> builder(Class<T> agentServiceClass,
+    public static <T> RuntimeFlowConditionalAgentService<T> builder(Class<T> agentServiceClass,
             RuntimeWorkflowApplicationProvider runtimeAppProvider) {
         return new RuntimeFlowConditionalAgentService<>(agentServiceClass,
                 validateAgentClass(agentServiceClass, false, ConditionalAgent.class),

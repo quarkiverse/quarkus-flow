@@ -15,7 +15,7 @@ public abstract class ConditionalAgenticFlow extends AgenticFlow {
 
     /**
      * Build activation predicate using LangChain4j's DeclarativeUtil API. Called by the generated
-     * {@link io.quarkiverse.flow.Flow} implementing this interface.
+     * {@link AgenticFlow} extending this class.
      */
     public Predicate<AgenticScope> buildActivationPredicate(Class<?> agentClass, String methodName,
             List<String> paramTypeNames) {
@@ -30,8 +30,8 @@ public abstract class ConditionalAgenticFlow extends AgenticFlow {
     /**
      * Returns activation predicates for conditional workflows, indexed by subagent position.
      * <p>
-     * This method is meant to be overridden by generated {@link io.quarkiverse.flow.Flow} classes
-     * implementing this interface. The generated implementation calls {@link #buildActivationPredicate(Class, String, List)}
+     * This method is meant to be overridden by generated {@link AgenticFlow} classes
+     * extending this class. The generated implementation calls {@link #buildActivationPredicate(Class, String, List)}
      * for each agent's activation condition method and returns a map of subagent indices to their predicates.
      * <p>
      * Default implementation returns an empty map (no conditional routing).

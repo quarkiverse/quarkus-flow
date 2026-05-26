@@ -24,8 +24,6 @@ public final class RuntimeFlowLoopAgentService<T> extends FlowLoopAgentService<T
 
     @Override
     public LoopAgentService<T> subAgents(Collection<?> agents) {
-        // NOTE: Don't add task names here! This method is called by the parent LC4j class
-        // as a callback from the varargs overload. Adding task names here would duplicate them.
         return super.subAgents(agents);
     }
 
