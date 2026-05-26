@@ -21,7 +21,7 @@ import io.smallrye.reactive.messaging.MutinyEmitter;
  */
 public abstract class ContentBasedRouterEventsPublisher implements EventPublisher {
 
-    private static final String ENGINE_PREFIX = "io.serverlessworkflow.";
+    private static final String ENGINE_PREFIX = "io.serverlessworkflow";
     private static final Logger LOG = LoggerFactory.getLogger(ContentBasedRouterEventsPublisher.class);
     private static final EventFormat FORMAT = EventFormatProvider.getInstance()
             .resolveFormat(JsonFormat.CONTENT_TYPE);
