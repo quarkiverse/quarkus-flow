@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.langchain4j.workflow;
+package io.quarkiverse.flow.langchain4j.workflow.flow;
 
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.withInstanceId;
 

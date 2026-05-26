@@ -3,11 +3,11 @@ package io.quarkiverse.flow.langchain4j.deployment;
 import java.util.Map;
 
 import dev.langchain4j.agentic.planner.AgenticSystemTopology;
-import io.quarkiverse.flow.langchain4j.workflow.AgenticFlow;
-import io.quarkiverse.flow.langchain4j.workflow.ConditionalAgenticFlow;
-import io.quarkiverse.flow.langchain4j.workflow.LoopAgenticFlow;
-import io.quarkiverse.flow.langchain4j.workflow.ParallelAgenticFlow;
-import io.quarkiverse.flow.langchain4j.workflow.SequentialAgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.flow.AgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.flow.ConditionalAgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.flow.LoopAgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.flow.ParallelAgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.flow.SequentialAgenticFlow;
 
 /**
  * Maps LangChain4j {@link AgenticSystemTopology} to corresponding {@link AgenticFlow} implementation classes.

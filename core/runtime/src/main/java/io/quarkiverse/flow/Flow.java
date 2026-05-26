@@ -85,10 +85,10 @@ import io.smallrye.mutiny.Uni;
  */
 public abstract class Flow implements Flowable {
 
-    private WorkflowDefinition definition;
+    protected WorkflowDefinition definition;
 
     @PostConstruct
-    void init() {
+    protected void init() {
         this.definition = Arc.container()
                 .select(WorkflowDefinition.class, Identifier.Literal.of(this.identifier()))
                 .get();

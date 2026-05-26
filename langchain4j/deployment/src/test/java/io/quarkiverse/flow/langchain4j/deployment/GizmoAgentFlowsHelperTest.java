@@ -25,9 +25,9 @@ import dev.langchain4j.agentic.declarative.ParallelAgent;
 import dev.langchain4j.agentic.declarative.SequenceAgent;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import io.quarkiverse.flow.Flow;
-import io.quarkiverse.flow.langchain4j.workflow.AgenticFlow;
-import io.quarkiverse.flow.langchain4j.workflow.ConditionalAgenticFlow;
-import io.quarkiverse.flow.langchain4j.workflow.LoopAgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.flow.AgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.flow.ConditionalAgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.flow.LoopAgenticFlow;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 

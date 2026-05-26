@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.deployment.DiscoveredWorkflowBuildItem;
-import io.quarkiverse.flow.langchain4j.workflow.AgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.flow.AgenticFlow;
 import io.quarkiverse.langchain4j.agentic.deployment.DetectedAiAgentBuildItem;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;

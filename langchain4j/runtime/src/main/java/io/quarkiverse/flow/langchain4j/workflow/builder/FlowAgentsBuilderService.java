@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.langchain4j.workflow;
+package io.quarkiverse.flow.langchain4j.workflow.builder;
 
 import java.util.stream.Collectors;
 
@@ -12,6 +12,8 @@ import dev.langchain4j.agentic.workflow.ConditionalAgentService;
 import dev.langchain4j.agentic.workflow.LoopAgentService;
 import dev.langchain4j.agentic.workflow.ParallelAgentService;
 import dev.langchain4j.agentic.workflow.SequentialAgentService;
+import io.quarkiverse.flow.langchain4j.workflow.flow.*;
+import io.quarkiverse.flow.langchain4j.workflow.service.*;
 import io.quarkus.arc.Unremovable;
 
 /**

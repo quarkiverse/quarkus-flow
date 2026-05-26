@@ -5,31 +5,26 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
+import jakarta.inject.Inject;
+
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
 import dev.langchain4j.service.V;
+import io.quarkiverse.flow.langchain4j.workflow.builder.*;
+import io.quarkiverse.flow.langchain4j.workflow.flow.*;
+import io.quarkiverse.flow.langchain4j.workflow.runtime.*;
+import io.quarkiverse.flow.langchain4j.workflow.service.*;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-@Disabled("TODO: Agents are now generated in build time, we can't afford creating them in runtime. To be added in a future PR.")
 public class FlowAgentServicesMockedTest {
 
-    SequentialAgenticFlow sequentialAgentFlow;
-
-    ParallelAgenticFlow parallelAgenticFlow;
-
-    LoopAgenticFlow loopAgenticFlow;
-
-    ConditionalAgenticFlow conditionalAgenticFlow;
-
-    SequentialAgenticFlow sequentialContextIsolationFlow;
-
-    SequentialAgenticFlow sequentialContextError;
+    @Inject
+    RuntimeWorkflowApplicationProvider runtimeAppProvider;
 
     @Test
     void sequentialAgentInvokesExecutorsInOrder() {
@@ -47,7 +42,7 @@ public class FlowAgentServicesMockedTest {
 
         // Build our Flow-backed LC4J service
         FlowSequentialAgentService<TestSequentialAgent> service = FlowSequentialAgentService.builder(TestSequentialAgent.class,
-                sequentialAgentFlow);
+                runtimeAppProvider);
 
         // Register sub-agents (executors)
         service.subAgents(agent1, agent2);
@@ -70,7 +65,7 @@ public class FlowAgentServicesMockedTest {
         var agent3 = AgenticServices.agentAction(scope -> scope.writeState("calledC", true));
 
         FlowParallelAgentService<TestParallelAgent> service = FlowParallelAgentService.builder(TestParallelAgent.class,
-                parallelAgenticFlow);
+                runtimeAppProvider);
 
         service.subAgents(agent1, agent2, agent3);
 
@@ -91,7 +86,7 @@ public class FlowAgentServicesMockedTest {
         var financeExec = AgenticServices.agentAction(scope -> scope.writeState("branch", "finance"));
 
         FlowConditionalAgentService<TestConditionalAgent> service = FlowConditionalAgentService
-                .builder(TestConditionalAgent.class, conditionalAgenticFlow);
+                .builder(TestConditionalAgent.class, runtimeAppProvider);
 
         // condition on state("type")
         Predicate<AgenticScope> isMedical = scope -> "medical".equals(scope.readState("type", ""));
@@ -121,7 +116,7 @@ public class FlowAgentServicesMockedTest {
             calls.incrementAndGet();
         });
 
-        FlowLoopAgentService<TestLoopAgent> service = FlowLoopAgentService.builder(TestLoopAgent.class, loopAgenticFlow);
+        FlowLoopAgentService<TestLoopAgent> service = FlowLoopAgentService.builder(TestLoopAgent.class, runtimeAppProvider);
 
         // max 10 iterations, but we exit when counter >= 3
         service.maxIterations(10);
@@ -159,7 +154,7 @@ public class FlowAgentServicesMockedTest {
         });
 
         FlowSequentialAgentService<TestExecutionContextIsolationAgent> service = FlowSequentialAgentService
-                .builder(TestExecutionContextIsolationAgent.class, sequentialContextIsolationFlow);
+                .builder(TestExecutionContextIsolationAgent.class, runtimeAppProvider);
         service.subAgents(agent);
         TestExecutionContextIsolationAgent testAgent = service.build();
 
@@ -186,7 +181,7 @@ public class FlowAgentServicesMockedTest {
         });
 
         FlowSequentialAgentService<TestExecutionContextErrorAgent> service = FlowSequentialAgentService
-                .builder(TestExecutionContextErrorAgent.class, sequentialContextError);
+                .builder(TestExecutionContextErrorAgent.class, runtimeAppProvider);
         service.subAgents(failingAgent);
         TestExecutionContextErrorAgent agent = service.build();
 

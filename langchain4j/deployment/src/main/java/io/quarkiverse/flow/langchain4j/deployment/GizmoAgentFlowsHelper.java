@@ -18,8 +18,8 @@ import org.jboss.jandex.Type;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import io.quarkiverse.flow.langchain4j.workflow.ConditionalAgenticFlow;
-import io.quarkiverse.flow.langchain4j.workflow.LoopAgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.flow.ConditionalAgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.flow.LoopAgenticFlow;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;

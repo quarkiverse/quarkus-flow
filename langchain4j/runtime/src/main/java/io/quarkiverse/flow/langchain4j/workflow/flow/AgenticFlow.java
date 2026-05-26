@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.langchain4j.workflow;
+package io.quarkiverse.flow.langchain4j.workflow.flow;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -14,6 +14,7 @@ import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import io.quarkiverse.flow.Flow;
 import io.quarkiverse.flow.internal.WorkflowInvocationMetadata;
 import io.quarkiverse.flow.internal.WorkflowNameUtils;
+import io.quarkiverse.flow.langchain4j.workflow.service.FlowPlanner;
 import io.serverlessworkflow.fluent.spec.DocumentBuilder;
 import io.serverlessworkflow.fluent.spec.InputBuilder;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
@@ -117,13 +118,15 @@ public abstract class AgenticFlow extends Flow {
      *
      * @return the input schema as a JSON string
      */
-    protected abstract String getInputSchemaJson();
+    protected String getInputSchemaJson() {
+        return "";
+    }
 
     public Consumer<InputBuilder> inputSchema() {
         String schemaJson = getInputSchemaJson();
         if (schemaJson == null || schemaJson.isEmpty()) {
             // No schema to apply
-            return null;
+            return builder -> builder.build().setFrom(null);
         }
         try {
             JsonNode schemaNode = objectMapper.readTree(schemaJson);

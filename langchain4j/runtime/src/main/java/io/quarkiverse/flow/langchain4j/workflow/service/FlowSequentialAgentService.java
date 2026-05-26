@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.langchain4j.workflow;
+package io.quarkiverse.flow.langchain4j.workflow.service;
 
 import static dev.langchain4j.agentic.internal.AgentUtil.validateAgentClass;
 
@@ -8,10 +8,12 @@ import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.agentic.declarative.SequenceAgent;
 import dev.langchain4j.agentic.planner.AgenticSystemTopology;
 import dev.langchain4j.agentic.workflow.impl.SequentialAgentServiceImpl;
+import io.quarkiverse.flow.langchain4j.workflow.flow.*;
+import io.quarkiverse.flow.langchain4j.workflow.runtime.*;
 
 public class FlowSequentialAgentService<T> extends SequentialAgentServiceImpl<T> {
 
-    private final SequentialAgenticFlow flow;
+    protected final SequentialAgenticFlow flow;
 
     protected FlowSequentialAgentService(Class<T> agentServiceClass, Method agenticMethod, SequentialAgenticFlow flow) {
         super(agentServiceClass, agenticMethod);
@@ -26,6 +28,13 @@ public class FlowSequentialAgentService<T> extends SequentialAgentServiceImpl<T>
     public static <T> FlowSequentialAgentService<T> builder(Class<T> agentServiceClass, SequentialAgenticFlow flow) {
         return new FlowSequentialAgentService<>(agentServiceClass,
                 validateAgentClass(agentServiceClass, false, SequenceAgent.class), flow);
+    }
+
+    public static <T> FlowSequentialAgentService<T> builder(Class<T> agentServiceClass,
+            RuntimeWorkflowApplicationProvider runtimeAppProvider) {
+        return new RuntimeFlowSequentialAgentService<>(agentServiceClass,
+                validateAgentClass(agentServiceClass, false, SequenceAgent.class),
+                new RuntimeSequentialAgenticFlow(agentServiceClass.getName(), runtimeAppProvider));
     }
 
     @Override

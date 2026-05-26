@@ -14,6 +14,10 @@ import org.junit.jupiter.api.Test;
 import dev.langchain4j.agentic.planner.AgentInstance;
 import dev.langchain4j.agentic.planner.AgenticSystemTopology;
 import dev.langchain4j.agentic.planner.InitPlanningContext;
+import io.quarkiverse.flow.langchain4j.workflow.builder.*;
+import io.quarkiverse.flow.langchain4j.workflow.flow.*;
+import io.quarkiverse.flow.langchain4j.workflow.runtime.*;
+import io.quarkiverse.flow.langchain4j.workflow.service.*;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 
 /**
