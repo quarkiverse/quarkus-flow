@@ -3,7 +3,10 @@
 :page-topic-type: concept
 include::includes/attributes.adoc[]
 
-While you can orchestrate AI agents manually using the Java DSL, Quarkus Flow also provides deep, native integration with the LangChain4j *Agentic Workflow API* (e.g., `@SequenceAgent`, `@ParallelAgent`).
+Quarkus Flow provides deep, native integration with the LangChain4j *Agentic Workflow API* through two complementary approaches:
+
+* **Build-time compilation** of `@SequenceAgent`, `@ParallelAgent`, `@LoopAgent`, and `@ConditionalAgent` annotations
+* **Runtime workflow creation** via `FlowAgentsBuilderService` for dynamic UntypedAgent workflows
 
 This page explains the internal architecture of that integration: how Quarkus Flow compiles these external annotations into standard workflows, and how the engine bridges the gap between AI memory and workflow state.
 
@@ -25,7 +28,49 @@ It does not run a separate "AI Engine" at runtime. Instead, during the Quarkus b
 
 Because of this build-time translation, the generated AI workflows benefit from the exact same runtime execution speeds, tracing, and Dev UI visualizers as a workflow you wrote manually using the Java DSL.
 
-== 2. The Memory Bridge (AgenticScope vs. Workflow Context)
+== 2. The Runtime Workflow Factory
+
+While build-time compilation provides optimal performance for known AI patterns, some use cases require creating workflows dynamically at runtime:
+
+* Multi-tenant applications where each customer has custom workflow logic
+* Workflow editors or no-code platforms
+* A/B testing different agent orchestration strategies
+* Temporary, ephemeral workflows created on-demand
+
+=== The FlowAgentsBuilderService
+
+`FlowAgentsBuilderService` is a CDI-managed bean that provides factory methods for creating LangChain4j workflows programmatically:
+
+[source,java]
+----
+@Inject
+FlowAgentsBuilderService builderService;
+
+UntypedAgent workflow = builderService.newSequential()
+    .subAgents(agent1, agent2, agent3)
+    .build();
+----
+
+Each builder method (`newSequential()`, `newParallel()`, `newLoop()`, `newConditional()`) creates a `Runtime*AgenticFlow` instance that:
+
+1. **Collects workflow metadata** as you call builder methods (`.subAgents()`, `.exitCondition()`, etc.)
+2. **Generates a WorkflowDefinition** when `.build()` is called
+3. **Creates a fresh WorkflowApplication** instance with isolated workflow definition cache
+4. **Returns a proxy UntypedAgent** that delegates to the generated workflow
+
+This approach mirrors LangChain4j's own runtime builder API while generating standard CNCF Serverless Workflow definitions under the hood.
+
+=== Isolation and State Management
+
+Unlike build-time workflows (which share a global WorkflowApplication), runtime workflows receive a new `WorkflowApplication` instance on each build. This ensures:
+
+* **Cache isolation:** Each runtime workflow has its own workflow definition cache
+* **No conflicts:** Multiple tests or concurrent workflow creations don't interfere
+* **Clean state:** No residual data from previous workflow executions
+
+The isolation is achieved through `RuntimeWorkflowApplicationProvider`, which creates a new `WorkflowApplication` instance per call instead of caching a singleton.
+
+== 3. The Memory Bridge (AgenticScope vs. Workflow Context)
 
 The biggest architectural challenge when integrating an external AI framework with a workflow engine is state management.
 
@@ -41,7 +86,7 @@ When a generated AI workflow executes:
 2. It dynamically maps the `AgenticScope.state()` directly to the Workflow Data Context.
 3. **The Result:** This means that standard tasks (and `jq` expressions) can seamlessly read and write variables directly into the AI's memory scope, and the AI agents can read data injected by standard HTTP or Messaging tasks, all without manual data marshaling.
 
-== 3. Runtime Execution Semantics
+== 4. Runtime Execution Semantics
 
 When a generated AI workflow is triggered (either via the Dev UI or by an incoming event), Quarkus Flow must preserve the specific execution semantics required by LangChain4j (such as triggering specific output mappers or respecting `AgenticScope` lifecycles).
 
