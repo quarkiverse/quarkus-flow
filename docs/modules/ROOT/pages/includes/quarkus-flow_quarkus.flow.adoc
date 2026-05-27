@@ -44,8 +44,8 @@ Naming strategy to be used when generating `Identifier++#++value()` for `io.quar
 
 Given a workflow definition with namespace (`namespace: foo`) name (`name: bar`):
 
- * If the naming strategy is `class`, the generated identifier will be `foo.Bar`.
- * If the naming strategy is `spec`, the generated identifier will be `foo:bar`.
+ - If the naming strategy is `class`, the generated identifier will be `foo.Bar`.
+ - If the naming strategy is `spec`, the generated identifier will be `foo:bar`.
 
 
 ifdef::add-copy-button-to-env-var[]
@@ -72,16 +72,16 @@ Must be a valid Java package name.
 
 Example:
 
- * Workflow Document's name: `myWorkflow`
- * Workflow Document's namespace: `flow`
- * Configuration: `quarkus.flow.namespace.prefix=my.company`
+ - Workflow Document's name: `myWorkflow`
+ - Workflow Document's namespace: `flow`
+ - Configuration: `quarkus.flow.namespace.prefix=my.company`
 
 
 
 Generated identifiers are:
 
- * `@Identifier("my.company.flow.MyWorkflow")`
- * `@Identifier("flow:myWorkflow")`
+ - `@Identifier("my.company.flow.MyWorkflow")`
+ - `@Identifier("flow:myWorkflow")`
 
 
 
@@ -156,8 +156,8 @@ endif::add-copy-button-to-config-props[]
 --
 The type of storage to use for workflow instances in dev mode.
 
- * *in-memory*: Data is stored in memory and lost on restart
- * *mvstore*: Data is persisted to a file using H2 MVStore
+ - *in-memory*: Data is stored in memory and lost on restart
+ - *mvstore*: Data is persisted to a file using H2 MVStore
 
 
 ifdef::add-copy-button-to-env-var[]
@@ -303,9 +303,9 @@ Events to capture and log.
 
 Supports glob patterns:
 
- * `workflow.++*++` - All workflow and task events
- * `workflow.instance.++*++` - Only workflow-level events
- * `workflow.task.faulted` - Only task failures
+ - `workflow.++*++` - All workflow and task events
+ - `workflow.instance.++*++` - Only workflow-level events
+ - `workflow.task.faulted` - Only task failures
 
 
 
@@ -511,11 +511,11 @@ Timestamp format for structured logging events.
 
 Controls the format of all timestamp fields (timestamp, startTime, endTime, lastUpdateTime).
 
- * `iso8601` - ISO 8601 with nanosecond precision (default, backward compatible)
- * `epoch-seconds` - Unix epoch as double with fractional seconds (PostgreSQL via FluentBit)
- * `epoch-millis` - Unix epoch milliseconds as long (Elasticsearch)
- * `epoch-nanos` - Unix epoch nanoseconds as long (high-precision time-series)
- * `custom` - Custom DateTimeFormatter pattern (requires timestamp-pattern)
+ - `iso8601` - ISO 8601 with nanosecond precision (default, backward compatible)
+ - `epoch-seconds` - Unix epoch as double with fractional seconds (PostgreSQL via FluentBit)
+ - `epoch-millis` - Unix epoch milliseconds as long (Elasticsearch)
+ - `epoch-nanos` - Unix epoch nanoseconds as long (high-precision time-series)
+ - `custom` - Custom DateTimeFormatter pattern (requires timestamp-pattern)
 
 
 
@@ -546,9 +546,9 @@ Only used when `timestamp-format()` is `CUSTOM`.
 
 Example patterns:
 
- * `yyyy-MM-dd'T'HH:mm:ss.SSSXXX` - ISO 8601 with millisecond precision
- * `yyyy-MM-dd HH:mm:ss` - Simple datetime without timezone
- * `EEE, dd MMM yyyy HH:mm:ss Z` - RFC 1123 format
+ - `yyyy-MM-dd'T'HH:mm:ss.SSSXXX` - ISO 8601 with millisecond precision
+ - `yyyy-MM-dd HH:mm:ss` - Simple datetime without timezone
+ - `EEE, dd MMM yyyy HH:mm:ss Z` - RFC 1123 format
 
 
 
@@ -577,9 +577,9 @@ The log handler mode to use for structured logging events.
 
 Determines where workflow and task execution events are written:
 
- * `file` - Writes to a dedicated file (`/var/log/quarkus-flow/events.log` in production, `target/quarkus-flow-events.log` in dev/test)
- * `container` - Writes to stdout for containerized deployments (Kubernetes, Docker, cloud-native environments)
- * `none` - Disables automatic handler creation; you must manually configure handlers via `quarkus.log.++*++` properties
+ - `file` - Writes to a dedicated file (`/var/log/quarkus-flow/events.log` in production, `target/quarkus-flow-events.log` in dev/test)
+ - `container` - Writes to stdout for containerized deployments (Kubernetes, Docker, cloud-native environments)
+ - `none` - Disables automatic handler creation; you must manually configure handlers via `quarkus.log.++*++` properties
 
 
 
@@ -1127,9 +1127,9 @@ Logging scope for the underlying REST client.
 
 Supported values (case-insensitive):
 
- * `request-response`
- * `all`
- * `none`
+ - `request-response`
+ - `all`
+ - `none`
 
 Default client:
 
@@ -1252,9 +1252,9 @@ quarkus.flow.http.client.named.<name>.proxy-configuration-name=proxy-cfg
 
 There are some rules for using proxy configuration:
 
- * If not set and the default proxy configuration is configured (`quarkus.proxy.++*++`) then that will be used.
- * If the proxy configuration name is set, the configuration from `quarkus.proxy.<name>.++*++` will be used.
- * If the proxy configuration name is set, but no proxy configuration is found with that name, then an error will be thrown at runtime.
+ - If not set and the default proxy configuration is configured (`quarkus.proxy.++*++`) then that will be used.
+ - If the proxy configuration name is set, the configuration from `quarkus.proxy.<name>.++*++` will be used.
+ - If the proxy configuration name is set, but no proxy configuration is found with that name, then an error will be thrown at runtime.
 
 
 
@@ -1605,9 +1605,9 @@ Defines the maximum number of retries for a task execution.
 
 The value must be greater than or equal to `-1`.
 
- * `-1`: retries indefinitely
- * `0`: no retries (the task is executed only once)
- * `N > 0`: the task is executed `N {plus} 1` times (1 initial execution plus `N` retries)
+ - `-1`: retries indefinitely
+ - `0`: no retries (the task is executed only once)
+ - `N > 0`: the task is executed `N {plus} 1` times (1 initial execution plus `N` retries)
 
 
 
@@ -2030,8 +2030,8 @@ Whether the HTTP Client should propagate through HTTP headers the correlation me
 
 The correlation metadata are:
 
- * `X-Flow-Instance-Id` the instance ID see `WorkflowInstance++#++id()`
- * `X-Flow-Task-Id` the task's position that where the request was made, see `TaskContext++#++position()`
+ - `X-Flow-Instance-Id` the instance ID see `WorkflowInstance++#++id()`
+ - `X-Flow-Task-Id` the task's position that where the request was made, see `TaskContext++#++position()`
 
 
 ifdef::add-copy-button-to-env-var[]
@@ -2602,9 +2602,9 @@ Logging scope for the underlying REST client.
 
 Supported values (case-insensitive):
 
- * `request-response`
- * `all`
- * `none`
+ - `request-response`
+ - `all`
+ - `none`
 
 Default client:
 
@@ -2727,9 +2727,9 @@ quarkus.flow.http.client.named.<name>.proxy-configuration-name=proxy-cfg
 
 There are some rules for using proxy configuration:
 
- * If not set and the default proxy configuration is configured (`quarkus.proxy.++*++`) then that will be used.
- * If the proxy configuration name is set, the configuration from `quarkus.proxy.<name>.++*++` will be used.
- * If the proxy configuration name is set, but no proxy configuration is found with that name, then an error will be thrown at runtime.
+ - If not set and the default proxy configuration is configured (`quarkus.proxy.++*++`) then that will be used.
+ - If the proxy configuration name is set, the configuration from `quarkus.proxy.<name>.++*++` will be used.
+ - If the proxy configuration name is set, but no proxy configuration is found with that name, then an error will be thrown at runtime.
 
 
 
@@ -3080,9 +3080,9 @@ Defines the maximum number of retries for a task execution.
 
 The value must be greater than or equal to `-1`.
 
- * `-1`: retries indefinitely
- * `0`: no retries (the task is executed only once)
- * `N > 0`: the task is executed `N {plus} 1` times (1 initial execution plus `N` retries)
+ - `-1`: retries indefinitely
+ - `0`: no retries (the task is executed only once)
+ - `N > 0`: the task is executed `N {plus} 1` times (1 initial execution plus `N` retries)
 
 
 
