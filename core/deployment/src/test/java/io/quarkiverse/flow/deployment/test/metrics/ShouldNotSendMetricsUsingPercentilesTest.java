@@ -16,12 +16,12 @@ import io.micrometer.core.instrument.distribution.HistogramSnapshot;
 import io.micrometer.core.instrument.distribution.ValueAtPercentile;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.QuarkusUnitTest;
 
 public class ShouldNotSendMetricsUsingPercentilesTest {
 
     @RegisterExtension
-    static QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
+    static QuarkusUnitTest unitTest = new QuarkusUnitTest()
             .withApplicationRoot(jar -> {
                 jar.addClass(SimpleFlow.class);
             })

@@ -9,13 +9,13 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.QuarkusUnitTest;
 import io.serverlessworkflow.impl.WorkflowApplication;
 
 public class WorkflowApplicationIdTest {
 
     @RegisterExtension
-    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
+    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
             .withConfigurationResource("application-named.properties");
 

@@ -14,12 +14,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.QuarkusUnitTest;
 
 public class SendMetricWhenDisabledTest {
 
     @RegisterExtension
-    static QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
+    static QuarkusUnitTest unitTest = new QuarkusUnitTest()
             .withApplicationRoot(jar -> {
                 jar.addClass(SimpleFlow.class);
             })
