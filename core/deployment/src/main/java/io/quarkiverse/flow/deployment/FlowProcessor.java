@@ -449,7 +449,7 @@ class FlowProcessor {
                 .setRuntimeInit()
                 .addQualifier().annotation(DotNames.IDENTIFIER)
                 .addValue("value", identifier).done()
-                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowDefinition.class)))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowApplication.class)))
                 .createWith(recorder.workflowDefinitionFromFileCreator(
                         workflow.name(), workflow.content(), WorkflowFormat.fromFileName(workflow.name())))
                 .done();

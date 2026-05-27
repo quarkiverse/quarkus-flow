@@ -1,7 +1,11 @@
 package io.quarkiverse.flow.langchain4j.workflow;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
+
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -16,9 +20,6 @@ import io.quarkiverse.flow.langchain4j.workflow.service.FlowLoopAgentService;
 import io.quarkiverse.flow.langchain4j.workflow.service.FlowParallelAgentService;
 import io.quarkiverse.flow.langchain4j.workflow.service.FlowSequentialAgentService;
 import io.quarkus.test.junit.QuarkusTest;
-import jakarta.inject.Inject;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
 public class FlowAgentServicesMockedTest {
