@@ -1,14 +1,9 @@
 package io.quarkiverse.flow.langchain4j.workflow;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,10 +12,8 @@ import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
 import dev.langchain4j.service.V;
 import io.quarkiverse.flow.Flow;
-import io.quarkiverse.flow.langchain4j.workflow.builder.*;
-import io.quarkiverse.flow.langchain4j.workflow.flow.*;
-import io.quarkiverse.flow.langchain4j.workflow.runtime.*;
-import io.quarkiverse.flow.langchain4j.workflow.service.*;
+import io.quarkiverse.flow.langchain4j.workflow.runtime.RuntimeWorkflowApplicationProvider;
+import io.quarkiverse.flow.langchain4j.workflow.service.FlowSequentialAgentService;
 import io.quarkus.test.junit.QuarkusTest;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
@@ -31,6 +24,10 @@ import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener;
 import io.serverlessworkflow.impl.lifecycle.WorkflowStartedEvent;
 import io.serverlessworkflow.impl.model.jackson.JacksonModelFactory;
 import io.smallrye.mutiny.Uni;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Behaviour-documenting tests for {@link WorkflowExecutionListener}.
@@ -234,6 +231,10 @@ public class WorkflowExecutionListenerBehaviourTest {
     // Supporting CDI beans
     // ─────────────────────────────────────────────────────────────────────────
 
+    interface SequentialTestAgent {
+        ResultWithAgenticScope<String> run(@V("topic") String topic);
+    }
+
     /**
      * Recording listener — captures lifecycle events for assertions.
      * All state is static so it survives across the CDI lifecycle; reset in @BeforeEach.
@@ -285,7 +286,9 @@ public class WorkflowExecutionListenerBehaviourTest {
         }
     }
 
-    /** Q1 + Q2: workflow that tries to read a listener-injected context key. */
+    /**
+     * Q1 + Q2: workflow that tries to read a listener-injected context key.
+     */
     @ApplicationScoped
     static class Q1ContextInjectWorkflow extends Flow {
         @Override
@@ -302,7 +305,9 @@ public class WorkflowExecutionListenerBehaviourTest {
         }
     }
 
-    /** Q4: workflow with a Uni<String>-returning function (no delay — tests the Uni path, not timing). */
+    /**
+     * Q4: workflow with a Uni<String>-returning function (no delay — tests the Uni path, not timing).
+     */
     @ApplicationScoped
     static class Q4UniWorkflow extends Flow {
         @Override
@@ -312,9 +317,5 @@ public class WorkflowExecutionListenerBehaviourTest {
                             input -> Uni.createFrom().item("from-uni-async"))))
                     .build();
         }
-    }
-
-    interface SequentialTestAgent {
-        ResultWithAgenticScope<String> run(@V("topic") String topic);
     }
 }

@@ -193,7 +193,7 @@ class FlowProcessor {
                 .addQualifier().annotation(DotNames.IDENTIFIER).addValue("value", it.className()).done()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(it.className())),
                         AnnotationInstance.builder(DotName.createSimple(Any.class)).build())
-                .addInjectionPoint(ClassType.create(DotName.createSimple("io.serverlessworkflow.impl.WorkflowApplication")))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowApplication.class)))
                 .createWith(recorder.workflowDefinitionCreator(it.className()))
                 .done());
         identifiers.produce(new FlowIdentifierBuildItem(Set.of(it.className())));
@@ -449,7 +449,7 @@ class FlowProcessor {
                 .setRuntimeInit()
                 .addQualifier().annotation(DotNames.IDENTIFIER)
                 .addValue("value", identifier).done()
-                .addInjectionPoint(ClassType.create(DotName.createSimple("io.serverlessworkflow.impl.WorkflowApplication")))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowDefinition.class)))
                 .createWith(recorder.workflowDefinitionFromFileCreator(
                         workflow.name(), workflow.content(), WorkflowFormat.fromFileName(workflow.name())))
                 .done();
