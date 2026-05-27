@@ -18,7 +18,7 @@ public class FlowDevUITestBase extends DevUIJsonRPCTest {
     @BeforeEach
     public void waitForAsyncWarmup() {
         Awaitility.await()
-                .alias("Wait for WorkflowRegistry async warmup to complete")
+                .alias("Wait for WorkflowApplication async warmup to complete")
                 .atMost(Duration.ofSeconds(15))
                 .pollInterval(Duration.ofSeconds(1))
                 .ignoreExceptions() // If the websocket fails early, just keep trying

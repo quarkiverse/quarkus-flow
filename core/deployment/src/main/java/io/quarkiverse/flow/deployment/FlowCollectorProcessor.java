@@ -137,7 +137,7 @@ public class FlowCollectorProcessor {
     @BuildStep
     void collectFlows(CombinedIndexBuildItem index, BuildProducer<DiscoveredWorkflowBuildItem> wf) {
         for (ClassInfo flow : index.getIndex().getAllKnownImplementations(DotNames.FLOWABLE)) {
-            if (flow.isInterface() || Modifier.isAbstract(flow.flags())) {
+            if (flow.isInterface() || Modifier.isAbstract(flow.flags()) || flow.hasAnnotation(DotNames.VETOED)) {
                 continue;
             }
             wf.produce(DiscoveredWorkflowBuildItem.fromSource(flow.name().toString()));

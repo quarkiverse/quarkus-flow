@@ -17,7 +17,8 @@ import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
 import dev.langchain4j.service.V;
 import io.quarkiverse.flow.Flow;
-import io.quarkiverse.flow.internal.WorkflowRegistry;
+import io.quarkiverse.flow.langchain4j.workflow.runtime.RuntimeWorkflowApplicationProvider;
+import io.quarkiverse.flow.langchain4j.workflow.service.FlowSequentialAgentService;
 import io.quarkus.test.junit.QuarkusTest;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
@@ -41,16 +42,16 @@ import io.smallrye.mutiny.Uni;
  * See <a href="https://github.com/casehubio/engine/issues/213">casehubio/engine#213</a> for context.
  */
 @QuarkusTest
-class WorkflowExecutionListenerBehaviourTest {
-
-    @Inject
-    WorkflowRegistry registry;
+public class WorkflowExecutionListenerBehaviourTest {
 
     @Inject
     Q1ContextInjectWorkflow q1Workflow;
 
     @Inject
     Q4UniWorkflow q4Workflow;
+
+    @Inject
+    RuntimeWorkflowApplicationProvider runtimeAppProvider;
 
     @BeforeEach
     void reset() {
@@ -170,7 +171,7 @@ class WorkflowExecutionListenerBehaviourTest {
         var agent3 = AgenticServices.agentAction(scope -> scope.writeState("step", "3"));
 
         FlowSequentialAgentService<SequentialTestAgent> service = FlowSequentialAgentService.builder(SequentialTestAgent.class,
-                registry);
+                runtimeAppProvider);
         service.subAgents(agent1, agent2, agent3);
         SequentialTestAgent agent = service.build();
 
@@ -231,6 +232,10 @@ class WorkflowExecutionListenerBehaviourTest {
     // Supporting CDI beans
     // ─────────────────────────────────────────────────────────────────────────
 
+    interface SequentialTestAgent {
+        ResultWithAgenticScope<String> run(@V("topic") String topic);
+    }
+
     /**
      * Recording listener — captures lifecycle events for assertions.
      * All state is static so it survives across the CDI lifecycle; reset in @BeforeEach.
@@ -282,7 +287,9 @@ class WorkflowExecutionListenerBehaviourTest {
         }
     }
 
-    /** Q1 + Q2: workflow that tries to read a listener-injected context key. */
+    /**
+     * Q1 + Q2: workflow that tries to read a listener-injected context key.
+     */
     @ApplicationScoped
     static class Q1ContextInjectWorkflow extends Flow {
         @Override
@@ -299,7 +306,9 @@ class WorkflowExecutionListenerBehaviourTest {
         }
     }
 
-    /** Q4: workflow with a Uni<String>-returning function (no delay — tests the Uni path, not timing). */
+    /**
+     * Q4: workflow with a Uni<String>-returning function (no delay — tests the Uni path, not timing).
+     */
     @ApplicationScoped
     static class Q4UniWorkflow extends Flow {
         @Override
@@ -309,9 +318,5 @@ class WorkflowExecutionListenerBehaviourTest {
                             input -> Uni.createFrom().item("from-uni-async"))))
                     .build();
         }
-    }
-
-    interface SequentialTestAgent {
-        ResultWithAgenticScope<String> run(@V("topic") String topic);
     }
 }

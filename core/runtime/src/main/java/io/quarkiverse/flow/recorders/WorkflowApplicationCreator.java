@@ -94,7 +94,7 @@ public class WorkflowApplicationCreator {
     public WorkflowApplication create(boolean tracingEnabled, boolean isMicrometerSupported) {
         final Builder builder = WorkflowApplication.builder();
         if (tracingEnabled) {
-            LOG.info("Flow: Tracing enabled");
+            LOG.debug("Flow: Tracing enabled");
             builder.withListener(new TraceLoggerExecutionListener());
         }
         builder.withContextFactory(new JavaModelFactory()).withModelFactory(new JacksonModelFactory());
@@ -148,12 +148,12 @@ public class WorkflowApplicationCreator {
         if (eventConsumers.isResolvable()) {
             EventConsumer<?, ?> consumer = eventConsumers.get();
             builder.withEventConsumer(consumer);
-            LOG.info("Flow: Bound EventConsumer bean: {}", consumer.getClass().getName());
+            LOG.debug("Flow: Bound EventConsumer bean: {}", consumer.getClass().getName());
         } else if (eventConsumers.isAmbiguous()) {
             throw new IllegalStateException(
                     "Multiple EventConsumer beans found. Provide exactly one, or configure selection.");
         } else {
-            LOG.info("Flow: No EventConsumer bean found; using default fallback.");
+            LOG.debug("Flow: No EventConsumer bean found; using default fallback.");
         }
     }
 
@@ -163,12 +163,12 @@ public class WorkflowApplicationCreator {
             for (EventPublisher pub : pubHandles) {
                 builder.withEventPublisher(pub);
             }
-            LOG.info("Flow: Bound {} EventPublisher bean(s): {}",
+            LOG.debug("Flow: Bound {} EventPublisher bean(s): {}",
                     pubHandles.size(), pubHandles.stream()
                             .map(p -> p.getClass().getName())
                             .collect(Collectors.joining(", ")));
         } else {
-            LOG.info("Flow: No EventPublisher beans found; using default fallback.");
+            LOG.debug("Flow: No EventPublisher beans found; using default fallback.");
         }
     }
 
@@ -176,7 +176,7 @@ public class WorkflowApplicationCreator {
         List<SecretManager> managers = secretManagers.stream().toList();
 
         if (managers.isEmpty()) {
-            LOG.info("Flow: No SecretManager bean found; skipping so SDK can fall back to MicroProfile Config.");
+            LOG.debug("Flow: No SecretManager bean found; skipping so SDK can fall back to MicroProfile Config.");
             return;
         }
 
@@ -187,12 +187,12 @@ public class WorkflowApplicationCreator {
                 .toList();
 
         if (usable.isEmpty()) {
-            LOG.info("Flow: SecretManager beans present but none usable (no CredentialsProvider available); " +
+            LOG.debug("Flow: SecretManager beans present but none usable (no CredentialsProvider available); " +
                     "skipping so SDK can fall back to MicroProfile Config.");
         } else {
             SecretManager chosen = usable.get(0);
             builder.withSecretManager(chosen);
-            LOG.info("Flow: SecretManager bound: {} (priority: {})",
+            LOG.debug("Flow: SecretManager bound: {} (priority: {})",
                     chosen.getClass().getName(), chosen.priority());
         }
     }
@@ -201,17 +201,17 @@ public class WorkflowApplicationCreator {
         if (configManagers.isResolvable()) {
             ConfigManager configManager = configManagers.get();
             builder.withConfigManager(configManager);
-            LOG.info("Flow: Bound ConfigManager bean: {}", configManager.getClass().getName());
+            LOG.debug("Flow: Bound ConfigManager bean: {}", configManager.getClass().getName());
         } else if (configManagers.isAmbiguous()) {
             throw new IllegalStateException(
                     "Multiple ConfigManager beans found. Must exist only one in the classpath");
         } else {
-            LOG.info("Flow: No ConfigManager bean found; workflow runtime 'secrets' expression and definitions won't work.");
+            LOG.debug("Flow: No ConfigManager bean found; workflow runtime 'secrets' expression and definitions won't work.");
         }
     }
 
     private void injectHttpClientProvider(final Builder builder) {
-        LOG.info("Flow: Bound HttpClientProvider bean: {}", httpClientProvider.getClass().getName());
+        LOG.debug("Flow: Bound HttpClientProvider bean: {}", httpClientProvider.getClass().getName());
         builder.withAdditionalObject(HttpClientResolver.HTTP_CLIENT_PROVIDER, ((workflowContextData, taskContextData) -> {
             final String workflowName = workflowContextData.definition().workflow().getDocument().getName();
             final String taskName = taskContextData.taskName();
@@ -230,7 +230,7 @@ public class WorkflowApplicationCreator {
     }
 
     private void injectFaultTolerance(Builder builder, boolean isMicrometerSupported) {
-        LOG.info("Flow: Bound FaultToleranceProvider bean: {}", faultToleranceProvider.getClass().getName());
+        LOG.debug("Flow: Bound FaultToleranceProvider bean: {}", faultToleranceProvider.getClass().getName());
         builder.withCallableProxy(new CallableTaskProxyBuilder() {
             @Override
             public CallableTask build(CallableTask delegate) {

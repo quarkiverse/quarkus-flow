@@ -2,7 +2,12 @@ package io.quarkiverse.flow.langchain4j.deployment;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
+
+import dev.langchain4j.agentic.planner.AgenticSystemTopology;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
@@ -12,33 +17,51 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class FlowAgenticWorkflowBuildItem extends MultiBuildItem {
 
     private final String ifaceName;
-    private final String methodName;
-    private final List<String> parameterTypeNames;
+    private final MethodInfo method;
+    private final AgenticWorkflowBlueprint blueprint;
 
-    public FlowAgenticWorkflowBuildItem(String ifaceName, String methodName, List<String> parameterTypeNames) {
+    FlowAgenticWorkflowBuildItem(String ifaceName,
+            MethodInfo method,
+            AgenticWorkflowBlueprint blueprint) {
         this.ifaceName = ifaceName;
-        this.methodName = methodName;
-        this.parameterTypeNames = List.copyOf(parameterTypeNames);
+        this.method = method;
+        this.blueprint = blueprint;
     }
 
     public String ifaceName() {
         return ifaceName;
     }
 
-    public String methodName() {
-        return methodName;
+    public MethodInfo method() {
+        return method;
     }
 
-    public List<String> parameterTypeNames() {
-        return parameterTypeNames;
+    public AgenticSystemTopology topology() {
+        return blueprint.topology();
+    }
+
+    public List<Type> subAgents() {
+        return blueprint.subAgents();
+    }
+
+    public String description() {
+        return blueprint.description();
+    }
+
+    public Optional<ConditionalMetadata> conditionalMetadata() {
+        return Optional.ofNullable(blueprint.conditionalMetadata());
+    }
+
+    public Optional<LoopMetadata> loopMetadata() {
+        return Optional.ofNullable(blueprint.loopMetadata());
     }
 
     @Override
     public String toString() {
         return "FlowAgenticWorkflowBuildItem{" +
                 "ifaceName='" + ifaceName + '\'' +
-                ", methodName='" + methodName + '\'' +
-                ", parameterTypeNames=" + parameterTypeNames +
+                ", method='" + method + '\'' +
+                ", blueprint=" + blueprint +
                 '}';
     }
 
@@ -47,12 +70,12 @@ public final class FlowAgenticWorkflowBuildItem extends MultiBuildItem {
         if (o == null || getClass() != o.getClass())
             return false;
         FlowAgenticWorkflowBuildItem that = (FlowAgenticWorkflowBuildItem) o;
-        return Objects.equals(ifaceName, that.ifaceName) && Objects.equals(methodName, that.methodName)
-                && Objects.equals(parameterTypeNames, that.parameterTypeNames);
+        return Objects.equals(ifaceName, that.ifaceName) && Objects.equals(method, that.method)
+                && Objects.equals(blueprint, that.blueprint);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(ifaceName, methodName, parameterTypeNames);
+        return Objects.hash(ifaceName, method, blueprint);
     }
 }

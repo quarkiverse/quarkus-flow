@@ -133,7 +133,124 @@ public class OrderWorkflow extends Flow {
 }
 ----
 
-== 4. Adding Human-in-the-Loop (HITL) Guardrails
+== 4. Pattern C: Dynamic Runtime Workflows with UntypedAgent
+
+For scenarios where you need to create AI workflows dynamically at runtime (without annotations), Quarkus Flow provides the `FlowAgentsBuilderService`. This CDI bean gives you programmatic access to LangChain4j's workflow builders.
+
+=== Why Use Runtime Workflows?
+
+Use this pattern when:
+
+* Your workflow structure is determined by runtime data (e.g., user configuration, database records)
+* You're building a workflow editor or no-code platform
+* You need to create temporary, one-off agent orchestrations
+
+=== Using FlowAgentsBuilderService
+
+Inject the builder service and use its factory methods to create sequential, parallel, loop, or conditional workflows:
+
+[source,java]
+----
+include::{examples-dir}org/acme/langchain4j/DynamicWorkflowExample.java[tag=sequential]
+----
+
+==== Sequential Workflow Example
+
+[source,java]
+----
+public UntypedAgent createDataPipeline() {
+    var validateAgent = AgenticServices.agentAction(scope -> {
+        String data = scope.readState("input", "");
+        scope.writeState("valid", data != null && !data.isEmpty());
+    });
+
+    var processAgent = AgenticServices.agentAction(scope -> {
+        String data = scope.readState("input", "");
+        scope.writeState("processed", data.toUpperCase());
+    });
+
+    return builderService.newSequential()
+            .subAgents(validateAgent, processAgent)
+            .build();
+}
+----
+
+==== Parallel Workflow Example
+
+[source,java]
+----
+public UntypedAgent createParallelFetcher() {
+    var fetchWeather = AgenticServices.agentAction(scope ->
+        scope.writeState("weather", "Sunny, 25°C"));
+    var fetchNews = AgenticServices.agentAction(scope ->
+        scope.writeState("news", "Breaking: AI advances"));
+
+    return builderService.newParallel()
+            .subAgents(fetchWeather, fetchNews)
+            .build();
+}
+----
+
+==== Loop Workflow Example
+
+[source,java]
+----
+public UntypedAgent createRetryWorkflow(int maxRetries) {
+    var attemptTask = AgenticServices.agentAction(scope -> {
+        int attempts = scope.readState("attempts", 0);
+        scope.writeState("attempts", attempts + 1);
+        scope.writeState("success", attempts >= 2); // Success on 3rd attempt
+    });
+
+    return builderService.newLoop()
+            .maxIterations(maxRetries)
+            .exitCondition((scope, iteration) -> scope.readState("success", false))
+            .subAgents(attemptTask)
+            .build();
+}
+----
+
+==== Conditional Workflow Example
+
+[source,java]
+----
+public UntypedAgent createUserRouter() {
+    var adminFlow = AgenticServices.agentAction(scope ->
+        scope.writeState("permissions", "ALL"));
+    var userFlow = AgenticServices.agentAction(scope ->
+        scope.writeState("permissions", "READ"));
+
+    return builderService.newConditional()
+            .subAgents(scope -> "admin".equals(scope.readState("userType", "")), adminFlow)
+            .subAgents(scope -> "user".equals(scope.readState("userType", "")), userFlow)
+            .build();
+}
+----
+
+Complete examples available at: `docs/modules/ROOT/examples/org/acme/langchain4j/DynamicWorkflowExample.java`
+
+=== Builder Methods
+
+[cols="1,3"]
+|===
+| Method | Description
+
+| `newSequential()`
+| Creates a sequential workflow where agents execute one after another
+
+| `newParallel()`
+| Creates a parallel workflow where agents execute concurrently
+
+| `newLoop()`
+| Creates a loop workflow with `maxIterations()` and optional `exitCondition()`
+
+| `newConditional()`
+| Creates a conditional/router workflow with predicate-based branching
+|===
+
+NOTE: Loop workflows use LangChain4j's default behavior: if you don't specify an `exitCondition()`, the loop runs until `maxIterations` is reached. The default `maxIterations` is `Integer.MAX_VALUE`.
+
+== 5. Adding Human-in-the-Loop (HITL) Guardrails
 
 You can easily pause an AI orchestration to wait for human approval by combining an `emit` task with a `listen` task.
 
@@ -155,17 +272,48 @@ switchWhenOrElse(
 )
 ----
 
-== 5. The Dev UI "Auto-Generation" Magic
+== 6. Build-Time Workflow Generation from Annotations
 
-If you only want to use LangChain4j's `@SequenceAgent` or `@ParallelAgent` annotations without writing a larger Java DSL workflow, the `quarkus-flow-langchain4j` extension provides a massive developer experience boost.
+The `quarkus-flow-langchain4j` extension acts as an ahead-of-time compiler for LangChain4j's Agentic Workflow annotations. When you annotate your AI service methods with `@SequenceAgent`, `@ParallelAgent`, `@LoopAgent`, or `@ConditionalAgent`, Quarkus Flow automatically generates full workflow definitions at build time.
+
+=== Supported Annotations
+
+[cols="1,3"]
+|===
+| Annotation | Workflow Type
+
+| `@SequenceAgent`
+| Sequential execution of sub-agents in defined order
+
+| `@ParallelAgent`
+| Concurrent execution of sub-agents
+
+| `@LoopAgent`
+| Iterative execution with exit conditions
+
+| `@ConditionalAgent`
+| Conditional branching based on predicates
+|===
+
+=== How It Works
 
 When you start your application in dev mode (`./mvnw quarkus:dev`):
 
-1. Quarkus Flow automatically discovers your `@SequenceAgent` and `@ParallelAgent` methods.
-2. It generates a standalone `WorkflowDefinition` for each one in the background.
-3. It derives a JSON Schema from the agent's method parameters.
+1. Quarkus Flow scans your `@RegisterAiService` interfaces for Agentic Workflow annotations
+2. It generates a standalone `WorkflowDefinition` for each annotated method at build time
+3. It derives JSON Schema from the method parameters for input validation
+4. The generated workflows are registered as first-class citizens in the workflow registry
 
-Open the **Quarkus Flow Dev UI**, and you will see your LangChain4j agents listed as fully-fledged workflows. You can execute them via auto-generated HTML forms, view their internal topology using Mermaid diagrams, and inspect their execution traces—all without writing a single line of orchestration code.
+Open the **Quarkus Flow Dev UI** (`http://localhost:8080/q/dev`), and you will see your annotated agents listed as fully-fledged workflows. You can:
+
+* Execute them via auto-generated HTML forms
+* View their internal topology using Mermaid diagrams
+* Inspect execution traces and state transitions
+* Monitor performance and error rates
+
+All of this happens without writing a single line of orchestration code.
+
+NOTE: See xref:concepts-agentic-langchain4j.adoc[Agentic AI Topology and Internals] for details on how the build-time compiler works.
 
 == See also
 * xref:data-flow.adoc[Data flow and context management] — deeper dive into `inputFrom` and `exportAs`.

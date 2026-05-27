@@ -11,7 +11,7 @@ import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.smallrye.common.annotation.Identifier;
 
-interface GizmoFlowHelper {
+public interface GizmoFlowHelper {
 
     static FieldCreator addWorkflowDefinitionField(ClassCreator creator, String identifier) {
         FieldCreator fieldCreator = creator.getFieldCreator("workflowDefinition",

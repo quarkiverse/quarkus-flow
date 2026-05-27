@@ -1,0 +1,165 @@
+package io.quarkiverse.flow.langchain4j.workflow.service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import dev.langchain4j.agentic.planner.Action;
+import dev.langchain4j.agentic.planner.AgentInstance;
+import dev.langchain4j.agentic.planner.AgenticSystemTopology;
+import dev.langchain4j.agentic.planner.InitPlanningContext;
+import dev.langchain4j.agentic.planner.Planner;
+import dev.langchain4j.agentic.planner.PlanningContext;
+import io.quarkiverse.flow.langchain4j.workflow.flow.*;
+import io.quarkiverse.flow.langchain4j.workflow.runtime.*;
+import io.serverlessworkflow.impl.WorkflowDefinition;
+import io.serverlessworkflow.impl.WorkflowInstance;
+
+public class FlowPlanner implements Planner {
+
+    private static final Logger LOG = LoggerFactory.getLogger(FlowPlanner.class);
+    private final AgenticSystemTopology topology;
+    private final WorkflowDefinition definition;
+    private List<AgentInstance> subAgentsList;
+    private BlockingQueue<AgentExchange> agentExchangeQueue;
+    private Map<String, AgentExchange> currentExchanges;
+    private AtomicInteger parallelAgents;
+
+    public FlowPlanner(AgenticSystemTopology topology, AgenticFlow flow) {
+        this.topology = topology;
+        this.definition = flow.definition();
+    }
+
+    @Override
+    public AgenticSystemTopology topology() {
+        return topology;
+    }
+
+    @Override
+    public void init(InitPlanningContext initPlanningContext) {
+        // lazy creation since we are being instantiated twice upstream
+        agentExchangeQueue = new LinkedBlockingQueue<>();
+        currentExchanges = new ConcurrentHashMap<>();
+        parallelAgents = new AtomicInteger(0);
+
+        // Store subagents in ordered list for index-based lookup
+        this.subAgentsList = new ArrayList<>(initPlanningContext.subagents());
+    }
+
+    @Override
+    public Action firstAction(PlanningContext planningContext) {
+        final WorkflowInstance instance = definition.instance(planningContext.agenticScope());
+        planningContext.agenticScope().writeExecutionContext(FlowPlanner.class, this);
+
+        // Starts workflow on a different thread
+        // Despite returning a CompletableFuture, the start() method executes on the same thread by design.
+        // We use supplyAsync to force execution on the async executor thread, then flatten the nested future.
+        CompletableFuture.supplyAsync(instance::start)
+                .thenCompose(future -> future)
+                .whenComplete((r, e) -> {
+                    if (e != null) {
+                        LOG.error("Workflow failed", e);
+                    }
+                    signalTermination();
+                });
+        return internalNextAction();
+    }
+
+    @Override
+    public Action nextAction(PlanningContext planningContext) {
+        AgentExchange exchange = currentExchanges.remove(planningContext.previousAgentInvocation().agentId());
+        if (exchange != null)
+            exchange.continuation.complete(null);
+        else
+            LOG.warn("No exchange found for agent {}", planningContext.previousAgentInvocation().agentId());
+
+        int remaining = parallelAgents.decrementAndGet();
+        if (remaining > 0) {
+            return done();
+        }
+
+        return internalNextAction();
+    }
+
+    private Action internalNextAction() {
+        List<AgentInstance> agents = new ArrayList<>();
+        try {
+            // Take first agent (blocking)
+            AgentExchange currentExchange = agentExchangeQueue.take();
+            if (currentExchange.agent == null) {
+                LOG.debug("Workflow terminated");
+                return done();
+            }
+            currentExchanges.put(currentExchange.agent.agentId(), currentExchange);
+            agents.add(currentExchange.agent);
+
+            // Drain any remaining agents with timeout to handle parallel enqueuing
+            // The timeout handles race conditions in parallel workflows where branches enqueue concurrently
+            while ((currentExchange = agentExchangeQueue.poll(100, TimeUnit.MILLISECONDS)) != null) {
+                if (currentExchange.agent == null) {
+                    LOG.debug("Workflow terminated");
+                    break;
+                }
+                currentExchanges.put(currentExchange.agent.agentId(), currentExchange);
+                agents.add(currentExchange.agent);
+            }
+
+            parallelAgents.set(agents.size());
+
+            LOG.debug("Executing {} agent(s)", agents.size());
+            return agents.isEmpty() ? done() : call(agents);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOG.error("Interrupted while waiting for agent exchange", e);
+            return done();
+        }
+    }
+
+    public CompletableFuture<Void> executeAgent(int agentIndex) {
+        return executeAgent(getAgentByIndex(agentIndex));
+    }
+
+    public CompletableFuture<Void> executeAgent(AgentInstance agent) {
+        CompletableFuture<Void> continuation = new CompletableFuture<>();
+        AgentExchange exchange = new AgentExchange(agent, continuation);
+
+        try {
+            agentExchangeQueue.put(exchange);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOG.error("Interrupted while queueing agent exchange", e);
+            continuation.completeExceptionally(e);
+        }
+
+        return continuation;
+    }
+
+    public AgentInstance getAgentByIndex(int index) {
+        if (index < 0 || index >= subAgentsList.size()) {
+            throw new IllegalStateException(
+                    "Invalid subagent index: " + index +
+                            ". Available subagents: " + subAgentsList.size() +
+                            " (IDs: " + subAgentsList.stream().map(AgentInstance::agentId).toList() + ")");
+        }
+        return subAgentsList.get(index);
+    }
+
+    private void signalTermination() {
+        agentExchangeQueue.offer(new AgentExchange(null, CompletableFuture.completedFuture(null)));
+    }
+
+    /**
+     * Encapsulates the bidirectional exchange between workflow execution and planner actions.
+     */
+    private record AgentExchange(AgentInstance agent, CompletableFuture<Void> continuation) {
+    }
+}

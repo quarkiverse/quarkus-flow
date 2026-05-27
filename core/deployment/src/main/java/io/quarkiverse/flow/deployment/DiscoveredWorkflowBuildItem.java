@@ -20,7 +20,13 @@ import io.serverlessworkflow.impl.WorkflowDefinitionId;
 public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
 
     private enum From {
+        /**
+         * Workflow definition comes from a Java Source file, (e.g. a DSL descriptor).
+         */
         SOURCE,
+        /**
+         * Workflow definition described as a YAML or JSON file in a target path.
+         */
         SPEC
     }
 

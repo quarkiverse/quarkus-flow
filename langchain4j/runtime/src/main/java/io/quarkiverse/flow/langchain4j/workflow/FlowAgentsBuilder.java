@@ -6,6 +6,7 @@ import dev.langchain4j.agentic.workflow.LoopAgentService;
 import dev.langchain4j.agentic.workflow.ParallelAgentService;
 import dev.langchain4j.agentic.workflow.SequentialAgentService;
 import dev.langchain4j.agentic.workflow.WorkflowAgentsBuilder;
+import io.quarkiverse.flow.langchain4j.workflow.builder.FlowAgentsBuilderService;
 import io.quarkus.arc.Arc;
 
 public class FlowAgentsBuilder implements WorkflowAgentsBuilder {

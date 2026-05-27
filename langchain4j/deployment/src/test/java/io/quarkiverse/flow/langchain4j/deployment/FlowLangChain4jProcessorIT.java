@@ -2,8 +2,6 @@ package io.quarkiverse.flow.langchain4j.deployment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Optional;
-
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -11,11 +9,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkiverse.flow.internal.WorkflowNameUtils;
-import io.quarkiverse.flow.internal.WorkflowRegistry;
 import io.quarkiverse.flow.langchain4j.Agents;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
@@ -38,10 +36,10 @@ public class FlowLangChain4jProcessorIT {
         assertThat(story).isNotEmpty();
 
         WorkflowDefinitionId expectedId = WorkflowNameUtils.newId(Agents.StoryCreatorWithConfigurableStyleEditor.class);
-        WorkflowRegistry registry = WorkflowRegistry.current();
-        Optional<WorkflowDefinition> definition = registry.lookup(expectedId);
-        assertThat(definition).isPresent();
-        assertThat(definition.get().workflow().getDo()).isNotEmpty();
+        WorkflowApplication app = Arc.container().instance(WorkflowApplication.class).get();
+        WorkflowDefinition definition = app.workflowDefinitions().get(expectedId);
+        assertThat(definition).isNotNull();
+        assertThat(definition.workflow().getDo()).isNotEmpty();
     }
 
 }

@@ -11,14 +11,14 @@ import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.eclipse.microprofile.health.Readiness;
 
 import io.quarkiverse.flow.internal.WorkflowApplicationInfo;
-import io.quarkiverse.flow.internal.WorkflowRegistryInitializer;
+import io.quarkiverse.flow.internal.WorkflowApplicationInitializer;
 
 @Readiness
 @ApplicationScoped
 public class WorkflowEngineHealthCheck implements HealthCheck {
 
     @Inject
-    WorkflowRegistryInitializer initializer;
+    WorkflowApplicationInitializer initializer;
 
     private static final String NAME = "WorkflowApplication Engine Readiness";
 
