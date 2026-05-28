@@ -16,6 +16,9 @@ import './qwc-flow-workflow-execution.js';
 
 import { themeState } from 'theme-state';
 
+// Load the bundled diagram editor (includes React + DiagramEditor)
+import './bundle.js';
+
 export class QwcFlow extends observeState(QwcHotReloadElement) {
     jsonRpc = new JsonRpc(this);
 

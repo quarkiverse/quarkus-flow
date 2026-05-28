@@ -10,6 +10,14 @@
     <artifactId>quarkus-flow-deployment</artifactId>
     <name>Quarkus Flow :: Core :: Deployment</name>
 
+    <properties>
+        <serverlessworkflow.diagram-editor.version>0.0.0</serverlessworkflow.diagram-editor.version>
+        <serverlessworkflow.sdk.version>1.0.3-alpha1</serverlessworkflow.sdk.version>
+        <react.version>19.2.6</react.version>
+        <scheduler.version>0.27.0</scheduler.version>
+        <d3-interpolate.version>3.0.1</d3-interpolate.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -117,6 +125,16 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <!-- Do not copy the raw bundle source, esbuild will generate the compiled version -->
+                    <exclude>dev-ui/bundle.js</exclude>
+                </excludes>
+            </resource>
+        </resources>
+
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -134,6 +152,81 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>io.mvnpm</groupId>
+                <artifactId>esbuild-maven-plugin</artifactId>
+                <version>2.0.0</version>
+
+                <executions>
+                    <execution>
+                        <id>esbuild</id>
+                        <goals>
+                            <goal>esbuild</goal>
+                        </goals>
+                    </execution>
+                </executions>
+
+                <configuration>
+                    <sourceDirectory>src/main/resources/dev-ui</sourceDirectory>
+                    <outputDirectory>target/classes/dev-ui</outputDirectory>
+                    <entryPoint>bundle.js</entryPoint>
+                </configuration>
+
+                <dependencies>
+                    <!-- Serverless Workflow Diagram Editor (mvnpm) -->
+                    <dependency>
+                        <groupId>org.mvnpm.at.serverlessworkflow</groupId>
+                        <artifactId>diagram-editor</artifactId>
+                        <version>${serverlessworkflow.diagram-editor.version}</version>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>org.mvnpm.at.serverlessworkflow</groupId>
+                                <artifactId>sdk</artifactId>
+                            </exclusion>
+                            <exclusion>
+                                <groupId>org.mvnpm</groupId>
+                                <artifactId>d3-interpolate</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+
+                    <!-- @serverlessworkflow/diagram-editor peerDependency -->
+                    <dependency>
+                        <groupId>org.mvnpm</groupId>
+                        <artifactId>react</artifactId>
+                        <version>${react.version}</version>
+                    </dependency>
+
+                    <!-- @serverlessworkflow/diagram-editor peerDependency -->
+                    <dependency>
+                        <groupId>org.mvnpm</groupId>
+                        <artifactId>react-dom</artifactId>
+                        <version>${react.version}</version>
+                    </dependency>
+
+                    <!-- TODO: Change this to mvnpm when the 1.0.3 is published on mvnpm -->
+                    <dependency>
+                        <groupId>org.webjars.npm</groupId>
+                        <artifactId>serverlessworkflow__sdk</artifactId>
+                        <version>${serverlessworkflow.sdk.version}</version>
+                    </dependency>
+
+                    <!-- Required to specify d3 version for the mvnpm/Maven resolution -->
+                    <dependency>
+                        <groupId>org.mvnpm</groupId>
+                        <artifactId>d3-interpolate</artifactId>
+                        <version>${d3-interpolate.version}</version>
+                    </dependency>
+
+                    <!-- Required by react-dom -->
+                    <dependency>
+                        <groupId>org.mvnpm</groupId>
+                        <artifactId>scheduler</artifactId>
+                        <version>${scheduler.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>
