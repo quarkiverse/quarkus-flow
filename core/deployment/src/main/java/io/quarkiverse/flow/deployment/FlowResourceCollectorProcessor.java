@@ -63,8 +63,7 @@ public class FlowResourceCollectorProcessor {
                             // No need to read content - we'll load from classpath at runtime
                             DiscoveredWorkflowBuildItem item = DiscoveredWorkflowBuildItem.fromSpec(
                                     relativePath,
-                                    workflow,
-                                    null); // content not needed for resource-based workflows
+                                    workflow);
 
                             tryAddUniqueWorkflow(item, workflowsMap);
                             LOG.debug("Discovered workflow: {} at {}", item.workflowDefinitionId(), relativePath);
