@@ -1,7 +1,5 @@
 package io.quarkiverse.flow.deployment;
 
-import java.nio.file.Path;
-
 import io.quarkiverse.flow.internal.WorkflowNameUtils;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.serverlessworkflow.api.types.Workflow;
@@ -30,17 +28,15 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
         SPEC
     }
 
-    private Path absolute;
-    private Path relativeToFlowDir;
+    private String definitionResourcePath;
     private WorkflowDefinitionId workflowDefinitionId;
     private String specIdentifier;
     private String className;
     private final From from;
     private byte[] content;
 
-    private DiscoveredWorkflowBuildItem(Path absolute, Path relativeToFlowDir, Workflow workflow, byte[] content) {
-        this.absolute = absolute;
-        this.relativeToFlowDir = relativeToFlowDir;
+    private DiscoveredWorkflowBuildItem(String definitionResourcePath, Workflow workflow, byte[] content) {
+        this.definitionResourcePath = definitionResourcePath;
         this.workflowDefinitionId = WorkflowDefinitionId.of(workflow);
         this.specIdentifier = WorkflowNameUtils.yamlDescriptorIdentifier(
                 workflowDefinitionId.namespace(),
@@ -58,16 +54,14 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
     /**
      * Creates a build item for a workflow discovered from a specification file.
      *
-     * @param absolute the path to the workflow specification file
+     * @param definitionResourcePath the classpath workflow definition resource path
      * @param workflow the parsed workflow model
-     * @param relativeToFlowDir the relative path from the flow directory
      * @param content the workflow file content
      *
      * @return a new {@link DiscoveredWorkflowBuildItem}
      */
-    public static DiscoveredWorkflowBuildItem fromSpec(Path absolute, Path relativeToFlowDir, Workflow workflow,
-            byte[] content) {
-        return new DiscoveredWorkflowBuildItem(absolute, relativeToFlowDir, workflow, content);
+    public static DiscoveredWorkflowBuildItem fromSpec(String definitionResourcePath, Workflow workflow, byte[] content) {
+        return new DiscoveredWorkflowBuildItem(definitionResourcePath, workflow, content);
     }
 
     /**
@@ -78,15 +72,6 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
      */
     public static DiscoveredWorkflowBuildItem fromSource(String className) {
         return new DiscoveredWorkflowBuildItem(className);
-    }
-
-    /**
-     * Returns the absolute location of the workflow specification on disk.
-     *
-     * @return the workflow file location
-     */
-    public String absolutePath() {
-        return this.absolute.toString();
     }
 
     public String namespace() {
@@ -133,15 +118,12 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
     }
 
     /**
-     * Returns the relative path of the workflow specification file from the flow directory.
-     * <p>
-     * This is used for test resource override: a test workflow file overrides
-     * a main workflow file only if they have the same relative path.
+     * Returns the classpath resource path for this workflow definition.
      *
-     * @return the relative flow path, or {@code null} if discovered from source
+     * @return the resource path (e.g., "flow/subdir/order-workflow.yaml")
      */
-    public String relativeToFlowDir() {
-        return relativeToFlowDir.toString();
+    public String definitionResourcePath() {
+        return definitionResourcePath;
     }
 
     public byte[] content() {

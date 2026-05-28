@@ -15,12 +15,12 @@ This guide shows you how to load a YAML workflow into your Quarkus application a
 
 == 1. Create the workflow specification file
 
-By default, Quarkus Flow scans the `src/main/flow` directory (relative to your Maven module root) for workflow specification files at build time.
+By default, Quarkus Flow scans the `src/main/resources/flow` directory for workflow specification files at build time.
 
 Create the directory and add your CNCF 1.0.0 workflow:
 
 [source,yaml]
-.src/main/flow/echo-name.yaml
+.src/main/resources/flow/echo-name.yaml
 ----
 include::{examples-dir}flow/echo-name.yaml[]
 ----
@@ -34,21 +34,21 @@ This definition:
 ====
 You can customize the discovery directory by setting the xref:configuration.adoc#quarkus-flow_quarkus-flow-definitions-dir[`quarkus.flow.definitions.dir`] property in your `application.properties`.
 
-It accepts an absolute path or a path relative to the Maven module root. All `*.yaml` and `*.yml` files in the resolved directory are discovered automatically.
+The property accepts a classpath resource path (e.g., `flow`, `workflows`, or `custom/workflows`). Workflow files must be placed in `src/main/resources/{path}` to be available at runtime. All `*.yaml`, `*.yml`, and `*.json` files in the resource path are discovered automatically.
 ====
 
 [IMPORTANT]
 ====
-In test mode, if the same workflow file exists in both `src/main/flow` and `src/test/flow` with the same relative path, the `src/test/flow` file takes precedence.
+In test mode, Maven automatically merges `src/main/resources` and `src/test/resources`, with test resources taking precedence. If the same workflow file exists in both locations with the same relative path, the test version overrides the main version.
 
 Example:
 
-* `src/main/flow/echo.yaml`
-* `src/test/flow/echo.yaml`
+* `src/main/resources/flow/echo.yaml`
+* `src/test/resources/flow/echo.yaml`
 
-In this case, Quarkus Flow uses `src/test/flow/echo.yaml` during tests.
+In this case, Quarkus Flow uses `src/test/resources/flow/echo.yaml` during tests.
 
-Only exact relative-path matches are overridden. For example, `src/test/flow/echo.yaml` does *not* override `src/main/flow/workflows/echo.yaml`.
+Only exact relative-path matches are overridden. For example, `src/test/resources/flow/echo.yaml` does *not* override `src/main/resources/flow/workflows/echo.yaml`.
 ====
 
 == 2. Inject the `Flow` bean
@@ -157,7 +157,7 @@ curl "http://localhost:8080/echo?name=John"
 # {"message":"echo: John"}
 ----
 
-**The best part:** Because Quarkus Flow integrates seamlessly with Quarkus dev mode, any changes you make to the YAML file in `src/main/flow` will be picked up and live-reloaded immediately. You do not need to restart your application when tweaking YAML tasks!
+**The best part:** Because Quarkus Flow integrates seamlessly with Quarkus dev mode, any changes you make to the YAML file in `src/main/resources/flow` will be picked up and live-reloaded immediately. You do not need to restart your application when tweaking YAML tasks!
 
 == See also
 

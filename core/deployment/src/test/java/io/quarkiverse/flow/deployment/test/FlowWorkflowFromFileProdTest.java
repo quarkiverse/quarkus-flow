@@ -4,7 +4,6 @@ import static org.assertj.core.api.Fail.fail;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +55,6 @@ public class FlowWorkflowFromFileProdTest {
 
         @Override
         public void execute(BuildContext context) {
-            Path dummy = Path.of("flow/flow.yaml");
             byte[] bytes = """
                     document:
                       dsl: '1.0.0'
@@ -70,8 +68,9 @@ public class FlowWorkflowFromFileProdTest {
                     """.getBytes(StandardCharsets.UTF_8);
             try {
                 Workflow workflow = WorkflowReader.readWorkflow(bytes, WorkflowFormat.YAML);
-                context.produce(DiscoveredWorkflowBuildItem.fromSpec(
-                        dummy, dummy, workflow, bytes));
+                // Use null for definitionResourcePath to indicate this is a programmatic workflow
+                // without an actual resource file - the old recorder will be used
+                context.produce(DiscoveredWorkflowBuildItem.fromSpec(null, workflow, bytes));
             } catch (IOException e) {
                 fail(e);
             }
