@@ -44,35 +44,35 @@ public class FlowResourceCollectorProcessor {
         final String flowResourcePath = flowDefinitionsConfig.dir().orElse(FlowDefinitionsConfig.DEFAULT_FLOW_DIR);
         Map<String, DiscoveredWorkflowBuildItem> workflowsMap = new HashMap<>();
 
-        // Scan all application archives for workflow files
-        archives.getAllApplicationArchives().forEach(archive -> {
-            archive.accept(tree -> {
-                tree.walk(visit -> {
-                    String relativePath = visit.getRelativePath("/");
+        // Scan only the root archive (application's own resources)
+        // In test mode, the root archive contains merged src/main/resources + src/test/resources
+        // with test resources taking precedence
+        archives.getRootArchive().accept(tree -> {
+            tree.walk(visit -> {
+                String relativePath = visit.getRelativePath("/");
 
-                    // Only process files in the configured flow directory
-                    if (relativePath.startsWith(flowResourcePath + "/") &&
-                            SUPPORTED_WORKFLOW_FILE_EXTENSIONS.stream()
-                                    .anyMatch(relativePath::endsWith)) {
+                // Only process files in the configured flow directory
+                if (relativePath.startsWith(flowResourcePath + "/") &&
+                        SUPPORTED_WORKFLOW_FILE_EXTENSIONS.stream()
+                                .anyMatch(relativePath::endsWith)) {
 
-                        Path filePath = visit.getPath();
-                        try {
-                            // Parse workflow to extract metadata (namespace, name, version)
-                            Workflow workflow = WorkflowReader.readWorkflow(filePath);
+                    Path filePath = visit.getPath();
+                    try {
+                        // Parse workflow to extract metadata (namespace, name, version)
+                        Workflow workflow = WorkflowReader.readWorkflow(filePath);
 
-                            // No need to read content - we'll load from classpath at runtime
-                            DiscoveredWorkflowBuildItem item = DiscoveredWorkflowBuildItem.fromSpec(
-                                    relativePath,
-                                    workflow);
+                        // No need to read content - we'll load from classpath at runtime
+                        DiscoveredWorkflowBuildItem item = DiscoveredWorkflowBuildItem.fromSpec(
+                                relativePath,
+                                workflow);
 
-                            tryAddUniqueWorkflow(item, workflowsMap);
-                            LOG.debug("Discovered workflow: {} at {}", item.workflowDefinitionId(), relativePath);
-                        } catch (IOException e) {
-                            LOG.error("Failed to parse workflow file: {}", filePath, e);
-                            throw new UncheckedIOException("Error parsing workflow file: " + filePath, e);
-                        }
+                        tryAddUniqueWorkflow(item, workflowsMap);
+                        LOG.debug("Discovered workflow: {} at {}", item.workflowDefinitionId(), relativePath);
+                    } catch (IOException e) {
+                        LOG.error("Failed to parse workflow file: {}", filePath, e);
+                        throw new UncheckedIOException("Error parsing workflow file: " + filePath, e);
                     }
-                });
+                }
             });
         });
 
