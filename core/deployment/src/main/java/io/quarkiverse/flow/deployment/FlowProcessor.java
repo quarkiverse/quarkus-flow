@@ -455,15 +455,7 @@ class FlowProcessor {
                 .addValue("value", identifier).done()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowApplication.class)));
 
-        // If definitionResourcePath is null, this is a programmatic workflow (e.g., from tests)
-        // Use the old method that embeds content directly
-        if (workflow.definitionResourcePath() == null) {
-            return configurator.createWith(recorder.workflowDefinitionFromFileCreator(
-                    "programmatic-workflow", workflow.content(), WorkflowFormat.YAML))
-                    .done();
-        }
-
-        // Otherwise, use the new resource-based method that loads from classpath
+        // Load workflow from classpath resource at runtime
         return configurator.createWith(recorder.workflowDefinitionFromResourceCreator(
                 workflow.definitionResourcePath(),
                 WorkflowFormat.fromFileName(workflow.definitionResourcePath())))

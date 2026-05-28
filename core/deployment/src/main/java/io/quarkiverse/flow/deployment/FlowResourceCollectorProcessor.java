@@ -2,7 +2,6 @@ package io.quarkiverse.flow.deployment;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -58,13 +57,14 @@ public class FlowResourceCollectorProcessor {
 
                         Path filePath = visit.getPath();
                         try {
+                            // Parse workflow to extract metadata (namespace, name, version)
                             Workflow workflow = WorkflowReader.readWorkflow(filePath);
-                            byte[] content = Files.readAllBytes(filePath);
 
+                            // No need to read content - we'll load from classpath at runtime
                             DiscoveredWorkflowBuildItem item = DiscoveredWorkflowBuildItem.fromSpec(
                                     relativePath,
                                     workflow,
-                                    content);
+                                    null); // content not needed for resource-based workflows
 
                             tryAddUniqueWorkflow(item, workflowsMap);
                             LOG.debug("Discovered workflow: {} at {}", item.workflowDefinitionId(), relativePath);

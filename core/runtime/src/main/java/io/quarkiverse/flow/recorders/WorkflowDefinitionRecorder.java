@@ -43,19 +43,6 @@ public class WorkflowDefinitionRecorder {
         };
     }
 
-    public Function<SyntheticCreationalContext<WorkflowDefinition>, WorkflowDefinition> workflowDefinitionFromFileCreator(
-            String filename, byte[] content, WorkflowFormat workflowFormat) {
-        return context -> {
-            final WorkflowApplication app = context.getInjectedReference(WorkflowApplication.class);
-            try {
-                Workflow workflow = WorkflowReader.readWorkflow(content, workflowFormat);
-                return app.workflowDefinition(workflow);
-            } catch (IOException e) {
-                throw new UncheckedIOException("Failed to create WorkflowDefinition for workflow at " + filename, e);
-            }
-        };
-    }
-
     /**
      * Creates a WorkflowDefinition bean supplier that loads workflow content from classpath resources at runtime.
      * <p>

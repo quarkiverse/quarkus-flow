@@ -33,16 +33,14 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
     private String specIdentifier;
     private String className;
     private final From from;
-    private byte[] content;
 
-    private DiscoveredWorkflowBuildItem(String definitionResourcePath, Workflow workflow, byte[] content) {
+    private DiscoveredWorkflowBuildItem(String definitionResourcePath, Workflow workflow) {
         this.definitionResourcePath = definitionResourcePath;
         this.workflowDefinitionId = WorkflowDefinitionId.of(workflow);
         this.specIdentifier = WorkflowNameUtils.yamlDescriptorIdentifier(
                 workflowDefinitionId.namespace(),
                 workflowDefinitionId.name(),
                 workflowDefinitionId.version());
-        this.content = content;
         this.from = From.SPEC;
     }
 
@@ -56,12 +54,11 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
      *
      * @param definitionResourcePath the classpath workflow definition resource path
      * @param workflow the parsed workflow model
-     * @param content the workflow file content
      *
      * @return a new {@link DiscoveredWorkflowBuildItem}
      */
-    public static DiscoveredWorkflowBuildItem fromSpec(String definitionResourcePath, Workflow workflow, byte[] content) {
-        return new DiscoveredWorkflowBuildItem(definitionResourcePath, workflow, content);
+    public static DiscoveredWorkflowBuildItem fromSpec(String definitionResourcePath, Workflow workflow) {
+        return new DiscoveredWorkflowBuildItem(definitionResourcePath, workflow);
     }
 
     /**
@@ -124,9 +121,5 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
      */
     public String definitionResourcePath() {
         return definitionResourcePath;
-    }
-
-    public byte[] content() {
-        return content;
     }
 }
