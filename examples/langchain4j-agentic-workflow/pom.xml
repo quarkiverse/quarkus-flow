@@ -16,7 +16,7 @@
         <quarkus.platform.version>3.36.0</quarkus.platform.version>
         <quarkus.flow.version>1.0.0-SNAPSHOT</quarkus.flow.version>
         <skipITs>true</skipITs>
-        <surefire-plugin.version>3.5.5</surefire-plugin.version>
+        <surefire-plugin.version>3.5.6</surefire-plugin.version>
         <io.quarkiverse.langchain4j.version>1.10.0</io.quarkiverse.langchain4j.version>
         <version.assertj>3.27.7</version.assertj>
         <org.wiremock.version>3.13.2</org.wiremock.version>
