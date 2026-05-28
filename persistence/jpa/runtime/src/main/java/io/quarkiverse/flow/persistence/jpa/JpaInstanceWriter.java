@@ -1,13 +1,11 @@
 package io.quarkiverse.flow.persistence.jpa;
 
-import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import io.serverlessworkflow.impl.WorkflowDefinitionData;
-import io.serverlessworkflow.impl.persistence.AsyncPersistenceExecutor;
 import io.serverlessworkflow.impl.persistence.PersistenceExecutor;
 import io.serverlessworkflow.impl.persistence.PersistenceInstanceOperations;
 import io.serverlessworkflow.impl.persistence.TransactedPersistenceInstanceWriter;
@@ -19,7 +17,7 @@ public class JpaInstanceWriter extends TransactedPersistenceInstanceWriter {
     JpaInstanceOperations operations;
 
     @Inject
-    ExecutorService service;
+    PersistenceExecutor executor;
 
     @Override
     protected void doTransaction(Consumer<PersistenceInstanceOperations> operation, WorkflowDefinitionData definition) {
@@ -28,6 +26,6 @@ public class JpaInstanceWriter extends TransactedPersistenceInstanceWriter {
 
     @Override
     protected PersistenceExecutor persistenceExecutor() {
-        return new AsyncPersistenceExecutor(service);
+        return executor;
     }
 }

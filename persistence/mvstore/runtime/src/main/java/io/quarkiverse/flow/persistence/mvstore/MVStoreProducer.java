@@ -5,6 +5,7 @@ import jakarta.enterprise.inject.Produces;
 
 import io.serverlessworkflow.impl.marshaller.WorkflowBufferFactory;
 import io.serverlessworkflow.impl.persistence.DefaultPersistenceInstanceHandlers;
+import io.serverlessworkflow.impl.persistence.PersistenceExecutor;
 import io.serverlessworkflow.impl.persistence.PersistenceInstanceHandlers;
 import io.serverlessworkflow.impl.persistence.mvstore.MVStorePersistenceStore;
 
@@ -13,7 +14,9 @@ public class MVStoreProducer {
 
     @Produces
     @ApplicationScoped
-    PersistenceInstanceHandlers mvStoreHandlers(MVStoreConfig config, WorkflowBufferFactory factory) {
-        return DefaultPersistenceInstanceHandlers.builder(new MVStorePersistenceStore(config.dbPath(), factory)).build();
+    PersistenceInstanceHandlers mvStoreHandlers(MVStoreConfig config, WorkflowBufferFactory factory,
+            PersistenceExecutor executor) {
+        return DefaultPersistenceInstanceHandlers.builder(new MVStorePersistenceStore(config.dbPath(), factory))
+                .withPersistenceExecutor(executor).build();
     }
 }

@@ -11,6 +11,8 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
+import io.cloudevents.CloudEvent;
+import io.cloudevents.core.builder.CloudEventBuilder;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.serverlessworkflow.impl.TaskContext;
 import io.serverlessworkflow.impl.TaskContextData;
@@ -21,6 +23,8 @@ import io.serverlessworkflow.impl.WorkflowInstanceData;
 import io.serverlessworkflow.impl.WorkflowStatus;
 import io.serverlessworkflow.impl.executors.AbstractTaskExecutor;
 import io.serverlessworkflow.impl.executors.TransitionInfo;
+import io.serverlessworkflow.impl.marshaller.MarshallingUtils;
+import io.serverlessworkflow.impl.marshaller.WorkflowBufferFactory;
 import io.serverlessworkflow.impl.persistence.CompletedTaskInfo;
 import io.serverlessworkflow.impl.persistence.PersistenceInstanceOperations;
 import io.serverlessworkflow.impl.persistence.PersistenceTaskInfo;
@@ -34,10 +38,15 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     ProcessInstanceRepository repository;
 
     @Inject
+    CloudEventRepository ceRepository;
+
+    @Inject
+    WorkflowBufferFactory factory;
+
+    @Inject
     EntityManager em;
 
     @Override
-    @Transactional
     public void writeInstanceData(WorkflowContextData workflowContext) {
         WorkflowInstanceData instance = workflowContext.instanceData();
         repository.persist(new ProcessInstanceEntity(workflowContext.definition().application().id(),
@@ -45,14 +54,12 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     }
 
     @Override
-    @Transactional
     public void writeRetryTask(WorkflowContextData workflowContext, TaskContextData taskContext) {
         em.persist(new RetriedTaskEntity(TaskInfoKey.from(workflowContext, taskContext),
                 ((TaskContext) taskContext).retryAttempt()));
     }
 
     @Override
-    @Transactional
     public void writeCompletedTask(WorkflowContextData workflowContext, TaskContextData taskContext) {
         TransitionInfo transition = ((TaskContext) taskContext).transition();
         AbstractTaskExecutor<?> next = (AbstractTaskExecutor<?>) transition.next();
@@ -64,19 +71,50 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     }
 
     @Override
-    @Transactional
     public void writeStatus(WorkflowContextData workflowContext, WorkflowStatus status) {
         find(workflowContext).setStatus(status);
     }
 
     @Override
-    @Transactional
     public void removeProcessInstance(WorkflowContextData workflowContext) {
         repository.deleteById(toKey(workflowContext));
     }
 
+    public void retrieveEvents(Map<String, Collection<CloudEvent>> reg2EventsMap) {
+        ceRepository.findByRegId(reg2EventsMap.keySet())
+                .forEach(entity -> reg2EventsMap.get(entity.getRegId()).add(from(entity)));
+    }
+
+    private CloudEvent from(CloudEventEntity entity) {
+        CloudEventBuilder builder = CloudEventBuilder.fromSpecVersion(entity.getVersion()).withType(entity.getType())
+                .withSource(entity.getSource()).withId(entity.getId()).withTime(entity.getTime())
+                .withSubject(entity.getSubject()).withDataSchema(entity.getDataSchema())
+                .withDataContentType(entity.getDataContentType()).withData(entity.getData());
+        MarshallingUtils.readCloudEventExtensions(factory, entity.getExtensions(), builder);
+        return builder.build();
+    }
+
     @Override
-    @Transactional
+    public void storeEvent(String regId, CloudEvent event) {
+        ceRepository.persist(new CloudEventEntity(regId, event, MarshallingUtils.writeCloudEventExtensions(factory, event)));
+    }
+
+    @Override
+    public void markAsProcessed(Map<String, Collection<String>> regCeIds) {
+        ceRepository.setProcessed(regCeIds.values().stream().flatMap(c -> c.stream()).toList());
+    }
+
+    @Override
+    public void clearProcessed() {
+        ceRepository.clearProcessed();
+    }
+
+    @Override
+    public void removeCloudEvents(Map<String, String> ids) {
+        ceRepository.deleteByIds(ids.values());
+    }
+
+    @Override
     public void clearStatus(WorkflowContextData workflowContext) {
         find(workflowContext).setStatus(null);
     }
