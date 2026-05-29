@@ -11,7 +11,6 @@ import io.quarkiverse.flow.FlowMetadata;
 import io.quarkiverse.flow.Flowable;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.runtime.annotations.Recorder;
-import io.serverlessworkflow.api.WorkflowFormat;
 import io.serverlessworkflow.api.WorkflowReader;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.api.types.WorkflowMetadata;
@@ -50,16 +49,14 @@ public class WorkflowDefinitionRecorder {
      * the bytecode size and avoiding MethodTooLargeException when registering many workflows.
      *
      * @param resourcePath the classpath resource path (e.g., "flow/order-workflow.yaml")
-     * @param workflowFormat the workflow format (YAML or JSON)
      * @return a function that creates WorkflowDefinition instances by loading from classpath
      */
     public Function<SyntheticCreationalContext<WorkflowDefinition>, WorkflowDefinition> workflowDefinitionFromResourceCreator(
-            String resourcePath, WorkflowFormat workflowFormat) {
+            String resourcePath) {
         return context -> {
             final WorkflowApplication app = context.getInjectedReference(WorkflowApplication.class);
             try {
-                byte[] content = loadResourceFromClasspath(resourcePath);
-                Workflow workflow = WorkflowReader.readWorkflow(content, workflowFormat);
+                Workflow workflow = WorkflowReader.readWorkflowFromClasspath(resourcePath);
                 return app.workflowDefinition(workflow);
             } catch (IOException e) {
                 throw new UncheckedIOException("Failed to load workflow from resource: " + resourcePath, e);

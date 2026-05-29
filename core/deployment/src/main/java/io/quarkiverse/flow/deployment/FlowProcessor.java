@@ -66,7 +66,6 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.runtime.metrics.MetricsFactory;
-import io.serverlessworkflow.api.WorkflowFormat;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowException;
@@ -456,9 +455,7 @@ class FlowProcessor {
                 .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowApplication.class)));
 
         // Load workflow from classpath resource at runtime
-        return configurator.createWith(recorder.workflowDefinitionFromResourceCreator(
-                workflow.definitionResourcePath(),
-                WorkflowFormat.fromFileName(workflow.definitionResourcePath())))
+        return configurator.createWith(recorder.workflowDefinitionFromResourceCreator(workflow.definitionResourcePath()))
                 .done();
     }
 
