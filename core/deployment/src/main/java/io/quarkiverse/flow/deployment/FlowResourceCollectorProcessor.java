@@ -92,9 +92,14 @@ public class FlowResourceCollectorProcessor {
 
     private static void tryAddUniqueWorkflow(DiscoveredWorkflowBuildItem item,
             Map<String, DiscoveredWorkflowBuildItem> uniqueWorkflows) {
-        if (uniqueWorkflows.put(item.specIdentifier(), item) != null) {
-            throw new IllegalStateException(String.format(
-                    "Duplicate workflow detected %s", item.workflowDefinitionId()));
+        DiscoveredWorkflowBuildItem existing = uniqueWorkflows.put(item.specIdentifier(), item);
+        if (existing != null) {
+            // Allow test resources to override main resources (Maven convention)
+            // The tree walk processes resources in order, so the last one wins
+            LOG.debug("Workflow {} found in multiple locations - using {}, overriding {}",
+                    item.workflowDefinitionId(),
+                    item.definitionResourcePath(),
+                    existing.definitionResourcePath());
         }
     }
 }
