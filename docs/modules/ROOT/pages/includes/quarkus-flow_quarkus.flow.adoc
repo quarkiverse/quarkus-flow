@@ -15,11 +15,15 @@ endif::add-copy-button-to-config-props[]
 
 [.description]
 --
-Directory where to look for Workflow definition files.
+Classpath resource path where workflow definition files are located.
 
-It is relative to `src/main` directory.
+Workflow files must be placed in `src/main/resources/++{++path++}++` to be available at runtime. Maven automatically copies files from `src/main/resources` to the classpath.
 
-If you set by example `workflows`, the Workflow definitions must be located in `src/main/workflows`.
+Default: `flow` (expects files in `src/main/resources/flow`)
+
+Example: Setting `workflows` expects workflow files in `src/main/resources/workflows`.
+
+Test workflows in `src/test/resources/++{++path++}++` override main workflows with the same relative path when running tests.
 
 
 ifdef::add-copy-button-to-env-var[]
@@ -30,7 +34,7 @@ Environment variable: `+++QUARKUS_FLOW_DEFINITIONS_DIR+++`
 endif::add-copy-button-to-env-var[]
 --
 |string
-|`+++src/main/flow+++`
+|`+++flow+++`
 
 a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-definitions-naming-strategy]] [.property-path]##link:#quarkus-flow_quarkus-flow-definitions-naming-strategy[`+++quarkus.flow.definitions.naming-strategy+++`]##
 ifdef::add-copy-button-to-config-props[]

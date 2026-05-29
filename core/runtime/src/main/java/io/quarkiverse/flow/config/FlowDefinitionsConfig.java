@@ -31,16 +31,23 @@ public interface FlowDefinitionsConfig {
         }
     }
 
-    String DEFAULT_FLOW_DIR = "src/main/flow";
+    String DEFAULT_FLOW_DIR = "flow";
     String ROOT_KEY = "quarkus.flow.definitions";
 
     /**
-     * Directory where to look for Workflow definition files.
+     * Classpath resource path where workflow definition files are located.
      * <p>
-     * It is relative to <code>src/main</code> directory.
+     * Workflow files must be placed in <code>src/main/resources/{path}</code> to be
+     * available at runtime. Maven automatically copies files from <code>src/main/resources</code>
+     * to the classpath.
      * <p>
-     * If you set by example <code>workflows</code>, the Workflow definitions must be located in
-     * <code>src/main/workflows</code>.
+     * Default: <code>flow</code> (expects files in <code>src/main/resources/flow</code>)
+     * <p>
+     * Example: Setting <code>workflows</code> expects workflow files in
+     * <code>src/main/resources/workflows</code>.
+     * <p>
+     * Test workflows in <code>src/test/resources/{path}</code> override main workflows
+     * with the same relative path when running tests.
      */
     @WithDefault(DEFAULT_FLOW_DIR)
     Optional<String> dir();

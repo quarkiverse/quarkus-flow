@@ -66,7 +66,6 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.runtime.metrics.MetricsFactory;
-import io.serverlessworkflow.api.WorkflowFormat;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowException;
@@ -239,10 +238,10 @@ class FlowProcessor {
             return Version.parse(semver);
         } catch (IllegalArgumentException | ParseException e) {
             throw new IllegalArgumentException(
-                    String.format("Invalid semantic version '%s' in workflow '%s:%s' (file: %s). " +
+                    String.format("Invalid semantic version '%s' in workflow '%s:%s' (resource: %s). " +
                             "Expected format: MAJOR.MINOR.PATCH (e.g., '1.0.0')",
                             discoveredWorkflow.version(), discoveredWorkflow.namespace(), discoveredWorkflow.name(),
-                            discoveredWorkflow.absolutePath()),
+                            discoveredWorkflow.definitionResourcePath()),
                     e);
         }
     }
@@ -320,13 +319,16 @@ class FlowProcessor {
     public void watchChanges(List<DiscoveredWorkflowBuildItem> workflows,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) {
 
-        List<String> locations = workflows.stream().filter(DiscoveredWorkflowBuildItem::fromSpec)
-                .map(DiscoveredWorkflowBuildItem::absolutePath)
+        // Watch workflow resource files for changes in dev mode
+        // Since workflows are now loaded from classpath resources, we watch the resource paths
+        List<String> resourcePaths = workflows.stream()
+                .filter(DiscoveredWorkflowBuildItem::fromSpec)
+                .map(DiscoveredWorkflowBuildItem::definitionResourcePath)
                 .toList();
 
-        for (String location : locations) {
+        for (String resourcePath : resourcePaths) {
             watchedFiles.produce(HotDeploymentWatchedFileBuildItem.builder()
-                    .setLocation(location)
+                    .setLocation(resourcePath)
                     .setRestartNeeded(true)
                     .build());
         }
@@ -443,15 +445,17 @@ class FlowProcessor {
 
     private static SyntheticBeanBuildItem produceSyntheticWorkflowDefinitionBean(String identifier,
             WorkflowDefinitionRecorder recorder, DiscoveredWorkflowBuildItem workflow) {
-        return SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
+        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
+                .configure(WorkflowDefinition.class)
                 .scope(ApplicationScoped.class)
                 .unremovable()
                 .setRuntimeInit()
                 .addQualifier().annotation(DotNames.IDENTIFIER)
                 .addValue("value", identifier).done()
-                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowApplication.class)))
-                .createWith(recorder.workflowDefinitionFromFileCreator(
-                        workflow.name(), workflow.content(), WorkflowFormat.fromFileName(workflow.name())))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowApplication.class)));
+
+        // Load workflow from classpath resource at runtime
+        return configurator.createWith(recorder.workflowDefinitionFromResourceCreator(workflow.definitionResourcePath()))
                 .done();
     }
 

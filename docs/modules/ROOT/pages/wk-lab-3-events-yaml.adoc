@@ -39,10 +39,10 @@ quarkus.flow.messaging.defaults-enabled=true
 
 == 2. Create the YAML workflow
 
-Create a new file at `src/main/flow/uppercase-message.yaml`. This workflow acts as a "Transformer" that listens for a specific event type, modifies the data using a `jq` expression, and emits a result event.
+Create a new file at `src/main/resources/flow/uppercase-message.yaml`. This workflow acts as a "Transformer" that listens for a specific event type, modifies the data using a `jq` expression, and emits a result event.
 
 [source,yaml]
-.src/main/flow/uppercase-message.yaml
+.src/main/resources/flow/uppercase-message.yaml
 ----
 document:
   dsl: '1.0.0'
