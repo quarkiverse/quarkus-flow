@@ -71,23 +71,6 @@ public class WorkflowDefinitionRecorder {
     }
 
     /**
-     * Loads a resource from the classpath and returns its content as a byte array.
-     *
-     * @param resourcePath the classpath resource path
-     * @return the resource content as byte array
-     * @throws IOException if the resource cannot be found or read
-     */
-    private byte[] loadResourceFromClasspath(String resourcePath) throws IOException {
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        try (InputStream is = cl.getResourceAsStream(resourcePath)) {
-            if (is == null) {
-                throw new IOException("Workflow resource not found in classpath: " + resourcePath);
-            }
-            return is.readAllBytes();
-        }
-    }
-
-    /**
      * Adds Flow-specific metadata to the workflow descriptor.
      * This metadata is used to link workflows back to their Flow class.
      */
