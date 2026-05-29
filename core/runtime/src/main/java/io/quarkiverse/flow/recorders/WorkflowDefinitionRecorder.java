@@ -1,7 +1,6 @@
 package io.quarkiverse.flow.recorders;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.function.Function;
 
