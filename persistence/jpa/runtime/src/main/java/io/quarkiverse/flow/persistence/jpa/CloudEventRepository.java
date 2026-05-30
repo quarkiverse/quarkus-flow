@@ -17,7 +17,9 @@ public class CloudEventRepository {
     }
 
     public Collection<CloudEventEntity> findByRegId(Collection<String> regIds) {
-        return em.createQuery("SELECT c FROM CloudEventEntity c WHERE c.regId IN :regIds", CloudEventEntity.class)
+        return em
+                .createQuery("SELECT c FROM CloudEventEntity c WHERE c.regId IN :regIds AND processedFlag != true",
+                        CloudEventEntity.class)
                 .setParameter("regIds", regIds)
                 .getResultList();
     }
