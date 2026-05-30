@@ -3,25 +3,39 @@ package io.quarkiverse.flow.persistence.jpa;
 import java.util.Collection;
 
 import jakarta.enterprise.context.ApplicationScoped;
-
-import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 
 @ApplicationScoped
-public class CloudEventRepository implements PanacheRepositoryBase<CloudEventEntity, String> {
+public class CloudEventRepository {
+
+    @Inject
+    EntityManager em;
+
+    public void persist(CloudEventEntity entity) {
+        em.persist(entity);
+    }
 
     public Collection<CloudEventEntity> findByRegId(Collection<String> regIds) {
-        return list("regId in ?1 and processedFlag != true", regIds);
+        return em.createQuery("SELECT c FROM CloudEventEntity c WHERE c.regId IN :regIds", CloudEventEntity.class)
+                .setParameter("regIds", regIds)
+                .getResultList();
     }
 
     public void setProcessed(Collection<String> ids) {
-        update("processedFlag = true where id in ?1", ids);
+        em.createQuery("UPDATE CloudEventEntity c SET c.processedFlag = true WHERE c.id IN :ids")
+                .setParameter("ids", ids)
+                .executeUpdate();
     }
 
     public void clearProcessed() {
-        update("processedFlag = false");
+        em.createQuery("UPDATE CloudEventEntity c SET c.processedFlag = false")
+                .executeUpdate();
     }
 
     public void deleteByIds(Collection<String> values) {
-        delete("id in ?1", values);
+        em.createQuery("DELETE FROM CloudEventEntity c WHERE c.id IN :ids")
+                .setParameter("ids", values)
+                .executeUpdate();
     }
 }
