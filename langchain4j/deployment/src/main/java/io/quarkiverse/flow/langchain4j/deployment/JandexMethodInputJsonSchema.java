@@ -233,7 +233,7 @@ final class JandexMethodInputJsonSchema {
         }
 
         // POJO expansion
-        if (expandPojoOrRecord && isPojoLike(index, typeName)) {
+        if (expandPojoOrRecord && isPojoLike(index, typeName) && classInfo != null) {
             return buildPojoSchema(index, classInfo);
         }
 
