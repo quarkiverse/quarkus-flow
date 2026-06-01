@@ -1,0 +1,500 @@
+[.configuration-legend]
+icon:lock[title=Fixed at build time] Configuration property fixed at build time - All other configuration properties are overridable at runtime
+[.configuration-reference.searchable, cols="80,.^10,.^10"]
+|===
+
+h|[.header-title]##Configuration property##
+h|Type
+h|Default
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow-runner_quarkus-flow-runner-endpoints-definition-enabled]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-endpoints-definition-enabled[`+++quarkus.flow.runner.endpoints.definition.enabled+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.endpoints.definition.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enable or disable definition management endpoints at build time.
+
+When `true` (default), all CRUD operations are available:
+
+ - GET /runner/definition - List workflows (always available)
+ - POST /runner/definition - Create new workflow definitions
+ - PUT /runner/definition/++{++namespace++}++/++{++name++}++/++{++version++}++ - Update workflow
+ - DELETE /runner/definition/++{++namespace++}++/++{++name++}++/++{++version++}++ - Delete workflow
+
+
+
+When `false`, only the GET endpoint is included in the build. This is recommended for production cloud deployments where workflows are loaded from ConfigMaps or filesystem mounts and should not be modified at runtime.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_ENDPOINTS_DEFINITION_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_ENDPOINTS_DEFINITION_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-enabled]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-enabled[`+++quarkus.flow.runner.enabled+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enable or disable the Flow Runner feature.
+
+When `false`, all runner REST endpoints are disabled and workflow definitions are not loaded from the configured source.
+
+This is the master switch for the entire runner functionality.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-source-path]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-source-path[`+++quarkus.flow.runner.source.path+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.source.path+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Filesystem path to workflow definitions.
+
+Required when `type=PATH`. The directory is scanned recursively for all `.yaml`, `.yml`, and `.json` files.
+
+In Kubernetes/OpenShift deployments, this typically points to a ConfigMap or persistent volume mount:
+
+```
+quarkus.flow.runner.source.path=/deployments/workflows
+```
+
+
+
+Workflows are uniquely identified by `namespace:name:version`. Duplicate workflow identifiers cause application startup to fail.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SOURCE_PATH+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SOURCE_PATH+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-source-type]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-source-type[`+++quarkus.flow.runner.source.type+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.source.type+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Workflow definition source type.
+
+Determines where workflow definitions are loaded from:
+
+ - `CLASSPATH` - Load from `META-INF/workflows/` (or configurable path)
+ - `PATH` - Load from filesystem directory specified in `path`
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SOURCE_TYPE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SOURCE_TYPE+++`
+endif::add-copy-button-to-env-var[]
+--
+a|`path`, `classpath`
+|`+++classpath+++`
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-security-type]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-type[`+++quarkus.flow.runner.security.type+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.security.type+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Authentication type.
+
+Selects which authentication mechanism to use:
+
+ - `OIDC` - Requires `quarkus-oidc` extension in classpath. Uses standard Quarkus OIDC configuration (`quarkus.oidc.++*++`). Roles extracted from JWT claims.
+ - `API_KEY` - Custom filter validates `Authorization: Bearer <key>` header against configured secrets. Maps keys to roles.
+ - `NONE` - Endpoints are unprotected. Use only in development.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_TYPE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_TYPE+++`
+endif::add-copy-button-to-env-var[]
+--
+a|`oidc`, `api-key`, `none`
+|`+++none+++`
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-security-namespace-claim]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-namespace-claim[`+++quarkus.flow.runner.security.namespace.claim+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.security.namespace.claim+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+JWT claim name containing authorized namespace(s).
+
+Used when `type=OIDC`. The claim can contain:
+
+ - Single string value (e.g., `"my-namespace"`)
+ - Array of strings (e.g., `++[++"ns1", "ns2"++]++`)
+
+
+
+Example:
+
+```
+quarkus.flow.runner.security.namespace.claim=namespace
+# or for multi-namespace support:
+quarkus.flow.runner.security.namespace.claim=namespaces
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_NAMESPACE_CLAIM+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_NAMESPACE_CLAIM+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|`+++namespace+++`
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-security-namespace-validate]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-namespace-validate[`+++quarkus.flow.runner.security.namespace.validate+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.security.namespace.validate+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enable or disable namespace validation.
+
+When `true`, requests are validated against the namespace in the request path and the user's authorized namespaces (from JWT claim or API key configuration).
+
+When `false`, namespace validation is skipped (all users can access all namespaces). Use only in development.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_NAMESPACE_VALIDATE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_NAMESPACE_VALIDATE+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-callback-timeout]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-callback-timeout[`+++quarkus.flow.runner.callback.timeout+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.callback.timeout+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+HTTP timeout per callback delivery attempt.
+
+Applies to each individual retry attempt, not the total delivery time.
+
+Example values:
+
+ - `10s` - 10 seconds (default)
+ - `5s` - 5 seconds for fast-failing webhooks
+ - `30s` - 30 seconds for slower external services
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_CALLBACK_TIMEOUT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_CALLBACK_TIMEOUT+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|`+++10s+++`
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-callback-max-retries]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-callback-max-retries[`+++quarkus.flow.runner.callback.max-retries+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.callback.max-retries+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Maximum number of delivery retry attempts.
+
+Retries use exponential backoff:
+
+ - Attempt 1: immediate
+ - Attempt 2: {plus}1s
+ - Attempt 3: {plus}2s
+ - Attempt 4: {plus}4s
+
+
+
+After exhausting retries, the error is logged and the callback configuration is removed from memory. Callback failures do NOT fail the workflow execution.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_CALLBACK_MAX_RETRIES+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_CALLBACK_MAX_RETRIES+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++3+++`
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-callback-requires-https]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-callback-requires-https[`+++quarkus.flow.runner.callback.requires-https+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.callback.requires-https+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Require HTTPS for callback URLs in production.
+
+When `true`, callback URLs must use HTTPS scheme. HTTP URLs are rejected with `400 Bad Request`.
+
+Set to `false` only in development/testing environments.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_CALLBACK_REQUIRES_HTTPS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_CALLBACK_REQUIRES_HTTPS+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-callback-allowed-hosts]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-callback-allowed-hosts[`+++quarkus.flow.runner.callback.allowed-hosts+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.callback.allowed-hosts+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Allowed callback URL host patterns.
+
+Comma-separated list of host patterns. Supports wildcards:
+
+ - `"++*++"` - Allow all hosts (default)
+ - `"example.com"` - Exact match
+ - `"++*++.example.com"` - Subdomain match
+ - `"example.com,api.partner.com"` - Multiple allowed hosts
+
+
+
+Use this to restrict callbacks to known external services.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_CALLBACK_ALLOWED_HOSTS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_CALLBACK_ALLOWED_HOSTS+++`
+endif::add-copy-button-to-env-var[]
+--
+|list of string
+|`+++*+++`
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-callback-blocked-ips]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-callback-blocked-ips[`+++quarkus.flow.runner.callback.blocked-ips+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.callback.blocked-ips+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Blocked IP ranges for SSRF prevention.
+
+List of CIDR blocks to reject for callback URLs. Used to prevent Server-Side Request Forgery (SSRF) attacks targeting internal infrastructure.
+
+Default blocked ranges (RFC 1918 private networks {plus} loopback):
+
+ - `10.0.0.0/8`
+ - `172.16.0.0/12`
+ - `192.168.0.0/16`
+ - `127.0.0.0/8`
+
+
+
+Override this if you need to allow callbacks to internal services:
+
+```
+# Allow callbacks to 10.0.0.0/8 but block others
+quarkus.flow.runner.callback.blocked-ips=172.16.0.0/12,192.168.0.0/16,127.0.0.0/8
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_CALLBACK_BLOCKED_IPS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_CALLBACK_BLOCKED_IPS+++`
+endif::add-copy-button-to-env-var[]
+--
+|list of string
+|`+++10.0.0.0/8+++`, `+++172.16.0.0/12+++`, `+++192.168.0.0/16+++`, `+++127.0.0.0/8+++`
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-limits-max-definitions-per-namespace]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-limits-max-definitions-per-namespace[`+++quarkus.flow.runner.limits.max-definitions-per-namespace+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.limits.max-definitions-per-namespace+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Maximum number of workflow definitions allowed per namespace.
+
+Prevents a single namespace from consuming excessive registry space.
+
+Values:
+
+ - `-1` - Unlimited (default)
+ - `> 0` - Maximum definitions per namespace
+
+
+
+When the limit is reached, attempts to create new definitions in that namespace fail with `429 Too Many Requests`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_LIMITS_MAX_DEFINITIONS_PER_NAMESPACE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_LIMITS_MAX_DEFINITIONS_PER_NAMESPACE+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++-1+++`
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-limits-rate-limit-execution-per-minute]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-limits-rate-limit-execution-per-minute[`+++quarkus.flow.runner.limits.rate-limit.execution.per-minute+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.limits.rate-limit.execution.per-minute+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Rate limit for workflow executions per minute.
+
+Applies to `POST /runner/exec/++*++` endpoints.
+
+Values:
+
+ - `-1` - Unlimited (default)
+ - `> 0` - Maximum executions per minute
+
+
+
+When exceeded, requests fail with `429 Too Many Requests`.
+
+*Note:* This is a global limit across all users/namespaces. Per-user or per-namespace limits are planned for future releases.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_LIMITS_RATE_LIMIT_EXECUTION_PER_MINUTE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_LIMITS_RATE_LIMIT_EXECUTION_PER_MINUTE+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++-1+++`
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-secret]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-secret[`+++quarkus.flow.runner.security.api-keys."api-keys".secret+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.security.api-keys."api-keys".secret+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The API key secret value.
+
+Should be loaded from environment variables or Kubernetes Secrets:
+
+```
+quarkus.flow.runner.security.api-keys."my-key".secret=${FLOW_API_KEY}
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__SECRET+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__SECRET+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|required icon:exclamation-circle[title=Configuration property is required]
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-roles]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-roles[`+++quarkus.flow.runner.security.api-keys."api-keys".roles+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.security.api-keys."api-keys".roles+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Roles assigned to this API key.
+
+Predefined roles:
+
+ - `flow-admin` - Full access (definition management {plus} execution)
+ - `flow-invoker` - Execution only (POST/GET /runner/exec/++*++)
+
+
+
+Example:
+
+```
+quarkus.flow.runner.security.api-keys."admin-key".roles=flow-admin
+quarkus.flow.runner.security.api-keys."webhook-key".roles=flow-invoker
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__ROLES+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__ROLES+++`
+endif::add-copy-button-to-env-var[]
+--
+|list of string
+|required icon:exclamation-circle[title=Configuration property is required]
+
+|===
+
