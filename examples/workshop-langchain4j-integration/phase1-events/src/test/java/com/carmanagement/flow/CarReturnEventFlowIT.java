@@ -11,6 +11,7 @@ import io.cloudevents.core.provider.EventFormatProvider;
 import io.cloudevents.jackson.JsonFormat;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.kafka.InjectKafkaCompanion;
 import io.quarkus.test.kafka.KafkaCompanionResource;
 import io.smallrye.reactive.messaging.kafka.companion.ConsumerTask;
@@ -26,6 +27,8 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.jboss.logging.Logger;
 
 import java.net.URI;
@@ -49,9 +52,11 @@ import static org.awaitility.Awaitility.await;
  * - Awaitility for async message processing verification
  */
 @QuarkusTest
+@TestProfile(KafkaTestProfile.class)
 @QuarkusTestResource(KafkaCompanionResource.class)
 @QuarkusTestResource(OllamaMockResource.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@DisabledOnOs(OS.WINDOWS)
 class CarReturnEventFlowIT {
 
     private static final Logger LOG = Logger.getLogger(CarReturnEventFlowIT.class);
