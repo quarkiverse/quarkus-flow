@@ -15,7 +15,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.36.0</quarkus.platform.version>
+        <quarkus.platform.version>3.33.2</quarkus.platform.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.6</surefire-plugin.version>
         <failsafe-plugin.version>3.5.4</failsafe-plugin.version>
@@ -56,6 +56,18 @@
             <artifactId>quarkus-langchain4j-ollama</artifactId>
             <version>${io.quarkiverse.langchain4j.version}</version>
             <optional>true</optional>
+            <exclusions>
+                <!--                it will be solved in 1.11.0 version-->
+                <exclusion>
+                    <groupId>io.smallrye.reactive</groupId>
+                    <artifactId>mutiny</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>mutiny</artifactId>
+            <version>3.2.1</version>
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>
