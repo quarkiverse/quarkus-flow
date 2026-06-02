@@ -29,6 +29,10 @@
             <artifactId>quarkus-langchain4j-agentic</artifactId>
             <version>${io.quarkiverse.langchain4j.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-tls-registry</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>
