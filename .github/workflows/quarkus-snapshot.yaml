@@ -19,3 +19,4 @@ jobs:
     with:
       ecosystem_ci_repo_path: quarkiverse-flow
       java_version: 17
+      quarkus_version_pom_property: 'quarkus.version'
