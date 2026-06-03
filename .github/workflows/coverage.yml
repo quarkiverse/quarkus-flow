@@ -46,7 +46,7 @@ jobs:
 
 
       - name: Add Coverage Comment
-        uses: madrapps/jacoco-report@v1.7.2
+        uses: madrapps/jacoco-report@v1.8.0
         with:
           # Path to the aggregated XML report in the root target
           paths: |
