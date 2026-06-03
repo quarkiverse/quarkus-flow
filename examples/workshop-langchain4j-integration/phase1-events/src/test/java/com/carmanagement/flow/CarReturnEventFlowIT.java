@@ -1,5 +1,24 @@
 package com.carmanagement.flow;
 
+import java.net.URI;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+import org.jboss.logging.Logger;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+
 import com.carmanagement.agentic.OllamaMockResource;
 import com.carmanagement.model.CarConditions;
 import com.carmanagement.model.CarInfo;
@@ -11,40 +30,21 @@ import io.cloudevents.core.provider.EventFormatProvider;
 import io.cloudevents.jackson.JsonFormat;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.kafka.InjectKafkaCompanion;
 import io.quarkus.test.kafka.KafkaCompanionResource;
 import io.smallrye.reactive.messaging.kafka.companion.ConsumerTask;
 import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
-import org.apache.kafka.common.serialization.ByteArrayDeserializer;
-import org.apache.kafka.common.serialization.StringDeserializer;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
-import org.jboss.logging.Logger;
-
-import java.net.URI;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 /**
  * Integration test for CarReturnEventFlow.
- *
+ * <p>
  * Tests the complete event-driven flow:
  * Kafka (car-returns topic) → CarReturnEventFlow → @SequenceAgent → Kafka (car-processed topic)
- *
+ * <p>
  * Uses:
  * - @QuarkusTest for testing with Quarkus runtime
  * - KafkaCompanion for Kafka test utilities
@@ -52,7 +52,6 @@ import static org.awaitility.Awaitility.await;
  * - Awaitility for async message processing verification
  */
 @QuarkusTest
-@TestProfile(KafkaTestProfile.class)
 @QuarkusTestResource(KafkaCompanionResource.class)
 @QuarkusTestResource(OllamaMockResource.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
