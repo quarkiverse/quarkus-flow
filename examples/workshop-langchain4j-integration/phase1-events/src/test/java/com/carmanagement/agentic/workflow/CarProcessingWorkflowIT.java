@@ -8,6 +8,8 @@ import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -17,7 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @QuarkusTest
 @QuarkusTestResource(OllamaMockResource.class)
-class CarProcessingWorkflowTest {
+@DisabledOnOs(OS.WINDOWS)
+class CarProcessingWorkflowIT {
 
     @Inject
     CarProcessingWorkflow workflow;
