@@ -3,7 +3,7 @@
 [![Version](https://img.shields.io/maven-central/v/io.quarkiverse.flow/quarkus-flow?logo=apache-maven&style=flat-square)](https://central.sonatype.com/artifact/io.quarkiverse.flow/quarkus-flow-parent)
 
 [![Native Compilation Nightly](https://github.com/quarkiverse/quarkus-flow/actions/workflows/native-nigthly-ci.yaml/badge.svg)](https://github.com/quarkiverse/quarkus-flow/actions/workflows/native-nigthly-ci.yaml)
-[![Quarkus ecosystem CI](https://github.com/quarkiverse/quarkus-flow/actions/workflows/quarkus-snapshot.yaml/badge.svg)](https://github.com/quarkiverse/quarkus-flow/actions/workflows/quarkus-snapshot.yaml)
+[![Quarkus ecosystem CI](https://github.com/quarkiverse/quarkus-flow/actions/workflows/quarkus-snapshot.yaml/badge.svg?branch=main)](https://github.com/quarkiverse/quarkus-flow/actions/workflows/quarkus-snapshot.yaml)
 [![Quarkus Platform Nightly](https://github.com/quarkiverse/quarkus-flow/actions/workflows/quarkus-platform-nightly.yml/badge.svg)](https://github.com/quarkiverse/quarkus-flow/actions/workflows/quarkus-platform-nightly.yml)
 [![Build with Integration Tests](https://github.com/quarkiverse/quarkus-flow/actions/workflows/build-it.yml/badge.svg?branch=main&event=push)](https://github.com/quarkiverse/quarkus-flow/actions/workflows/build-it.yml)
 [![Build](https://github.com/quarkiverse/quarkus-flow/actions/workflows/build.yml/badge.svg?branch=main&event=push)](https://github.com/quarkiverse/quarkus-flow/actions/workflows/build.yml)
