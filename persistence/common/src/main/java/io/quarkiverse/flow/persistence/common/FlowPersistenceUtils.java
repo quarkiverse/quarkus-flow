@@ -11,7 +11,10 @@ import io.serverlessworkflow.impl.WorkflowDefinitionId;
 class FlowPersistenceUtils {
 
     private FlowPersistenceUtils() {
+
     }
+
+    final static String NO_PERSISTENCE_WARN_MSG = "No persistence implementation availaable in the classpath. Please consider adding quarkus-flow-jpa, quarkus-flow-mvstore, quarkus-flow-redis, or quarkus-flow-infinispan to the classpath.";
 
     public static Collection<WorkflowDefinitionId> excludedIds(Optional<List<String>> excludedWorkflows) {
         return excludedWorkflows

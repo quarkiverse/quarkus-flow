@@ -6,12 +6,12 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.config.FlowDefinitionsConfig;
+import io.quarkiverse.flow.internal.WorkflowNameUtils;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -25,7 +25,6 @@ import io.serverlessworkflow.api.types.Workflow;
 public class FlowResourceCollectorProcessor {
 
     private static final Logger LOG = LoggerFactory.getLogger(FlowResourceCollectorProcessor.class);
-    private static final Set<String> SUPPORTED_WORKFLOW_FILE_EXTENSIONS = Set.of(".json", ".yaml", ".yml");
 
     /**
      * Collect all workflow files from application archives and produce
@@ -53,7 +52,7 @@ public class FlowResourceCollectorProcessor {
 
                 // Only process files in the configured flow directory
                 if (relativePath.startsWith(flowResourcePath + "/") &&
-                        SUPPORTED_WORKFLOW_FILE_EXTENSIONS.stream()
+                        WorkflowNameUtils.SUPPORTED_WORKFLOW_FILE_EXTENSIONS.stream()
                                 .anyMatch(relativePath::endsWith)) {
 
                     Path filePath = visit.getPath();

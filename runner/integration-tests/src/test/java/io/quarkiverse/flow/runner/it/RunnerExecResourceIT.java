@@ -10,10 +10,12 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkiverse.flow.runner.model.ExecutionResponse;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
 import io.serverlessworkflow.impl.WorkflowStatus;
 
 @SuppressWarnings("unchecked")
 @QuarkusTest
+@TestProfile(DefaultTestProfile.class)
 @DisplayName("Runner Execution Resource Integration Tests")
 class RunnerExecResourceIT {
 
