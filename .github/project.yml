@@ -1,3 +1,4 @@
 release:
   current-version: "0.10.1"
   next-version: "1.0.0-SNAPSHOT"
+# Kicking off 0.10.1 again, skipping tests to avoid using too many resources.
