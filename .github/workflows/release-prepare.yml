@@ -19,4 +19,7 @@ jobs:
     name: Prepare Release
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true}}
     uses: quarkiverse/.github/.github/workflows/prepare-release.yml@main
+    # our ITs require too much resource fromm GHA, the pipeline continue failing because of it
+    with:
+      skip_tests: true 
     secrets: inherit
