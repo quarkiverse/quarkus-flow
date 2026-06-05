@@ -1,0 +1,18 @@
+name: Flow Quartz
+description: |
+  Flow scheduler implemetation relying on quarkus quartz
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+    - workflow
+    - workflows
+    - cncf
+    - serverless
+    - cloudevents
+    - scheduler
+    - quartz
+  guide: https://docs.quarkiverse.io/quarkus-flow/dev/
+  categories:
+    - "integration"
+    - "scheduler"
+  status: "preview"
