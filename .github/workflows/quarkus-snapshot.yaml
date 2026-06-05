@@ -31,5 +31,5 @@ jobs:
     strategy:
       matrix:
         version: ['3.33']
-    name: "Build ${{ matrix.version }} against Quarkus latest ${{ matrix.version }}"
+    name: "Build against Quarkus LTS ${{ matrix.version }}"
       
