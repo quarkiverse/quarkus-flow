@@ -66,6 +66,13 @@ public interface FlowRunnerConfig {
     Security security();
 
     /**
+     * OpenAPI documentation configuration.
+     *
+     * @return the OpenAPI configuration
+     */
+    OpenApi openapi();
+
+    /**
      * Workflow definition source configuration.
      * <p>
      * Specifies where workflow definitions should be loaded from at startup.
@@ -222,11 +229,24 @@ public interface FlowRunnerConfig {
             Set<String> roles();
 
             /**
-             * Namespaces allowed by these roles. An empty Set means all namespaces are allowed.
+             * Namespaces allowed for this API key.
+             * <p>
+             * When not configured (empty), the key has access to all namespaces.
+             * When configured, the key can only access workflows in the specified namespaces.
+             * <p>
+             * Example:
              *
-             * @return set of namespaces
+             * <pre>
+             * # Restrict to specific namespaces
+             * quarkus.flow.runner.security.api-keys."team-key".namespaces=team-a,team-b
+             *
+             * # Or leave empty for all namespaces (default)
+             * quarkus.flow.runner.security.api-keys."admin-key".roles=flow-admin
+             * </pre>
+             *
+             * @return optional set of authorized namespace names, empty means all namespaces allowed
              */
-            Set<String> namespaces();
+            Optional<Set<String>> namespaces();
         }
 
         /**
@@ -274,6 +294,51 @@ public interface FlowRunnerConfig {
             @WithDefault("true")
             boolean validate();
         }
+    }
+
+    /**
+     * OpenAPI documentation configuration.
+     * <p>
+     * Controls dynamic OpenAPI document generation for registered workflows.
+     */
+    interface OpenApi {
+
+        /**
+         * Enable or disable dynamic workflow operations in OpenAPI document.
+         * <p>
+         * When {@code true}, the OpenAPI document will include a concrete operation
+         * for each registered workflow definition. For example, a workflow
+         * {@code test-namespace:hello-world:1.0.0} will generate:
+         *
+         * <pre>
+         * POST /q/flow/exec/test-namespace/hello-world/1.0.0
+         * </pre>
+         * <p>
+         * When {@code false}, only the generic parameterized endpoint is documented.
+         * <p>
+         * <strong>Security Note:</strong> The OpenAPI document ({@code /q/openapi}) is
+         * publicly accessible and will show all registered workflows (namespace, name,
+         * version, summary). This serves as a <strong>public workflow catalog</strong>.
+         * Actual execution remains protected by authentication and namespace authorization,
+         * returning 401/403 for unauthorized access attempts.
+         * <p>
+         * <strong>Exposed Information:</strong>
+         * <ul>
+         * <li>Workflow namespace, name, and version</li>
+         * <li>Workflow summary/description (if configured)</li>
+         * </ul>
+         * <strong>NOT Exposed:</strong>
+         * <ul>
+         * <li>Workflow DSL or task definitions</li>
+         * <li>Internal business logic or function implementations</li>
+         * <li>Secrets, credentials, or sensitive data</li>
+         * </ul>
+         *
+         * @return {@code true} to expand workflows in OpenAPI (default),
+         *         {@code false} to use generic endpoint only
+         */
+        @WithDefault("true")
+        boolean expandWorkflows();
     }
 
 }

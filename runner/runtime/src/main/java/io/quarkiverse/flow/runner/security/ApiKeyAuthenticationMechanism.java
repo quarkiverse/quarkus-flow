@@ -44,9 +44,9 @@ public class ApiKeyAuthenticationMechanism implements HttpAuthenticationMechanis
         // Extract Authorization header
         String authHeader = context.request().getHeader("Authorization");
 
+        // No auth header → anonymous identity (let @RolesAllowed reject if needed)
         if (authHeader == null || authHeader.isBlank()) {
-            return Uni.createFrom().failure(
-                    new AuthenticationFailedException("Missing Authorization header"));
+            return Uni.createFrom().nullItem();
         }
 
         // Validate Bearer token format (case-insensitive)
@@ -73,20 +73,25 @@ public class ApiKeyAuthenticationMechanism implements HttpAuthenticationMechanis
         if (matchingKey.isPresent()) {
             String keyName = matchingKey.get().getKey();
             Set<String> roles = matchingKey.get().getValue().roles();
-            Set<String> namespaces = matchingKey.get().getValue().namespaces();
+            Optional<Set<String>> namespacesOpt = matchingKey.get().getValue().namespaces();
 
             // Build security identity with principal name and roles
             QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder()
                     .setPrincipal(() -> "api-key:" + keyName);
             roles.forEach(builder::addRole);
 
-            if (namespaces != null && !namespaces.isEmpty()) {
-                Set<String> nonBlankNs = namespaces.stream()
-                        .filter(Objects::nonNull)
-                        .filter(ns -> !ns.isBlank())
-                        .collect(Collectors.toSet());
-                builder.addAttribute(CLAIM_NAMESPACES, nonBlankNs);
-            }
+            // Add namespaces attribute if configured
+            namespacesOpt.ifPresent(namespaces -> {
+                if (!namespaces.isEmpty()) {
+                    Set<String> nonBlankNs = namespaces.stream()
+                            .filter(Objects::nonNull)
+                            .filter(ns -> !ns.isBlank())
+                            .collect(Collectors.toSet());
+                    if (!nonBlankNs.isEmpty()) {
+                        builder.addAttribute(CLAIM_NAMESPACES, nonBlankNs);
+                    }
+                }
+            });
 
             return Uni.createFrom().item(builder.build());
         }

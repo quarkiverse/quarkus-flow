@@ -1,24 +1,19 @@
 package io.quarkiverse.flow.runner.security;
 
-import java.io.IOException;
 import java.util.Set;
 
-import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.Priorities;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.container.ContainerRequestFilter;
-import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.UriInfo;
-import jakarta.ws.rs.ext.Provider;
+
+import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 
 import io.quarkiverse.flow.runner.FlowRunnerConfig;
 import io.quarkus.arc.Unremovable;
-import io.quarkus.security.identity.SecurityIdentity;
 
 /**
- * JAX-RS filter that enforces namespace-level authorization (ABAC).
+ * Modern RESTEasy Reactive filter that enforces namespace-level authorization (ABAC).
  * <p>
  * This filter intercepts all requests and validates that the authenticated user
  * has access to the requested namespace. Namespace can be specified as:
@@ -33,16 +28,19 @@ import io.quarkus.security.identity.SecurityIdentity;
  * the filter allows the request through and the resource method handles filtering
  * by authorized namespaces.
  * <p>
- * Authorized namespaces are extracted from {@link SecurityIdentity} attributes
+ * Authorized namespaces are extracted from {@link io.quarkus.security.identity.SecurityIdentity} attributes
  * set by authentication mechanisms during login. An empty or null namespace set
  * means the user has access to all namespaces.
+ * <p>
+ * <strong>Implementation Note:</strong> Uses {@code @ServerRequestFilter} (RESTEasy Reactive modern approach)
+ * instead of the legacy {@code ContainerRequestFilter} interface.
  *
  * @see NamespaceAuthorizationService
  */
-@Provider
+@FlowRunnerEndpoint
 @Unremovable
-@Priority(Priorities.AUTHORIZATION)
-public class NamespaceAuthorizationFilter implements ContainerRequestFilter {
+@ApplicationScoped
+public class NamespaceAuthorizationFilter {
 
     @Inject
     FlowRunnerConfig config;
@@ -53,8 +51,17 @@ public class NamespaceAuthorizationFilter implements ContainerRequestFilter {
     @Inject
     UriInfo uriInfo;
 
-    @Override
-    public void filter(ContainerRequestContext requestContext) throws IOException {
+    /**
+     * Server request filter method that validates namespace access.
+     * <p>
+     * This method is automatically invoked by RESTEasy Reactive for every request.
+     * The {@code @ServerRequestFilter} annotation is the modern, declarative approach
+     * that replaces implementing {@code ContainerRequestFilter}.
+     *
+     * @throws ForbiddenException if user does not have access to the namespace
+     */
+    @ServerRequestFilter
+    public void filter() {
         if (!config.security().namespace().validate()) {
             return;
         }
@@ -106,11 +113,9 @@ public class NamespaceAuthorizationFilter implements ContainerRequestFilter {
      * @return the namespace from path or query parameter, or null if not present
      */
     private String extractNamespaceFromUri() {
-        MultivaluedMap<String, String> pathParams = uriInfo.getPathParameters();
-        String ns = pathParams.getFirst("namespace");
+        String ns = uriInfo.getPathParameters().getFirst("namespace");
         if (ns == null || ns.isBlank()) {
-            MultivaluedMap<String, String> queryParams = uriInfo.getQueryParameters();
-            ns = queryParams.getFirst("namespace");
+            ns = uriInfo.getQueryParameters().getFirst("namespace");
         }
         return ns == null ? null : ns.trim();
     }

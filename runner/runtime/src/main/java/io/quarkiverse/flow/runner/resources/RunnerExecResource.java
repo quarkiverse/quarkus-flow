@@ -26,6 +26,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import io.quarkiverse.flow.internal.WorkflowVersionComparator;
 import io.quarkiverse.flow.runner.model.ExecutionResponse;
 import io.quarkiverse.flow.runner.security.AuthzConsts;
+import io.quarkiverse.flow.runner.security.FlowRunnerEndpoint;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
@@ -33,7 +34,8 @@ import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.smallrye.mutiny.Uni;
 
-@Path("/runner/exec")
+@FlowRunnerEndpoint
+@Path("/q/flow/exec")
 @RolesAllowed({ AuthzConsts.ROLE_ADMIN, AuthzConsts.ROLE_INVOKER })
 @Tag(name = "Workflow Execution", description = "Execute and manage workflow instances")
 public class RunnerExecResource {
@@ -46,11 +48,12 @@ public class RunnerExecResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Operation(summary = "Execute workflow (latest version)", description = "Executes the latest version of the specified workflow. "
             +
-            "By default runs asynchronously and returns immediately with execution metadata. " +
-            "Use wait=true for synchronous execution. " +
+            "With wait=true (synchronous): blocks until workflow completes, always returns 200 OK with output. " +
+            "With wait=false (asynchronous): returns immediately. If workflow already completed, returns 200 OK with output. " +
+            "If still running, returns 202 Accepted without output. " +
             "Namespace access is validated when namespace authorization is enabled.")
-    @APIResponse(responseCode = "200", description = "Workflow execution completed (synchronous mode)", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
-    @APIResponse(responseCode = "202", description = "Workflow execution started (asynchronous mode)", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
+    @APIResponse(responseCode = "200", description = "Workflow execution completed. Returned when: (1) wait=true and workflow finished, or (2) wait=false but workflow completed before response.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
+    @APIResponse(responseCode = "202", description = "Workflow execution accepted for processing (wait=false and still running). Check workflowOutput field - will be null if pending.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
     @APIResponse(responseCode = "401", description = "Authentication required - missing or invalid credentials")
     @APIResponse(responseCode = "403", description = "Access denied to requested namespace")
     @APIResponse(responseCode = "404", description = "Workflow not found")
@@ -73,11 +76,12 @@ public class RunnerExecResource {
     @Path("/{namespace}/{name}/{version}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Operation(summary = "Execute workflow (specific version)", description = "Executes a specific version of the workflow. " +
-            "By default runs asynchronously and returns immediately with execution metadata. " +
-            "Use wait=true for synchronous execution. " +
+            "With wait=true (synchronous): blocks until workflow completes, always returns 200 OK with output. " +
+            "With wait=false (asynchronous): returns immediately. If workflow already completed, returns 200 OK with output. " +
+            "If still running, returns 202 Accepted without output. " +
             "Namespace access is validated when namespace authorization is enabled.")
-    @APIResponse(responseCode = "200", description = "Workflow execution completed (synchronous mode)", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
-    @APIResponse(responseCode = "202", description = "Workflow execution started (asynchronous mode)", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
+    @APIResponse(responseCode = "200", description = "Workflow execution completed. Returned when: (1) wait=true and workflow finished, or (2) wait=false but workflow completed before response.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
+    @APIResponse(responseCode = "202", description = "Workflow execution accepted for processing (wait=false and still running). Check workflowOutput field - will be null if pending.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
     @APIResponse(responseCode = "401", description = "Authentication required - missing or invalid credentials")
     @APIResponse(responseCode = "403", description = "Access denied to requested namespace")
     @APIResponse(responseCode = "404", description = "Workflow version not found")
@@ -110,8 +114,10 @@ public class RunnerExecResource {
                     .onItem()
                     .transform(model -> Response.ok().entity(ExecutionResponse.from(instance, model)).build());
         }
+        final ExecutionResponse response = ExecutionResponse.from(instance);
         return Uni.createFrom()
-                .item(Response.status(Response.Status.ACCEPTED).entity(ExecutionResponse.from(instance)).build());
+                .item(Response.status(response.workflowOutput() == null ? Response.Status.ACCEPTED : Response.Status.OK)
+                        .entity(response).build());
     }
 
 }

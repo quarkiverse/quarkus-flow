@@ -25,9 +25,11 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
+import io.quarkiverse.flow.internal.WorkflowVersionComparator;
 import io.quarkiverse.flow.runner.model.WorkflowDefinitionHeader;
 import io.quarkiverse.flow.runner.model.WorkflowFormatUtils;
 import io.quarkiverse.flow.runner.security.AuthzConsts;
+import io.quarkiverse.flow.runner.security.FlowRunnerEndpoint;
 import io.quarkiverse.flow.runner.security.NamespaceAuthorizationService;
 import io.serverlessworkflow.api.WorkflowFormat;
 import io.serverlessworkflow.api.WorkflowWriter;
@@ -35,7 +37,8 @@ import io.serverlessworkflow.api.types.Document;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 
-@Path("/runner/definitions")
+@FlowRunnerEndpoint
+@Path("/q/flow/definitions")
 @RolesAllowed({ AuthzConsts.ROLE_ADMIN, AuthzConsts.ROLE_INVOKER })
 @Tag(name = "Workflow Definitions", description = "Browse and retrieve workflow definitions")
 public class DefinitionResource {
@@ -82,9 +85,42 @@ public class DefinitionResource {
     }
 
     @GET
+    @Path("/{namespace}/{name}")
+    @Produces({ MediaType.APPLICATION_JSON, "application/yaml" })
+    @Operation(summary = "Get workflow definition (latest version)", description = "Returns the full workflow definition for the latest version in the requested format (JSON or YAML). "
+            +
+            "Use the Accept header to specify format: application/json or application/yaml. " +
+            "Namespace access is validated when namespace authorization is enabled.")
+    @APIResponse(responseCode = "200", description = "Workflow definition (latest version) in requested format", content = {
+            @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = String.class)),
+            @Content(mediaType = "application/yaml", schema = @Schema(implementation = String.class))
+    })
+    @APIResponse(responseCode = "401", description = "Authentication required - missing or invalid credentials")
+    @APIResponse(responseCode = "403", description = "Access denied to requested namespace")
+    @APIResponse(responseCode = "404", description = "Workflow definition not found")
+    @APIResponse(responseCode = "415", description = "Unsupported Media Type - use Accept: application/json or application/yaml")
+    public Response getLatestDefinition(
+            @Parameter(description = "Workflow namespace (access validated if namespace authorization enabled)", required = true) @PathParam("namespace") String namespace,
+            @Parameter(description = "Workflow name", required = true) @PathParam("name") String name,
+            @Context HttpHeaders headers) {
+        final WorkflowFormat format = WorkflowFormatUtils.mediaTypeToFormat(headers);
+
+        // Find latest version by comparing all versions for this namespace:name
+        Optional<String> workflowDocument = application.workflowDefinitions().entrySet().stream()
+                .filter(entry -> namespace.equals(entry.getKey().namespace()) && name.equals(entry.getKey().name()))
+                .max(new WorkflowVersionComparator())
+                .map(entry -> parseWorkflowDocument(entry.getValue(), format));
+
+        if (workflowDocument.isPresent()) {
+            return Response.ok(workflowDocument.get()).type(WorkflowFormatUtils.formatToMediaType(format)).build();
+        }
+        return Response.status(Response.Status.NOT_FOUND).build();
+    }
+
+    @GET
     @Path("/{namespace}/{name}/{version}")
     @Produces({ MediaType.APPLICATION_JSON, "application/yaml" })
-    @Operation(summary = "Get workflow definition", description = "Returns the full workflow definition in the requested format (JSON or YAML). "
+    @Operation(summary = "Get workflow definition (specific version)", description = "Returns the full workflow definition for a specific version in the requested format (JSON or YAML). "
             +
             "Use the Accept header to specify format: application/json or application/yaml. " +
             "Namespace access is validated when namespace authorization is enabled.")

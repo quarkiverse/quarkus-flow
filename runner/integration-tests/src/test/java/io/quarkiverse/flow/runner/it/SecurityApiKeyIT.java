@@ -1,6 +1,8 @@
 package io.quarkiverse.flow.runner.it;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.is;
 
 import java.util.Map;
 
@@ -29,7 +31,7 @@ class SecurityApiKeyIT {
         given()
                 .header("Authorization", "Bearer " + ADMIN_API_KEY)
                 .when()
-                .get("/runner/definitions")
+                .get("/q/flow/definitions")
                 .then()
                 .statusCode(200);
     }
@@ -40,7 +42,7 @@ class SecurityApiKeyIT {
         given()
                 .header("Authorization", "Bearer " + INVOKER_API_KEY)
                 .when()
-                .get("/runner/definitions")
+                .get("/q/flow/definitions")
                 .then()
                 .statusCode(200);
     }
@@ -50,7 +52,7 @@ class SecurityApiKeyIT {
     void test_list_definitions_without_auth_header() {
         given()
                 .when()
-                .get("/runner/definitions")
+                .get("/q/flow/definitions")
                 .then()
                 .statusCode(401);
     }
@@ -61,7 +63,7 @@ class SecurityApiKeyIT {
         given()
                 .header("Authorization", "Bearer " + INVALID_API_KEY)
                 .when()
-                .get("/runner/definitions")
+                .get("/q/flow/definitions")
                 .then()
                 .statusCode(401);
     }
@@ -72,7 +74,7 @@ class SecurityApiKeyIT {
         given()
                 .header("Authorization", "Bearer ")
                 .when()
-                .get("/runner/definitions")
+                .get("/q/flow/definitions")
                 .then()
                 .statusCode(401);
     }
@@ -83,7 +85,7 @@ class SecurityApiKeyIT {
         given()
                 .header("Authorization", "Basic dXNlcjpwYXNz")
                 .when()
-                .get("/runner/definitions")
+                .get("/q/flow/definitions")
                 .then()
                 .statusCode(401);
     }
@@ -94,7 +96,7 @@ class SecurityApiKeyIT {
         given()
                 .header("Authorization", "BearerNOSPACE" + ADMIN_API_KEY)
                 .when()
-                .get("/runner/definitions")
+                .get("/q/flow/definitions")
                 .then()
                 .statusCode(401);
     }
@@ -106,7 +108,7 @@ class SecurityApiKeyIT {
         given()
                 .header("Authorization", "bearer " + ADMIN_API_KEY)
                 .when()
-                .get("/runner/definitions")
+                .get("/q/flow/definitions")
                 .then()
                 .statusCode(200);
     }
@@ -118,7 +120,7 @@ class SecurityApiKeyIT {
         given()
                 .header("Authorization", "BeArEr " + ADMIN_API_KEY)
                 .when()
-                .get("/runner/definitions")
+                .get("/q/flow/definitions")
                 .then()
                 .statusCode(200);
     }
@@ -130,7 +132,7 @@ class SecurityApiKeyIT {
                 .header("Authorization", "Bearer " + ADMIN_API_KEY)
                 .header("Accept", "application/json")
                 .when()
-                .get("/runner/definitions/test-namespace/simple-greeting/1.0.0")
+                .get("/q/flow/definitions/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(200);
     }
@@ -141,7 +143,7 @@ class SecurityApiKeyIT {
         given()
                 .header("Accept", "application/json")
                 .when()
-                .get("/runner/definitions/test-namespace/simple-greeting/1.0.0")
+                .get("/q/flow/definitions/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(401);
     }
@@ -157,7 +159,7 @@ class SecurityApiKeyIT {
                 .body(input)
                 .queryParam("wait", "true")
                 .when()
-                .post("/runner/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(200);
     }
@@ -173,7 +175,7 @@ class SecurityApiKeyIT {
                 .body(input)
                 .queryParam("wait", "true")
                 .when()
-                .post("/runner/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(200);
     }
@@ -188,7 +190,7 @@ class SecurityApiKeyIT {
                 .body(input)
                 .queryParam("wait", "true")
                 .when()
-                .post("/runner/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(401);
     }
@@ -204,7 +206,7 @@ class SecurityApiKeyIT {
                 .body(input)
                 .queryParam("wait", "true")
                 .when()
-                .post("/runner/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(401);
     }
@@ -220,9 +222,9 @@ class SecurityApiKeyIT {
                 .body(input)
                 .queryParam("wait", "false")
                 .when()
-                .post("/runner/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
                 .then()
-                .statusCode(202);
+                .statusCode(anyOf(is(200), is(202)));
     }
 
     @Test
@@ -232,7 +234,7 @@ class SecurityApiKeyIT {
         given()
                 .header("Authorization", "Bearer   " + ADMIN_API_KEY + "   ")
                 .when()
-                .get("/runner/definitions")
+                .get("/q/flow/definitions")
                 .then()
                 .statusCode(200);
     }
@@ -246,7 +248,7 @@ class SecurityApiKeyIT {
         given()
                 .header("Authorization", "Bearer " + ADMIN_API_KEY)
                 .when()
-                .get("/runner/definitions")
+                .get("/q/flow/definitions")
                 .then()
                 .statusCode(200);
 
@@ -255,7 +257,7 @@ class SecurityApiKeyIT {
                 .header("Authorization", "Bearer " + ADMIN_API_KEY)
                 .header("Accept", "application/json")
                 .when()
-                .get("/runner/definitions/test-namespace/simple-greeting/1.0.0")
+                .get("/q/flow/definitions/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(200);
 
@@ -266,7 +268,7 @@ class SecurityApiKeyIT {
                 .body(Map.of("name", "Admin"))
                 .queryParam("wait", "true")
                 .when()
-                .post("/runner/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(200);
     }
@@ -281,7 +283,7 @@ class SecurityApiKeyIT {
         given()
                 .header("Authorization", "Bearer " + INVOKER_API_KEY)
                 .when()
-                .get("/runner/definitions")
+                .get("/q/flow/definitions")
                 .then()
                 .statusCode(200);
 
@@ -290,7 +292,7 @@ class SecurityApiKeyIT {
                 .header("Authorization", "Bearer " + INVOKER_API_KEY)
                 .header("Accept", "application/json")
                 .when()
-                .get("/runner/definitions/test-namespace/simple-greeting/1.0.0")
+                .get("/q/flow/definitions/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(200);
 
@@ -301,7 +303,7 @@ class SecurityApiKeyIT {
                 .body(Map.of("name", "Invoker"))
                 .queryParam("wait", "true")
                 .when()
-                .post("/runner/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(200);
     }

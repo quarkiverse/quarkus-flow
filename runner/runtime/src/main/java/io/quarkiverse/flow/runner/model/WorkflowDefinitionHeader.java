@@ -17,8 +17,8 @@ public record WorkflowDefinitionHeader(String namespace, String name, String ver
         final String version = workflow.getDocument().getVersion();
 
         final Links links = Links.empty()
-                .self("/runner/definitions/" + namespace + "/" + name + "/" + version)
-                .execute("/runner/exec/" + namespace + "/" + name + "/" + version);
+                .self("/q/flow/definitions/" + namespace + "/" + name + "/" + version)
+                .execute("/q/flow/exec/" + namespace + "/" + name + "/" + version);
 
         return new WorkflowDefinitionHeader(
                 namespace,

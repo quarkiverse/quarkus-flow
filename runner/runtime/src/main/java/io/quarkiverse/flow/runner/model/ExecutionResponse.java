@@ -18,7 +18,7 @@ public record ExecutionResponse(String instanceId,
                 instance.status(),
                 instance.startedAt(),
                 instance.completedAt(),
-                null);
+                getOutputIfCompleted(instance));
     }
 
     public static ExecutionResponse from(WorkflowInstance instance, WorkflowModel output) {
@@ -27,7 +27,16 @@ public record ExecutionResponse(String instanceId,
                 instance.startedAt(),
                 instance.completedAt(),
                 output.asMap().orElseGet(() -> Map.of("response", output.asJavaObject())));
+    }
 
+    private static Map<String, Object> getOutputIfCompleted(WorkflowInstance instance) {
+        if (instance.status() == WorkflowStatus.COMPLETED ||
+                instance.status() == WorkflowStatus.CANCELLED ||
+                instance.status() == WorkflowStatus.FAULTED) {
+            return instance.output() == null ? null
+                    : instance.output().asMap().orElseGet(() -> Map.of("response", instance.output().asJavaObject()));
+        }
+        return null;
     }
 
 }

@@ -10,7 +10,6 @@ import static org.mockito.Mockito.when;
 import java.util.Set;
 
 import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.UriInfo;
@@ -21,6 +20,13 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkiverse.flow.runner.FlowRunnerConfig;
 
+/**
+ * Unit tests for {@link NamespaceAuthorizationFilter}.
+ * <p>
+ * Tests the modern {@code @ServerRequestFilter} implementation which uses
+ * a parameter-less {@code filter()} method instead of the legacy
+ * {@code filter(ContainerRequestContext)} signature.
+ */
 @DisplayName("NamespaceAuthorizationFilter Unit Tests")
 class NamespaceAuthorizationFilterTest {
 
@@ -30,7 +36,6 @@ class NamespaceAuthorizationFilterTest {
     private FlowRunnerConfig.Security.Namespace namespaceConfig;
     private NamespaceAuthorizationService namespaceAuthzService;
     private UriInfo uriInfo;
-    private ContainerRequestContext requestContext;
 
     @BeforeEach
     void setUp() {
@@ -40,7 +45,6 @@ class NamespaceAuthorizationFilterTest {
         namespaceConfig = mock(FlowRunnerConfig.Security.Namespace.class);
         namespaceAuthzService = mock(NamespaceAuthorizationService.class);
         uriInfo = mock(UriInfo.class);
-        requestContext = mock(ContainerRequestContext.class);
 
         filter.config = config;
         filter.namespaceAuthzService = namespaceAuthzService;
@@ -57,7 +61,7 @@ class NamespaceAuthorizationFilterTest {
         when(namespaceConfig.validate()).thenReturn(false);
 
         // When
-        filter.filter(requestContext);
+        filter.filter();
 
         // Then
         verify(namespaceAuthzService, never()).getAuthorizedNamespaces();
@@ -74,7 +78,7 @@ class NamespaceAuthorizationFilterTest {
         when(uriInfo.getQueryParameters()).thenReturn(queryParams);
 
         // When
-        filter.filter(requestContext);
+        filter.filter();
 
         // Then
         verify(namespaceAuthzService, never()).getAuthorizedNamespaces();
@@ -91,7 +95,7 @@ class NamespaceAuthorizationFilterTest {
         when(namespaceAuthzService.getAuthorizedNamespaces()).thenReturn(null);
 
         // When/Then
-        assertThatCode(() -> filter.filter(requestContext)).doesNotThrowAnyException();
+        assertThatCode(() -> filter.filter()).doesNotThrowAnyException();
     }
 
     @Test
@@ -105,7 +109,7 @@ class NamespaceAuthorizationFilterTest {
         when(namespaceAuthzService.getAuthorizedNamespaces()).thenReturn(Set.of());
 
         // When/Then
-        assertThatCode(() -> filter.filter(requestContext)).doesNotThrowAnyException();
+        assertThatCode(() -> filter.filter()).doesNotThrowAnyException();
     }
 
     @Test
@@ -119,7 +123,7 @@ class NamespaceAuthorizationFilterTest {
         when(namespaceAuthzService.getAuthorizedNamespaces()).thenReturn(Set.of("team-a", "team-b"));
 
         // When/Then
-        assertThatCode(() -> filter.filter(requestContext)).doesNotThrowAnyException();
+        assertThatCode(() -> filter.filter()).doesNotThrowAnyException();
     }
 
     @Test
@@ -133,7 +137,7 @@ class NamespaceAuthorizationFilterTest {
         when(namespaceAuthzService.getAuthorizedNamespaces()).thenReturn(Set.of("team-a", "team-b"));
 
         // When/Then
-        assertThatThrownBy(() -> filter.filter(requestContext))
+        assertThatThrownBy(() -> filter.filter())
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("Access denied to namespace: team-c");
     }
@@ -149,7 +153,7 @@ class NamespaceAuthorizationFilterTest {
         when(namespaceAuthzService.getAuthorizedNamespaces()).thenReturn(Set.of("my-namespace"));
 
         // When/Then
-        assertThatCode(() -> filter.filter(requestContext)).doesNotThrowAnyException();
+        assertThatCode(() -> filter.filter()).doesNotThrowAnyException();
     }
 
     @Test
@@ -165,7 +169,7 @@ class NamespaceAuthorizationFilterTest {
         when(namespaceAuthzService.getAuthorizedNamespaces()).thenReturn(Set.of("query-namespace"));
 
         // When/Then
-        assertThatCode(() -> filter.filter(requestContext)).doesNotThrowAnyException();
+        assertThatCode(() -> filter.filter()).doesNotThrowAnyException();
     }
 
     @Test
@@ -182,7 +186,7 @@ class NamespaceAuthorizationFilterTest {
         when(namespaceAuthzService.getAuthorizedNamespaces()).thenReturn(Set.of("path-ns"));
 
         // When/Then - Should validate against path-ns, not query-ns
-        assertThatCode(() -> filter.filter(requestContext)).doesNotThrowAnyException();
+        assertThatCode(() -> filter.filter()).doesNotThrowAnyException();
     }
 
     @Test
@@ -199,7 +203,7 @@ class NamespaceAuthorizationFilterTest {
         when(namespaceAuthzService.getAuthorizedNamespaces()).thenReturn(Set.of("query-ns"));
 
         // When/Then
-        assertThatCode(() -> filter.filter(requestContext)).doesNotThrowAnyException();
+        assertThatCode(() -> filter.filter()).doesNotThrowAnyException();
     }
 
     @Test
@@ -216,7 +220,7 @@ class NamespaceAuthorizationFilterTest {
             when(uriInfo.getPathParameters()).thenReturn(pathParams);
 
             // When/Then
-            assertThatCode(() -> filter.filter(requestContext)).doesNotThrowAnyException();
+            assertThatCode(() -> filter.filter()).doesNotThrowAnyException();
         }
     }
 
@@ -231,7 +235,7 @@ class NamespaceAuthorizationFilterTest {
         when(namespaceAuthzService.getAuthorizedNamespaces()).thenReturn(Set.of("team-a"));
 
         // When/Then - Should fail (case-sensitive)
-        assertThatThrownBy(() -> filter.filter(requestContext))
+        assertThatThrownBy(() -> filter.filter())
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("Access denied to namespace: Team-A");
     }
@@ -247,7 +251,7 @@ class NamespaceAuthorizationFilterTest {
         when(namespaceAuthzService.getAuthorizedNamespaces()).thenReturn(Set.of("only-ns"));
 
         // When/Then
-        assertThatCode(() -> filter.filter(requestContext)).doesNotThrowAnyException();
+        assertThatCode(() -> filter.filter()).doesNotThrowAnyException();
     }
 
     @Test
@@ -261,7 +265,7 @@ class NamespaceAuthorizationFilterTest {
         when(namespaceAuthzService.getAuthorizedNamespaces()).thenReturn(Set.of("allowed"));
 
         // When/Then
-        assertThatThrownBy(() -> filter.filter(requestContext))
+        assertThatThrownBy(() -> filter.filter())
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("forbidden-namespace");
     }

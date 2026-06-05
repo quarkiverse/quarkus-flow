@@ -2,6 +2,8 @@ package io.quarkiverse.flow.runner.it;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.is;
 
 import java.util.Map;
 
@@ -31,7 +33,7 @@ class RunnerExecResourceIT {
                 .body(input)
                 .queryParam("wait", "true")
                 .when()
-                .post("/runner/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(200)
                 .extract()
@@ -57,9 +59,9 @@ class RunnerExecResourceIT {
                 .body(Map.of("workflowInput", input))
                 .queryParam("wait", "false")
                 .when()
-                .post("/runner/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
                 .then()
-                .statusCode(202) // Should be 202 Accepted for async
+                .statusCode(anyOf(is(200), is(202))) // 200 if completed fast, 202 if still running
                 .extract()
                 .as(Map.class);
 
@@ -82,7 +84,7 @@ class RunnerExecResourceIT {
                 .body(input)
                 .queryParam("wait", "true")
                 .when()
-                .post("/runner/exec/test-namespace/simple-greeting")
+                .post("/q/flow/exec/test-namespace/simple-greeting")
                 .then()
                 .statusCode(200)
                 .extract()
@@ -108,7 +110,7 @@ class RunnerExecResourceIT {
                 .body(Map.of("workflowInput", input))
                 .queryParam("wait", "true")
                 .when()
-                .post("/runner/exec/non-existent-namespace/non-existent-workflow/1.0.0")
+                .post("/q/flow/exec/non-existent-namespace/non-existent-workflow/1.0.0")
                 .then()
                 .statusCode(404);
     }
@@ -125,7 +127,7 @@ class RunnerExecResourceIT {
                 .body(Map.of("workflowInput", emptyInput))
                 .queryParam("wait", "true")
                 .when()
-                .post("/runner/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(200)
                 .extract()
@@ -147,7 +149,7 @@ class RunnerExecResourceIT {
                 .body("")
                 .queryParam("wait", "true")
                 .when()
-                .post("/runner/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(200)
                 .extract()
@@ -170,7 +172,7 @@ class RunnerExecResourceIT {
                 .body(input)
                 .queryParam("wait", "true")
                 .when()
-                .post("/runner/exec/test-namespace/simple-greeting")
+                .post("/q/flow/exec/test-namespace/simple-greeting")
                 .then()
                 .statusCode(200)
                 .extract()
@@ -196,7 +198,7 @@ class RunnerExecResourceIT {
                 .body(input)
                 .queryParam("wait", "true")
                 .when()
-                .post("/runner/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(200)
                 .extract()
@@ -222,7 +224,7 @@ class RunnerExecResourceIT {
                 .body(input)
                 .queryParam("wait", "true")
                 .when()
-                .post("/runner/exec/test-namespace/simple-greeting/1.5.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.5.0")
                 .then()
                 .statusCode(200)
                 .extract()

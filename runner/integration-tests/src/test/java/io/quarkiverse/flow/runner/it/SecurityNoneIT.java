@@ -2,6 +2,8 @@ package io.quarkiverse.flow.runner.it;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.is;
 
 import java.util.Map;
 
@@ -29,7 +31,7 @@ class SecurityNoneIT {
         // In NONE mode, no authentication required
         given()
                 .when()
-                .get("/runner/definitions")
+                .get("/q/flow/definitions")
                 .then()
                 .statusCode(200);
     }
@@ -40,7 +42,7 @@ class SecurityNoneIT {
         given()
                 .header("Accept", "application/json")
                 .when()
-                .get("/runner/definitions/test-namespace/simple-greeting/1.0.0")
+                .get("/q/flow/definitions/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(200);
     }
@@ -55,7 +57,7 @@ class SecurityNoneIT {
                 .body(input)
                 .queryParam("wait", "true")
                 .when()
-                .post("/runner/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(200)
                 .extract()
@@ -76,9 +78,9 @@ class SecurityNoneIT {
                 .body(input)
                 .queryParam("wait", "false")
                 .when()
-                .post("/runner/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
                 .then()
-                .statusCode(202);
+                .statusCode(anyOf(is(200), is(202)));
     }
 
     @Test
@@ -87,7 +89,7 @@ class SecurityNoneIT {
         given()
                 .queryParam("namespace", "test-namespace")
                 .when()
-                .get("/runner/definitions")
+                .get("/q/flow/definitions")
                 .then()
                 .statusCode(200);
     }
@@ -100,7 +102,7 @@ class SecurityNoneIT {
         // List definitions
         given()
                 .when()
-                .get("/runner/definitions")
+                .get("/q/flow/definitions")
                 .then()
                 .statusCode(200);
 
@@ -108,7 +110,7 @@ class SecurityNoneIT {
         given()
                 .header("Accept", "application/json")
                 .when()
-                .get("/runner/definitions/test-namespace/simple-greeting/1.0.0")
+                .get("/q/flow/definitions/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(200);
 
@@ -116,7 +118,7 @@ class SecurityNoneIT {
         given()
                 .header("Accept", "application/yaml")
                 .when()
-                .get("/runner/definitions/test-namespace/simple-greeting/1.0.0")
+                .get("/q/flow/definitions/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(200);
 
@@ -126,7 +128,7 @@ class SecurityNoneIT {
                 .body(Map.of("name", "Test"))
                 .queryParam("wait", "true")
                 .when()
-                .post("/runner/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(200);
 
@@ -136,9 +138,9 @@ class SecurityNoneIT {
                 .body(Map.of("name", "Test"))
                 .queryParam("wait", "false")
                 .when()
-                .post("/runner/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
                 .then()
-                .statusCode(202);
+                .statusCode(anyOf(is(200), is(202)));
 
         // Execute latest version
         given()
@@ -146,7 +148,7 @@ class SecurityNoneIT {
                 .body(Map.of("name", "Test"))
                 .queryParam("wait", "true")
                 .when()
-                .post("/runner/exec/test-namespace/simple-greeting")
+                .post("/q/flow/exec/test-namespace/simple-greeting")
                 .then()
                 .statusCode(200);
     }
@@ -158,7 +160,7 @@ class SecurityNoneIT {
         given()
                 .header("Authorization", "Bearer some-random-token")
                 .when()
-                .get("/runner/definitions")
+                .get("/q/flow/definitions")
                 .then()
                 .statusCode(200);
     }
@@ -170,7 +172,7 @@ class SecurityNoneIT {
         given()
                 .header("Authorization", "Bearer invalid-garbage")
                 .when()
-                .get("/runner/definitions")
+                .get("/q/flow/definitions")
                 .then()
                 .statusCode(200);
     }

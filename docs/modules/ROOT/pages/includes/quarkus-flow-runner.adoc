@@ -162,7 +162,19 @@ endif::add-copy-button-to-config-props[]
 
 [.description]
 --
-Namespaces allowed by these roles. An empty Set means all namespaces are allowed.
+Namespaces allowed for this API key.
+
+When not configured (empty), the key has access to all namespaces. When configured, the key can only access workflows in the specified namespaces.
+
+Example:
+
+```
+# Restrict to specific namespaces
+quarkus.flow.runner.security.api-keys."team-key".namespaces=team-a,team-b
+
+# Or leave empty for all namespaces (default)
+quarkus.flow.runner.security.api-keys."admin-key".roles=flow-admin
+```
 
 
 ifdef::add-copy-button-to-env-var[]
@@ -173,7 +185,7 @@ Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__NAMES
 endif::add-copy-button-to-env-var[]
 --
 |list of string
-|required icon:exclamation-circle[title=Configuration property is required]
+|
 
 a| [[quarkus-flow-runner_quarkus-flow-runner-security-namespace-claim]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-namespace-claim[`+++quarkus.flow.runner.security.namespace.claim+++`]##
 ifdef::add-copy-button-to-config-props[]
@@ -231,6 +243,50 @@ Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_N
 endif::add-copy-button-to-env-var[]
 ifndef::add-copy-button-to-env-var[]
 Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_NAMESPACE_VALIDATE+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-openapi-expand-workflows]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-openapi-expand-workflows[`+++quarkus.flow.runner.openapi.expand-workflows+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.openapi.expand-workflows+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enable or disable dynamic workflow operations in OpenAPI document.
+
+When `true`, the OpenAPI document will include a concrete operation for each registered workflow definition. For example, a workflow `test-namespace:hello-world:1.0.0` will generate:
+
+```
+POST /q/flow/exec/test-namespace/hello-world/1.0.0
+```
+
+
+
+When `false`, only the generic parameterized endpoint is documented.
+
+*Security Note:* The OpenAPI document (`/q/openapi`) is publicly accessible and will show all registered workflows (namespace, name, version, summary). This serves as a *public workflow catalog*. Actual execution remains protected by authentication and namespace authorization, returning 401/403 for unauthorized access attempts.
+
+*Exposed Information:*
+
+ - Workflow namespace, name, and version
+ - Workflow summary/description (if configured)
+
+*NOT Exposed:*
+
+ - Workflow DSL or task definitions
+ - Internal business logic or function implementations
+ - Secrets, credentials, or sensitive data
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_OPENAPI_EXPAND_WORKFLOWS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_OPENAPI_EXPAND_WORKFLOWS+++`
 endif::add-copy-button-to-env-var[]
 --
 |boolean

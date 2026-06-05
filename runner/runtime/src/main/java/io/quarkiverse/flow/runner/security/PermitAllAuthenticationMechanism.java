@@ -44,6 +44,6 @@ public class PermitAllAuthenticationMechanism implements HttpAuthenticationMecha
 
     @Override
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
-        return null;
+        return Uni.createFrom().nullItem();
     }
 }

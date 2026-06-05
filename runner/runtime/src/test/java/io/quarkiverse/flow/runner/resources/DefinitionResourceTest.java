@@ -146,8 +146,8 @@ class DefinitionResourceTest {
         // Verify HATEOAS links
         assertThat(header.links()).isNotNull();
         assertThat(header.links()).containsKeys("self", "execute");
-        assertThat(header.links().get("self").href()).isEqualTo("/runner/definitions/test-ns/test-wf/1.5.0");
-        assertThat(header.links().get("execute").href()).isEqualTo("/runner/exec/test-ns/test-wf/1.5.0");
+        assertThat(header.links().get("self").href()).isEqualTo("/q/flow/definitions/test-ns/test-wf/1.5.0");
+        assertThat(header.links().get("execute").href()).isEqualTo("/q/flow/exec/test-ns/test-wf/1.5.0");
     }
 
     @Test
