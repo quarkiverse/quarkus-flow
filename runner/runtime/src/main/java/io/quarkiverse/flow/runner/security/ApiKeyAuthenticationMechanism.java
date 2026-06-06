@@ -103,6 +103,9 @@ public class ApiKeyAuthenticationMechanism implements HttpAuthenticationMechanis
 
     @Override
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
+        if (config.security().type() != FlowRunnerConfig.Security.Type.API_KEY) {
+            return Uni.createFrom().nullItem();
+        }
         return Uni.createFrom().item(new ChallengeData(401, "Bearer", "Invalid or missing API Key"));
     }
 

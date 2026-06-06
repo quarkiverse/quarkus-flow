@@ -35,6 +35,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-security</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc</artifactId>
+            <optional>true</optional>
+        </dependency>
 
         <!-- Test dependencies -->
         <dependency>

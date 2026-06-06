@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import io.quarkiverse.flow.runner.FlowRunnerConfig;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.configuration.ConfigurationException;
 
 @ApplicationScoped
 @Unremovable
@@ -17,16 +18,26 @@ public class SecurityConfigValidator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SecurityConfigValidator.class.getName());
 
+    private static final String OIDC_CONFIG_CLASS = "io.quarkus.oidc.runtime.OidcConfig";
+
     @Inject
     FlowRunnerConfig config;
 
     void logSecurityMode(@Observes StartupEvent event) {
         switch (config.security().type()) {
-            case NONE ->
-                LOGGER.warn(
-                        "Flow Runner: SECURITY DISABLED - All requests are granted all roles (flow-admin, flow-invoker). Use ONLY in development!");
+            case NONE -> LOGGER.warn(
+                    "Flow Runner: SECURITY DISABLED - All requests are granted all roles (flow-admin, flow-invoker). Use ONLY in development!");
             case API_KEY -> LOGGER.info("Flow Runner: API Key authentication enabled");
-            case OIDC -> LOGGER.info("Flow Runner: OIDC authentication enabled");
+            case OIDC -> {
+                try {
+                    Class.forName(OIDC_CONFIG_CLASS);
+                } catch (ClassNotFoundException e) {
+                    throw new ConfigurationException(
+                            "quarkus.flow.runner.security.type=OIDC requires quarkus-oidc extension. " +
+                                    "Add <dependency>io.quarkus:quarkus-oidc</dependency> to your pom.xml");
+                }
+                LOGGER.info("Flow Runner: OIDC authentication enabled");
+            }
         }
     }
 

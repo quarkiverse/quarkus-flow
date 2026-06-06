@@ -43,6 +43,11 @@ public class SecurityAbacNamespaceProfile implements QuarkusTestProfile {
         // Use random port to avoid conflicts
         config.put("quarkus.http.test-port", "0");
 
+        // Disable Keycloak DevServices (not needed for API_KEY security mode)
+        config.put("quarkus.oidc.devservices.enabled", "false");
+        config.put("quarkus.keycloak.devservices.enabled", "false");
+        config.put("quarkus.oidc.auth-server-url", "http://localhost.not.used");
+
         return config;
     }
 

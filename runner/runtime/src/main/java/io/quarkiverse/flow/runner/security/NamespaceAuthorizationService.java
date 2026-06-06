@@ -7,9 +7,15 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+
+import org.eclipse.microprofile.jwt.JsonWebToken;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.flow.runner.FlowRunnerConfig;
 import io.quarkus.arc.Unremovable;
@@ -47,6 +53,9 @@ public class NamespaceAuthorizationService {
     @Inject
     SecurityIdentity securityIdentity;
 
+    @Inject
+    ObjectMapper objectMapper;
+
     /**
      * Gets the set of namespaces the current user is authorized to access.
      * <p>
@@ -66,13 +75,20 @@ public class NamespaceAuthorizationService {
      * @return set of authorized namespace names, or null/empty if all namespaces are allowed
      */
     public Set<String> getAuthorizedNamespaces() {
-        // Try standard "namespaces" attribute
+        // Try standard "namespaces" attribute (API_KEY mode)
         Object attr = securityIdentity.getAttribute(CLAIM_NAMESPACES);
 
         if (attr == null) {
-            // Fall back to configured claim name (for OIDC)
+            // Fall back to configured claim name
             String claimName = config.security().namespace().claim();
+
+            // Try as attribute first (API_KEY mode)
             attr = securityIdentity.getAttribute(claimName);
+
+            // If not found, try to extract from JWT token (OIDC mode)
+            if (attr == null && securityIdentity.getPrincipal() instanceof JsonWebToken jwt) {
+                attr = jwt.getClaim(claimName);
+            }
         }
 
         if (attr == null) {
@@ -105,6 +121,21 @@ public class NamespaceAuthorizationService {
         } else if (attr instanceof Collection) {
             return new HashSet<>((Collection<String>) attr);
         } else if (attr instanceof String ns) {
+            // Handle JSON array string: ["ns1","ns2"] or ["ns1", "ns2"]
+            if (ns.startsWith("[") && ns.endsWith("]")) {
+                try {
+                    JsonNode jsonNode = objectMapper.readTree(ns);
+                    if (jsonNode.isArray()) {
+                        return StreamSupport.stream(jsonNode.spliterator(), false)
+                                .map(JsonNode::asText)
+                                .filter(s -> !s.isBlank())
+                                .collect(Collectors.toSet());
+                    }
+                } catch (Exception e) {
+                    // Not valid JSON, fall through to other parsing strategies
+                }
+            }
+            // Handle comma-separated string: ns1,ns2
             if (ns.contains(",")) {
                 return Arrays.stream(ns.split(","))
                         .map(String::trim)

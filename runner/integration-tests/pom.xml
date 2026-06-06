@@ -55,6 +55,18 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- OIDC testing with @TestSecurity -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-security-oidc</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Force dependency graph for parallel execution -->
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>

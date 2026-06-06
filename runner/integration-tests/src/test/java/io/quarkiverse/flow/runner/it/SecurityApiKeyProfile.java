@@ -28,7 +28,12 @@ public class SecurityApiKeyProfile implements QuarkusTestProfile {
                 "quarkus.flow.runner.security.namespace.validate", "false",
 
                 // Use random port to avoid conflicts
-                "quarkus.http.test-port", "0");
+                "quarkus.http.test-port", "0",
+
+                // Disable Keycloak DevServices (not needed for API_KEY security mode)
+                "quarkus.oidc.devservices.enabled", "false",
+                "quarkus.keycloak.devservices.enabled", "false",
+                "quarkus.oidc.auth-server-url", "http://localhost.not.used");
     }
 
     @Override

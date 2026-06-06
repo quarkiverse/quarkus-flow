@@ -17,7 +17,12 @@ public class DefaultTestProfile implements QuarkusTestProfile {
                 "quarkus.flow.runner.security.type", "none",
 
                 // Use random port to avoid conflicts
-                "quarkus.http.test-port", "0");
+                "quarkus.http.test-port", "0",
+
+                // Disable Keycloak DevServices (not needed for NONE security mode)
+                "quarkus.oidc.devservices.enabled", "false",
+                "quarkus.keycloak.devservices.enabled", "false",
+                "quarkus.oidc.auth-server-url", "http://localhost.not.used");
     }
 
     @Override
