@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import dev.langchain4j.agentic.scope.AgenticScope;
 import io.serverlessworkflow.impl.AbstractWorkflowModel;
@@ -13,6 +15,8 @@ import io.serverlessworkflow.impl.WorkflowModel;
 import io.serverlessworkflow.impl.jackson.JsonUtils;
 import io.serverlessworkflow.impl.model.jackson.JacksonModel;
 
+@JsonSerialize(using = AgenticAwareWorkflowModelSerializer.class)
+@JsonDeserialize(using = AgenticAwareWorkflowModelDeserializer.class)
 public class AgenticAwareWorkflowModel extends AbstractWorkflowModel {
 
     private final AgenticScope agenticScope;
