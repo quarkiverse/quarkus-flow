@@ -1,6 +1,6 @@
 # Token Propagation and Exchange for Quarkus Flow
 
-**Date**: 2026-06-03  
+**Date**: 2026-06-08  
 **Status**: Proposed  
 **Context**: ADR for implementing token propagation and exchange feature  
 
@@ -1150,7 +1150,7 @@ oidc/ (parent POM: quarkus-flow-oidc-parent)
     ├── deployment/
     │   ├── pom.xml
     │   └── src/main/java/io/quarkiverse/flow/oidc/deployment/
-    │       └── FlowOAuth2Processor.java
+    │       └── FlowOidcProcessor.java
     └── integration-tests/
         ├── pom.xml
         └── src/test/java/io/quarkiverse/flow/oidc/it/
@@ -1227,7 +1227,7 @@ oidc/ (parent POM: quarkus-flow-oidc-parent)
 **Database Schema (JPA example)**:
 
 ```sql
-CREATE TABLE flow_oauth2_token_cache (
+CREATE TABLE flow_oidc_token_cache (
     id VARCHAR(255) PRIMARY KEY,
     auth_scheme VARCHAR(100) NOT NULL,
     subject_token_hash VARCHAR(64) NOT NULL,
@@ -1239,11 +1239,11 @@ CREATE TABLE flow_oauth2_token_cache (
     INDEX idx_expires_at (expires_at)
 );
 
-CREATE TABLE flow_oauth2_instance_tokens (
+CREATE TABLE flow_oidc_instance_tokens (
     instance_id VARCHAR(255) NOT NULL,
     token_cache_id VARCHAR(255) NOT NULL,
     PRIMARY KEY (instance_id, token_cache_id),
-    FOREIGN KEY (token_cache_id) REFERENCES flow_oauth2_token_cache(id) ON DELETE CASCADE
+    FOREIGN KEY (token_cache_id) REFERENCES flow_oidc_token_cache(id) ON DELETE CASCADE
 );
 ```
 
@@ -1639,7 +1639,7 @@ quarkus.openapi-generator.<service>.auth.<name>.token-propagation
    - **Dependencies**: Phase 1 complete
    - **Assignee**: TBD
 
-10. **Issue #XXX: Redis Token Cache Persistence**
+11. **Issue #XXX: Redis Token Cache Persistence**
     - **Description**: Persistent token cache using Redis
     - **Scope**:
       - Module: `oidc/persistence/redis`
@@ -1655,7 +1655,7 @@ quarkus.openapi-generator.<service>.auth.<name>.token-propagation
      - **Dependencies**: Phase 1 complete
     - **Assignee**: TBD
 
-11. **Issue #XXX: Infinispan Token Cache Persistence**
+12. **Issue #XXX: Infinispan Token Cache Persistence**
     - **Description**: Distributed token cache using Infinispan
     - **Scope**:
       - Module: `oidc/persistence/infinispan`
@@ -1671,7 +1671,7 @@ quarkus.openapi-generator.<service>.auth.<name>.token-propagation
      - **Dependencies**: Phase 1 complete
     - **Assignee**: TBD
 
-12. **Issue #XXX: MVStore Token Cache Persistence**
+13. **Issue #XXX: MVStore Token Cache Persistence**
     - **Description**: Persistent token cache using MVStore
     - **Scope**:
       - Module: `oidc/persistence/mvstore`
@@ -1687,7 +1687,7 @@ quarkus.openapi-generator.<service>.auth.<name>.token-propagation
      - **Dependencies**: Phase 1 complete
     - **Assignee**: TBD
 
-13. **Issue #XXX: Enhanced Proactive Refresh & Performance Testing**
+14. **Issue #XXX: Enhanced Proactive Refresh & Performance Testing**
     - **Description**: Subject token storage for refresh and performance benchmarks
     - **Scope**:
       - Subject token encryption/decryption for storage
