@@ -592,7 +592,7 @@ quarkus.flow.oidc.auth.<auth-name>.token-propagation.enabled=false
 #### 7.2 Config Classes
 
 ```java
-@ConfigMapping(prefix = "quarkus.flow.oauth2")
+@ConfigMapping(prefix = "quarkus.flow.oidc")
 public interface FlowOidcConfig {
     
     TokenExchangeConfig tokenExchange();
