@@ -4,7 +4,7 @@ include::includes/attributes.adoc[]
 
 The Serverless Workflow specification allows you to define workflows that execute automatically on a recurring schedule.
 
-By default, the Quarkus Flow engine uses a lightweight, in-memory implementation (based on `ScheduledExecutorService` and the `cron-utils` library) to trigger these executions. However, for a production-grade Quarkus application, **we highly recommend replacing this with the native Quarkus Scheduler integration**.
+By default, the Serverless Workflow SDK engine uses a lightweight, in-memory implementation (based on `ScheduledExecutorService` and the `cron-utils` library) to trigger these executions. However, for Quarkus Flow application, **we highly recommend replacing this with the native Quarkus Scheduler integration**.
 
 This guide shows how to:
 
