@@ -321,7 +321,7 @@ curl -X POST http://localhost:8080/q/flow/exec/examples/hello-runner/1.0.0?wait=
   -d '{"name": "World"}'
 ----
 
-When you omit the version (`/exec/{namespace}/{name}`), the Runner automatically selects the **latest version** based on semantic versioning.
+When you omit the version (`/exec/\{namespace}/\{name}`), the Runner automatically selects the **latest version** based on semantic versioning.
 
 == 7. Explore the OpenAPI documentation
 
@@ -398,7 +398,7 @@ Beyond role-based access, the Runner enforces attribute-based access control at 
 
 **How it works:**
 
-1. The workflow path contains a namespace parameter: `/q/flow/exec/{namespace}/...`
+1. The workflow path contains a namespace parameter: `/q/flow/exec/\{namespace}/...`
 2. The Runner extracts the user's authorized namespaces from their authentication context
 3. If the requested namespace is not in the user's authorized list, the request is rejected with **403 Forbidden**
 
@@ -622,7 +622,7 @@ The Runner supports running multiple versions of the same workflow simultaneousl
 
 **Version resolution strategy:**
 
-When executing without specifying a version (`/q/flow/exec/{namespace}/{name}`):
+When executing without specifying a version (`/q/flow/exec/\{namespace}/\{name}`):
 
 1. All registered versions of the workflow are retrieved
 2. Versions are sorted using semantic versioning rules (highest first)
@@ -847,7 +847,7 @@ WARNING: Never use this in production.
 
 === Version resolution not working
 
-**Symptom:** Execution fails with `404 Not Found` when calling `/q/flow/exec/{namespace}/{name}` (without version).
+**Symptom:** Execution fails with `404 Not Found` when calling `/q/flow/exec/\{namespace}/\{name}` (without version).
 
 **Cause:** No versions of the workflow are registered with that namespace and name.
 
