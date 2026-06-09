@@ -1,0 +1,932 @@
+= Workflow execution via REST API with Quarkus Flow Runner
+:page-role: tutorial
+include::includes/attributes.adoc[]
+
+Deploy and execute Serverless Workflow definitions via REST API.
+
+The Quarkus Flow Runner extension transforms your Quarkus application into a lightweight, cloud-native workflow execution engine. Load workflow definitions from YAML/JSON files at startup, and execute them through a secured REST API.
+
+This enables runtime workflow deployment where definitions are managed externally (by CI/CD pipelines, GitOps operators, or development teams) and deployed as configuration rather than requiring application rebuilds.
+
+== Use cases
+
+**When to use the Runner:**
+
+* **GitOps workflow deployment** - Store workflow definitions in Git, deploy via Kubernetes ConfigMaps, execute via API
+* **Runtime workflow management** - Update and deploy workflows without application rebuilds or recompilation
+* **Multi-tenant workflow hosting** - Deploy a single Runner instance serving workflows for multiple teams/namespaces
+* **Event-driven automation** - Execute workflows triggered by webhooks, Kafka events, or scheduled jobs
+* **Externally-managed workflows** - Workflows authored by tools, UI builders, or external systems that generate YAML definitions
+* **Microservice-based architecture** - Expose workflow execution as a REST API for integration with other services
+
+**When NOT to use the Runner:**
+
+* **Type-safe Java DSL preferred** - Use standard `xref:getting-started.adoc[Quarkus Flow workflows]` for compile-time safety and IDE support
+* **Build-time optimization critical** - Java workflows get compile-time validation, dead code elimination, and native image optimization
+* **Tightly coupled workflows** - Workflows that depend heavily on application CDI beans and business logic should remain as Java classes
+
+== Prerequisites
+
+* Java 17 or newer
+* Maven 3.8+ or link:https://quarkus.io/guides/cli-tooling[Quarkus CLI]
+* An existing Quarkus project, or create one:
++
+[source,bash]
+----
+quarkus create app org.acme:workflow-runner
+cd workflow-runner
+----
+
+== 1. Add the Runner dependency
+
+Add the Flow Runner extension to enable REST-based workflow execution.
+
+.pom.xml
+[source,xml,subs=attributes+]
+----
+<dependency>
+  <groupId>io.quarkiverse.flow</groupId>
+  <artifactId>quarkus-flow-runner</artifactId>
+  <version>{project-version}</version>
+</dependency>
+----
+
+TIP: The Runner extension automatically includes the core `quarkus-flow` dependency. You don't need to add it separately.
+
+== 2. Configure workflow loading
+
+The Runner loads workflow definitions from a configured filesystem path at startup. This directory is typically a Kubernetes ConfigMap or volume mount in production.
+
+.application.properties
+[source,properties]
+----
+# Enable the runner (default: true)
+quarkus.flow.runner.enabled=true
+
+# Path to workflow definitions (REQUIRED when enabled)
+# Scans recursively for .yaml, .yml, .json files
+quarkus.flow.runner.source.path=/deployments/workflows
+----
+
+**Local development setup:**
+
+Create a `workflows/` directory in your project:
+
+[source,bash]
+----
+mkdir -p src/main/resources/workflows
+----
+
+Point the configuration to it during development:
+
+.application.properties
+[source,properties]
+----
+quarkus.flow.runner.source.path=src/main/resources/workflows
+----
+
+== 3. Create workflow definitions
+
+Workflow definitions follow the link:https://serverlessworkflow.io/[CNCF Serverless Workflow specification]. The Runner supports YAML and JSON formats.
+
+Create your first workflow definition as a YAML file.
+
+.src/main/resources/workflows/hello-runner.yaml
+[source,yaml]
+----
+document:
+  dsl: "1.0.0"
+  namespace: examples
+  name: hello-runner
+  version: "1.0.0"
+  title: "Simple greeting workflow for the Runner"
+input:
+  schema:
+    type: object
+    properties:
+      name:
+        type: string
+do:
+  - greet:
+      set:
+        greeting: "${ \"Hello, \" + .name + \"!\" }"
+----
+
+**Key fields for the Runner:**
+
+* `document.dsl` - DSL version (e.g., "1.0.3") (REQUIRED)
+* `document.namespace` - Organizes workflows and enforces access control (REQUIRED)
+* `document.name` - Workflow identifier within the namespace (REQUIRED)
+* `document.version` - Semantic version string for versioning support (REQUIRED)
+* `document.title` - Description shown in OpenAPI documentation (optional)
+* `input.schema` - JSON Schema for input validation (optional but recommended)
+* `do` - Array of tasks to execute (REQUIRED)
+
+== 4. Choose a security mode
+
+The Runner supports three authentication modes. For this tutorial, start with `NONE` for local testing, then configure proper authentication for production.
+
+=== NONE (Development only)
+
+WARNING: This mode disables all authentication. Use only for local development. Production deployments MUST use OIDC or API_KEY authentication.
+
+.application.properties (Development)
+[source,properties]
+----
+quarkus.flow.runner.security.type=NONE
+----
+
+When you start the application, you'll see a warning:
+
+[source,console]
+----
+WARN  [io.qua.flo.run.sec] Flow Runner security is disabled (type=NONE). 
+                           This is NOT safe for production deployments.
+----
+
+=== API_KEY (Machine-to-machine)
+
+API Key authentication is ideal for webhook integrations, CI/CD pipelines, and service-to-service communication.
+
+.application.properties (Production)
+[source,properties]
+----
+# Enable API Key authentication
+quarkus.flow.runner.security.type=API_KEY
+
+# Define API keys with roles and optional namespace restrictions
+quarkus.flow.runner.security.api-keys.admin.secret=${FLOW_ADMIN_KEY}
+quarkus.flow.runner.security.api-keys.admin.roles=flow-admin
+
+quarkus.flow.runner.security.api-keys.invoker.secret=${FLOW_INVOKER_KEY}
+quarkus.flow.runner.security.api-keys.invoker.roles=flow-invoker
+quarkus.flow.runner.security.api-keys.invoker.namespaces=examples,team-a
+----
+
+**Environment variables:**
+
+[source,bash]
+----
+export FLOW_ADMIN_KEY="admin-secret-change-me"
+export FLOW_INVOKER_KEY="invoker-secret-change-me"
+----
+
+**Predefined roles:**
+
+* `flow-admin` - Full access to all endpoints and namespaces
+* `flow-invoker` - Execute workflows and read definitions (no write access)
+
+**API Key usage:**
+
+[source,bash]
+----
+curl -H "Authorization: Bearer ${FLOW_INVOKER_KEY}" \
+  http://localhost:8080/q/flow/exec/examples/hello-runner
+----
+
+=== OIDC (Enterprise SSO)
+
+For enterprise deployments with existing identity providers (Keycloak, Auth0, Okta, Azure AD), use OIDC authentication.
+
+**Add the OIDC extension:**
+
+.pom.xml
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-oidc</artifactId>
+</dependency>
+----
+
+**Configure OIDC and Runner security:**
+
+.application.properties (Production)
+[source,properties]
+----
+# Enable OIDC authentication for the Runner
+quarkus.flow.runner.security.type=OIDC
+
+# Standard Quarkus OIDC configuration
+quarkus.oidc.auth-server-url=https://keycloak.example.com/realms/workflows
+quarkus.oidc.client-id=workflow-runner
+quarkus.oidc.credentials.secret=${OIDC_CLIENT_SECRET}
+
+# JWT claim containing authorized namespaces
+quarkus.flow.runner.security.namespace.claim=namespace
+----
+
+**JWT token requirements:**
+
+* Must contain a `roles` claim with `flow-admin` or `flow-invoker`
+* Must contain a `namespace` claim (string or array) for namespace authorization
+* Example token payload:
+
+[source,json]
+----
+{
+  "sub": "alice@example.com",
+  "roles": ["flow-invoker"],
+  "namespace": ["examples", "team-a"]
+}
+----
+
+**API usage:**
+
+[source,bash]
+----
+curl -H "Authorization: Bearer ${JWT_TOKEN}" \
+  http://localhost:8080/q/flow/exec/examples/hello-runner
+----
+
+=== Custom authentication
+
+For advanced scenarios (mTLS, custom tokens, existing auth filters), you can combine `security.type=NONE` with your own JAX-RS filters.
+
+.application.properties
+[source,properties]
+----
+quarkus.flow.runner.security.type=NONE
+quarkus.flow.runner.security.namespace.validate=false
+----
+
+Then implement a custom `ContainerRequestFilter` that injects `SecurityIdentity`. The Runner endpoints will respect `@RolesAllowed` annotations if a valid identity is present.
+
+== 5. Start the application
+
+Run Quarkus in development mode:
+
+[source,bash]
+----
+./mvnw quarkus:dev
+----
+
+Watch the startup logs to verify workflows loaded successfully:
+
+[source,console]
+----
+INFO  [io.qua.flo.run.loa] Loading workflow definitions from: src/main/resources/workflows
+INFO  [io.qua.flo.run.loa] Registered workflow: examples:hello-runner:1.0.0
+INFO  [io.qua.flo.run.loa] Loaded 1 workflow definition(s)
+----
+
+== 6. Execute workflows via REST API
+
+=== Synchronous execution
+
+Execute the workflow and wait for the result (blocks until completion):
+
+[source,bash]
+----
+curl -X POST http://localhost:8080/q/flow/exec/examples/hello-runner?wait=true \
+  -H "Content-Type: application/json" \
+  -d '{"name": "World"}'
+----
+
+**Response (200 OK):**
+
+[source,json]
+----
+{
+  "greeting": "Hello, World!"
+}
+----
+
+=== Asynchronous execution
+
+Start the workflow and return immediately (non-blocking):
+
+[source,bash]
+----
+curl -X POST http://localhost:8080/q/flow/exec/examples/hello-runner?wait=false \
+  -H "Content-Type: application/json" \
+  -d '{"name": "World"}'
+----
+
+**Response behavior:**
+
+* **202 Accepted** - Workflow is still running (returns execution ID but no output)
+* **200 OK** - Workflow already completed by the time the response is sent (includes output)
+
+For truly long-running workflows, use `wait=false` and poll for status or implement callbacks (future feature).
+
+=== Execute specific workflow version
+
+If you have multiple versions of the same workflow, specify the version in the path:
+
+[source,bash]
+----
+curl -X POST http://localhost:8080/q/flow/exec/examples/hello-runner/1.0.0?wait=true \
+  -H "Content-Type: application/json" \
+  -d '{"name": "World"}'
+----
+
+When you omit the version (`/exec/{namespace}/{name}`), the Runner automatically selects the **latest version** based on semantic versioning.
+
+== 7. Explore the OpenAPI documentation
+
+The Runner automatically generates OpenAPI documentation for all loaded workflows. This provides a live API catalog and interactive testing interface.
+
+**Access the Swagger UI:**
+
+1. Ensure the OpenAPI extension is added to your project:
++
+.pom.xml
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-smallrye-openapi</artifactId>
+</dependency>
+----
+
+2. Start Quarkus in dev mode and open: http://localhost:8080/q/swagger-ui
+
+3. Find the **Flow Runner Execution** section to see all registered workflows as individual operations
+
+**OpenAPI spec download:**
+
+[source,bash]
+----
+# JSON format
+curl http://localhost:8080/q/openapi -o openapi.json
+
+# YAML format
+curl -H "Accept: application/yaml" http://localhost:8080/q/openapi -o openapi.yaml
+----
+
+**Dynamic workflow operations:**
+
+By default (`quarkus.flow.runner.openapi.expand-workflows=true`), the Runner generates a dedicated operation for each registered workflow. This provides better documentation but exposes the workflow catalog publicly.
+
+To disable per-workflow operations and only document the generic parameterized endpoint:
+
+.application.properties
+[source,properties]
+----
+quarkus.flow.runner.openapi.expand-workflows=false
+----
+
+NOTE: The OpenAPI document is publicly accessible even when authentication is enabled. It shows workflow metadata (namespace, name, version, summary) but does not allow execution without proper credentials.
+
+== Security in depth
+
+=== Role-based access control (RBAC)
+
+The Runner enforces two predefined roles across all endpoints:
+
+[cols="1,2,3",options="header"]
+|===
+| Role
+| Access Level
+| Endpoints
+
+| `flow-admin`
+| Full access
+| All definition and execution endpoints
+
+| `flow-invoker`
+| Execute and read
+| `POST /q/flow/exec/*`, `GET /q/flow/definitions`
+|===
+
+Configure roles per API key or extract them from OIDC JWT tokens.
+
+=== Namespace-based authorization (ABAC)
+
+Beyond role-based access, the Runner enforces attribute-based access control at the **namespace level**. Users can only execute workflows in namespaces they are authorized for.
+
+**How it works:**
+
+1. The workflow path contains a namespace parameter: `/q/flow/exec/{namespace}/...`
+2. The Runner extracts the user's authorized namespaces from their authentication context
+3. If the requested namespace is not in the user's authorized list, the request is rejected with **403 Forbidden**
+
+**Namespace configuration:**
+
+For **API_KEY mode**, configure namespaces per key:
+
+.application.properties
+[source,properties]
+----
+# Allow this key to execute workflows in "team-a" and "team-b" only
+quarkus.flow.runner.security.api-keys.team-key.secret=${TEAM_KEY}
+quarkus.flow.runner.security.api-keys.team-key.roles=flow-invoker
+quarkus.flow.runner.security.api-keys.team-key.namespaces=team-a,team-b
+----
+
+For **OIDC mode**, namespaces are extracted from JWT claims:
+
+.application.properties
+[source,properties]
+----
+# JWT claim name containing authorized namespaces (default: "namespace")
+quarkus.flow.runner.security.namespace.claim=namespace
+----
+
+The claim can contain:
+
+* Single namespace: `"namespace": "team-a"`
+* Array of namespaces: `"namespace": ["team-a", "team-b"]`
+* Comma-separated string: `"namespace": "team-a,team-b"`
+
+**Disabling namespace validation:**
+
+If your deployment doesn't require namespace-based authorization (ABAC), you can disable it:
+
+.application.properties
+[source,properties]
+----
+quarkus.flow.runner.security.namespace.validate=false
+----
+
+When disabled, all authenticated users can access workflows in all namespaces. Only role-based authorization (RBAC) is enforced.
+
+=== Public workflow catalog
+
+The `/q/flow/definitions` endpoint and OpenAPI documentation expose workflow metadata (namespace, name, version, summary) **without authentication**. This is by design to enable API discovery.
+
+**What is exposed:**
+
+* Workflow identifiers (`namespace:name:version`)
+* Descriptions and summaries
+* Input schemas (for client-side validation)
+
+**What is protected:**
+
+* Workflow execution (requires authentication)
+* Full workflow source code (requires authentication and `flow-admin` role)
+
+If you need to hide the workflow catalog, customize the Runner resource via CDI interceptors or deploy behind an API gateway with path-based restrictions.
+
+== API reference
+
+=== Workflow execution
+
+==== POST /q/flow/exec/\{namespace}/\{name}
+
+Execute the latest version of a workflow.
+
+**Path parameters:**
+
+* `namespace` (string, required) - Workflow namespace
+* `name` (string, required) - Workflow name
+
+**Query parameters:**
+
+* `wait` (boolean, default: `false`) - Wait for workflow completion
+
+**Request body (JSON, optional):**
+
+[source,json]
+----
+{
+  "orderId": "12345",
+  "customerId": "alice@example.com"
+}
+----
+
+**Responses:**
+
+* **200 OK** - Workflow completed (includes output)
+* **202 Accepted** - Workflow accepted for processing (async execution, no output yet)
+* **400 Bad Request** - Invalid input JSON
+* **401 Unauthorized** - Authentication required
+* **403 Forbidden** - Access denied to namespace
+* **404 Not Found** - No versions of the workflow found
+* **429 Too Many Requests** - Rate limit exceeded (if configured)
+
+**Example:**
+
+[source,bash]
+----
+curl -X POST "http://localhost:8080/q/flow/exec/examples/order-processing?wait=true" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${API_KEY}" \
+  -d '{"orderId": "12345", "customerId": "alice@example.com"}'
+----
+
+==== POST /q/flow/exec/\{namespace}/\{name}/\{version}
+
+Execute a specific version of a workflow.
+
+**Path parameters:**
+
+* `namespace` (string, required) - Workflow namespace
+* `name` (string, required) - Workflow name
+* `version` (string, required) - Workflow version (semantic version format)
+
+**Query parameters and responses:** Same as the latest version endpoint.
+
+**Example:**
+
+[source,bash]
+----
+curl -X POST "http://localhost:8080/q/flow/exec/examples/order-processing/2.1.0?wait=false" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${API_KEY}" \
+  -d '{"orderId": "12345"}'
+----
+
+=== Workflow definitions
+
+==== GET /q/flow/definitions
+
+List all workflow definitions accessible to the authenticated user.
+
+**Query parameters:**
+
+* `namespace` (string, optional) - Filter workflows by namespace
+
+**Responses:**
+
+* **200 OK** - Array of workflow metadata objects
+* **401 Unauthorized** - Authentication required
+* **403 Forbidden** - Access denied to requested namespace
+
+**Response body example:**
+
+[source,json]
+----
+[
+  {
+    "namespace": "examples",
+    "name": "hello-runner",
+    "version": "1.0.0",
+    "summary": "Simple greeting workflow for the Runner",
+    "_links": {
+      "self": {
+        "href": "/q/flow/definitions/examples/hello-runner/1.0.0"
+      },
+      "execute": {
+        "href": "/q/flow/exec/examples/hello-runner/1.0.0"
+      }
+    }
+  }
+]
+----
+
+NOTE: Results are automatically filtered by the user's authorized namespaces when namespace validation is enabled.
+
+==== GET /q/flow/definitions/\{namespace}/\{name}
+
+Get the full workflow definition for the latest version.
+
+**Path parameters:**
+
+* `namespace` (string, required) - Workflow namespace
+* `name` (string, required) - Workflow name
+
+**Request headers:**
+
+* `Accept: application/json` or `Accept: application/yaml` (controls response format)
+
+**Responses:**
+
+* **200 OK** - Workflow definition in requested format
+* **401 Unauthorized** - Authentication required
+* **403 Forbidden** - Access denied to namespace
+* **404 Not Found** - Workflow not found
+* **415 Unsupported Media Type** - Invalid Accept header
+
+**Example (YAML format):**
+
+[source,bash]
+----
+curl -H "Accept: application/yaml" \
+  -H "Authorization: Bearer ${API_KEY}" \
+  http://localhost:8080/q/flow/definitions/examples/hello-runner
+----
+
+==== GET /q/flow/definitions/\{namespace}/\{name}/\{version}
+
+Get the full workflow definition for a specific version.
+
+**Path parameters:**
+
+* `namespace` (string, required) - Workflow namespace
+* `name` (string, required) - Workflow name
+* `version` (string, required) - Workflow version
+
+**Request headers and responses:** Same as the latest version endpoint.
+
+== Configuration reference
+
+include::includes/quarkus-flow-runner_quarkus.flow.adoc[leveloffset=+1]
+
+== Advanced topics
+
+=== Multiple workflow versions
+
+The Runner supports running multiple versions of the same workflow simultaneously. Workflows are uniquely identified by the `namespace:name:version` tuple.
+
+**Version resolution strategy:**
+
+When executing without specifying a version (`/q/flow/exec/{namespace}/{name}`):
+
+1. All registered versions of the workflow are retrieved
+2. Versions are sorted using semantic versioning rules (highest first)
+3. The highest version is selected as "latest"
+
+**Example:**
+
+If you have these versions registered:
+
+* `examples:order-processing:2.1.0`
+* `examples:order-processing:2.0.0`
+* `examples:order-processing:1.9.5`
+
+Calling `/q/flow/exec/examples/order-processing` will execute version `2.1.0`.
+
+**Deployment workflow:**
+
+1. Deploy new workflow version as a separate YAML file:
++
+.workflows/order-processing-v2.1.0.yaml
+[source,yaml]
+----
+document:
+  dsl: "1.0.0"
+  namespace: examples
+  name: order-processing
+  version: "2.1.0"
+# ... input, do, and other workflow sections
+----
+
+2. Update the ConfigMap or volume with the new file
+3. Restart the Runner application (or implement hot-reload in future versions)
+4. New executions automatically use version `2.1.0`
+5. Old executions on version `2.0.0` continue running normally
+
+**Version requirements:**
+
+* `document.version` field is **required** in all workflow definitions
+* Version must follow semantic versioning format (`MAJOR.MINOR.PATCH`)
+* Pre-release versions are supported (e.g., `1.0.0-alpha`, `2.0.0-rc.1`)
+* Invalid version strings cause startup failure with a clear error message
+
+=== Deploying to Kubernetes/OpenShift
+
+The Runner is designed for cloud-native deployments where workflows are managed as configuration.
+
+**ConfigMap-based deployment:**
+
+1. Create a ConfigMap with workflow definitions:
++
+.workflow-definitions.yaml
+[source,yaml]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workflow-definitions
+  namespace: workflows
+data:
+  hello-runner.yaml: |
+    document:
+      dsl: "1.0.0"
+      namespace: examples
+      name: hello-runner
+      version: "1.0.0"
+      title: "Simple greeting workflow"
+    input:
+      schema:
+        type: object
+        properties:
+          name:
+            type: string
+    do:
+      - greet:
+          set:
+            greeting: "${ \"Hello, \" + .name + \"!\" }"
+----
+
+2. Mount the ConfigMap in your Deployment:
++
+.deployment.yaml
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflow-runner
+spec:
+  template:
+    spec:
+      containers:
+      - name: runner
+        image: quay.io/myorg/workflow-runner:latest
+        env:
+        - name: FLOW_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: flow-secrets
+              key: api-key
+        volumeMounts:
+        - name: workflows
+          mountPath: /deployments/workflows
+          readOnly: true
+      volumes:
+      - name: workflows
+        configMap:
+          name: workflow-definitions
+----
+
+3. Configure the Runner to load from the mount path:
++
+.application.properties
+[source,properties]
+----
+quarkus.flow.runner.enabled=true
+quarkus.flow.runner.source.path=/deployments/workflows
+quarkus.flow.runner.security.type=API_KEY
+quarkus.flow.runner.security.api-keys.default.secret=${FLOW_API_KEY}
+quarkus.flow.runner.security.api-keys.default.roles=flow-admin
+----
+
+**GitOps workflow:**
+
+1. Store workflow definitions in a Git repository
+2. Use a GitOps operator (Flux, ArgoCD) to sync workflows to ConfigMaps
+3. ConfigMap changes trigger Rolling Update of the Runner deployment
+4. New versions become available automatically
+
+== Troubleshooting
+
+=== Workflows not loading at startup
+
+**Symptom:** Application starts but no workflows are registered.
+
+**Causes:**
+
+* Path does not exist or is not readable
+* Path contains no valid workflow files
+* Workflow files have syntax errors
+
+**Solutions:**
+
+1. Verify the path exists and is readable:
++
+[source,bash]
+----
+ls -la /deployments/workflows
+----
+
+2. Check application logs for parse errors:
++
+[source,console]
+----
+ERROR [io.qua.flo.run.loa] Failed to parse workflow: workflows/broken.yaml
+----
+
+3. Validate YAML syntax using a linter:
++
+[source,bash]
+----
+yamllint workflows/
+----
+
+4. Ensure required fields are present in `document` section (`dsl`, `namespace`, `name`, `version`) and `do` array is defined
+
+=== 403 Forbidden on execution
+
+**Symptom:** Execution requests return `403 Forbidden` even with valid authentication.
+
+**Causes:**
+
+* User not authorized for the workflow's namespace
+* Namespace claim missing from JWT token (OIDC mode)
+* API key not configured with required namespaces (API_KEY mode)
+
+**Solutions:**
+
+For **OIDC mode**:
+
+1. Inspect the JWT token payload:
++
+[source,bash]
+----
+echo $JWT_TOKEN | cut -d'.' -f2 | base64 -d | jq .
+----
+
+2. Verify the `namespace` claim contains the requested namespace:
++
+[source,json]
+----
+{
+  "namespace": ["examples", "team-a"]
+}
+----
+
+3. If the claim name is different, configure it:
++
+[source,properties]
+----
+quarkus.flow.runner.security.namespace.claim=custom-namespaces
+----
+
+For **API_KEY mode**:
+
+1. Check the API key configuration includes the namespace:
++
+[source,properties]
+----
+quarkus.flow.runner.security.api-keys.mykey.namespaces=examples,team-a
+----
+
+2. If empty, the key has access to all namespaces (verify it's not a typo)
+
+For **development**, temporarily disable namespace validation:
+
+[source,properties]
+----
+quarkus.flow.runner.security.namespace.validate=false
+----
+
+WARNING: Never use this in production.
+
+=== Version resolution not working
+
+**Symptom:** Execution fails with `404 Not Found` when calling `/q/flow/exec/{namespace}/{name}` (without version).
+
+**Cause:** No versions of the workflow are registered with that namespace and name.
+
+**Solutions:**
+
+1. List registered workflows:
++
+[source,bash]
+----
+curl http://localhost:8080/q/flow/definitions
+----
+
+2. Verify the `document.namespace` and `document.name` match exactly (case-sensitive)
+
+3. Check that workflow files were loaded at startup:
++
+[source,console]
+----
+INFO  [io.qua.flo.run.loa] Registered workflow: examples:hello-runner:1.0.0
+----
+
+4. Ensure the workflow definition includes a valid `document.version` field:
++
+[source,yaml]
+----
+document:
+  dsl: "1.0.0"
+  namespace: examples
+  name: hello-runner
+  version: "1.0.0"  # Required, must be semantic version
+----
+
+=== Authentication not required (security disabled)
+
+**Symptom:** Endpoints are accessible without `Authorization` header.
+
+**Cause:** Security mode is set to `NONE`.
+
+**Solution:**
+
+Verify the security configuration:
+
+[source,properties]
+----
+quarkus.flow.runner.security.type=API_KEY  # or OIDC
+----
+
+Check application logs for the security mode warning:
+
+[source,console]
+----
+WARN  Flow Runner security is disabled (type=NONE)
+----
+
+If the configuration is correct but authentication is still disabled, ensure API keys or OIDC configuration is valid (the Runner may fall back to NONE mode on configuration errors).
+
+== What's next?
+
+Now that you have the Runner operational, explore these advanced topics:
+
+**Core Workflow Features:**
+
+* xref:data-flow.adoc[Data flow and context management] - Understand how to manipulate data between workflow tasks
+* xref:dsl-cheatsheet.adoc[Java DSL cheatsheet] - Learn workflow DSL syntax for creating complex definitions
+* xref:specification.adoc[CNCF Specification Mapping] - Understand how Quarkus Flow maps to the Serverless Workflow spec
+
+**AI and Integrations:**
+
+* xref:langchain4j.adoc[LangChain4j integration] - Build agentic AI workflows with LLM tasks
+* xref:http-client.adoc[HTTP and OpenAPI tasks] - Call external REST APIs from workflows
+* xref:messaging.adoc[Messaging and events] - Integrate with Kafka, AMQP, and CloudEvents
+
+**Production Deployment:**
+
+* xref:persistence.adoc[Configure state persistence] - Make workflows durable across restarts
+* xref:fault-tolerance.adoc[Fault tolerance and resilience] - Configure retries and circuit breakers
+* xref:secrets.adoc[Secrets management] - Handle sensitive data in workflow definitions
+
+**Development and Testing:**
+
+* xref:test-debug.adoc[Testing and debugging] - Write tests for workflow definitions
+* link:https://quarkus.io/guides/security-oidc-bearer-token-authentication[Quarkus OIDC Guide] - Configure OIDC authentication in detail
