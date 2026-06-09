@@ -48,7 +48,7 @@
         <io.quarkiverse.langchain4j.version>1.10.0</io.quarkiverse.langchain4j.version>
         <!-- Tests and Docs -->
         <org.assertj.version>3.27.7</org.assertj.version>
-        <quarkus-antora.version>3.25.0</quarkus-antora.version>
+        <quarkus-antora.version>3.33.0</quarkus-antora.version>
         <version.org.jacoco>0.8.15</version.org.jacoco>
         <io.quarkiverse.playwright>2.3.4</io.quarkiverse.playwright>
         <com.h2database.version>2.4.240</com.h2database.version>
