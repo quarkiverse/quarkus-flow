@@ -96,7 +96,8 @@ public class WorkflowDefinitionRuntimeLoader {
             if (workflow.getDocument().getNamespace() == null || workflow.getDocument().getName() == null
                     || workflow.getDocument().getVersion() == null) {
                 throw new IllegalStateException(
-                        String.format("Flow Runner: Workflow at %s is missing required fields (namespace, name, or version)", path));
+                        String.format("Flow Runner: Workflow at %s is missing required fields (namespace, name, or version)",
+                                path));
             }
 
             // Register with WorkflowApplication - creates WorkflowDefinition

@@ -83,20 +83,17 @@ public class WorkflowOpenApiFilter implements OASFilter {
 
     @Override
     public void filterOpenAPI(OpenAPI openAPI) {
-        // Skip if feature disabled
+        boolean securityEnabled = config.security().type() != FlowRunnerConfig.Security.Type.NONE;
+
+        if (securityEnabled) {
+            ensureSecurityScheme(openAPI);
+            applySecurityToExistingOperations(openAPI);
+        }
+
         if (!config.openapi().expandWorkflows()) {
             return;
         }
 
-        // Check if security is enabled
-        boolean securityEnabled = config.security().type() != FlowRunnerConfig.Security.Type.NONE;
-
-        // Add security scheme definition only if security is enabled
-        if (securityEnabled) {
-            ensureSecurityScheme(openAPI);
-        }
-
-        // Group workflows by namespace:name to find latest versions
         Map<String, List<Map.Entry<WorkflowDefinitionId, WorkflowDefinition>>> workflowsByName = application
                 .workflowDefinitions()
                 .entrySet()
@@ -104,12 +101,10 @@ public class WorkflowOpenApiFilter implements OASFilter {
                 .collect(Collectors.groupingBy(
                         entry -> entry.getKey().namespace() + ":" + entry.getKey().name()));
 
-        // Add concrete operation for each registered workflow version
         application.workflowDefinitions().values().forEach(definition -> {
             Document doc = definition.workflow().getDocument();
             Workflow workflow = definition.workflow();
 
-            // Create concrete path for this specific version
             String path = String.format("/q/flow/exec/%s/%s/%s",
                     doc.getNamespace(),
                     doc.getName(),
@@ -128,12 +123,10 @@ public class WorkflowOpenApiFilter implements OASFilter {
                 return;
             }
 
-            // Get any definition from the group (they all have same namespace:name)
             var firstDef = definitions.get(0).getValue();
             Document doc = firstDef.workflow().getDocument();
             Workflow workflow = firstDef.workflow();
 
-            // Create "latest" path (without version)
             String latestPath = String.format("/q/flow/exec/%s/%s",
                     doc.getNamespace(),
                     doc.getName());
@@ -180,13 +173,11 @@ public class WorkflowOpenApiFilter implements OASFilter {
         // Tags
         operation.addTag("Workflow Execution");
 
-        // Security - only add if security is enabled
         if (securityEnabled) {
             operation.addSecurityRequirement(OASFactory.createSecurityRequirement()
                     .addScheme("BearerAuth", List.of(AuthzConsts.ROLE_ADMIN, AuthzConsts.ROLE_INVOKER)));
         }
 
-        // Query parameters
         Parameter waitParam = OASFactory.createParameter();
         waitParam.setName("wait");
         waitParam.setIn(Parameter.In.QUERY);
@@ -200,7 +191,6 @@ public class WorkflowOpenApiFilter implements OASFilter {
         waitParam.setSchema(waitSchema);
         operation.addParameter(waitParam);
 
-        // Request body (workflow input)
         RequestBody requestBody = OASFactory.createRequestBody();
         requestBody.setDescription("Workflow execution input data");
         requestBody.setRequired(false);
@@ -208,7 +198,6 @@ public class WorkflowOpenApiFilter implements OASFilter {
         Content content = OASFactory.createContent();
         MediaType mediaType = OASFactory.createMediaType();
 
-        // Use workflow input schema if available, otherwise generic object
         Schema schema = createInputSchema(workflowInput);
 
         mediaType.setSchema(schema);
@@ -341,6 +330,40 @@ public class WorkflowOpenApiFilter implements OASFilter {
         }
 
         return schema;
+    }
+
+    /**
+     * Applies security requirements to all existing Flow Runner operations.
+     * This ensures static JAX-RS endpoints also show the lock icon in Swagger UI.
+     */
+    private void applySecurityToExistingOperations(OpenAPI openAPI) {
+        if (openAPI.getPaths() == null) {
+            return;
+        }
+
+        openAPI.getPaths().getPathItems().forEach((path, pathItem) -> {
+            if (path.startsWith("/q/flow/")) {
+                applySecurityToOperation(pathItem.getGET());
+                applySecurityToOperation(pathItem.getPOST());
+                applySecurityToOperation(pathItem.getPUT());
+                applySecurityToOperation(pathItem.getDELETE());
+                applySecurityToOperation(pathItem.getPATCH());
+            }
+        });
+    }
+
+    /**
+     * Applies security requirement to a single operation if it doesn't already have one.
+     */
+    private void applySecurityToOperation(Operation operation) {
+        if (operation == null) {
+            return;
+        }
+
+        if (operation.getSecurity() == null || operation.getSecurity().isEmpty()) {
+            operation.addSecurityRequirement(OASFactory.createSecurityRequirement()
+                    .addScheme("BearerAuth", List.of(AuthzConsts.ROLE_ADMIN, AuthzConsts.ROLE_INVOKER)));
+        }
     }
 
     /**

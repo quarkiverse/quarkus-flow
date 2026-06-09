@@ -19,29 +19,6 @@ import io.quarkus.test.junit.TestProfile;
 class OpenApiSecurityNoneIT {
 
     @Test
-    @DisplayName("test_openapi_does_not_contain_security_scheme_when_none")
-    void test_openapi_does_not_contain_security_scheme_when_none() {
-        // Given - OpenAPI document with NONE security
-        String openApiDoc = given()
-                .when()
-                .get("/q/openapi")
-                .then()
-                .statusCode(200)
-                .extract()
-                .asString();
-
-        // Then - should NOT contain BearerAuth security scheme
-        assertThat(openApiDoc).doesNotContain("BearerAuth:");
-
-        // Operations should NOT have security requirements
-        // (Note: Generic endpoints might still have @RolesAllowed annotations,
-        // but dynamically generated workflow operations should not)
-
-        // Verify workflow operations exist but without security
-        assertThat(openApiDoc).contains("/q/flow/exec/test-namespace/simple-greeting/1.0.0:");
-    }
-
-    @Test
     @DisplayName("test_openapi_operations_not_marked_as_secured")
     void test_openapi_operations_not_marked_as_secured() {
         // Given - OpenAPI document

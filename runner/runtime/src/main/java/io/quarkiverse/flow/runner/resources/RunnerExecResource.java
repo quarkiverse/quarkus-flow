@@ -21,6 +21,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import io.quarkiverse.flow.internal.WorkflowVersionComparator;
@@ -38,6 +39,7 @@ import io.smallrye.mutiny.Uni;
 @Path("/q/flow/exec")
 @RolesAllowed({ AuthzConsts.ROLE_ADMIN, AuthzConsts.ROLE_INVOKER })
 @Tag(name = "Workflow Execution", description = "Execute and manage workflow instances")
+@SecurityRequirement(name = "BearerAuth")
 public class RunnerExecResource {
 
     @Inject

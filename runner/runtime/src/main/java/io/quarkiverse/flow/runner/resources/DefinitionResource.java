@@ -23,6 +23,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import io.quarkiverse.flow.internal.WorkflowVersionComparator;
@@ -41,6 +42,7 @@ import io.serverlessworkflow.impl.WorkflowDefinition;
 @Path("/q/flow/definitions")
 @RolesAllowed({ AuthzConsts.ROLE_ADMIN, AuthzConsts.ROLE_INVOKER })
 @Tag(name = "Workflow Definitions", description = "Browse and retrieve workflow definitions")
+@SecurityRequirement(name = "BearerAuth")
 public class DefinitionResource {
 
     @Inject
