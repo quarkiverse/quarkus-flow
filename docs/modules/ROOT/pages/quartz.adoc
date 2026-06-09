@@ -105,7 +105,7 @@ do:
 
 The Serverless Workflow specification mandates that CRON expressions follow the standard **Unix** format.
 
-The Quarkus Quarkus Scheduler, however, use the link:https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html[Quartz] format. This means that, if you are using the Unix format in your workflow definition, you should change the CRON expression to use Quartz format. 
+The Quarkus Quartz Scheduler, however, use the link:https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html[Quartz] format. This means that, if you are using the Unix format in your workflow definition, you should change the CRON expression to use Quartz format. 
 
 == See also
 
