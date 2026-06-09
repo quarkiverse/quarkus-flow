@@ -37,27 +37,27 @@ public class WorkflowDefinitionRuntimeLoader {
 
     void onStart(@Observes WorkflowApplicationReady ev) {
         if (!config.enabled()) {
-            LOGGER.info("Workflow runner is disabled. Skipping loading Workflow Definitions from file system.");
+            LOGGER.info("Flow Runner: Workflow runner is disabled. Skipping loading Workflow Definitions from file system.");
             return;
         }
         if (config.source().path().isEmpty()) {
             LOGGER.info(
-                    "quarkus.flow.runner.source.path is not defined, skipping loading Workflow Definitions from file system.");
+                    "Flow Runner: quarkus.flow.runner.source.path is not defined, skipping loading Workflow Definitions from file system.");
             return;
         }
         final List<WorkflowDefinitionId> workflowDefinitionIds = loadWorkflowDefinitions();
         if (workflowDefinitionIds.isEmpty())
             LOGGER.warn(
-                    "No Workflow Definitions found in path {}, make sure you have valid workflow definition files with extensions: {}",
+                    "Flow Runner: No Workflow Definitions found in path {}, make sure you have valid workflow definition files with extensions: {}",
                     config.source().path(),
                     WorkflowNameUtils.SUPPORTED_WORKFLOW_FILE_EXTENSIONS);
         else
-            LOGGER.info("Workflow Definitions loaded for {}:\n{}", config.source().path(), workflowDefinitionIds);
+            LOGGER.info("Flow Runner: Workflow Definitions loaded for {}:\n{}", config.source().path(), workflowDefinitionIds);
     }
 
     private List<WorkflowDefinitionId> loadWorkflowDefinitions() {
         Path basePath = Path.of(config.source().path().get());
-        LOGGER.info("Loading workflows from filesystem: {}", basePath);
+        LOGGER.info("Flow Runner: Loading workflows from filesystem: {}", basePath);
 
         if (!Files.exists(basePath))
             throw new IllegalStateException("Workflow directory does not exist: " + basePath);
@@ -76,7 +76,7 @@ public class WorkflowDefinitionRuntimeLoader {
                 workflowDefinitionIds.add(loadWorkflow(path));
             }
         } catch (IOException e) {
-            throw new UncheckedIOException("Failed to scan workflow directory: " + basePath, e);
+            throw new UncheckedIOException("Flow Runner: Failed to scan workflow directory: " + basePath, e);
         }
         return workflowDefinitionIds;
     }
@@ -96,13 +96,13 @@ public class WorkflowDefinitionRuntimeLoader {
             if (workflow.getDocument().getNamespace() == null || workflow.getDocument().getName() == null
                     || workflow.getDocument().getVersion() == null) {
                 throw new IllegalStateException(
-                        String.format("Workflow at %s is missing required fields (namespace, name, or version)", path));
+                        String.format("Flow Runner: Workflow at %s is missing required fields (namespace, name, or version)", path));
             }
 
             // Register with WorkflowApplication - creates WorkflowDefinition
             application.workflowDefinition(workflow);
 
-            LOGGER.debug("Registered workflow {}:{}:{} from {}",
+            LOGGER.debug("Flow Runner: Registered workflow {}:{}:{} from {}",
                     workflow.getDocument().getNamespace(),
                     workflow.getDocument().getName(),
                     workflow.getDocument().getVersion(),
@@ -110,7 +110,7 @@ public class WorkflowDefinitionRuntimeLoader {
 
             return WorkflowDefinitionId.of(workflow);
         } catch (IOException e) {
-            throw new UncheckedIOException("Failed to load workflow from " + path, e);
+            throw new UncheckedIOException("Flow Runner: Failed to load workflow from " + path, e);
         }
     }
 
