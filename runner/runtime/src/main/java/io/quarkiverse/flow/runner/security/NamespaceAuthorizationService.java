@@ -86,8 +86,8 @@ public class NamespaceAuthorizationService {
             attr = securityIdentity.getAttribute(claimName);
 
             // If not found, try to extract from JWT token (OIDC mode)
-            if (attr == null && securityIdentity.getPrincipal() instanceof JsonWebToken jwt) {
-                attr = jwt.getClaim(claimName);
+            if (attr == null) {
+                attr = extractFromJwt(securityIdentity, claimName);
             }
         }
 
@@ -96,6 +96,27 @@ public class NamespaceAuthorizationService {
         }
 
         return convertToSet(attr);
+    }
+
+    /**
+     * Extracts namespace claim from JWT token if available.
+     * <p>
+     * This method safely handles the case where quarkus-oidc is not present by catching
+     * {@link NoClassDefFoundError}. When OIDC is not available, returns null.
+     *
+     * @param securityIdentity the security identity
+     * @param claimName the claim name to extract
+     * @return the claim value, or null if not found or OIDC is not available
+     */
+    private Object extractFromJwt(SecurityIdentity securityIdentity, String claimName) {
+        try {
+            if (securityIdentity.getPrincipal() instanceof JsonWebToken jwt) {
+                return jwt.getClaim(claimName);
+            }
+        } catch (NoClassDefFoundError e) {
+            // quarkus-oidc not present - this is expected for API_KEY mode
+        }
+        return null;
     }
 
     /**

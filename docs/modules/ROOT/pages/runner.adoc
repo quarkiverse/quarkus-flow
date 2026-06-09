@@ -102,10 +102,12 @@ document:
   title: "Simple greeting workflow for the Runner"
 input:
   schema:
-    type: object
-    properties:
-      name:
-        type: string
+    format: json
+    document:
+      type: object
+      properties:
+        name:
+          type: string
 do:
   - greet:
       set:
@@ -691,10 +693,12 @@ data:
       title: "Simple greeting workflow"
     input:
       schema:
-        type: object
-        properties:
-          name:
-            type: string
+        format: json
+        document:
+          type: object
+          properties:
+            name:
+              type: string
     do:
       - greet:
           set:

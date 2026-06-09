@@ -11,8 +11,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Any;
-import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
 
@@ -22,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import io.quarkiverse.flow.Flowable;
 import io.quarkiverse.flow.internal.WorkflowInvocationMetadata;
 import io.quarkiverse.flow.internal.WorkflowInvoker;
 import io.quarkus.arc.Arc;
@@ -50,10 +47,6 @@ public class WorkflowRPCService {
     ObjectMapper objectMapper;
 
     @Inject
-    @Any
-    Instance<Flowable> flowRegistry;
-
-    @Inject
     WorkflowApplication workflowApplication;
 
     public WorkflowRPCService() {
@@ -61,13 +54,13 @@ public class WorkflowRPCService {
 
     @PostConstruct
     void buildCache() {
-        flowRegistry.stream()
-                .map(Flowable::descriptor)
-                .forEach(w -> registryCache.put(WorkflowDefinitionId.of(w), w));
+        workflowApplication.workflowDefinitions().forEach((key, value) -> registryCache.put(key, value.workflow()));
     }
 
     @JsonRpcDescription("Get numbers of workflows available in the application")
     public int getNumbersOfWorkflows() {
+        // refresh when we open the main devui
+        buildCache();
         return registryCache.size();
     }
 

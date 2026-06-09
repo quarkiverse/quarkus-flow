@@ -26,6 +26,7 @@
         <module>suspend-resume-abort</module>
         <module>order-fulfillment-compensation</module>
         <module>resilient-task-orchestrator</module>
+        <module>greeting-runner</module>
     </modules>
 
     <build>
