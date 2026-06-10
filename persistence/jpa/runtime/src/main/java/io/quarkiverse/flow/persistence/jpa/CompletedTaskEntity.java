@@ -6,9 +6,10 @@ import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 
-import io.serverlessworkflow.impl.WorkflowModel;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+
+import io.serverlessworkflow.impl.WorkflowModel;
 
 @Entity
 @DiscriminatorValue("1")
