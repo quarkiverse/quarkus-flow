@@ -82,18 +82,18 @@ The workflow can pass the business key as an HTTP header, and the downstream ser
 public Response processPayment(@HeaderParam("X-Order-Id") String orderId,
     PaymentRequest request) {
 // Check if we've already processed this order
-if (paymentStore.exists(orderId)) {
-    // Return the previously stored result — no double-charge
-    return Response.ok(paymentStore.get(orderId)).build();
-}
+    if (paymentStore.exists(orderId)) {
+        // Return the previously stored result — no double-charge
+        return Response.ok(paymentStore.get(orderId)).build();
+    }
 
-// Process the payment (this runs at most once per order)
-PaymentResult result = paymentGateway.charge(request);
+    // Process the payment (this runs at most once per order)
+    PaymentResult result = paymentGateway.charge(request);
 
-// Store the result keyed by the business key
-paymentStore.save(orderId, result);
+    // Store the result keyed by the business key
+    paymentStore.save(orderId, result);
 
-return Response.ok(result).build();
+    return Response.ok(result).build();
 }
 ----
 
@@ -105,16 +105,16 @@ import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
 
 public class PaymentWorkflow extends Flow {
 
-public Workflow descriptor() {
-    return workflow("paymentWorkflow")
-        .tasks(
-            call("processPayment", http("/payments")
-                .method("POST")
-                .header("X-Order-Id", "${.order.id}")
-                .body(".paymentRequest"))
-        )
-        .build();
-}
+    public Workflow descriptor() {
+        return workflow("paymentWorkflow")
+            .tasks(
+                call("processPayment", http("/payments")
+                    .method("POST")
+                    .header("X-Order-Id", "${.order.id}")
+                    .body(".paymentRequest"))
+            )
+            .build();
+    }
 }
 ----
 
