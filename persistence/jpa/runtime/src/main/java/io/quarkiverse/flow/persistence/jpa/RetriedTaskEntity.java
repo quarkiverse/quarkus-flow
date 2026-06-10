@@ -11,7 +11,7 @@ public class RetriedTaskEntity extends TaskInfoEntity {
     public RetriedTaskEntity() {
     }
 
-    @Column
+    @Column(name = "retry_attempt")
     private short retryAttempt;
 
     public RetriedTaskEntity(TaskInfoKey key, short retryAttempt) {

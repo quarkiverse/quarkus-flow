@@ -20,8 +20,8 @@ public abstract class TaskInfoEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumns({
-            @JoinColumn(name = "applicationId", referencedColumnName = "applicationId", insertable = false, updatable = false),
-            @JoinColumn(name = "processInstanceId", referencedColumnName = "instanceId", insertable = false, updatable = false) })
+            @JoinColumn(name = "applicationId", referencedColumnName = "application_id", insertable = false, updatable = false),
+            @JoinColumn(name = "processInstanceId", referencedColumnName = "instance_id", insertable = false, updatable = false) })
     private ProcessInstanceEntity processInstance;
 
     public TaskInfoEntity() {

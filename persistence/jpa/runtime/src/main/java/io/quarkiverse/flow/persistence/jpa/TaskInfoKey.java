@@ -26,13 +26,13 @@ public class TaskInfoKey implements Serializable {
     @Column
     private int iteration;
 
-    @Column
+    @Column(name = "json_pointer")
     private String jsonPointer;
 
-    @Column
+    @Column(name = "application_id")
     private String applicationId;
 
-    @Column
+    @Column(name = "process_instance_id")
     private String processInstanceId;
 
     public String getJsonPointer() {

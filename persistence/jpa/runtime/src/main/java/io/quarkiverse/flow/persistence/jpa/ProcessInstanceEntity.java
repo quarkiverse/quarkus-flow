@@ -17,6 +17,8 @@ import org.hibernate.annotations.DynamicUpdate;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.serverlessworkflow.impl.WorkflowStatus;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @DynamicUpdate
@@ -24,27 +26,30 @@ import io.serverlessworkflow.impl.WorkflowStatus;
 public class ProcessInstanceEntity {
 
     @Id
+    @Column(name = "instance_id")
     private String instanceId;
 
     @Id
+    @Column(name = "application_id")
     private String applicationId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "workflow_namespace")
     private String workflowNamespace;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "workflow_name")
     private String workflowName;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "workflow_version")
     private String workflowVersion;
 
     @Column(nullable = true)
     private WorkflowStatus status;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "started_at")
     private Instant startedAt;
 
     @Basic(fetch = FetchType.LAZY)
+    @JdbcTypeCode(SqlTypes.LONGVARBINARY)
     private WorkflowModel input;
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "processInstance")

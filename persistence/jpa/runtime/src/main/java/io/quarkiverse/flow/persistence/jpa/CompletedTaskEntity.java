@@ -7,6 +7,8 @@ import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 
 import io.serverlessworkflow.impl.WorkflowModel;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @DiscriminatorValue("1")
@@ -14,13 +16,13 @@ public class CompletedTaskEntity extends TaskInfoEntity {
 
     @Column
     private Instant instant;
-    @Column
+    @JdbcTypeCode(SqlTypes.LONGVARBINARY)
     private WorkflowModel model;
     @Column
     private WorkflowModel context;
-    @Column
+    @Column(name = "is_end_node")
     private boolean isEndNode;
-    @Column
+    @Column(name = "next_position")
     private String nextPosition;
 
     public CompletedTaskEntity() {
