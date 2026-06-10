@@ -31,7 +31,7 @@ public abstract class PoolController implements Runnable {
     KubeInfoStrategy kubeInfo;
 
     @Inject
-    DevModeStrategy devModeStrategy;
+    LocalStrategy localStrategy;
 
     protected String computeSchedulerDelay() {
         String schedulerInitialDelay = schedulerConfig().initialDelay();
@@ -48,8 +48,8 @@ public abstract class PoolController implements Runnable {
             return;
         }
         String scheduledExecutorName = scheduledExecutorName();
-        if (devModeStrategy.enabled()) {
-            LOG.debug("Flow: pool controller '{}' disabled by dev mode strategy settings", scheduledExecutorName);
+        if (localStrategy.enabled()) {
+            LOG.debug("Flow: pool controller '{}' disabled by local mode strategy", scheduledExecutorName);
             return;
         }
         LOG.info("Flow: Initializing pool controller '{}' scheduler", scheduledExecutorName);
@@ -71,7 +71,7 @@ public abstract class PoolController implements Runnable {
 
     @PreDestroy
     public void release() {
-        if (devModeStrategy.enabled()) {
+        if (localStrategy.enabled()) {
             return;
         }
 

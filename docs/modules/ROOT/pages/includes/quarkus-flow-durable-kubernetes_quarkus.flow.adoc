@@ -91,24 +91,24 @@ endif::add-copy-button-to-env-var[]
 |string
 |`+++random+++`
 
-a|icon:lock[title=Fixed at build time] [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-dev-dev-mode-strategy-enabled]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-dev-dev-mode-strategy-enabled[`+++quarkus.flow.durable.kube.dev.dev-mode-strategy-enabled+++`]##
+a|icon:lock[title=Fixed at build time] [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-local-local-strategy-enabled]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-local-local-strategy-enabled[`+++quarkus.flow.durable.kube.local.local-strategy-enabled+++`]##
 ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.durable.kube.dev.dev-mode-strategy-enabled+++[]
+config_property_copy_button:+++quarkus.flow.durable.kube.local.local-strategy-enabled+++[]
 endif::add-copy-button-to-config-props[]
 
 
 [.description]
 --
-If true, enables the dev-mode/test-mode strategy that avoids querying the K8s cluster when in dev mode or testing profiles. Defaults to true.
+If true, enables the dev-mode/test-mode/local-mode strategy that avoids querying the K8s cluster when in dev mode or testing profiles or executing in an environment without Kubernetes access. Defaults to true.
 
 Enable it ONLY if you can mock the Kubernetes objects required for the durable use case. In normal conditions, you will NEVER disable this property.
 
 
 ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DURABLE_KUBE_DEV_DEV_MODE_STRATEGY_ENABLED+++[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DURABLE_KUBE_LOCAL_LOCAL_STRATEGY_ENABLED+++[]
 endif::add-copy-button-to-env-var[]
 ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_DURABLE_KUBE_DEV_DEV_MODE_STRATEGY_ENABLED+++`
+Environment variable: `+++QUARKUS_FLOW_DURABLE_KUBE_LOCAL_LOCAL_STRATEGY_ENABLED+++`
 endif::add-copy-button-to-env-var[]
 --
 |boolean

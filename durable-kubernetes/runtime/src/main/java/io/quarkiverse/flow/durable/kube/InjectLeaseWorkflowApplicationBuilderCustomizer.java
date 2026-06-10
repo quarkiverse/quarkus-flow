@@ -25,7 +25,7 @@ public class InjectLeaseWorkflowApplicationBuilderCustomizer implements Workflow
     LeaseGroupConfig leaseConfig;
 
     @Inject
-    DevModeStrategy devModeStrategy;
+    LocalStrategy localStrategy;
 
     @Inject
     Event<LeaseStartupEvent> leaseStartupEvent;
@@ -41,8 +41,8 @@ public class InjectLeaseWorkflowApplicationBuilderCustomizer implements Workflow
             return;
         }
 
-        if (devModeStrategy.enabled()) {
-            LOG.info("Flow: Dev Mode detected. Bypassing Kubernetes Lease acquisition for instant startup.");
+        if (localStrategy.enabled()) {
+            LOG.info("Flow: Local Mode detected. Bypassing Kubernetes Lease acquisition for instant startup.");
             // Return early. The WorkflowApplication will fallback to a default/local UUID.
             return;
         }
