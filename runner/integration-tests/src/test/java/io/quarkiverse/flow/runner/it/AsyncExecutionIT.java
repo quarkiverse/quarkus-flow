@@ -42,8 +42,10 @@ class AsyncExecutionIT {
 
         long responseTime = System.currentTimeMillis() - startTime;
 
-        // Then - response should be immediate (< 1 second)
-        assertThat(responseTime).as("Response should be immediate").isLessThan(1000);
+        // Then - response should be immediate (much less than the 5-second workflow duration)
+        // Use 4 seconds as threshold to account for CI overhead while still proving it doesn't wait
+        assertThat(responseTime).as("Response should return immediately, not wait for workflow completion")
+                .isLessThan(4000);
 
         // And - response should indicate workflow is running
         assertThat(response).isNotNull();
