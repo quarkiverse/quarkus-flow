@@ -1,11 +1,19 @@
 package io.quarkiverse.flow.internal;
 
+import java.util.Set;
+
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
 import io.serverlessworkflow.impl.WorkflowUtils;
 
 public final class WorkflowNameUtils {
 
     private static final int MAX_LENGTH = 63;
+
+    /**
+     * Supported workflow file extensions.
+     * Used by both core module (classpath scanning) and runner module (filesystem scanning).
+     */
+    public static final Set<String> SUPPORTED_WORKFLOW_FILE_EXTENSIONS = Set.of(".json", ".yaml", ".yml");
 
     private WorkflowNameUtils() {
     }
