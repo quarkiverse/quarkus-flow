@@ -1,6 +1,5 @@
 package io.quarkiverse.flow.persistence.common;
 
-import static io.quarkiverse.flow.persistence.common.FlowPersistenceUtils.NO_PERSISTENCE_WARN_MSG;
 import static io.quarkiverse.flow.persistence.common.FlowPersistenceUtils.excludedIds;
 
 import java.util.Collection;
@@ -9,7 +8,6 @@ import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import org.slf4j.Logger;
@@ -28,22 +26,14 @@ import io.serverlessworkflow.impl.persistence.PersistenceInstanceHandlers;
 public class FlowPersistenceRestore {
 
     private static final Logger LOG = LoggerFactory.getLogger(FlowPersistenceRestore.class);
-
     @Inject
-    Instance<PersistenceInstanceHandlers> handlers;
-
+    PersistenceInstanceHandlers handlers;
     @Inject
     WorkflowApplication application;
-
     @Inject
     FlowPersistenceConfig config;
 
     void restoreInstances(@Observes WorkflowApplicationReady event) {
-        if (handlers.isUnsatisfied()) {
-            LOG.warn(NO_PERSISTENCE_WARN_MSG);
-            return;
-        }
-
         Map<WorkflowDefinitionId, WorkflowDefinition> definitions = application.workflowDefinitions();
 
         Collection<WorkflowDefinitionId> excludedIds = excludedIds(config.excludeWorkflows());
@@ -55,7 +45,7 @@ public class FlowPersistenceRestore {
                 continue;
             }
 
-            try (Stream<WorkflowInstance> stream = handlers.get().reader().scanAll(def)) {
+            try (Stream<WorkflowInstance> stream = handlers.reader().scanAll(def)) {
                 stream.forEach(instance -> {
                     LOG.debug("Restoring workflow instance: {} with WorkflowInstance.status(): {}", instance.id(),
                             instance.status());
