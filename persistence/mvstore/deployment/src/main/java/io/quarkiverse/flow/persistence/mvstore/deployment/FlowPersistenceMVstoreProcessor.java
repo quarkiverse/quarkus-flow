@@ -1,9 +1,7 @@
 package io.quarkiverse.flow.persistence.mvstore.deployment;
 
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.serverlessworkflow.impl.persistence.mvstore.MVStorePersistenceStore;
 
 public class FlowPersistenceMVstoreProcessor {
 
@@ -14,11 +12,4 @@ public class FlowPersistenceMVstoreProcessor {
         return new FeatureBuildItem(FEATURE);
     }
 
-    @BuildStep
-    AdditionalBeanBuildItem additionalBean() {
-        return AdditionalBeanBuildItem.builder()
-                .setUnremovable()
-                .addBeanClass(MVStorePersistenceStore.class)
-                .build();
-    }
 }

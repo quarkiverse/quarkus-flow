@@ -2,6 +2,7 @@ package io.quarkiverse.flow.persistence.redis;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import io.quarkus.arc.Unremovable;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.hash.HashCommands;
 import io.quarkus.redis.datasource.keys.KeyCommands;
@@ -10,6 +11,7 @@ import io.serverlessworkflow.impl.persistence.PersistenceInstanceStore;
 import io.serverlessworkflow.impl.persistence.PersistenceInstanceTransaction;
 
 @ApplicationScoped
+@Unremovable
 public class RedisInstanceStore implements PersistenceInstanceStore {
 
     private final RedisDataSource ds;
