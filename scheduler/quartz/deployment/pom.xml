@@ -3,12 +3,12 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.quarkiverse.flow</groupId>
-        <artifactId>quarkus-flow-scheduler-parent</artifactId>
+        <artifactId>quarkus-flow-scheduler-quartz-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-flow-scheduler-deployment</artifactId>
-    <name>Quarkus Flow :: Scheduler :: Deployment</name>
+    <artifactId>quarkus-flow-quartz-scheduler-deployment</artifactId>
+    <name>Quarkus Flow :: Scheduler :: Quartz :: Deployment</name>
 
     <dependencies>
         <dependency>
@@ -16,8 +16,12 @@
             <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
         <dependency>
-          <groupId>io.quarkus</groupId>
-          <artifactId>quarkus-scheduler-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-quartz-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-flyway-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>
@@ -26,7 +30,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>
-            <artifactId>quarkus-flow-scheduler</artifactId>
+            <artifactId>quarkus-flow-quartz-scheduler</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

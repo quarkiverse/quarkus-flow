@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.quarkiverse.flow</groupId>
-        <artifactId>quarkus-flow-scheduler-parent</artifactId>
+        <artifactId>quarkus-flow-scheduler-memory-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
     <properties>
@@ -11,7 +11,7 @@
     </properties>
 
     <artifactId>quarkus-flow-scheduler-integration-tests</artifactId>
-    <name>Quarkus Flow :: Scheduler :: Integration Tests</name>
+    <name>Quarkus Flow :: Scheduler :: InMemory:: Integration Tests</name>
 
     <dependencies>
         <dependency>
