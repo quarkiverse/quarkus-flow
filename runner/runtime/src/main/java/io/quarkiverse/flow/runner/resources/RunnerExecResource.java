@@ -51,11 +51,12 @@ public class RunnerExecResource {
     @Operation(summary = "Execute workflow (latest version)", description = "Executes the latest version of the specified workflow. "
             +
             "With wait=true (synchronous): blocks until workflow completes, always returns 200 OK with output. " +
-            "With wait=false (asynchronous): returns immediately. If workflow already completed, returns 200 OK with output. " +
-            "If still running, returns 202 Accepted without output. " +
+            "With wait=false (asynchronous): returns immediately with 202 Accepted, workflowOutput is always null regardless of completion status. "
+            +
+            "This ensures a consistent API contract where async execution never includes output. " +
             "Namespace access is validated when namespace authorization is enabled.")
-    @APIResponse(responseCode = "200", description = "Workflow execution completed. Returned when: (1) wait=true and workflow finished, or (2) wait=false but workflow completed before response.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
-    @APIResponse(responseCode = "202", description = "Workflow execution accepted for processing (wait=false and still running). Check workflowOutput field - will be null if pending.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
+    @APIResponse(responseCode = "200", description = "Workflow execution completed (only when wait=true). Returns workflow output.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
+    @APIResponse(responseCode = "202", description = "Workflow accepted for async processing (when wait=false). Always returned with workflowOutput=null, regardless of whether the workflow has completed.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
     @APIResponse(responseCode = "401", description = "Authentication required - missing or invalid credentials")
     @APIResponse(responseCode = "403", description = "Access denied to requested namespace")
     @APIResponse(responseCode = "404", description = "Workflow not found")
@@ -79,11 +80,12 @@ public class RunnerExecResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Operation(summary = "Execute workflow (specific version)", description = "Executes a specific version of the workflow. " +
             "With wait=true (synchronous): blocks until workflow completes, always returns 200 OK with output. " +
-            "With wait=false (asynchronous): returns immediately. If workflow already completed, returns 200 OK with output. " +
-            "If still running, returns 202 Accepted without output. " +
+            "With wait=false (asynchronous): returns immediately with 202 Accepted, workflowOutput is always null regardless of completion status. "
+            +
+            "This ensures a consistent API contract where async execution never includes output. " +
             "Namespace access is validated when namespace authorization is enabled.")
-    @APIResponse(responseCode = "200", description = "Workflow execution completed. Returned when: (1) wait=true and workflow finished, or (2) wait=false but workflow completed before response.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
-    @APIResponse(responseCode = "202", description = "Workflow execution accepted for processing (wait=false and still running). Check workflowOutput field - will be null if pending.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
+    @APIResponse(responseCode = "200", description = "Workflow execution completed (only when wait=true). Returns workflow output.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
+    @APIResponse(responseCode = "202", description = "Workflow accepted for async processing (when wait=false). Always returned with workflowOutput=null, regardless of whether the workflow has completed.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
     @APIResponse(responseCode = "401", description = "Authentication required - missing or invalid credentials")
     @APIResponse(responseCode = "403", description = "Access denied to requested namespace")
     @APIResponse(responseCode = "404", description = "Workflow version not found")
@@ -94,8 +96,7 @@ public class RunnerExecResource {
             @Parameter(description = "Wait for workflow completion (default: false)") @QueryParam("wait") @DefaultValue("false") boolean wait,
             @RequestBody(description = "Workflow input data", required = false) Map<String, Object> request) {
         final WorkflowDefinitionId id = new WorkflowDefinitionId(namespace, name, version);
-        final WorkflowDefinition definition = application.workflowDefinitions().get(id);
-        return executeWorkflow(wait, request, id, definition);
+        return executeWorkflow(wait, request, id, application.workflowDefinitions().get(id));
     }
 
     private Uni<Response> executeWorkflow(boolean wait, Map<String, Object> request, WorkflowDefinitionId id,
@@ -116,10 +117,8 @@ public class RunnerExecResource {
                     .onItem()
                     .transform(model -> Response.ok().entity(ExecutionResponse.from(instance, model)).build());
         }
-        final ExecutionResponse response = ExecutionResponse.from(instance);
         return Uni.createFrom()
-                .item(Response.status(response.workflowOutput() == null ? Response.Status.ACCEPTED : Response.Status.OK)
-                        .entity(response).build());
+                .item(Response.status(Response.Status.ACCEPTED).entity(ExecutionResponse.from(instance)).build());
     }
 
 }

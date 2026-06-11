@@ -305,10 +305,28 @@ curl -X POST http://localhost:8080/q/flow/exec/examples/hello-runner?wait=false 
   -d '{"name": "World"}'
 ----
 
-**Response behavior:**
+**Response (202 Accepted):**
 
-* **202 Accepted** - Workflow is still running (returns execution ID but no output)
-* **200 OK** - Workflow already completed by the time the response is sent (includes output)
+[source,json]
+----
+{
+  "instanceId": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "WAITING",
+  "startedAt": "2026-06-11T10:15:30.123Z",
+  "completedAt": null,
+  "workflowOutput": null
+}
+----
+
+**API Contract:**
+
+The Runner follows the HTTP API contract strictly when `wait=false`:
+
+* **Always returns 202 Accepted** - Regardless of how quickly the workflow completes
+* **Output is always null** - Even if the workflow finishes before the response is sent
+* **Status reflects current state** - Can be `WAITING`, `RUNNING`, or `COMPLETED` depending on when the response was captured
+
+This ensures clients can rely on a consistent API contract: `wait=false` means "acknowledge receipt and start execution" with no output, while `wait=true` means "wait for completion and return output".
 
 For truly long-running workflows, use `wait=false` and poll for status or implement callbacks (future feature).
 
@@ -490,13 +508,15 @@ Execute the latest version of a workflow.
 
 **Responses:**
 
-* **200 OK** - Workflow completed (includes output)
-* **202 Accepted** - Workflow accepted for processing (async execution, no output yet)
+* **200 OK** - Workflow completed (only when `wait=true`, includes output)
+* **202 Accepted** - Workflow accepted for processing (when `wait=false`, always returned with null output regardless of completion status)
 * **400 Bad Request** - Invalid input JSON
 * **401 Unauthorized** - Authentication required
 * **403 Forbidden** - Access denied to namespace
 * **404 Not Found** - No versions of the workflow found
 * **429 Too Many Requests** - Rate limit exceeded (if configured)
+
+NOTE: When `wait=false`, the API strictly returns **202 Accepted** with `workflowOutput: null` even if the workflow completes before the response is sent. This ensures a consistent contract where async execution never includes output in the response.
 
 **Example:**
 

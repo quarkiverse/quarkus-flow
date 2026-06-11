@@ -27,6 +27,7 @@ import org.eclipse.microprofile.openapi.models.security.SecurityScheme;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkiverse.flow.internal.WorkflowVersionComparator;
 import io.quarkiverse.flow.runner.FlowRunnerConfig;
 import io.quarkiverse.flow.runner.security.AuthzConsts;
 import io.quarkus.arc.Unremovable;
@@ -123,7 +124,8 @@ public class WorkflowOpenApiFilter implements OASFilter {
                 return;
             }
 
-            var firstDef = definitions.get(0).getValue();
+            var firstDef = definitions.stream().max(new WorkflowVersionComparator()).map(Map.Entry::getValue).orElseThrow(
+                    () -> new IllegalStateException("Failed to find workflow definition for namespace " + namespaceName));
             Document doc = firstDef.workflow().getDocument();
             Workflow workflow = firstDef.workflow();
 
@@ -182,8 +184,8 @@ public class WorkflowOpenApiFilter implements OASFilter {
         waitParam.setName("wait");
         waitParam.setIn(Parameter.In.QUERY);
         waitParam.setDescription("Wait for workflow completion (default: false). " +
-                "Use wait=true for synchronous execution (returns workflow result). " +
-                "Use wait=false for asynchronous execution (returns execution metadata immediately).");
+                "Use wait=true for synchronous execution (blocks and returns 200 OK with workflow output). " +
+                "Use wait=false for asynchronous execution (returns immediately with 202 Accepted and workflowOutput=null, regardless of completion status).");
         waitParam.setRequired(false);
         Schema waitSchema = OASFactory.createSchema();
         waitSchema.setType(Collections.singletonList(Schema.SchemaType.BOOLEAN));
@@ -210,12 +212,12 @@ public class WorkflowOpenApiFilter implements OASFilter {
 
         APIResponse successResponse = OASFactory.createAPIResponse();
         successResponse.setDescription(
-                "Workflow execution completed. Returned when: (1) wait=true and workflow finished, or (2) wait=false but workflow completed before response.");
+                "Workflow execution completed (only when wait=true). Returns workflow output.");
         responses.addAPIResponse("200", successResponse);
 
         APIResponse acceptedResponse = OASFactory.createAPIResponse();
         acceptedResponse.setDescription(
-                "Workflow execution accepted for processing (wait=false and still running). Check workflowOutput field - will be null if pending.");
+                "Workflow accepted for async processing (when wait=false). Always returned with workflowOutput=null, regardless of whether the workflow has completed.");
         responses.addAPIResponse("202", acceptedResponse);
 
         APIResponse unauthorizedResponse = OASFactory.createAPIResponse();

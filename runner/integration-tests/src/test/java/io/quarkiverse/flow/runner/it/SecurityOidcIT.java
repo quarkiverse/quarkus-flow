@@ -93,7 +93,7 @@ class SecurityOidcIT {
         assertThat(response).isNotNull();
         assertThat(response.instanceId()).isNotBlank();
         assertThat(response.status()).isEqualTo(WorkflowStatus.COMPLETED);
-        assertThat(response.workflowOutput()).isNotEmpty();
+        assertThat(response.workflowOutput()).asString().isNotBlank();
     }
 
     @Test

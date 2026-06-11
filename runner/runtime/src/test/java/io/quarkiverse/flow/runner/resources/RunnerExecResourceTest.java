@@ -112,7 +112,7 @@ class RunnerExecResourceTest {
         when(mockInstance.start()).thenReturn(CompletableFuture.completedFuture(mockModel));
         when(mockDefinition.instance(any())).thenReturn(mockInstance);
 
-        when(mockModel.asMap()).thenReturn(java.util.Optional.of(Map.of("result", "success")));
+        when(mockModel.asJavaObject()).thenReturn("success");
 
         WorkflowDefinitionId id = new WorkflowDefinitionId("test-ns", "test-wf", "1.0.0");
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of(id, mockDefinition));
@@ -129,7 +129,7 @@ class RunnerExecResourceTest {
         assertThat(executionResponse.instanceId()).isEqualTo("instance-456");
         assertThat(executionResponse.status()).isEqualTo(WorkflowStatus.COMPLETED);
         assertThat(executionResponse.workflowOutput()).isNotNull();
-        assertThat(executionResponse.workflowOutput()).containsEntry("result", "success");
+        assertThat(executionResponse.workflowOutput()).asString().isEqualTo("success");
     }
 
     @Test

@@ -386,4 +386,42 @@ class WorkflowDefinitionRuntimeLoaderTest {
                 .isInstanceOf(UncheckedIOException.class)
                 .hasMessageContaining("Failed to load workflow");
     }
+
+    @Test
+    @DisplayName("test_loader_rejects_duplicate_workflow_ids")
+    void test_loader_rejects_duplicate_workflow_ids() throws IOException {
+        String workflow1 = """
+                document:
+                  dsl: '1.0.0'
+                  namespace: test-namespace
+                  name: duplicate-workflow
+                  version: '1.0.0'
+                do:
+                  - setMessage:
+                      set:
+                        message: "First"
+                """;
+        String workflow2 = """
+                document:
+                  dsl: '1.0.0'
+                  namespace: test-namespace
+                  name: duplicate-workflow
+                  version: '1.0.0'
+                do:
+                  - setMessage:
+                      set:
+                        message: "Second"
+                """;
+        Files.writeString(tempDir.resolve("workflow-1.yaml"), workflow1);
+        Files.writeString(tempDir.resolve("workflow-2.yaml"), workflow2);
+        when(mockConfig.enabled()).thenReturn(true);
+        when(mockSource.path()).thenReturn(Optional.of(tempDir.toString()));
+        assertThatThrownBy(() -> loader.onStart(new WorkflowApplicationReady("ABC123")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Duplicated workflow definition")
+                .hasMessageContaining("test-namespace")
+                .hasMessageContaining("duplicate-workflow")
+                .hasMessageContaining("1.0.0")
+                .hasMessageContaining("workflow-2.yaml");
+    }
 }

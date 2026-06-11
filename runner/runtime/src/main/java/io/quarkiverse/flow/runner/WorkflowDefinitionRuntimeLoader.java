@@ -66,14 +66,19 @@ public class WorkflowDefinitionRuntimeLoader {
             throw new IllegalStateException("Workflow path is not a directory: " + basePath);
 
         final List<WorkflowDefinitionId> workflowDefinitionIds = new ArrayList<>();
-        try (Stream<Path> paths = Files.walk(basePath)) {
+        try (Stream<Path> paths = Files.walk(basePath).sorted()) {
             var workflows = paths
                     .filter(Files::isRegularFile)
                     .filter(this::isSupportedWorkflowFile)
                     .toList();
 
             for (Path path : workflows) {
-                workflowDefinitionIds.add(loadWorkflow(path));
+                final WorkflowDefinitionId defId = loadWorkflow(path);
+                workflowDefinitionIds.stream().filter(addedId -> addedId.equals(defId)).findFirst().ifPresent(duplicatedId -> {
+                    throw new IllegalStateException(
+                            String.format("Duplicated workflow definition (%s) found in path %s", defId.toString(":"), path));
+                });
+                workflowDefinitionIds.add(defId);
             }
         } catch (IOException e) {
             throw new UncheckedIOException("Flow Runner: Failed to scan workflow directory: " + basePath, e);
