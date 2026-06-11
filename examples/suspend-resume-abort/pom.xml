@@ -55,7 +55,7 @@
             <artifactId>quarkus-flow</artifactId>
             <version>${quarkus.flow.version}</version>
         </dependency>
-        
+
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow-mvstore</artifactId>
@@ -74,6 +74,12 @@
             <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow-mvstore-deployment</artifactId>
             <version>${quarkus.flow.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-testing</artifactId>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -5,6 +5,7 @@ import io.serverlessworkflow.impl.WorkflowInstance;
 import io.smallrye.common.annotation.Identifier;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -74,6 +75,15 @@ public class FlowAPIResource {
     @Path("/cancel/{instanceId}")
     public Response cancel(@PathParam("instanceId") String instanceId) {
         return instanceOperation(instanceId, WorkflowInstance::cancel);
+    }
+
+    @GET
+    @Path("/status/{instanceId}")
+    public Response status(@PathParam("instanceId") String instanceId) {
+        return flow.activeInstance(instanceId)
+                .map(instance -> Response.ok(Map.of("instanceId", instance.id(), "state", instance.status())).build())
+                .orElseGet(() -> notFoundResponse(instanceId));
+
     }
 
     private Response instanceOperation(String instanceId, Function<WorkflowInstance, Boolean> function) {
