@@ -38,6 +38,7 @@
 ** xref:data-flow.adoc[Data Flow and Context Management]
 ** xref:concepts-agentic-langchain4j.adoc[Agentic AI Topology]
 ** xref:concepts-durable-workflow-k8s.adoc[Durable Workflows in Kubernetes]
+** xref:idempotency-correlation.adoc[Idempotency and Correlation]
 
 * Reference
 ** xref:dsl-cheatsheet.adoc[Java DSL cheatsheet]
