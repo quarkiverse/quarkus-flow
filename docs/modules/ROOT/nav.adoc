@@ -17,6 +17,7 @@
 *** xref:how-to-deal-with-state.adoc[Use data flow and context management]
 ** Agentic AI & LangChain4j
 *** xref:langchain4j.adoc[Orchestrate agents with the Java DSL]
+*** xref:schedule-agentic-workflows.adoc[Schedule agentic workflows]
 ** External Integrations
 *** xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services]
 *** xref:http-client.adoc[Configure the HTTP client]

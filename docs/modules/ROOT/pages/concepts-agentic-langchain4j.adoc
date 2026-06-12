@@ -94,6 +94,24 @@ To achieve this, Quarkus Flow uses a **Bean Invoker** strategy. Instead of evalu
 
 This ensures that LangChain4j remains the ultimate authority on how the prompt is formed and how the LLM is called, while Quarkus Flow remains the authority on observability, retries, and task transitions.
 
+== 5. Schedulable workflows
+
+When you annotate an agentic method with `@ScheduleOn`, Quarkus Flow generates a xref:schedule-agentic-workflows.adoc[schedulable workflow] at build time:
+
+* **Workflow behavior**: The generated workflow acts as a bridge between the scheduler/event system and your agentic planner. When triggered, it:
+1. Receives the trigger (CloudEvent, cron tick, or every tick)
+2. Extracts and deserializes the input (for `event` triggers)
+3. Invokes your agentic method with the appropriate parameters
+4. Returns the result
+
+* **Workflow relationship**: The schedulable workflow internally calls the non-schedulable agentic workflow as a subflow. This means you'll see two workflows in the system:
+- The schedulable workflow (e.g., `GeneratedConferenceReviewerPlannerSchedulable`) that handles the trigger
+- The agentic workflow (e.g., `GeneratedConferenceReviewerPlanner`) that executes the actual agent logic
+
+* **DevUI visualization**: In the Quarkus Dev UI, schedulable workflows are displayed with a `-schedulable` suffix in their workflow ID for easy identification. For example, `conference-reviewer-planner-schedulable` is the schedulable wrapper that triggers `conference-reviewer-planner`.
+
+This design keeps your agent interface clean while automatically handling the scheduling infrastructure and maintaining a clear separation between trigger handling and agent execution.
+
 == See also
 * xref:langchain4j.adoc[Orchestrate LangChain4j Agents and Patterns] — how to use these features in practice.
 * xref:concepts-architecture.adoc[Engine Architecture] — the broader build-time paradigm of Quarkus Flow.

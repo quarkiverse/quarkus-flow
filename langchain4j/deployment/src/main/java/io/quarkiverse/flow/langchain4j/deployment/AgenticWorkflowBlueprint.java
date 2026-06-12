@@ -17,6 +17,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
 import dev.langchain4j.agentic.planner.AgenticSystemTopology;
+import io.quarkiverse.flow.langchain4j.annotations.ScheduleOn;
 
 /**
  * Build-time representation of an agentic workflow extracted from LangChain4j annotations.
@@ -87,6 +88,10 @@ record AgenticWorkflowBlueprint(String description,
                             .toList());
 
         return null;
+    }
+
+    static boolean isSchedulable(MethodInfo method) {
+        return method.hasAnnotation(ScheduleOn.class);
     }
 
     /**
