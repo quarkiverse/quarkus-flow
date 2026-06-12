@@ -1,7 +1,8 @@
 package io.quarkiverse.flow.durable.kube;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
+import static io.quarkiverse.flow.durable.kube.KubernetesAwareness.HOSTNAME_ENV_VAR;
+import static io.quarkiverse.flow.durable.kube.KubernetesAwareness.NAMESPACE_ENV_VAR;
+import static io.quarkiverse.flow.durable.kube.KubernetesAwareness.POD_NAME_ENV_VAR;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -13,31 +14,11 @@ import io.quarkus.arc.DefaultBean;
 @ApplicationScoped
 public class Fabric8KubeInfoStrategy implements KubeInfoStrategy {
 
-    private static final String POD_NAME_ENV_VAR = "POD_NAME";
-    private static final String NAMESPACE_ENV_VAR = "POD_NAMESPACE";
-    // Usually, tools add this env var to deployments - we can use it as an alternative in case users forgot to set POD_NAMESPACE
-    private static final String K8S_NAMESPACE_ENV_VAR = "KUBERNETES_NAMESPACE";
-    private static final String HOSTNAME_ENV_VAR = "HOSTNAME";
-
-    private static final Path SERVICE_ACCOUNT_NAMESPACE_PATH = Path
-            .of("/var/run/secrets/kubernetes.io/serviceaccount/namespace");
-
     @Inject
     KubernetesClient client;
 
     volatile String cachedNamespace;
     volatile String cachedPodName;
-
-    private static String readNamespaceFromServiceAccount() {
-        try {
-            if (Files.isRegularFile(SERVICE_ACCOUNT_NAMESPACE_PATH)) {
-                return Files.readString(SERVICE_ACCOUNT_NAMESPACE_PATH).trim();
-            }
-        } catch (Exception ignored) {
-            // best-effort fallback
-        }
-        return null;
-    }
 
     @Override
     public String namespace() {
@@ -61,7 +42,7 @@ public class Fabric8KubeInfoStrategy implements KubeInfoStrategy {
         if (p != null && !p.isBlank())
             return p;
 
-        p = resolvePodNameOrNull();
+        p = KubernetesAwareness.tryResolveCurrentPodNameOrNull();
         if (p == null) {
             throw new IllegalStateException("Impossible to get current pod name. Please set " + POD_NAME_ENV_VAR
                     + " on the current deployment via Downward API or check if " + HOSTNAME_ENV_VAR
@@ -71,34 +52,13 @@ public class Fabric8KubeInfoStrategy implements KubeInfoStrategy {
         return p;
     }
 
-    protected String resolveNamespaceOrNull() {
-        String namespace = System.getenv(NAMESPACE_ENV_VAR);
-        if (namespace != null && !namespace.isBlank())
-            return namespace;
-
-        namespace = System.getenv(K8S_NAMESPACE_ENV_VAR);
-        if (namespace != null && !namespace.isBlank())
-            return namespace;
-
-        namespace = readNamespaceFromServiceAccount();
-        if (namespace != null && !namespace.isBlank())
-            return namespace;
+    private String resolveNamespaceOrNull() {
+        String namespace = KubernetesAwareness.tryResolveCurrentNamespaceOrNull();
 
         namespace = client.getNamespace();
         if (namespace != null && !namespace.isBlank())
             return namespace;
 
         return null;
-    }
-
-    protected String resolvePodNameOrNull() {
-        String podName = System.getenv(POD_NAME_ENV_VAR);
-        if (podName == null || podName.isBlank()) {
-            podName = System.getenv(HOSTNAME_ENV_VAR);
-        }
-        if (podName == null || podName.isBlank()) {
-            return null;
-        }
-        return podName;
     }
 }

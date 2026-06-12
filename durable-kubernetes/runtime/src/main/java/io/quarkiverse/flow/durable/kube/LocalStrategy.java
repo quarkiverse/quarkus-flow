@@ -3,22 +3,21 @@ package io.quarkiverse.flow.durable.kube;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import io.quarkiverse.flow.durable.kube.config.DevModeConfig;
+import io.quarkiverse.flow.durable.kube.config.LocalConfig;
 import io.quarkus.runtime.LaunchMode;
 
 /**
- * Handles the strategy for dev mode or testing on user's space.
- * When enabled, means that the system will automatically skip querying the Kubernetes API in dev mode or testing.
+ * Handles the strategy for dev mode, testing or local execution on user's space.
+ * When enabled, means that the system will automatically skip querying the Kubernetes API.
  * <p/>
  * To override this behavior, user's can disable this strategy via configuration on
- * {@link DevModeConfig#devModeStrategyEnabled()}.
+ * {@link LocalConfig#localStrategyEnabled()}.
  */
 @ApplicationScoped
-public class DevModeStrategy {
+public class LocalStrategy {
 
     @Inject
-    DevModeConfig devConfig;
-
+    LocalConfig devConfig;
     @Inject
     LaunchMode launchMode;
 
@@ -26,7 +25,8 @@ public class DevModeStrategy {
      * @return Whether we are on dev mode or user forced configuration to query Kubernetes in dev.
      */
     boolean enabled() {
-        return launchMode.isDevOrTest() && devConfig.devModeStrategyEnabled();
+        return (launchMode.isDevOrTest() || !KubernetesAwareness.isRunningInKubernetes()) &&
+                devConfig.localStrategyEnabled();
     }
 
 }

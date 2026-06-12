@@ -1,16 +1,16 @@
 package io.quarkiverse.flow.durable.kube.deployment;
 
 import io.quarkiverse.flow.durable.kube.DeploymentPoolTopologyResolver;
-import io.quarkiverse.flow.durable.kube.DevModeStrategy;
 import io.quarkiverse.flow.durable.kube.Fabric8KubeInfoStrategy;
 import io.quarkiverse.flow.durable.kube.InjectLeaseWorkflowApplicationBuilderCustomizer;
 import io.quarkiverse.flow.durable.kube.LeaseAcquisitionHealthCheck;
 import io.quarkiverse.flow.durable.kube.LeaseService;
+import io.quarkiverse.flow.durable.kube.LocalStrategy;
 import io.quarkiverse.flow.durable.kube.MemberLeaseCoordinator;
 import io.quarkiverse.flow.durable.kube.PoolLeaderController;
 import io.quarkiverse.flow.durable.kube.PoolMemberController;
-import io.quarkiverse.flow.durable.kube.config.DevModeConfig;
 import io.quarkiverse.flow.durable.kube.config.FlowDurableKubeConfig;
+import io.quarkiverse.flow.durable.kube.config.LocalConfig;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -34,12 +34,12 @@ class FlowDurableKubernetesProcessor {
      * @see <a href="https://quarkus.io/guides/all-builditems#scheduler">Build Items - Scheduler</a>
      */
     @BuildStep
-    void forceStartSchedulerBuildItem(LaunchModeBuildItem launchMode, DevModeConfig devModeConfig,
+    void forceStartSchedulerBuildItem(LaunchModeBuildItem launchMode, LocalConfig localConfig,
             BuildProducer<ForceStartSchedulerBuildItem> forceScheduler) {
         boolean isDevOrTest = launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ||
                 launchMode.getLaunchMode() == LaunchMode.TEST;
         // Skip our schedulers by default
-        boolean bypassActive = isDevOrTest && devModeConfig.devModeStrategyEnabled();
+        boolean bypassActive = isDevOrTest && localConfig.localStrategyEnabled();
         if (!bypassActive) {
             forceScheduler.produce(new ForceStartSchedulerBuildItem());
         }
@@ -58,7 +58,7 @@ class FlowDurableKubernetesProcessor {
                         InjectLeaseWorkflowApplicationBuilderCustomizer.class,
                         DeploymentPoolTopologyResolver.class,
                         LeaseAcquisitionHealthCheck.class,
-                        DevModeStrategy.class)
+                        LocalStrategy.class)
                 .setUnremovable()
                 .build();
     }
