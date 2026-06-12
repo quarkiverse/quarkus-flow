@@ -35,6 +35,10 @@
             <artifactId>quarkus-oidc</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse.microprofile.jwt</groupId>
+            <artifactId>microprofile-jwt-auth-api</artifactId>
+        </dependency>
 
         <!-- Test dependencies -->
         <dependency>
