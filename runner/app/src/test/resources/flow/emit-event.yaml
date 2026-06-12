@@ -1,0 +1,15 @@
+document:
+  dsl: '1.0.0'
+  namespace: quarkiverse-flow-runner
+  name: emit-event
+  version: '0.1.0'
+do:
+  - setName:
+      set: '${ { name: . } }'
+  - emitEvent:
+      emit:
+        event:
+          with:
+            source: uri://org.quarkiverse.flow.runner.app.test
+            type: org.quarkiverse.flow.runner.app.response
+            data: '${ . }'
