@@ -13,8 +13,6 @@ import java.util.function.Predicate;
 
 import jakarta.inject.Inject;
 
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -27,7 +25,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.CloudEventData;
 import io.quarkiverse.flow.internal.WorkflowNameUtils;
-import io.quarkiverse.flow.langchain4j.annotations.ScheduleOn;
 import io.quarkiverse.flow.langchain4j.schedule.Schedule;
 import io.quarkiverse.flow.langchain4j.schedule.ScheduleType;
 import io.quarkiverse.flow.langchain4j.workflow.AbstractSchedulableFlow;

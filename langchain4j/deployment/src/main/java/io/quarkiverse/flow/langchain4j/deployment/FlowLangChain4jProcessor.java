@@ -23,8 +23,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import io.quarkiverse.flow.langchain4j.annotations.ScheduleOn;
-import io.quarkiverse.flow.langchain4j.schedule.ScheduleType;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Singleton;
 
@@ -33,7 +31,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.deployment.DiscoveredWorkflowBuildItem;
+import io.quarkiverse.flow.langchain4j.annotations.ScheduleOn;
 import io.quarkiverse.flow.langchain4j.schedule.Schedule;
+import io.quarkiverse.flow.langchain4j.schedule.ScheduleType;
 import io.quarkiverse.flow.langchain4j.workflow.AbstractSchedulableFlow;
 import io.quarkiverse.flow.langchain4j.workflow.flow.AgenticFlow;
 import io.quarkiverse.langchain4j.agentic.deployment.DetectedAiAgentBuildItem;
@@ -214,7 +214,6 @@ public class FlowLangChain4jProcessor {
 
     }
 
-
     /**
      * Builds a Schedule from the @ScheduleOn annotation on an agent method.
      * <p>
@@ -255,7 +254,6 @@ public class FlowLangChain4jProcessor {
         }
         return null;
     }
-
 
     /**
      * Mark all interfaces that have at least one FlowAgenticWorkflowBuildItem as unremovable.
