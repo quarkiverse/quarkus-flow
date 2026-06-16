@@ -12,17 +12,7 @@
     <name>Quarkus Flow :: Scheduler</name>
 
     <modules>
-        <module>runtime</module>
-        <module>deployment</module>
-        <module>integration-tests</module>
+        <module>memory</module>
+        <module>quartz</module>
     </modules>
-
-    <dependencies>
-        <dependency>
-            <groupId>io.quarkiverse.flow</groupId>
-            <artifactId>quarkus-flow-deployment</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
 </project>

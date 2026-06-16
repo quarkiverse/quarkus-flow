@@ -1,7 +1,5 @@
 package io.quarkiverse.flow.persistence.redis.deployment;
 
-import io.quarkiverse.flow.persistence.redis.RedisInstanceStore;
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 
@@ -14,11 +12,4 @@ public class FlowPersistenceRedisProcessor {
         return new FeatureBuildItem(FEATURE);
     }
 
-    @BuildStep
-    AdditionalBeanBuildItem additionalBean() {
-        return AdditionalBeanBuildItem.builder()
-                .setUnremovable()
-                .addBeanClass(RedisInstanceStore.class)
-                .build();
-    }
 }

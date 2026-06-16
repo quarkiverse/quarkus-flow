@@ -13,8 +13,10 @@
 ** Building Workflows
 *** xref:workflow-definitions.adoc[Define workflows from YAML]
 *** xref:scheduler.adoc[Schedule workflow executions]
+*** xref:quartz.adoc[Quartz Scheduler]
 *** xref:secrets.adoc[Resolve secrets securely]
 *** xref:how-to-deal-with-state.adoc[Use data flow and context management]
+*** xref:runner.adoc[Execute workflows via REST API]
 ** Agentic AI & LangChain4j
 *** xref:langchain4j.adoc[Orchestrate agents with the Java DSL]
 *** xref:schedule-agentic-workflows.adoc[Schedule agentic workflows]
@@ -39,6 +41,7 @@
 ** xref:data-flow.adoc[Data Flow and Context Management]
 ** xref:concepts-agentic-langchain4j.adoc[Agentic AI Topology]
 ** xref:concepts-durable-workflow-k8s.adoc[Durable Workflows in Kubernetes]
+** xref:idempotency-correlation.adoc[Idempotency and Correlation]
 
 * Reference
 ** xref:dsl-cheatsheet.adoc[Java DSL cheatsheet]

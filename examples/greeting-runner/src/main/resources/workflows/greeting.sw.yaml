@@ -1,0 +1,21 @@
+document:
+  dsl: "1.0.0"
+  namespace: examples
+  name: greeting
+  version: "1.0.0"
+  title: "Simple greeting workflow"
+input:
+  schema:
+    format: json
+    document:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Name to greet
+do:
+  - greet:
+      set:
+        message: "${ \"Hello, \" + .name + \"!\" }"

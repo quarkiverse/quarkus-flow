@@ -22,6 +22,7 @@ jobs:
       java_version: 17
       quarkus_version_pom_property: 'quarkus.version'
   lts:
+    name: "Build against Quarkus LTS ${{ matrix.version }}"
     uses: quarkiverse/.github/.github/workflows/quarkus-ecosystem-ci.yml@main
     secrets: inherit
     with:
@@ -31,5 +32,4 @@ jobs:
     strategy:
       matrix:
         version: ['3.33']
-    name: "Build ${{ matrix.version }} against Quarkus latest ${{ matrix.version }}"
       

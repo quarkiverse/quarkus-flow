@@ -1,0 +1,296 @@
+[.configuration-legend]
+icon:lock[title=Fixed at build time] Configuration property fixed at build time - All other configuration properties are overridable at runtime
+[.configuration-reference.searchable, cols="80,.^10,.^10"]
+|===
+
+h|[.header-title]##Configuration property##
+h|Type
+h|Default
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-enabled]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-enabled[`+++quarkus.flow.runner.enabled+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enable or disable the Flow Runner feature.
+
+When `false`, all runner REST endpoints are disabled and workflow definitions are not loaded from the configured source.
+
+This is the master switch for the entire runner functionality.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-source-path]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-source-path[`+++quarkus.flow.runner.source.path+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.source.path+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Filesystem path to workflow definitions.
+
+Required when `type=PATH`. The directory is scanned recursively for all `.yaml`, `.yml`, and `.json` files.
+
+In Kubernetes/OpenShift deployments, this typically points to a ConfigMap or persistent volume mount:
+
+```
+quarkus.flow.runner.source.path=/deployments/workflows
+```
+
+
+
+Workflows are uniquely identified by `namespace:name:version`. Duplicate workflow identifiers cause application startup to fail.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SOURCE_PATH+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SOURCE_PATH+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-security-type]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-type[`+++quarkus.flow.runner.security.type+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.security.type+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Authentication type.
+
+Selects which authentication mechanism to use:
+
+ - `OIDC` - Requires `quarkus-oidc` extension in classpath. Uses standard Quarkus OIDC configuration (`quarkus.oidc.++*++`). Roles extracted from JWT claims.
+ - `API_KEY` - Custom filter validates `Authorization: Bearer <key>` header against configured secrets. Maps keys to roles.
+ - `NONE` - Endpoints are unprotected. Use only in development.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_TYPE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_TYPE+++`
+endif::add-copy-button-to-env-var[]
+--
+a|`oidc`, `api-key`, `none`
+|`+++none+++`
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-secret]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-secret[`+++quarkus.flow.runner.security.api-keys."api-keys".secret+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.security.api-keys."api-keys".secret+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The API key secret value.
+
+Should be loaded from environment variables or Kubernetes Secrets:
+
+```
+quarkus.flow.runner.security.api-keys."my-key".secret=${FLOW_API_KEY}
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__SECRET+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__SECRET+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|required icon:exclamation-circle[title=Configuration property is required]
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-roles]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-roles[`+++quarkus.flow.runner.security.api-keys."api-keys".roles+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.security.api-keys."api-keys".roles+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Roles assigned to this API key.
+
+Predefined roles:
+
+ - `flow-admin` - Full access (definition management {plus} execution)
+ - `flow-invoker` - Execution only (POST/GET /runner/exec/++*++)
+
+
+
+Example:
+
+```
+quarkus.flow.runner.security.api-keys."admin-key".roles=flow-admin
+quarkus.flow.runner.security.api-keys."webhook-key".roles=flow-invoker
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__ROLES+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__ROLES+++`
+endif::add-copy-button-to-env-var[]
+--
+|list of string
+|required icon:exclamation-circle[title=Configuration property is required]
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-namespaces]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-namespaces[`+++quarkus.flow.runner.security.api-keys."api-keys".namespaces+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.security.api-keys."api-keys".namespaces+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Namespaces allowed for this API key.
+
+When not configured (empty), the key has access to all namespaces. When configured, the key can only access workflows in the specified namespaces.
+
+Example:
+
+```
+# Restrict to specific namespaces
+quarkus.flow.runner.security.api-keys."team-key".namespaces=team-a,team-b
+
+# Or leave empty for all namespaces (default)
+quarkus.flow.runner.security.api-keys."admin-key".roles=flow-admin
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__NAMESPACES+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__NAMESPACES+++`
+endif::add-copy-button-to-env-var[]
+--
+|list of string
+|
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-security-namespace-claim]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-namespace-claim[`+++quarkus.flow.runner.security.namespace.claim+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.security.namespace.claim+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+JWT claim name containing authorized namespace(s).
+
+Used when `type=OIDC`. The claim can contain:
+
+ - Single string value (e.g., `"my-namespace"`)
+ - Array of strings (e.g., `++[++"ns1", "ns2"++]++`)
+
+
+
+Example:
+
+```
+quarkus.flow.runner.security.namespace.claim=namespace
+# or for multi-namespace support:
+quarkus.flow.runner.security.namespace.claim=namespaces
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_NAMESPACE_CLAIM+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_NAMESPACE_CLAIM+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|`+++namespace+++`
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-security-namespace-validate]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-namespace-validate[`+++quarkus.flow.runner.security.namespace.validate+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.security.namespace.validate+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enable or disable namespace validation.
+
+When `true`, requests are validated against the namespace in the request path and the user's authorized namespaces (from JWT claim or API key configuration).
+
+When `false`, namespace validation is skipped (all users can access all namespaces). Use only in development.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_NAMESPACE_VALIDATE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_NAMESPACE_VALIDATE+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-openapi-expand-workflows]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-openapi-expand-workflows[`+++quarkus.flow.runner.openapi.expand-workflows+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.openapi.expand-workflows+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enable or disable dynamic workflow operations in OpenAPI document.
+
+When `true`, the OpenAPI document will include a concrete operation for each registered workflow definition. For example, a workflow `test-namespace:hello-world:1.0.0` will generate:
+
+```
+POST /q/flow/exec/test-namespace/hello-world/1.0.0
+```
+
+
+
+When `false`, only the generic parameterized endpoint is documented.
+
+*Security Note:* The OpenAPI document (`/q/openapi`) is publicly accessible and will show all registered workflows (namespace, name, version, summary). This serves as a *public workflow catalog*. Actual execution remains protected by authentication and namespace authorization, returning 401/403 for unauthorized access attempts.
+
+*Exposed Information:*
+
+ - Workflow namespace, name, and version
+ - Workflow summary/description (if configured)
+
+*NOT Exposed:*
+
+ - Workflow DSL or task definitions
+ - Internal business logic or function implementations
+ - Secrets, credentials, or sensitive data
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_OPENAPI_EXPAND_WORKFLOWS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_OPENAPI_EXPAND_WORKFLOWS+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+|===
+

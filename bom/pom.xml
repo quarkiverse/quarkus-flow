@@ -10,7 +10,7 @@
 
   <artifactId>quarkus-flow-bom</artifactId>
   <packaging>pom</packaging>
-  <name>Quarkus Flow BOM</name>
+  <name>Quarkus Flow :: BOM</name>
   <description>Centralized dependency management configuration of Quarkus Flow.</description>
 
   <licenses>
@@ -133,6 +133,28 @@
       <dependency>
         <groupId>io.quarkiverse.flow</groupId>
         <artifactId>quarkus-flow-scheduler-deployment</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-quartz-scheduler</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-quartz-scheduler-deployment</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-runner</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-runner-deployment</artifactId>
         <version>${project.version}</version>
       </dependency>
     </dependencies>

@@ -150,48 +150,49 @@ quarkus.flow.runner.security.api-keys."invoker".roles=flow-invoker
 
 ### 1. Workflow Definition Loader
 
-**Class:** `WorkflowDefinitionLoader`  
+**Class:** `WorkflowDefinitionRuntimeLoader`  
 **Scope:** `@ApplicationScoped`
 
 **Responsibilities:**
-- Reads workflow definitions from configured source at startup
-- Parses YAML/JSON using existing SDK detection
+- Reads workflow definitions from configured filesystem path at startup
+- Parses YAML/JSON using `WorkflowReader` (auto-detects format from file extension)
 - Validates definitions (fail-fast on errors)
-- Registers with `WorkflowRegistry`
-- Provides manual reload capability
+- Registers with `WorkflowApplication` via `workflowDefinition(workflow)`
 
-**Lifecycle:**
+**Implementation:**
 
 ```java
 @ApplicationScoped
-public class WorkflowDefinitionLoader {
+@Unremovable
+public class WorkflowDefinitionRuntimeLoader {
     
     @Inject
-    WorkflowRegistry registry;
+    WorkflowApplication application;
     
     @Inject
     FlowRunnerConfig config;
     
-    void onStart(@Observes StartupEvent event) {
+    void onStart(@Observes WorkflowApplicationReady event) {
         if (!config.enabled()) return;
-        loadDefinitions(); // Fail-fast if invalid
-    }
-    
-    public void reload() {
-        // Manual reload triggered by management endpoint
-        // Atomic registry update, fail-fast on invalid definitions
+        if (config.source().path().isEmpty()) return;
+        
+        loadWorkflowDefinitions(); // Fail-fast if invalid
     }
 }
 ```
 
 **Loading Strategy:**
-- `source=classpath`: Scan `META-INF/workflows/` (or configurable path)
-- `source=path`: Read all `.yaml`, `.yml`, `.json` from filesystem path
-- Recursive directory scanning supported
-- Workflows are uniquely identified by `namespace:name:version` (all three fields required)
-- Multiple versions of the same workflow (same `namespace:name`, different `version`) can coexist
-- Duplicate workflow (same `namespace:name:version` tuple) → fail-fast
-- Version must be present in the workflow definition; workflows without a version field fail validation
+- Filesystem path configured via `quarkus.flow.runner.source.path`
+- Recursively scans directory using `Files.walk()`
+- Supports file extensions: `.yaml`, `.yml`, `.json`, `.sw.yaml`, `.sw.yml`, `.sw.json`
+- Auto-detects format using `WorkflowReader.readWorkflow(path)`
+- Validates required fields: `namespace`, `name`, `version` (all required)
+- Fail-fast on missing directory, invalid files, or missing required fields
+- Workflows uniquely identified by `namespace:name:version` tuple
+- Multiple versions of same workflow can coexist
+- Registers via `application.workflowDefinition(workflow)` (creates `WorkflowDefinition` bean)
+
+**Note:** Classpath loading (`source=classpath`) is deferred to a future release. Current implementation focuses on filesystem path loading for cloud deployment scenarios (ConfigMap mounts).
 
 ### 2. Definition Management Resource
 
@@ -460,6 +461,31 @@ public class NamespaceAuthorizationFilter implements ContainerRequestFilter {
 - Claim can be single value or array
 - If claim missing or doesn't match → 403 Forbidden
 - For API Key mode: optionally configure namespace per key
+
+**Namespace Claim Extraction Implementation:**
+
+For **API_KEY mode**: Namespaces stored in `SecurityIdentity` attributes via `ApiKeyAuthenticationMechanism`:
+```java
+securityIdentity.getAttribute(claimName);
+```
+
+For **OIDC mode**: Namespaces extracted from JWT claims via the principal:
+```java
+if (securityIdentity.getPrincipal() instanceof JsonWebToken jwt) {
+    Object claim = jwt.getClaim(claimName);
+    // claim contains the namespace value(s) from the JWT token
+}
+```
+
+**Claim Format Support:**
+
+The `NamespaceAuthorizationService.convertToSet()` method handles multiple claim formats:
+- **JSON array string**: `["ns1","ns2"]` - parsed using Jackson ObjectMapper
+- **Comma-separated string**: `"ns1,ns2"` - split on comma
+- **Single value**: `"ns1"` - used directly
+- **Collection/Set**: Direct use (from real OIDC JWT array claims)
+
+This allows both API_KEY and OIDC modes to support single or multiple namespaces per user.
 
 #### 4.3 Attack Surface Mitigation
 
@@ -951,8 +977,31 @@ Standard JSON error structure:
 
 **Mocking:**
 - Use `quarkus-mockito` for mocking internal services
-- Use `WireMock` for external callback endpoints and OIDC IdP
+- Use `WireMock` for external callback endpoints
 - Mock LLM calls if workflows use LangChain4j
+
+**OIDC Testing Strategy:**
+
+Integration tests for OIDC authentication use Quarkus's `@TestSecurity` and `@OidcSecurity` annotations instead of WireMock:
+
+```java
+@Test
+@TestSecurity(user = "alice", roles = "flow-admin")
+@OidcSecurity(claims = {@Claim(key = "namespace", value = "team-a")})
+void test_namespace_authorization() {
+    // Mock OIDC authentication without real JWT tokens or OIDC server
+    given().queryParam("namespace", "team-a")
+        .when().get("/q/flow/definitions")
+        .then().statusCode(200);
+}
+```
+
+**Benefits of @TestSecurity approach:**
+- No external OIDC server or Keycloak DevServices needed
+- Fast test execution (no container startup)
+- Claims properly injected into `JsonWebToken` principal
+- Simpler and more maintainable than WireMock OIDC simulation
+- Test profiles can disable DevServices: `quarkus.oidc.devservices.enabled=false`
 
 **Test Isolation:**
 - Random ports (no fixed 8080)
@@ -1031,15 +1080,34 @@ runner/
 
 ## Success Criteria
 
-- ✅ Workflows load from filesystem paths and classpath at startup
-- ✅ REST API provides full execution lifecycle (start, status, resume, abort)
-- ✅ Async execution with callback delivery and retry logic
+### ✅ Completed (As of 2026-06-08)
+
+- ✅ Workflows load from filesystem paths at startup (`WorkflowDefinitionRuntimeLoader`)
+- ✅ Fail-fast on invalid definitions (missing fields, invalid directory, parse errors)
+- ✅ Recursive directory scanning with supported file extensions
+- ✅ REST API execution endpoint with wait parameter (`/q/flow/exec/{namespace}/{name}/{version}`)
+- ✅ Latest version resolution (`/q/flow/exec/{namespace}/{name}` → highest semantic version)
+- ✅ Async execution semantics (200 if completed, 202 if still running)
 - ✅ Dual authentication (OIDC + API Key) with RBAC and ABAC
-- ✅ Definition management endpoints conditionally excluded at build-time
-- ✅ Fail-fast on invalid definitions (startup and reload)
-- ✅ Zero changes to core workflow engine
-- ✅ Integration tests cover all endpoints and security modes
-- ✅ Documentation includes cloud deployment patterns
+- ✅ OIDC JWT claim extraction via `JsonWebToken.getClaim()` from principal
+- ✅ API_KEY namespace extraction via `SecurityIdentity.getAttribute()`
+- ✅ Namespace authorization with multiple claim formats (JSON array, CSV, single value)
+- ✅ Definition management GET endpoints (list all, get specific version, get latest version)
+- ✅ Zero changes to core workflow engine (uses `WorkflowApplication.workflowDefinition()`)
+- ✅ Integration tests for authentication and ABAC (API_KEY + OIDC modes, 40+ tests)
+- ✅ OpenAPI dynamic generation with security schemes (config-aware)
+- ✅ OIDC testing via `@TestSecurity` + `@OidcSecurity` (no DevServices overhead)
+
+### ⏳ Pending (Future Releases)
+
+- ⏳ Classpath loading (`source=classpath`) - deferred
+- ⏳ Full execution lifecycle endpoints (status, resume, abort)
+- ⏳ Callback delivery and retry logic
+- ⏳ Definition management write endpoints (POST/PUT/DELETE)
+- ⏳ Build-time conditional exclusion of write endpoints
+- ⏳ Manual reload capability
+- ⏳ Rate limiting and quotas
+- ⏳ Documentation with cloud deployment patterns
 
 ## References
 
