@@ -1,0 +1,225 @@
+= Schedule agentic workflows
+:page-role: howto
+include::includes/attributes.adoc[]
+
+Agentic LangChain4j workflows usually run on demand, but many real-world AI processes need to be triggered automatically.
+Combined with tools, this lets an agent wake up on a schedule or event and then act on its own, calling tools to fetch data,
+take decisions, and produce results without any manual interaction.
+
+Quarkus Flow lets you declare a trigger directly on the agentic method with the `@ScheduleOn` annotation. The engine then generates a schedulable workflow that fires whenever the configured trigger occurs.
+
+[TIP]
+====
+To understand how schedulable workflows are generated and how they relate to the underlying agentic workflows, see xref:concepts-agentic-langchain4j.adoc#_5_schedulable_workflows[Schedulable workflows] in the concepts documentation.
+====
+
+This guide shows how to:
+
+* Trigger an agentic workflow from a CloudEvent.
+* Send the event that triggers the workflow, from Microprofile Reactive Messaging connector or from `EventPublisher`.
+* Trigger it on a recurring CRON schedule.
+* Trigger it periodically with a fixed every.
+* Understand why only one trigger can be configured per method.
+
+== Prerequisites
+
+* A Quarkus application with xref:langchain4j.adoc[LangChain4j agents set up].
+* An agentic method annotated with one of the LangChain4j declarative agent annotations
+(`@SequenceAgent`, `@ParallelAgent`, `@LoopAgent`, or `@ConditionalAgent`).
+
+== The `@ScheduleOn` annotation
+
+`@ScheduleOn` is placed on the agentic method and exposes three mutually exclusive trigger strategies:
+
+[cols="1,2,2",options="header"]
+|===
+| Member | Type | Triggers the workflow when...
+
+| `event`
+| CloudEvent type (`String`)
+| an event of the given type is received.
+
+| `cron`
+| Unix cron expression (`String`)
+| the cron schedule elapses.
+
+| `every`
+| ISO 8601 duration (`String`)
+| the fixed period elapses.
+|===
+
+[IMPORTANT]
+====
+You must configure **exactly one** strategy per method. If none of `event`, `cron`, or `every` is
+set, or if more than one is set, the build fails fast with a clear error message.
+====
+
+[[input-handling]]
+Only the `event` strategy can pass input to the workflow:
+
+* `event` — the CloudEvent payload becomes the workflow input, so the agentic method takes the
+event data as a parameter.
+* `cron` and `every` — these triggers fire on a timer and carry **no payload**, so they cannot
+provide any input. The agentic method must be **parameterless**.
+
+[IMPORTANT]
+====
+Because cron and every triggers have no payload, annotating a method that declares parameters with a
+`cron` or `every` strategy fails the build. Use `event` whenever the workflow needs input.
+====
+
+== 1. Trigger from a CloudEvent
+
+Use `event` to start the workflow whenever a CloudEvent of the given type is received.
+
+[source,java]
+----
+@RegisterAiService
+public interface ConferenceReviewerPlanner {
+
+    @ScheduleOn(event = "proposal.submitted")
+    @ParallelAgent(outputKey = "reviewResult",
+            subAgents = { ProposalImproverAgent.class, ScoreJavaProposal.class })
+    ProposalReview proposalReview(@V("proposal") Proposal proposal);
+}
+----
+
+Every time a `proposal.submitted` CloudEvent arrives, the agentic workflow runs with the event payload as its input.
+
+[[payload-mapping]]
+=== How the CloudEvent payload maps to method parameters
+
+The CloudEvent data is deserialized into the agentic method's parameters:
+
+* **Single parameter** — the entire payload becomes that parameter.
+* **Multiple parameters** — the payload must be a JSON object whose field names match the parameter
+names; each parameter is bound from its matching field.
+
+
+**Example with single parameter:**
+
+[source,java]
+----
+@ScheduleOn(event = "proposal.submitted")
+@ParallelAgent(outputKey = "reviewResult",
+        subAgents = { ProposalImproverAgent.class, ScoreJavaProposal.class })
+ProposalReview proposalReview(@V("proposal") Proposal proposal);
+----
+
+CloudEvent payload (entire JSON becomes the `proposal` parameter):
+[source,json]
+----
+{
+  "id": 1,
+  "title": "Quarkus Flow, Java and AI Orchestration",
+  "description": "It is a great talk (trust)",
+  "subject": "Quarkus Flow"
+}
+----
+
+**Example with multiple parameters:**
+
+[source,java]
+----
+@ScheduleOn(event = "review.requested")
+@SequenceAgent(outputKey = "result",
+        subAgents = { ReviewerAgent.class })
+ReviewResult review(@V("proposalId") Long proposalId, 
+                    @V("reviewerName") String reviewerName);
+----
+
+CloudEvent payload (fields map to parameter names):
+[source,json]
+----
+{
+  "proposalId": 42,
+  "reviewerName": "Jane Doe"
+}
+----
+
+The `proposalId` field maps to the `proposalId` parameter, and `reviewerName` maps to the `reviewerName` parameter.
+
+[[sending-events]]
+=== Sending the event that triggers the workflow
+
+An `event` trigger only fires when a CloudEvent of the configured type reaches the engine.
+
+==== Microprofile Reactive Messaging Bridge (recommended)
+
+The most common way is to send it from an external system through the messaging bridge: publish a CloudEvent
+to the inbound `flow-in` channel and the engine matches its `type` against your
+`@ScheduleOn(event = "...")`. See xref:messaging.adoc[Use messaging and events] for more details.
+
+==== Using WorkflowApplication publishers
+
+You can also publish the triggering event programmatically through the engine's `EventPublisher`,
+which is handy in tests or when the producer lives in the same application. Obtain a publisher from
+the `WorkflowApplication` and build a CloudEvent whose `type` matches the `@ScheduleOn(event = "...")`
+value:
+
+[source,java]
+----
+@Inject
+WorkflowApplication workflowApp;
+
+@Inject
+ObjectMapper objectMapper;
+
+void triggerReview() {
+    EventPublisher publisher = workflowApp.eventPublishers().iterator().next();
+
+    JsonNode data = objectMapper.convertValue(Map.of(
+            "id", 1L,
+            "title", "Quarkus Flow, Java and AI Orchestration",
+            "description", "It is a great talk (trust)",
+            "subject", "Quarkus Flow, Java and AI Orchestration"), JsonNode.class);
+
+    publisher.publish(new CloudEventBuilder()
+            .withId(UUID.randomUUID().toString())
+            .withSource(URI.create("http://localhost/conference-system"))
+            .withType("proposal.submitted") // <1>
+            .withData(JsonCloudEventData.wrap(data))
+            .build());
+}
+----
+<1> The CloudEvent `type` must match the `@ScheduleOn(event = "proposal.submitted")` declared on the
+agentic method.
+
+Once published, the engine correlates the event to the workflow and
+runs it with the event `data` as input.
+
+== 2. Trigger on a CRON schedule
+
+Use `cron` for time-based, calendar-like scheduling. The expression follows the standard **Unix** cron format.
+
+[source,java]
+----
+@ScheduleOn(cron = "0 0 * * *") // every day at midnight
+@SequenceAgent(outputKey = "digest", subAgents = { MessageSummaryAgent.class })
+String dailyDigest();
+----
+
+[NOTE]
+====
+Unix cron has whole-minute granularity. For sub-minute cadences use `every` instead (see below).
+An invalid cron expression does not fail startup — it is logged and only that schedule is disabled.
+====
+
+== 3. Trigger on a fixed every
+
+Use `every` to run the workflow periodically. The value is an ISO 8601 duration string,
+for example `PT5M` (every 5 minutes) or `PT1H` (every hour).
+
+[source,java]
+----
+@ScheduleOn(every = "PT1H") // every hour
+@SequenceAgent(outputKey = "digest", subAgents = { MessageSummaryAgent.class })
+String hourlyDigest();
+----
+
+== Next steps
+
+* xref:langchain4j.adoc[Orchestrate LangChain4j agents with the Java DSL]
+* xref:concepts-agentic-langchain4j.adoc[Agentic AI Topology and Internals]
+* xref:scheduler.adoc[Schedule classic (non-agentic) workflow executions]
+* xref:messaging.adoc[Use messaging and events]

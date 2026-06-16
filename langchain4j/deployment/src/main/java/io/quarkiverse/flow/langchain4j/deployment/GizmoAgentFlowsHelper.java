@@ -1,5 +1,6 @@
 package io.quarkiverse.flow.langchain4j.deployment;
 
+import static io.quarkiverse.flow.langchain4j.deployment.FlowLangChain4jProcessor.resolveParameterName;
 import static io.quarkiverse.flow.langchain4j.deployment.Lc4jAnnotations.ALL_AGENT_ANNOTATIONS;
 
 import java.lang.reflect.Modifier;
@@ -10,6 +11,8 @@ import java.util.Map;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
+import jakarta.inject.Inject;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -17,13 +20,23 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.cloudevents.CloudEvent;
+import io.cloudevents.CloudEventData;
+import io.quarkiverse.flow.internal.WorkflowNameUtils;
+import io.quarkiverse.flow.langchain4j.schedule.Schedule;
+import io.quarkiverse.flow.langchain4j.schedule.ScheduleType;
+import io.quarkiverse.flow.langchain4j.workflow.AbstractSchedulableFlow;
 import io.quarkiverse.flow.langchain4j.workflow.flow.ConditionalAgenticFlow;
 import io.quarkiverse.flow.langchain4j.workflow.flow.LoopAgenticFlow;
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.FieldCreator;
+import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
 /**
  * Helper methods for Gizmo bytecode generation of {@link io.quarkiverse.flow.langchain4j.workflow.AgenticFlow} classes.
@@ -255,7 +268,7 @@ final class GizmoAgentFlowsHelper {
     /**
      * Generates the {@code getInputSchemaJson()} method that returns the build-time generated JSON schema string.
      * <p>
-     * Parsing is handled by the base {@link io.quarkiverse.flow.langchain4j.workflow.AgenticFlow} class.
+     * Parsing is handled by the base {@link io.quarkiverse.flow.langchain4j.workflow.flow.AgenticFlow} class.
      *
      * @param classCreator the Gizmo class creator
      * @param index the Jandex index for type inspection
@@ -314,4 +327,127 @@ final class GizmoAgentFlowsHelper {
         }
     }
 
+    static void generateWorkflowDefinitionIdMethods(String generatedClassName, ClassCreator classCreator) {
+        WorkflowDefinitionId id = WorkflowNameUtils.newId(generatedClassName);
+        try (MethodCreator namespace = classCreator.getMethodCreator("namespace", String.class)
+                .setModifiers(Modifier.PUBLIC)) {
+            namespace.returnValue(namespace.load(id.namespace()));
+        }
+        try (MethodCreator name = classCreator.getMethodCreator("name", String.class).setModifiers(Modifier.PUBLIC)) {
+            name.returnValue(name.load(id.name()));
+        }
+        try (MethodCreator version = classCreator.getMethodCreator("version", String.class)
+                .setModifiers(Modifier.PUBLIC)) {
+            version.returnValue(version.load(id.version()));
+        }
+    }
+
+    static void generateSchedulableConsumeMethod(FlowAgenticWorkflowBuildItem workflow, ClassCreator classCreator,
+            FieldDescriptor agentFieldDescriptor) {
+        // Object consume(CloudEvent ce):
+        //   - parameterless agent method (cron/every triggers carry no payload): invoke directly;
+        //   - otherwise: read the CloudEvent JSON payload and convert it to the agent method
+        //     parameter type(s) via the injected ObjectMapper, then invoke the agent.
+        try (MethodCreator consume = classCreator.getMethodCreator("consume", Object.class, CloudEvent.class)
+                .setModifiers(Modifier.PUBLIC)) {
+
+            ResultHandle agentInstance = consume.readInstanceField(agentFieldDescriptor, consume.getThis());
+            MethodInfo agentMethod = workflow.method();
+            int paramCount = agentMethod.parametersCount();
+
+            ResultHandle result;
+            if (paramCount == 0) {
+                // No parameters: agent.methodName()
+                result = consume.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(
+                                workflow.ifaceName(),
+                                agentMethod.name(),
+                                agentMethod.returnType().name().toString()),
+                        agentInstance);
+            } else {
+                // ObjectMapper objectMapper = this.objectMapper();
+                ResultHandle objectMapper = consume.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(AbstractSchedulableFlow.class, "objectMapper",
+                                ObjectMapper.class),
+                        consume.getThis());
+
+                // JsonNode root = objectMapper.readTree(ce.getData().toBytes());
+                ResultHandle ceParam = consume.getMethodParam(0);
+                ResultHandle data = consume.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(CloudEvent.class, "getData", CloudEventData.class), ceParam);
+                ResultHandle bytes = consume.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(CloudEventData.class, "toBytes", byte[].class), data);
+                ResultHandle root = consume.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(ObjectMapper.class, "readTree", JsonNode.class, byte[].class),
+                        objectMapper, bytes);
+
+                boolean singleParam = paramCount == 1;
+                ResultHandle[] args = new ResultHandle[paramCount];
+                String[] paramTypeNames = new String[paramCount];
+                for (int i = 0; i < paramCount; i++) {
+                    String paramTypeName = agentMethod.parameterType(i).name().toString();
+                    paramTypeNames[i] = paramTypeName;
+
+                    ResultHandle source;
+                    if (singleParam) {
+                        source = root;
+                    } else {
+                        // root.get("<paramName>")
+                        source = consume.invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(JsonNode.class, "get", JsonNode.class, String.class),
+                                root, consume.load(resolveParameterName(agentMethod, i)));
+                    }
+
+                    ResultHandle paramClass = consume.loadClass(paramTypeName);
+                    ResultHandle converted = consume.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(ObjectMapper.class, "convertValue", Object.class,
+                                    Object.class, Class.class),
+                            objectMapper, source, paramClass);
+                    args[i] = consume.checkCast(converted, paramTypeName);
+                }
+
+                result = consume.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(
+                                workflow.ifaceName(),
+                                agentMethod.name(),
+                                agentMethod.returnType().name().toString(),
+                                paramTypeNames),
+                        agentInstance, args);
+            }
+
+            consume.returnValue(result);
+        }
+    }
+
+    static void generateSchedulableTypes(ClassCreator classCreator, Schedule schedule) {
+        try (MethodCreator event = classCreator.getMethodCreator("scheduleType", ScheduleType.class)
+                .setModifiers(Modifier.PUBLIC)) {
+            event.returnValue(event.load(schedule.scheduleType()));
+        }
+
+        try (MethodCreator v = classCreator.getMethodCreator("value", String.class).setModifiers(Modifier.PUBLIC)) {
+            String value = switch (schedule.scheduleType()) {
+                case EVENT -> schedule.event();
+                case CRON -> schedule.cron();
+                case EVERY -> schedule.every();
+            };
+            v.returnValue(v.load(value));
+        }
+    }
+
+    static void generateTaskNameMethod(FlowAgenticWorkflowBuildItem workflow, ClassCreator classCreator) {
+        // String taskName() { return "methodName"; }
+        try (MethodCreator taskNameMethod = classCreator.getMethodCreator("taskName", String.class)
+                .setModifiers(Modifier.PUBLIC)) {
+            taskNameMethod.returnValue(taskNameMethod.load(workflow.method().name()));
+        }
+    }
+
+    static FieldDescriptor generateInjectedAgentField(FlowAgenticWorkflowBuildItem workflow, ClassCreator classCreator) {
+        // @Inject ifaceName agent;
+        FieldCreator agentField = classCreator.getFieldCreator("agent", workflow.ifaceName())
+                .setModifiers(Modifier.PUBLIC);
+        agentField.addAnnotation(Inject.class);
+        return agentField.getFieldDescriptor();
+    }
 }

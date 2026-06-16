@@ -16,7 +16,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-@QuarkusTestResource(FlowAgentOllamaMockResource.class)
+@QuarkusTestResource(value = FlowAgentOllamaMockResource.class, restrictToAnnotatedClass = true)
 public class FlowAgentsBuilderIT {
 
     @Inject

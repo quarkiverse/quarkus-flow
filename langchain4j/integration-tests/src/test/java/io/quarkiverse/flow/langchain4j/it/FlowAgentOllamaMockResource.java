@@ -5,6 +5,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
+import static io.quarkiverse.flow.langchain4j.it.WiremockOllamaUtils.ollamaResponse;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -103,54 +104,5 @@ public class FlowAgentOllamaMockResource implements QuarkusTestResourceLifecycle
         if (wireMock != null) {
             wireMock.stop();
         }
-    }
-
-    /**
-     * Creates an Ollama-format chat response JSON for plain text content.
-     */
-    private String ollamaResponse(String content) {
-        return """
-                {
-                  "model": "llama3.2",
-                  "created_at": "2024-01-01T00:00:00.000000Z",
-                  "message": {
-                    "role": "assistant",
-                    "content": "%s"
-                  },
-                  "done": true,
-                  "total_duration": 1000000000,
-                  "load_duration": 100000000,
-                  "prompt_eval_count": 50,
-                  "prompt_eval_duration": 200000000,
-                  "eval_count": 100,
-                  "eval_duration": 700000000
-                }
-                """.formatted(content.replace("\"", "\\\"").replace("\n", "\\n"));
-    }
-
-    /**
-     * Creates an Ollama-format chat response JSON for raw JSON content (arrays, objects).
-     * The content is already JSON so we escape inner quotes properly.
-     */
-    private String ollamaResponseRaw(String jsonContent) {
-        // Escape quotes inside the JSON content for embedding in the outer JSON string
-        String escaped = jsonContent.replace("\"", "\\\"");
-        return """
-                {
-                  "model": "llama3.2",
-                  "created_at": "2024-01-01T00:00:00.000000Z",
-                  "message": {
-                    "role": "assistant",
-                    "content": "%s"
-                  },
-                  "done": true,
-                  "total_duration": 1000000000,
-                  "load_duration": 100000000,
-                  "prompt_eval_count": 50,
-                  "prompt_eval_duration": 200000000,
-                  "eval_count": 100,
-                  "eval_duration": 700000000
-                }
-                """.formatted(escaped);
     }
 }
