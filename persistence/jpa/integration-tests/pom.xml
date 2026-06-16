@@ -25,6 +25,21 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-flyway</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-jdbc-postgresql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-jpa-deployment</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- test dependencies -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit</artifactId>
             <scope>test</scope>
         </dependency>
@@ -34,19 +49,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-          <groupId>io.serverlessworkflow</groupId>
-          <artifactId>serverlessworkflow-persistence-tests</artifactId>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>io.quarkus</groupId>
-          <artifactId>quarkus-jdbc-postgresql</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.quarkiverse.flow</groupId>
-            <artifactId>quarkus-flow-jpa-deployment</artifactId>
-            <version>${project.version}</version>
+            <groupId>io.serverlessworkflow</groupId>
+            <artifactId>serverlessworkflow-persistence-tests</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
