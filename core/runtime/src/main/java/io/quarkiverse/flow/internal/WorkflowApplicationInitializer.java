@@ -40,7 +40,7 @@ public class WorkflowApplicationInitializer {
 
     void onStart(@Observes StartupEvent ev) {
         LOG.debug("Flow: Starting WorkflowApplication initialization");
-        if (launchMode == LaunchMode.DEVELOPMENT) {
+        if (launchMode.isDevOrTest()) {
             LOG.debug("Flow: {} mode detected. Warmup configured as SYNC.", launchMode);
             doStart();
         } else {
