@@ -1,0 +1,151 @@
+name: Publish Runner Docker Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag/ref to build from (e.g., 1.0.0, main) - leave empty for current branch'
+        required: false
+        type: string
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  attestations: write
+  id-token: write
+
+jobs:
+  setup:
+    name: Setup and verify release
+    runs-on: ubuntu-latest
+    outputs:
+      TAG: ${{ steps.set-tag.outputs.TAG }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - id: set-tag
+        name: Set TAG output based on trigger
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "TAG=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "TAG=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
+          else
+            echo "TAG=latest" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Verify release version
+        run: |
+          TAG="${{ steps.set-tag.outputs.TAG }}"
+          POM_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -pl runner/app)
+          TRIGGER="${{ github.event_name }}"
+
+          echo "Release tag: ${TAG}"
+          echo "POM version: ${POM_VERSION}"
+          echo "Trigger: ${TRIGGER}"
+
+          # For tag pushes (official releases), enforce strict version matching and no SNAPSHOT
+          if [[ "${TRIGGER}" == "push" ]]; then
+            if [[ "${POM_VERSION}" != "${TAG}" ]]; then
+              echo "❌ ERROR: Tag ${TAG} does not match pom.xml version ${POM_VERSION}"
+              exit 1
+            fi
+
+            if [[ "${POM_VERSION}" == *"-SNAPSHOT" ]]; then
+              echo "❌ ERROR: Cannot release SNAPSHOT version ${POM_VERSION} from tag push"
+              exit 1
+            fi
+
+            echo "✅ Official release verified: ${POM_VERSION}"
+          else
+            # Manual dispatch - allow SNAPSHOT for testing
+            echo "⚠️  Manual build - SNAPSHOT allowed for testing"
+            echo "✅ Building version: ${POM_VERSION}"
+          fi
+
+  build:
+    name: Build ${{ matrix.variant }} variant
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [minimal, standard, messaging]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Install skopeo
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y skopeo
+
+      - name: Build
+        run: |
+          POM_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -pl runner/app)
+
+          if [[ "${POM_VERSION}" == *"-SNAPSHOT" ]]; then
+            echo "📦 Building SNAPSHOT from source"
+            mvn clean package -DskipTests -Dquarkus.log.level=OFF -ntp \
+                -pl runner/app -am -P image-${{ matrix.variant }} -Dquarkus.profile=container,${{ matrix.variant }}
+          else
+            echo "📦 Building release from Maven Central"
+            mvn clean package -DskipTests -Dquarkus.log.level=OFF -ntp \
+                -pl runner/app -P image-${{ matrix.variant }} -Dquarkus.profile=container,${{ matrix.variant }}
+          fi
+
+      - name: Build and save Docker Image
+        working-directory: runner/app
+        run: |
+          TAG="${{ needs.setup.outputs.TAG }}"
+          VARIANT="${{ matrix.variant }}"
+
+          # Build Docker image
+          docker build --build-arg VARIANT=${VARIANT} -f Dockerfile -t quay.io/quarkiverse/quarkus-flow-runner:${TAG}-${VARIANT} .
+
+          # Save as OCI archive
+          skopeo copy docker-daemon:quay.io/quarkiverse/quarkus-flow-runner:${TAG}-${VARIANT} oci-archive:artifact.tar.gz
+
+      - name: Upload the Docker Image
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-${{ matrix.variant }}
+          path: runner/app/artifact.tar.gz
+          retention-days: 1
+
+  publish:
+    name: Publish ${{ matrix.variant }} to Quay.io
+    needs: [setup, build]
+    strategy:
+      matrix:
+        variant: [minimal, standard, messaging]
+    uses: quarkiverse/.github/.github/workflows/deploy-image.yml@main
+    secrets: inherit
+    with:
+      image_name: quarkiverse/quarkus-flow-runner
+      image_tag: ${{ needs.setup.outputs.TAG }}-${{ matrix.variant }}
+      artifact_name: artifact-${{ matrix.variant }}

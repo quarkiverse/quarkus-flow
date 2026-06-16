@@ -1,6 +1,12 @@
 name: Durable Workflows (Kubernetes Lease) - Kind Verification
 
 # This pipeline tests the runner standard variant with durable-kubernetes HA support
+# NOTE: This is a CI/test pipeline, NOT a release pipeline
+# - Runs on: every PR and push to main
+# - Purpose: verify runner deployment and HA functionality
+# - Uses: SNAPSHOT dependencies from local Maven build
+#
+# For releasing images to Quay.io, see: .github/workflows/publish-runner-images.yml
 #
 # Key lessons learned:
 # 1. Build order: mvn install (filters k8s manifests) → make build-standard → kind load → kubectl apply
