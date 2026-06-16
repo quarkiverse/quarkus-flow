@@ -1,0 +1,176 @@
+---
+# Optional: Create a ConfigMap with custom application.properties
+# Users can override any default settings by mounting this to /deployments/config
+#
+# Example:
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: runner-custom-config
+#   namespace: quarkus-flow
+# data:
+#   application.properties: |
+#     quarkus.log.level=DEBUG
+#     quarkus.datasource.jdbc.url=jdbc:postgresql://my-postgres:5432/mydb
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: runner-standard-secret
+  namespace: quarkus-flow
+type: Opaque
+stringData:
+  QUARKUS_DATASOURCE_PASSWORD: "flowpass"
+---
+# Example: Create ConfigMaps for your workflows
+# You can create multiple ConfigMaps and mount them all to /deployments/workflows
+#
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: workflow-hello
+#   namespace: quarkus-flow
+# data:
+#   hello.yaml: |
+#     id: hello-world
+#     name: Hello World
+#     start: printMessage
+#     functions:
+#       - name: printMessage
+#         operation: sysout
+#     states:
+#       - name: printMessage
+#         type: operation
+#         actions:
+#           - functionRef: printMessage
+#         end: true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quarkus-flow-runner-standard
+  namespace: quarkus-flow
+  labels:
+    app: quarkus-flow-runner
+    variant: standard
+spec:
+  # HA setup: 3 replicas with durable-kubernetes for automatic failover
+  replicas: 3
+  # Rolling update strategy: kill 1 pod before starting new one to release lease
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: quarkus-flow-runner
+      variant: standard
+  template:
+    metadata:
+      labels:
+        app: quarkus-flow-runner
+        variant: standard
+        # Kubernetes recommended labels for tooling compatibility
+        app.kubernetes.io/name: quarkus-flow-runner-standard
+        app.kubernetes.io/part-of: quarkus-flow-runner
+        app.kubernetes.io/version: standard
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/q/metrics"
+    spec:
+      # Service account for Kubernetes API access (durable-kubernetes lease management)
+      serviceAccountName: quarkus-flow-runner
+      containers:
+        - name: runner
+          image: quay.io/quarkiverse/quarkus-flow-runner:${project.version}-standard
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          env:
+            # Database connection (required for JPA)
+            - name: QUARKUS_DATASOURCE_JDBC_URL
+              value: "jdbc:postgresql://postgresql:5432/flowdb"
+            - name: QUARKUS_DATASOURCE_USERNAME
+              value: "flowuser"
+            - name: QUARKUS_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: runner-standard-secret
+                  key: QUARKUS_DATASOURCE_PASSWORD
+            # Pod identity for durable-kubernetes (Downward API)
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+            # Example workflow (automatically created by kustomize)
+            - name: workflow-example
+              mountPath: /deployments/workflows/example-workflow.yaml
+              subPath: example-workflow.yaml
+              readOnly: true
+            # Add more workflows here:
+            # - name: workflow-myapp
+            #   mountPath: /deployments/workflows/myworkflow.yaml
+            #   subPath: myworkflow.yaml
+            #   readOnly: true
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        # Example workflow (automatically created by kustomize)
+        - name: workflow-example
+          configMap:
+            name: workflow-example
+        # Add more workflows here:
+        # - name: workflow-myapp
+        #   configMap:
+        #     name: workflow-myapp
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: quarkus-flow-runner-standard
+  namespace: quarkus-flow
+  labels:
+    app: quarkus-flow-runner
+    variant: standard
+spec:
+  selector:
+    app: quarkus-flow-runner
+    variant: standard
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  type: ClusterIP

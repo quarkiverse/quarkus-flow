@@ -107,6 +107,12 @@
                     <exclude>**/*.html</exclude>
                 </excludes>
             </resource>
+            <!-- Kubernetes manifests with version filtering -->
+            <resource>
+                <directory>src/main/k8s</directory>
+                <filtering>true</filtering>
+                <targetPath>${project.build.directory}/k8s</targetPath>
+            </resource>
         </resources>
         <plugins>
             <plugin>
