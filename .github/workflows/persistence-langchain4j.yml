@@ -1,4 +1,4 @@
-name: Durable Workflows with Langchain4J
+name: Persistent Workflows with Langchain4J
 
 on:
   push:
