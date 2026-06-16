@@ -50,7 +50,13 @@ jobs:
 
       - name: Run persistence integration tests (${{ matrix.kind }})
         run: |
-          DB_ARGS="-Ddb=${{ matrix.kind }} -Dquarkus.test.profile=${{ matrix.kind }}"
+          if [ "${{ matrix.kind }}" = "h2" ]; then
+            # H2 is the default config in application.properties, so
+            # neither -Ddb nor a test profile is needed.
+            DB_ARGS=""
+          else
+            DB_ARGS="-Ddb=${{ matrix.kind }} -Dquarkus.test.profile=${{ matrix.kind }}"
+          fi
           mvn -B verify \
             -pl langchain4j/integration-tests \
             $DB_ARGS \

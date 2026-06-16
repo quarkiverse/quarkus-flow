@@ -142,7 +142,7 @@
         <!-- database profiles -->
         <profile>
             <id>h2</id>
-            <!-- Activated by default (when no -Ddb is provided) -->
+            <!-- h2 is activated by default -->
             <activation>
                 <property>
                     <name>!db</name>
