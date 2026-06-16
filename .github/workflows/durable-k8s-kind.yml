@@ -67,8 +67,9 @@ jobs:
         run: |
           # Build all dependencies first to cache them locally before Docker build
           # This also processes k8s manifests with Maven filtering (${project.version} replacement)
+          # Must include deployment modules explicitly since -pl -am only builds runtime dependencies
           mvn -DskipTests -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp \
-              -pl runner/app -am install
+              -pl runner/deployment,persistence/jpa/deployment,durable-kubernetes/deployment,runner/app -am -P image-standard install
 
       - name: Build runner standard image
         working-directory: runner/app

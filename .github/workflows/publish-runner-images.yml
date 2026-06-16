@@ -107,15 +107,30 @@ jobs:
       - name: Build
         run: |
           POM_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -pl runner/app)
+          VARIANT="${{ matrix.variant }}"
+
+          # Determine which deployment modules are needed for this variant
+          # All variants need runner/deployment
+          case "${VARIANT}" in
+            minimal)
+              DEPLOYMENT_MODULES="runner/deployment,persistence/mvstore/deployment"
+              ;;
+            standard)
+              DEPLOYMENT_MODULES="runner/deployment,persistence/jpa/deployment,durable-kubernetes/deployment"
+              ;;
+            messaging)
+              DEPLOYMENT_MODULES="runner/deployment,persistence/jpa/deployment,durable-kubernetes/deployment,messaging/deployment"
+              ;;
+          esac
 
           if [[ "${POM_VERSION}" == *"-SNAPSHOT" ]]; then
-            echo "📦 Building SNAPSHOT from source"
+            echo "📦 Building SNAPSHOT from source (including deployment modules: ${DEPLOYMENT_MODULES})"
             mvn clean package -DskipTests -Dquarkus.log.level=OFF -ntp \
-                -pl runner/app -am -P image-${{ matrix.variant }} -Dquarkus.profile=container,${{ matrix.variant }}
+                -pl ${DEPLOYMENT_MODULES},runner/app -am -P image-${VARIANT} -Dquarkus.profile=container,${VARIANT}
           else
-            echo "📦 Building release from Maven Central"
+            echo "📦 Building release from Maven Central (including deployment modules: ${DEPLOYMENT_MODULES})"
             mvn clean package -DskipTests -Dquarkus.log.level=OFF -ntp \
-                -pl runner/app -P image-${{ matrix.variant }} -Dquarkus.profile=container,${{ matrix.variant }}
+                -pl ${DEPLOYMENT_MODULES},runner/app -am -P image-${VARIANT} -Dquarkus.profile=container,${VARIANT}
           fi
 
       - name: Build and save Docker Image
