@@ -26,7 +26,11 @@ import java.util.stream.Collectors;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Singleton;
 
-import org.jboss.jandex.*;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
