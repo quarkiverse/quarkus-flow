@@ -5,6 +5,8 @@
 
 .PHONY: help quick-check build test-all verify clean format docs install-local native pre-commit
 
+.PHONY: test-core test-langchain4j test-persistence test-examples watch
+
 # Default target shows help
 .DEFAULT_GOAL := help
 
@@ -89,6 +91,10 @@ test-langchain4j: ## Test langchain4j module only
 	@echo "🧪 Testing langchain4j module"
 	@mvn clean test $(MAVEN_OPTS) -pl langchain4j/runtime,langchain4j/deployment -am
 
+test-persistence: ## Test persistence module only
+	@echo "🧪 Testing persistence module"
+	@mvn clean test $(MAVEN_OPTS) -pl persistence/jpa/runtime,persistence/jpa/deployment -am
+
 test-examples: ## Test all examples
 	@echo "🧪 Testing all examples"
 	@mvn clean test $(MAVEN_OPTS) -pl examples -am
@@ -98,4 +104,3 @@ watch: ## Watch for changes and recompile (uses quarkus:dev on core)
 	@echo "👀 Starting Quarkus dev mode (hot reload enabled)"
 	@mvn quarkus:dev -pl core/runtime
 
-.PHONY: test-core test-langchain4j test-examples watch
