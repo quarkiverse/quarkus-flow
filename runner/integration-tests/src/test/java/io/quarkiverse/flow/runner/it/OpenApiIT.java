@@ -171,4 +171,27 @@ class OpenApiIT {
         assertThat(openApiDoc).contains("/q/flow/definitions/{namespace}/{name}:");
         assertThat(openApiDoc).contains("/q/flow/definitions/{namespace}/{name}/{version}:");
     }
+
+    @Test
+    @DisplayName("test_openapi_request_body_schema_parses_workflow_input_schema")
+    void test_openapi_request_body_schema_parses_workflow_input_schema() {
+        // Given - OpenAPI document in JSON format for easier parsing
+        Response response = given()
+                .header("Accept", "application/json")
+                .when()
+                .get("/q/openapi")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .extract()
+                .response();
+
+        // Then - request body schema should be based on workflow's input schema
+        var requestBodySchema = response.jsonPath()
+                .getMap("paths.'/q/flow/exec/test-namespace/simple-greeting/1.0.0'.post.requestBody.content.'application/json'.schema");
+
+        assertThat(requestBodySchema).isNotNull();
+        assertThat(requestBodySchema).containsKey("type");
+    }
+
 }

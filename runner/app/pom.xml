@@ -17,6 +17,10 @@
     <properties>
         <skipITs>true</skipITs>
         <maven.deploy.skip>true</maven.deploy.skip>
+        <build.timestamp>${maven.build.timestamp}</build.timestamp>
+        <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ss'Z'</maven.build.timestamp.format>
+        <!-- Variant is set by the active profile, defaults to minimal -->
+        <image.variant>minimal</image.variant>
     </properties>
 
     <dependencies>
@@ -54,7 +58,7 @@
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5</artifactId>
+            <artifactId>quarkus-junit</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -88,6 +92,22 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/*.html</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>**/*.html</exclude>
+                </excludes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
@@ -140,7 +160,7 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <quarkus.profile>minimal</quarkus.profile>
+                <image.variant>minimal</image.variant>
             </properties>
             <dependencies>
                 <!-- Persistence: MVStore (file-based) -->
@@ -152,26 +172,24 @@
             </dependencies>
         </profile>
 
-        <!-- Standard variant: Multiple persistence options + PostgreSQL -->
-        <!-- NOTE: Currently BROKEN - multiple persistence modules cause CDI ambiguity -->
-        <!-- TODO: Implement runtime persistence selection before enabling this profile -->
+        <!-- Standard variant: JPA persistence + PostgreSQL + durable-kubernetes (WORKING) -->
         <profile>
             <id>image-standard</id>
+            <properties>
+                <image.variant>standard</image.variant>
+            </properties>
             <dependencies>
-                <!-- Persistence: All options (CAUSES CDI AMBIGUITY - NEEDS FIX) -->
+                <!-- Durable Kubernetes for HA -->
+                <dependency>
+                    <groupId>io.quarkiverse.flow</groupId>
+                    <artifactId>quarkus-flow-durable-kubernetes</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+
+                <!-- Persistence: JPA only -->
                 <dependency>
                     <groupId>io.quarkiverse.flow</groupId>
                     <artifactId>quarkus-flow-jpa</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>io.quarkiverse.flow</groupId>
-                    <artifactId>quarkus-flow-mvstore</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>io.quarkiverse.flow</groupId>
-                    <artifactId>quarkus-flow-redis</artifactId>
                     <version>${project.version}</version>
                 </dependency>
 
@@ -180,35 +198,27 @@
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-jdbc-postgresql</artifactId>
                 </dependency>
-
-                <!-- Messaging: In-memory -->
-                <dependency>
-                    <groupId>io.smallrye.reactive</groupId>
-                    <artifactId>smallrye-reactive-messaging-in-memory</artifactId>
-                </dependency>
             </dependencies>
         </profile>
 
-        <!-- Messaging variant: Multiple persistence + Kafka -->
-        <!-- NOTE: Currently BROKEN - same persistence ambiguity as standard -->
-        <!-- TODO: Implement runtime persistence selection before enabling this profile -->
+        <!-- Messaging variant: JPA persistence + Kafka + durable-kubernetes (WORKING) -->
         <profile>
             <id>image-messaging</id>
+            <properties>
+                <image.variant>messaging</image.variant>
+            </properties>
             <dependencies>
-                <!-- Persistence: All options (CAUSES CDI AMBIGUITY - NEEDS FIX) -->
+                <!-- Durable Kubernetes for HA -->
+                <dependency>
+                    <groupId>io.quarkiverse.flow</groupId>
+                    <artifactId>quarkus-flow-durable-kubernetes</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+
+                <!-- Persistence: JPA only -->
                 <dependency>
                     <groupId>io.quarkiverse.flow</groupId>
                     <artifactId>quarkus-flow-jpa</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>io.quarkiverse.flow</groupId>
-                    <artifactId>quarkus-flow-mvstore</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>io.quarkiverse.flow</groupId>
-                    <artifactId>quarkus-flow-redis</artifactId>
                     <version>${project.version}</version>
                 </dependency>
 

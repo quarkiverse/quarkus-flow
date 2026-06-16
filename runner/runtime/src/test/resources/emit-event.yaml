@@ -1,0 +1,22 @@
+document:
+  dsl: '1.0.0'
+  namespace: test-namespace
+  name: emit-event
+  version: 1.0.0
+  summary: Test workflow with input schema
+do:
+  - emitGreeting:
+      emit:
+        event:
+          with:
+            greeting: ${ "Hello, " + .name + "!" }
+input:
+  schema:
+    document:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Your name

@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: flow-postgres
+    environment:
+      POSTGRES_DB: flowdb
+      POSTGRES_USER: flowuser
+      POSTGRES_PASSWORD: flowpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowuser -d flowdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - flow-network
+
+  kafka:
+    image: apache/kafka:latest
+    container_name: flow-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      # KRaft mode configuration (no Zookeeper needed)
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_NUM_PARTITIONS: 3
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-cluster.sh cluster-id --bootstrap-server localhost:9092 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    networks:
+      - flow-network
+
+  runner:
+    image: quay.io/quarkiverse/quarkus-flow-runner:latest-messaging
+    container_name: flow-runner-messaging
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mount workflow files from host (customize via WORKFLOWS env var, default: ./workflows)
+      - ${WORKFLOWS:-./workflows}:/deployments/workflows:ro
+    environment:
+      # Database connection
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/flowdb
+      QUARKUS_DATASOURCE_USERNAME: flowuser
+      QUARKUS_DATASOURCE_PASSWORD: flowpass
+      # Kafka connection
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/q/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    networks:
+      - flow-network
+
+volumes:
+  postgres-data:
+    driver: local
+
+networks:
+  flow-network:
+    driver: bridge

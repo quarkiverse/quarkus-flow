@@ -1,0 +1,9 @@
+# This directory is for mounting workflow YAML files to the Docker container
+# 
+# Place your workflow definition files here:
+#   - my-workflow.yaml
+#   - another-workflow.yaml
+#
+# They will be automatically loaded when the container starts.
+# 
+# See hello-world.yaml for an example workflow.

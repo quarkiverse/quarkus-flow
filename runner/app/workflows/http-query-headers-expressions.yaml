@@ -1,0 +1,29 @@
+document:
+  dsl: '1.0.0'
+  namespace: examples
+  name: http-query-headers-expressions
+  version: '1.0.0'
+input:
+  schema:
+    format: json
+    document:
+      type: object
+      required:
+        - searchQuery
+      properties:
+        searchQuery:
+          type: string
+do:
+  - setQueryAndHeaders:
+      set:
+        query:
+          search: ${.searchQuery}
+        headers:
+          Accept: application/json
+  - searchStarWarsCharacters:
+      call: http
+      with:
+        method: get
+        endpoint: https://swapi.info/api/people/
+        headers: ${.headers}
+        query: ${.query}

@@ -1,0 +1,27 @@
+services:
+  runner:
+    image: quay.io/quarkiverse/quarkus-flow-runner:latest-minimal
+    container_name: flow-runner-minimal
+    ports:
+      - "8080:8080"
+    volumes:
+      # Persist MVStore data
+      - flow-data:/deployments/data
+      # Mount workflow files from host (customize via WORKFLOWS env var, default: ./workflows)
+      - ${WORKFLOWS:-./workflows}:/deployments/workflows:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/q/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - flow-network
+
+volumes:
+  flow-data:
+    driver: local
+
+networks:
+  flow-network:
+    driver: bridge

@@ -174,10 +174,12 @@ docker build \
 - ✅ Issue #629 created for K8s auto-detection
 - ✅ Create `runner/app/` module skeleton
   - ✅ pom.xml with image-minimal, image-standard, image-messaging profiles
-  - ✅ application.properties with minimal profile configuration
-  - ✅ README.md documenting usage and current limitations
-  - ✅ Basic smoke test (RunnerAppSmokeTest.java)
-  - ✅ Event emission test (EmitEventWorkflowTest.java)
+  - ✅ image-minimal: MVStore only (no messaging, no durable-kubernetes)
+  - ✅ image-standard/messaging: Include durable-kubernetes for HA
+  - ✅ application.properties with container profile for production paths
+  - ✅ README.md documenting usage, HA architecture, and MVStore limitations
+  - ✅ Basic smoke test (RunnerAppSmokeTest.java) with unique DB paths
+  - ✅ Event emission test (EmitEventWorkflowTest.java) with MessagingProfile
   - ✅ Test workflow (emit-event.yaml)
 
 **Blocked - Requires Persistence Selection Enhancement:**

@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <title>Quarkus Flow Runner</title>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            /* Quarkus theme colors */
+            --quarkus-blue: #4695eb;
+            --quarkus-dark-blue: #4050b5;
+            --quarkus-red: #ff004a;
+
+            /* Lumo base colors */
+            --lumo-base-color: #ffffff;
+            --lumo-tint-5pct: #f3f5f9;
+            --lumo-tint-10pct: #e8ecf1;
+            --lumo-body-text-color: #1a1a1a;
+            --lumo-header-text-color: #0d0d0d;
+            --lumo-secondary-text-color: #6b7280;
+            --lumo-contrast-5pct: rgba(0, 0, 0, 0.05);
+            --lumo-contrast-10pct: rgba(0, 0, 0, 0.1);
+            --lumo-contrast-20pct: rgba(0, 0, 0, 0.2);
+            --lumo-contrast-30pct: rgba(0, 0, 0, 0.3);
+
+            /* DevUI specific */
+            --lumo-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            --lumo-font-size-m: 14px;
+            --lumo-line-height-m: 1.6;
+            --lumo-clickable-cursor: pointer;
+
+            --devui-header-height: 50px;
+            --devui-transition-fast: 0.15s ease;
+            --devui-transition-normal: 0.2s ease;
+            --devui-transition-slow: 0.3s ease;
+            --devui-radius-sm: 6px;
+            --devui-radius-md: 8px;
+            --devui-radius-lg: 12px;
+
+            /* Status colors */
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --error-color: #dc3545;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            width: 100vw;
+            min-height: 100vh;
+            font-family: var(--lumo-font-family);
+            font-size: var(--lumo-font-size-m);
+            line-height: var(--lumo-line-height-m);
+            color: var(--lumo-body-text-color);
+            background: var(--lumo-tint-5pct);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+        }
+
+        .page-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            animation: devui-fade-in var(--devui-transition-slow) ease;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #001d3d 0%, #003a70 35%, #0353a4 70%, #0466c8 100%);
+            position: relative;
+            overflow: hidden;
+            padding: 60px 0;
+            margin: -20px -20px 30px -20px;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -10%;
+            width: 120%;
+            height: 200%;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 40px,
+                rgba(120, 169, 255, 0.08) 40px,
+                rgba(120, 169, 255, 0.08) 80px
+            );
+            pointer-events: none;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            font-weight: 300;
+            color: #ffffff;
+            margin: 0;
+        }
+
+        .header-info-card {
+            background: var(--lumo-base-color);
+            border-radius: var(--devui-radius-md);
+            padding: 20px 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            min-width: 300px;
+        }
+
+        .header-info-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--lumo-header-text-color);
+            margin-bottom: 8px;
+        }
+
+        .header-info-detail {
+            font-size: 12px;
+            color: var(--lumo-secondary-text-color);
+            line-height: 1.6;
+            margin: 2px 0;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--lumo-header-text-color);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--lumo-contrast-10pct);
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--lumo-base-color);
+            border: 1px solid var(--lumo-contrast-10pct);
+            border-radius: var(--devui-radius-md);
+            padding: 20px;
+            transition: all var(--devui-transition-fast);
+            cursor: var(--lumo-clickable-cursor);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(70, 149, 235, 0.15);
+            border-color: var(--quarkus-blue);
+            transform: translateY(-2px);
+        }
+
+        .card a {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--quarkus-blue);
+            margin-bottom: 8px;
+        }
+
+        .card-description {
+            font-size: 13px;
+            color: var(--lumo-secondary-text-color);
+            line-height: 1.5;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .info-card {
+            background: var(--lumo-base-color);
+            border: 1px solid var(--lumo-contrast-10pct);
+            border-radius: var(--devui-radius-md);
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .info-label {
+            font-size: 11px;
+            color: var(--lumo-secondary-text-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .info-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--lumo-header-text-color);
+        }
+
+        .metric-card {
+            background: var(--lumo-base-color);
+            border: 1px solid var(--lumo-contrast-10pct);
+            border-radius: var(--devui-radius-md);
+            padding: 20px;
+            transition: all var(--devui-transition-fast);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .metric-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .metric-title {
+            font-size: 11px;
+            color: var(--lumo-secondary-text-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .metric-value {
+            font-size: 36px;
+            font-weight: 300;
+            color: var(--quarkus-blue);
+            margin-bottom: 6px;
+            line-height: 1.2;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--lumo-secondary-text-color);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 160px;
+            margin-top: 16px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid var(--lumo-contrast-10pct);
+            border-radius: var(--devui-radius-md);
+            background: var(--lumo-base-color);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: var(--lumo-contrast-5pct);
+        }
+
+        th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 11px;
+            color: var(--lumo-secondary-text-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--lumo-contrast-10pct);
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--lumo-contrast-5pct);
+            font-size: 13px;
+        }
+
+        tbody tr {
+            transition: background-color var(--devui-transition-fast);
+        }
+
+        tbody tr:hover {
+            background: var(--lumo-contrast-5pct);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: var(--devui-radius-sm);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-primary {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            border-radius: var(--devui-radius-sm);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all var(--devui-transition-fast);
+            border: none;
+            cursor: var(--lumo-clickable-cursor);
+            box-shadow: 0 1px 3px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .badge-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .badge-warning {
+            background: var(--warning-color);
+            color: #333;
+        }
+
+        .badge-error {
+            background: var(--error-color);
+            color: white;
+        }
+
+        .badge-idle {
+            background: var(--lumo-contrast-10pct);
+            color: var(--lumo-secondary-text-color);
+        }
+
+        .error-message {
+            background: #fff3cd;
+            border: 1px solid var(--warning-color);
+            border-radius: var(--devui-radius-md);
+            color: #856404;
+            padding: 14px 16px;
+            margin-top: 16px;
+            font-size: 13px;
+        }
+
+        /* Animations */
+        @keyframes devui-fade-in {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Global scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--lumo-contrast-20pct);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--lumo-contrast-30pct);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>Quarkus Flow Runner</h1>
+            <div class="header-info-card">
+                <div class="header-info-title">Application</div>
+                <div class="header-info-detail">quarkus-flow-runner</div>
+                <div class="header-info-detail">Version: ${project.version}</div>
+                <div class="header-info-detail">Variant: ${image.variant}</div>
+                <div class="header-info-detail">Quarkus Version: ${quarkus.version}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-container">
+
+        <div class="section">
+            <h2 class="section-title">Quick Links</h2>
+            <div class="card-grid">
+                <div class="card">
+                    <a href="/q/swagger-ui">
+                        <div class="card-title">📖 API Documentation</div>
+                        <div class="card-description">Interactive OpenAPI / Swagger UI</div>
+                    </a>
+                </div>
+                <div class="card">
+                    <a href="/q/health">
+                        <div class="card-title">💚 Health Checks</div>
+                        <div class="card-description">Readiness and liveness probes</div>
+                    </a>
+                </div>
+                <div class="card">
+                    <a href="/q/metrics">
+                        <div class="card-title">📊 Metrics</div>
+                        <div class="card-description">Prometheus metrics endpoint</div>
+                    </a>
+                </div>
+                <div class="card">
+                    <a href="https://docs.quarkiverse.io/quarkus-flow/dev/" target="_blank">
+                        <div class="card-title">📚 Documentation</div>
+                        <div class="card-description">Complete Quarkus Flow guide</div>
+                    </a>
+                </div>
+                <div class="card">
+                    <a href="/q/flow/definitions">
+                        <div class="card-title">⚡ Workflows</div>
+                        <div class="card-description">View registered workflow definitions</div>
+                    </a>
+                </div>
+                <div class="card">
+                    <a href="/q/openapi">
+                        <div class="card-title">🔧 OpenAPI Spec</div>
+                        <div class="card-description">Raw OpenAPI specification (YAML)</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <p style="color: var(--lumo-secondary-text-color); margin-bottom: 20px;">
+                Serverless Workflow Engine for Quarkus. This page provides real-time monitoring and access to workflow management APIs.
+            </p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Overall Metrics</h2>
+            <div class="card-grid">
+                <div class="metric-card">
+                    <div class="metric-title">HTTP Requests</div>
+                    <div class="metric-value" id="http-requests">-</div>
+                    <div class="metric-label">Total requests</div>
+                    <div class="chart-container">
+                        <canvas id="requests-chart"></canvas>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Workflows Started</div>
+                    <div class="metric-value" id="workflow-started">-</div>
+                    <div class="metric-label">Total started</div>
+                    <div class="chart-container">
+                        <canvas id="started-chart"></canvas>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Workflows Completed</div>
+                    <div class="metric-value" id="workflow-completed">-</div>
+                    <div class="metric-label">Total completed</div>
+                    <div class="chart-container">
+                        <canvas id="completed-chart"></canvas>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">JVM Memory</div>
+                    <div class="metric-value" id="jvm-memory">-</div>
+                    <div class="metric-label">Used / Max (MB)</div>
+                    <div class="chart-container">
+                        <canvas id="memory-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div id="metrics-error" class="error-message" style="display: none;">
+                Failed to load metrics. Make sure the application is running and metrics endpoint is accessible.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Workflow Metrics</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Workflow</th>
+                            <th>Version</th>
+                            <th>Started</th>
+                            <th>Completed</th>
+                            <th>Running</th>
+                            <th>Waiting</th>
+                            <th>Suspended</th>
+                            <th>Avg Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody id="workflow-table-body">
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 20px; color: var(--lumo-secondary-text-color);">
+                                No workflow metrics available yet
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        // Chart configurations
+        const chartConfig = {
+            type: 'line',
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { display: false },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0, font: { family: 'Inter' } },
+                        grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                    }
+                },
+                animation: { duration: 300 }
+            }
+        };
+
+        const chartDataset = (color) => ({
+            data: [],
+            borderColor: color,
+            backgroundColor: color + '20',
+            fill: true,
+            tension: 0.4,
+            borderWidth: 2,
+            pointRadius: 0,
+            pointHoverRadius: 4
+        });
+
+        const requestsChart = new Chart(document.getElementById('requests-chart'), {
+            ...chartConfig,
+            data: { labels: [], datasets: [chartDataset('#4695eb')] }
+        });
+
+        const startedChart = new Chart(document.getElementById('started-chart'), {
+            ...chartConfig,
+            data: { labels: [], datasets: [chartDataset('#28a745')] }
+        });
+
+        const completedChart = new Chart(document.getElementById('completed-chart'), {
+            ...chartConfig,
+            data: { labels: [], datasets: [chartDataset('#4695eb')] }
+        });
+
+        const memoryChart = new Chart(document.getElementById('memory-chart'), {
+            ...chartConfig,
+            data: { labels: [], datasets: [chartDataset('#764ba2')] }
+        });
+
+        const maxDataPoints = 20;
+        let metricsHistory = { requests: [], started: [], completed: [], memory: [] };
+
+        function parsePrometheusMetrics(text) {
+            const lines = text.split('\n');
+            const metrics = {};
+
+            for (const line of lines) {
+                if (line.startsWith('#') || !line.trim()) continue;
+
+                const match = line.match(/^([a-zA-Z_:][a-zA-Z0-9_:]*)\{([^}]*)\}\s+([0-9.Ee+-]+)/);
+                if (match) {
+                    const [, metricName, labels, value] = match;
+                    const val = parseFloat(value);
+                    if (!isNaN(val)) {
+                        metrics[`${metricName}{${labels}}`] = val;
+                        metrics[metricName] = (metrics[metricName] || 0) + val;
+                    }
+                } else {
+                    const [metricName, value] = line.split(/\s+/);
+                    const val = parseFloat(value);
+                    if (!isNaN(val)) metrics[metricName] = val;
+                }
+            }
+            return metrics;
+        }
+
+        function parseWorkflowLabels(labels) {
+            const workflow = labels.match(/workflow="([^"]+)"/)?.[1];
+            const version = labels.match(/workflowVersion="([^"]+)"/)?.[1];
+            return { workflow, version };
+        }
+
+        function updateMetrics(metrics) {
+            const httpRequests = metrics['http_server_requests_seconds_count'] || 0;
+            document.getElementById('http-requests').textContent = Math.round(httpRequests);
+            metricsHistory.requests.push(httpRequests);
+
+            const workflowStarted = metrics['quarkus_flow_workflow_started_total'] || 0;
+            document.getElementById('workflow-started').textContent = Math.round(workflowStarted);
+            metricsHistory.started.push(workflowStarted);
+
+            const workflowCompleted = metrics['quarkus_flow_workflow_completed_total'] || 0;
+            document.getElementById('workflow-completed').textContent = Math.round(workflowCompleted);
+            metricsHistory.completed.push(workflowCompleted);
+
+            let memUsed = 0, memMax = 0;
+            for (const [key, value] of Object.entries(metrics)) {
+                if (key.startsWith('jvm_memory_used_bytes{area="heap"')) memUsed += value;
+                if (key.startsWith('jvm_memory_max_bytes{area="heap"') && value > 0) memMax += value;
+            }
+            if (memMax === 0) {
+                for (const [key, value] of Object.entries(metrics)) {
+                    if (key.startsWith('jvm_memory_committed_bytes{area="heap"')) memMax += value;
+                }
+            }
+
+            const memUsedMB = memUsed / 1024 / 1024;
+            const memMaxMB = memMax / 1024 / 1024;
+            document.getElementById('jvm-memory').textContent = `${Math.round(memUsedMB)} / ${Math.round(memMaxMB)}`;
+            metricsHistory.memory.push(memUsedMB);
+
+            if (metricsHistory.requests.length > maxDataPoints) {
+                Object.values(metricsHistory).forEach(arr => arr.shift());
+            }
+
+            [requestsChart, startedChart, completedChart, memoryChart].forEach((chart, i) => {
+                const data = Object.values(metricsHistory)[i];
+                chart.data.labels = data.map((_, idx) => idx);
+                chart.data.datasets[0].data = data;
+                chart.update();
+            });
+
+            updateWorkflowTable(metrics);
+            document.getElementById('metrics-error').style.display = 'none';
+        }
+
+        function updateWorkflowTable(metrics) {
+            const workflows = {};
+
+            // Helper to ensure workflow entry exists
+            const ensureWorkflow = (workflow, version) => {
+                const wfKey = `${workflow}:${version}`;
+                if (!workflows[wfKey]) {
+                    workflows[wfKey] = { name: workflow, version, started: 0, completed: 0, running: 0, waiting: 0, suspended: 0, duration: 0 };
+                }
+                return workflows[wfKey];
+            };
+
+            for (const [key, value] of Object.entries(metrics)) {
+                if (key.startsWith('quarkus_flow_workflow_started_total{')) {
+                    const { workflow, version } = parseWorkflowLabels(key);
+                    if (workflow) ensureWorkflow(workflow, version).started = value;
+                } else if (key.startsWith('quarkus_flow_workflow_completed_total{')) {
+                    const { workflow, version } = parseWorkflowLabels(key);
+                    if (workflow) ensureWorkflow(workflow, version).completed = value;
+                } else if (key.startsWith('quarkus_flow_instance_running{')) {
+                    const { workflow, version } = parseWorkflowLabels(key);
+                    if (workflow) ensureWorkflow(workflow, version).running = value;
+                } else if (key.startsWith('quarkus_flow_instance_waiting{')) {
+                    const { workflow, version } = parseWorkflowLabels(key);
+                    if (workflow) ensureWorkflow(workflow, version).waiting = value;
+                } else if (key.startsWith('quarkus_flow_instance_suspended{')) {
+                    const { workflow, version } = parseWorkflowLabels(key);
+                    if (workflow) ensureWorkflow(workflow, version).suspended = value;
+                } else if (key.startsWith('quarkus_flow_workflow_duration_seconds_sum{')) {
+                    const { workflow, version } = parseWorkflowLabels(key);
+                    if (workflow) ensureWorkflow(workflow, version).duration = value;
+                } else if (key.startsWith('quarkus_flow_task_')) {
+                    // Ensure workflows are discovered even if they only have task-level metrics
+                    const { workflow, version } = parseWorkflowLabels(key);
+                    if (workflow) ensureWorkflow(workflow, version);
+                }
+            }
+
+            const tbody = document.getElementById('workflow-table-body');
+            if (Object.keys(workflows).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: var(--lumo-secondary-text-color);">No workflow metrics available yet</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = Object.values(workflows).map(wf => {
+                const avgDuration = wf.completed > 0 ? (wf.duration / wf.completed).toFixed(3) : '-';
+                const badge = (val, type) => val > 0 ? `<span class="badge badge-${type}">${val}</span>` : `<span class="badge badge-idle">0</span>`;
+
+                return `
+                    <tr>
+                        <td><strong>${wf.name}</strong></td>
+                        <td>${wf.version}</td>
+                        <td>${Math.round(wf.started)}</td>
+                        <td>${Math.round(wf.completed)}</td>
+                        <td>${badge(wf.running, 'success')}</td>
+                        <td>${badge(wf.waiting, 'warning')}</td>
+                        <td>${badge(wf.suspended, 'error')}</td>
+                        <td>${avgDuration}s</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function fetchMetrics() {
+            try {
+                const response = await fetch('/q/metrics');
+                if (!response.ok) throw new Error('Metrics endpoint not available');
+                const text = await response.text();
+                updateMetrics(parsePrometheusMetrics(text));
+            } catch (error) {
+                console.error('Error fetching metrics:', error);
+                document.getElementById('metrics-error').style.display = 'block';
+            }
+        }
+
+        fetchMetrics();
+        setInterval(fetchMetrics, 5000);
+    </script>
+</body>
+</html>

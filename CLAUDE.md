@@ -31,22 +31,6 @@ This guide helps Claude Code (and contributors using it) work effectively with t
 
 **User work-in-progress is sacred. Never discard it without permission.**
 
-## ⚠️ CRITICAL: Required Workflow Validation
-
-**BEFORE CREATING ANY PULL REQUEST**, you MUST run the full build with integration tests:
-
-```bash
-./mvnw clean install -DskipITs=false
-```
-
-This is **NON-NEGOTIABLE**. This command ensures:
-- All unit tests pass
-- All integration tests pass (including cross-module compatibility)
-- No build errors across all modules
-- Dev Services (Testcontainers) work correctly
-
-**For Claude Code**: When the user asks you to create a PR, you MUST run this command first and verify it succeeds before proceeding with `gh pr create`. If the build fails, fix the issues before creating the PR.
-
 ## Project Overview
 
 **Quarkus Flow** is a lightweight workflow engine for Quarkus based on the CNCF Serverless Workflow specification. It supports classic workflows and Agentic AI orchestrations with LangChain4j integration.
@@ -98,20 +82,6 @@ This automatically runs unit tests. Integration tests are skipped by default.
 ./mvnw -pl docs -am quarkus:dev
 # Press 'w' when Quarkus starts to open the docs site
 ```
-
-### Pre-PR validation (REQUIRED)
-```bash
-./mvnw clean install -DskipITs=false
-```
-
-**Why this matters**:
-- Integration tests validate cross-module compatibility
-- Catches issues with Quarkus Dev Services and Testcontainers
-- Ensures all modules work together correctly
-- Prevents CI failures and broken builds
-- Required by project policy before any PR creation
-
-**When to run**: Before creating ANY pull request. No exceptions.
 
 ## Testing
 
@@ -220,15 +190,6 @@ This project uses ADRs to document significant architectural and design decision
 
 **Before performing ANY git operation that could lose work or change history**, you MUST ask the user for explicit permission. See the "🚨 CRITICAL: Git Safety Rules" section at the top of this document.
 
-### Before submitting PRs
-
-**REQUIRED**: Run the full validation build (see top of this document):
-```bash
-./mvnw clean install -DskipITs=false
-```
-
-This must pass completely before creating a PR. Do not skip this step.
-
 ### Commit messages
 - Follow conventional commits style (see git log for examples)
 - Use imperative mood and keep commits atomic
@@ -237,7 +198,6 @@ This must pass completely before creating a PR. Do not skip this step.
 - **NEVER commit without user permission** (see Git Safety Rules)
 
 ### PR checklist
-- [ ] **Full build with integration tests passed** (`./mvnw clean install -DskipITs=false`)
 - [ ] Code builds successfully on all modules
 - [ ] All tests pass (unit + integration)
 - [ ] Documentation updated if user-facing change
@@ -276,7 +236,6 @@ When adding dependencies:
 ## Common Pitfalls
 
 1. **CRITICAL**: **NEVER** use `git restore`, `git reset`, `git commit`, or ANY destructive git operation without explicit user permission (see Git Safety Rules at top)
-2. **CRITICAL**: **Don't** create PRs without running `./mvnw clean install -DskipITs=false` first
 3. **Don't** reference deployment code from runtime
 4. **Don't** add dependencies without checking BOMs first
 5. **Don't** skip integration tests - they catch cross-module issues
@@ -300,14 +259,6 @@ When adding dependencies:
 ## Claude Code Hooks Configuration
 
 This project uses **hooks** to enforce quality gates automatically. Hooks are configured in `.claude/settings.json`.
-
-### Active Hooks
-
-**Pre-PR Validation Hook** (CRITICAL)
-- **Trigger**: When attempting to create a PR (`gh pr create`)
-- **Action**: Runs `mvn clean install -DskipITs=false`
-- **Behavior**: Blocks PR creation if build/tests fail
-- **Why**: Prevents broken builds from reaching GitHub
 
 ### Managing Hooks
 

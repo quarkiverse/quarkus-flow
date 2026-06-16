@@ -1,0 +1,22 @@
+document:
+  dsl: '1.0.0'
+  namespace: examples
+  name: call-http-shorthand-endpoint
+  version: '0.1.0'
+input:
+  schema:
+    format: json
+    document:
+      type: object
+      required:
+        - petId
+      properties:
+        petId:
+          type: integer
+          description: The petId
+do:
+  - getPet:
+      call: http
+      with:
+        method: get
+        endpoint: https://petstore.swagger.io/v2/pet/{petId}
