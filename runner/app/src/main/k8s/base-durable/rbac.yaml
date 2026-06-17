@@ -1,0 +1,39 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: quarkus-flow-runner
+  namespace: quarkus-flow
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: quarkus-flow-runner-lease-manager
+  namespace: quarkus-flow
+rules:
+  # Lease management for durable-kubernetes coordination
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Read Pods (for holderIdentity)
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  # Read Deployments and ReplicaSets (for replica count)
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: quarkus-flow-runner-lease-manager
+  namespace: quarkus-flow
+subjects:
+  - kind: ServiceAccount
+    name: quarkus-flow-runner
+    namespace: quarkus-flow
+roleRef:
+  kind: Role
+  name: quarkus-flow-runner-lease-manager
+  apiGroup: rbac.authorization.k8s.io

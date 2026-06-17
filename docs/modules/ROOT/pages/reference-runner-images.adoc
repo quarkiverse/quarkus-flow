@@ -1,0 +1,862 @@
+= Pre-built Runner Docker Images
+include::includes/attributes.adoc[]
+
+Deploy workflows without Java/Quarkus development using pre-built Docker images ready for Docker, Kubernetes, or any container platform.
+
+[IMPORTANT]
+====
+**The best experience is still the Java DSL.**
+
+If you're a Java/Quarkus developer, we strongly recommend xref:getting-started.adoc[incorporating Quarkus Flow into your project] for:
+
+* ✅ Compile-time validation and type safety
+* ✅ Full IDE support with code completion
+* ✅ Access to the complete Quarkus ecosystem
+* ✅ Build-time optimizations and native image support
+* ✅ Direct integration with your CDI beans and business logic
+
+**Use pre-built images when:**
+
+* You're a Kubernetes administrator deploying workflows as configuration
+* Your team doesn't have Java/Quarkus expertise
+* You want to quickly test the Serverless Workflow specification locally
+* You're deploying workflows managed by external tools or GitOps
+====
+
+[[purpose]]
+== Purpose and Use Cases
+
+The **Quarkus Flow Runner** images provide a ready-to-run workflow execution engine. Instead of building a Quarkus application, you deploy a pre-built container and mount your workflow definitions (YAML/JSON files) as ConfigMaps or volumes.
+
+**Common use cases:**
+
+* **GitOps workflow deployment** - Store workflows in Git, deploy via Kubernetes ConfigMaps, execute via REST API
+* **Polyglot teams** - Non-Java teams can deploy workflows using the Serverless Workflow specification
+* **Quick prototyping** - Test workflow definitions locally with Docker in seconds
+* **Platform-as-a-Service** - Build a workflow execution platform where users deploy only YAML definitions
+* **Multi-tenant hosting** - Single Runner instance serves workflows across multiple namespaces/teams
+
+[[runner-app-module]]
+== The runner/app Module
+
+The link:https://github.com/quarkiverse/quarkus-flow/tree/main/runner/app[`runner/app`] module is the source for all pre-built images. It's a pre-configured Quarkus application template that:
+
+* Includes the `quarkus-flow-runner` extension
+* Provides Maven profiles for each variant (`image-minimal`, `image-standard`, `image-messaging`)
+* Configures sensible defaults for container deployment
+* Supports xref:runner.adoc#rest-api[REST API workflow execution]
+* Can be customized with additional dependencies or configurations
+
+Think of it as a **starting point** - you can clone it, add your own Quarkus extensions, and build custom images tailored to your needs.
+
+[[image-variants]]
+== Available Image Variants
+
+We distribute three variants of the Runner to Quay.io, each optimized for different deployment scenarios:
+
+[cols="1,3,2,2", options="header"]
+|===
+|Variant |Features |HA Support |Use Case
+
+|**minimal**
+|MVStore (file-based H2)
+|❌ No (single replica only)
+|Development, testing, single-node deployments
+
+|**standard**
+|PostgreSQL (JPA) + durable-kubernetes
+|✅ Yes (multi-replica with lease coordination)
+|Production deployments without event streaming
+
+|**messaging**
+|PostgreSQL (JPA) + Kafka + durable-kubernetes
+|✅ Yes (multi-replica with lease coordination)
+|Production deployments with event-driven workflows
+|===
+
+**Image naming convention:**
+
+[source,bash]
+----
+quay.io/quarkiverse/quarkus-flow-runner:<VERSION>-<VARIANT>
+
+# Examples (versioned):
+quay.io/quarkiverse/quarkus-flow-runner:1.0.0-minimal
+quay.io/quarkiverse/quarkus-flow-runner:1.0.0-standard
+quay.io/quarkiverse/quarkus-flow-runner:1.0.0-messaging
+
+# Latest tags (point to most recent release):
+quay.io/quarkiverse/quarkus-flow-runner:latest-minimal
+quay.io/quarkiverse/quarkus-flow-runner:latest-standard
+quay.io/quarkiverse/quarkus-flow-runner:latest-messaging
+----
+
+TIP: Pin to specific versions in production (`1.0.0-standard`), use `latest-*` tags only for development/testing.
+
+[[image-structure]]
+== Image Structure and Layering
+
+All variants are based on `registry.access.redhat.com/ubi9/openjdk-17-runtime` and follow a consistent directory structure:
+
+[source]
+----
+/deployments/
+├── config/          # Custom application.properties (mount here)
+├── workflows/       # Workflow YAML/JSON files (mount here)
+├── data/            # MVStore persistence (minimal variant only)
+├── quarkus-run.jar  # Application JAR
+├── app/             # Application classes
+├── lib/             # Dependencies
+└── quarkus/         # Quarkus runtime
+----
+
+**Customization via volume mounts:**
+
+[cols="1,3", options="header"]
+|===
+|Mount Point |Purpose
+
+|`/deployments/config`
+|Custom `application.properties` to override defaults (credentials, URLs, log levels)
+
+|`/deployments/workflows`
+|Workflow definitions (`.yaml`, `.yml`, `.json` files) - scanned recursively
+
+|`/deployments/data`
+|Persistent storage for MVStore (minimal variant only) - mount a PVC here
+|===
+
+**How layering works:**
+
+1. **Base configuration** - Built into the image (sensible defaults for each variant)
+2. **Custom configuration** - Your `application.properties` mounted to `/deployments/config` (overrides base)
+3. **Environment variables** - OS-level env vars (override both base and custom config)
+
+This allows zero-config Docker runs while supporting full customization for production.
+
+[[quick-start]]
+== Quick Start with Docker
+
+Run a workflow engine locally in under 60 seconds:
+
+**1. Create a workflow directory:**
+
+[source,bash]
+----
+mkdir workflows && cd workflows
+----
+
+**2. Create an example workflow:**
+
+[source,bash]
+----
+cat > hello-world.yaml <<'EOF'
+document:
+  dsl: "1.0.0"
+  namespace: examples
+  name: hello-world
+  version: "1.0.0"
+input:
+  schema:
+    format: json
+    document:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+do:
+  - greet:
+      set:
+        message: '${ "Hello, " + .name + "!" }'
+EOF
+----
+
+**3. Run the minimal variant:**
+
+[source,bash]
+----
+docker run -d \
+  --name flow-runner \
+  -p 8080:8080 \
+  -v $(pwd):/deployments/workflows \
+  quay.io/quarkiverse/quarkus-flow-runner:latest-minimal
+----
+
+**4. Wait for startup (~5 seconds):**
+
+[source,bash]
+----
+docker logs -f flow-runner
+# Wait for: "Quarkus ... started in ..."
+----
+
+**5. Execute the workflow:**
+
+[source,bash]
+----
+curl -X POST http://localhost:8080/examples/hello-world/1.0.0 \
+  -H "Content-Type: application/json" \
+  -d '{"name": "World"}'
+----
+
+**6. Check the result:**
+
+[source,bash]
+----
+# Response will be:
+# {"message": "Hello, World!"}
+----
+
+**7. Cleanup:**
+
+[source,bash]
+----
+docker stop flow-runner && docker rm flow-runner
+----
+
+TIP: See xref:runner.adoc#rest-api[REST API documentation] for the complete API reference, including workflow execution, querying, and management endpoints.
+
+[[building-custom]]
+== Building Your Own Runner Image
+
+Use the `runner/app` module as a template to build custom images with additional Quarkus extensions or configurations.
+
+**When to build custom images:**
+
+* Add Quarkus extensions not included in pre-built variants (Redis, MongoDB, custom connectors)
+* Include proprietary dependencies or internal libraries
+* Pre-configure application settings baked into the image
+* Add custom workflow functions or task handlers
+
+**Build process:**
+
+**1. Clone the repository:**
+
+[source,bash]
+----
+git clone https://github.com/quarkiverse/quarkus-flow.git
+cd quarkus-flow/runner/app
+----
+
+**2. (Optional) Add custom dependencies:**
+
+Edit `pom.xml` to add Quarkus extensions. For example, to add Redis support:
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-redis-client</artifactId>
+</dependency>
+----
+
+**3. (Optional) Customize default configuration:**
+
+Edit `src/main/resources/application-{variant}.properties` to change defaults.
+
+**4. Build the variant you need:**
+
+[source,bash]
+----
+# Build minimal variant
+make build-minimal
+
+# Build standard variant (PostgreSQL + HA)
+make build-standard
+
+# Build messaging variant (PostgreSQL + Kafka + HA)
+make build-messaging
+----
+
+This creates images tagged locally as:
+
+[source]
+----
+quay.io/quarkiverse/quarkus-flow-runner:<VERSION>-minimal
+quay.io/quarkiverse/quarkus-flow-runner:<VERSION>-standard
+quay.io/quarkiverse/quarkus-flow-runner:<VERSION>-messaging
+----
+
+**5. Tag for your registry:**
+
+[source,bash]
+----
+docker tag quay.io/quarkiverse/quarkus-flow-runner:1.0.0-SNAPSHOT-standard \
+  myregistry.io/my-flow-runner:latest
+----
+
+**6. Push:**
+
+[source,bash]
+----
+docker push myregistry.io/my-flow-runner:latest
+----
+
+TIP: See the link:https://github.com/quarkiverse/quarkus-flow/tree/main/runner/app[runner/app README] for advanced build options, including native image builds and custom Dockerfiles.
+
+[[kubernetes-deployment]]
+== Deploying to Kubernetes
+
+We provide production-ready Kustomize manifests for all three variants. These include PostgreSQL, RBAC for HA coordination, Kafka (messaging variant), and secure defaults.
+
+[[kubernetes-prerequisites]]
+=== Prerequisites
+
+**1. Build dependencies and process manifests:**
+
+The manifests use Maven resource filtering to inject the correct image version. Run this once:
+
+[source,bash]
+----
+# From project root
+git clone https://github.com/quarkiverse/quarkus-flow.git
+cd quarkus-flow
+
+# Build dependencies and process k8s manifests
+mvn install -pl runner/app -am
+----
+
+This creates filtered manifests in `runner/app/target/k8s/` with the correct image tags.
+
+[IMPORTANT]
+====
+**Do NOT deploy from `src/main/k8s/` directly!**
+
+Source manifests contain Maven placeholders like `${project.version}` that must be replaced during build. Always deploy from `target/k8s/`.
+====
+
+[[kubernetes-minimal]]
+=== Deploy minimal variant
+
+Single replica, file-based persistence, no external dependencies:
+
+[source,bash]
+----
+# Deploy to quarkus-flow namespace
+kubectl apply -k runner/app/target/k8s/overlays/minimal
+
+# Wait for deployment
+kubectl -n quarkus-flow rollout status deployment/quarkus-flow-runner-minimal
+
+# Verify
+kubectl -n quarkus-flow get pods
+
+# Port-forward to access locally
+kubectl -n quarkus-flow port-forward svc/quarkus-flow-runner-minimal 8080:8080
+
+# Test
+curl http://localhost:8080/q/health/ready
+----
+
+[[kubernetes-standard]]
+=== Deploy standard variant (with HA)
+
+Multi-replica with PostgreSQL and durable-kubernetes for high availability:
+
+[source,bash]
+----
+# Deploy (includes PostgreSQL, RBAC, 3 replicas)
+kubectl apply -k runner/app/target/k8s/overlays/standard
+
+# Wait for PostgreSQL
+kubectl -n quarkus-flow rollout status deployment/postgresql
+
+# Wait for runner
+kubectl -n quarkus-flow rollout status deployment/quarkus-flow-runner-standard
+
+# Verify all replicas are running
+kubectl -n quarkus-flow get pods -l app=quarkus-flow-runner,variant=standard
+
+# Check HA lease acquisition
+kubectl -n quarkus-flow get lease
+
+# Expected output:
+# NAME                                       HOLDER
+# flow-pool-leader-flow-runner-standard      pod-name-xyz
+# flow-pool-member-flow-runner-standard-00   pod-name-abc
+# flow-pool-member-flow-runner-standard-01   pod-name-def
+# flow-pool-member-flow-runner-standard-02   pod-name-xyz
+----
+
+[[kubernetes-messaging]]
+=== Deploy messaging variant (with Kafka)
+
+Multi-replica with PostgreSQL, Kafka, and durable-kubernetes:
+
+[source,bash]
+----
+# Deploy (includes PostgreSQL, Kafka, Zookeeper, RBAC, 3 replicas)
+kubectl apply -k runner/app/target/k8s/overlays/messaging
+
+# Wait for all components
+kubectl -n quarkus-flow get pods
+
+# Verify Kafka topics are created
+kubectl -n quarkus-flow exec -it deployment/kafka -- \
+  kafka-topics.sh --list --bootstrap-server localhost:9092
+----
+
+TIP: See link:https://github.com/quarkiverse/quarkus-flow/blob/main/runner/app/src/main/k8s/README.md[Kubernetes manifests README] for detailed customization options, scaling guides, and production best practices.
+
+[[kubernetes-customization]]
+=== Customizing Kubernetes deployments
+
+**Add custom application.properties:**
+
+[source,yaml]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: runner-custom-config
+  namespace: quarkus-flow
+data:
+  application.properties: |
+    # Override logging
+    quarkus.log.level=DEBUG
+
+    # Custom database (standard/messaging)
+    quarkus.datasource.jdbc.url=jdbc:postgresql://my-postgres:5432/mydb
+
+    # Enable OIDC security
+    quarkus.flow.runner.security.type=OIDC
+    quarkus.oidc.auth-server-url=https://keycloak.example.com/realms/myrealm
+----
+
+Add a volume mount to the runner deployment:
+
+[source,yaml]
+----
+spec:
+  template:
+    spec:
+      containers:
+      - name: runner
+        volumeMounts:
+        - name: custom-config
+          mountPath: /deployments/config
+      volumes:
+      - name: custom-config
+        configMap:
+          name: runner-custom-config
+----
+
+**Add workflow definitions:**
+
+Create a ConfigMap with your workflows:
+
+[source,yaml]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-workflows
+  namespace: quarkus-flow
+data:
+  order-processing.yaml: |
+    document:
+      dsl: "1.0.0"
+      namespace: orders
+      name: process-order
+      version: "1.0.0"
+    do:
+      - validateOrder:
+          # ... your workflow tasks ...
+
+  payment-verification.yaml: |
+    document:
+      dsl: "1.0.0"
+      namespace: payments
+      name: verify-payment
+      version: "1.0.0"
+    # ... workflow definition ...
+----
+
+Mount to `/deployments/workflows`:
+
+[source,yaml]
+----
+volumeMounts:
+- name: workflows
+  mountPath: /deployments/workflows
+volumes:
+- name: workflows
+  configMap:
+    name: my-workflows
+----
+
+**Multiple ConfigMaps** can be mounted to the same directory - create separate workflow ConfigMaps per team/namespace and mount them all:
+
+[source,yaml]
+----
+volumeMounts:
+- name: team-a-workflows
+  mountPath: /deployments/workflows/team-a
+- name: team-b-workflows
+  mountPath: /deployments/workflows/team-b
+volumes:
+- name: team-a-workflows
+  configMap:
+    name: team-a-workflows
+- name: team-b-workflows
+  configMap:
+    name: team-b-workflows
+----
+
+[[configuration-reference]]
+== Configuration Reference
+
+All variants support the same configuration properties. Override defaults by mounting a custom `application.properties` to `/deployments/config` or via environment variables.
+
+[[configuration-core]]
+=== Core settings (pre-configured)
+
+These are already set in the images with sensible defaults:
+
+[source,properties]
+----
+# Workflow loading
+quarkus.flow.runner.enabled=true
+quarkus.flow.runner.source.path=/deployments/workflows
+
+# Security (disabled by default - MUST configure for production!)
+quarkus.flow.runner.security.type=NONE
+
+# Logging
+quarkus.log.console.format=%d{HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n
+quarkus.log.level=INFO
+----
+
+WARNING: Security is disabled (`NONE`) by default in pre-built images for ease of local testing. Production deployments **MUST** configure xref:runner.adoc#security-modes[API_KEY or OIDC authentication].
+
+[[configuration-variants]]
+=== Variant-specific defaults
+
+.*Minimal variant* (`minimal`)
+[source,properties]
+----
+# MVStore file-based persistence
+quarkus.flow.persistence.mvstore.enabled=true
+quarkus.flow.persistence.mvstore.db-path=/deployments/data/flow.mv.db
+
+# No HA support (single replica)
+----
+
+.*Standard variant* (`standard`)
+[source,properties]
+----
+# PostgreSQL JPA persistence
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.jdbc.url=jdbc:postgresql://postgresql:5432/flowdb
+quarkus.datasource.username=flowuser
+# Password via env var: QUARKUS_DATASOURCE_PASSWORD
+
+# Durable Kubernetes HA
+quarkus.flow.durable.kube.enabled=true
+quarkus.flow.durable.kube.pool.name=flow-runner-standard
+----
+
+.*Messaging variant* (`messaging`)
+[source,properties]
+----
+# PostgreSQL + Kafka (same as standard, plus...)
+kafka.bootstrap.servers=kafka:9092
+
+# Reactive Messaging for CloudEvents
+mp.messaging.incoming.flow-in.connector=smallrye-kafka
+mp.messaging.incoming.flow-in.topic=workflow-events
+mp.messaging.outgoing.flow-out.connector=smallrye-kafka
+mp.messaging.outgoing.flow-out.topic=workflow-results
+----
+
+[[configuration-production]]
+=== Common production overrides
+
+**Security:**
+
+[source,properties]
+----
+# Option 1: API Key authentication
+quarkus.flow.runner.security.type=API_KEY
+quarkus.flow.runner.security.api-keys.admin.secret=${FLOW_ADMIN_KEY}
+quarkus.flow.runner.security.api-keys.admin.roles=flow-admin
+
+# Option 2: OIDC authentication (requires quarkus-oidc dependency)
+quarkus.flow.runner.security.type=OIDC
+quarkus.oidc.auth-server-url=https://keycloak.example.com/realms/myrealm
+quarkus.oidc.client-id=flow-runner
+quarkus.oidc.credentials.secret=${OIDC_CLIENT_SECRET}
+----
+
+**Database (standard/messaging):**
+
+[source,properties]
+----
+quarkus.datasource.jdbc.url=jdbc:postgresql://prod-postgres:5432/workflows
+quarkus.datasource.username=prod-user
+quarkus.datasource.password=${DB_PASSWORD}  # From K8s secret
+quarkus.datasource.jdbc.max-size=20
+----
+
+**Kafka (messaging):**
+
+[source,properties]
+----
+kafka.bootstrap.servers=kafka-cluster:9092
+mp.messaging.incoming.flow-in.topic=production-workflow-events
+mp.messaging.outgoing.flow-out.topic=production-workflow-results
+----
+
+**Logging:**
+
+[source,properties]
+----
+quarkus.log.level=INFO
+quarkus.log.category."io.quarkiverse.flow".level=DEBUG
+quarkus.log.category."io.serverlessworkflow".level=DEBUG
+----
+
+**Environment variables from secrets (Kubernetes):**
+
+[source,yaml]
+----
+env:
+- name: QUARKUS_DATASOURCE_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: postgresql-secret
+      key: password
+- name: QUARKUS_FLOW_RUNNER_SECURITY_API_KEY
+  valueFrom:
+    secretKeyRef:
+      name: runner-secret
+      key: api-key
+- name: OIDC_CLIENT_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: oidc-secret
+      key: client-secret
+----
+
+[[choosing-variant]]
+== Choosing the Right Variant
+
+Use this decision tree:
+
+[source]
+----
+Do you need Kafka/messaging integration?
+├─ YES → messaging variant
+└─ NO
+   └─ Do you need high availability (multiple replicas)?
+      ├─ YES → standard variant
+      └─ NO → minimal variant
+----
+
+**Detailed comparison:**
+
+[cols="2,2,2,2", options="header"]
+|===
+|Feature |minimal |standard |messaging
+
+|*Deployment*
+|Single pod
+|Multi-pod (PostgreSQL + 3 replicas)
+|Multi-pod (PostgreSQL + Kafka + 3 replicas)
+
+|*High Availability*
+|❌ No
+|✅ Yes (lease coordination)
+|✅ Yes (lease coordination)
+
+|*Persistence*
+|File-based (MVStore)
+|PostgreSQL (JPA)
+|PostgreSQL (JPA)
+
+|*Event streaming*
+|❌ No
+|❌ No
+|✅ Kafka (Reactive Messaging)
+
+|*Storage*
+|PVC for `/deployments/data`
+|PostgreSQL database
+|PostgreSQL database
+
+|*Startup time*
+|~5 seconds
+|~8 seconds
+|~10 seconds
+
+|*Memory usage*
+|~200MB
+|~300MB
+|~400MB
+
+|*Production ready?*
+|Single-node only
+|✅ Yes
+|✅ Yes
+
+|*Best for*
+|Dev/test, demos
+|Production (stateless workflows)
+|Production (event-driven workflows)
+|===
+
+[[troubleshooting]]
+== Troubleshooting
+
+[[troubleshooting-startup]]
+=== Container won't start
+
+**Check container logs:**
+
+[source,bash]
+----
+# Docker
+docker logs flow-runner
+
+# Kubernetes
+kubectl -n quarkus-flow logs deployment/quarkus-flow-runner-standard
+----
+
+**Common issues:**
+
+* **No workflows found** - Verify `/deployments/workflows` is mounted and contains `.yaml`/`.yml`/`.json` files
+* **Database connection failed** (standard/messaging) - Check PostgreSQL is running and credentials are correct
+* **Permission denied on `/deployments/data`** (minimal) - Ensure the PVC has correct permissions (UID 185)
+
+[[troubleshooting-workflows]]
+=== Workflows not loading
+
+**Verify workflows directory:**
+
+[source,bash]
+----
+# Docker
+docker exec flow-runner ls -la /deployments/workflows
+
+# Kubernetes
+kubectl -n quarkus-flow exec deployment/quarkus-flow-runner-standard -- \
+  ls -la /deployments/workflows
+----
+
+**Check file format:**
+
+[source,bash]
+----
+# Files must end in .yaml, .yml, or .json
+docker exec flow-runner cat /deployments/workflows/my-workflow.yaml
+----
+
+**Examine startup logs for parsing errors:**
+
+[source,bash]
+----
+docker logs flow-runner | grep -A5 "Flow Runner: Loading workflows"
+----
+
+[[troubleshooting-database]]
+=== Database connection issues (standard/messaging)
+
+**Verify PostgreSQL is running:**
+
+[source,bash]
+----
+kubectl -n quarkus-flow get pods -l app=postgresql
+kubectl -n quarkus-flow get svc postgresql
+----
+
+**Check connection string in logs:**
+
+[source,bash]
+----
+kubectl -n quarkus-flow logs deployment/quarkus-flow-runner-standard \
+  | grep -i datasource
+----
+
+**Test connectivity from runner pod:**
+
+[source,bash]
+----
+kubectl -n quarkus-flow exec deployment/quarkus-flow-runner-standard -- \
+  sh -c 'nc -zv postgresql 5432'
+----
+
+[[troubleshooting-ha]]
+=== HA coordination not working (standard/messaging)
+
+**Check RBAC permissions:**
+
+[source,bash]
+----
+kubectl -n quarkus-flow get role quarkus-flow-runner-lease-manager
+kubectl -n quarkus-flow get rolebinding quarkus-flow-runner-lease-manager
+kubectl -n quarkus-flow get serviceaccount quarkus-flow-runner
+----
+
+**Verify lease acquisition:**
+
+[source,bash]
+----
+kubectl -n quarkus-flow get lease
+
+# Expected: 1 leader + N member leases
+# NAME                                       HOLDER
+# flow-pool-leader-flow-runner-standard      pod-abc
+# flow-pool-member-flow-runner-standard-00   pod-abc
+# flow-pool-member-flow-runner-standard-01   pod-def
+# flow-pool-member-flow-runner-standard-02   pod-ghi
+----
+
+**Check pod logs for lease errors:**
+
+[source,bash]
+----
+kubectl -n quarkus-flow logs deployment/quarkus-flow-runner-standard \
+  | grep -i lease
+----
+
+**Common HA issues:**
+
+* **No leases acquired** - RBAC permissions missing or ServiceAccount not assigned to deployment
+* **Lease contention** - Multiple pools using the same pool name (check `quarkus.flow.durable.kube.pool.name`)
+* **Pods crash looping** - PostgreSQL not ready or database migrations failed
+
+[[next-steps]]
+== What's next?
+
+Now that you understand the pre-built Runner images:
+
+**Learn the complete Runner API:**
+
+* xref:runner.adoc[Workflow execution via REST API] - Complete tutorial on the Runner extension with API reference
+
+**Core workflow features:**
+
+* xref:workflow-definitions.adoc[Define workflows from YAML] - Deep dive into workflow definitions
+* xref:data-flow.adoc[Data flow and context management] - Manipulate data between tasks
+* xref:dsl-cheatsheet.adoc[Java DSL cheatsheet] - Quick reference for workflow syntax
+
+**Production deployment:**
+
+* xref:persistence.adoc[Configure state persistence] - Durable workflows across restarts
+* xref:concepts-durable-workflow-k8s.adoc[Durable Workflows in Kubernetes] - HA architecture explained
+* xref:fault-tolerance.adoc[Fault tolerance and resilience] - Retries, circuit breakers, timeouts
+* xref:secrets.adoc[Secrets management] - Handle sensitive data securely
+
+**Integrations:**
+
+* xref:langchain4j.adoc[LangChain4j integration] - Build agentic AI workflows
+* xref:messaging.adoc[Messaging and events] - Kafka, AMQP, and CloudEvents
+* xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services] - External REST APIs
+
+**Monitoring:**
+
+* xref:metrics-prometheus.adoc[Metrics & Prometheus] - Observability and monitoring
+* xref:structured-logging.adoc[Structured logging] - Export workflow data via logs
+* xref:tracing.adoc[Distributed tracing] - OpenTelemetry integration

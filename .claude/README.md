@@ -7,21 +7,6 @@ This directory contains configuration files for [Claude Code](https://claude.ai/
 - **`settings.json`**: Hooks and automation configuration
 - **`CLAUDE.md`** (or `../CLAUDE.md`): Project guidelines and conventions loaded at every Claude Code session start
 
-## Hooks
-
-### Pre-PR Validation Hook
-
-**What it does**: Automatically runs `mvn clean install -DskipITs=false` before any PR creation to ensure all tests pass.
-
-**Why**: Prevents broken builds from being pushed to GitHub and ensures high code quality.
-
-**How it works**: When Claude Code (or you) attempts to run `gh pr create`, the hook intercepts and:
-1. Runs the full Maven build with integration tests
-2. If successful: PR creation proceeds
-3. If failed: PR creation is blocked with an error message
-
-You can see this configured in `settings.json` under the `PreToolUse` hooks section.
-
 ## For Contributors
 
 If you're using Claude Code to contribute to this project:

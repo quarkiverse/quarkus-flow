@@ -1,0 +1,24 @@
+document:
+  dsl: '1.0.0'
+  namespace: quarkiverse-flow-runner
+  name: emit-event
+  version: '0.1.0'
+input:
+  schema:
+    format: json
+    document:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Your name
+do:
+  - emitEvent:
+      emit:
+        event:
+          with:
+            source: uri://org.quarkiverse.flow.runner.app.test
+            type: org.quarkiverse.flow.runner.app.response
+            data: '${ { message: "Hello " + .name + "!" } }'

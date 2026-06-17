@@ -9,7 +9,7 @@ import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
 @ConfigMapping(prefix = FlowPersistenceConfig.PREFIX)
-@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface FlowPersistenceConfig {
 
     String PREFIX = "quarkus.flow.persistence";

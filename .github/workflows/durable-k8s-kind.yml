@@ -1,5 +1,30 @@
 name: Durable Workflows (Kubernetes Lease) - Kind Verification
 
+# This pipeline tests the runner standard variant with durable-kubernetes HA support
+# NOTE: This is a CI/test pipeline, NOT a release pipeline
+# - Runs on: every PR and push to main
+# - Purpose: verify runner deployment and HA functionality
+# - Uses: SNAPSHOT dependencies from local Maven build
+#
+# For releasing images to Quay.io, see: .github/workflows/publish-runner-images.yml
+#
+# Key lessons learned:
+# 1. Build order: mvn install (filters k8s manifests) → make build-standard → kind load → kubectl apply
+# 2. Image version is automatically injected via Maven resource filtering:
+#    - Source manifests (src/main/k8s) use ${project.version} placeholder
+#    - Maven processes them to target/k8s with actual version (e.g., 1.0.0-SNAPSHOT-standard)
+#    - This ensures version consistency between build and manifests
+# 3. Load image into Kind BEFORE deploying manifests to avoid ImagePullBackOff
+# 4. Deploy via kustomize (kubectl apply -k) which creates namespace automatically
+# 5. Do NOT kubectl apply postgresql.yaml separately - kustomize handles it
+# 6. Always use filtered manifests from target/k8s, not src/main/k8s
+#
+# Test coverage:
+# - 3-replica deployment with lease-based HA coordination
+# - Leader election and lease renewal
+# - Leader failover when leader pod is deleted
+# - Two-pod disruption (2 followers deleted, then leader + 1 follower)
+
 on:
   push:
     branches: [ "main" ]
@@ -38,83 +63,111 @@ jobs:
           kubectl cluster-info
           kubectl get nodes -o wide
 
-      - name: Deploy Valkey
+      - name: Build dependencies and process k8s manifests
         run: |
-          kubectl apply -f examples/durable-workflows-k8s/manifests/valkey.yaml
-          kubectl wait --for=condition=Ready pod -l app=redis --timeout=120s -n default
-
-      - name: Build + deploy example to Kind (from repo root, single-threaded)
-        run: |
+          # Build all dependencies first to cache them locally before Docker build
+          # This also processes k8s manifests with Maven filtering (${project.version} replacement)
+          # Must include deployment modules explicitly since -pl -am only builds runtime dependencies
           mvn -DskipTests -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp \
-              -pl :quarkus-flow,:quarkus-flow-deployment,:quarkus-flow-durable-kubernetes,:quarkus-flow-durable-kubernetes-deployment,:quarkus-flow-redis,:quarkus-flow-redis-deployment \
-              -am install
-          mvn -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp -pl examples/durable-workflows-k8s -DskipTests -am -Pkind clean package
+              -pl runner/deployment,persistence/jpa/deployment,durable-kubernetes/deployment,runner/app -am -P image-standard install
+
+      - name: Build runner standard image
+        working-directory: runner/app
+        run: |
+          # Build the standard variant Docker image
+          # Image tag format: quay.io/quarkiverse/quarkus-flow-runner:{VERSION}-standard
+          # The manifest must use matching SNAPSHOT version (e.g., 1.0.0-SNAPSHOT-standard)
+          make build-standard
+
+      - name: Load image into Kind
+        run: |
+          # Load the image into Kind BEFORE deploying manifests to avoid ImagePullBackOff
+          # The image must be present in the cluster before pods try to pull it
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -pl runner/app)
+          kind load docker-image quay.io/quarkiverse/quarkus-flow-runner:${VERSION}-standard --name kind
+
+      - name: Deploy runner standard to Kind
+        run: |
+          # Deploy via kustomize which creates: namespace, PostgreSQL, RBAC, runner deployment
+          # This handles namespace creation automatically - do NOT kubectl apply namespace separately
+          # Use filtered manifests from target/k8s (${project.version} replaced by Maven)
+          kubectl apply -k runner/app/target/k8s/overlays/standard
+
+      - name: Wait for PostgreSQL
+        run: |
+          # Wait for PostgreSQL to be ready before checking runner deployment
+          kubectl wait --for=condition=Ready pod -l app=postgresql --timeout=120s -n quarkus-flow
 
       - name: Wait for deployment
         run: |
-          kubectl -n default rollout status deployment/durable-flow-demo --timeout=240s
-          kubectl -n default get pods -l app=durable-flow-demo -o wide
-          kubectl -n default get lease -o wide || true
+          kubectl -n quarkus-flow rollout status deployment/quarkus-flow-runner-standard --timeout=240s
+          kubectl -n quarkus-flow get pods -l app=quarkus-flow-runner,variant=standard -o wide
+          kubectl -n quarkus-flow get lease -o wide || true
 
       - name: Verify lease renew
         working-directory: examples/durable-workflows-k8s
         env:
-          NAMESPACE: default
-          APP_NAME: durable-flow-demo
-          APP_PART_OF: quarkus-flow
-          APP_VERSION: 0.1.0
+          NAMESPACE: quarkus-flow
+          APP_NAME: quarkus-flow-runner-standard
+          APP_PART_OF: quarkus-flow-runner
+          APP_VERSION: standard
           EXPECTED_REPLICAS: "3"
-          FLOW_POOL_NAME: durable-flow
+          FLOW_POOL_NAME: flow-runner-standard
           RENEW_TIMEOUT_SECONDS: "120"
           FAILOVER_TIMEOUT_SECONDS: "180"
+          DEPLOYMENT_NAME: quarkus-flow-runner-standard
         run: ./scripts/verify-lease.sh
 
       - name: Verify failover
         working-directory: examples/durable-workflows-k8s
         env:
-          NAMESPACE: default
-          APP_NAME: durable-flow-demo
-          APP_PART_OF: quarkus-flow
-          APP_VERSION: 0.1.0
+          NAMESPACE: quarkus-flow
+          APP_NAME: quarkus-flow-runner-standard
+          APP_PART_OF: quarkus-flow-runner
+          APP_VERSION: standard
           EXPECTED_REPLICAS: "3"
-          FLOW_POOL_NAME: durable-flow
+          FLOW_POOL_NAME: flow-runner-standard
           RENEW_TIMEOUT_SECONDS: "120"
           FAILOVER_TIMEOUT_SECONDS: "180"
+          DEPLOYMENT_NAME: quarkus-flow-runner-standard
         run: ./scripts/verify-failover.sh
 
       - name: Verify two-pod disruption
         working-directory: examples/durable-workflows-k8s
         env:
-          NAMESPACE: default
-          APP_NAME: durable-flow-demo
-          APP_PART_OF: quarkus-flow
-          APP_VERSION: 0.1.0
+          NAMESPACE: quarkus-flow
+          APP_NAME: quarkus-flow-runner-standard
+          APP_PART_OF: quarkus-flow-runner
+          APP_VERSION: standard
           EXPECTED_REPLICAS: "3"
-          FLOW_POOL_NAME: durable-flow
+          FLOW_POOL_NAME: flow-runner-standard
           RENEW_TIMEOUT_SECONDS: "120"
           FAILOVER_TIMEOUT_SECONDS: "240"
           STABILITY_WINDOW_SECONDS: "20"
+          DEPLOYMENT_NAME: quarkus-flow-runner-standard
         run: ./scripts/verify-two-pod-disruption.sh
 
       - name: Dump debug info on failure
         if: failure()
         run: |
-          echo "== Pods (selector app=durable-flow-demo) =="
-          kubectl -n default get pods -l app=durable-flow-demo -o wide || true
+          echo "== Pods (selector app=quarkus-flow-runner) =="
+          kubectl -n quarkus-flow get pods -l app=quarkus-flow-runner,variant=standard -o wide || true
           echo "== Pods (k8s recommended labels) =="
-          kubectl -n default get pods -l app.kubernetes.io/name=durable-flow-demo -o wide || true
+          kubectl -n quarkus-flow get pods -l app.kubernetes.io/name=quarkus-flow-runner-standard -o wide || true
           echo "== Deployment =="
-          kubectl -n default get deploy durable-flow-demo -o yaml || true
+          kubectl -n quarkus-flow get deploy quarkus-flow-runner-standard -o yaml || true
           echo "== Service =="
-          kubectl -n default get svc durable-flow-demo -o yaml || true
+          kubectl -n quarkus-flow get svc quarkus-flow-runner-standard -o yaml || true
+          echo "== PostgreSQL =="
+          kubectl -n quarkus-flow get pods -l app=postgresql -o wide || true
           echo "== Leases =="
-          kubectl -n default get lease -o wide || true
-          for l in $(kubectl -n default get lease -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null); do
+          kubectl -n quarkus-flow get lease -o wide || true
+          for l in $(kubectl -n quarkus-flow get lease -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null); do
             echo "--- lease/$l ---"
-            kubectl -n default get lease "$l" -o yaml || true
+            kubectl -n quarkus-flow get lease "$l" -o yaml || true
           done
-          echo "== Logs (all pods) =="
-          for p in $(kubectl -n default get pods -l app.kubernetes.io/name=durable-flow-demo -o name 2>/dev/null); do
+          echo "== Logs (all runner pods) =="
+          for p in $(kubectl -n quarkus-flow get pods -l app.kubernetes.io/name=quarkus-flow-runner-standard -o name 2>/dev/null); do
             echo "--- logs: $p ---"
-            kubectl -n default logs "$p" --tail=250 || true
+            kubectl -n quarkus-flow logs "$p" --tail=250 || true
           done
