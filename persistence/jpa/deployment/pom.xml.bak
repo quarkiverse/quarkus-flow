@@ -3,12 +3,12 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.quarkiverse.flow</groupId>
-        <artifactId>quarkus-flow-redis-parent</artifactId>
+        <artifactId>quarkus-flow-jpa-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-  <artifactId>quarkus-flow-redis-deployment</artifactId>
-    <name>Quarkus Flow :: Persistence :: Redis :: Deployment</name>
+    <artifactId>quarkus-flow-jpa-deployment</artifactId>
+    <name>Quarkus Flow :: Persistence :: JPA :: Deployment</name>
 
     <dependencies>
         <dependency>
@@ -16,13 +16,13 @@
             <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
         <dependency>
-           <groupId>io.quarkus</groupId>
-           <artifactId>quarkus-redis-client-deployment</artifactId>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-jpa</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.quarkiverse.flow</groupId>
-            <artifactId>quarkus-flow-redis</artifactId>
-            <version>${project.version}</version>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-hibernate-orm-panache-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>
@@ -31,34 +31,24 @@
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>
-            <artifactId>quarkus-flow-persistence-common-deployment</artifactId>
+            <artifactId>quarkus-flow-persistence-test-common</artifactId>
             <version>${project.version}</version>
-        </dependency>
-
-        <!-- test dependencies -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-jackson</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.quarkiverse.flow</groupId>
-            <artifactId>quarkus-flow-persistence-test-common</artifactId>
-            <version>${project.version}</version>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-jackson-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-postgresql-deployment</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <systemPropertyVariables>
-                        <redis.test.image-name>${redis.test.image-name}</redis.test.image-name>
-                    </systemPropertyVariables>
-                </configuration>
-            </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>

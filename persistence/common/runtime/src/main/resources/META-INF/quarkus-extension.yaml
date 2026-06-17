@@ -1,0 +1,14 @@
+name: Flow Persistence Common
+description: |
+  Common persistence components shared across Flow persistence implementations
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+    - workflow
+    - workflows
+    - persistence
+  guide: https://docs.quarkiverse.io/quarkus-flow/dev/
+  categories:
+    - "integration"
+    - "persistence"
+  status: "preview"
