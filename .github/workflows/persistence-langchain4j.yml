@@ -66,12 +66,36 @@ jobs:
             -Dquarkus.langchain4j.ollama.devservices.enabled=false \
             -ntp
 
-      - name: Publish Failed Test Report
-        uses: mikepenz/action-junit-report@v6
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              '**/target/*-reports/TEST-*.xml' \
+              'target/build-report.json' \
+              'LICENSE'
+
+      - name: Upload build reports
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          check_name: "JUnit Test Report (persistence-jpa / ${{ matrix.kind }})"
-          report_paths: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
-          include_passed: false
-          detailed_summary: true
-          annotate_only: true
+          name: "build-reports-${{ github.run_attempt }}-persistence-jpa-${{ matrix.kind }}"
+          path: build-reports.zip
+          retention-days: 1
+
+  build-report:
+    runs-on: ubuntu-latest
+    name: Build report
+    needs: [persistence-jpa]
+    if: always()
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: build-reports-artifacts
+          pattern: build-reports-${{ github.run_attempt }}-*
+          merge-multiple: true
+
+      - name: Produce report and add it as job summary
+        uses: quarkusio/action-build-reporter@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          build-reports-artifacts-path: build-reports-artifacts
