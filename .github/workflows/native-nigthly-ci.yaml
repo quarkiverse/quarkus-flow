@@ -71,7 +71,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: "build-reports-${{ github.run_attempt }}-Native Build (JDK 25)"
+          name: "build-reports-${{ github.run_attempt }}-native-build-jdk-25"
           path: build-reports.zip
           retention-days: 1
 
