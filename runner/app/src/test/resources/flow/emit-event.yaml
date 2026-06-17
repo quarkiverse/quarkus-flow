@@ -21,4 +21,5 @@ do:
           with:
             source: uri://org.quarkiverse.flow.runner.app.test
             type: org.quarkiverse.flow.runner.app.response
-            data: '${ { message: "Hello " + .name + "!" } }'
+            data:
+              message: '${ "Hello " + .name + "!" }'

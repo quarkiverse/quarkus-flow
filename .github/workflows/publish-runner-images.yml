@@ -99,11 +99,6 @@ jobs:
           java-version: "17"
           cache: maven
 
-      - name: Install skopeo
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y skopeo
-
       - name: Build
         run: |
           POM_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -pl runner/app)
