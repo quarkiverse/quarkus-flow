@@ -59,19 +59,43 @@ jobs:
           -Drestassured.config.http.client.params.SO_TIMEOUT=${{ env.RESTASSURED_TIMEOUT_MS }}
           -DskipITs=false
 
-      - name: Publish Failed Test Report
-        uses: mikepenz/action-junit-report@v6
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              '**/target/*-reports/TEST-*.xml' \
+              'target/build-report.json' \
+              'LICENSE'
+
+      - name: Upload build reports
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          check_name: "JUnit Test Report (Native Nightly)"
-          report_paths: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
-          include_passed: false
-          detailed_summary: true
-          annotate_only: true
+          name: "build-reports-${{ github.run_attempt }}-Native Build (JDK 25)"
+          path: build-reports.zip
+          retention-days: 1
 
       - name: Fail the workflow if native build failed
         if: steps.native-build.outcome == 'failure'
         run: exit 1
+
+  build-report:
+    runs-on: ubuntu-latest
+    name: Build report
+    needs: [native-build]
+    if: always()
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: build-reports-artifacts
+          pattern: build-reports-${{ github.run_attempt }}-*
+          merge-multiple: true
+
+      - name: Produce report and add it as job summary
+        uses: quarkusio/action-build-reporter@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          build-reports-artifacts-path: build-reports-artifacts
 
   track-issue:
     name: Track Issue
