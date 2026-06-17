@@ -30,12 +30,15 @@ public class LeaseAcquisitionHealthCheck implements HealthCheck {
     @Inject
     KubeInfoStrategy kubeInfo;
 
+    @Inject
+    LocalStrategy localStrategy;
+
     @ConfigProperty(name = "quarkus.flow.durable.kube.health.readiness.require-lease", defaultValue = "true")
     boolean requireLease;
 
     @Override
     public HealthCheckResponse call() {
-        boolean enabled = leaseConfig.member().enabled();
+        boolean enabled = leaseConfig.member().enabled() && !localStrategy.enabled();
         String lease = memberLeaseCoordinator.currentLeaseOrNull();
 
         HealthCheckResponseBuilder b = HealthCheckResponse.named(NAME)

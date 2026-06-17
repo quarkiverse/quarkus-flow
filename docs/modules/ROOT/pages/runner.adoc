@@ -124,6 +124,7 @@ do:
 * `input.schema` - JSON Schema for input validation (optional but recommended)
 * `do` - Array of tasks to execute (REQUIRED)
 
+[[security-modes]]
 == 4. Choose a security mode
 
 The Runner supports three authentication modes. For this tutorial, start with `NONE` for local testing, then configure proper authentication for production.
@@ -232,7 +233,7 @@ quarkus.flow.runner.security.namespace.claim=namespace
   "namespace": ["examples", "team-a"]
 }
 ----
-
+[[rest-api]]
 **API usage:**
 
 [source,bash]

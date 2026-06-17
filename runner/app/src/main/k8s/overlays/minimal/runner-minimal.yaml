@@ -1,0 +1,154 @@
+---
+# Optional: Create a ConfigMap with custom application.properties
+# Users can override any default settings by mounting this to /deployments/config
+#
+# Example:
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: runner-custom-config
+#   namespace: quarkus-flow
+# data:
+#   application.properties: |
+#     quarkus.log.level=DEBUG
+#     quarkus.flow.runner.source-path=/deployments/workflows
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: runner-minimal-data-pvc
+  namespace: quarkus-flow
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# Example: Create ConfigMaps for your workflows
+# You can create multiple ConfigMaps and mount them all to /deployments/workflows
+#
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: workflow-hello
+#   namespace: quarkus-flow
+# data:
+#   hello.yaml: |
+#     id: hello-world
+#     name: Hello World
+#     start: printMessage
+#     functions:
+#       - name: printMessage
+#         operation: sysout
+#     states:
+#       - name: printMessage
+#         type: operation
+#         actions:
+#           - functionRef: printMessage
+#         end: true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quarkus-flow-runner-minimal
+  namespace: quarkus-flow
+  labels:
+    app: quarkus-flow-runner
+    variant: minimal
+spec:
+  # Single replica - MVStore is file-based and doesn't support multi-replica HA
+  replicas: 1
+  selector:
+    matchLabels:
+      app: quarkus-flow-runner
+      variant: minimal
+  template:
+    metadata:
+      labels:
+        app: quarkus-flow-runner
+        variant: minimal
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/q/metrics"
+    spec:
+      containers:
+        - name: runner
+          image: quay.io/quarkiverse/quarkus-flow-runner:${project.version}-minimal
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          # No env vars needed - defaults from classpath are safe
+          # Users can override via ConfigMap mounted to /deployments/config
+          volumeMounts:
+            - name: data
+              mountPath: /deployments/data
+            # Example workflow (automatically created by kustomize)
+            - name: workflow-example
+              mountPath: /deployments/workflows/example-workflow.yaml
+              subPath: example-workflow.yaml
+              readOnly: true
+            # Add more workflows here:
+            # - name: workflow-myapp
+            #   mountPath: /deployments/workflows/myworkflow.yaml
+            #   subPath: myworkflow.yaml
+            #   readOnly: true
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: runner-minimal-data-pvc
+        # Example workflow (automatically created by kustomize)
+        - name: workflow-example
+          configMap:
+            name: workflow-example
+        # Add more workflows here:
+        # - name: workflow-myapp
+        #   configMap:
+        #     name: workflow-myapp
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: quarkus-flow-runner-minimal
+  namespace: quarkus-flow
+  labels:
+    app: quarkus-flow-runner
+    variant: minimal
+spec:
+  selector:
+    app: quarkus-flow-runner
+    variant: minimal
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  type: ClusterIP

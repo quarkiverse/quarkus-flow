@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: flow-postgres
+    environment:
+      POSTGRES_DB: flowdb
+      POSTGRES_USER: flowuser
+      POSTGRES_PASSWORD: flowpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowuser -d flowdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - flow-network
+
+  runner:
+    image: quay.io/quarkiverse/quarkus-flow-runner:latest-standard
+    container_name: flow-runner-standard
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mount workflow files from host (customize via WORKFLOWS env var, default: ./workflows)
+      - ${WORKFLOWS:-./workflows}:/deployments/workflows:ro
+    environment:
+      # Database connection
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/flowdb
+      QUARKUS_DATASOURCE_USERNAME: flowuser
+      QUARKUS_DATASOURCE_PASSWORD: flowpass
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/q/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - flow-network
+
+volumes:
+  postgres-data:
+    driver: local
+
+networks:
+  flow-network:
+    driver: bridge

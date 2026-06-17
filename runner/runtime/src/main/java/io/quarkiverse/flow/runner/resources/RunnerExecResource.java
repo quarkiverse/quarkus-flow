@@ -64,7 +64,7 @@ public class RunnerExecResource {
             @Parameter(description = "Workflow namespace (access validated if namespace authorization enabled)", required = true) @PathParam("namespace") String namespace,
             @Parameter(description = "Workflow name", required = true) @PathParam("name") String name,
             @Parameter(description = "Wait for workflow completion (default: false)") @QueryParam("wait") @DefaultValue("false") boolean wait,
-            @RequestBody(description = "Workflow input data", required = false) Map<String, Object> request) {
+            @RequestBody(description = "Workflow input data (can be object, array, string, number, or boolean)", required = false) Object request) {
 
         final Optional<WorkflowDefinition> definition = application.workflowDefinitions().entrySet().stream()
                 .filter(entry -> name.equals(entry.getKey().name()) && namespace.equals(entry.getKey().namespace()))
@@ -94,12 +94,12 @@ public class RunnerExecResource {
             @Parameter(description = "Workflow name", required = true) @PathParam("name") String name,
             @Parameter(description = "Workflow version", required = true) @PathParam("version") String version,
             @Parameter(description = "Wait for workflow completion (default: false)") @QueryParam("wait") @DefaultValue("false") boolean wait,
-            @RequestBody(description = "Workflow input data", required = false) Map<String, Object> request) {
+            @RequestBody(description = "Workflow input data (can be object, array, string, number, or boolean)", required = false) Object request) {
         final WorkflowDefinitionId id = new WorkflowDefinitionId(namespace, name, version);
         return executeWorkflow(wait, request, id, application.workflowDefinitions().get(id));
     }
 
-    private Uni<Response> executeWorkflow(boolean wait, Map<String, Object> request, WorkflowDefinitionId id,
+    private Uni<Response> executeWorkflow(boolean wait, Object request, WorkflowDefinitionId id,
             WorkflowDefinition definition) {
         if (definition == null) {
             return Uni.createFrom().item(

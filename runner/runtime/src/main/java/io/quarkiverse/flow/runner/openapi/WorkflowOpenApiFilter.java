@@ -149,7 +149,7 @@ public class WorkflowOpenApiFilter implements OASFilter {
      * @param isLatest true if this is the "latest" endpoint (without version in path)
      * @param securityEnabled true if security is enabled (adds security requirements)
      */
-    private Operation createWorkflowOperation(Document doc, Input workflowInput, boolean isLatest, boolean securityEnabled) {
+    Operation createWorkflowOperation(Document doc, Input workflowInput, boolean isLatest, boolean securityEnabled) {
         Operation operation = OASFactory.createOperation();
 
         // Basic metadata
@@ -247,17 +247,17 @@ public class WorkflowOpenApiFilter implements OASFilter {
      * @param workflowInput the workflow input schema
      * @return OpenAPI schema for the workflow input
      */
-    private Schema createInputSchema(Input workflowInput) {
+    Schema createInputSchema(Input workflowInput) {
         Schema schema = OASFactory.createSchema();
 
         // Check if workflow has inline schema defined
         if (workflowInput != null && workflowInput.getSchema() != null
                 && workflowInput.getSchema().getSchemaInline() != null) {
-            Object schemaInline = workflowInput.getSchema().getSchemaInline();
+            Object schemaDocument = workflowInput.getSchema().getSchemaInline().getDocument();
 
             try {
-                // Parse the inline schema (can be JsonNode or String)
-                JsonNode schemaNode = parseSchemaInline(schemaInline);
+                // Parse the inline schema document (can be JsonNode or String)
+                JsonNode schemaNode = parseSchemaInline(schemaDocument);
 
                 if (schemaNode != null) {
                     // Extract properties from JSON Schema and map to OpenAPI schema
@@ -281,12 +281,15 @@ public class WorkflowOpenApiFilter implements OASFilter {
      * Parses the schema inline object (JsonNode or String) to JsonNode.
      */
     private JsonNode parseSchemaInline(Object schemaInline) throws Exception {
+        if (schemaInline == null)
+            return null;
+
         if (schemaInline instanceof JsonNode) {
             return (JsonNode) schemaInline;
         } else if (schemaInline instanceof String) {
             return mapper.readTree((String) schemaInline);
         }
-        return null;
+        return mapper.valueToTree(schemaInline);
     }
 
     /**
