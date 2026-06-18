@@ -6,7 +6,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 
 @ConfigMapping(prefix = FlowPersistenceConfig.PREFIX + ".mvstore")
-@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface MVStoreConfig {
 
     /**

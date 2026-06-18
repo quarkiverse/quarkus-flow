@@ -14,7 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.internal.WorkflowApplicationReady;
-import io.quarkus.arc.properties.IfBuildProperty;
+import io.quarkus.arc.Unremovable;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
@@ -22,7 +22,7 @@ import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.persistence.PersistenceInstanceHandlers;
 
 @ApplicationScoped
-@IfBuildProperty(name = FlowPersistenceConfig.PREFIX + ".autoRestore", enableIfMissing = true, stringValue = "true")
+@Unremovable
 public class FlowPersistenceRestore {
 
     private static final Logger LOG = LoggerFactory.getLogger(FlowPersistenceRestore.class);
@@ -34,6 +34,11 @@ public class FlowPersistenceRestore {
     FlowPersistenceConfig config;
 
     void restoreInstances(@Observes WorkflowApplicationReady event) {
+        // Check runtime config to see if auto-restore is enabled
+        if (!config.autoRestore()) {
+            LOG.debug("Auto-restore is disabled, skipping workflow instance restoration");
+            return;
+        }
         Map<WorkflowDefinitionId, WorkflowDefinition> definitions = application.workflowDefinitions();
 
         Collection<WorkflowDefinitionId> excludedIds = excludedIds(config.excludeWorkflows());
