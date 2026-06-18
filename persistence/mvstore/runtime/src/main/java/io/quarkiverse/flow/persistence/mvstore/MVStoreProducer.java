@@ -32,7 +32,7 @@ public class MVStoreProducer {
                 .withPersistenceExecutor(executor).build();
     }
 
-    void close(@Disposes MVStorePersistenceStore persistenceStore) {
+    public void close(@Disposes MVStorePersistenceStore persistenceStore) {
         try {
             persistenceStore.close();
         } catch (Exception e) {
