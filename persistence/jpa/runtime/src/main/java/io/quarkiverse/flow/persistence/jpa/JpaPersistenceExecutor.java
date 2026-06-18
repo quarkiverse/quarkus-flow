@@ -16,7 +16,6 @@ import io.smallrye.context.api.ManagedExecutorConfig;
 public class JpaPersistenceExecutor extends AbstractAsyncPersistenceExecutor {
 
     @Inject
-    // See https://github.com/quarkiverse/quarkus-flow/issues/652
     @ManagedExecutorConfig(cleared = ThreadContext.TRANSACTION)
     ManagedExecutor service;
 
