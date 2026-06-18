@@ -141,7 +141,7 @@ jobs:
           skopeo copy docker-daemon:quay.io/quarkiverse/quarkus-flow-runner:${TAG}-${VARIANT} oci-archive:artifact.tar.gz
 
       - name: Upload the Docker Image
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: artifact-${{ matrix.variant }}
           path: runner/app/artifact.tar.gz
