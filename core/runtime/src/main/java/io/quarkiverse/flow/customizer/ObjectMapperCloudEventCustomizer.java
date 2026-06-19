@@ -1,13 +1,15 @@
-package io.quarkiverse.flow.messaging;
+package io.quarkiverse.flow.customizer;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.cloudevents.jackson.JsonFormat;
+import io.quarkus.arc.Unremovable;
 import io.quarkus.jackson.ObjectMapperCustomizer;
 
 @ApplicationScoped
+@Unremovable
 public class ObjectMapperCloudEventCustomizer implements ObjectMapperCustomizer {
 
     @Override
