@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import io.quarkiverse.flow.messaging.FlowDomainEventsPublisher;
 import io.quarkiverse.flow.messaging.FlowLifecycleEventsPublisher;
 import io.quarkiverse.flow.messaging.FlowMessagingConsumer;
-import io.quarkiverse.flow.messaging.ObjectMapperCloudEventCustomizer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -44,10 +43,4 @@ public class FlowMessagingProcessor {
 
         beans.produce(builder.setUnremovable().build());
     }
-
-    @BuildStep
-    AdditionalBeanBuildItem additionalBean() {
-        return AdditionalBeanBuildItem.unremovableOf(ObjectMapperCloudEventCustomizer.class);
-    }
-
 }
