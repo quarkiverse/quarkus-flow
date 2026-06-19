@@ -9,15 +9,13 @@ import '@vaadin/dialog';
 import { dialogRenderer, dialogFooterRenderer } from '@vaadin/dialog/lit.js';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import { devuiState } from 'devui-state';
+import './components/serverless-workflow-diagram-editor.js';
 
 import { notifier } from 'notifier';
 
 import './qwc-flow-workflow-execution.js';
 
 import { themeState } from 'theme-state';
-
-// Load the bundled diagram editor (includes React + DiagramEditor)
-import './bundle.js';
 
 export class QwcFlow extends observeState(QwcHotReloadElement) {
     jsonRpc = new JsonRpc(this);
@@ -259,7 +257,9 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
             <vaadin-dialog
                     .opened=${this._mermaidDialogOpened}
                     @opened-changed=${e => (this._mermaidDialogOpened = e.detail.value)}
-                    ${dialogRenderer(() => this._mermaidContent(), [])}
+                    ${dialogRenderer(() => this._diagramEditorContent(), [
+                        this._mermaidDialogOpened
+                    ])}
                     ${dialogFooterRenderer(() => html`
                         <div class="buttonBar">
                             <vaadin-button id="download-diagram" class="button" @click=${() => this._downloadDiagramAsPng()}>
@@ -268,13 +268,24 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
                             </vaadin-button>
                         </div>
                     `, [])}
-                    .width=${'800px'}
-                    .height=${'600px'}
+                    .width=${'80%'}
+                    .height=${'80%'}
                     resizable
                     draggable
                     header-title="Flow Diagram"
                     theme="${themeState.theme.name}">
             </vaadin-dialog>
+        `;
+    }
+
+    _diagramEditorContent() {
+        return html`
+            <qwc-serverless-workflow-diagram-editor
+                    .workflow=${this._currentMermaidWorkflow}
+                    .source=${this._currentMermaid}
+                    .readonly=${true}
+                    @workflow-change=${this._onWorkflowDiagramChange}>
+            </qwc-serverless-workflow-diagram-editor>
         `;
     }
 

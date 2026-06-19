@@ -1,18 +1,28 @@
 import * as React from "react";
 import { createRoot } from "react-dom/client";
 import { DiagramEditor } from "@serverlessworkflow/diagram-editor";
+import "@serverlessworkflow/diagram-editor/styles.css";
 
-const rootElement = document.getElementById("root");
+const roots = new WeakMap();
 
-if (!rootElement) {
-  throw new Error("Missing #root element for Serverless Workflow Diagram Editor");
+export function renderServerlessWorkflowDiagramEditor(container, props) {
+  let root = roots.get(container);
+
+  if (!root) {
+    root = createRoot(container);
+    roots.set(container, root);
+  }
+
+    root.render(React.createElement(DiagramEditor, props));
+
+  return root;
 }
 
-createRoot(rootElement).render(
-  React.createElement(DiagramEditor, {
-    content: "{}",
-    isReadOnly: false,
-    locale: "en",
-    colorMode: "system",
-  })
-);
+export function unmountServerlessWorkflowDiagramEditor(container) {
+  const root = roots.get(container);
+
+  if (root) {
+    root.unmount();
+    roots.delete(container);
+  }
+}

@@ -85,6 +85,14 @@ public class WorkflowRPCService {
         return mermaidDefinition;
     }
 
+    @JsonRpcDescription("Get the workflow definition")
+    public Workflow getWorkflowDefinition(
+            @JsonRpcDescription("Workflow's id") WorkflowDefinitionId id) {
+        LOG.info("Getting workflow definition for '{}'", id.name());
+        return registry.lookupDescriptor(id)
+                .orElseThrow(() -> new IllegalStateException("Workflow with id '" + id + "' not found"));
+    }
+
     @Blocking
     @JsonRpcDescription("Execute a workflow given an input")
     public WorkflowOutput executeWorkflow(
