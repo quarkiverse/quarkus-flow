@@ -89,8 +89,7 @@ public class WorkflowRPCService {
     public Workflow getWorkflowDefinition(
             @JsonRpcDescription("Workflow's id") WorkflowDefinitionId id) {
         LOG.info("Getting workflow definition for '{}'", id.name());
-        return registry.lookupDescriptor(id)
-                .orElseThrow(() -> new IllegalStateException("Workflow with id '" + id + "' not found"));
+        return Objects.requireNonNull(registryCache.get(id), "Workflow with id '" + id + "' not found");
     }
 
     @Blocking
