@@ -12,7 +12,8 @@
 
 # Maven parallel threads configuration
 MAVEN_THREADS ?= 15C
-MAVEN_OPTS := -T $(MAVEN_THREADS) -Dquarkus.log.level=OFF -ntp -Dquarkus.banner.enabled=false
+MAVEN_OPTS_NO_THREADS = -Dquarkus.log.level=OFF -ntp -Dquarkus.banner.enabled=false
+MAVEN_OPTS := -T $(MAVEN_THREADS) $(MAVEN_OPTS_NO_THREADS)
 
 help: ## Show this help message
 	@echo "Quarkus Flow - Available Make Targets"
@@ -21,7 +22,6 @@ help: ## Show this help message
 	@echo "  make quick-check    - Fast: Run all unit tests (skip docs, ITs)"
 	@echo "  make build          - Build all modules (format, skip tests)"
 	@echo "  make test-all       - Run all tests (unit + integration)"
-	@echo "  make verify         - Full verification for PRs (required before PR)"
 	@echo ""
 	@echo "Other targets:"
 	@echo "  make clean          - Clean all build artifacts"
@@ -32,16 +32,16 @@ help: ## Show this help message
 	@echo "  make pre-commit     - Quick pre-commit check (format + unit tests)"
 	@echo ""
 	@echo "Configuration:"
-	@echo "  MAVEN_THREADS       - Number of parallel threads (default: 15C)"
+	@echo "  MAVEN_THREADS       - Number of parallel threads (default: 15C) for commands which supports it"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make quick-check MAVEN_THREADS=8C"
-	@echo "  make verify"
+	@echo "  make test-all"
 	@echo ""
 
 quick-check: ## Fast check: Run all unit tests, skip docs and integration tests
 	@echo "⚡ Quick Check: Unit tests only (skipping docs and ITs)"
-	@mvn clean test $(MAVEN_OPTS) -pl '!docs' -DskipITs=true -Dno-format
+	@mvn clean test $(MAVEN_OPTS_NO_THREADS) -pl '!docs' -DskipITs=true -Dno-format
 
 build: ## Build all modules with formatting, skip tests
 	@echo "🔨 Building all modules (format + compile, no tests)"
@@ -49,12 +49,7 @@ build: ## Build all modules with formatting, skip tests
 
 test-all: ## Run all tests (unit + integration)
 	@echo "🧪 Running all tests (unit + integration)"
-	@mvn clean install $(MAVEN_OPTS) -DskipITs=false -Dno-format
-
-verify: ## Full verification build (required before creating PR)
-	@echo "✅ Full verification (format + all tests + examples)"
-	@echo "⚠️  This is what runs in CI - must pass before PR"
-	@mvn clean install $(MAVEN_OPTS) -DskipITs=false
+	@mvn clean install $(MAVEN_OPTS_NO_THREADS) -DskipITs=false -Dno-format
 
 clean: ## Clean all build artifacts
 	@echo "🧹 Cleaning all build artifacts"
