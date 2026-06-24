@@ -1,20 +1,14 @@
 import { QwcHotReloadElement, html, css } from 'qwc-hot-reload-element';
 import { observeState } from 'lit-element-state';
 import { JsonRpc } from 'jsonrpc';
-import { unsafeHTML } from "lit/directives/unsafe-html.js"
 import '@vaadin/grid';
 import '@vaadin/button';
 import '@vaadin/icon';
 import '@vaadin/dialog';
-import { dialogRenderer, dialogFooterRenderer } from '@vaadin/dialog/lit.js';
+import { dialogRenderer } from '@vaadin/dialog/lit.js';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
-import { devuiState } from 'devui-state';
 import './components/serverless-workflow-diagram-editor.js';
-
-import { notifier } from 'notifier';
-
 import './qwc-flow-workflow-execution.js';
-
 import { themeState } from 'theme-state';
 
 export class QwcFlow extends observeState(QwcHotReloadElement) {
@@ -24,37 +18,20 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
         .workflows {
             padding: 8px;
         }
-        .buttonBar {
-            display: flex;
-            justify-content: space-between;
-            gap: 10px;
-            align-items: center;
-            width: 90%;
-            color: var(--lumo-primary-text-color);
-            width: 100%;
-        }
-        .mermaidError {
-            color: var(--lumo-error-text-color);
-            padding: 20px;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            white-space: pre-wrap;
-        }
     `;
 
     static properties = {
         _workflows: { state: true },
-        _currentMermaid: { state: true },
-        _currentMermaidWorkflow: { state: true },
-        _mermaidDialogOpened: { state: true },
+        _currentDiagramEditorWorkflow: { state: true },
+        _diagramEditorDialogOpened: { state: true },
         _selectedWorkflow: { state: true }
     };
 
     constructor() {
         super();
         this._workflows = [];
-        this._currentMermaid = '';
-        this._mermaidDialogOpened = false;
+        this._currentDiagramEditorWorkflow = null;
+        this._diagramEditorDialogOpened = false;
         this._selectedWorkflow = null;
     }
 
@@ -104,17 +81,17 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
                                 header="Actions"
                                 auto-width
                                 ${columnBodyRenderer(workflow => html`
-                                    <vaadin-button @click=${() => this._visualizeMermaid(workflow)}
-                                                   id="see-${this._generateMermaidId(workflow.id)}">
+                                    <vaadin-button @click=${() => this._visualizeDiagramEditor(workflow)}
+                                                   id="see-${this._generateDiagramEditorId(workflow.id)}">
                                         <vaadin-icon icon="font-awesome-solid:eye"></vaadin-icon>
                                     </vaadin-button>
-                                    <vaadin-button id="play-${this._generateMermaidId(workflow.id)}"  @click=${() => this._executeWorkflow(workflow)}>
+                                    <vaadin-button id="play-${this._generateDiagramEditorId(workflow.id)}"  @click=${() => this._executeWorkflow(workflow)}>
                                         <vaadin-icon icon="font-awesome-solid:play"></vaadin-icon>
                                     </vaadin-button>
                                 `, [])}>
                         </vaadin-grid-column>
                     </vaadin-grid>
-                    ${this._mermaidDialog()}
+                    ${this._diagramEditorDialog()}
                 </div>
             `;
         }
@@ -126,148 +103,29 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
 
     connectedCallback() {
         super.connectedCallback();
-        if (!window.mermaid) {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/mermaid@11.12.0/dist/mermaid.min.js';
-            script.onload = () => {
-                this._initializeMermaid();
-            };
-            document.head.appendChild(script);
-        } else {
-            this._initializeMermaid();
-        }
-
         this.jsonRpc.getWorkflows().then(({ result }) => {
             this._workflows = result;
         });
     }
 
-    disconnectedCallback() {
-        super.disconnectedCallback();
-    }
-
-    async updated(changedProps) {
-        super.updated?.(changedProps);
-        if (this._currentMermaid && window.mermaid) {
-            const mermaidElement = this.shadowRoot?.querySelector('.mermaid');
-            if (mermaidElement && !mermaidElement.hasAttribute('data-processed')) {
-                try {
-                    const id = this._generateMermaidId(this._currentMermaidWorkflow.id);
-                    const { svg } = await window.mermaid.render(id, this._currentMermaid);
-                    mermaidElement.innerHTML = svg;
-                    mermaidElement.setAttribute('data-processed', 'true');
-                } catch (error) {
-                    mermaidElement.innerHTML = `<div class="mermaidError">
-                            <p>Error rendering diagram: ${error.message || 'Unknown error'}</p>
-                        </div>`;
-                }
-            }
-        }
-    }
-
-    _initializeMermaid() {
-        window.mermaid.initialize({
-            startOnLoad: false,
-            theme: themeState.theme.name === 'dark' ? 'dark' : 'default',
-            fontFamily: 'var(--lumo-font-family)',
-            fontSize: 12,
-            flowchart: {
-                useMaxWidth: true,
-                htmlLabels: true,
-            },
-            themeCSS: ".label foreignObject { font-size: 14px; overflow: visible; width: auto; }"
-        });
-    };
-
-    _generateMermaidId(workflowId) {
+    _generateDiagramEditorId(workflowId) {
         const { namespace, name, version } = workflowId;
-        return 'mermaid-' + `${namespace.replaceAll('.', '-')}-${name.replaceAll('.', '-')}-${version.replaceAll('.', '-')}`;
+        return 'diagramEditor-' + `${namespace.replaceAll('.', '-')}-${name.replaceAll('.', '-')}-${version.replaceAll('.', '-')}`;
     }
 
-    _visualizeMermaid(workflow) {
-        // Backend expects: generateMermaidDiagram(WorkflowDefinitionId id)
-        this.jsonRpc.generateMermaidDiagram({
-            id: workflow.id
-        }).then(({ result }) => {
-            this._currentMermaid = result.mermaid.replace(/^---[\s\S]*?---\s*/, '');
-            this._mermaidDialogOpened = true;
-        });
-        this._currentMermaidWorkflow = workflow;
+    _visualizeDiagramEditor(workflow) {
+        this._diagramEditorDialogOpened = true;
+        this._currentDiagramEditorWorkflow = workflow;
     }
 
-    _mermaidContent() {
-        return unsafeHTML(`
-            ${!this._currentMermaid ? `
-            <span style="display:flex;align-items:center;gap:8px;color:var(--lumo-secondary-text-color);">
-                <vaadin-icon icon="font-awesome-solid:circle-info"></vaadin-icon>
-                <span id="unavailable-mermaid-warning" style="margin:0;font-size:var(--lumo-font-size-xs);">
-                Diagram not available. Run the workflow once to generate it.
-                </span>
-            </span>` : ''}
-             <pre class="mermaid mermaid-container" style="display: flex; flex-direction: column; align-items: center;">
-            ${this._currentMermaid}
-            </pre>`);
-    }
-
-    _downloadDiagramAsPng() {
-        let svgData = document.querySelector("#page > qwc-flow-workflows")
-            .shadowRoot.querySelector("svg");
-        if (!svgData) return;
-
-        const scale = 3;
-        const bbox = svgData.getBBox();
-        const padding = 20;
-        const width = bbox.width + bbox.x + padding * 2;
-        const height = bbox.height + bbox.y + padding * 2;
-
-        const svgClone = svgData.cloneNode(true);
-        svgClone.setAttribute("width", width);
-        svgClone.setAttribute("height", height);
-        svgClone.setAttribute("viewBox", `0 0 ${width} ${height}`);
-
-        const svgString = new XMLSerializer().serializeToString(svgClone);
-        const utf8Bytes = new TextEncoder().encode(svgString);
-        const base64 = btoa(String.fromCharCode(...utf8Bytes));
-
-        let img = new Image(width, height);
-        img.src = `data:image/svg+xml;base64,${base64}`;
-
-        img.onload = function () {
-            let cnv = document.createElement('canvas');
-            cnv.width = width * scale;
-            cnv.height = height * scale;
-
-            const ctx = cnv.getContext("2d");
-            ctx.scale(scale, scale);
-            ctx.drawImage(img, 0, 0);
-
-            cnv.toBlob((blob) => {
-                let lnk = document.createElement('a');
-                lnk.href = URL.createObjectURL(blob);
-                lnk.download = "flow-" + devuiState.applicationInfo.applicationName
-                    + "-" + new Date().toISOString().replace(/\D/g, '') + ".png";
-                lnk.click();
-                notifier.showSuccessMessage(lnk.download + " downloaded.", 'bottom-end');
-            }, 'image/png');
-        };
-    }
-
-    _mermaidDialog() {
+    _diagramEditorDialog() {
         return html`
             <vaadin-dialog
-                    .opened=${this._mermaidDialogOpened}
-                    @opened-changed=${e => (this._mermaidDialogOpened = e.detail.value)}
+                    .opened=${this._diagramEditorDialogOpened}
+                    @opened-changed=${e => (this._diagramEditorDialogOpened = e.detail.value)}
                     ${dialogRenderer(() => this._diagramEditorContent(), [
-                        this._mermaidDialogOpened
+                        this._diagramEditorDialogOpened
                     ])}
-                    ${dialogFooterRenderer(() => html`
-                        <div class="buttonBar">
-                            <vaadin-button id="download-diagram" class="button" @click=${() => this._downloadDiagramAsPng()}>
-                                <vaadin-icon icon="font-awesome-solid:file-export"></vaadin-icon>
-                                Export
-                            </vaadin-button>
-                        </div>
-                    `, [])}
                     .width=${'80%'}
                     .height=${'80%'}
                     resizable
@@ -281,10 +139,8 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
     _diagramEditorContent() {
         return html`
             <qwc-serverless-workflow-diagram-editor
-                    .workflow=${this._currentMermaidWorkflow}
-                    .source=${this._currentMermaid}
-                    .readonly=${true}
-                    @workflow-change=${this._onWorkflowDiagramChange}>
+                    .workflow=${this._currentDiagramEditorWorkflow}
+                    .readonly=${true}>
             </qwc-serverless-workflow-diagram-editor>
         `;
     }
