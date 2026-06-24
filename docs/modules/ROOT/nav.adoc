@@ -23,6 +23,7 @@
 ** External Integrations
 *** xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services]
 *** xref:http-client.adoc[Configure the HTTP client]
+*** xref:grpc.adoc[Call gRPC services with Quarkus channels]
 *** xref:fault-tolerance.adoc[Fault tolerance and resilience]
 *** xref:messaging.adoc[Use messaging and events]
 ** State Persistence

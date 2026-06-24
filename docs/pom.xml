@@ -23,6 +23,15 @@
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-grpc</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow-langchain4j</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -106,6 +115,16 @@
     <build>
         <sourceDirectory>modules/ROOT/examples</sourceDirectory>
         <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/grpc/GreeterServiceImpl.java</exclude>
+                        <exclude>**/grpc/GrpcGreetingResource.java</exclude>
+                        <exclude>**/grpc/GrpcClientHolder.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
@@ -215,6 +234,15 @@
                                 <resource>
                                     <directory>${project.basedir}/../examples/langchain4j-agentic-workflow/src/main/java</directory>
                                     <filtering>false</filtering>
+                                </resource>
+                                <resource>
+                                   <directory>${project.basedir}/../examples/grpc-client-routing/src/main/java</directory>
+                                   <filtering>false</filtering>
+                                <excludes>
+                                    <exclude>**/GreeterServiceImpl.java</exclude>
+                                    <exclude>**/GrpcGreetingResource.java</exclude>
+                                    <exclude>**/GrpcClientHolder.java</exclude>
+                                </excludes>
                                 </resource>
                             </resources>
                         </configuration>

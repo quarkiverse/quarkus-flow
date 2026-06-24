@@ -8,6 +8,7 @@ Directory of end-to-end use case examples.
 - [Greeting Runner](greeting-runner/README.md): **Zero Java code** - A fully functional workflow microservice using only YAML definitions and the Runner extension. Demonstrates runtime workflow deployment via REST API.
 - [HTTP Basic Auth](http-basic-auth/README.md): Simple workflow exemplifying calling an HTTP service secured by Basic Auth.
 - [LangChain4j Agentic Workflow](langchain4j-agentic-workflow/README.md): Example of agentic workflows declared with LangChain4j annotations and executed as Quarkus Flow workflows with Dev UI support.
+- [gRPC Client Routing](grpc-client-routing/README.md): Example demonstrating **Quarkus named gRPC client routing** for workflows with per-workflow and per-task channel overrides.
 - [Micrometer Prometheus](micrometer-prometheus/README.md): Example showing case how to configure, export, and visualize **workflow and task metrics**.
 - [Newsletter Drafter](newsletter-drafter/README.md): Human-in-the-loop Agentic Workflow example with LangChain4j.
 - [Petstore OpenAPI](petstore-openapi/README.md): The famous Petstore Demo calling HTTP services via an OpenAPI specification file descriptor.
