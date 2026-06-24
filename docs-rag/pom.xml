@@ -10,11 +10,12 @@
     </parent>
 
     <artifactId>quarkus-flow-docs-rag</artifactId>
-    <name>Quarkus Flow - Documentation RAG</name>
+    <name>Quarkus Flow :: Documentation RAG</name>
     <description>RAG vector embeddings for Quarkus Flow documentation</description>
 
     <properties>
         <skipRagGeneration>true</skipRagGeneration>
+        <version.quarkus.rag-maven-plugin>0.0.5</version.quarkus.rag-maven-plugin>
     </properties>
 
     <build>
@@ -32,7 +33,7 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-documentation-rag-maven-plugin</artifactId>
-                <version>0.0.5</version>
+                <version>${version.quarkus.rag-maven-plugin}</version>
                 <executions>
                     <execution>
                         <id>generate-rag</id>
