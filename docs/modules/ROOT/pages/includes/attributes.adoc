@@ -1,4 +1,4 @@
-:project-version: 0.10.2
+:project-version: 0.11.0
 
 :examples-dir: ./../examples/
 :docs-repo: https://github.com/quarkiverse/quarkus-flow/tree/main/docs/modules/ROOT/examples
