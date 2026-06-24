@@ -17,6 +17,7 @@
         <module>core</module>
         <module>messaging</module>
         <module>langchain4j</module>
+        <module>grpc</module>
         <module>persistence</module>
         <module>durable-kubernetes</module>
         <module>scheduler</module>

@@ -424,28 +424,35 @@ do:
 
 // TODO: add it later in the "OpenAPI" section
 
-// *gRPC Example:*
-// [source,yaml]
-// ----
-// document:
-//   dsl: '1.0.3'
-//   namespace: test
-//   name: grpc-example
-//   version: '0.1.0'
-// do:
-//   - greet:
-//       call: grpc
-//       with:
-//         proto:
-//           endpoint: file://app/greet.proto
-//         service:
-//           name: GreeterApi.Greeter
-//           host: localhost
-//           port: 5011
-//         method: SayHello
-//         arguments:
-//           name: ${ .user.preferredDisplayName }
-// ----
+== 6. gRPC
+
+Quarkus Flow supports gRPC via the `quarkus-flow-grpc` module.
+By default, it uses the `flowGrpc` Quarkus gRPC client if configured.
+You can also override per-workflow or per-task with `quarkus.flow.grpc.client.<key>.name=<clientName>`.
+
+[source,yaml]
+----
+document:
+  dsl: '1.0.3'
+  namespace: test
+  name: grpc-example
+  version: '0.1.0'
+do:
+  - greet:
+      call: grpc
+      with:
+        proto:
+          endpoint: proto/greet.proto
+        service:
+          name: Greeter
+          host: localhost
+          port: 9000
+        method: SayHello
+        arguments:
+          name: ${ .user.preferredDisplayName }
+----
+
+See xref:grpc.adoc[the gRPC guide] for the Quarkus client configuration variant.
 
 // TODO: add later when we enable these features in qflow
 

@@ -1,0 +1,32 @@
+[.configuration-legend]
+icon:lock[title=Fixed at build time] Configuration property fixed at build time - All other configuration properties are overridable at runtime
+[.configuration-reference.searchable, cols="80,.^10,.^10"]
+|===
+
+h|[.header-title]##Configuration property##
+h|Type
+h|Default
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow-grpc_quarkus-client-client-name]] [.property-path]##link:#quarkus-flow-grpc_quarkus-client-client-name[`+++quarkus.client."client".name+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.client."client".name+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The Quarkus gRPC client name to use, configured under `quarkus.grpc.clients.<name>`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_CLIENT__CLIENT__NAME+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_CLIENT__CLIENT__NAME+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+|===
+

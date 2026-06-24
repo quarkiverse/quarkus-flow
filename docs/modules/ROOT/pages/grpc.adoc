@@ -1,0 +1,98 @@
+= gRPC Channel Routing
+:page-layout: default
+:description: Use Quarkus gRPC named clients from Quarkus Flow workflows.
+
+include::./includes/attributes.adoc[]
+
+Quarkus Flow supports gRPC through the `quarkus-flow-grpc` module.
+It connects the Serverless Workflow gRPC executor to Quarkus gRPC channels, so you can reuse the same client routing and configuration you already use in Quarkus applications.
+
+== Add the dependency
+
+```xml
+<dependency>
+    <groupId>io.quarkiverse.flow</groupId>
+    <artifactId>quarkus-flow-grpc</artifactId>
+</dependency>
+```
+
+== Channel resolution
+
+The module resolves the Quarkus gRPC named channel to use for each workflow task, following this order:
+
+1. **Task-level override**: `quarkus.flow.grpc.client.<workflowId>:<taskName>.name=<clientName>`
+2. **Workflow-level override**: `quarkus.flow.grpc.client.<workflowId>.name=<clientName>`
+3. **Default channel**: If a Quarkus gRPC client named `flowGrpc` exists, it is used for all workflows.
+4. **Workflow ID as client name**: If a Quarkus gRPC client matching the workflow ID exists, it is used.
+5. **SDK fallback**: If none of the above match, the SDK falls back to the host and port declared in the workflow itself.
+
+The workflow ID is `namespace:name:version` (e.g. `org.acme:grpcGreeting:0.0.1`).
+
+== Configure a default channel
+
+If all your workflows contact the same gRPC server, configure a single default client:
+
+```properties
+quarkus.grpc.clients.flowGrpc.host=localhost
+quarkus.grpc.clients.flowGrpc.port=9000
+quarkus.grpc.clients.flowGrpc.plain-text=true
+```
+
+All workflows will automatically use the `flowGrpc` channel.
+
+== Configure per-workflow channels
+
+To route a specific workflow to a different gRPC server:
+
+```properties
+quarkus.grpc.clients.myService.host=my-grpc-server.example.com
+quarkus.grpc.clients.myService.port=443
+quarkus.grpc.clients.myService.plain-text=false
+
+quarkus.flow.grpc.client.org.acme:grpcGreeting:0.0.1.name=myService
+```
+
+== Configure per-task channels
+
+If a single workflow orchestrates multiple gRPC servers, use task-level overrides.
+Each gRPC task in the workflow must have a unique name.
+
+```properties
+quarkus.flow.grpc.client.org.acme:orderWorkflow:0.0.1.name=orderService
+quarkus.flow.grpc.client.org.acme:orderWorkflow:0.0.1:checkInventory.name=inventoryService
+```
+
+[NOTE]
+====
+Task names within a workflow must be distinct if you need different gRPC clients for different tasks.
+====
+
+== Proto file path
+
+The `quarkus-flow-grpc` module provides a classpath-aware resource loader.
+You can reference proto files directly from the classpath without extracting them to temporary files:
+
+```java
+import static io.serverlessworkflow.fluent.spec.dsl.DSL.grpc;
+
+@ApplicationScoped
+public class GrpcGreetingFlow extends Flow {
+    @Override
+    public Workflow descriptor() {
+        return WorkflowBuilder.workflow("grpcGreeting")
+                .tasks(tasks -> tasks.grpc("greet",
+                        grpc()
+                                .proto("proto/greeter.proto")
+                                .service("Greeter", "localhost")
+                                .method("SayHello")
+                                .argument("name", "${ .name }")))
+                .build();
+    }
+}
+```
+
+The proto file at `src/main/resources/proto/greeter.proto` is resolved from the classpath automatically.
+
+== Example project
+
+See the full runnable example at https://github.com/quarkiverse/quarkus-flow/tree/main/examples/grpc-client-routing[examples/grpc-client-routing].
