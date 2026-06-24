@@ -23,6 +23,7 @@
         <module>bom</module>
         <module>quarkus-platform-checks</module>
         <module>runner</module>
+        <module>docs-rag</module>
     </modules>
 
     <scm>
