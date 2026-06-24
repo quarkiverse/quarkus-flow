@@ -26,6 +26,7 @@ import org.jboss.logmanager.formatters.PatternFormatter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
+import io.quarkus.arc.lookup.LookupIfProperty;
 import io.serverlessworkflow.impl.lifecycle.TaskCancelledEvent;
 import io.serverlessworkflow.impl.lifecycle.TaskCompletedEvent;
 import io.serverlessworkflow.impl.lifecycle.TaskFailedEvent;
@@ -45,6 +46,7 @@ import io.serverlessworkflow.impl.lifecycle.WorkflowSuspendedEvent;
 /**
  * Workflow execution listener that emits structured JSON logs for all lifecycle events.
  */
+@LookupIfProperty(name = "quarkus.flow.structured-logging.enabled", stringValue = "true")
 public class StructuredLoggingListener implements WorkflowExecutionListener {
 
     private static final String LOG_CATEGORY = "io.quarkiverse.flow.structuredlogging";
@@ -60,7 +62,6 @@ public class StructuredLoggingListener implements WorkflowExecutionListener {
     public StructuredLoggingListener(FlowStructuredLoggingConfig config, ObjectMapper objectMapper) {
         this.config = config;
         this.formatter = new EventFormatter(config, objectMapper);
-        // Note: No formatter logic in the constructor anymore!
     }
 
     // Workflow Instance Events

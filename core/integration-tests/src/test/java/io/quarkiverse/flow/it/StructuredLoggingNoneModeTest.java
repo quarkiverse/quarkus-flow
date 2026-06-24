@@ -19,20 +19,18 @@ import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 
 /**
- * Test that structured logging works correctly in NONE mode.
+ * Test that structured logging works correctly without handler configuration.
  * <p>
- * NONE mode disables automatic handler creation, allowing advanced users to
- * manually configure handlers via standard Quarkus logging properties. Events
- * are still emitted by StructuredLoggingListener, but no default handler is created.
+ * When no handler is configured, events are still emitted by StructuredLoggingListener,
+ * but they are not captured anywhere (they go to the default parent handlers if any).
  * <p>
  * This test verifies that:
- * 1. Workflow execution succeeds with NONE mode enabled
- * 2. No automatic handler is created (no file handler created)
+ * 1. Workflow execution succeeds with structured logging enabled but no handler configured
+ * 2. No file handler is created (no target/quarkus-flow-events.log file)
  * 3. StructuredLoggingListener is still active (bean is created)
  * <p>
- * Manual verification: Check build logs for the message:
- * "Structured Logging enabled, but automatic logging handler disabled.
- * You have to configure the output via quarkus.log.* configuration"
+ * Users can manually configure handlers via standard Quarkus logging properties
+ * if they want to capture events in this scenario.
  */
 @QuarkusTest
 @TestProfile(StructuredLoggingNoneModeTest.NoneModeProfile.class)
@@ -52,33 +50,32 @@ public class StructuredLoggingNoneModeTest {
     @Test
     @DisplayName("test_none_mode_workflow_execution_succeeds_without_handler")
     void test_none_mode_workflow_execution_succeeds_without_handler() {
-        // Execute workflow with structured logging in NONE mode
-        // No automatic handler should be created, but workflow should execute successfully
+        // Execute workflow with structured logging enabled but no handler configured
+        // Workflow should execute successfully even without handler
         var result = helloWorkflow.startInstance().await().indefinitely();
 
         // Verify workflow executed successfully
         assertThat(result)
-                .withFailMessage("Workflow should execute successfully even with handler.mode=none")
+                .withFailMessage("Workflow should execute successfully even without handler configured")
                 .isNotNull();
 
-        // Verify that NO automatic file handler was created
+        // Verify that no file handler was created
         Path defaultFileLogPath = Paths.get("target/quarkus-flow-events.log");
         assertThat(defaultFileLogPath)
                 .withFailMessage(
-                        "NONE mode should not create a file handler. " +
+                        "No handler configured - should not create a file. " +
                                 "Found unexpected log file at: %s",
                         defaultFileLogPath)
                 .doesNotExist();
 
-        // Manual verification: Check build logs for:
-        // INFO [io.quarkiverse.flow.deployment.FlowProcessor] Structured Logging enabled, but automatic logging handler disabled.
-        //      You have to configure the output via quarkus.log.* configuration for the category io.quarkiverse.flow.structuredlogging
-        //
-        // Verify that NO automatic handler is created (no file, no console handler)
-        // Events are emitted by StructuredLoggingListener but go nowhere without manual handler config
+        // Manual verification:
+        // Events are emitted by StructuredLoggingListener but go nowhere without handler config.
         //
         // To verify events ARE being emitted (just not captured), you could add manual handler config
-        // in the test profile and verify events appear there
+        // in the test profile and verify events appear there, e.g.:
+        //   "quarkus.log.handler.console.\"FLOW_EVENTS\".enable", "true",
+        //   "quarkus.log.handler.console.\"FLOW_EVENTS\".format", "%s%n",
+        //   "quarkus.log.category.\"io.quarkiverse.flow.structuredlogging\".handlers", "FLOW_EVENTS"
     }
 
     public static class NoneModeProfile implements QuarkusTestProfile {
@@ -86,9 +83,9 @@ public class StructuredLoggingNoneModeTest {
         public Map<String, String> getConfigOverrides() {
             return Map.of(
                     "quarkus.flow.structured-logging.enabled", "true",
-                    "quarkus.flow.structured-logging.handler.mode", "none",
                     "quarkus.flow.structured-logging.events", "workflow.*",
                     "quarkus.flow.structured-logging.log-level", "INFO");
+            // NO handler configuration - events are emitted but not captured
         }
     }
 }

@@ -25,9 +25,6 @@ import com.github.zafarkhaja.semver.ParseException;
 import com.github.zafarkhaja.semver.Version;
 
 import io.quarkiverse.flow.config.FlowDefinitionsConfig;
-import io.quarkiverse.flow.config.FlowMetricsConfig;
-import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
-import io.quarkiverse.flow.config.FlowTracingConfig;
 import io.quarkiverse.flow.internal.WorkflowApplicationInitializer;
 import io.quarkiverse.flow.internal.WorkflowNameUtils;
 import io.quarkiverse.flow.metrics.MicrometerExecutionListener;
@@ -41,8 +38,6 @@ import io.quarkiverse.flow.recorders.SDKRecorder;
 import io.quarkiverse.flow.recorders.WorkflowApplicationCreator;
 import io.quarkiverse.flow.recorders.WorkflowApplicationRecorder;
 import io.quarkiverse.flow.recorders.WorkflowDefinitionRecorder;
-import io.quarkiverse.flow.structuredlogging.EventFormatter;
-import io.quarkiverse.flow.structuredlogging.StructuredLoggingListener;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -58,8 +53,6 @@ import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.gizmo.ClassCreator;
@@ -81,6 +74,77 @@ class FlowProcessor {
 
     private static final String FEATURE = "flow";
     private static final String DEFAULT_STRUCTURED_LOG_HANDLER = "FLOW_EVENTS";
+
+    /**
+     * Groups workflows by their versionless identifier (namespace:name) and selects
+     * the workflow with the highest semantic version for each group.
+     *
+     * @param workflows List of discovered workflows from spec files
+     * @return Map of versionless identifiers to their highest-version representative workflow
+     */
+    private static Map<String, DiscoveredWorkflowBuildItem> selectLatestVersionPerWorkflow(
+            List<DiscoveredWorkflowBuildItem> workflows) {
+        return workflows.stream()
+                .collect(Collectors.toMap(
+                        d -> WorkflowNameUtils.versionlessIdentifier(d.namespace(), d.name()),
+                        d -> d,
+                        (a, b) -> {
+                            return tryParseSemver(a.version(), a).compareTo(tryParseSemver(b.version(), b)) >= 0 ? a : b;
+                        }));
+    }
+
+    public static Version tryParseSemver(String semver, DiscoveredWorkflowBuildItem discoveredWorkflow) {
+        try {
+            return Version.parse(semver);
+        } catch (IllegalArgumentException | ParseException e) {
+            throw new IllegalArgumentException(
+                    String.format("Invalid semantic version '%s' in workflow '%s:%s' (resource: %s). " +
+                            "Expected format: MAJOR.MINOR.PATCH (e.g., '1.0.0')",
+                            discoveredWorkflow.version(), discoveredWorkflow.namespace(), discoveredWorkflow.name(),
+                            discoveredWorkflow.definitionResourcePath()),
+                    e);
+        }
+    }
+
+    private static SyntheticBeanBuildItem produceSyntheticWorkflowDefinitionBean(String identifier,
+            WorkflowDefinitionRecorder recorder, DiscoveredWorkflowBuildItem workflow) {
+        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
+                .configure(WorkflowDefinition.class)
+                .scope(ApplicationScoped.class)
+                .unremovable()
+                .setRuntimeInit()
+                .addQualifier().annotation(DotNames.IDENTIFIER)
+                .addValue("value", identifier).done()
+                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowApplication.class)));
+
+        // Load workflow from classpath resource at runtime
+        return configurator.createWith(recorder.workflowDefinitionFromResourceCreator(workflow.definitionResourcePath()))
+                .done();
+    }
+
+    /**
+     * Produces a versionless {@code @Identifier("namespace:name")} synthetic bean that delegates
+     * to the highest-semver versioned {@link WorkflowDefinition} bean.
+     * <p>
+     * An explicit injection point on the versioned bean is declared so CDI creates — and
+     * registers into {@code WorkflowApplication} — the versioned bean before this one,
+     * preventing any ordering / lookup-before-registration issues at startup.
+     */
+    private static SyntheticBeanBuildItem produceVersionlessSyntheticBean(String versionlessIdentifier,
+            WorkflowDefinitionRecorder recorder, DiscoveredWorkflowBuildItem representative) {
+        String versionedIdentifier = representative.specIdentifier();
+        return SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
+                .scope(ApplicationScoped.class)
+                .unremovable()
+                .setRuntimeInit()
+                .addQualifier().annotation(DotNames.IDENTIFIER)
+                .addValue("value", versionlessIdentifier).done()
+                .addInjectionPoint(
+                        ClassType.create(DotName.createSimple(WorkflowDefinition.class)),
+                        AnnotationInstance.builder(DotNames.IDENTIFIER).value(versionedIdentifier).build())
+                .createWith(recorder.workflowDefinitionVersionlessDelegateCreator(versionedIdentifier))
+                .done();
+    }
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -215,37 +279,6 @@ class FlowProcessor {
         identifiers.produce(new FlowIdentifierBuildItem(Set.of(identifier)));
     }
 
-    /**
-     * Groups workflows by their versionless identifier (namespace:name) and selects
-     * the workflow with the highest semantic version for each group.
-     *
-     * @param workflows List of discovered workflows from spec files
-     * @return Map of versionless identifiers to their highest-version representative workflow
-     */
-    private static Map<String, DiscoveredWorkflowBuildItem> selectLatestVersionPerWorkflow(
-            List<DiscoveredWorkflowBuildItem> workflows) {
-        return workflows.stream()
-                .collect(Collectors.toMap(
-                        d -> WorkflowNameUtils.versionlessIdentifier(d.namespace(), d.name()),
-                        d -> d,
-                        (a, b) -> {
-                            return tryParseSemver(a.version(), a).compareTo(tryParseSemver(b.version(), b)) >= 0 ? a : b;
-                        }));
-    }
-
-    public static Version tryParseSemver(String semver, DiscoveredWorkflowBuildItem discoveredWorkflow) {
-        try {
-            return Version.parse(semver);
-        } catch (IllegalArgumentException | ParseException e) {
-            throw new IllegalArgumentException(
-                    String.format("Invalid semantic version '%s' in workflow '%s:%s' (resource: %s). " +
-                            "Expected format: MAJOR.MINOR.PATCH (e.g., '1.0.0')",
-                            discoveredWorkflow.version(), discoveredWorkflow.namespace(), discoveredWorkflow.name(),
-                            discoveredWorkflow.definitionResourcePath()),
-                    e);
-        }
-    }
-
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void produceGeneratedFlows(List<DiscoveredWorkflowBuildItem> workflows,
@@ -275,21 +308,18 @@ class FlowProcessor {
     @BuildStep
     void registerWorkflowApp(WorkflowApplicationRecorder recorder,
             ShutdownContextBuildItem shutdown,
-            FlowTracingConfig cfg,
-            LaunchModeBuildItem launchMode,
             Optional<MetricsCapabilityBuildItem> metricsCapability,
             BuildProducer<SyntheticBeanBuildItem> beans) {
 
         boolean isMicrometerSupported = metricsCapability
                 .map(capability -> capability.metricsSupported(MetricsFactory.MICROMETER)).orElse(false);
-        boolean isTracingEnabled = cfg.enabled().orElse(launchMode.getLaunchMode().isDevOrTest());
 
         beans.produce(SyntheticBeanBuildItem.configure(WorkflowApplication.class)
                 .scope(ApplicationScoped.class)
                 .unremovable()
                 .setRuntimeInit()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowApplicationCreator.class)))
-                .createWith(recorder.workflowAppCreator(shutdown, isTracingEnabled, isMicrometerSupported))
+                .createWith(recorder.workflowAppCreator(shutdown, isMicrometerSupported))
                 .done());
         LOG.info("Flow: Registering Workflow Application bean: {}", WorkflowApplication.class.getName());
     }
@@ -335,152 +365,18 @@ class FlowProcessor {
     }
 
     @BuildStep
-    void configureRegistryPrometheusIntegration(FlowMetricsConfig metricsConfig,
+    void configureRegistryPrometheusIntegration(
             Optional<MetricsCapabilityBuildItem> metricsCapability,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
-        boolean micrometerExecutionListenerNeeded = metricsConfig.enabled()
-                && metricsCapability.map(capability -> capability.metricsSupported(MetricsFactory.MICROMETER)).orElse(false);
+        boolean micrometerExecutionListenerNeeded = metricsCapability
+                .map(capability -> capability.metricsSupported(MetricsFactory.MICROMETER)).orElse(false);
         if (micrometerExecutionListenerNeeded) {
             additionalBeans.produce(AdditionalBeanBuildItem.builder()
                     .addBeanClasses(MicrometerExecutionListener.class).setUnremovable()
                     .setDefaultScope(SINGLETON)
                     .build());
         }
-    }
-
-    @BuildStep
-    void configureStructuredLogging(FlowStructuredLoggingConfig structuredLoggingConfig,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-
-        if (!structuredLoggingConfig.enabled()) {
-            return;
-        }
-
-        additionalBeans.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClasses(StructuredLoggingListener.class).setUnremovable()
-                .setDefaultScope(SINGLETON)
-                .build());
-    }
-
-    @BuildStep
-    void detectQuarkusLoggingJson(FlowStructuredLoggingConfig structuredLoggingConfig,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> configDefaults,
-            LaunchModeBuildItem launchMode) {
-
-        if (!structuredLoggingConfig.enabled())
-            return;
-
-        // Provide sensible defaults for the structured logging file handler
-        // Users can override these in application.properties if needed
-        String loggerCategory = EventFormatter.class.getPackageName();
-
-        switch (structuredLoggingConfig.handler().mode()) {
-            case NONE -> LOG.info("Structured Logging enabled, but automatic logging handler disabled. " +
-                    "You have to configure the output via quarkus.log.* configuration for the category {}", loggerCategory);
-            case FILE -> createStructuredLoggingFileHandler(configDefaults, launchMode, loggerCategory);
-            case CONTAINER -> createStructuredLoggingStdoutHandler(configDefaults, loggerCategory);
-        }
-    }
-
-    private void createStructuredLoggingFileHandler(BuildProducer<RunTimeConfigurationDefaultBuildItem> configDefaults,
-            LaunchModeBuildItem launchMode,
-            String loggerCategory) {
-        // Enable file handler by default when structured logging is enabled
-        configDefaults.produce(new RunTimeConfigurationDefaultBuildItem(
-                "quarkus.log.handler.file.\"" + DEFAULT_STRUCTURED_LOG_HANDLER + "\".enable",
-                "true"));
-
-        // Set raw JSON format (no timestamps, just the event JSON)
-        configDefaults.produce(new RunTimeConfigurationDefaultBuildItem(
-                "quarkus.log.handler.file.\"" + DEFAULT_STRUCTURED_LOG_HANDLER + "\".format",
-                "%s%n"));
-
-        // Set default path based on launch mode
-        String defaultPath = launchMode.getLaunchMode().isDevOrTest()
-                ? "target/quarkus-flow-events.log" // Dev/test: use target directory
-                : "/var/log/quarkus-flow/events.log"; // Prod: use standard location
-
-        configDefaults.produce(new RunTimeConfigurationDefaultBuildItem(
-                "quarkus.log.handler.file.\"" + DEFAULT_STRUCTURED_LOG_HANDLER + "\".path",
-                defaultPath));
-
-        // Assign this handler to the structured logging category
-        configDefaults.produce(new RunTimeConfigurationDefaultBuildItem(
-                "quarkus.log.category.\"" + loggerCategory + "\".handlers",
-                DEFAULT_STRUCTURED_LOG_HANDLER));
-
-        // Prevent workflow events from appearing in console (to avoid double logging)
-        configDefaults.produce(new RunTimeConfigurationDefaultBuildItem(
-                "quarkus.log.category.\"" + loggerCategory + "\".use-parent-handlers",
-                "false"));
-
-        LOG.info("Quarkus Flow structured logging file handler auto-configured. " +
-                "Events will be written to: {} (override with quarkus.log.handler.file.{}.path)", defaultPath,
-                DEFAULT_STRUCTURED_LOG_HANDLER);
-    }
-
-    private void createStructuredLoggingStdoutHandler(BuildProducer<RunTimeConfigurationDefaultBuildItem> configDefaults,
-            String loggerCategory) {
-        // Enable console handler
-        configDefaults.produce(new RunTimeConfigurationDefaultBuildItem(
-                "quarkus.log.handler.console.\"" + DEFAULT_STRUCTURED_LOG_HANDLER + "\".enable",
-                "true"));
-        // Set raw JSON format (no timestamps, just the event JSON)
-        configDefaults.produce(new RunTimeConfigurationDefaultBuildItem(
-                "quarkus.log.handler.console.\"" + DEFAULT_STRUCTURED_LOG_HANDLER + "\".format",
-                "%s%n"));
-        // Assign this handler to the structured logging category
-        configDefaults.produce(new RunTimeConfigurationDefaultBuildItem(
-                "quarkus.log.category.\"" + loggerCategory + "\".handlers",
-                DEFAULT_STRUCTURED_LOG_HANDLER));
-        // Prevent workflow events from appearing in parent console handler
-        configDefaults.produce(new RunTimeConfigurationDefaultBuildItem(
-                "quarkus.log.category.\"" + loggerCategory + "\".use-parent-handlers",
-                "false"));
-
-        LOG.info("Quarkus Flow structured logging console handler auto-configured. " +
-                "Events will be written to stdout (containers mode)");
-    }
-
-    private static SyntheticBeanBuildItem produceSyntheticWorkflowDefinitionBean(String identifier,
-            WorkflowDefinitionRecorder recorder, DiscoveredWorkflowBuildItem workflow) {
-        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                .configure(WorkflowDefinition.class)
-                .scope(ApplicationScoped.class)
-                .unremovable()
-                .setRuntimeInit()
-                .addQualifier().annotation(DotNames.IDENTIFIER)
-                .addValue("value", identifier).done()
-                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowApplication.class)));
-
-        // Load workflow from classpath resource at runtime
-        return configurator.createWith(recorder.workflowDefinitionFromResourceCreator(workflow.definitionResourcePath()))
-                .done();
-    }
-
-    /**
-     * Produces a versionless {@code @Identifier("namespace:name")} synthetic bean that delegates
-     * to the highest-semver versioned {@link WorkflowDefinition} bean.
-     * <p>
-     * An explicit injection point on the versioned bean is declared so CDI creates — and
-     * registers into {@code WorkflowApplication} — the versioned bean before this one,
-     * preventing any ordering / lookup-before-registration issues at startup.
-     */
-    private static SyntheticBeanBuildItem produceVersionlessSyntheticBean(String versionlessIdentifier,
-            WorkflowDefinitionRecorder recorder, DiscoveredWorkflowBuildItem representative) {
-        String versionedIdentifier = representative.specIdentifier();
-        return SyntheticBeanBuildItem.configure(WorkflowDefinition.class)
-                .scope(ApplicationScoped.class)
-                .unremovable()
-                .setRuntimeInit()
-                .addQualifier().annotation(DotNames.IDENTIFIER)
-                .addValue("value", versionlessIdentifier).done()
-                .addInjectionPoint(
-                        ClassType.create(DotName.createSimple(WorkflowDefinition.class)),
-                        AnnotationInstance.builder(DotNames.IDENTIFIER).value(versionedIdentifier).build())
-                .createWith(recorder.workflowDefinitionVersionlessDelegateCreator(versionedIdentifier))
-                .done();
     }
 
     private void produceVersionedFlowGizmoBean(DiscoveredWorkflowBuildItem workflow,

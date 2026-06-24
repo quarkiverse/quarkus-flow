@@ -38,6 +38,6 @@ public class RuntimeWorkflowApplicationProvider {
      */
     public WorkflowApplication getRuntimeApplication() {
         // Create a NEW instance each time to ensure isolation between workflows
-        return creator.create(false, false);
+        return creator.create(false);
     }
 }
