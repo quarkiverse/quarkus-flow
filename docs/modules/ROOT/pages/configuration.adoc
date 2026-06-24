@@ -7,3 +7,15 @@ include::includes/quarkus-flow.adoc[leveloffset=+1, opts=optional]
 
 == Messaging
 include::includes/quarkus-flow-messaging.adoc[leveloffset=+1, opts=optional]
+
+== Durable Kubernetes
+include::includes/quarkus-flow-durable-kubernetes.adoc[leveloffset=+1, opts=optional]
+
+== Persistence
+include::includes/quarkus-flow-persistence.adoc[leveloffset=+1, opts=optional]
+
+== Persistence MVStore
+include::includes/quarkus-flow-mvstore.adoc[leveloffset=+1, opts=optional]
+
+== Runner
+include::includes/quarkus-flow-runner.adoc[leveloffset=+1, opts=optional]

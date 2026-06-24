@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import io.fabric8.kubernetes.api.model.coordination.v1.Lease;
 import io.quarkiverse.flow.durable.kube.config.LeaseGroupConfig;
 import io.quarkiverse.flow.durable.kube.config.PoolConfig;
+import io.quarkiverse.flow.durable.kube.config.SchedulerGroupConfig;
 
 /**
  * Runs on every pod on a given interval scheduled via property configuration (check the Quarkus Flow Durable Workflows docs).

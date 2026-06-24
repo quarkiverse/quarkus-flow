@@ -166,8 +166,12 @@ public class StructuredLoggingWithQuarkusLoggingJsonTest {
                     "quarkus.flow.structured-logging.enabled", "true",
                     "quarkus.flow.structured-logging.events", "workflow.*",
 
-                    // Use a unique file path for this test
-                    "quarkus.log.handler.file.\"FLOW_EVENTS\".path", "target/structured-logging-json-test.log");
+                    // Manual FILE handler configuration
+                    "quarkus.log.handler.file.\"FLOW_EVENTS\".enable", "true",
+                    "quarkus.log.handler.file.\"FLOW_EVENTS\".format", "%s%n",
+                    "quarkus.log.handler.file.\"FLOW_EVENTS\".path", "target/structured-logging-json-test.log",
+                    "quarkus.log.category.\"io.quarkiverse.flow.structuredlogging\".handlers", "FLOW_EVENTS",
+                    "quarkus.log.category.\"io.quarkiverse.flow.structuredlogging\".use-parent-handlers", "false");
         }
     }
 }

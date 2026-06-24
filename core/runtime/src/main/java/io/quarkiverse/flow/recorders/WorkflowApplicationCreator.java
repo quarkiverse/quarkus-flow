@@ -15,6 +15,8 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.quarkiverse.flow.config.FlowMetricsConfig;
+import io.quarkiverse.flow.config.FlowTracingConfig;
 import io.quarkiverse.flow.metrics.MicrometerExecutionListener;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
 import io.quarkiverse.flow.providers.FaultToleranceProvider;
@@ -23,6 +25,7 @@ import io.quarkiverse.flow.providers.JQScopeSupplier;
 import io.quarkiverse.flow.providers.QuarkusManagedExecutorServiceFactory;
 import io.quarkiverse.flow.providers.WorkflowTaskContext;
 import io.quarkiverse.flow.tracing.TraceLoggerExecutionListener;
+import io.quarkus.runtime.LaunchMode;
 import io.serverlessworkflow.api.types.CallHTTP;
 import io.serverlessworkflow.api.types.CallOpenAPI;
 import io.serverlessworkflow.api.types.TaskBase;
@@ -91,12 +94,26 @@ public class WorkflowApplicationCreator {
     @Any
     Instance<WorkflowApplicationBuilderCustomizer> customizers;
 
-    public WorkflowApplication create(boolean tracingEnabled, boolean isMicrometerSupported) {
+    @Inject
+    LaunchMode launchMode;
+
+    @Inject
+    FlowTracingConfig tracingConfig;
+
+    @Inject
+    FlowMetricsConfig metricsConfig;
+
+    public WorkflowApplication create(boolean isMicrometerSupported) {
         final Builder builder = WorkflowApplication.builder();
-        if (tracingEnabled) {
+        if (tracingConfig.enabled().orElse(launchMode.isDevOrTest())) {
             LOG.debug("Flow: Tracing enabled");
             builder.withListener(new TraceLoggerExecutionListener());
         }
+        if (metricsConfig.enabled() && !isMicrometerSupported) {
+            LOG.warn("Quarkus Flow metrics enabled but Micrometer not available. " +
+                    "Add 'quarkus-micrometer-registry-prometheus' dependency to enable metrics.");
+        }
+
         builder.withContextFactory(new JavaModelFactory()).withModelFactory(new JacksonModelFactory());
 
         injectAppId(builder);

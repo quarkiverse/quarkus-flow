@@ -19,14 +19,14 @@ import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 
 /**
- * Test that structured logging works correctly in CONTAINER mode.
+ * Test that structured logging works correctly with CONSOLE handler.
  * <p>
- * CONTAINER mode writes events to stdout instead of a file, which is appropriate
- * for containerized deployments (Kubernetes, Docker) where logs are captured
- * from the container's stdout by the runtime.
+ * CONSOLE handler writes events to stdout, which is appropriate for containerized
+ * deployments (Kubernetes, Docker) where logs are captured from the container's
+ * stdout by the runtime.
  * <p>
  * This test verifies that:
- * 1. Workflow execution succeeds with CONTAINER mode enabled
+ * 1. Workflow execution succeeds with CONSOLE handler enabled
  * 2. No file handler is created (no target/quarkus-flow-events.log file)
  * 3. Events are written to console handler (manual verification via logs)
  * <p>
@@ -55,24 +55,24 @@ public class StructuredLoggingContainerModeTest {
     @Test
     @DisplayName("test_container_mode_writes_to_stdout_not_file")
     void test_container_mode_writes_to_stdout_not_file() {
-        // Execute workflow with structured logging in CONTAINER mode
+        // Execute workflow with structured logging CONSOLE handler configured
         // Events should be written to console (stdout) instead of a file
         var result = helloWorkflow.startInstance().await().indefinitely();
 
         // Verify workflow executed successfully
         assertThat(result).isNotNull();
 
-        // Verify that the default file handler was NOT created
-        // (container mode uses console handler, not file handler)
+        // Verify that no file handler was created
+        // (console handler writes to stdout, not file)
         Path defaultFileLogPath = Paths.get("target/quarkus-flow-events.log");
         assertThat(defaultFileLogPath)
                 .withFailMessage(
-                        "CONTAINER mode should not create a file handler. " +
+                        "CONSOLE handler should not create a file. " +
                                 "Found unexpected log file at: %s",
                         defaultFileLogPath)
                 .doesNotExist();
 
-        // Manual verification: Check build logs for JSON events like:
+        // Manual verification: Check test logs for JSON events like:
         // INFO [io.quarkiverse.flow.structuredlogging] {"eventType":"io.serverlessworkflow.workflow.started.v1",...}
         //
         // Events should appear in console output via console handler, NOT in a file
@@ -83,9 +83,13 @@ public class StructuredLoggingContainerModeTest {
         public Map<String, String> getConfigOverrides() {
             return Map.of(
                     "quarkus.flow.structured-logging.enabled", "true",
-                    "quarkus.flow.structured-logging.handler.mode", "container",
                     "quarkus.flow.structured-logging.events", "workflow.*",
-                    "quarkus.flow.structured-logging.log-level", "INFO");
+                    "quarkus.flow.structured-logging.log-level", "INFO",
+                    // Manual CONTAINER (console) handler configuration
+                    "quarkus.log.handler.console.\"FLOW_EVENTS\".enable", "true",
+                    "quarkus.log.handler.console.\"FLOW_EVENTS\".format", "%s%n",
+                    "quarkus.log.category.\"io.quarkiverse.flow.structuredlogging\".handlers", "FLOW_EVENTS",
+                    "quarkus.log.category.\"io.quarkiverse.flow.structuredlogging\".use-parent-handlers", "false");
         }
     }
 }

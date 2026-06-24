@@ -165,7 +165,13 @@ public class StructuredLoggingHttpAsyncTest {
                     "quarkus.flow.structured-logging.events", "*",
                     "quarkus.flow.structured-logging.include-workflow-payloads", "true",
                     "quarkus.flow.structured-logging.include-task-payloads", "true",
-                    "quarkus.flow.structured-logging.log-level", "INFO");
+                    "quarkus.flow.structured-logging.log-level", "INFO",
+                    // Manual FILE handler configuration (test expects file at target/quarkus-flow-events.log)
+                    "quarkus.log.handler.file.\"FLOW_EVENTS\".enable", "true",
+                    "quarkus.log.handler.file.\"FLOW_EVENTS\".format", "%s%n",
+                    "quarkus.log.handler.file.\"FLOW_EVENTS\".path", "target/quarkus-flow-events.log",
+                    "quarkus.log.category.\"io.quarkiverse.flow.structuredlogging\".handlers", "FLOW_EVENTS",
+                    "quarkus.log.category.\"io.quarkiverse.flow.structuredlogging\".use-parent-handlers", "false");
         }
     }
 

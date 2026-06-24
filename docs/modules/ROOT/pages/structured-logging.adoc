@@ -24,12 +24,25 @@ This approach provides several advantages:
 
 == Configuration
 
-Structured logging is **disabled by default**. Enable it via configuration:
+Structured logging is **disabled by default**. To enable it, you need to:
+
+1. Enable the structured logging feature
+2. Configure a log handler to capture events
+
+=== Basic Configuration
 
 [source,properties]
 ----
-# Enable structured logging (REQUIRED)
+# 1. Enable structured logging (REQUIRED)
 quarkus.flow.structured-logging.enabled=true
+
+# 2. Configure where events should be written (REQUIRED - see Handler Configuration below)
+# Example: Write to a file
+quarkus.log.handler.file."FLOW_EVENTS".enable=true
+quarkus.log.handler.file."FLOW_EVENTS".format=%s%n
+quarkus.log.handler.file."FLOW_EVENTS".path=target/quarkus-flow-events.log
+quarkus.log.category."io.quarkiverse.flow.structuredlogging".handlers=FLOW_EVENTS
+quarkus.log.category."io.quarkiverse.flow.structuredlogging".use-parent-handlers=false
 
 # Event filtering (default: all events)
 quarkus.flow.structured-logging.events=workflow.*
@@ -54,43 +67,59 @@ quarkus.flow.structured-logging.timestamp-format=iso8601
 # quarkus.flow.structured-logging.timestamp-pattern=yyyy-MM-dd'T'HH:mm:ss.SSSXXX
 ----
 
-IMPORTANT: When you enable structured logging, Quarkus Flow **automatically configures** a log handler based on the `handler.mode` setting. By default, events are written to a file (`target/quarkus-flow-events.log` in dev/test mode, `/var/log/quarkus-flow/events.log` in production). For containerized deployments, use `handler.mode=container` to write to stdout instead. See xref:#handler-mode-configuration[Handler Mode Configuration] for details.
+IMPORTANT: Structured logging requires **manual handler configuration**. Unlike application logs, structured events use standard Quarkus logging properties (`quarkus.log.handler.*`) which gives you full control over output destination and format. This is intentional – it allows runtime configuration changes (e.g., switching from file to stdout) without rebuilding your application. See xref:#handler-configuration[Handler Configuration] for complete examples.
 
-=== Handler Mode Configuration
+[[handler-configuration]]
+=== Handler Configuration
 
-Quarkus Flow provides three handler modes to control where structured logging events are written. This allows you to adapt the logging output to your deployment environment.
+Quarkus Flow uses standard Quarkus logging configuration to control where structured events are written. You configure handlers using `quarkus.log.*` properties, which gives you full runtime flexibility – you can change output destinations without rebuilding your application.
 
-==== FILE Mode (Default)
+TIP: All handler configurations shown below are **runtime-configurable**. This is essential for pre-built container images that need different logging setups per environment (dev/staging/production).
+
+==== FILE Handler (Traditional Deployments)
 
 Writes events to a dedicated file, separate from application logs:
 
 [source,properties]
 ----
+# Enable structured logging
 quarkus.flow.structured-logging.enabled=true
-quarkus.flow.structured-logging.handler.mode=file  # Default, can be omitted
+
+# Configure FILE handler
+quarkus.log.handler.file."FLOW_EVENTS".enable=true
+quarkus.log.handler.file."FLOW_EVENTS".format=%s%n
+quarkus.log.handler.file."FLOW_EVENTS".path=target/quarkus-flow-events.log
+quarkus.log.category."io.quarkiverse.flow.structuredlogging".handlers=FLOW_EVENTS
+quarkus.log.category."io.quarkiverse.flow.structuredlogging".use-parent-handlers=false
 ----
 
-**File locations:**
+**Recommended file paths:**
 
 * **Dev/Test mode:** `target/quarkus-flow-events.log`
 * **Production mode:** `/var/log/quarkus-flow/events.log`
 
-**When to use FILE mode:**
+**When to use FILE handler:**
 
 * Running on traditional servers or VMs
 * You want events in a separate file from application logs
 * Using file-based log forwarders (Filebeat, FluentBit with file input)
 * File system is writable and persistent
 
-==== CONTAINER Mode
+==== CONSOLE Handler (Container Deployments)
 
 Writes events to stdout for containerized deployments (Kubernetes, Docker, Podman):
 
 [source,properties]
 ----
+# Enable structured logging
 quarkus.flow.structured-logging.enabled=true
-quarkus.flow.structured-logging.handler.mode=container
 quarkus.flow.structured-logging.timestamp-format=epoch-seconds  # Recommended for container environments
+
+# Configure CONSOLE handler
+quarkus.log.handler.console."FLOW_EVENTS".enable=true
+quarkus.log.handler.console."FLOW_EVENTS".format=%s%n
+quarkus.log.category."io.quarkiverse.flow.structuredlogging".handlers=FLOW_EVENTS
+quarkus.log.category."io.quarkiverse.flow.structuredlogging".use-parent-handlers=false
 ----
 
 **Benefits:**
@@ -100,9 +129,8 @@ quarkus.flow.structured-logging.timestamp-format=epoch-seconds  # Recommended fo
 * Compatible with log aggregation tools (FluentBit, Fluentd, Promtail, Vector)
 * Works with read-only filesystems
 * Follows cloud-native logging best practices
-* Simpler configuration (3 lines vs 8 lines for manual workaround)
 
-**When to use CONTAINER mode:**
+**When to use CONSOLE handler:**
 
 * Running in containers (Docker, Kubernetes, Podman, OpenShift)
 * Using container runtime log collection
@@ -112,7 +140,7 @@ quarkus.flow.structured-logging.timestamp-format=epoch-seconds  # Recommended fo
 
 **Example Kubernetes deployment:**
 
-With CONTAINER mode, your logs flow like this:
+With CONSOLE handler, your logs flow like this:
 
 1. Quarkus Flow writes JSON events to stdout
 2. Container runtime captures stdout → `/var/log/containers/*.log`
@@ -121,30 +149,49 @@ With CONTAINER mode, your logs flow like this:
 
 No special volume mounts or file permissions needed!
 
-==== NONE Mode
+==== Custom Handler Configuration
 
-Disables automatic handler creation for advanced use cases:
+For advanced use cases, you can configure any Quarkus-supported log handler:
 
 [source,properties]
 ----
+# Enable structured logging
 quarkus.flow.structured-logging.enabled=true
-quarkus.flow.structured-logging.handler.mode=none
 
-# You must manually configure handlers
+# Example: Custom console handler with different name
 quarkus.log.handler.console."CUSTOM_FLOW".enable=true
 quarkus.log.handler.console."CUSTOM_FLOW".format=%s%n
 quarkus.log.category."io.quarkiverse.flow.structuredlogging".handlers=CUSTOM_FLOW
 quarkus.log.category."io.quarkiverse.flow.structuredlogging".use-parent-handlers=false
 ----
 
-**When to use NONE mode:**
+**When to use custom handlers:**
 
 * You need full control over logging configuration
-* Using custom handlers (syslog, GELF, custom formatters)
+* Using specialized handlers (syslog, GELF, custom formatters)
 * Integrating with specialized logging infrastructure
-* Default handlers don't fit your deployment requirements
+* Standard file/console handlers don't fit your requirements
 
-The logger category for structured events is `io.quarkiverse.flow.structuredlogging`.
+The logger category for structured events is always `io.quarkiverse.flow.structuredlogging`.
+
+==== Runtime Configuration Changes
+
+All handler configurations are **runtime-configurable**. This is particularly valuable for pre-built container images:
+
+.Example: Switch from FILE to CONSOLE at runtime
+[source,properties]
+----
+# Built with FILE handler, deployed with CONSOLE handler
+# Just override at runtime via environment variables:
+
+QUARKUS_LOG_HANDLER_FILE_FLOW_EVENTS_ENABLE=false
+QUARKUS_LOG_HANDLER_CONSOLE_FLOW_EVENTS_ENABLE=true
+QUARKUS_LOG_HANDLER_CONSOLE_FLOW_EVENTS_FORMAT=%s%n
+QUARKUS_LOG_CATEGORY__IO_QUARKIVERSE_FLOW_STRUCTUREDLOGGING__HANDLERS=FLOW_EVENTS
+QUARKUS_LOG_CATEGORY__IO_QUARKIVERSE_FLOW_STRUCTUREDLOGGING__USE_PARENT_HANDLERS=false
+----
+
+TIP: All `quarkus.log.*` properties support runtime override via environment variables. No application rebuild required!
 
 === Timestamp Format Configuration
 
@@ -379,9 +426,9 @@ NOTE: Timestamp fields can be formatted as ISO 8601 strings, Unix epoch values, 
 
 == Integration with quarkus-logging-json
 
-When you use `quarkus-logging-json` in your application, Quarkus Flow **automatically configures** a separate file handler for structured events to avoid double JSON serialization.
+When you use `quarkus-logging-json` in your application, you need to configure a separate handler for structured events to avoid double JSON serialization.
 
-=== The Problem (and Automatic Solution)
+=== The Problem
 
 When `quarkus-logging-json` is enabled, it wraps all log messages in a JSON structure:
 
@@ -403,99 +450,77 @@ Notice how the `message` field contains a JSON **string**, not a JSON **object**
 
 This "double serialization" defeats the purpose of structured logging.
 
-=== The Solution: Automatic Handler Configuration
+=== The Solution: Dedicated Handler with Raw Format
 
-Quarkus Flow **automatically configures** a log handler when structured logging is enabled. No manual configuration required!
+Configure a dedicated handler for structured events with raw format (`%s%n`):
 
-**Default Configuration (FILE mode):**
+**FILE Handler (Recommended):**
 
-When you enable structured logging:
 [source,properties]
 ----
+# Enable quarkus-logging-json for application logs
+quarkus.log.console.json=true
+
 # Enable Quarkus Flow structured logging
 quarkus.flow.structured-logging.enabled=true
 quarkus.flow.structured-logging.events=workflow.*
-# handler.mode=file is the default
+
+# Configure dedicated FILE handler with raw format
+quarkus.log.handler.file."FLOW_EVENTS".enable=true
+quarkus.log.handler.file."FLOW_EVENTS".format=%s%n  # Raw JSON, no quarkus-logging-json wrapper
+quarkus.log.handler.file."FLOW_EVENTS".path=target/quarkus-flow-events.log
+quarkus.log.category."io.quarkiverse.flow.structuredlogging".handlers=FLOW_EVENTS
+quarkus.log.category."io.quarkiverse.flow.structuredlogging".use-parent-handlers=false
 ----
 
-Quarkus Flow automatically:
+**CONSOLE Handler (Containerized deployments):**
 
-- Creates a file handler named `FLOW_EVENTS`
-- Writes events to:
-  * **Dev/Test mode**: `target/quarkus-flow-events.log`
-  * **Production mode**: `/var/log/quarkus-flow/events.log`
-- Uses raw JSON format (`%s%n` - no timestamps, just the event JSON)
-- Prevents events from appearing in console (no double logging)
-
-**Alternative: CONTAINER mode for containerized deployments:**
-
-If you're running in containers and want events in stdout instead:
+If you prefer stdout in containers:
 
 [source,properties]
 ----
+# Enable quarkus-logging-json for application logs
+quarkus.log.console.json=true
+
+# Enable Quarkus Flow structured logging
 quarkus.flow.structured-logging.enabled=true
-quarkus.flow.structured-logging.handler.mode=container
+quarkus.flow.structured-logging.events=workflow.*
+
+# Configure dedicated CONSOLE handler with raw format
+quarkus.log.handler.console."FLOW_EVENTS".enable=true
+quarkus.log.handler.console."FLOW_EVENTS".format=%s%n  # Raw JSON, no quarkus-logging-json wrapper
+quarkus.log.category."io.quarkiverse.flow.structuredlogging".handlers=FLOW_EVENTS
+quarkus.log.category."io.quarkiverse.flow.structuredlogging".use-parent-handlers=false
 ----
 
-This writes events to stdout instead of a file. See xref:#handler-mode-configuration[Handler Mode Configuration] for details.
-
-**Customizing the Configuration:**
-
-You can override any of the defaults:
-
-[source,properties]
-----
-# Custom file path
-quarkus.log.handler.file."FLOW_EVENTS".path=/custom/path/workflow-events.log
-
-# Or disable the file handler and use console only (not recommended with quarkus-logging-json)
-quarkus.log.handler.file."FLOW_EVENTS".enable=false
-quarkus.log.category."io.quarkiverse.flow.structuredlogging".use-parent-handlers=true
-----
-
-IMPORTANT: Quarkus Flow handles formatting programmatically at runtime. Even if `quarkus-logging-json` takes over the global loggers, Quarkus Flow automatically pierces through the logging wrappers to strictly enforce raw string formatting for the `FLOW_EVENTS` file handler.
-This guarantees that your event stream remains pure, single-level JSON without any configuration effort on your part.
-
-With the default configuration:
+With this configuration:
 
 - **Console logs**: Application logs in JSON format (from `quarkus-logging-json`)
-- **Event file**: Pure workflow event JSON (one event per line, safe from double-wrapping)
+- **Event output**: Pure workflow event JSON (one event per line, no double-wrapping)
 
-=== Why Separate Files?
+=== Why Separate Handlers?
 
 This follows the **logs-as-transport pattern** correctly:
 
-* **Application logs**: Diagnostic information for debugging (stdout/stderr)
-* **Event streams**: Structured data for analytics/auditing (dedicated file)
+* **Application logs**: Diagnostic information for debugging (stdout/stderr, formatted by quarkus-logging-json)
+* **Event streams**: Structured data for analytics/auditing (dedicated handler with raw JSON format)
 
 Event streams and diagnostic logs serve different purposes and should be treated separately. Log forwarders can then:
-- Parse application logs with the appropriate schema
-- Parse workflow events as pure JSON
+- Parse application logs with the quarkus-logging-json schema
+- Parse workflow events as pure JSON (no wrapper)
 - Route each to different destinations (e.g., Elasticsearch for logs, PostgreSQL for events)
 
-=== Automatic Detection and Configuration
-
-Quarkus Flow automatically detects `quarkus-logging-json` at build time and:
-- Emits an informational message about the auto-configured file handler
-- Shows the default file path being used
-- Reminds you that the path can be customized
-
-Check your build logs for:
-```
-INFO  [io.qua.flo.dep.FlowProcessor] Quarkus Flow structured logging file handler auto-configured.
-      Events will be written to: target/quarkus-flow-events.log
-      (override with quarkus.log.handler.file."FLOW_EVENTS".path)
-```
+TIP: The `format=%s%n` setting ensures events are written as raw JSON strings without any additional formatting from `quarkus-logging-json`.
 
 == Log Forwarder Integration
 
 === FluentBit Example
 
-FluentBit is a lightweight, high-performance log forwarder. Configuration depends on your handler mode:
+FluentBit is a lightweight, high-performance log forwarder. Configuration depends on your handler type:
 
-==== FILE Mode Configuration
+==== FILE Handler Configuration
 
-When using `handler.mode=file` (default), FluentBit reads from the log file:
+When using a FILE handler, FluentBit reads from the configured log file:
 
 [source,conf]
 ----
@@ -523,9 +548,9 @@ When using `handler.mode=file` (default), FluentBit reads from the log file:
     Timestamp_Key     timestamp
 ----
 
-==== CONTAINER Mode Configuration (Recommended for Kubernetes/Docker)
+==== CONSOLE Handler Configuration (Recommended for Kubernetes/Docker)
 
-When using `handler.mode=container`, FluentBit collects logs from stdout via the container runtime:
+When using a CONSOLE handler, FluentBit collects logs from stdout via the container runtime:
 
 [source,conf]
 ----
@@ -566,7 +591,7 @@ This configuration:
 3. Filters for Quarkus Flow events using the `eventType` field
 4. Routes to PostgreSQL
 
-TIP: For container mode, the structured events are already JSON in the log stream, so FluentBit can parse them directly without additional processing.
+TIP: For CONSOLE handler, the structured events are already JSON in the log stream, so FluentBit can parse them directly without additional processing.
 
 === Dual Output Pattern
 

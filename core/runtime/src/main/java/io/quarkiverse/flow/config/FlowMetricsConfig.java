@@ -8,8 +8,22 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
+/**
+ * Configuration for Quarkus Flow metrics collection.
+ * <p>
+ * <strong>Note:</strong> Changes to metrics configuration require an application restart to take effect.
+ * The metrics listener is registered at startup and cannot be dynamically added or removed.
+ * <p>
+ * To enable metrics:
+ *
+ * <pre>
+ * quarkus.flow.metrics.enabled = true
+ * </pre>
+ *
+ * Then restart the application (no rebuild required).
+ */
 @ConfigMapping(prefix = "quarkus.flow.metrics")
-@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface FlowMetricsConfig {
 
     /**
@@ -21,6 +35,8 @@ public interface FlowMetricsConfig {
      * Enables or disables metrics collection for Quarkus Flow.
      * <p>
      * When set to {@code false}, no metrics are published.
+     * <p>
+     * <strong>Restart required:</strong> Changing this property requires an application restart to take effect.
      */
     @WithDefault("true")
     boolean enabled();
@@ -32,6 +48,8 @@ public interface FlowMetricsConfig {
      * application or framework metrics.
      * <p>
      * Please, configure a prefix separating words by (<code>.</code>) dot character.
+     * <p>
+     * <strong>Restart required:</strong> Changing this property requires an application restart to take effect.
      * <p>
      * {@see <a href="https://quarkus.io/guides/telemetry-micrometer#naming-conventions">Naming conventions</a>}.
      */
@@ -51,6 +69,8 @@ public interface FlowMetricsConfig {
          * <p>
          * When disabled, no timing metrics (such as workflow or task
          * execution durations) are published.
+         * <p>
+         * <strong>Restart required:</strong> Changing this property requires an application restart to take effect.
          */
         @WithDefault("true")
         boolean enabled();
@@ -60,6 +80,8 @@ public interface FlowMetricsConfig {
          * <p>
          * Values must be in the range {@code (0, 1)}, for example:
          * {@code 0.5}, {@code 0.95}, {@code 0.99}.
+         * <p>
+         * <strong>Restart required:</strong> Changing this property requires an application restart to take effect.
          */
         Optional<List<String>> percentiles();
 
