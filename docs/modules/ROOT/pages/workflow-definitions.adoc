@@ -34,7 +34,7 @@ This definition:
 ====
 You can customize the discovery directory by setting the xref:configuration.adoc#quarkus-flow_quarkus-flow-definitions-dir[`quarkus.flow.definitions.dir`] property in your `application.properties`.
 
-The property accepts a classpath resource path (e.g., `flow`, `workflows`, or `custom/workflows`). Workflow files must be placed in `src/main/resources/{path}` to be available at runtime. All `*.yaml`, `*.yml`, and `*.json` files in the resource path are discovered automatically.
+The property accepts a classpath resource path (e.g., `flow`, `workflows`, or `custom/workflows`). Workflow files must be placed in `src/main/resources/<path>` to be available at runtime. All `*.yaml`, `*.yml`, and `*.json` files in the resource path are discovered automatically.
 ====
 
 [IMPORTANT]
