@@ -17,10 +17,9 @@ import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.
 
 import java.util.logging.Handler;
 
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
 import jakarta.inject.Singleton;
+
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.ExtHandler;
 import org.jboss.logmanager.formatters.PatternFormatter;
