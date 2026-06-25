@@ -4,6 +4,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -113,19 +114,23 @@ public class StructuredLoggingHttpAsyncTest {
 
         // Then: structured log file should contain workflow completion event with output
         Path logFile = Path.of("target/quarkus-flow-events.log");
-        assertThat(logFile).exists();
 
-        List<String> logLines = Files.readAllLines(logFile);
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+            assertThat(logFile).exists();
 
-        // Find the workflow.completed event
-        boolean foundCompletionEventWithOutput = logLines.stream()
-                .filter(line -> line.contains("workflow.completed"))
-                .filter(line -> line.contains(instance.id()))
-                .anyMatch(line -> line.contains("\"output\"") && line.contains("Received: Async Test Data"));
+            List<String> logLines = Files.readAllLines(logFile);
 
-        assertThat(foundCompletionEventWithOutput)
-                .as("Structured log should contain workflow.completed event with output for instance " + instance.id())
-                .isTrue();
+            // Find the workflow.completed event
+            boolean foundCompletionEventWithOutput = logLines.stream()
+                    .filter(line -> line.contains("workflow.completed"))
+                    .filter(line -> line.contains(instance.id()))
+                    .anyMatch(line -> line.contains("\"output\"") && line.contains("Received: Async Test Data"));
+
+            assertThat(foundCompletionEventWithOutput)
+                    .as("Structured log should contain workflow.completed event with output for instance "
+                            + instance.id())
+                    .isTrue();
+        });
     }
 
     @Test
