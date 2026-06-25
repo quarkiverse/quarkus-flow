@@ -17,8 +17,10 @@ import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.
 
 import java.util.logging.Handler;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import jakarta.inject.Singleton;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.ExtHandler;
 import org.jboss.logmanager.formatters.PatternFormatter;
@@ -46,6 +48,7 @@ import io.serverlessworkflow.impl.lifecycle.WorkflowSuspendedEvent;
 /**
  * Workflow execution listener that emits structured JSON logs for all lifecycle events.
  */
+@Singleton
 @LookupIfProperty(name = "quarkus.flow.structured-logging.enabled", stringValue = "true")
 public class StructuredLoggingListener implements WorkflowExecutionListener {
 
