@@ -85,6 +85,12 @@
             <version>${project.version}</version>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-oidc</artifactId>
+            <version>${project.version}</version>
+            <optional>true</optional>
+        </dependency>
 
         <!-- Required by serverlessworkflow-core-http HttpExecutor service module -->
         <dependency>
@@ -149,6 +155,8 @@
                             </conditionalDevDependencies>
                             <conditionalDependencies>
                                 <dependency>${project.groupId}:${project.artifactId}-messaging:${project.version}
+                                </dependency>
+                                <dependency>${project.groupId}:${project.artifactId}-oidc:${project.version}
                                 </dependency>
                             </conditionalDependencies>
                             <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}

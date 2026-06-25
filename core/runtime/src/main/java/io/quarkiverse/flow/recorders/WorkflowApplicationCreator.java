@@ -29,6 +29,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.serverlessworkflow.api.types.CallHTTP;
 import io.serverlessworkflow.api.types.CallOpenAPI;
 import io.serverlessworkflow.api.types.TaskBase;
+import io.serverlessworkflow.impl.ContextPropagator;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowApplication.Builder;
 import io.serverlessworkflow.impl.WorkflowModel;
@@ -53,6 +54,10 @@ public class WorkflowApplicationCreator {
 
     @Inject
     QuarkusManagedExecutorServiceFactory executorServiceFactory;
+
+    @Inject
+    @Any
+    Instance<ContextPropagator> contextPropagators;
 
     @Inject
     JQScopeSupplier jqScopeSupplier;
@@ -118,6 +123,7 @@ public class WorkflowApplicationCreator {
 
         injectAppId(builder);
         injectExecutorServiceFactory(builder);
+        injectContextPropagator(builder);
         injectJQExpressionFactory(builder);
         injectEventConsumers(builder);
         injectEventPublishers(builder);
@@ -140,6 +146,19 @@ public class WorkflowApplicationCreator {
     private void injectExecutorServiceFactory(Builder builder) {
         builder.withExecutorFactory(executorServiceFactory);
         LOG.debug("Flow: Bound ExecutorServiceFactory bean: {}", executorServiceFactory.getClass().getName());
+    }
+
+    private void injectContextPropagator(Builder builder) {
+        if (contextPropagators.isResolvable()) {
+            ContextPropagator contextPropagator = contextPropagators.get();
+            builder.withContextPropagator(contextPropagator);
+            LOG.debug("Flow: Bound ContextPropagator bean: {}", contextPropagator.getClass().getName());
+        } else if (contextPropagators.isAmbiguous()) {
+            throw new IllegalStateException(
+                    "Multiple ContextPropagator beans found. Provide exactly one.");
+        } else {
+            LOG.debug("Flow: No ContextPropagator bean found; caller context propagation disabled (NOOP).");
+        }
     }
 
     private void injectCustomListeners(Builder builder) {

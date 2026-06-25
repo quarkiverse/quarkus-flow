@@ -1,0 +1,219 @@
+[.configuration-legend]
+icon:lock[title=Fixed at build time] Configuration property fixed at build time - All other configuration properties are overridable at runtime
+[.configuration-reference.searchable, cols="80,.^10,.^10"]
+|===
+
+h|[.header-title]##Configuration property##
+h|Type
+h|Default
+
+a| [[quarkus-flow-oidc_quarkus-flow-oidc-token-exchange-enabled]] [.property-path]##link:#quarkus-flow-oidc_quarkus-flow-oidc-token-exchange-enabled[`+++quarkus.flow.oidc.token-exchange.enabled+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.oidc.token-exchange.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether token exchange is enabled globally. When `false`, schemes fall back to client-credentials unless they explicitly enable exchange or propagation.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_OIDC_TOKEN_EXCHANGE_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_OIDC_TOKEN_EXCHANGE_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a| [[quarkus-flow-oidc_quarkus-flow-oidc-token-exchange-proactive-refresh-seconds]] [.property-path]##link:#quarkus-flow-oidc_quarkus-flow-oidc-token-exchange-proactive-refresh-seconds[`+++quarkus.flow.oidc.token-exchange.proactive-refresh-seconds+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.oidc.token-exchange.proactive-refresh-seconds+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+How many seconds before expiry a cached token is proactively refreshed.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_OIDC_TOKEN_EXCHANGE_PROACTIVE_REFRESH_SECONDS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_OIDC_TOKEN_EXCHANGE_PROACTIVE_REFRESH_SECONDS+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow-oidc_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
+|`+++PT300S+++`
+
+a| [[quarkus-flow-oidc_quarkus-flow-oidc-token-exchange-monitor-rate-seconds]] [.property-path]##link:#quarkus-flow-oidc_quarkus-flow-oidc-token-exchange-monitor-rate-seconds[`+++quarkus.flow.oidc.token-exchange.monitor-rate-seconds+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.oidc.token-exchange.monitor-rate-seconds+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+How often (seconds) the proactive-refresh monitor runs.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_OIDC_TOKEN_EXCHANGE_MONITOR_RATE_SECONDS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_OIDC_TOKEN_EXCHANGE_MONITOR_RATE_SECONDS+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow-oidc_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
+|`+++PT60S+++`
+
+a| [[quarkus-flow-oidc_quarkus-flow-oidc-subject-token-input-key]] [.property-path]##link:#quarkus-flow-oidc_quarkus-flow-oidc-subject-token-input-key[`+++quarkus.flow.oidc.subject-token.input-key+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.oidc.subject-token.input-key+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Workflow input key holding the subject token (for programmatic / non-HTTP triggers).
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_OIDC_SUBJECT_TOKEN_INPUT_KEY+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_OIDC_SUBJECT_TOKEN_INPUT_KEY+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|`+++subjectToken+++`
+
+a| [[quarkus-flow-oidc_quarkus-flow-oidc-subject-token-security-identity-attribute]] [.property-path]##link:#quarkus-flow-oidc_quarkus-flow-oidc-subject-token-security-identity-attribute[`+++quarkus.flow.oidc.subject-token.security-identity-attribute+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.oidc.subject-token.security-identity-attribute+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+`SecurityIdentity` attribute holding the subject token (for HTTP-triggered workflows).
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_OIDC_SUBJECT_TOKEN_SECURITY_IDENTITY_ATTRIBUTE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_OIDC_SUBJECT_TOKEN_SECURITY_IDENTITY_ATTRIBUTE+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|`+++access_token+++`
+
+a| [[quarkus-flow-oidc_quarkus-flow-oidc-auth-auth-oidc-client-name]] [.property-path]##link:#quarkus-flow-oidc_quarkus-flow-oidc-auth-auth-oidc-client-name[`+++quarkus.flow.oidc.auth."auth".oidc-client-name+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.oidc.auth."auth".oidc-client-name+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Name of the `quarkus.oidc-client.<name>` to use for exchange and client-credentials. Defaults to the scheme name.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_OIDC_AUTH__AUTH__OIDC_CLIENT_NAME+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_OIDC_AUTH__AUTH__OIDC_CLIENT_NAME+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
+a| [[quarkus-flow-oidc_quarkus-flow-oidc-auth-auth-token-exchange-enabled]] [.property-path]##link:#quarkus-flow-oidc_quarkus-flow-oidc-auth-auth-token-exchange-enabled[`+++quarkus.flow.oidc.auth."auth".token-exchange-enabled+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.oidc.auth."auth".token-exchange-enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Force token exchange on/off for this scheme, overriding the global setting and smart default.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_OIDC_AUTH__AUTH__TOKEN_EXCHANGE_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_OIDC_AUTH__AUTH__TOKEN_EXCHANGE_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+a| [[quarkus-flow-oidc_quarkus-flow-oidc-auth-auth-proactive-refresh-seconds]] [.property-path]##link:#quarkus-flow-oidc_quarkus-flow-oidc-auth-auth-proactive-refresh-seconds[`+++quarkus.flow.oidc.auth."auth".proactive-refresh-seconds+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.oidc.auth."auth".proactive-refresh-seconds+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Per-scheme proactive-refresh threshold (seconds), overriding the global value.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_OIDC_AUTH__AUTH__PROACTIVE_REFRESH_SECONDS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_OIDC_AUTH__AUTH__PROACTIVE_REFRESH_SECONDS+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow-oidc_quarkus-flow-oidc-auth-auth-token-propagation-enabled]] [.property-path]##link:#quarkus-flow-oidc_quarkus-flow-oidc-auth-auth-token-propagation-enabled[`+++quarkus.flow.oidc.auth."auth".token-propagation-enabled+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.oidc.auth."auth".token-propagation-enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Forward the caller's subject token unchanged. Takes precedence over exchange when enabled.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_OIDC_AUTH__AUTH__TOKEN_PROPAGATION_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_OIDC_AUTH__AUTH__TOKEN_PROPAGATION_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+|===
+
+ifndef::no-duration-note[]
+[NOTE]
+[id=duration-note-anchor-quarkus-flow-oidc_quarkus-flow]
+.About the Duration format
+====
+To write duration values, use the standard `java.time.Duration` format.
+See the link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#parse(java.lang.CharSequence)[Duration#parse() Java API documentation] for more information.
+
+You can also use a simplified format, starting with a number:
+
+* If the value is only a number, it represents time in seconds.
+* If the value is a number followed by `ms`, it represents time in milliseconds.
+
+In other cases, the simplified format is translated to the `java.time.Duration` format for parsing:
+
+* If the value is a number followed by `h`, `m`, or `s`, it is prefixed with `PT`.
+* If the value is a number followed by `d`, it is prefixed with `P`.
+====
+endif::no-duration-note[]

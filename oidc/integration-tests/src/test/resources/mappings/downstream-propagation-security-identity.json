@@ -1,0 +1,21 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/propagation/resource",
+    "headers": {
+      "Authorization": {
+        "equalTo": "Bearer dummy-RSax7ZTj0RRUHC170HBEcOWZvX7fTZFmy8TUSZqyc7PWRzcXATfjDL005mcMROmV"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "authorized": true,
+      "via": "propagation"
+    }
+  }
+}

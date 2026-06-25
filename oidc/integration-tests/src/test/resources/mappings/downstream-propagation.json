@@ -1,0 +1,21 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/propagation/resource",
+    "headers": {
+      "Authorization": {
+        "equalTo": "Bearer static-token-123"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "authorized": true,
+      "via": "propagation"
+    }
+  }
+}

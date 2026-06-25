@@ -27,4 +27,9 @@ public class MetadataPropagationRequestDecorator implements HttpRequestDecorator
                     .header(X_FLOW_TASK_ID, taskContext.position().jsonPointer());
         }
     }
+
+    @Override
+    public int priority() {
+        return 50;
+    }
 }
