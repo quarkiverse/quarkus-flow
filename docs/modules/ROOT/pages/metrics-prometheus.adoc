@@ -2,8 +2,11 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
-Quarkus Flow integrates with Quarkus Micrometer to provide observability for workflow executions.
-It exposes metrics for execution counts, durations, and runtime states, which can be easily visualized and used for alerting with Prometheus and Grafana.
+Quarkus Flow instruments workflow executions using https://micrometer.io[Micrometer], the metrics facade integrated into Quarkus.
+It records meters for execution counts, durations, and runtime states.
+
+Because the instrumentation is registry-agnostic, Quarkus Flow does not depend on Prometheus directly: the same meters can be exported to any Micrometer-supported backend.
+This guide uses the Prometheus registry, the most common choice, which pairs naturally with Grafana for visualization and alerting.
 
 == Configuring Observability
 
@@ -32,6 +35,18 @@ or by setting `quarkus.flow.metrics.enabled=false` in `application.properties`.
 ====
 Metric names are aligned with the workflow state phases defined in the CNCF Serverless Workflow specification:
 https://github.com/serverlessworkflow/specification/blob/main/dsl.md#status-phases
+====
+
+[NOTE]
+====
+Prometheus is only one of the registries that Micrometer supports.
+Since Quarkus Flow records its meters through Micrometer rather than depending on Prometheus,
+you can export the same metrics to a different backend by swapping the registry — for example,
+through the Micrometer-to-OpenTelemetry bridge (the `quarkus-micrometer-opentelemetry` extension)
+to push metrics to an OpenTelemetry collector.
+
+The metric names and tags described in this guide stay the same regardless of the registry;
+only their on-the-wire representation changes.
 ====
 
 == Counting workflow events
@@ -163,6 +178,15 @@ With this configuration:
 
 * Client-side percentiles are exported as `quantile` time series
 * Histogram buckets are exported as `_bucket` metrics
+
+[NOTE]
+====
+The Micrometer Timer always records its base statistics (count, total time, and max),
+regardless of the `quarkus.flow.metrics.durations` settings.
+
+Setting `quarkus.flow.metrics.durations.enabled=false` only disables the
+*distribution statistics* (the histogram buckets and the percentiles).
+====
 
 Example output from `/q/metrics`:
 
