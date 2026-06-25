@@ -173,8 +173,3 @@ jobs:
       image_tag: ${{ needs.setup.outputs.TAG }}-${{ matrix.variant }}
       artifact_name: artifact-${{ matrix.variant }}
       additional_tags: latest
-
-    with:
-      image_name: quarkiverse/quarkus-flow-runner
-      image_tag: latest-${{ matrix.variant }}
-      artifact_name: artifact-${{ matrix.variant }}
