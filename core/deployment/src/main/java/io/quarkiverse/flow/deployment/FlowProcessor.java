@@ -38,6 +38,7 @@ import io.quarkiverse.flow.recorders.SDKRecorder;
 import io.quarkiverse.flow.recorders.WorkflowApplicationCreator;
 import io.quarkiverse.flow.recorders.WorkflowApplicationRecorder;
 import io.quarkiverse.flow.recorders.WorkflowDefinitionRecorder;
+import io.quarkiverse.flow.structuredlogging.StructuredLoggingListener;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -179,6 +180,7 @@ class FlowProcessor {
                 .addBeanClass(FaultToleranceProvider.class)
                 .addBeanClass(WorkflowApplicationCreator.class)
                 .addBeanClass(WorkflowApplicationInitializer.class)
+                .addBeanClass(StructuredLoggingListener.class)
                 .setUnremovable()
                 .build();
     }
