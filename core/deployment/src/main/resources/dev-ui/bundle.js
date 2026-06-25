@@ -13,7 +13,7 @@ export function renderServerlessWorkflowDiagramEditor(container, props) {
     roots.set(container, root);
   }
 
-    root.render(React.createElement(DiagramEditor, props));
+    root.render(React.createElement(DiagramEditor, {key: props.workflowKey, ...props}));
 
   return root;
 }

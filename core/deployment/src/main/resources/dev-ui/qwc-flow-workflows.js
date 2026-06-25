@@ -140,7 +140,8 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
         return html`
             <qwc-serverless-workflow-diagram-editor
                     .workflow=${this._currentDiagramEditorWorkflow}
-                    .readonly=${true}>
+                    .readonly=${true}
+                    .workflowKey="show-${this._generateDiagramEditorId(this._currentDiagramEditorWorkflow.id)}">
             </qwc-serverless-workflow-diagram-editor>
         `;
     }
