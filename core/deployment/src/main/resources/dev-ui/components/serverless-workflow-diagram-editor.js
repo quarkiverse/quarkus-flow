@@ -50,17 +50,10 @@ export class ServerlessWorkflowDiagramEditorElement extends LitElement {
         `;
     }
 
-  updated(changedProperties) {
+  async updated(changedProperties) {
     if (changedProperties.has('workflow')) {
-      this._loadWorkflowDefinition();
-    }
-
-    // Only re-render when definition or readonly changes, not when workflow changes
-    // (workflow change triggers async load which will update _workflowDefinition)
-    if (
-      changedProperties.has('readonly') ||
-      changedProperties.has('_workflowDefinition')
-    ) {
+      await this._loadWorkflowDefinition();
+    //} else if (changedProperties.has('_workflowDefinition')) {
       this._renderReactEditor();
     }
   }
@@ -73,6 +66,7 @@ export class ServerlessWorkflowDiagramEditorElement extends LitElement {
 
     try {
       const { result } = await this.jsonRpc.getWorkflowDefinition({ id: this.workflow.id });
+      //throw new Error("Test error");
       this._workflowDefinition = result;
     } catch (error) {
       console.error('Failed to load workflow definition:', error);
@@ -88,7 +82,7 @@ export class ServerlessWorkflowDiagramEditorElement extends LitElement {
   _renderReactEditor() {
     const container = this.renderRoot.querySelector('#container');
 
-    if (!container || !this._workflowDefinition) {
+    if (!container) {
       return;
     }
 
