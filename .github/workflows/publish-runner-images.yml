@@ -145,6 +145,7 @@ jobs:
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
             --build-arg VARIANT=${VARIANT} \
+            --provenance=false \
             -f Dockerfile \
             -t quay.io/quarkiverse/quarkus-flow-runner:${TAG}-${VARIANT} \
             -o type=oci,dest=artifact-${VARIANT}.tar \
@@ -172,4 +173,4 @@ jobs:
       image_name: quarkiverse/quarkus-flow-runner
       image_tag: ${{ needs.setup.outputs.TAG }}-${{ matrix.variant }}
       artifact_name: artifact-${{ matrix.variant }}
-      additional_tags: latest
+      additional_tags: latest-${{ matrix.variant }}
