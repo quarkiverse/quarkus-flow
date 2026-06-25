@@ -98,7 +98,13 @@ jobs:
           distribution: temurin
           java-version: "17"
           cache: maven
+          
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+        
       - name: Build
         run: |
           POM_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -pl runner/app)
@@ -134,11 +140,18 @@ jobs:
           TAG="${{ needs.setup.outputs.TAG }}"
           VARIANT="${{ matrix.variant }}"
 
-          # Build Docker image
-          docker build --build-arg VARIANT=${VARIANT} -f Dockerfile -t quay.io/quarkiverse/quarkus-flow-runner:${TAG}-${VARIANT} .
+          # Build multi-arch Docker image using buildx and export directly as an OCI tarball.
+          # This replaces the single-arch 'docker build' + 'skopeo copy' combination.
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --build-arg VARIANT=${VARIANT} \
+            -f Dockerfile \
+            -t quay.io/quarkiverse/quarkus-flow-runner:${TAG}-${VARIANT} \
+            -o type=oci,dest=artifact-${VARIANT}.tar \
+            .
 
-          # Save as OCI archive
-          skopeo copy docker-daemon:quay.io/quarkiverse/quarkus-flow-runner:${TAG}-${VARIANT} oci-archive:artifact-${VARIANT}.tar.gz
+          # Compress to match the expected .tar.gz format downstream
+          gzip artifact-${VARIANT}.tar
 
       - name: Upload the Docker Image
         uses: actions/upload-artifact@v7
@@ -158,4 +171,19 @@ jobs:
     with:
       image_name: quarkiverse/quarkus-flow-runner
       image_tag: ${{ needs.setup.outputs.TAG }}-${{ matrix.variant }}
+      artifact_name: artifact-${{ matrix.variant }}
+
+  publish-latest:
+    name: Publish ${{ matrix.variant }} (latest) to Quay.io
+    needs: [setup, build]
+    # Only run this if the primary tag being published isn't already 'latest'
+    if: needs.setup.outputs.TAG != 'latest'
+    strategy:
+      matrix:
+        variant: [minimal, standard, messaging]
+    uses: quarkiverse/.github/.github/workflows/deploy-image.yml@main
+    secrets: inherit
+    with:
+      image_name: quarkiverse/quarkus-flow-runner
+      image_tag: latest-${{ matrix.variant }}
       artifact_name: artifact-${{ matrix.variant }}
