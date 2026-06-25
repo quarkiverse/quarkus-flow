@@ -17,7 +17,7 @@ import io.smallrye.config.WithDefault;
  * To enable metrics:
  *
  * <pre>
- * quarkus.flow.metrics.enabled = true
+ * <code>quarkus.flow.metrics.enabled=true</code>
  * </pre>
  *
  * Then restart the application (no rebuild required).
@@ -65,10 +65,15 @@ public interface FlowMetricsConfig {
     interface Durations {
 
         /**
-         * Enables or disables duration metrics.
+         * Enables or disables the duration <em>distribution statistics</em>
+         * (the histogram and the configured percentiles).
          * <p>
-         * When disabled, no timing metrics (such as workflow or task
-         * execution durations) are published.
+         * The duration {@code Timer} is always registered and recorded, so its base
+         * statistics (count, total time, and max) are published regardless of this
+         * setting. When set to {@code false}, only the histogram and percentiles are
+         * omitted; the exact representation of these statistics in the backend depends
+         * on the configured Micrometer registry (for example, Prometheus or an
+         * OpenTelemetry bridge).
          * <p>
          * <strong>Restart required:</strong> Changing this property requires an application restart to take effect.
          */

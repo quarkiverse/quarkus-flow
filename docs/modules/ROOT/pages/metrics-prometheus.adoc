@@ -164,6 +164,31 @@ With this configuration:
 * Client-side percentiles are exported as `quantile` time series
 * Histogram buckets are exported as `_bucket` metrics
 
+[NOTE]
+====
+The Micrometer Timer always exports the base series `_count`, `_sum`, and `_max`,
+regardless of the `quarkus.flow.metrics.durations` settings.
+
+Setting `quarkus.flow.metrics.durations.enabled=false` only disables the
+*distribution statistics* (the `_bucket` histogram and the `quantile` percentiles).
+The duration Timer is still registered and recorded, so `_count`, `_sum`, and `_max`
+remain available. In that case the metric is exported as a Prometheus `summary`
+instead of a `histogram`.
+
+There is no dedicated *average* series in `/q/metrics` — this is by design in
+Micrometer/Prometheus. Derive the average from the exported series instead:
+
+[source,promql]
+----
+# Cumulative average (recommended for low-traffic workflows)
+quarkus_flow_workflow_duration_seconds_sum / quarkus_flow_workflow_duration_seconds_count
+
+# Moving average (use $__rate_interval in Grafana; returns no data while idle)
+rate(quarkus_flow_workflow_duration_seconds_sum[$__rate_interval])
+  / rate(quarkus_flow_workflow_duration_seconds_count[$__rate_interval])
+----
+====
+
 Example output from `/q/metrics`:
 
 [source,text]
