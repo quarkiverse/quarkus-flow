@@ -172,17 +172,8 @@ jobs:
       image_name: quarkiverse/quarkus-flow-runner
       image_tag: ${{ needs.setup.outputs.TAG }}-${{ matrix.variant }}
       artifact_name: artifact-${{ matrix.variant }}
+      additional_tags: latest
 
-  publish-latest:
-    name: Publish ${{ matrix.variant }} (latest) to Quay.io
-    needs: [setup, build]
-    # Only run this if the primary tag being published isn't already 'latest'
-    if: needs.setup.outputs.TAG != 'latest'
-    strategy:
-      matrix:
-        variant: [minimal, standard, messaging]
-    uses: quarkiverse/.github/.github/workflows/deploy-image.yml@main
-    secrets: inherit
     with:
       image_name: quarkiverse/quarkus-flow-runner
       image_tag: latest-${{ matrix.variant }}
