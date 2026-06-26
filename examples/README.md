@@ -2,6 +2,53 @@
 
 Directory of end-to-end use case examples.
 
+## ▶️ Running an example
+
+Each example is a **self-contained Quarkus application** with its own Maven wrapper (`./mvnw`),
+its own `README.md`, and its own prerequisites (some need Docker/Podman, Ollama, etc. — check the
+example's README first).
+
+### 1. Make the Quarkus Flow artifacts resolvable
+
+The examples depend on Quarkus Flow (`io.quarkiverse.flow`) and, for the agentic ones, Quarkus
+LangChain4j. By default, the example POMs point at the in-development version
+(`quarkus.flow.version` = `1.0.0-SNAPSHOT`), which is **not published to Maven Central**. Pick one
+of the two options below.
+
+**Option A — Use a published release (fastest, no full build).**
+Edit the `quarkus.flow.version` property in the example's `pom.xml` to a released version so the
+dependencies resolve straight from Maven Central:
+
+```xml
+<quarkus.flow.version>0.11.0</quarkus.flow.version>
+```
+
+> See the [released versions](https://github.com/quarkiverse/quarkus-flow/tags) and pick the latest.
+
+**Option B — Build the SNAPSHOT locally.**
+From the **repository root**, build and install the Quarkus Flow artifacts into your local Maven
+repository (`~/.m2`) once, then run the example against the freshly built SNAPSHOT:
+
+```bash
+# from the repository root
+mvn -DskipTests install
+```
+
+### 2. Run the example in dev mode
+
+```bash
+cd examples/<example-name>
+./mvnw quarkus:dev
+```
+
+That's it — Quarkus **Dev Services** auto-starts any infrastructure the example needs (e.g. Kafka)
+when Docker or Podman is available. Follow the individual example's `README.md` for the URLs to open
+and how to interact with it.
+
+> **Note:** the `quarkus-flow-deployment` / `quarkus-flow-langchain4j-deployment` dependencies
+> declared with `<scope>test</scope>` exist only to support this multi-module repository and are
+> **not required** when you copy an example into your own project. They can be safely removed.
+
 <!-- Please update this list when adding a new example / keep it in alphabetical order -->
 - [Agentic + HTTP](agentic-http/README.md): Example of a workflow enriching an agent prompt from a remote HTTP request.
 - [Durable Workflows on Kubernetes](durable-workflows-k8s/README.md): Example of leasing acquiring when deploying workflows on Kubernetes to enable durable workflows use cases.
