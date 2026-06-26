@@ -1,5 +1,8 @@
 package io.quarkiverse.flow.providers;
 
+import java.util.Map;
+import java.util.function.Predicate;
+
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -48,31 +51,54 @@ public class GrpcChannelProvider implements WorkflowApplicationBuilderCustomizer
     }
 
     private String resolveClientName(WorkflowDefinitionId workflowId, String taskName) {
+        return resolveClientName(config.client(), this::channelExists, workflowId, taskName);
+    }
+
+    static String resolveClientName(Map<String, FlowGrpcConfig.ClientOverrideConfig> overrides,
+            Predicate<String> channelExists, WorkflowDefinitionId workflowId, String taskName) {
         String workflowKey = workflowId.toString(KEY_SEPARATOR);
 
+        // 1. Task-level override: namespace:name:version:taskName
         if (taskName != null && !taskName.isBlank()) {
-            String taskKey = workflowKey + KEY_SEPARATOR + taskName;
-            FlowGrpcConfig.ClientOverride taskOverride = config.client().get(taskKey);
-            if (taskOverride != null && taskOverride.name().isPresent()) {
-                return taskOverride.name().get();
+            String taskOverride = overrideName(overrides, workflowKey + KEY_SEPARATOR + taskName);
+            if (taskOverride != null) {
+                return taskOverride;
             }
         }
 
-        FlowGrpcConfig.ClientOverride workflowOverride = config.client().get(workflowKey);
-        if (workflowOverride != null && workflowOverride.name().isPresent()) {
-            return workflowOverride.name().get();
+        // 2. Workflow-level override: namespace:name:version
+        String workflowOverride = overrideName(overrides, workflowKey);
+        if (workflowOverride != null) {
+            return workflowOverride;
         }
 
-        if (channelExists(workflowKey)) {
+        // 3. Versionless workflow override: namespace:name (applies to all versions)
+        String versionlessOverride = overrideName(overrides, workflowId.namespace() + KEY_SEPARATOR + workflowId.name());
+        if (versionlessOverride != null) {
+            return versionlessOverride;
+        }
+
+        // 4. Workflow ID as client name
+        if (channelExists.test(workflowKey)) {
             return workflowKey;
         }
 
-        if (channelExists(DEFAULT_CHANNEL_NAME)) {
+        // 5. Default channel
+        if (channelExists.test(DEFAULT_CHANNEL_NAME)) {
             return DEFAULT_CHANNEL_NAME;
         }
 
+        // 6. SDK fallback
         LOG.debug("No Quarkus gRPC client configured for workflow '{}'; SDK will use its default channel",
                 workflowKey);
+        return null;
+    }
+
+    private static String overrideName(Map<String, FlowGrpcConfig.ClientOverrideConfig> overrides, String key) {
+        FlowGrpcConfig.ClientOverrideConfig override = overrides.get(key);
+        if (override != null && override.name().isPresent()) {
+            return override.name().get();
+        }
         return null;
     }
 
