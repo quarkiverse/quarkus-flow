@@ -93,6 +93,25 @@ public class GrpcGreetingFlow extends Flow {
 
 The proto file at `src/main/resources/proto/greeter.proto` is resolved from the classpath automatically.
 
+[IMPORTANT]
+====
+**Native image**: proto files are read from the classpath at runtime, so Quarkus Flow does **not** bundle them
+into the native image automatically. If you build a native executable, don't forget to register your proto
+files as native resources, otherwise the workflow fails at startup with a missing-resource error:
+
+[source,properties]
+----
+quarkus.native.resources.includes=proto/greeter.proto
+----
+
+You can also use a pattern to include every proto under a directory:
+
+[source,properties]
+----
+quarkus.native.resources.includes=proto/*
+----
+====
+
 == Example project
 
 See the full runnable example at https://github.com/quarkiverse/quarkus-flow/tree/main/examples/grpc-client-routing[examples/grpc-client-routing].
