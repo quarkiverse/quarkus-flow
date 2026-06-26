@@ -15,7 +15,7 @@
 
     <properties>
         <skipRagGeneration>true</skipRagGeneration>
-        <version.quarkus.rag-maven-plugin>0.0.5</version.quarkus.rag-maven-plugin>
+        <version.quarkus.rag-maven-plugin>0.0.7</version.quarkus.rag-maven-plugin>
     </properties>
 
     <build>
