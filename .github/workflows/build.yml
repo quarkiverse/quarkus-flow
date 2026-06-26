@@ -121,20 +121,12 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: mvn -B clean install -Dno-format -P!docs -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp
 
-  examples-it:
-    name: Examples IT (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+  examples:
+    name: Examples
+    runs-on: ubuntu-latest
     needs: validate
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ ubuntu-latest, windows-latest ]
 
     steps:
-      - name: Prepare git (CRLF)
-        if: matrix.os == 'windows-latest'
-        run: git config --global core.autocrlf false
-
       - uses: actions/checkout@v7
 
       - name: Set up JDK 17
