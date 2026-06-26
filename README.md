@@ -8,7 +8,7 @@
 [![Build with Integration Tests](https://github.com/quarkiverse/quarkus-flow/actions/workflows/build-it.yml/badge.svg?branch=main&event=push)](https://github.com/quarkiverse/quarkus-flow/actions/workflows/build-it.yml)
 [![Build](https://github.com/quarkiverse/quarkus-flow/actions/workflows/build.yml/badge.svg?branch=main&event=push)](https://github.com/quarkiverse/quarkus-flow/actions/workflows/build.yml)
 
-**Quarkus Flow** is a lightweight, low-dependency, production-grade workflow engine for Quarkus, built on the CNCF [Serverless Workflow](https://serverlessworkflow.io/) specification.
+**Quarkus Flow** is a lightweight, low-dependency, production-grade workflow engine for Quarkus, built on the [Serverless Workflow](https://serverlessworkflow.io/) specification CNCF sandbox project.
 
 Use it to model **classic workflows** *and* **Agentic AI orchestrations**, with first-class CDI/Quarkus ergonomics.
 
@@ -20,15 +20,81 @@ Use it to model **classic workflows** *and* **Agentic AI orchestrations**, with 
 
 ## Why Quarkus Flow?
 
-* 🧩 **CNCF-compliant** workflows via a fluent Java DSL
+* 🧩 **Specification-compliant** workflows via a fluent Java DSL
 * ⚡ **Fast start & low footprint** (Quarkus/native-friendly)
 * 🔌 **CDI-first**: build-time discovery → CDI injection, no registries to wire
 * 🧪 **Great DX**: inject your workflow class *or* the compiled `WorkflowDefinition`
 * 🤝 **Agentic AI ready**: orchestrate LangChain4j agents as workflow **tasks** (with loops + human-in-the-loop)
 
-## Quick start (classic workflow)
+## 🚀 Try it First (Optional)
 
-Add the BOM to manage versions:
+Want to see Quarkus Flow in action before adding it to your project? Use our pre-built Docker runner to explore workflows without writing any code:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/quarkiverse/quarkus-flow/main/runner/app/quickstart.sh | bash
+```
+
+> 💡 **This is just for exploration!** The Docker runner lets you try Quarkus Flow features quickly, but the real power comes from integrating it into your Quarkus application below.
+
+<details>
+<summary>Or use Docker directly</summary>
+
+```bash
+# 1. Create a workflow directory with an example
+mkdir -p ~/quarkus-flow-quickstart/workflows
+cat > ~/quarkus-flow-quickstart/workflows/hello.yaml << 'EOF'
+document:
+  dsl: '1.0.0'
+  namespace: demo
+  name: hello-world
+  version: '1.0.0'
+do:
+  - greet:
+      set:
+        message: '${ "Hello, " + .name + "!" }'
+EOF
+
+# 2. Run Quarkus Flow (foreground, Ctrl+C to stop)
+docker run --rm \
+  -p 8080:8080 \
+  -v ~/quarkus-flow-quickstart/workflows:/deployments/workflows:ro \
+  quay.io/quarkiverse/quarkus-flow-runner:latest-minimal
+
+# 3. In another terminal, try the workflow
+curl -X POST "http://localhost:8080/q/flow/exec/demo/hello-world/1.0.0?wait=true" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Alice"}' | jq
+
+# Visit dashboard: http://localhost:8080
+# Stop: Ctrl+C in the Docker terminal
+```
+
+**Note:** Workflows are loaded at startup. To load modified/new workflows, restart the container.
+
+</details>
+
+<details>
+<summary>More runner options (docker-compose, production variants)</summary>
+
+**Using docker-compose:**
+
+```bash
+git clone https://github.com/quarkiverse/quarkus-flow.git
+cd quarkus-flow/runner/app
+docker-compose up
+```
+
+**Production variants:**
+- PostgreSQL + HA: [`latest-standard`](https://quay.io/repository/quarkiverse/quarkus-flow-runner?tab=tags)
+- Kafka messaging: [`latest-messaging`](https://quay.io/repository/quarkiverse/quarkus-flow-runner?tab=tags)
+
+See [`runner/app/`](runner/app/) for complete documentation.
+
+</details>
+
+## Quick Start
+
+Add Quarkus Flow to your Quarkus application:
 
 ```xml
 <dependencyManagement>
@@ -82,10 +148,15 @@ Run:
 ./mvnw quarkus:dev
 ```
 
-Quarkus Flow allows you to load workflows through [CNCF Workflow Definitions](https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md).
-See [here](https://docs.quarkiverse.io/quarkus-flow/dev/workflow-definitions.html) how to load (YAML DSL) into your Quarkus application and expose them as WorkflowDefinition/Flow CDI beans you can inject and execute.
+**Next steps:**
+- **Load YAML workflows:** See [Workflow Definitions](https://docs.quarkiverse.io/quarkus-flow/dev/workflow-definitions.html) to load [CNCF Workflow DSL](https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md) files
+- **Add persistence:** See [Persistence](https://docs.quarkiverse.io/quarkus-flow/dev/persistence.html) for MVStore, JPA, or Redis backends
+- **Add messaging:** See [Messaging](https://docs.quarkiverse.io/quarkus-flow/dev/messaging.html) for Kafka/AMQP integration
+- **Explore examples:** Check out [`examples/`](examples/) for complete sample applications
 
-## LangChain4j (choose your approach)
+---
+
+## LangChain4j Integration (Agentic AI Workflows)
 
 Quarkus Flow supports **three complementary ways** to use LangChain4j:
 

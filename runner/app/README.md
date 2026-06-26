@@ -2,6 +2,51 @@
 
 This module builds pre-configured Quarkus Flow Runner applications for Docker deployment. It is **not released as a Maven artifact** - its purpose is to generate Docker images.
 
+## 🚀 Quick Start
+
+**Try Quarkus Flow right now** (no setup required):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/quarkiverse/quarkus-flow/main/runner/app/quickstart.sh | bash
+```
+
+This will create example workflows in `~/.quarkus-flow-quickstart/workflows/` and run them automatically.
+
+**Or run directly with Docker** (mount your own workflows):
+
+```bash
+# 1. Create a workflow
+mkdir -p ~/quarkus-flow-demo/workflows
+cat > ~/quarkus-flow-demo/workflows/hello.yaml << 'EOF'
+document:
+  dsl: '1.0.0'
+  namespace: demo
+  name: hello
+  version: '1.0.0'
+do:
+  - greet:
+      set:
+        message: '${ "Hello, " + .name + "!" }'
+EOF
+
+# 2. Run Quarkus Flow (Ctrl+C to stop, --rm auto-cleans up)
+docker run --rm \
+  -p 8080:8080 \
+  -v ~/quarkus-flow-demo/workflows:/deployments/workflows:ro \
+  quay.io/quarkiverse/quarkus-flow-runner:latest-minimal
+
+# 3. In another terminal, execute the workflow
+curl -X POST "http://localhost:8080/q/flow/exec/demo/hello/1.0.0?wait=true" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "World"}' | jq
+```
+
+**Key points:**
+- The image has **no baked-in workflows** - you must mount them via `-v`
+- Workflows are loaded at startup - restart the container to load new/modified workflows
+- Use `--rm` for automatic cleanup when you stop (Ctrl+C)
+- Mount workflows as read-only (`:ro`) for safety
+
 ## Pre-built Image Variants
 
 Three image variants are planned:
