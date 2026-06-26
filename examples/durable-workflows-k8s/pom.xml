@@ -4,7 +4,7 @@
     <groupId>org.acme</groupId>
     <artifactId>durable-workflows-k8s</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <packaging>quarkus</packaging>
+    <packaging>jar</packaging>
     <name>Quarkus Flow :: Examples :: Durable Workflows on Kubernetes</name>
 
     <properties>
@@ -72,18 +72,7 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit</artifactId>
             <scope>test</scope>
-        </dependency>
-
-
-        <!-- Can be ignored / Used to run Quarkus Flow project in parallel -->
-        <!-- On real use cases this can be safely removed -->
-        <dependency>
-            <groupId>io.quarkiverse.flow</groupId>
-            <artifactId>quarkus-flow-deployment</artifactId>
-            <version>${quarkus.flow.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
+        </dependency>        <dependency>
             <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow-durable-kubernetes-deployment</artifactId>
             <version>${quarkus.flow.version}</version>

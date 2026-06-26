@@ -2,6 +2,45 @@
 
 Directory of end-to-end use case examples.
 
+## 🚀 Using These Examples
+
+Each example is a **standalone Quarkus application** that can be copied and run independently.
+
+### For End Users (Recommended)
+
+**Use examples from tagged releases, not the main branch:**
+
+```bash
+# Clone a specific release tag
+git clone -b 0.11.0 https://github.com/quarkiverse/quarkus-flow.git
+cd quarkus-flow/examples/<example-name>
+
+# Or download just the example directory from GitHub releases
+# https://github.com/quarkiverse/quarkus-flow/releases
+```
+
+**Then run the example:**
+
+```bash
+cd <example-name>
+./mvnw quarkus:dev
+```
+
+> **⚠️ Important:** Examples on the `main` branch use `SNAPSHOT` versions and require building the entire project first. For a better experience, always use examples from a tagged release.
+
+### For Contributors
+
+If you're working from the main branch during development:
+
+```bash
+# Build the entire project first to install SNAPSHOTs to local Maven repo
+./mvnw clean install -DskipTests
+
+# Then run any example
+cd examples/<example-name>
+./mvnw quarkus:dev
+```
+
 <!-- Please update this list when adding a new example / keep it in alphabetical order -->
 - [Agentic + HTTP](agentic-http/README.md): Example of a workflow enriching an agent prompt from a remote HTTP request.
 - [Durable Workflows on Kubernetes](durable-workflows-k8s/README.md): Example of leasing acquiring when deploying workflows on Kubernetes to enable durable workflows use cases.

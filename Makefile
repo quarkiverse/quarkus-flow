@@ -30,6 +30,7 @@ help: ## Show this help message
 	@echo "  make install-local  - Install to local Maven repository"
 	@echo "  make native         - Build native images (requires GraalVM)"
 	@echo "  make pre-commit     - Quick pre-commit check (format + unit tests)"
+	@echo "  make test-examples  - Test all examples"
 	@echo ""
 	@echo "Configuration:"
 	@echo "  MAVEN_THREADS       - Number of parallel threads (default: 15C) for commands which supports it"
@@ -92,7 +93,10 @@ test-persistence: ## Test persistence module only
 
 test-examples: ## Test all examples
 	@echo "🧪 Testing all examples"
-	@mvn clean test $(MAVEN_OPTS) -pl examples -am
+	@echo "  Phase 1: Building core modules (required for examples)..."
+	@mvn clean install $(MAVEN_OPTS) -P!docs -DskipTests -DskipITs=true
+	@echo "  Phase 2: Testing examples..."
+	@cd examples && mvn test $(MAVEN_OPTS)
 
 # Development helpers
 watch: ## Watch for changes and recompile (uses quarkus:dev on core)

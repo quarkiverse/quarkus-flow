@@ -1,4 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Quarkus Flow Examples
+
+  IMPORTANT FOR USERS:
+  ====================
+  If you want to copy and run these examples independently:
+
+  1. Checkout examples from a TAGGED RELEASE (not main branch):
+     git clone -b <version-tag> https://github.com/quarkiverse/quarkus-flow.git
+     Example: git clone -b 0.11.0 https://github.com/quarkiverse/quarkus-flow.git
+
+  2. Each example under examples/ is a standalone Quarkus application
+     that can be copied and run independently.
+
+  3. Update the quarkus.flow.version property in the example's pom.xml
+     to match the released version (not SNAPSHOT).
+
+  4. Examples use the published Quarkus Flow artifacts from Maven Central,
+     so you don't need to build the entire project.
+
+  RUNNING AN EXAMPLE:
+  ===================
+  cd examples/<example-name>
+  ./mvnw quarkus:dev
+
+  See each example's README.md for specific instructions.
+
+  NOTE: This parent pom.xml is only used for CI/CD builds of all examples.
+  Individual examples do NOT inherit from this parent and are fully standalone.
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
@@ -14,6 +44,65 @@
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
+
+    <!--
+      Dependencies below enforce build order in the reactor:
+      Maven will build all -deployment modules before building any examples.
+      This ensures examples test against freshly installed artifacts.
+
+      Individual examples do NOT need these dependencies - they're standalone.
+      These are only for reactor ordering during CI/multi-module builds.
+    -->
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-deployment</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-langchain4j-deployment</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-messaging-deployment</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-persistence-jpa-deployment</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-scheduler-deployment</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-grpc-deployment</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-durable-kubernetes-deployment</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-runner-deployment</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <modules>
         <module>agentic-http</module>

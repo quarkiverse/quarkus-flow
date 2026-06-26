@@ -59,14 +59,6 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <!-- required to run the quarkus-flow tests CI in parallel. Can be removed by final users. -->
-            <groupId>io.quarkiverse.flow</groupId>
-            <artifactId>quarkus-flow-deployment</artifactId>
-            <version>${quarkus.flow.version}</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
