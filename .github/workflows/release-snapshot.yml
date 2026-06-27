@@ -1,0 +1,28 @@
+name: Snapshot Deploy
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  attestations: write
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-snapshot:
+    name: Deploy Snapshots
+    uses: quarkiverse/.github/.github/workflows/perform-release.yml@main
+    secrets: inherit
+    with:
+      ref: main
+      version: 1.0.0-SNAPSHOT

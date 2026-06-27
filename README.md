@@ -316,6 +316,38 @@ To see the full list, check the [examples/](examples/README.md) directory.
 
 * Docs snippets under `docs/modules/ROOT/examples/`
 
+## Using SNAPSHOT versions
+
+Want to try the latest unreleased changes? SNAPSHOT artifacts are published to the
+Maven Central snapshots repository. Register it in your `pom.xml`:
+
+```xml
+<repositories>
+  <repository>
+    <id>central-snapshots</id>
+    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+    <releases>
+      <enabled>false</enabled>
+    </releases>
+    <snapshots>
+      <enabled>true</enabled>
+    </snapshots>
+  </repository>
+</repositories>
+```
+
+Then import the BOM using the `1.0.0-SNAPSHOT` version:
+
+```xml
+<dependency>
+  <groupId>io.quarkiverse.flow</groupId>
+  <artifactId>quarkus-flow-bom</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <type>pom</type>
+  <scope>import</scope>
+</dependency>
+```
+
 ## Contributing
 
 Issues & PRs welcome! Please:
