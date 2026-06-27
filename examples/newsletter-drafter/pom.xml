@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.acme</groupId>
@@ -56,18 +57,6 @@
             <artifactId>quarkus-langchain4j-ollama</artifactId>
             <version>${io.quarkiverse.langchain4j.version}</version>
             <optional>true</optional>
-            <exclusions>
-                <!--                it will be solved in 1.11.0 version-->
-                <exclusion>
-                    <groupId>io.smallrye.reactive</groupId>
-                    <artifactId>mutiny</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.smallrye.reactive</groupId>
-            <artifactId>mutiny</artifactId>
-            <version>3.3.0</version>
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>
@@ -120,11 +109,6 @@
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <version>${org.assertj.version}</version>
-            <scope>test</scope>
-        </dependency>        <dependency>
-            <groupId>io.quarkiverse.flow</groupId>
-            <artifactId>quarkus-flow-langchain4j-deployment</artifactId>
-            <version>${quarkus.flow.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
