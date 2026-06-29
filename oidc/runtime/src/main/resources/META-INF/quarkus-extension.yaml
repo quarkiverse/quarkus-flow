@@ -1,0 +1,18 @@
+name: Flow OIDC
+description: OIDC token propagation and exchange for Quarkus Flow workflow tasks.
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+    - workflow
+    - workflows
+    - cncf
+    - serverless
+    - oidc
+    - oauth2
+    - security
+    - token-exchange
+  guide: https://docs.quarkiverse.io/quarkus-flow/dev/
+  categories:
+    - "security"
+    - "integration"
+  status: "preview"

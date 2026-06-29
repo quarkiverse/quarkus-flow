@@ -1,0 +1,422 @@
+= Authenticate downstream calls with OIDC and Token propagation
+:page-role: howto
+include::includes/attributes.adoc[]
+
+When a workflow calls a protected HTTP service, the service typically expects a bearer token
+in the `Authorization` header. The `quarkus-flow-oidc` module handles this automatically.
+
+You reference a named scheme on the task (`FuncDSL.use("myScheme")`) and configure it in `application.properties`.
+At runtime, Flow OIDC adds `Authorization: Bearer <token>` using one of three strategies:
+
+[cols="1,3,2", options="header"]
+|===
+| Mode | What it does | Typical use
+
+| `client-credentials`
+| Acquires a service-to-service token from a named `quarkus-oidc-client` via the link:https://datatracker.ietf.org/doc/html/rfc6749#section-4.4[OAuth 2.0 client credentials grant]. No user context.
+| Background / scheduled workflows, system-to-system calls.
+
+| `token-propagation`
+| Forwards the caller's subject token unchanged. No OIDC round-trip.
+| Downstream service trusts the same issuer as the caller.
+
+| `token-exchange`
+| Swaps the caller's subject token for a service-specific token via link:https://datatracker.ietf.org/doc/html/rfc8693[RFC 8693], using a named `quarkus-oidc-client`.
+| Downstream service needs a different audience/scope than the inbound token.
+|===
+
+[IMPORTANT]
+====
+Flow OIDC is about **outbound** authentication (the tokens your workflow *sends*).
+Securing the **inbound** endpoint that *triggers* a workflow is still the job of your application code.
+The two concerns stay separate: Flow OIDC only *reads* the inbound identity to obtain a subject token when it needs one,
+in other words, *it never authenticates the caller*.
+====
+
+[NOTE]
+====
+Every workflow that references a Flow OIDC scheme must declare an *empty* workflow-level `authentications` container with `.use(use -> use.authentications(auth -> {}))`.
+This is what lets Flow OIDC's request decorator own the call and resolve schemes per task from configuration; without it, the scheme referenced by `use("<scheme>")` is not applied.
+You keep the container empty on purpose — scheme behaviour is driven entirely by `quarkus.flow.oidc.auth.*` in `application.properties`. See <<client-credentials>> for a full example.
+====
+
+== Why this module exists
+
+Once workflows start calling secured APIs, a few problems show up that Flow OIDC is designed to handle:
+
+* **Long-running workflows** whose tokens would otherwise expire before the workflow completes.
+* **Security isolation** — avoid forwarding the original user token to third-party services that shouldn't see it.
+* **Multi-tenant / multi-issuer** setups that need different tokens or scopes per downstream service.
+* **Service-to-service** calls that run with no user context at all.
+
+== Prerequisites
+
+* A Quarkus application with xref:getting-started.adoc[Quarkus Flow set up].
+* Familiarity with xref:http-openapi-tasks.adoc[calling HTTP and OpenAPI services].
+* An OIDC provider (Keycloak, etc.) reachable from your application.
+
+== 1. Add the dependency
+
+[source,xml]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc-client</artifactId> <!--1-->
+</dependency>
+
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc</artifactId> <!--2-->
+</dependency>
+----
+<1> Enables the `quarkus-flow-oidc` module (activated by the presence of `quarkus-oidc-client`).
+<2> Only used to secure and simulate the protected downstream; not required by `quarkus-flow-oidc` itself.
+
+== 2. Add a protected service to call
+
+The tutorial's workflow calls a downstream HTTP service that expects a bearer token.
+Add this resource to your application so there is something to authenticate against: it is guarded by
+`@Authenticated` (so unauthenticated calls are rejected) and logs the incoming `Authorization` header
+so you can confirm Flow OIDC attached a token.
+
+[source,java]
+.ProtectedOrderResource.java
+----
+import io.quarkus.logging.Log;
+import io.quarkus.security.Authenticated;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Response;
+
+import java.util.List;
+
+@Path("/orders")
+public class ProtectedOrderResource {
+
+    @GET
+    @Authenticated
+    public Response orders(@HeaderParam("Authorization") String authorization) {
+        Log.infov("Receiving Authorization header: {0}", authorization);
+        return Response.ok(List.of(
+                "ORDER#001",
+                "ORDER#002"
+        )).build();
+    }
+}
+----
+
+This is the `http://localhost:8080/orders` endpoint that `BackendFlow` calls in <<client-credentials>>.
+It is guarded by `@Authenticated`, which relies on the `quarkus-oidc` extension added above.
+
+[[client-credentials]]
+== 3. Your first authenticated call (client-credentials)
+
+This is the shortest end-to-end path: a workflow that calls a protected service using a service account, with no user involved.
+
+=== Step 1 — Start Keycloak with Dev Services
+
+When `quarkus-oidc-client` is on the classpath and no `auth-server-url` is configured,
+Quarkus automatically starts a Keycloak container in dev and test mode and injects a ready-to-use OIDC client.
+
+[source,properties]
+.Provided automatically by Keycloak Dev Services
+----
+quarkus.oidc-client.auth-server-url=http://localhost:<port>/realms/quarkus
+quarkus.oidc-client.client-id=quarkus-app
+quarkus.oidc-client.credentials.secret=secret
+quarkus.oidc-client.token-path=/protocol/openid-connect/tokens
+# Keycloak realm "quarkus" with seeded users alice/alice and bob/bob
+----
+
+These configure the *default* (unnamed) OIDC client.
+
+=== Step 2 — Define a named client and map the scheme to it
+
+A Flow OIDC scheme always resolves its client *by name*, so define a named `backend` client that reuses the Keycloak that Dev Services started,
+then point the scheme at it:
+
+[source,properties]
+.application.properties
+----
+# Reuse the Keycloak started by Dev Services
+quarkus.oidc-client.backend.auth-server-url=${quarkus.oidc-client.auth-server-url}
+quarkus.oidc-client.backend.client-id=${quarkus.oidc-client.client-id}
+quarkus.oidc-client.backend.credentials.secret=${quarkus.oidc-client.credentials.secret}
+quarkus.oidc-client.backend.grant.type=client
+
+# Map the Flow OIDC scheme to that named client
+quarkus.flow.oidc.auth.backend.oidc-client-name=backend
+----
+
+With no subject token present and no propagation enabled, Flow OIDC resolves this scheme to **client-credentials** automatically (see <<resolution>>).
+
+=== Step 3 — Reference the scheme from the task
+
+Attach the scheme to the HTTP call with `FuncDSL.use("<scheme>")`:
+
+[source,java]
+.BackendFlow.java
+----
+import io.quarkiverse.flow.Flow;
+import io.serverlessworkflow.api.types.Workflow;
+import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
+import jakarta.enterprise.context.ApplicationScoped;
+
+import java.net.URI;
+
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.call;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.http;
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.use;
+
+@ApplicationScoped
+public class BackendFlow extends Flow {
+
+    @Override
+    public Workflow descriptor() {
+        return FuncWorkflowBuilder.workflow("backend-call", "quarkus-flow")
+                .use(use -> use.authentications(auth -> {})) // <1>
+                .tasks(call(
+                        http("fetchOrders")
+                                .GET()
+                                .uri(URI.create("http://localhost:8080/orders"),
+                                        use("backend")))) // <2>
+                .build();
+    }
+}
+----
+<1> *Required.* Declares an empty workflow-level `authentications` container. Flow OIDC resolves a scheme per task through its HTTP request decorator, and the decorator only owns the call when the referenced name is *config-only* that is, not declared under `use.authentications`.
+
+<2> `FuncDSL.use("backend")` matches `quarkus.flow.oidc.auth.backend.*`.
+Flow OIDC acquires a token from the `backend` oidc-client and adds the `Authorization` header before the request leaves.
+
+That's it. When `fetchOrders` runs, the outgoing request carries `Authorization: Bearer <service-token>`.
+
+== 4. How-to: forward the caller's token (token-propagation)
+
+Token propagation relays the caller's existing access token to the downstream service, **unchanged**.
+There is no OIDC round-trip, no `quarkus-oidc-client`, and no token caching,
+Flow OIDC simply copies the subject token onto the outgoing `Authorization` header.
+
+[WARNING]
+====
+Propagation forwards the *raw* user token.
+Only enable it for services you trust, since they receive a credential that can act as the user for the lifetime of that token.
+When in doubt, exchange the token instead so the downstream gets a narrowly-scoped, audience-restricted token.
+====
+
+=== 4.1 Enable it
+
+Set `token-propagation-enabled` on the scheme and reference it from the task with `use(...)`.
+
+[source,properties]
+.application.properties
+----
+quarkus.flow.oidc.auth.backend.token-propagation-enabled=true
+----
+
+Propagation always wins over exchange: if a scheme has both `token-propagation-enabled=true` and exchange configured, the token is propagated (see <<resolution>>).
+
+=== 4.2 How a request flows
+
+[source,text]
+----
+caller (user token)                Flow OIDC                 downstream
+      │  triggers workflow             │                         │
+      ├───────────────────────────────►                          │
+      │                                │ extract subject token   │
+      │                                │ (input key │ identity)  │
+      │                                │                         │
+      │                  POST /flow    │ Authorization: Bearer <subject token>
+      │                                ├────────────────────────►│
+      │                                │                         │
+----
+
+=== 4.3 Where the subject token comes from
+
+Propagation needs the caller's token.
+Flow OIDC resolves it from two sources, in order (see <<subject-token>> for the configurable keys):
+
+- a. **HTTP-triggered workflows** — read from the request's `SecurityIdentity`.
+
+Secure the endpoint that starts the workflow with `quarkus-oidc`.
+Flow OIDC reads the `access_token` attribute of the resolved identity.
+
+- b. **Programmatic / non-HTTP triggers** — pass the token as workflow input.
+
+For workflows started outside an HTTP request (messaging, scheduler, tests), put the token under the `subjectToken` input key:
+
+[source,java]
+----
+@Inject
+JsonWebToken jwt;
+
+@POST
+@Authenticated
+public Response trigger() {
+    WorkflowModel model = backendFlow.instance(
+            Map.of("subjectToken", jwt.getRawToken())
+    ).start().join();
+    return Response.ok(model.asJavaObject()).build();
+}
+----
+
+The input key takes precedence over the `SecurityIdentity` attribute, so an explicit `subjectToken` always wins.
+
+=== 4.4 Edge cases and caveats
+
+[NOTE]
+====
+* **No subject token found** — Flow OIDC adds no `Authorization` header and the request goes out unauthenticated;
+* **Off-request-thread execution** — `SecurityIdentity` is request-scoped. If the workflow runs asynchronously (e.g. `start()` without joining, or resumed on another thread), the identity may no longer be available.
+For async or durable workflows, pass the token explicitly via the `subjectToken` input instead of relying on the identity.
+* **Token expiry** — the propagated token lives and dies with the caller's session; Flow OIDC does not refresh it.
+Long-running workflows that may outlive the token should use exchange or client-credentials.
+====
+
+[#token-exchange]
+== 5. How-to: exchange the token for another audience (token-exchange)
+
+Use this when the downstream service requires a token with a **different audience or scope** than the inbound one.
+Flow OIDC performs an RFC 8693 exchange through a named oidc-client.
+
+Token exchange is enabled globally by default and kicks in automatically whenever a subject token is available and propagation is *not* enabled.
+To be explicit (and to pin the oidc-client used for the exchange):
+
+[source,properties]
+.application.properties
+----
+quarkus.oidc-client.exchange.auth-server-url=https://auth.example.com/realms/apps
+quarkus.oidc-client.exchange.client-id=flow-exchange
+quarkus.oidc-client.exchange.credentials.secret=${EXCHANGE_SECRET}
+
+quarkus.flow.oidc.auth.billing.oidc-client-name=exchange
+quarkus.flow.oidc.auth.billing.token-exchange-enabled=true
+----
+
+Reference the scheme with `use("billing")`.
+On the first call, Flow OIDC exchanges the caller's subject token for a service-specific one and caches the result per `(scheme, subject-token, audience)`.
+The cached entry is bound to the workflow instance and evicted when the instance terminates.
+
+To turn exchange off globally (schemes then fall back to client-credentials unless they opt in individually):
+
+[source,properties]
+----
+quarkus.flow.oidc.token-exchange.enabled=false
+----
+
+[[multiple-oidc-servers]]
+== 6. How-to: target multiple OIDC servers (multi-tenant)
+
+Each scheme resolves its own `quarkus-oidc-client`, so different tasks can authenticate against different issuers in the same workflow.
+Configure one named oidc-client per provider and point each scheme at the right one with `oidc-client-name`:
+
+[source,properties]
+.application.properties
+----
+# Provider A
+quarkus.oidc-client.idp-a.auth-server-url=https://idp-a.example.com/realms/acme
+quarkus.oidc-client.idp-a.client-id=workflow-runtime
+quarkus.oidc-client.idp-a.credentials.secret=${IDP_A_SECRET}
+
+# Provider B
+quarkus.oidc-client.idp-b.auth-server-url=https://idp-b.example.com/realms/other
+quarkus.oidc-client.idp-b.client-id=workflow-client
+quarkus.oidc-client.idp-b.credentials.secret=${IDP_B_SECRET}
+
+# Map each scheme to its provider
+quarkus.flow.oidc.auth.service-a.oidc-client-name=idp-a
+quarkus.flow.oidc.auth.service-b.oidc-client-name=idp-b
+----
+
+The task chooses the provider purely by which scheme it references — `use("service-a")` vs `use("service-b")`.
+If `oidc-client-name` is omitted, the scheme name itself is used as the oidc-client name;
+if no client is configured under that name, the call fails fast with a clear error pointing at the missing `quarkus.oidc-client.<name>.*` configuration.
+
+[#resolution]
+== 7. How a scheme's mode is resolved
+
+A scheme does **not** name its mode explicitly.
+Flow OIDC derives it at call time, with this precedence:
+
+. `token-propagation-enabled=true` → **token-propagation** (always wins).
+. Otherwise, exchange applies → **token-exchange**, when:
+.. the scheme sets `token-exchange-enabled=true`; or
+.. exchange is enabled globally *and* a subject token is available.
+. Otherwise → **client-credentials**.
+
+A per-scheme `token-exchange-enabled` value always overrides the global `quarkus.flow.oidc.token-exchange.enabled` flag.
+
+[#subject-token]
+== 8. Where the subject token comes from
+
+For propagation and exchange, Flow OIDC needs the caller's token.
+It looks, in order:
+
+. **Workflow input** under the key `quarkus.flow.oidc.subject-token.input-key` (default `subjectToken`) — ideal for programmatic triggers.
+. **`SecurityIdentity`** attribute named by `quarkus.flow.oidc.subject-token.security-identity-attribute` (default `access_token`) — for HTTP-triggered workflows running on the request thread.
+
+If no subject token is found, exchange/propagation produces no header and the request goes out unauthenticated — the downstream service owns the resulting `401`.
+
+== 9. Token caching and lifecycle
+
+Client-credentials and exchanged tokens are cached so steady-state calls don't hit the token endpoint on every execution. Propagation is *not* cached — it just forwards the caller's token.
+
+**How entries are keyed.** Each cache entry is keyed by `(scheme, subject-token, audience)`. The subject token is stored only as a SHA-256 hash, so raw user tokens never live in the cache. This lets the same user reuse one exchanged token across workflow instances while keeping different users — and different audiences — isolated.
+
+**Instance linking and eviction.** A cached token is linked to the workflow instances using it. When an instance terminates (completed, failed, or cancelled), it is unlinked; once no instances reference a token, it is evicted. Tokens therefore don't outlive the work that needed them.
+
+**Proactive expiry handling.** A single daemon thread periodically scans for tokens nearing expiry and **evicts** them, so the next call transparently re-acquires a fresh token instead of sending one about to expire mid-request. (The current phase evicts-and-re-acquires rather than refreshing in place; this is by design.)
+
+[source,properties]
+.application.properties
+----
+# Evict a cached token this long before it expires (default PT300S = 5 min)
+quarkus.flow.oidc.token-exchange.proactive-refresh-seconds=PT300S
+
+# How often the background monitor scans for near-expiry tokens (default PT60S)
+quarkus.flow.oidc.token-exchange.monitor-rate-seconds=PT60S
+
+# Per-scheme override of the proactive threshold (seconds)
+quarkus.flow.oidc.auth.billing.proactive-refresh-seconds=120
+----
+
+[NOTE]
+====
+The cache is **in-memory** and per-application: it is cleared on restart and not shared across instances. Persistent and distributed token caches are planned for a later phase.
+====
+
+== 10. Troubleshooting
+
+[cols="1,2", options="header"]
+|===
+| Symptom | Likely cause and fix
+
+| Downstream returns `401` and no `Authorization` header was sent.
+| No subject token was found for a propagation/exchange scheme. For HTTP triggers, confirm the endpoint is secured with `quarkus-oidc` and the token is exposed under the `access_token` identity attribute; for programmatic triggers, pass it under the `subjectToken` input key. See <<subject-token>>.
+
+| The wrong mode is used (e.g. exchange instead of propagation).
+| Modes are derived, not declared. Re-check the precedence in <<resolution>> — `token-propagation-enabled=true` always wins, and a per-scheme `token-exchange-enabled` overrides the global flag.
+
+| Startup/runtime error: _"OIDC client not configured: <name>"_.
+| The scheme resolved to an oidc-client name that has no `quarkus.oidc-client.<name>.*` configuration. Either add that client or set `oidc-client-name` on the scheme. See <<multiple-oidc-servers>>.
+
+| Token is missing only on async / background executions.
+| `SecurityIdentity` is request-scoped and unavailable off the request thread. Pass the token via the `subjectToken` input instead of relying on the identity.
+
+| Header still absent even though the scheme is configured.
+| The task must *reference* the scheme via `use("<scheme>")` on the HTTP/OpenAPI endpoint, and the name must match `quarkus.flow.oidc.auth.<scheme>` exactly. Schemes are only applied to `call` HTTP and OpenAPI tasks.
+|===
+
+== Configuration reference
+
+include::includes/quarkus-flow-oidc_quarkus.flow.adoc[]
+
+== See also
+
+* xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services] — defining the tasks these schemes secure.
+* xref:secrets.adoc[Resolve secrets securely] — for static credentials and API keys.
+* link:https://quarkus.io/guides/security-openid-connect-client-reference[Quarkus: OIDC Client reference] — configuring `quarkus-oidc-client`.
+* link:https://datatracker.ietf.org/doc/html/rfc6749[RFC 6749] — The OAuth 2.0 Authorization Framework (client credentials grant: section 4.4).
+* link:https://datatracker.ietf.org/doc/html/rfc8693[RFC 8693] — OAuth 2.0 Token Exchange.
