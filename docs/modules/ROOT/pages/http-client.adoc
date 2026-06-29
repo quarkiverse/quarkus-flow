@@ -27,7 +27,7 @@ All Flow HTTP and OpenAPI tasks use a `jakarta.ws.rs.client.Client` managed by Q
 At runtime, Quarkus Flow:
 * Builds a *default client* from `quarkus.flow.http.client.*`.
 * Optionally builds *named clients* from `quarkus.flow.http.client.named.<name>.*`.
-* Resolves *which client to use* for a given workflow or task using `quarkus.flow.http.client.workflow.*` routing.
+* Resolves *which client to use* for a given workflow or task using `quarkus.flow.http.client.client.*` routing.
 * Reuses and closes these clients automatically at the end of the application lifecycle.
 
 == 2. Configure the default HTTP client
@@ -68,24 +68,39 @@ quarkus.flow.http.client.named.internal.connection-pool-size=100
 
 == 4. Route workflows and tasks to clients
 
-Routing is configured under the `workflow` section:
+Routing is configured under the `client` section using workflow or task identifiers as keys.
+
+The supported key formats are:
 
 [source,properties]
 ----
-# Use "secureA" for all HTTP/OpenAPI tasks in the workflow "order-flow"
-quarkus.flow.http.client.workflow.order-flow.name=secureA
+# Workflow name: document.name
+quarkus.flow.http.client.workflow.myFlow.name=secureA
 
-# Override only the "fetchCustomers" task within "order-flow" to use "internal"
-quarkus.flow.http.client.workflow.order-flow.task.fetchCustomers.name=internal
+# Full workflow ID: namespace:name:version
+quarkus.flow.http.client.workflow."org.acme:myFlow:0.0.1".name=secureA
+
+# Short workflow ID: namespace:name
+quarkus.flow.http.client.workflow."org.acme:myFlow".name=secureA
+
+# Task-level override by workflow name
+quarkus.flow.http.client.workflow.myFlow.task.fetchCustomers.name=secureB
+
+# Task-level override by full workflow ID
+quarkus.flow.http.client.workflow."org.acme:myFlow:0.0.1:fetchCustomers".name=secureB
+
+# Task-level override by short workflow ID
+quarkus.flow.http.client.workflow."org.acme:myFlow:fetchCustomers".name=secureB
 ----
 
-Resolution order for a call:
-. Task-level override.
-. Workflow-level default.
-. Fallback to the global default client.
+**Resolution order** for a call:
 
-[IMPORTANT]
-It is highly recommended that you keep HTTP-related task names unique within your workflow to avoid routing conflicts.
+. Task-level override by full/short workflow ID (`namespace:name:version:taskName` or `namespace:name:taskName`).
+. Task-level override by workflow name (`workflow.<workflowName>.task.<taskName>.name`).
+. Workflow-level override by full/short workflow ID (`namespace:name:version` or `namespace:name`).
+. Workflow-level override by workflow name (`workflow.<workflowName>.name`).
+. Workflow ID as named client (if a named client matching the workflow ID exists).
+. Fallback to the global default client.
 
 == 5. Configure static headers
 

@@ -20,15 +20,45 @@ It connects the Serverless Workflow gRPC executor to Quarkus gRPC channels, so y
 
 The module resolves the Quarkus gRPC named channel to use for each workflow task, following this order:
 
-1. **Task-level override**: `quarkus.flow.grpc.client."<workflowId>:<taskName>".name=<clientName>`
-2. **Workflow-level override**: `quarkus.flow.grpc.client."<workflowId>".name=<clientName>`
-3. **Versionless override**: `quarkus.flow.grpc.client."<namespace>:<name>".name=<clientName>` — applied to **all versions** of the workflow.
-4. **Workflow ID as client name**: If a Quarkus gRPC client matching the workflow ID exists, it is used.
-5. **Default channel**: If a Quarkus gRPC client named `flowGrpc` exists, it is used for all workflows.
-6. **SDK fallback**: If none of the above match, the SDK falls back to the host and port declared in the workflow itself.
+1. **Task-level override by workflow name**: `quarkus.flow.grpc.client.workflow.<workflowName>.task.<taskName>.name=<clientName>`
+2. **Task-level override by workflow name without overrides map fallback**: not applicable
+3. **Task-level override by full/short workflow ID**: `quarkus.flow.grpc.client."<workflowId>:<taskName>".name=<clientName>` or `quarkus.flow.grpc.client."<namespace>:<name>:<taskName>".name=<clientName>`
+4. **Workflow-level override by workflow name**: `quarkus.flow.grpc.client.workflow.<workflowName>.name=<clientName>`
+5. **Workflow-level override by full/short workflow ID**: `quarkus.flow.grpc.client."<workflowId>".name=<clientName>` or `quarkus.flow.grpc.client."<namespace>:<name>".name=<clientName>`
+6. **Workflow ID as client name**: If a Quarkus gRPC client matching the workflow ID exists, it is used.
+7. **Default channel**: If a Quarkus gRPC client named `flowGrpc` exists, it is used for all workflows.
+8. **SDK fallback**: If none of the above match, the SDK falls back to the host and port declared in the workflow itself.
 
 The workflow ID is `namespace:name:version` (e.g. `org.acme:grpcGreeting:0.0.1`).
-The versionless key is `namespace:name` (e.g. `org.acme:grpcGreeting`).
+The short workflow ID is `namespace:name` (e.g. `org.acme:grpcGreeting`).
+
+The supported key formats are:
+
+[source,properties]
+----
+# Workflow name: document.name
+quarkus.flow.grpc.client.workflow.myFlow.name=myService
+
+# Full workflow ID: namespace:name:version
+quarkus.flow.grpc.client.workflow."org.acme:myFlow:0.0.1".name=myService
+
+# Short workflow ID: namespace:name
+quarkus.flow.grpc.client.workflow."org.acme:myFlow".name=myService
+
+# Task-level override by workflow name
+quarkus.flow.grpc.client.workflow.myFlow.task.fetchCustomers.name=inventoryService
+
+# Task-level override by full workflow ID
+quarkus.flow.grpc.client.workflow."org.acme:myFlow:0.0.1:fetchCustomers".name=inventoryService
+
+# Task-level override by short workflow ID
+quarkus.flow.grpc.client.workflow."org.acme:myFlow:fetchCustomers".name=inventoryService
+----
+
+[TIP]
+====
+Quotes are required around keys that contain the `:` separator so that the value is read as a single property key.
+====
 
 == Configure a default channel
 

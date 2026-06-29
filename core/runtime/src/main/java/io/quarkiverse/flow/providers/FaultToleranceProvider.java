@@ -62,7 +62,7 @@ public class FaultToleranceProvider {
     }
 
     public TypedGuard<CompletionStage<WorkflowModel>> guardFor(WorkflowTaskContext ctx) {
-        String guardName = this.routingNameResolver.resolveName(ctx.workflowName(), ctx.taskName());
+        String guardName = this.routingNameResolver.resolveName(ctx.workflowId(), ctx.taskName());
         if (guardName == null) {
             return getOrCreateDefaultGuard(ctx);
         }
@@ -140,7 +140,7 @@ public class FaultToleranceProvider {
                     .onFailure(() -> sendCircuitBreakerFailure(ctx))
                     .onPrevented(() -> sendCircuitBreakerPrevented(ctx))
                     .onStateChange(state -> {
-                        CircuitBreakerKey key = new CircuitBreakerKey(ctx.workflowName(), ctx.taskName());
+                        CircuitBreakerKey key = new CircuitBreakerKey(ctx.workflowId().toString(), ctx.taskName());
                         onCircuitBreakerStateChange(state, key);
                     })
                     .done();
@@ -192,7 +192,7 @@ public class FaultToleranceProvider {
         Counter.builder(FlowMetrics.FAULT_TOLERANCE_TASK_RETRY_FAILURE_TOTAL.prefixedWith(flowMetricsConfig.prefix().get()))
                 .description("Fault Tolerance Task Failure")
                 .tag("task", ctx.taskName())
-                .tag("workflow", ctx.workflowName())
+                .tag("workflow", ctx.workflowId().toString())
                 .register(Metrics.globalRegistry)
                 .increment();
     }
@@ -201,7 +201,7 @@ public class FaultToleranceProvider {
         Counter.builder(FlowMetrics.FAULT_TOLERANCE_TASK_RETRY_TOTAL.prefixedWith(flowMetricsConfig.prefix().get()))
                 .description("Fault Tolerance Task Retry")
                 .tag("task", ctx.taskName())
-                .tag("workflow", ctx.workflowName())
+                .tag("workflow", ctx.workflowId().toString())
                 .register(Metrics.globalRegistry)
                 .increment();
 
@@ -212,7 +212,7 @@ public class FaultToleranceProvider {
                 FlowMetrics.FAULT_TOLERANCE_CIRCUIT_BREAKER_PREVENTED_TOTAL.prefixedWith(flowMetricsConfig.prefix().get()))
                 .description("Fault Tolerance Circuit Breaker Prevented")
                 .tag("task", ctx.taskName())
-                .tag("workflow", ctx.workflowName())
+                .tag("workflow", ctx.workflowId().toString())
                 .register(Metrics.globalRegistry)
                 .increment();
     }
@@ -222,7 +222,7 @@ public class FaultToleranceProvider {
                 FlowMetrics.FAULT_TOLERANCE_CIRCUIT_BREAKER_FAILURE_TOTAL.prefixedWith(flowMetricsConfig.prefix().get()))
                 .description("Fault Tolerance Circuit Breaker Failure")
                 .tag("task", ctx.taskName())
-                .tag("workflow", ctx.workflowName())
+                .tag("workflow", ctx.workflowId().toString())
                 .register(Metrics.globalRegistry)
                 .increment();
     }

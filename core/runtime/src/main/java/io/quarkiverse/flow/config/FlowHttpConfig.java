@@ -54,7 +54,7 @@ public interface FlowHttpConfig extends HttpClientConfig {
      * Each entry maps to:
      *
      * <pre>
-     * quarkus.flow.http.client.named.&lt;name&gt;.&lt;property&gt;
+     * quarkus.flow.http.client.named.<name>.<property>
      * </pre>
      *
      * For example:
@@ -69,18 +69,52 @@ public interface FlowHttpConfig extends HttpClientConfig {
     Map<String, HttpClientConfig> named();
 
     /**
+     * Canonical workflow/task routing via a free-form keyed map.
+     * <p>
+     * Supported key formats (using {@code ":"} as separator):
+     * <ul>
+     * <li>{@code <namespace>:<name>:<version>} — workflow-level override</li>
+     * <li>{@code <namespace>:<name>:<version>:<taskName>} — task-level override</li>
+     * </ul>
+     * <p>
+     * Example:
+     *
+     * <pre>
+     * quarkus.flow.http.client."org.acme:order-flow:0.0.1".name=secureA
+     * quarkus.flow.http.client."org.acme:order-flow:0.0.1:fetchCustomers".name=secureB
+     * </pre>
+     *
+     * @return the map of client overrides
+     */
+    Map<String, ClientOverride> client();
+
+    /**
      * Workflow-level HTTP client routing configuration.
      * <p>
      * Each entry is keyed by the workflow id and maps to:
      *
      * <pre>
-     * quarkus.flow.http.client.workflow.&lt;workflowName&gt;.name=&lt;clientName&gt;
-     * quarkus.flow.http.client.workflow.&lt;workflowName&gt;.task.&lt;taskName&gt;.name=&lt;clientName&gt;
+     * quarkus.flow.http.client.workflow.<workflowName>.name=<clientName>
+     * quarkus.flow.http.client.workflow.<workflowName>.task.<taskName>.name=<clientName>
      * </pre>
      *
      * @return the map of workflow routing configurations
      */
     Map<String, WorkflowRoutingConfig> workflow();
+
+    /**
+     * Named HTTP client override for canonical routing.
+     */
+    interface ClientOverride {
+
+        /**
+         * The named HTTP client to use, configured under
+         * {@code quarkus.flow.http.client.named.<name>}.
+         *
+         * @return the client name
+         */
+        Optional<String> name();
+    }
 
     /**
      * Routing configuration for a single workflow.
