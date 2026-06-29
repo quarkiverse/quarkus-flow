@@ -37,7 +37,7 @@ jobs:
           java-version: 17
           cache: maven
 
-      - name: Run build to validate formatting and generate docs (core only)
+      - name: Run build to validate formatting (core only)
         run: mvn -B clean install -T 1C -P!docs -DskipTests -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp
 
       - name: Upload core artifacts for examples-it

@@ -22,7 +22,6 @@ cd quarkus-flow/examples/<example-name>
 **Then run the example:**
 
 ```bash
-cd <example-name>
 ./mvnw quarkus:dev
 ```
 
