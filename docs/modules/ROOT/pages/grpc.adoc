@@ -20,13 +20,15 @@ It connects the Serverless Workflow gRPC executor to Quarkus gRPC channels, so y
 
 The module resolves the Quarkus gRPC named channel to use for each workflow task, following this order:
 
-1. **Task-level override**: `quarkus.flow.grpc.client.<workflowId>:<taskName>.name=<clientName>`
-2. **Workflow-level override**: `quarkus.flow.grpc.client.<workflowId>.name=<clientName>`
-3. **Default channel**: If a Quarkus gRPC client named `flowGrpc` exists, it is used for all workflows.
+1. **Task-level override**: `quarkus.flow.grpc.client."<workflowId>:<taskName>".name=<clientName>`
+2. **Workflow-level override**: `quarkus.flow.grpc.client."<workflowId>".name=<clientName>`
+3. **Versionless override**: `quarkus.flow.grpc.client."<namespace>:<name>".name=<clientName>` — applied to **all versions** of the workflow.
 4. **Workflow ID as client name**: If a Quarkus gRPC client matching the workflow ID exists, it is used.
-5. **SDK fallback**: If none of the above match, the SDK falls back to the host and port declared in the workflow itself.
+5. **Default channel**: If a Quarkus gRPC client named `flowGrpc` exists, it is used for all workflows.
+6. **SDK fallback**: If none of the above match, the SDK falls back to the host and port declared in the workflow itself.
 
 The workflow ID is `namespace:name:version` (e.g. `org.acme:grpcGreeting:0.0.1`).
+The versionless key is `namespace:name` (e.g. `org.acme:grpcGreeting`).
 
 == Configure a default channel
 
@@ -49,8 +51,22 @@ quarkus.grpc.clients.myService.host=my-grpc-server.example.com
 quarkus.grpc.clients.myService.port=443
 quarkus.grpc.clients.myService.plain-text=false
 
-quarkus.flow.grpc.client.org.acme:grpcGreeting:0.0.1.name=myService
+quarkus.flow.grpc.client."org.acme:grpcGreeting:0.0.1".name=myService
 ```
+
+== Configure a channel for all versions of a workflow
+
+To route every version of a workflow to the same gRPC server, use the versionless key `namespace:name` (omit the version):
+
+```properties
+quarkus.grpc.clients.myService.host=my-grpc-server.example.com
+quarkus.grpc.clients.myService.port=443
+quarkus.grpc.clients.myService.plain-text=false
+
+quarkus.flow.grpc.client."org.acme:grpcGreeting".name=myService
+```
+
+A version-specific override (`org.acme:grpcGreeting:0.0.1`) always takes precedence over the versionless one (`org.acme:grpcGreeting`).
 
 == Configure per-task channels
 
@@ -58,8 +74,8 @@ If a single workflow orchestrates multiple gRPC servers, use task-level override
 Each gRPC task in the workflow must have a unique name.
 
 ```properties
-quarkus.flow.grpc.client.org.acme:orderWorkflow:0.0.1.name=orderService
-quarkus.flow.grpc.client.org.acme:orderWorkflow:0.0.1:checkInventory.name=inventoryService
+quarkus.flow.grpc.client."org.acme:orderWorkflow:0.0.1".name=orderService
+quarkus.flow.grpc.client."org.acme:orderWorkflow:0.0.1:checkInventory".name=inventoryService
 ```
 
 [NOTE]

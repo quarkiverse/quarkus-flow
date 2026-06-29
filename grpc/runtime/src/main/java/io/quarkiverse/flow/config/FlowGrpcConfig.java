@@ -18,18 +18,19 @@ public interface FlowGrpcConfig {
      * <p>
      * Keys can be:
      * <ul>
-     * <li>{@code <namespace>:<name>:<version>} — workflow-level override</li>
      * <li>{@code <namespace>:<name>:<version>:<taskName>} — task-level override</li>
+     * <li>{@code <namespace>:<name>:<version>} — workflow-level override</li>
+     * <li>{@code <namespace>:<name>} — versionless override, applied to all versions of the workflow</li>
      * </ul>
      *
      * @return the map of client overrides
      */
-    Map<String, ClientOverride> client();
+    Map<String, ClientOverrideConfig> client();
 
     /**
      * Override for the Quarkus gRPC client name.
      */
-    interface ClientOverride {
+    interface ClientOverrideConfig {
 
         /**
          * The Quarkus gRPC client name to use, configured under
