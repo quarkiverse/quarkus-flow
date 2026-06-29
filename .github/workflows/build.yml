@@ -136,6 +136,9 @@ jobs:
           java-version: 17
           cache: maven
 
+      - name: Clear local Quarkus Flow artifacts
+        run: rm -rf ~/.m2/repository/io/quarkiverse/flow
+
       - name: Download core artifacts
         uses: actions/download-artifact@v8
         with:
