@@ -33,3 +33,53 @@ When the gRPC executor asks for a channel, this module first checks Quarkus CDI 
 ## Example
 
 See [`examples/grpc-client-routing`](../examples/grpc-client-routing/README.md).
+
+## Development Prerequisites
+
+### Protocol Buffers Compiler (protoc)
+
+The gRPC integration tests require the `protoc` (Protocol Buffers compiler) to be installed on your system.
+
+**Error you might see without it:**
+```
+java.io.IOException: Cannot run program "protoc": error=2, No such file or directory
+```
+
+**Installation:**
+
+**macOS (Homebrew):**
+```bash
+brew install protobuf
+```
+
+**Linux (apt):**
+```bash
+sudo apt-get install -y protobuf-compiler
+```
+
+**Linux (yum):**
+```bash
+sudo yum install -y protobuf-compiler
+```
+
+**Windows (Chocolatey):**
+```bash
+choco install protoc
+```
+
+**Verify installation:**
+```bash
+protoc --version
+# Should show: libprotoc 3.x.x or higher
+```
+
+**Alternative - Skip gRPC tests:**
+
+If you don't need to run gRPC tests locally, you can skip them:
+```bash
+# Skip the entire grpc integration tests module
+./mvnw test -pl '!grpc/integration-tests'
+
+# Or skip the specific failing test
+./mvnw test -Dtest='!GrpcGreetingFlowTest'
+```
