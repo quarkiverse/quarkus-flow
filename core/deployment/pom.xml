@@ -11,9 +11,10 @@
     <name>Quarkus Flow :: Core :: Deployment</name>
 
     <properties>
-        <serverlessworkflow.diagram-editor.version>0.0.0</serverlessworkflow.diagram-editor.version>
+        <esbuild-maven-plugin.version>2.0.0</esbuild-maven-plugin.version>
         <react.version>19.2.7</react.version>
         <scheduler.version>0.27.0</scheduler.version>
+        <serverlessworkflow.diagram-editor.version>0.0.0</serverlessworkflow.diagram-editor.version>
         <use-sync-external-store.version>1.6.0</use-sync-external-store.version>
     </properties>
 
@@ -156,7 +157,7 @@
             <plugin>
                 <groupId>io.mvnpm</groupId>
                 <artifactId>esbuild-maven-plugin</artifactId>
-                <version>2.0.0</version>
+                <version>${esbuild-maven-plugin.version}</version>
 
                 <executions>
                     <execution>
