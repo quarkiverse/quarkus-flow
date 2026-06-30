@@ -30,7 +30,7 @@ ARG VARIANT=minimal
 # ============================================================================
 # Base Image - Red Hat UBI 9 with OpenJDK 17
 # ============================================================================
-FROM registry.access.redhat.com/ubi9/openjdk-17-runtime:1.24
+FROM registry.access.redhat.com/ubi9/openjdk-17-runtime:1.24-2.1782292635
 
 # Re-declare ARG after FROM to make it available in this stage
 ARG VARIANT=minimal
