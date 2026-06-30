@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.quarkiverse.flow</groupId>
         <artifactId>quarkus-flow-runner-parent</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>0.12.0</version>
     </parent>
     <artifactId>quarkus-flow-runner-deployment</artifactId>
     <name>Quarkus Flow :: Runner :: Deployment</name>
