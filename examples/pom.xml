@@ -74,7 +74,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>
-            <artifactId>quarkus-flow-persistence-jpa-deployment</artifactId>
+            <artifactId>quarkus-flow-jpa-deployment</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
