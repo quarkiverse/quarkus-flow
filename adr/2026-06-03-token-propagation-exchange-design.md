@@ -43,7 +43,7 @@ Implement a **hybrid approach** using Serverless Workflow 1.0.0 OAuth2 definitio
 ### Phased Implementation
 
 **Phase 0** (Validation/Proof of Concept) — **COMPLETE (2026-06-18), GO for Phase 1**:
-- Validate current architecture integrates with `quarkus-oidc-client` — done (`OidcClient` via `HttpRequestDecorator`)
+- Validate current architecture integrates with `quarkus-oidc-client` — done (`OidcClient` via `AuthProviderFactory`)
 - Build working examples of OAuth2/OIDC authentication against third-party services — done, `examples/auth-oauth2-oidc` (six scenarios: client credentials, multiple OAuth2 clients, OpenAPI with OAuth2, OIDC client, RFC 8693 token exchange, Resource Owner Password)
 - Test OAuth2 client credentials flow (service-to-service, no user token) — done
 - Test OAuth2 with user context (manual token passing via workflow input) — done
