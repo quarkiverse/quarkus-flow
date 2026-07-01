@@ -1,8 +1,8 @@
 # Token Propagation and Exchange for Quarkus Flow
 
-**Date**: 2026-06-08  
+**Date**: 2026-06-08 (last updated: 2026-06-30)  
 **Status**: Proposed  
-**Context**: ADR for implementing token propagation and exchange feature  
+**Context**: ADR for implementing token propagation and exchange feature
 
 ## Context
 
@@ -42,15 +42,16 @@ Implement a **hybrid approach** using Serverless Workflow 1.0.0 OAuth2 definitio
 
 ### Phased Implementation
 
-**Phase 0** (Validation/Proof of Concept):
-- Validate current architecture integrates with `quarkus-oidc-client`
-- Build working examples of OAuth2/OIDC authentication against third-party services
-- Test OAuth2 client credentials flow (service-to-service, no user token)
-- Test OAuth2 with user context (manual token passing via workflow input)
-- Identify gaps/issues in current SDK OAuth2/OIDC handling
-- Document findings and integration patterns
+**Phase 0** (Validation/Proof of Concept) — **COMPLETE (2026-06-18), GO for Phase 1**:
+- Validate current architecture integrates with `quarkus-oidc-client` — done (`OidcClient` via `AuthProviderFactory`)
+- Build working examples of OAuth2/OIDC authentication against third-party services — done, `examples/auth-oauth2-oidc` (six scenarios: client credentials, multiple OAuth2 clients, OpenAPI with OAuth2, OIDC client, RFC 8693 token exchange, Resource Owner Password)
+- Test OAuth2 client credentials flow (service-to-service, no user token) — done
+- Test OAuth2 with user context (manual token passing via workflow input) — done
+- **Additionally validated** (beyond original scope): RFC 8693 **token exchange** (subject + actor tokens) and **Resource Owner Password** grant
+- Identify gaps/issues in current SDK OAuth2/OIDC handling — done, see [Phase 0 Findings](#phase-0-findings-2026-06-18)
+- Document findings and integration patterns — done
 - **Contingency**: If basic OIDC support missing, add to `core` (conditionally activated when `quarkus-oidc-client` present)
-- **Deliverable**: Working examples + integration assessment before proceeding to Phase 1
+- **Deliverable**: Working examples + integration assessment before proceeding to Phase 1 — delivered
 
 **Phase 1** (Token Propagation & Exchange):
 - Token propagation (forward user tokens)
@@ -66,6 +67,145 @@ Implement a **hybrid approach** using Serverless Workflow 1.0.0 OAuth2 definitio
 - JPA, Redis, Infinispan, MVStore implementations
 - Enhanced proactive refresh with encrypted subject token storage
 - Performance testing and optimization
+
+## Phase 0 Findings (2026-06-18)
+
+Phase 0 shipped a single example project, `examples/auth-oauth2-oidc`, exposing **six** workflow
+scenarios behind a REST API, all backed by **WireMock Dev Services** (no real OIDC server).
+
+**Recommendation: GO for Phase 1**. Risk 1's event-loop blocking scenario is **mitigated** by the
+shipped implementation using `AuthProviderFactory`/`AuthProvider` (which runs inside `supplyAsync`
+on a worker thread) instead of `HttpRequestDecorator`. The async/reactive SPI gap remains an
+upstream sdk-java improvement for the long term but is not a Phase 1 blocker.
+No architectural blocker was found, the gaps are *additive* not redesigns. 
+
+### Gating questions answered
+
+- **Q1 — `HttpExecutor` passes auth to JAX-RS:** **Yes, but with a caveat.** Both the SDK-native
+  OAuth2 path (`JaxRSAccessTokenProvider`) and custom `HttpRequestDecorator`s reach the
+  `Invocation.Builder`. However, calling `OidcClient` from a `HttpRequestDecorator` causes a
+  **duplicate token request** — the SDK performs its own token call via `AuthProviderFactory` *and*
+  the decorator performs a second one. The correct integration point is implementing
+  `AuthProviderFactory` and installing it via `WorkflowApplication.Builder.withAuthProviderFactory(...)`,
+  which lets the extension own the token acquisition without duplication.
+- **Q2 — inject `OidcClient` in a decorator:** **Yes, but not via `@Inject`.** Decorators are
+  `ServiceLoader` instantiated outside CDI, so use `Arc.container().instance(OidcClients.class).get()`
+  and resolve **named** clients with `OidcClients.getClient(id)` (a bare `OidcClient` lookup returns
+  only the default). **Note:** same duplicate token call caveat as Q1 applies — the `Arc.container()`
+  lookup technique is used in `AuthProvider` implementations instead.
+- **Q3 — OpenAPI scheme resolution:** the SDK does **not** auto-map a named `securityScheme` to a
+  configured credential; the DSL must supply the `Authentication`. The scheme documents the
+  requirement; the DSL provides the implementation.
+- **Q4 — OAuth2 grant limitations:** none on the critical path. `client_credentials`, `password`, and
+  `token-exchange` all work and are tested.
+- **Q5 — `Authorization` header injection via decorator:** **Yes** mechanically, but the SPI is
+  **synchronous** (see Risk 1). **Same caveat as Q1**: setting the `Authorization` header in a
+  `HttpRequestDecorator` causes duplication — the SDK's `AuthProviderFactory` already resolves and
+  applies auth before the decorator runs, so the decorator would trigger a second token call or
+  overwrite the SDK-applied header. The `AuthProviderFactory` seam is the correct place to own
+  token acquisition.
+
+### Risks / limitations found (drive Phase 1 design)
+
+- **Risk 1 — Both `HttpRequestDecorator` and `AuthProvider` are synchronous; `OidcClient` is
+  reactive (top blocker).** Both SDK SPIs have synchronous contracts:
+  - `HttpRequestDecorator.decorate(...)` returns `void` and runs **on the calling thread before**
+    the async dispatch in `HttpExecutor.apply` (line 78). On a Vert.x event-loop thread
+    (`@NonBlocking`) any blocking call (e.g., `OidcClient.getTokens().await()`) throws
+    `VertxException: Thread blocked` — **reproduced**.
+  - `AuthProvider.content(...)` returns `String` (synchronous) and runs inside `supplyAsync` on the
+    worker thread (`AbstractRequestExecutor:52`), so blocking I/O is **safe there today**. However,
+    the API itself is synchronous — it cannot return `Uni`/`CompletableFuture` — and the worker-thread
+    guarantee depends on the injected `ExecutorService` (see Risk 5: not all SDK threads honour it).
+  
+  The shipped implementation uses `AuthProviderFactory`/`AuthProvider` (not `HttpRequestDecorator`),
+  which avoids the event-loop blocking because `content()` runs inside `supplyAsync`. This is
+  sufficient for Phase 0/Phase 1 as long as the executor service provides worker threads. **Long-term**,
+  both SPIs should offer async/reactive variants (returning `Uni`/`CompletableFuture`) to be
+  safe regardless of the calling thread — tracked upstream as
+  [sdk-java#1510](https://github.com/serverlessworkflow/sdk-java/issues/1510).
+- **Risk 2 — OpenAPI `securityScheme` → credential mapping is manual** (see Q3). "Secure-by-spec"
+  ergonomics must be built on top.
+- **Risk 3 — token exchange and password grants validated.** Removes the biggest unknown.
+- **Risk 4 — `use.authentications(...)` DSL is verbose** (five nested lambdas + fully-qualified enums for
+  one client). DX gap, not a correctness blocker; Phase 1 should offer a flatter shorthand. Tracked
+  upstream as [sdk-java#1509](https://github.com/serverlessworkflow/sdk-java/issues/1509).
+- **Risk 5 — sdk-java thread context propagation is not guaranteed (open upstream issue).** Quarkus
+  Flow injects a `QuarkusManagedExecutor` as the SDK's `ExecutorService` so that task execution runs on
+  managed threads with CDI request context and thread-locals propagated. In practice **not all SDK
+  threads honour the injected executor** — some stages run on threads the SDK spawns/obtains itself,
+  bypassing `QuarkusManagedExecutor`. On those threads context-dependent lookups
+  (CDI request scope, `SecurityIdentity`, propagated thread-locals) are unavailable, which directly
+  undermines `SubjectTokenExtractor`'s `SecurityIdentity` source (§4) and any provider relying on
+  request-scoped state. This is an **upstream sdk-java defect** (thread-context propagation), not a
+  Quarkus Flow bug. **Mitigation until fixed:** prefer subject-token sources that do not depend on
+  thread context (explicit workflow input over `SecurityIdentity`), and resolve/cache tokens off the
+  affected threads. Tracked upstream as
+  [sdk-java#1481](https://github.com/serverlessworkflow/sdk-java/issues/1481).
+- **Risk 6 — no hook to override the SDK's authentication call (RESOLVED upstream by
+  [sdk-java#1486](https://github.com/serverlessworkflow/sdk-java/issues/1486)).** Originally the SDK's
+  `AuthProviderFactory` was a static utility with no plug-in seam, so an extension could not intercept
+  or replace how authentications are resolved/executed. PR #1486 introduced a **pluggable
+  `AuthProviderFactory`** (plus
+  `DefaultAuthProviderFactory` and `WorkflowApplication.Builder.withAuthProviderFactory(...)`), shipped in
+  `io.serverlessworkflow` **7.24.0.Final** — the version Quarkus Flow already targets, so **no version
+  bump was required** — which lets Quarkus Flow install an `OidcAuthProviderFactory` that owns OAuth2/OIDC
+  inline policies and delegates everything else to the SDK default. **This is what unblocks Phase 1's
+  authentication ownership**.
+
+### Design revisions triggered by Phase 0
+
+The findings above revise the following sections of this ADR (revisions marked inline):
+- **§1 OpenAPI Integration** — **will not be applied**; the spec discussion in
+  [specification#1158](https://github.com/serverlessworkflow/specification/issues/1158) supersedes
+  this revision. The OpenAPI `securityScheme` → credential auto-mapping (Risk 3) and the
+  `ServiceLoader`/sync-bound decorator concerns (Risk 1, Risk 2) are no longer relevant to
+  Quarkus Flow's design.
+- **§2 Subject Token Extraction** — DSL/expression-based subject token is **dropped from Phase 1**; sources are workflow input and `SecurityIdentity` only.
+- **Open Questions** — actor tokens (Q4 of Open Questions) were exercised in Phase 0; token exchange is
+  validated.
+
+### Upstream SDK change requests raised
+
+Async/reactive variants for both `HttpRequestDecorator.decorate` and `AuthProvider.content` (Risk 1)
+— [sdk-java#1510](https://github.com/serverlessworkflow/sdk-java/issues/1510); flatter shorthand
+for named authentications (Risk 4) —
+[sdk-java#1509](https://github.com/serverlessworkflow/sdk-java/issues/1509).
+
+Optional OpenAPI `securityScheme`→`Authentication` mapping (Risk 3) —
+[specification#1158](https://github.com/serverlessworkflow/specification/issues/1158), **rejected**
+by spec maintainers.
+
+Pluggable `AuthProviderFactory` so an extension can own authentication — **delivered** by
+[sdk-java#1486](https://github.com/serverlessworkflow/sdk-java/issues/1486) (in 7.24.0.Final);
+see Risk 6.
+
+Reliable thread-context propagation so SDK task stages run on the injected `QuarkusManagedExecutor`
+(Risk 5) — [sdk-java#1481](https://github.com/serverlessworkflow/sdk-java/issues/1481), **open**.
+
+### Shipped implementation note (2026-06-30)
+
+The `oidc/` extension that shipped alongside the Phase 0 examples realizes authentication ownership via the
+**`AuthProviderFactory` seam** (Risk 6), **not** the `HttpRequestDecorator` design sketched in §1 below.
+The actual runtime classes are:
+
+- `FlowOidcAuthCustomizer` — a `WorkflowApplicationBuilderCustomizer` that installs the factory via
+  `builder.withAuthProviderFactory(...)` when `quarkus.flow.oidc.enabled` is `true`.
+- `OidcAuthProviderFactory implements AuthProviderFactory` — owns inline OAuth2/OIDC policies and delegates
+  every other case (basic/bearer/digest, secret-based and referenced policies) to the SDK's
+  `DefaultAuthProviderFactory`.
+- `OidcClientAuthProvider implements AuthProvider` — maps the policy to a Quarkus `OidcClientConfig` and
+  returns the negotiated `access_token`.
+- `OidcClientFactory` — builds and caches `OidcClient` instances, keyed by the fully resolved policy
+  (authority, token endpoint, OAuth2-vs-OIDC flag, client id, client-auth method, grant, scopes, audiences
+  and credential material).
+- `OAuth2Policy`, `FlowOidcConfig` (only `enabled` + `request-timeout`), `FlowOidcProcessor`.
+
+Token caching is therefore **per-`OidcClient` (Quarkus)** today — there is no `TokenCacheRepository`,
+`AuthenticationRegistry`, `SubjectTokenExtractor`, or `TokenRefreshMonitor`. The Detailed Design below
+(§1 `HttpRequestDecorator`, §3 registry, §4 subject-token extraction, §5 token-cache repository, §8
+proactive refresh) and the §7 `FlowOidcConfig` (`token-exchange`/`subject-token`/`auth` maps) remain
+**Phase 1/2 proposed design and are not yet implemented**.
 
 ## Architecture Overview
 
@@ -102,7 +242,16 @@ User → [Quarkus Security] → Workflow Engine
 
 ## Detailed Design
 
-### 1. OpenAPI Integration
+### 1. ~~OpenAPI Integration~~ (SUPERSEDED)
+
+> **This section is superseded.** The shipped implementation uses the `AuthProviderFactory` seam
+> (see [Shipped implementation note](#shipped-implementation-note-2026-06-30)), not the
+> `HttpRequestDecorator` design below. Additionally, the OpenAPI `securityScheme` → credential
+> auto-mapping discussion is tracked in
+> [specification#1158](https://github.com/serverlessworkflow/specification/issues/1158) and will
+> not be pursued in Quarkus Flow.
+>
+> The original design is kept below for historical context only.
 
 **Integration Point**: SDK's `HttpRequestDecorator` (ServiceLoader)
 
@@ -126,7 +275,8 @@ Apply token (propagate or exchange)
 ```java
 public class AuthenticationRequestDecorator implements HttpRequestDecorator {
     
-    private final AuthenticationRegistry registry;
+    private final AuthenticationRegistry registry =
+        Arc.container().instance(AuthenticationRegistry.class).get();
     
     @Override
     public void decorate(
@@ -152,11 +302,17 @@ public class AuthenticationRequestDecorator implements HttpRequestDecorator {
 - `AuthenticationRequestDecorator`: 100 (adds Authorization header)
 - Custom decorators: 1000+ (user extensions)
 
-**OpenAPI Specifics**:
-- OpenAPI specs declare `securitySchemes` → SDK maps to `Authentication` objects
-- We consume already-parsed `Authentication` from `TaskContext`
-- No need to parse OpenAPI specs ourselves
-- Works for both inline DSL auth and OpenAPI-declared schemes
+**OpenAPI Specifics** (revised by Phase 0 — Risk 3):
+- An OpenAPI spec's `securitySchemes` block **documents** the requirement but the SDK does **not**
+  auto-map a named scheme to a configured credential set. In the Phase 0 OpenAPI scenario the
+  credentials are still supplied explicitly by the DSL
+  (`.authentication(FuncDSL.oidc(authority, CLIENT_CREDENTIALS, clientId, clientSecret))`).
+- We consume the `Authentication` the DSL supplies (and the SDK parsed) from `TaskContext`; we do not
+  derive credentials from the spec's scheme name.
+- "Secure-by-spec" ergonomics (scheme name → configured `Authentication`) would have to be built on
+  top — tracked as an upstream change request, not a Phase 1 critical-path item.
+- Works for both inline DSL auth and OpenAPI-declared schemes, **provided the credentials are
+  expressed in the DSL/config**.
 
 ### 2. AuthenticationProvider Interface
 
@@ -234,7 +390,18 @@ CDI `Instance<>` provides dynamic provider discovery, making it easy to add new 
 
 ### 4. Subject Token Extraction
 
-Extracts the user's token for propagation/exchange from multiple sources:
+> **Phase 0 revision:** the original design listed an **expression-based / DSL** subject token
+> (`oauth2(..., subject("${ ... }"))`) as the highest-priority source. Phase 0 found this is **not
+> viable in Phase 1**: the only way to populate `subject.token` is to *define* an OAuth2 authentication
+> under `use.authentications`, and the moment one is defined the SDK's `OAuth2AuthProvider` resolves it
+> and performs **its own** token request — so the downstream token call happens **twice** (once by the
+> SDK, once by the extension). **Phase 1 therefore sources the subject token from workflow input or
+> `SecurityIdentity` only.**
+> The DSL/expression source is deferred pending an upstream hook to register an external/pluggable
+> `AuthProvider` (or flag a referenced policy as "resolved externally") so the SDK parses the
+> authentication but does not act on it.
+
+Extracts the user's token for propagation/exchange from the available sources:
 
 ```java
 @ApplicationScoped
@@ -254,14 +421,8 @@ public class SubjectTokenExtractor {
         WorkflowContext workflow,
         Authentication auth
     ) {
-        // 1. Check if auth definition has subject token (expression-based, DSL-driven)
-        if (auth instanceof OAuth2Authentication oauth2) {
-            if (oauth2.subject() != null && oauth2.subject().token() != null) {
-                return Optional.of(oauth2.subject().token());
-            }
-        }
         
-        // 2. Check workflow input for explicit token (programmatic workflows)
+        // 1. Check workflow input for explicit token (programmatic workflows)
         String inputKey = config.subjectToken().inputKey(); // default: "subjectToken"
         Optional<String> inputToken = workflow.instance()
             .input()
@@ -271,7 +432,7 @@ public class SubjectTokenExtractor {
             return inputToken;
         }
         
-        // 3. Extract from SecurityIdentity (HTTP-triggered workflows)
+        // 2. Extract from SecurityIdentity (HTTP-triggered workflows)
         if (securityIdentity.isResolvable()) {
             String attribute = config.subjectToken().securityIdentityAttribute();
             return securityIdentity.get()
@@ -284,13 +445,12 @@ public class SubjectTokenExtractor {
 }
 ```
 
-**Token Sources** (in priority order):
-1. **Expression-based (DSL)**: `oauth2(..., subject("${ $context.securityIdentity.token }"))`
-   - Power-user control, explicit in workflow definition
-2. **Explicit workflow input**: `instance(Map.of("subjectToken", "eyJ...")).start()`
+**Token Sources** (Phase 1, in priority order):
+1. **Explicit workflow input**: `instance(Map.of("subjectToken", "eyJ...")).start()`
    - Useful for non-HTTP triggers (scheduled, messaging, programmatic)
-3. **SecurityIdentity (automatic)**: Auto-extracted when workflow triggered via REST
-   - Requires Quarkus OIDC/JWT extension present
+2. **SecurityIdentity (automatic)**: Auto-extracted when workflow triggered via REST
+   - Requires Quarkus OIDC/JWT extension present (`quarkus-oidc` validates inbound bearer
+     tokens at the security layer before the workflow runs)
 
 This design keeps task authentication separate from app security while allowing workflows to leverage authenticated user identity when needed.
 
@@ -1025,14 +1185,20 @@ Before implementing token propagation/exchange infrastructure, validate that:
 4. Are there SDK limitations with OAuth2 grants (client_credentials, password, etc.)?
 5. Does the current `HttpRequestDecorator` pattern support auth header injection?
 
-**Deliverables**:
-- [ ] Working example: OAuth2 client credentials flow
-- [ ] Working example: Bearer token propagation (manual)
-- [ ] Working example: Multiple named OIDC clients
-- [ ] Working example: OpenAPI with OAuth2 security scheme
-- [ ] Integration tests for each example
-- [ ] Documentation: Findings and integration patterns
-- [ ] Go/No-Go decision for Phase 1 based on findings
+**Deliverables** (see `examples/auth-oauth2-oidc`):
+- [x] Working example: OAuth2 client credentials flow
+- [ ] ~~Working example: Bearer token propagation (manual; valid/invalid user-token split)~~ — **dropped**;
+  not shipped in `examples/auth-oauth2-oidc` (the `UserProvidingValidTokenFlow`/`UserProvidingInvalidTokenFlow`
+  classes were never added; only leftover `tokens.valid-token`/`tokens.invalid-token` properties remain).
+  Bearer/token-propagation is deferred to Phase 1.
+- [x] Working example: Multiple named OIDC clients
+- [x] Working example: OpenAPI with OAuth2 security scheme
+- [x] Working example: RFC 8693 token exchange (subject + actor) — *beyond original scope*
+- [x] Working example: Resource Owner Password grant — *beyond original scope*
+- [x] Working example: OIDC client credentials (`FuncDSL.oidc(...)`)
+- [x] Integration tests for each example (`AuthFlowResourceTest`, 6/6 green)
+- [x] Documentation: Findings and integration patterns ([Phase 0 Findings](#phase-0-findings-2026-06-18))
+- [x] Go/No-Go decision for Phase 1 based on findings — **GO, conditional on Risk 1**
 
 **Success Criteria**:
 - All examples work with real OIDC flows (mocked via WireMock)
@@ -1464,6 +1630,8 @@ quarkus.openapi-generator.<service>.auth.<name>.token-propagation
 
 4. **Actor tokens**: SW spec supports `actor` token for delegation scenarios. Support in Phase 1?
    - **Decision**: Out of scope for Phase 1. Can add when user demand emerges.
+   - **Phase 0 update**: actor tokens were **exercised** in the `token-exchange` scenario
+     (`.subject(...).actor(...)`, tokens pulled from workflow secrets) is verified so the SDK capability exists.
 
 ## References
 
@@ -1537,15 +1705,16 @@ quarkus.openapi-generator.<service>.auth.<name>.token-propagation
    - **Dependencies**: #1-4 (examples reveal gaps)
    - **Assignee**: TBD
 
-6. **Issue #XXX: Phase 0 Assessment & Go/No-Go Decision**
+6. **Issue #XXX: Phase 0 Assessment & Go/No-Go Decision** — **DONE (2026-06-18)**
    - **Description**: Assess findings and document integration patterns
    - **Acceptance Criteria**:
-     - Document findings from all Phase 0 examples
-     - Identify integration points for Phase 1
-     - Document any blockers or SDK limitations
-     - If basic OIDC added to core (#5), validate it works
-     - Go/No-Go decision for Phase 1
-     - Update ADR with findings
+     - [x] Document findings from all Phase 0 examples
+     - [x] Identify integration points for Phase 1 (`HttpRequestDecorator` SPI, `OidcClient`/`OidcClients`,
+       SDK `Authentication` model, `core/runtime` decorator precedent, `WorkflowContext`/`TaskContext`)
+     - [x] Document any blockers or SDK limitations (Risk 1–Risk 6)
+     - [x] If basic OIDC added to core (#5), validate it works
+     - [x] Go/No-Go decision for Phase 1 — **GO**
+     - [x] Update ADR with findings (this revision)
    - **Dependencies**: #1-5 (all Phase 0 work)
    - **Assignee**: Tech Lead
 
@@ -1712,14 +1881,9 @@ quarkus.openapi-generator.<service>.auth.<name>.token-propagation
 
 - [ ] Architecture Review
 - [ ] Security Review
-- [ ] Phase 0 Plan Approved
+- [x] Phase 0 Plan Approved
+- [x] Phase 0 Executed & Assessed (2026-06-18) — GO for Phase 1, conditional on Risk 1
 - [ ] Phase 1 Plan Approved
 - [ ] Phase 2 Plan Approved (Conditional on Phase 0/1 success)
 
 ---
-
-**Next Steps**: 
-1. Review and approve this ADR
-2. Create GitHub issues for Phase 0 (Issues #1-6)
-3. Start Phase 0 implementation
-4. Phase 0 Go/No-Go decision before proceeding to Phase 1

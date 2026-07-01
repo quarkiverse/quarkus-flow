@@ -1,0 +1,30 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/endpoint-image-service/images",
+    "headers": {
+      "Accept": {
+        "contains": "application/json"
+      },
+      "Authorization": {
+        "equalTo": "Bearer token-endpoint-a"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": [
+      {
+        "id": "{{randomValue type='UUID'}}",
+        "filename": "from-endpoint-a.jpg"
+      }
+    ],
+    "transformers": [
+      "response-template"
+    ]
+  }
+}
