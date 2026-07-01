@@ -14,7 +14,7 @@
         <esbuild-maven-plugin.version>2.0.0</esbuild-maven-plugin.version>
         <react.version>19.2.7</react.version>
         <scheduler.version>0.27.0</scheduler.version>
-        <serverlessworkflow.diagram-editor.version>0.0.0</serverlessworkflow.diagram-editor.version>
+        <serverlessworkflow.diagram-editor.version>0.0.0-LOCAL</serverlessworkflow.diagram-editor.version>
         <use-sync-external-store.version>1.6.0</use-sync-external-store.version>
     </properties>
 
@@ -154,6 +154,40 @@
                 </executions>
             </plugin>
 
+            <!-- Extract local diagram-editor JAR to node_modules (same as prod) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>unpack-local-diagram-editor</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>io.serverlessworkflow.local</groupId>
+                                    <artifactId>diagram-editor</artifactId>
+                                    <version>${serverlessworkflow.diagram-editor.version}</version>
+                                    <type>jar</type>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.basedir}/node_modules/@serverlessworkflow/diagram-editor</outputDirectory>
+                                    <includes>META-INF/resources/webjars/diagram-editor/0.0.0-LOCAL/**</includes>
+                                    <fileMappers>
+                                        <org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
+                                            <pattern>^META-INF/resources/webjars/diagram-editor/0.0.0-LOCAL/(.*)$</pattern>
+                                            <replacement>$1</replacement>
+                                        </org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
+                                    </fileMappers>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>io.mvnpm</groupId>
                 <artifactId>esbuild-maven-plugin</artifactId>
@@ -175,25 +209,6 @@
                 </configuration>
 
                 <dependencies>
-                    <!-- Serverless Workflow Diagram Editor (mvnpm) -->
-                    <dependency>
-                        <groupId>org.mvnpm.at.serverlessworkflow</groupId>
-                        <artifactId>diagram-editor</artifactId>
-                        <version>${serverlessworkflow.diagram-editor.version}</version>
-                        <exclusions>
-                            <!-- Required because @serverlessworkflow/sdk is an npm dependency, not available on mvnpm as alpha version, but is already bundled in @serverlessworkflow/diagram-editor's dist. -->
-                            <exclusion>
-                                <groupId>org.mvnpm.at.serverlessworkflow</groupId>
-                                <artifactId>sdk</artifactId>
-                            </exclusion>
-                            <!-- D3 is already bundled in @serverlessworkflow/diagram-editor, avoid version conflicts for transitive D3 dependencies. -->
-                            <exclusion>
-                                <groupId>org.mvnpm</groupId>
-                                <artifactId>d3-interpolate</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-
                     <!-- @serverlessworkflow/diagram-editor peerDependency -->
                     <dependency>
                         <groupId>org.mvnpm</groupId>
