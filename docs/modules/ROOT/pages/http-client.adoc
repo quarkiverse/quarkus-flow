@@ -27,7 +27,7 @@ All Flow HTTP and OpenAPI tasks use a `jakarta.ws.rs.client.Client` managed by Q
 At runtime, Quarkus Flow:
 * Builds a *default client* from `quarkus.flow.http.client.*`.
 * Optionally builds *named clients* from `quarkus.flow.http.client.named.<name>.*`.
-* Resolves *which client to use* for a given workflow or task using `quarkus.flow.http.client.workflow.*` routing.
+* Resolves *which client to use* for a given workflow or task using `quarkus.flow.http.client.client.*` routing.
 * Reuses and closes these clients automatically at the end of the application lifecycle.
 
 == 2. Configure the default HTTP client
@@ -68,24 +68,36 @@ quarkus.flow.http.client.named.internal.connection-pool-size=100
 
 == 4. Route workflows and tasks to clients
 
-Routing is configured under the `workflow` section:
+Routing is configured under the `client` section using workflow or task identifiers as keys.
+
+Quarkus Flow supports **three key formats** for backward compatibility:
 
 [source,properties]
 ----
-# Use "secureA" for all HTTP/OpenAPI tasks in the workflow "order-flow"
-quarkus.flow.http.client.workflow.order-flow.name=secureA
+# === Recommended: full workflow ID (namespace:name:version) ===
+quarkus.flow.http.client.client."org.acme:order-flow:0.0.1".name=secureA
 
-# Override only the "fetchCustomers" task within "order-flow" to use "internal"
-quarkus.flow.http.client.workflow.order-flow.task.fetchCustomers.name=internal
+# === Short form (namespace:name, no version) ===
+quarkus.flow.http.client.client."org.acme:order-flow".name=secureA
+
+# === Legacy: workflow name only (backward compatible) ===
+quarkus.flow.http.client.client."workflow.order-flow".name=secureA
+
+# === Task-level override (full workflow ID) ===
+quarkus.flow.http.client.client."org.acme:order-flow:0.0.1:fetchCustomers".name=internal
+
+# === Task-level override (short form) ===
+quarkus.flow.http.client.client."org.acme:order-flow:fetchCustomers".name=internal
+
+# === Task-level override (legacy) ===
+quarkus.flow.http.client.client."workflow.order-flow.task.fetchCustomers".name=internal
 ----
 
-Resolution order for a call:
-. Task-level override.
-. Workflow-level default.
+**Resolution order** for a call:
+. Task-level override (`namespace:name:version:taskName`, `namespace:name:taskName`, or `workflow."name".task."taskName"`).
+. Workflow-level override (`namespace:name:version`, `namespace:name`, or `workflow."name"`).
+. Workflow ID as named client (if a named client matching the workflow ID exists).
 . Fallback to the global default client.
-
-[IMPORTANT]
-It is highly recommended that you keep HTTP-related task names unique within your workflow to avoid routing conflicts.
 
 == 5. Configure static headers
 

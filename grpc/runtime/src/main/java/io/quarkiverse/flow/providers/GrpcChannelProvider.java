@@ -56,49 +56,62 @@ public class GrpcChannelProvider implements WorkflowApplicationBuilderCustomizer
 
     static String resolveClientName(Map<String, FlowGrpcConfig.ClientOverrideConfig> overrides,
             Predicate<String> channelExists, WorkflowDefinitionId workflowId, String taskName) {
-        String workflowKey = workflowId.toString(KEY_SEPARATOR);
+        String workflowKey = workflowId.toString();
+        String shortKey = workflowId.namespace() + KEY_SEPARATOR + workflowId.name();
+        String workflowName = workflowId.name();
 
         // 1. Task-level override: namespace:name:version:taskName
         if (taskName != null && !taskName.isBlank()) {
-            String taskOverride = overrideName(overrides, workflowKey + KEY_SEPARATOR + taskName);
-            if (taskOverride != null) {
-                return taskOverride;
+            String taskKey = workflowKey + KEY_SEPARATOR + taskName;
+            FlowGrpcConfig.ClientOverrideConfig taskOverride = overrides.get(taskKey);
+            if (taskOverride != null && taskOverride.name().isPresent()) {
+                return taskOverride.name().get();
+            }
+
+            String shortTaskKey = shortKey + KEY_SEPARATOR + taskName;
+            FlowGrpcConfig.ClientOverrideConfig shortTaskOverride = overrides.get(shortTaskKey);
+            if (shortTaskOverride != null && shortTaskOverride.name().isPresent()) {
+                return shortTaskOverride.name().get();
+            }
+
+            String legacyTaskKey = "workflow." + workflowName + ".task." + taskName;
+            FlowGrpcConfig.ClientOverrideConfig legacyTaskOverride = overrides.get(legacyTaskKey);
+            if (legacyTaskOverride != null && legacyTaskOverride.name().isPresent()) {
+                return legacyTaskOverride.name().get();
             }
         }
 
         // 2. Workflow-level override: namespace:name:version
-        String workflowOverride = overrideName(overrides, workflowKey);
-        if (workflowOverride != null) {
-            return workflowOverride;
+        FlowGrpcConfig.ClientOverrideConfig workflowOverride = overrides.get(workflowKey);
+        if (workflowOverride != null && workflowOverride.name().isPresent()) {
+            return workflowOverride.name().get();
         }
 
-        // 3. Versionless workflow override: namespace:name (applies to all versions)
-        String versionlessOverride = overrideName(overrides, workflowId.namespace() + KEY_SEPARATOR + workflowId.name());
-        if (versionlessOverride != null) {
-            return versionlessOverride;
+        // 3. Short form: namespace:name
+        FlowGrpcConfig.ClientOverrideConfig shortWorkflowOverride = overrides.get(shortKey);
+        if (shortWorkflowOverride != null && shortWorkflowOverride.name().isPresent()) {
+            return shortWorkflowOverride.name().get();
         }
 
-        // 4. Workflow ID as client name
+        // 4. Legacy: workflow."name"
+        String legacyWorkflowKey = "workflow." + workflowName;
+        FlowGrpcConfig.ClientOverrideConfig legacyWorkflowOverride = overrides.get(legacyWorkflowKey);
+        if (legacyWorkflowOverride != null && legacyWorkflowOverride.name().isPresent()) {
+            return legacyWorkflowOverride.name().get();
+        }
+
+        // 5. Workflow ID as gRPC client name
         if (channelExists.test(workflowKey)) {
             return workflowKey;
         }
 
-        // 5. Default channel
+        // 6. Default channel
         if (channelExists.test(DEFAULT_CHANNEL_NAME)) {
             return DEFAULT_CHANNEL_NAME;
         }
 
-        // 6. SDK fallback
         LOG.debug("No Quarkus gRPC client configured for workflow '{}'; SDK will use its default channel",
                 workflowKey);
-        return null;
-    }
-
-    private static String overrideName(Map<String, FlowGrpcConfig.ClientOverrideConfig> overrides, String key) {
-        FlowGrpcConfig.ClientOverrideConfig override = overrides.get(key);
-        if (override != null && override.name().isPresent()) {
-            return override.name().get();
-        }
         return null;
     }
 

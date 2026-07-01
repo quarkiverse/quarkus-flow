@@ -3455,6 +3455,27 @@ endif::add-copy-button-to-env-var[]
 |list of string
 |
 
+a| [[quarkus-flow_quarkus-flow-http-client-client-client-name]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-client-client-name[`+++quarkus.flow.http.client.client."client".name+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.http.client.client."client".name+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The named HTTP client to use, configured under `quarkus.flow.http.client.named.<name>`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_HTTP_CLIENT_CLIENT__CLIENT__NAME+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_HTTP_CLIENT_CLIENT__CLIENT__NAME+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
 a| [[quarkus-flow_quarkus-flow-http-client-workflow-workflow-name]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-workflow-workflow-name[`+++quarkus.flow.http.client.workflow."workflow".name+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.http.client.workflow."workflow".name+++[]
