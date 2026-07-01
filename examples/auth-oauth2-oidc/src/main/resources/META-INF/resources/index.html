@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quarkus Flow · OAuth2 + OIDC Playground</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%234695EB'/%3E%3Ctext x='50' y='68' font-size='60' text-anchor='middle' fill='white' font-family='monospace'%3EQ%3C/text%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        quarkus: {
+                            blue: '#4695EB',
+                            'blue-dark': '#3380d8',
+                            red: '#FF004A',
+                            ink: '#1A1A1A',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 6px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+        .endpoint-item.active {
+            background: #eef5fe;
+            border-left-color: #4695EB;
+        }
+        pre code .tok-key { color: #4695EB; }
+        pre code .tok-str { color: #16a34a; }
+        pre code .tok-num { color: #FF004A; }
+        pre code .tok-bool { color: #d97706; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { animation: spin 0.7s linear infinite; }
+    </style>
+</head>
+<body class="bg-white text-quarkus-ink antialiased">
+
+<!-- Top bar -->
+<header class="h-14 border-b border-zinc-200 flex items-center px-5 gap-3 sticky top-0 bg-white z-10">
+    <div class="w-8 h-8 rounded-lg bg-quarkus-blue flex items-center justify-center text-white font-mono font-bold text-lg">Q</div>
+    <div class="flex flex-col leading-tight">
+        <span class="font-semibold text-sm">Quarkus Flow</span>
+        <span class="text-[11px] text-zinc-500 font-mono">OAuth2 + OIDC Playground</span>
+    </div>
+    <span class="ml-auto text-[11px] font-mono text-zinc-400 hidden sm:block">/quarkus-flow</span>
+</header>
+
+<div class="flex h-[calc(100vh-3.5rem)]">
+
+    <!-- Sidebar -->
+    <aside class="w-72 shrink-0 border-r border-zinc-200 overflow-y-auto bg-zinc-50/50">
+        <div class="px-4 pt-4 pb-2 text-[11px] uppercase tracking-wider font-semibold text-zinc-400 font-mono">Endpoints</div>
+        <nav id="endpoint-list" class="pb-6"></nav>
+    </aside>
+
+    <!-- Main panel -->
+    <main class="flex-1 overflow-y-auto">
+        <div class="max-w-3xl mx-auto px-8 py-8">
+
+            <!-- Header -->
+            <div class="flex items-center gap-3 mb-1">
+                <span id="ep-method" class="font-mono text-xs font-bold px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">GET</span>
+                <h1 id="ep-title" class="text-xl font-semibold">Client Credentials</h1>
+            </div>
+            <div id="ep-path" class="font-mono text-sm text-zinc-500 mb-4">/quarkus-flow/images</div>
+            <p id="ep-desc" class="text-sm text-zinc-600 leading-relaxed mb-6"></p>
+
+            <!-- Request controls -->
+            <div class="border border-zinc-200 rounded-xl overflow-hidden mb-6">
+                <div class="flex items-center justify-between px-4 py-3 bg-zinc-50 border-b border-zinc-200">
+                    <span class="text-xs font-mono font-semibold text-zinc-500 uppercase tracking-wide">Request</span>
+                    <button id="send-btn" onclick="sendRequest()"
+                            class="inline-flex items-center gap-2 bg-quarkus-blue hover:bg-quarkus-blue-dark text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M4 3l13 7-13 7V3z"/></svg>
+                        Send
+                    </button>
+                </div>
+                <div id="header-row" class="px-4 py-3 hidden">
+                    <label class="block text-[11px] font-mono uppercase tracking-wide text-zinc-400 mb-1.5">Authorization header</label>
+                    <input id="auth-header" type="text"
+                           class="w-full font-mono text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-quarkus-blue/30 focus:border-quarkus-blue"
+                           placeholder="Bearer ...">
+                </div>
+                <div class="px-4 py-3 text-xs font-mono text-zinc-400" id="no-input">No request body required — just hit Send.</div>
+            </div>
+
+            <!-- Response -->
+            <div class="border border-zinc-200 rounded-xl overflow-hidden">
+                <div class="flex items-center gap-3 px-4 py-3 bg-zinc-50 border-b border-zinc-200">
+                    <span class="text-xs font-mono font-semibold text-zinc-500 uppercase tracking-wide">Response</span>
+                    <span id="status-badge" class="font-mono text-xs font-bold px-2 py-0.5 rounded hidden"></span>
+                    <span id="time-badge" class="ml-auto font-mono text-[11px] text-zinc-400 hidden"></span>
+                </div>
+                <div class="relative">
+                    <pre class="text-[13px] leading-relaxed p-4 overflow-x-auto bg-white min-h-[120px] max-h-[480px] overflow-y-auto"><code id="response-body" class="font-mono text-zinc-700">// Click "Send" to execute the workflow</code></pre>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<script>
+    const endpoints = [
+        {
+            id: 'client-credentials',
+            title: 'Client Credentials',
+            method: 'GET',
+            path: '/quarkus-flow/images',
+            desc: 'OAuth2 Client Credentials grant. The workflow obtains an access_token from the authorization server and uses it to call the image service.',
+        },
+        {
+            id: 'oidc',
+            title: 'OIDC Client',
+            method: 'GET',
+            path: '/quarkus-flow/oidc/images',
+            desc: 'Attaches a token from an injected quarkus-oidc-client OidcClient via the HttpRequestDecorator.',
+        },
+        {
+            id: 'password',
+            title: 'Password Grant',
+            method: 'GET',
+            path: '/quarkus-flow/password/images',
+            desc: 'Obtains a token via the OAuth2 Resource Owner Password grant and calls the downstream service.',
+        },
+        {
+            id: 'token-exchange',
+            title: 'Token Exchange',
+            method: 'GET',
+            path: '/quarkus-flow/token-exchange/images',
+            desc: 'Obtains a token via RFC 8693 token exchange (subject + actor) and calls the downstream service.',
+        },
+        {
+            id: 'openapi',
+            title: 'OpenAPI + OAuth2',
+            method: 'GET',
+            path: '/quarkus-flow/openapi/images',
+            desc: 'Drives an OpenAPI operation secured with an OAuth2 / openIdConnect security scheme.',
+        },
+        {
+            id: 'repos',
+            title: 'User Token (valid)',
+            method: 'GET',
+            path: '/quarkus-flow/repos',
+            desc: 'Propagates a caller-provided bearer token to the downstream repos service. A token starting with "A" is accepted.',
+            header: 'Bearer A.abc.signature',
+        },
+        {
+            id: 'invalid-token',
+            title: 'User Token (invalid)',
+            method: 'GET',
+            path: '/quarkus-flow/invalid-token/repos',
+            desc: 'Propagates an invalid bearer token downstream. A token starting with "B" is rejected, mapping the downstream 401 to an HTTP 401.',
+            header: 'Bearer B.abc.signature',
+        },
+        {
+            id: 'read-all-emails',
+            title: 'Multiple OAuth2 Clients',
+            method: 'GET',
+            path: '/quarkus-flow/read-all-emails',
+            desc: 'Uses multiple OAuth2 clients / authorization servers in the same workflow, fetching inboxes in parallel via fork.',
+        },
+    ];
+
+    let current = endpoints[0];
+
+    // Build sidebar
+    const list = document.getElementById('endpoint-list');
+    endpoints.forEach((ep, i) => {
+        const a = document.createElement('button');
+        a.className = 'endpoint-item w-full text-left px-4 py-2.5 border-l-2 border-transparent hover:bg-zinc-100 transition-colors flex flex-col gap-0.5';
+        a.dataset.id = ep.id;
+        a.innerHTML = `
+            <span class="text-sm font-medium text-zinc-800">${ep.title}</span>
+            <span class="font-mono text-[11px] text-zinc-400">${ep.method} ${ep.path}</span>`;
+        a.onclick = () => selectEndpoint(ep.id);
+        list.appendChild(a);
+    });
+
+    function selectEndpoint(id) {
+        current = endpoints.find(e => e.id === id);
+        document.querySelectorAll('.endpoint-item').forEach(el =>
+            el.classList.toggle('active', el.dataset.id === id));
+
+        document.getElementById('ep-method').textContent = current.method;
+        document.getElementById('ep-title').textContent = current.title;
+        document.getElementById('ep-path').textContent = current.path;
+        document.getElementById('ep-desc').textContent = current.desc;
+
+        const headerRow = document.getElementById('header-row');
+        const noInput = document.getElementById('no-input');
+        if (current.header) {
+            headerRow.classList.remove('hidden');
+            noInput.classList.add('hidden');
+            document.getElementById('auth-header').value = current.header;
+        } else {
+            headerRow.classList.add('hidden');
+            noInput.classList.remove('hidden');
+        }
+
+        // reset response
+        const badge = document.getElementById('status-badge');
+        badge.classList.add('hidden');
+        document.getElementById('time-badge').classList.add('hidden');
+        document.getElementById('response-body').textContent = '// Click "Send" to execute the workflow';
+    }
+
+    function highlight(json) {
+        return json
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/("(\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+                (match) => {
+                    let cls = 'tok-num';
+                    if (/^"/.test(match)) {
+                        cls = /:$/.test(match) ? 'tok-key' : 'tok-str';
+                    } else if (/true|false/.test(match)) {
+                        cls = 'tok-bool';
+                    } else if (/null/.test(match)) {
+                        cls = 'tok-bool';
+                    }
+                    return `<span class="${cls}">${match}</span>`;
+                });
+    }
+
+    async function sendRequest() {
+        const btn = document.getElementById('send-btn');
+        const body = document.getElementById('response-body');
+        const badge = document.getElementById('status-badge');
+        const timeBadge = document.getElementById('time-badge');
+
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="w-3.5 h-3.5 spinner" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg> Sending`;
+        body.textContent = '';
+        badge.classList.add('hidden');
+        timeBadge.classList.add('hidden');
+
+        const headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' };
+        if (current.header) headers['Authorization'] = document.getElementById('auth-header').value;
+
+        const start = performance.now();
+        try {
+            const res = await fetch(current.path, { method: current.method, headers });
+            const elapsed = Math.round(performance.now() - start);
+
+            const text = await res.text();
+            let pretty = text;
+            try { pretty = JSON.stringify(JSON.parse(text), null, 2); } catch (_) {}
+
+            badge.textContent = `${res.status} ${res.statusText}`;
+            badge.className = 'font-mono text-xs font-bold px-2 py-0.5 rounded ' +
+                (res.ok ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : 'bg-red-50 text-quarkus-red border border-red-200');
+            badge.classList.remove('hidden');
+
+            timeBadge.textContent = `${elapsed} ms`;
+            timeBadge.classList.remove('hidden');
+
+            body.innerHTML = highlight(pretty || '// empty response');
+        } catch (err) {
+            badge.textContent = 'NETWORK ERROR';
+            badge.className = 'font-mono text-xs font-bold px-2 py-0.5 rounded bg-red-50 text-quarkus-red border border-red-200';
+            badge.classList.remove('hidden');
+            body.innerHTML = `<span class="tok-num">${err}</span>`;
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M4 3l13 7-13 7V3z"/></svg> Send`;
+        }
+    }
+
+    selectEndpoint(endpoints[0].id);
+</script>
+</body>
+</html>

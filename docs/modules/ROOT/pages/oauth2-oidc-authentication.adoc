@@ -1,0 +1,258 @@
+= Authenticate to OAuth2 and OIDC services
+:page-role: howto
+include::includes/attributes.adoc[]
+
+When a workflow calls a protected HTTP or OpenAPI service, it usually needs an `Authorization: Bearer <token>` header. Instead of fetching and refreshing those tokens yourself, Quarkus Flow can negotiate them for you: you declare an OAuth2/OIDC authentication on the call, and the engine performs the token request against the authorization server, caches the result, and attaches it to the downstream request automatically.
+
+This guide shows how to:
+
+* Enable OAuth2/OIDC token negotiation in a Quarkus Flow application.
+* Attach a token to an HTTP or OpenAPI call using the most common grants (Client Credentials, OIDC, Password, Token Exchange).
+* Reuse a single authentication across several calls, and use multiple authorization servers in one workflow.
+* Keep client credentials out of your workflow code using xref:secrets.adoc[secrets].
+
+[TIP]
+A complete, runnable project covering every scenario below lives in `examples/auth-oauth2-oidc`. All authorization servers and downstream APIs there are mocked with https://docs.quarkiverse.io/quarkus-wiremock/dev/[WireMock Dev Services], so it runs end-to-end without a real OAuth2 server.
+
+== Prerequisites
+
+* A Quarkus application with xref:getting-started.adoc[Quarkus Flow set up].
+* Familiarity with xref:http-openapi-tasks.adoc[HTTP and OpenAPI tasks] and xref:secrets.adoc[secrets].
+
+== 1. How token negotiation works
+
+Token negotiation is performed by the **`quarkus-flow-oidc`** extension, which delegates to https://quarkus.io/guides/security-openid-connect-client-reference[`quarkus-oidc-client`].
+
+You do **not** depend on `quarkus-flow-oidc` directly. It is a conditional dependency of `quarkus-flow` and activates automatically as soon as `quarkus-oidc-client` is on the classpath:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc-client</artifactId>
+</dependency>
+----
+
+With the extension active, the responsibility split is:
+
+* **You** declare *which* grant and *which* credentials to use on the call.
+* **Quarkus Flow** obtains the token, caches it (one client per resolved policy), refreshes it when needed, and adds the `Authorization` header.
+
+If you ever need to opt out and let the Serverless Workflow SDK negotiate tokens itself, set `quarkus.flow.oidc.enabled=false`. See the <<configuration-reference>>.
+
+== 2. Two ways to attach an authentication
+
+An authentication can be attached **inline** on a single call, or declared **once** under `use(...)` and referenced by name from many calls.
+
+Inline — best for a one-off call:
+
+[source,java]
+----
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+
+http("listImages")
+    .GET()
+    .header("Accept", "application/json")
+    .uri(URI.create(imageService),
+         oauth2(baseUrl, CLIENT_CREDENTIALS, clientId, clientSecret)); // <1>
+----
+<1> `oauth2(...)` attaches the authentication directly to this call. Use `oidc(...)` for an OpenID Connect client.
+
+Declared under `use(...)` and referenced by name — best when several calls share the same authority:
+
+[source,java]
+----
+workflow("orders")
+    .use(use -> use.authentications(auth ->
+        auth.authentication("inventory", a -> a.oauth2(o -> o
+            .authority(baseUrl)
+            .grant(CLIENT_CREDENTIALS)
+            .client(c -> c.id(clientId).secret(clientSecret))))))
+    .tasks(
+        http("reserve").GET()
+            .uri(URI.create(inventory + "/reserve"), use("inventory")), // <1>
+        http("confirm").GET()
+            .uri(URI.create(inventory + "/confirm"), use("inventory")))
+    .build();
+----
+<1> `use("inventory")` references the named authentication declared above.
+
+== 3. Client Credentials grant
+
+The most common machine-to-machine grant. The workflow asks the authorization server for a token and uses it to call the service. Credentials are read from xref:secrets.adoc[secrets] with `${ $secret.* }` expressions rather than hardcoded:
+
+[source,java]
+----
+@ApplicationScoped
+public class ClientCredentialsFlow extends Flow {
+
+    @ConfigProperty(name = "image.service.url")
+    String imageService;
+
+    @ConfigProperty(name = "clientCredentials.baseUrl")
+    String baseUrl;
+
+    @Override
+    public Workflow descriptor() {
+        return FuncWorkflowBuilder.workflow("client-credentials", "quarkus-flow")
+                .use(u -> u.secrets("clientCredentials")) // <1>
+                .tasks(
+                        FuncDSL.call(
+                                FuncDSL.http("listImages")
+                                        .GET()
+                                        .header("Accept", "application/json")
+                                        .uri(URI.create(imageService),
+                                                FuncDSL.oauth2(baseUrl, CLIENT_CREDENTIALS,
+                                                        "${ $secret.clientCredentials.clientId }",
+                                                        "${ $secret.clientCredentials.clientSecret }")))) // <2>
+                .build();
+    }
+}
+----
+<1> Declares the `clientCredentials` secret group, making its values available to the workflow.
+<2> The id and secret are resolved from that group at runtime.
+
+The secret values must be supplied externally. For local development and tests, `application.properties` is the simplest option:
+
+[source,properties]
+.application.properties
+----
+clientCredentials.clientId=quarkus-flow
+clientCredentials.clientSecret=dummy-client-secret
+clientCredentials.baseUrl=https://auth.example.com/realms/test/protocol/openid-connect/token
+----
+
+In production, the same secret names resolve through any Quarkus https://quarkus.io/guides/credentials-provider[`CredentialsProvider`] (HashiCorp Vault, Kubernetes Secrets, …) without changing the workflow code. See xref:secrets.adoc[Resolve secrets securely] for details.
+
+== 4. OIDC client
+
+Identical to Client Credentials, but built with `oidc(...)` so the authentication targets an OpenID Connect client. Use this when the authorization server is an OIDC provider:
+
+[source,java]
+----
+FuncDSL.http("listImages")
+        .GET()
+        .header("Accept", "application/json")
+        .uri(URI.create(imageService),
+                FuncDSL.oidc(baseUrl, CLIENT_CREDENTIALS,
+                        "${ $secret.oidcClient.\"client-id\" }",      // <1>
+                        "${ $secret.oidcClient.\"client-secret\" }"));
+----
+<1> When a secret key contains a dash, quote it inside the JQ path: `${ $secret.oidcClient."client-id" }`.
+
+== 5. Password grant
+
+The Resource Owner Password grant supplies a username and password alongside the client credentials. Use the full `oauth2(...)` builder so you can set every field:
+
+[source,java]
+----
+FuncDSL.http()
+        .method("DELETE")
+        .uri(URI.create(imageService + "/attrs/" + id),
+                FuncDSL.oauth2(oauth2 -> oauth2
+                        .authority(baseUrl)
+                        .grant(PASSWORD)
+                        .client(c -> c.id("${ $secret.\"password-grant\".\"client-id\" }")
+                                      .secret("${ $secret.\"password-grant\".\"client-secret\" }"))
+                        .username("${ $secret.\"password-grant\".username }")
+                        .password("${ $secret.\"password-grant\".password }")));
+----
+
+== 6. Token Exchange grant (RFC 8693)
+
+Token Exchange swaps a subject (and optional actor) token for a new one scoped to a target audience. The builder exposes `subject(...)`, `actor(...)`, `scopes(...)`, and `audiences(...)`:
+
+[source,java]
+----
+FuncDSL.oauth2(oauth2 -> oauth2
+        .endpoints(token -> token.token("/oauth2/token"))
+        .client(c -> c.id("my-client").secret("my-secret"))
+        .subject(s -> s.token("${ $secret.exchangeSecrets.subjectToken }")
+                       .type("urn:ietf:params:oauth:token-type:access_token"))
+        .actor(a -> a.token("${ $secret.exchangeSecrets.actorToken }")
+                     .type("urn:ietf:params:oauth:token-type:access_token"))
+        .scopes("api")
+        .audiences("target-service")
+        .grant(URN_IETF_PARAMS_OAUTH_GRANT_TYPE_TOKEN_EXCHANGE)
+        .authority(baseUrl));
+----
+
+The subject and actor tokens are passed to the authorization server as dynamic grant parameters at token-request time.
+
+== 7. Multiple authorization servers in one workflow
+
+When a workflow talks to several services, each with its own authorization server, declare every authentication **once** under `use(...)` and reference them by name. Each authentication can target a different token endpoint, authority, client-authentication method, and grant:
+
+[source,java]
+----
+return FuncWorkflowBuilder.workflow("multiple-oauth2-clients", "quarkus-flow")
+        .use(use -> use.secrets("joogle", "jahoo") // <1>
+                .authentications(auth -> {
+                    auth.authentication("joogle", a -> a.oauth2(o -> o
+                            .endpoints(e -> e.token("/auth/joogle/token"))
+                            .client(c -> c.id("${ $secret.joogle.clientId }")
+                                          .secret("${ $secret.joogle.clientSecret }")
+                                          .authentication(CLIENT_SECRET_POST))
+                            .authority(joogleBaseUrl)
+                            .grant(CLIENT_CREDENTIALS)));
+                    auth.authentication("jahoo", a -> a.oauth2(o -> o
+                            .endpoints(e -> e.token("/auth/jahoo/oidc/token"))
+                            .client(c -> c.id("${ $secret.jahoo.clientId }")
+                                          .secret("${ $secret.jahoo.clientSecret }")
+                                          .authentication(CLIENT_SECRET_POST))
+                            .authority(jahooBaseUrl)
+                            .grant(CLIENT_CREDENTIALS)));
+                }))
+        .tasks(
+                FuncDSL.fork( // <2>
+                        FuncDSL.http("getEmailsFromJoogle").GET()
+                                .uri(URI.create(wireMock + "/joogle/inbox"), FuncDSL.use("joogle")),
+                        FuncDSL.http("getEmailsFromJahoo").GET()
+                                .uri(URI.create(wireMock + "/jahoo/inbox"), FuncDSL.use("jahoo"))))
+        .build();
+----
+<1> Declare the secret groups for both clients together.
+<2> `fork` runs the two authenticated calls in parallel; each picks up its own token.
+
+== 8. OpenAPI operations
+
+The same authentications work on xref:http-openapi-tasks.adoc[OpenAPI tasks]. When an OpenAPI document declares an OAuth2/OIDC security scheme, supply the credentials through `oidc(...)` (or `oauth2(...)`):
+
+[source,java]
+----
+FuncWorkflowBuilder.workflow()
+        .use(u -> u.secrets("openapi"))
+        .tasks(t -> t.openapi("imageService", f -> f
+                .document(openApiDocumentUrl)
+                .operation("listImages")
+                .parameters(Map.of("Accept", "application/json"))
+                .authentication(FuncDSL.oidc(baseUrl, CLIENT_CREDENTIALS,
+                        "${ $secret.openapi.\"client-id\" }",
+                        "${ $secret.openapi.\"client-secret\" }"))))
+        .build();
+----
+
+== 9. Providing credentials
+
+Following xref:secrets.adoc[the secrets model], a secret name maps to a flat group of properties. For local development and tests you can supply them straight from `application.properties`:
+
+[source,properties]
+.application.properties
+----
+clientCredentials.clientId=quarkus-flow
+clientCredentials.clientSecret=dummy-client-secret
+clientCredentials.baseUrl=https://auth.example.com/realms/test/protocol/openid-connect/token
+----
+
+In production, the same handles resolve through any Quarkus `CredentialsProvider` (HashiCorp Vault, Kubernetes Secrets, …) without changing the workflow. See xref:secrets.adoc[Resolve secrets securely].
+
+[[configuration-reference]]
+== Configuration reference
+
+include::includes/quarkus-flow-oidc.adoc[]
+
+== What's next
+
+* xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services]
+* xref:http-client.adoc[Configure the HTTP client] — timeouts, TLS, and proxies for the downstream calls.
+* xref:secrets.adoc[Resolve secrets securely]

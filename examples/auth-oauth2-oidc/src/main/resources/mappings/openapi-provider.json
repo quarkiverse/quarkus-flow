@@ -1,0 +1,27 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "GET",
+        "urlPattern": "^/openapi/openapi-oauth2.yaml.*",
+        "headers": {}
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "text/plain"
+        },
+        "bodyFileName": "openapi-oauth2.yaml",
+        "transformers": ["response-template"]
+      }
+    },
+    {
+      "request": {
+        "method": "HEAD"
+      },
+      "response": {
+        "status": 200
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/repos-service/repos",
+    "headers": {
+      "Accept": {
+        "contains": "application/json"
+      },
+      "Authorization": {
+        "matches": "^Bearer B.*"
+      }
+    }
+  },
+  "response": {
+    "status": 401,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "message": "Unauthorized"
+    },
+    "transformers": [
+      "response-template"
+    ]
+  }
+}

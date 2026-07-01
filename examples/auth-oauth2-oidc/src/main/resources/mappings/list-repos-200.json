@@ -1,0 +1,37 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/repos-service/repos",
+    "headers": {
+      "Accept": {
+        "contains": "application/json"
+      },
+      "Authorization": {
+        "matches": "^Bearer A.*"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": [
+      {
+        "id": "{{randomValue type='UUID'}}",
+        "name": "quarkiverse/quarkus-flow"
+      },
+      {
+        "id": "{{randomValue type='UUID'}}",
+        "name": "quarkiverse/quarkus-openapi-generator"
+      },
+      {
+        "id": "{{randomValue type='UUID'}}",
+        "name": "quarkusio/quarkus"
+      }
+    ],
+    "transformers": [
+      "response-template"
+    ]
+  }
+}
