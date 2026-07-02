@@ -18,7 +18,7 @@ public class TaskInfoKey implements Serializable {
         TaskInfoKey key = new TaskInfoKey();
         key.jsonPointer = task.position().jsonPointer();
         key.applicationId = workflow.definition().application().id();
-        key.processInstanceId = workflow.instanceData().id();
+        key.workflowInstanceId = workflow.instanceData().id();
         key.iteration = task.iteration();
         return key;
     }
@@ -33,7 +33,7 @@ public class TaskInfoKey implements Serializable {
     private String applicationId;
 
     @Column
-    private String processInstanceId;
+    private String workflowInstanceId;
 
     public String getJsonPointer() {
         return jsonPointer;
@@ -51,12 +51,12 @@ public class TaskInfoKey implements Serializable {
         this.applicationId = applicationId;
     }
 
-    public String getProcessInstanceId() {
-        return processInstanceId;
+    public String getWorkflowInstanceId() {
+        return workflowInstanceId;
     }
 
-    public void setProcessInstanceId(String processInstanceId) {
-        this.processInstanceId = processInstanceId;
+    public void setWorkflowInstanceId(String workflowInstanceId) {
+        this.workflowInstanceId = workflowInstanceId;
     }
 
     public int getIteration() {
@@ -69,7 +69,7 @@ public class TaskInfoKey implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(applicationId, iteration, jsonPointer, processInstanceId);
+        return Objects.hash(applicationId, iteration, jsonPointer, workflowInstanceId);
     }
 
     @Override
@@ -83,6 +83,6 @@ public class TaskInfoKey implements Serializable {
         TaskInfoKey other = (TaskInfoKey) obj;
         return Objects.equals(applicationId, other.applicationId) && iteration == other.iteration
                 && Objects.equals(jsonPointer, other.jsonPointer)
-                && Objects.equals(processInstanceId, other.processInstanceId);
+                && Objects.equals(workflowInstanceId, other.workflowInstanceId);
     }
 }

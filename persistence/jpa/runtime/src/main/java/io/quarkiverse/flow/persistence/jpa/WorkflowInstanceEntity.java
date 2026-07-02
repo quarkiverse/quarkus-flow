@@ -20,8 +20,8 @@ import io.serverlessworkflow.impl.WorkflowStatus;
 
 @Entity
 @DynamicUpdate
-@IdClass(ProcessInstanceKey.class)
-public class ProcessInstanceEntity {
+@IdClass(WorkflowInstanceKey.class)
+public class WorkflowInstanceEntity {
 
     @Id
     private String instanceId;
@@ -47,13 +47,13 @@ public class ProcessInstanceEntity {
     @Basic(fetch = FetchType.LAZY)
     private WorkflowModel input;
 
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "processInstance")
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "workflowInstance")
     private Collection<TaskInfoEntity> tasks;
 
-    public ProcessInstanceEntity() {
+    public WorkflowInstanceEntity() {
     }
 
-    public ProcessInstanceEntity(String applicationId, WorkflowDefinitionId definitionId, String instanceId, Instant startedAt,
+    public WorkflowInstanceEntity(String applicationId, WorkflowDefinitionId definitionId, String instanceId, Instant startedAt,
             WorkflowModel input) {
         this.applicationId = applicationId;
         this.workflowNamespace = definitionId.namespace();
