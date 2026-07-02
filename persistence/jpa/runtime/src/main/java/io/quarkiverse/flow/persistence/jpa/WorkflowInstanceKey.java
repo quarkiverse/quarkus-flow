@@ -3,7 +3,7 @@ package io.quarkiverse.flow.persistence.jpa;
 import java.io.Serializable;
 import java.util.Objects;
 
-public class ProcessInstanceKey implements Serializable {
+public class WorkflowInstanceKey implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -11,10 +11,10 @@ public class ProcessInstanceKey implements Serializable {
 
     private String applicationId;
 
-    public ProcessInstanceKey() {
+    public WorkflowInstanceKey() {
     }
 
-    public ProcessInstanceKey(String instanceId, String applicationId) {
+    public WorkflowInstanceKey(String instanceId, String applicationId) {
         super();
         this.instanceId = instanceId;
         this.applicationId = applicationId;
@@ -33,7 +33,7 @@ public class ProcessInstanceKey implements Serializable {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        ProcessInstanceKey other = (ProcessInstanceKey) obj;
+        WorkflowInstanceKey other = (WorkflowInstanceKey) obj;
         return Objects.equals(applicationId, other.applicationId) && Objects.equals(instanceId, other.instanceId);
     }
 }
