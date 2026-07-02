@@ -5,19 +5,19 @@
 
 version: 2
 updates:
-  # Core project - restrict Quarkus to patch updates only
+  # Core project - restrict Quarkus to current LTS series (3.33.x)
   - package-ecosystem: "maven"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
-    # Allow only patch updates for Quarkus dependencies
+    # Block updates outside current LTS series using version ranges
     ignore:
       - dependency-name: "io.quarkus:*"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+        versions: [">= 3.34", "< 3.33"]
       - dependency-name: "io.quarkus.platform:*"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+        versions: [">= 3.34", "< 3.33"]
     # Group dependencies to reduce PR noise
     groups:
       quarkus:
