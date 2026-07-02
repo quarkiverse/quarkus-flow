@@ -5,11 +5,62 @@
 
 version: 2
 updates:
-  - package-ecosystem: "maven" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  # Core project - restrict Quarkus to current LTS series (3.33.x)
+  - package-ecosystem: "maven"
+    directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    # Block updates outside current LTS series using version ranges
+    ignore:
+      - dependency-name: "io.quarkus:*"
+        versions: [">= 3.34", "< 3.33"]
+      - dependency-name: "io.quarkus.platform:*"
+        versions: [">= 3.34", "< 3.33"]
+    # Group dependencies to reduce PR noise
+    groups:
+      quarkus:
+        patterns:
+          - "io.quarkus*"
+        update-types:
+          - "patch"
+      langchain4j:
+        patterns:
+          - "io.quarkiverse.langchain4j:*"
+          - "dev.langchain4j:*"
+      serverlessworkflow:
+        patterns:
+          - "io.serverlessworkflow:*"
+      test-dependencies:
+        patterns:
+          - "org.assertj:*"
+          - "org.awaitility:*"
+          - "org.junit*"
+          - "io.rest-assured:*"
+          - "org.wiremock:*"
+          - "org.mockito:*"
+
+  # Examples - allow all Quarkus updates (major/minor/patch)
+  - package-ecosystem: "maven"
+    directory: "/examples"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    groups:
+      quarkus:
+        patterns:
+          - "io.quarkus*"
+
+  - package-ecosystem: "docker"
+    directory: "/runner/app"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: daily
+      interval: "weekly"
+      day: "monday"
