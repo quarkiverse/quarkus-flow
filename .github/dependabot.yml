@@ -41,18 +41,6 @@ updates:
           - "org.wiremock:*"
           - "org.mockito:*"
 
-  # Examples - allow all Quarkus updates (major/minor/patch)
-  - package-ecosystem: "maven"
-    directory: "/examples"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    open-pull-requests-limit: 3
-    groups:
-      quarkus:
-        patterns:
-          - "io.quarkus*"
-
   - package-ecosystem: "docker"
     directory: "/runner/app"
     schedule:
