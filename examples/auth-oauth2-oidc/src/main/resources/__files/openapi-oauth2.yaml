@@ -1,0 +1,135 @@
+openapi: 3.0.3
+info:
+  title: Image Service API
+  description: >
+    A service for managing and retrieving images.
+    Authentication is handled via OAuth2 using the Client Credentials flow.
+  version: 1.0.0
+  contact:
+    name: Image Service Team
+
+servers:
+  - url: http://localhost:{{request.query.wireMockPort}}
+    description: WireMock Server
+
+security:
+  - oauth2ClientCredentials:
+      - images:read
+
+paths:
+  /image-service/images:
+    get:
+      summary: List all images
+      description: Returns a list of all available images in the service.
+      operationId: listImages
+      tags:
+        - Images
+      security:
+        - oauth2ClientCredentials:
+            - images:read
+      parameters:
+        - in: header
+          name: Accept
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A JSON array of image objects.
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/json
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Image'
+              example:
+                - id: "a3f1c2d4-e5b6-7890-abcd-ef1234567890"
+                  filename: "fjtirado.jpg"
+                - id: "b4e2d3c5-f6a7-8901-bcde-fa2345678901"
+                  filename: "mcruzdev.jpg"
+                - id: "c5f3e4d6-a7b8-9012-cdef-ab3456789012"
+                  filename: "ricardozanini.jpg"
+        '401':
+          description: Unauthorized — missing or invalid access token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 401
+                message: "Unauthorized: access token is missing or invalid."
+        '403':
+          description: Forbidden — the token does not have the required scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 403
+                message: "Forbidden: insufficient scope to access this resource."
+        '500':
+          description: Internal Server Error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 500
+                message: "An unexpected error occurred."
+
+components:
+  schemas:
+    Image:
+      type: object
+      required:
+        - id
+        - filename
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the image (UUID v4).
+          example: "a3f1c2d4-e5b6-7890-abcd-ef1234567890"
+        filename:
+          type: string
+          description: The original filename of the image.
+          example: "fjtirado.jpg"
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: HTTP status code.
+          example: 401
+        message:
+          type: string
+          description: Human-readable error description.
+          example: "Unauthorized: access token is missing or invalid."
+
+  securitySchemes:
+    oauth2ClientCredentials:
+      type: oauth2
+      description: >
+        OAuth2 security using the Client Credentials flow.
+        Obtain a token from the authorization server and include it
+        as a Bearer token in the Authorization header.
+      flows:
+        clientCredentials:
+          authorizationUrl: http://localhost:{{request.query.wireMockPort}}/auth/realms/test-realm/protocol/openid-connect/token
+          tokenUrl: http://localhost:{{request.query.wireMockPort}}/auth/realms/test-realm/protocol/openid-connect/token
+          scopes:
+            images:read: Grants read access to image resources.
+            images:write: Grants write access to image resources.
+
+tags:
+  - name: Images
+    description: Operations related to image management and retrieval.

@@ -1,0 +1,49 @@
+package io.quarkiverse.flow.oidc.it;
+
+import static io.serverlessworkflow.api.types.OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS;
+
+import java.net.URI;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import io.quarkiverse.flow.Flow;
+import io.serverlessworkflow.api.types.Workflow;
+import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
+import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
+
+/**
+ * Calls an OAuth2 (Client Credentials) protected HTTP service. Quarkus Flow negotiates the token through
+ * {@code quarkus-oidc-client} and attaches {@code Authorization: Bearer <token>} to the downstream call.
+ */
+@ApplicationScoped
+public class ClientCredentialsFlow extends Flow {
+
+    public static final String NAME = "client-credentials-it";
+
+    @ConfigProperty(name = "image.service.url")
+    String imageService;
+
+    @ConfigProperty(name = "auth.base-url")
+    String baseUrl;
+
+    @Override
+    public Workflow descriptor() {
+        return FuncWorkflowBuilder.workflow(NAME, "quarkus-flow")
+                .use(use -> use.authentications(auth -> {
+                    auth.authentication("global", r -> r.oauth2(
+                            oauth2 -> oauth2.authority("https://api.github.com")
+                                    .grant(CLIENT_CREDENTIALS)));
+                }))
+                .tasks(
+                        FuncDSL.call(
+                                FuncDSL.http("listImages")
+                                        .GET()
+                                        .header("Accept", "application/json")
+                                        .uri(URI.create(imageService),
+                                                FuncDSL.oauth2(baseUrl, CLIENT_CREDENTIALS, "quarkus-flow",
+                                                        "dummy-client-secret", e -> e.token("/oauth2/token")))))
+                .build();
+    }
+}

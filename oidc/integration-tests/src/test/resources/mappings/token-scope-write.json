@@ -1,0 +1,27 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "POST",
+    "urlPath": "/oauth2/token",
+    "bodyPatterns": [
+      {
+        "contains": "grant_type=client_credentials"
+      },
+      {
+        "contains": "scope=scope-write"
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "access_token": "token-scope-write",
+      "token_type": "Bearer",
+      "expires_in": 3600,
+      "scope": "scope-write"
+    }
+  }
+}
