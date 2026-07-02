@@ -16,6 +16,7 @@
 
     <dependencies>
         <!-- Make sure the doc is built after the other artifacts -->
+        <!-- Always bring the deployment modules, so we guarantee that the runtime also comes: required for the prepare-release reactor -->
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow-deployment</artifactId>
@@ -23,16 +24,17 @@
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>
-            <artifactId>quarkus-flow-grpc</artifactId>
+            <artifactId>quarkus-flow-langchain4j-deployment</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-grpc</artifactId>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-grpc-deployment</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>
-            <artifactId>quarkus-flow-langchain4j</artifactId>
+            <artifactId>quarkus-flow-scheduler-deployment</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -74,11 +76,6 @@
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
             <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkiverse.flow</groupId>
-            <artifactId>quarkus-flow-scheduler</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.wiremock</groupId>
