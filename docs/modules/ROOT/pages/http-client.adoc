@@ -124,6 +124,11 @@ quarkus.flow.http.client.alpn=true
 
 == 8. Proxy support
 
+[WARNING]
+====
+HTTP proxy support relies on `quarkus-proxy-registry`, which is currently *experimental*. This feature is not recommended for production environments as the API may change in future Quarkus versions.
+====
+
 Quarkus Flow integrates with the link:https://quarkus.io/guides/proxy-registry[Quarkus Proxy Registry].
 
 [source,properties]
