@@ -1,5 +1,6 @@
 package io.quarkiverse.flow.oidc;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
@@ -23,6 +24,18 @@ public interface FlowOidcConfig {
     boolean enabled();
 
     /**
+     * The number of seconds after which the current OIDC client creation times out.
+     */
+    @WithDefault("10s")
+    Duration creationTimeout();
+
+    /**
+     * The number of seconds after which the current OIDC connection request times out.
+     */
+    @WithDefault("10s")
+    Duration connectionTimeout();
+
+    /**
      * Per-workflow/task OIDC client routing overrides, keyed by composite identifier.
      * <p>
      * Keys can be:
@@ -36,13 +49,20 @@ public interface FlowOidcConfig {
     Map<String, ClientOverrideConfig> client();
 
     /**
-     * Override for the Quarkus OIDC client name.
+     * Routes a workflow, task or named authentication policy to a pre-configured Quarkus OIDC client.
      */
     interface ClientOverrideConfig {
 
         /**
-         * The Quarkus OIDC client name to use, configured under {@code quarkus.oidc-client.<name>}.
+         * The Quarkus OIDC client name to use, configured under {@code quarkus.oidc-client.<name>}. That client's own
+         * configuration governs the token endpoint and its request timeouts.
          */
         Optional<String> name();
+
+        /**
+         * The number of seconds after which the current OIDC client creation times out.
+         */
+        @WithDefault("10s")
+        Duration creationTimeout();
     }
 }

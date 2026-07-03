@@ -23,6 +23,9 @@ public class FlowResource {
     ConfigOverrideFlow configOverride;
 
     @Inject
+    NamedClientFlow namedClient;
+
+    @Inject
     EndpointAImagesFlow endpointAImages;
 
     @Inject
@@ -39,6 +42,13 @@ public class FlowResource {
     @Path("/config-override/images")
     public Response listConfigOverrideImages() {
         WorkflowModel model = configOverride.instance().start().join();
+        return Response.ok(model.asJavaObject()).build();
+    }
+
+    @GET
+    @Path("/named/images")
+    public Response listNamedClientImages() {
+        WorkflowModel model = namedClient.instance().start().join();
         return Response.ok(model.asJavaObject()).build();
     }
 

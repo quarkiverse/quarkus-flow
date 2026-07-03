@@ -28,6 +28,48 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |`+++true+++`
 
+a| [[quarkus-flow-oidc_quarkus-flow-oidc-creation-timeout]] [.property-path]##link:#quarkus-flow-oidc_quarkus-flow-oidc-creation-timeout[`+++quarkus.flow.oidc.creation-timeout+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.oidc.creation-timeout+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The number of seconds after which the current OIDC client creation times out.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_OIDC_CREATION_TIMEOUT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_OIDC_CREATION_TIMEOUT+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow-oidc_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
+|`+++10S+++`
+
+a| [[quarkus-flow-oidc_quarkus-flow-oidc-connection-timeout]] [.property-path]##link:#quarkus-flow-oidc_quarkus-flow-oidc-connection-timeout[`+++quarkus.flow.oidc.connection-timeout+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.oidc.connection-timeout+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The number of seconds after which the current OIDC connection request times out.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_OIDC_CONNECTION_TIMEOUT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_OIDC_CONNECTION_TIMEOUT+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow-oidc_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
+|`+++10S+++`
+
 a| [[quarkus-flow-oidc_quarkus-flow-oidc-client-client-name]] [.property-path]##link:#quarkus-flow-oidc_quarkus-flow-oidc-client-client-name[`+++quarkus.flow.oidc.client."client".name+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.oidc.client."client".name+++[]
@@ -36,7 +78,7 @@ endif::add-copy-button-to-config-props[]
 
 [.description]
 --
-The Quarkus OIDC client name to use, configured under `quarkus.oidc-client.<name>`.
+The Quarkus OIDC client name to use, configured under `quarkus.oidc-client.<name>`. That client's own configuration governs the token endpoint and its request timeouts.
 
 
 ifdef::add-copy-button-to-env-var[]
@@ -49,5 +91,45 @@ endif::add-copy-button-to-env-var[]
 |string
 |
 
+a| [[quarkus-flow-oidc_quarkus-flow-oidc-client-client-creation-timeout]] [.property-path]##link:#quarkus-flow-oidc_quarkus-flow-oidc-client-client-creation-timeout[`+++quarkus.flow.oidc.client."client".creation-timeout+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.oidc.client."client".creation-timeout+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The number of seconds after which the current OIDC client creation times out.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_OIDC_CLIENT__CLIENT__CREATION_TIMEOUT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_OIDC_CLIENT__CLIENT__CREATION_TIMEOUT+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow-oidc_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
+|`+++10S+++`
+
 |===
 
+ifndef::no-duration-note[]
+[NOTE]
+[id=duration-note-anchor-quarkus-flow-oidc_quarkus-flow]
+.About the Duration format
+====
+To write duration values, use the standard `java.time.Duration` format.
+See the link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#parse(java.lang.CharSequence)[Duration#parse() Java API documentation] for more information.
+
+You can also use a simplified format, starting with a number:
+
+* If the value is only a number, it represents time in seconds.
+* If the value is a number followed by `ms`, it represents time in milliseconds.
+
+In other cases, the simplified format is translated to the `java.time.Duration` format for parsing:
+
+* If the value is a number followed by `h`, `m`, or `s`, it is prefixed with `PT`.
+* If the value is a number followed by `d`, it is prefixed with `P`.
+====
+endif::no-duration-note[]

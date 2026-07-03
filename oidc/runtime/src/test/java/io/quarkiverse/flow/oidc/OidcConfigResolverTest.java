@@ -2,6 +2,7 @@ package io.quarkiverse.flow.oidc;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -9,6 +10,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.runtime.configuration.DurationConverter;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -151,6 +153,8 @@ class OidcConfigResolverTest {
 
     private static FlowOidcConfig buildConfig(Map<String, String> properties) {
         SmallRyeConfig config = new SmallRyeConfigBuilder()
+                .addDefaultSources()
+                .withConverter(Duration.class, 200, new DurationConverter())
                 .withMapping(FlowOidcConfig.class)
                 .withDefaultValues(properties)
                 .build();

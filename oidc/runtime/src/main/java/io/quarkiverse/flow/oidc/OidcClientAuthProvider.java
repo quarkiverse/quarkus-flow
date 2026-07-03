@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.oidc;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,11 +31,13 @@ import io.serverlessworkflow.impl.auth.AuthProvider;
  *
  * <p>
  * When a named Quarkus OIDC client is configured for the current workflow/task (via
- * {@code quarkus.flow.oidc.client."...".name}), that pre-configured client is used directly. Otherwise the workflow
- * policy is mapped to an {@link OidcClientConfig} built from the DSL values. For the token-exchange grant the
- * per-execution subject/actor tokens are resolved from the workflow context and passed as dynamic grant parameters. The
- * negotiated {@code access_token} is returned and the SDK attaches it as {@code Authorization: Bearer <token>} to the
- * downstream call.
+ * {@code quarkus.flow.oidc.client."...".name}), that pre-configured client is used directly and is fully config-driven:
+ * its grant, credentials and request timing all come from {@code quarkus.oidc-client.<name>} (the blocking await mirrors
+ * that client's {@code connection-timeout}), and no per-execution grant parameters are derived from the workflow DSL
+ * policy. Otherwise, the workflow policy is mapped to an {@link OidcClientConfig} built from the DSL values; for the
+ * token-exchange grant on that DSL path the per-execution subject/actor tokens are resolved from the workflow context and
+ * passed as dynamic grant parameters. The negotiated {@code access_token} is returned and the SDK attaches it as
+ * {@code Authorization: Bearer <token>} to the downstream call.
  */
 public final class OidcClientAuthProvider implements AuthProvider {
 
@@ -67,19 +70,22 @@ public final class OidcClientAuthProvider implements AuthProvider {
         final Optional<String> namedClient = configResolver.resolve(workflowId, taskName, authPolicyName);
 
         if (namedClient.isPresent()) {
-            return negotiateWithNamedClient(namedClient.get(), workflow, task, model);
+            return negotiateWithNamedClient(namedClient.get());
         }
 
-        return negotiateWithDslClient(workflow, task, model);
+        return negotiateWithDslClient(workflow, task, model, clientFactory.clientCreationTimeout());
     }
 
-    private String negotiateWithNamedClient(String clientName, WorkflowContext workflow, TaskContext task,
-            WorkflowModel model) {
+    private String negotiateWithNamedClient(String clientName) {
         final OidcClient client = clientFactory.getNamedClient(clientName);
-        final Map<String, String> dynamicParams = dynamicParams(workflow, task, model, policy.data());
+        if (client == null) {
+            throw new IllegalStateException(
+                    "Flow OIDC: named client '" + clientName + "' not found. Ensure it is configured under quarkus.oidc-client."
+                            + clientName);
+        }
+        final Duration timeout = clientFactory.namedConnectionTimeout(clientName);
         try {
-            final Tokens tokens = (dynamicParams.isEmpty() ? client.getTokens() : client.getTokens(dynamicParams))
-                    .await().indefinitely();
+            final Tokens tokens = client.getTokens().await().atMost(timeout);
             return tokens.getAccessToken();
         } catch (Exception e) {
             throw new IllegalStateException(
@@ -89,14 +95,16 @@ public final class OidcClientAuthProvider implements AuthProvider {
         }
     }
 
-    private String negotiateWithDslClient(WorkflowContext workflow, TaskContext task, WorkflowModel model) {
+    private String negotiateWithDslClient(WorkflowContext workflow, TaskContext task, WorkflowModel model, Duration timeout) {
         final OAuth2AuthenticationData data = policy.data();
         final ResolvedConfig resolved = resolveConfig(workflow, task, model, data);
-        final OidcClient client = clientFactory.get(resolved.cacheKey, () -> buildConfig(resolved));
+        final Duration creationTimeout = configResolver.resolveCreationTimeout(workflow.definition().id(), task.taskName(),
+                authPolicyName);
+        final OidcClient client = clientFactory.get(resolved.cacheKey, () -> buildConfig(resolved), creationTimeout);
         final Map<String, String> dynamicParams = dynamicParams(workflow, task, model, data);
         try {
             final Tokens tokens = (dynamicParams.isEmpty() ? client.getTokens() : client.getTokens(dynamicParams))
-                    .await().indefinitely();
+                    .await().atMost(timeout);
             return tokens.getAccessToken();
         } catch (Exception e) {
             throw new IllegalStateException(
@@ -139,7 +147,8 @@ public final class OidcClientAuthProvider implements AuthProvider {
     private OidcClientConfig buildConfig(ResolvedConfig config) {
         final OidcClientConfigBuilder builder = new OidcClientConfigBuilder().id(config.cacheKey.configId());
 
-        builder.authServerUrl(config.authority()).discoveryEnabled(false).tokenPath(config.tokenPath());
+        builder.authServerUrl(config.authority()).discoveryEnabled(false).tokenPath(config.tokenPath())
+                .connectionTimeout(clientFactory.connectionTimeout());
 
         if (config.clientId() != null) {
             builder.clientId(config.clientId());
@@ -212,7 +221,27 @@ public final class OidcClientAuthProvider implements AuthProvider {
         if (value == null) {
             throw new IllegalStateException("OAuth2/OIDC authentication policy is missing the required 'authority'");
         }
+        validateAuthority(value);
         return value;
+    }
+
+    private static void validateAuthority(String authority) {
+        if (authority == null || authority.isBlank()) {
+            throw new IllegalStateException("OAuth2/OIDC authority cannot be null or blank");
+        }
+        try {
+            URI uri = URI.create(authority);
+            String scheme = uri.getScheme();
+            if (scheme == null || (!scheme.equalsIgnoreCase("https") && !scheme.equalsIgnoreCase("http"))) {
+                throw new IllegalStateException("OAuth2/OIDC authority must use http or https scheme: " + authority);
+            }
+            String host = uri.getHost();
+            if (host == null || host.isBlank()) {
+                throw new IllegalStateException("OAuth2/OIDC authority must have a valid host: " + authority);
+            }
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("OAuth2/OIDC authority is not a valid URI: " + authority, e);
+        }
     }
 
     private static String tokenPath(OAuth2AuthenticationData data) {

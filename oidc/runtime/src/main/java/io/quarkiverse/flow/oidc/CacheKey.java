@@ -17,4 +17,21 @@ record CacheKey(String authority, String tokenPath, boolean openIdConnect, Strin
     String configId() {
         return "flow-oidc-" + (clientId != null ? clientId : authority);
     }
+
+    @Override
+    public String toString() {
+        return "CacheKey{" +
+                "authority='" + authority + '\'' +
+                ", tokenPath='" + tokenPath + '\'' +
+                ", openIdConnect=" + openIdConnect +
+                ", clientId='" + clientId + '\'' +
+                ", secretMethod=" + secretMethod +
+                ", grant=" + grant +
+                ", scopes=" + scopes +
+                ", audiences=" + audiences +
+                ", clientSecret='***'" +
+                ", username='***'" +
+                ", password='***'" +
+                '}';
+    }
 }
