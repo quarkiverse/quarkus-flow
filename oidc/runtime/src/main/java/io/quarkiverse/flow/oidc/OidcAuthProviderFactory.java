@@ -25,9 +25,11 @@ public class OidcAuthProviderFactory implements AuthProviderFactory {
 
     private final AuthProviderFactory delegate = DefaultAuthProviderFactory.factory();
     private final OidcClientFactory clientFactory;
+    private final OidcConfigResolver configResolver;
 
-    public OidcAuthProviderFactory(OidcClientFactory clientFactory) {
+    public OidcAuthProviderFactory(OidcClientFactory clientFactory, OidcConfigResolver configResolver) {
         this.clientFactory = clientFactory;
+        this.configResolver = configResolver;
     }
 
     @Override
@@ -47,8 +49,17 @@ public class OidcAuthProviderFactory implements AuthProviderFactory {
     }
 
     private Optional<AuthProvider> build(WorkflowDefinition definition, ReferenceableAuthenticationPolicy auth) {
+        final String authPolicyName = authPolicyName(auth);
         return OAuth2Policy.from(union(definition, auth))
-                .map(policy -> new OidcClientAuthProvider(definition.application(), policy, clientFactory));
+                .map(policy -> new OidcClientAuthProvider(definition.application(), policy, clientFactory, configResolver,
+                        authPolicyName));
+    }
+
+    private static String authPolicyName(ReferenceableAuthenticationPolicy auth) {
+        if (auth != null && auth.getAuthenticationPolicyReference() != null) {
+            return auth.getAuthenticationPolicyReference().getUse();
+        }
+        return null;
     }
 
     private AuthenticationPolicyUnion union(WorkflowDefinition definition, ReferenceableAuthenticationPolicy auth) {

@@ -20,6 +20,9 @@ public class FlowResource {
     ScopeWriteImagesFlow scopeWriteImages;
 
     @Inject
+    ConfigOverrideFlow configOverride;
+
+    @Inject
     EndpointAImagesFlow endpointAImages;
 
     @Inject
@@ -29,6 +32,13 @@ public class FlowResource {
     @Path("/images")
     public Response listImages() {
         WorkflowModel model = clientCredentials.instance().start().join();
+        return Response.ok(model.asJavaObject()).build();
+    }
+
+    @GET
+    @Path("/config-override/images")
+    public Response listConfigOverrideImages() {
+        WorkflowModel model = configOverride.instance().start().join();
         return Response.ok(model.asJavaObject()).build();
     }
 

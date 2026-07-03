@@ -19,6 +19,7 @@ import io.serverlessworkflow.api.types.UriTemplate;
 import io.serverlessworkflow.impl.TaskContext;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowContext;
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.serverlessworkflow.impl.WorkflowUtils;
 import io.serverlessworkflow.impl.auth.AuthProvider;
@@ -28,9 +29,10 @@ import io.serverlessworkflow.impl.auth.AuthProvider;
  *
  * <p>
  * The workflow policy is mapped to an {@link OidcClientConfig} (client id/secret, grant type, authority/token endpoint,
- * scopes and audiences). For the token-exchange grant the per-execution subject/actor tokens are resolved from the workflow
- * context and passed as dynamic grant parameters. The negotiated {@code access_token} is returned and the SDK attaches it as
- * {@code Authorization: Bearer <token>} to the downstream call.
+ * scopes and audiences). Configuration overrides from {@code application.properties} are resolved by workflow+task
+ * identity and applied on top of the DSL values. For the token-exchange grant the per-execution subject/actor tokens
+ * are resolved from the workflow context and passed as dynamic grant parameters. The negotiated {@code access_token} is
+ * returned and the SDK attaches it as {@code Authorization: Bearer <token>} to the downstream call.
  */
 public final class OidcClientAuthProvider implements AuthProvider {
 
@@ -39,11 +41,16 @@ public final class OidcClientAuthProvider implements AuthProvider {
     private final WorkflowApplication application;
     private final OAuth2Policy policy;
     private final OidcClientFactory clientFactory;
+    private final OidcConfigResolver configResolver;
+    private final String authPolicyName;
 
-    public OidcClientAuthProvider(WorkflowApplication application, OAuth2Policy policy, OidcClientFactory clientFactory) {
+    public OidcClientAuthProvider(WorkflowApplication application, OAuth2Policy policy, OidcClientFactory clientFactory,
+            OidcConfigResolver configResolver, String authPolicyName) {
         this.application = application;
         this.policy = policy;
         this.clientFactory = clientFactory;
+        this.configResolver = configResolver;
+        this.authPolicyName = authPolicyName;
     }
 
     @Override
@@ -54,7 +61,12 @@ public final class OidcClientAuthProvider implements AuthProvider {
     @Override
     public String content(WorkflowContext workflow, TaskContext task, WorkflowModel model, URI uri) {
         final OAuth2AuthenticationData data = policy.data();
-        final ResolvedConfig resolved = resolveConfig(workflow, task, model, data);
+
+        final WorkflowDefinitionId workflowId = workflow.definition().id();
+        final String taskName = task.taskName();
+        final OidcConfigResolver.ResolvedOverride override = configResolver.resolve(workflowId, taskName, authPolicyName);
+
+        final ResolvedConfig resolved = resolveConfig(workflow, task, model, data, override);
 
         final OidcClient client = clientFactory.get(resolved.cacheKey, () -> buildConfig(resolved));
 
@@ -77,11 +89,9 @@ public final class OidcClientAuthProvider implements AuthProvider {
      * (the cache key and the config build) and guarantees the key covers every value baked into the cached client.
      */
     private ResolvedConfig resolveConfig(WorkflowContext workflow, TaskContext task, WorkflowModel model,
-            OAuth2AuthenticationData data) {
+            OAuth2AuthenticationData data, OidcConfigResolver.ResolvedOverride override) {
         final boolean oidc = policy.isOpenIdConnect();
         final String authority = resolve(workflow, task, model, authorityTemplate(data));
-        // For an OpenID Connect policy the 'authority' *is* the token endpoint; for an OAuth2 policy it is 'authority' plus
-        // the (optional) token endpoint path. The token endpoint is always taken from the policy, never via OIDC discovery.
         final String tokenPath = oidc ? authority : tokenPath(data);
         final String clientId = resolve(workflow, task, model, clientId(data));
         final String clientSecret = resolve(workflow, task, model, clientSecret(data));
@@ -98,30 +108,56 @@ public final class OidcClientAuthProvider implements AuthProvider {
         }
 
         final CacheKey cacheKey = new CacheKey(authority, tokenPath, oidc, clientId, secretMethod, grant, scopes, audiences,
-                clientSecret, username, password);
+                clientSecret, username, password, override);
         return new ResolvedConfig(cacheKey, authority, tokenPath, clientId, clientSecret, secretMethod, grant, scopes,
-                audiences, username, password);
+                audiences, username, password, override);
     }
 
     private OidcClientConfig buildConfig(ResolvedConfig config) {
+        final OidcConfigResolver.ResolvedOverride override = config.override();
         final OidcClientConfigBuilder builder = new OidcClientConfigBuilder().id(config.cacheKey.configId());
 
-        builder.authServerUrl(config.authority()).discoveryEnabled(false).tokenPath(config.tokenPath());
+        final String effectiveAuthority = override.authServerUrl().orElse(config.authority());
+        final String effectiveTokenPath = override.tokenPath().orElse(config.tokenPath());
+        final boolean effectiveDiscovery = override.discoveryEnabled().orElse(false);
 
-        if (config.clientId() != null) {
-            builder.clientId(config.clientId());
-        }
-        if (config.clientSecret() != null) {
-            builder.credentials().clientSecret(config.clientSecret(), config.secretMethod()).end();
+        builder.authServerUrl(effectiveAuthority)
+                .discoveryEnabled(effectiveDiscovery)
+                .tokenPath(effectiveTokenPath);
+
+        final String effectiveClientId = override.clientId().orElse(config.clientId());
+        if (effectiveClientId != null) {
+            builder.clientId(effectiveClientId);
         }
 
-        builder.grant(grantType(config.grant()));
-
-        if (config.scopes() != null && !config.scopes().isEmpty()) {
-            builder.scopes(config.scopes());
+        final String effectiveClientSecret = override.clientSecret().orElse(config.clientSecret());
+        if (effectiveClientSecret != null) {
+            Credentials.Secret.Method effectiveMethod = config.secretMethod();
+            if (override.clientSecretMethod().isPresent()) {
+                effectiveMethod = parseSecretMethod(override.clientSecretMethod().get());
+            }
+            if (effectiveMethod == null) {
+                effectiveMethod = Credentials.Secret.Method.POST;
+            }
+            builder.credentials().clientSecret(effectiveClientSecret, effectiveMethod).end();
         }
-        if (config.audiences() != null && !config.audiences().isEmpty()) {
-            builder.audience(config.audiences());
+
+        final OidcClientConfig.Grant.Type effectiveGrantType;
+        if (override.grantType().isPresent()) {
+            effectiveGrantType = parseGrantType(override.grantType().get());
+        } else {
+            effectiveGrantType = grantType(config.grant());
+        }
+        builder.grant(effectiveGrantType);
+
+        final List<String> effectiveScopes = override.scopes().orElse(config.scopes());
+        if (effectiveScopes != null && !effectiveScopes.isEmpty()) {
+            builder.scopes(effectiveScopes);
+        }
+
+        final List<String> effectiveAudience = override.audience().orElse(config.audiences());
+        if (effectiveAudience != null && !effectiveAudience.isEmpty()) {
+            builder.audience(effectiveAudience);
         }
 
         if (config.grant() == OAuth2AuthenticationDataGrant.PASSWORD) {
@@ -133,6 +169,17 @@ public final class OidcClientAuthProvider implements AuthProvider {
                 passwordOptions.put("password", config.password());
             }
             builder.grantOptions("password", passwordOptions);
+        }
+
+        override.accessTokenExpiresIn().ifPresent(builder::accessTokenExpiresIn);
+        override.accessTokenExpirySkew().ifPresent(builder::accessTokenExpirySkew);
+        override.refreshTokenTimeSkew().ifPresent(builder::refreshTokenTimeSkew);
+        override.absoluteExpiresIn().ifPresent(builder::absoluteExpiresIn);
+        override.earlyTokensAcquisition().ifPresent(builder::earlyTokensAcquisition);
+        override.refreshInterval().ifPresent(builder::refreshInterval);
+
+        if (!override.headers().isEmpty()) {
+            builder.headers(override.headers());
         }
 
         return builder.build();
@@ -235,12 +282,36 @@ public final class OidcClientAuthProvider implements AuthProvider {
         };
     }
 
+    static Credentials.Secret.Method parseSecretMethod(String value) {
+        return switch (value.toUpperCase()) {
+            case "BASIC" -> Credentials.Secret.Method.BASIC;
+            case "POST_JWT" -> Credentials.Secret.Method.POST_JWT;
+            case "QUERY" -> Credentials.Secret.Method.QUERY;
+            default -> Credentials.Secret.Method.POST;
+        };
+    }
+
+    static OidcClientConfig.Grant.Type parseGrantType(String value) {
+        return switch (value) {
+            case "client-credentials", "client_credentials" -> OidcClientConfig.Grant.Type.CLIENT;
+            case "password" -> OidcClientConfig.Grant.Type.PASSWORD;
+            case "refresh-token", "refresh_token" -> OidcClientConfig.Grant.Type.REFRESH;
+            case "authorization-code", "authorization_code" -> OidcClientConfig.Grant.Type.CODE;
+            case "urn:ietf:params:oauth:grant-type:token-exchange", "exchange" -> OidcClientConfig.Grant.Type.EXCHANGE;
+            default -> throw new IllegalStateException(
+                    "Flow OIDC: unsupported grant type '" + value + "'; supported values are "
+                            + "authorization_code, client_credentials, password, refresh_token "
+                            + "and urn:ietf:params:oauth:grant-type:token-exchange");
+        };
+    }
+
     /**
      * The fully resolved view of a policy: every expression has been evaluated and the cache key computed, so the cached
      * {@link OidcClient} is built from immutable values rather than from the live workflow context.
      */
     private record ResolvedConfig(CacheKey cacheKey, String authority, String tokenPath, String clientId,
             String clientSecret, Credentials.Secret.Method secretMethod, OAuth2AuthenticationDataGrant grant,
-            List<String> scopes, List<String> audiences, String username, String password) {
+            List<String> scopes, List<String> audiences, String username, String password,
+            OidcConfigResolver.ResolvedOverride override) {
     }
 }

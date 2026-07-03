@@ -247,6 +247,91 @@ FuncWorkflowBuilder.workflow()
 
 Credentials are supplied through xref:secrets.adoc[secrets] as shown in <<client-credentials-grant, section 3>>. In production, the same secret names resolve through any Quarkus https://quarkus.io/guides/credentials-provider[`CredentialsProvider`] (HashiCorp Vault, Kubernetes Secrets, …) without changing the workflow code. See xref:secrets.adoc[Resolve secrets securely] for details.
 
+== 10. Override OIDC client configuration per workflow or task
+
+The authentication declared in the Serverless Workflow DSL defines the _identity_ of the OIDC client — authority,
+client ID, grant type, scopes, etc.
+In many cases you also need to tune operational behavior (token expiry, refresh intervals,
+custom headers) or override identity properties per environment (different auth server URL in production vs. development) without changing the workflow code.
+
+Quarkus Flow lets you do this from `application.properties`, routed by workflow and task identity. Resolution follows this priority: the most specific match wins and is used entirely (no merging across levels):
+
+1. **Task-level** (most specific) — `quarkus.flow.oidc.client."<namespace>\:<name>\:<version>\:<taskName>".<property>`
+2. **Versioned workflow** — `quarkus.flow.oidc.client."<namespace>\:<name>\:<version>".<property>`
+3. **Versionless workflow** — `quarkus.flow.oidc.client."<namespace>\:<name>".<property>`
+4. **Named authentication** — `quarkus.flow.oidc.client.<authPolicyName>.<property>` — matches the name declared in `use(...)`, e.g. `use("keycloak")`
+5. **Global defaults** (least specific) — `quarkus.flow.oidc.<property>`
+6. **SDK fallback** — no override; the DSL-declared values are used as-is
+
+The first level that has an entry in the configuration map is used; properties not set at that level fall through to the DSL-declared values (not to a less-specific configuration level).
+
+[IMPORTANT]
+====
+Colons in the composite key must be escaped as `\:` in `application.properties` files. For example, for a workflow with namespace `myns` and name `my-workflow`, use `"myns\:my-workflow"`.
+====
+
+=== Example
+
+[source,properties]
+.application.properties
+----
+# Global defaults — apply to all OIDC clients created by Flow
+quarkus.flow.oidc.access-token-expires-in=300S
+quarkus.flow.oidc.refresh-token-time-skew=5S
+quarkus.flow.oidc.headers.X-Tenant=default
+
+# Named auth override — matches use("keycloak-prod") declarations
+quarkus.flow.oidc.client.keycloak-prod.auth-server-url=https://keycloak.example.com
+quarkus.flow.oidc.client.keycloak-prod.access-token-expires-in=600S
+
+# Versionless override — applies to all versions of this workflow
+quarkus.flow.oidc.client."myns\:my-workflow".auth-server-url=https://prod-auth.example.com
+quarkus.flow.oidc.client."myns\:my-workflow".access-token-expires-in=600S
+
+# Versioned workflow override
+quarkus.flow.oidc.client."myns\:my-workflow\:2.0.0".auth-server-url=https://v2-auth.example.com
+
+# Workflow + task override (most specific)
+quarkus.flow.oidc.client."myns\:my-workflow\:1.0.0\:callSlowApi".access-token-expires-in=900S
+quarkus.flow.oidc.client."myns\:my-workflow\:1.0.0\:callSlowApi".headers.X-Custom=value
+----
+
+=== Overridable properties
+
+Both _identity_ properties (override what the DSL declares) and _operational tuning_ properties are supported:
+
+.Identity overrides
+[cols="1,1,2"]
+|===
+| Property | Type | Description
+
+| `auth-server-url` | `String` | Base URL of the authorization server. Overrides the DSL `authority`.
+| `token-path` | `String` | Relative path or absolute URL of the token endpoint.
+| `discovery-enabled` | `Boolean` | Whether to use OIDC discovery (default: `false`).
+| `client-id` | `String` | Client ID. Overrides the DSL `clientId`.
+| `client-secret` | `String` | Client secret. Overrides the DSL `clientSecret`.
+| `client-secret-method` | `String` | Method to send the secret: `BASIC`, `POST`, `POST_JWT`.
+| `grant-type` | `String` | OAuth2 grant: `authorization_code`, `client_credentials`, `password`, `refresh_token`, `urn:ietf:params:oauth:grant-type:token-exchange`.
+| `scopes` | `List<String>` | OAuth2 scopes. Overrides the DSL scopes.
+| `audience` | `List<String>` | Target audiences. Overrides the DSL audiences.
+|===
+
+.Operational tuning
+[cols="1,1,2"]
+|===
+| Property | Type | Description
+
+| `access-token-expires-in` | `Duration` | Explicit expiry when the server response does not include `expires_in`.
+| `access-token-expiry-skew` | `Duration` | Safety margin before the access token's actual expiry.
+| `refresh-token-time-skew` | `Duration` | When to consider the refresh token expired.
+| `absolute-expires-in` | `Boolean` | Treat `expires_in` as an absolute timestamp rather than a duration.
+| `early-tokens-acquisition` | `Boolean` | Acquire the token eagerly at client creation time.
+| `headers` | `Map<String,String>` | Custom HTTP headers for the token request.
+| `refresh-interval` | `Duration` | Interval for asynchronous background token refresh.
+|===
+
+Headers merge additively across layers — a task-level header does not remove a global-level header with a different name.
+
 [[configuration-reference]]
 == Configuration reference
 
