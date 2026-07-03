@@ -19,7 +19,7 @@ public class NotificationWorkflowBad extends Flow {
                         http("callApi")
                                 .POST()
                                 .endpoint("https://api.example.com/notify")
-                                .header("Authorization", "Bearer eyJhbGciOi..."))
+                                .header("X-Api-Key", "my-api-key"))
                 .build();
     }
 }

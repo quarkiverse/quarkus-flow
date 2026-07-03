@@ -67,10 +67,10 @@ In dev/test, provide the value in `application.properties`:
 
 [source,properties]
 ----
-mySecrets.apiKey=eyJhbGciOi...
+mySecrets.apiKey=my-api-key
 ----
 
-In production, configure a `CredentialsProvider` (e.g., HashiCorp Vault) so that secret values are never stored in plain text.
+In production, configure a `CredentialsProvider` (e.g., HashiCorp Vault, https://quarkus.io/guides/kubernetes-config[Kubernetes]) so that secret values are never stored in plain text.
 
 [TIP]
 ====
@@ -146,21 +146,7 @@ Model this kind of retry as part of the workflow definition itself using the `tr
 
 [source,java]
 ----
-return workflow("vacation-approval")
-        .tasks(
-                tryCatch(
-                        "tryApproval",
-                        t -> t.tryCatch(tasks(
-                                        function("submitRequest", approvalService::submit, VacationRequest.class),
-                                        function("checkApproval", approvalService::requireApproval, VacationRequest.class)))
-                                .catchHandler(handler -> handler
-                                        .errorsWith(err -> err.type("APPROVAL_REJECTED"))
-                                        .retry(r -> r
-                                                .limit(limit -> limit.attempt(a -> a.count(3)))
-                                                .delay("PT1H"))
-                                        .doTasks(tasks(
-                                                function("notifyRejection", approvalService::notifyRejection, VacationRequest.class))))))
-        .build();
+include::{examples-dir}org/acme/bestpractices/VacationApproveWorkflow.java[]
 ----
 
 The `retry` policy on the catch handler tells the engine to re-execute the try block up to 3 times, with a 1-hour delay between attempts.
