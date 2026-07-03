@@ -5,7 +5,7 @@
 
 .PHONY: help quick-check build test-all verify clean format docs install-local native pre-commit
 
-.PHONY: test-core test-langchain4j test-persistence test-examples watch
+.PHONY: test-core test-oidc test-langchain4j test-persistence test-examples watch
 
 # Default target shows help
 .DEFAULT_GOAL := help
@@ -82,6 +82,10 @@ pre-commit: ## Pre-commit check: format + quick unit tests
 test-core: ## Test core module only
 	@echo "🧪 Testing core module"
 	@mvn clean test $(MAVEN_OPTS) -pl core/runtime,core/deployment -am
+
+test-oidc: ## Test OIDC module (unit + integration tests)
+	@echo "🧪 Testing OIDC module (unit + integration)"
+	@mvn clean verify $(MAVEN_OPTS_NO_THREADS) -pl oidc/integration-tests -am -DskipITs=false -Dno-format
 
 test-langchain4j: ## Test langchain4j module only
 	@echo "🧪 Testing langchain4j module"

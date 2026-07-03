@@ -2,7 +2,9 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
-When a workflow calls a protected HTTP or OpenAPI service, it usually needs an `Authorization: Bearer <token>` header. Instead of fetching and refreshing those tokens yourself, Quarkus Flow can negotiate them for you: you declare an OAuth2/OIDC authentication on the call, and the engine performs the token request against the authorization server, caches the result, and attaches it to the downstream request automatically.
+When a workflow calls a protected HTTP or OpenAPI service, it usually needs an `Authorization: Bearer <token>` header.
+Instead of fetching those tokens yourself, Quarkus Flow can negotiate them for you:
+you declare an OAuth2/OIDC authentication on the call, and the engine performs the token request against the authorization server and attaches it to the downstream request automatically.
 
 This guide shows how to:
 
@@ -12,7 +14,7 @@ This guide shows how to:
 * Keep client credentials out of your workflow code using xref:secrets.adoc[secrets].
 
 [TIP]
-A complete, runnable project covering every scenario below lives in `examples/auth-oauth2-oidc`. All authorization servers and downstream APIs there are mocked with https://docs.quarkiverse.io/quarkus-wiremock/dev/[WireMock Dev Services], so it runs end-to-end without a real OAuth2 server.
+A complete, runnable project covering every scenario below lives in https://github.com/quarkiverse/quarkus-flow/tree/main/examples/auth-oauth2-oidc[`examples/auth-oauth2-oidc`].
 
 == Prerequisites
 
@@ -31,23 +33,11 @@ Add `quarkus-oidc-client` to your project. Quarkus Flow's OIDC integration activ
 </dependency>
 ----
 
-You declare which grant and credentials to use on the call; Quarkus Flow obtains the token, caches it, refreshes it when needed, and adds the `Authorization` header. To opt out, set `quarkus.flow.oidc.enabled=false` (see the <<configuration-reference>>).
+To opt out, set `quarkus.flow.oidc.enabled=false` (see the <<configuration-reference>>).
 
-.When is a token cached?
-[%collapsible]
+[NOTE]
 ====
-Quarkus Flow creates an `OidcClient` lazily on the first call that needs it and keeps it for the lifetime of the application. Every subsequent call whose resolved policy matches the same cache key reuses that client — and therefore its token cache and automatic refresh logic.
-
-The cache key covers: authority, token endpoint path, OAuth2-vs-OIDC flag, client ID, client secret, client-authentication method, grant type, scopes, audiences, and username/password (for the Password grant).
-
-Two call sites share a cached client **only when every field matches**. If any field differs — even a single scope — a separate `OidcClient` is created with its own independent token lifecycle:
-
-* **Same authority, same client, same grant, same scopes** → one cached client, one token.
-* **Same authority, same client, different scopes** → two cached clients, two independent tokens.
-* **Same authority, different token endpoint paths** → two cached clients, even if everything else matches.
-* **`oauth2(...)` vs `oidc(...)` for the same authority** → two cached clients, because the OAuth2-vs-OIDC flag differs.
-
-All cached clients are closed automatically on application shutdown.
+Quarkus Flow does **not** cache or refresh tokens: a new token is requested from the authorization server on **every authenticated call**. What is cached and reused is the underlying `OidcClient` — its resolved configuration and HTTP client. See <<client-caching-lifecycle>> for the details.
 ====
 
 == 2. Attach an authentication to a call
@@ -74,6 +64,8 @@ If several calls share the same authority, declare the authentication once and r
 
 [source,java]
 ----
+import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+
 workflow("orders")
     .use(use -> use.authentications(auth ->
         auth.authentication("inventory", a -> a.oauth2(o -> o
@@ -135,7 +127,7 @@ clientCredentials.clientSecret=dummy-client-secret
 clientCredentials.baseUrl=https://auth.example.com/realms/test/protocol/openid-connect/token
 ----
 
-In production, the same secret names resolve through any Quarkus https://quarkus.io/guides/credentials-provider[`CredentialsProvider`] (HashiCorp Vault, Kubernetes Secrets, …) without changing the workflow code. See xref:secrets.adoc[Resolve secrets securely] for details.
+In production, the same secret names resolve through any Quarkus https://quarkus.io/guides/credentials-provider[`CredentialsProvider`] (HashiCorp Vault, Kubernetes Secrets, etc.) without changing the workflow code. See xref:secrets.adoc[Resolve secrets securely] for details.
 
 == 4. Use an OIDC client
 
@@ -151,7 +143,7 @@ FuncDSL.http("listImages")
                         "${ $secret.oidcClient.\"client-id\" }",      // <1>
                         "${ $secret.oidcClient.\"client-secret\" }"));
 ----
-<1> When a secret key contains a dash, quote it inside the JQ path: `${ $secret.oidcClient."client-id" }`.
+<1> When a secret key contains a dash, quote it inside the JQ path: `${ $secret.oidcClient.\"client-id\" }`.
 
 == 5. Use the Password grant
 
@@ -245,92 +237,151 @@ FuncWorkflowBuilder.workflow()
 
 == 9. Provide credentials
 
-Credentials are supplied through xref:secrets.adoc[secrets] as shown in <<client-credentials-grant, section 3>>. In production, the same secret names resolve through any Quarkus https://quarkus.io/guides/credentials-provider[`CredentialsProvider`] (HashiCorp Vault, Kubernetes Secrets, …) without changing the workflow code. See xref:secrets.adoc[Resolve secrets securely] for details.
+Credentials are supplied through xref:secrets.adoc[secrets] as shown in <<client-credentials-grant, section 3>>. In production, the same secret names resolve through any Quarkus https://quarkus.io/guides/credentials-provider[`CredentialsProvider`] (HashiCorp Vault, Kubernetes Secrets, etc.) without changing the workflow code. See xref:secrets.adoc[Resolve secrets securely] for details.
 
-== 10. Override OIDC client configuration per workflow or task
+[[route-to-named-client]]
+== 10. Route to a named Quarkus OIDC client
 
-The authentication declared in the Serverless Workflow DSL defines the _identity_ of the OIDC client — authority,
-client ID, grant type, scopes, etc.
-In many cases you also need to tune operational behavior (token expiry, refresh intervals,
-custom headers) or override identity properties per environment (different auth server URL in production vs. development) without changing the workflow code.
+When a workflow declares an `oauth2(...)` or `oidc(...)` authentication in the DSL, Quarkus Flow builds an OIDC client from those values automatically. You can redirect any workflow or task to use a pre-configured https://quarkus.io/guides/security-openid-connect-client-reference[Quarkus OIDC client] instead, giving you full control over the client configuration — different auth server per environment, token expiry tuning, custom headers — without changing the workflow code.
 
-Quarkus Flow lets you do this from `application.properties`, routed by workflow and task identity. Resolution follows this priority: the most specific match wins and is used entirely (no merging across levels):
+=== How to route a workflow to a named client
 
-1. **Task-level** (most specific) — `quarkus.flow.oidc.client."<namespace>\:<name>\:<version>\:<taskName>".<property>`
-2. **Versioned workflow** — `quarkus.flow.oidc.client."<namespace>\:<name>\:<version>".<property>`
-3. **Versionless workflow** — `quarkus.flow.oidc.client."<namespace>\:<name>".<property>`
-4. **Named authentication** — `quarkus.flow.oidc.client.<authPolicyName>.<property>` — matches the name declared in `use(...)`, e.g. `use("keycloak")`
-5. **Global defaults** (least specific) — `quarkus.flow.oidc.<property>`
-6. **SDK fallback** — no override; the DSL-declared values are used as-is
+1. Define a standard Quarkus OIDC client in `application.properties`:
++
+[source,properties]
+----
+quarkus.oidc-client.prod-auth.auth-server-url=https://auth.prod.example.com
+quarkus.oidc-client.prod-auth.token-path=/oauth2/token
+quarkus.oidc-client.prod-auth.client-id=my-service
+quarkus.oidc-client.prod-auth.credentials.secret=${OIDC_CLIENT_SECRET}
+quarkus.oidc-client.prod-auth.grant.type=client
+quarkus.oidc-client.prod-auth.discovery-enabled=false
+----
 
-The first level that has an entry in the configuration map is used; properties not set at that level fall through to the DSL-declared values (not to a less-specific configuration level).
+2. Route the workflow to that client by mapping the workflow's composite identifier to the client name:
++
+[source,properties]
+----
+quarkus.flow.oidc.client."myns\:my-workflow".name=prod-auth
+----
+
+When the workflow runs, Quarkus Flow uses the `prod-auth` OIDC client instead of building one from the DSL. The DSL authentication still declares _which_ calls are authenticated — the routing only controls _how_ the token is obtained.
+
+=== How to route a specific task
+
+If a single task in a workflow needs a different OIDC client, use the full composite key including the task name:
+
+[source,properties]
+----
+quarkus.flow.oidc.client."myns\:my-workflow\:1.0.0\:callSlowApi".name=slow-api-auth
+----
+
+Only the `callSlowApi` task uses `slow-api-auth`. All other tasks in the same workflow fall through to the next matching level or use the DSL-derived client.
+
+=== How to route by named authentication policy
+
+If the DSL declares a named authentication with `use(...)`:
+
+[source,java]
+----
+workflow("orders")
+    .use(use -> use.authentications(auth ->
+        auth.authentication("keycloak", a -> a.oauth2(o -> o ...))))
+    .tasks(
+        http("reserve").GET()
+            .uri(URI.create(url), use("keycloak")))
+    .build();
+----
+
+You can route all calls that reference `"keycloak"` to a named Quarkus OIDC client:
+
+[source,properties]
+----
+quarkus.flow.oidc.client.keycloak.name=prod-auth
+----
+
+This is useful when multiple workflows share the same named authentication and you want to control the OIDC client configuration in one place.
+
+=== How to add authentication entirely from configuration
+
+A workflow can call an HTTP endpoint _without_ declaring any `oauth2(...)` or `oidc(...)` in the DSL, and have the token negotiation added purely from `application.properties`. Route the workflow (or a specific task) to a named Quarkus OIDC client:
+
+[source,properties]
+----
+# Define the OIDC client
+quarkus.oidc-client.internal-auth.auth-server-url=https://auth.internal.example.com
+quarkus.oidc-client.internal-auth.token-path=/oauth2/token
+quarkus.oidc-client.internal-auth.client-id=my-service
+quarkus.oidc-client.internal-auth.credentials.secret=${OIDC_SECRET}
+quarkus.oidc-client.internal-auth.grant.type=client
+quarkus.oidc-client.internal-auth.discovery-enabled=false
+
+# Route by versionless workflow identity — applies to all versions
+quarkus.flow.oidc.client."myns\:my-workflow".name=internal-auth
+
+# Or route a specific version
+quarkus.flow.oidc.client."myns\:my-workflow\:2.0.0".name=internal-auth
+
+# Or route a specific task within a versioned workflow
+quarkus.flow.oidc.client."myns\:my-workflow\:1.0.0\:fetchData".name=internal-auth
+----
+
+The workflow code stays free of credentials and auth-server URLs. Environment-specific OIDC configuration lives entirely in `application.properties` (or Kubernetes ConfigMaps, Vault, etc.).
+
+=== Resolution order
+
+When multiple routing rules match, the most specific one wins:
+
+1. **Task-level** (most specific) — `quarkus.flow.oidc.client."<namespace>\:<name>\:<version>\:<taskName>".name`
+2. **Versioned workflow** — `quarkus.flow.oidc.client."<namespace>\:<name>\:<version>".name`
+3. **Versionless workflow** — `quarkus.flow.oidc.client."<namespace>\:<name>".name`
+4. **Named authentication** — `quarkus.flow.oidc.client.<authPolicyName>.name`
+5. **SDK fallback** — no routing configured; the DSL-derived client is used as-is
 
 [IMPORTANT]
 ====
 Colons in the composite key must be escaped as `\:` in `application.properties` files. For example, for a workflow with namespace `myns` and name `my-workflow`, use `"myns\:my-workflow"`.
 ====
 
-=== Example
+All OIDC client tuning (client authentication, custom headers, TLS, proxy, etc.) is configured in the standard `quarkus.oidc-client.<name>.*` namespace. See the https://quarkus.io/guides/security-openid-connect-client-reference[Quarkus OIDC Client reference] for the full set of available properties.
 
-[source,properties]
-.application.properties
-----
-# Global defaults — apply to all OIDC clients created by Flow
-quarkus.flow.oidc.access-token-expires-in=300S
-quarkus.flow.oidc.refresh-token-time-skew=5S
-quarkus.flow.oidc.headers.X-Tenant=default
+[NOTE]
+====
+Routing also changes who manages the client's lifecycle. A named client is created at startup and closed on shutdown by the `quarkus-oidc-client` extension itself, while a DSL-derived client is created, cached, and closed by Quarkus Flow — see <<client-lifecycle>>. In both cases, Quarkus Flow requests a new token from the authorization server on every authenticated call; it does not cache tokens or refresh them in the background.
+====
 
-# Named auth override — matches use("keycloak-prod") declarations
-quarkus.flow.oidc.client.keycloak-prod.auth-server-url=https://keycloak.example.com
-quarkus.flow.oidc.client.keycloak-prod.access-token-expires-in=600S
+[[client-caching-lifecycle]]
+== Client caching and lifecycle
 
-# Versionless override — applies to all versions of this workflow
-quarkus.flow.oidc.client."myns\:my-workflow".auth-server-url=https://prod-auth.example.com
-quarkus.flow.oidc.client."myns\:my-workflow".access-token-expires-in=600S
+This section explains what Quarkus Flow caches, for how long, and who is responsible for the `OidcClient` instances behind your authenticated calls. As stated in section 1, tokens are never cached: a new token is requested from the authorization server on every authenticated call.
 
-# Versioned workflow override
-quarkus.flow.oidc.client."myns\:my-workflow\:2.0.0".auth-server-url=https://v2-auth.example.com
+[[client-caching]]
+=== When is an `OidcClient` cached and reused?
 
-# Workflow + task override (most specific)
-quarkus.flow.oidc.client."myns\:my-workflow\:1.0.0\:callSlowApi".access-token-expires-in=900S
-quarkus.flow.oidc.client."myns\:my-workflow\:1.0.0\:callSlowApi".headers.X-Custom=value
-----
+Quarkus Flow creates an `OidcClient` lazily on the first call that needs it and keeps it for the lifetime of the application. Every subsequent call whose resolved policy matches the same cache key reuses that client, avoiding the cost of rebuilding the client and its HTTP connection setup. The token request itself is still performed on every call.
 
-=== Overridable properties
+The cache key covers: authority, token endpoint path, OAuth2-vs-OIDC flag, client ID, client secret, client-authentication method, grant type, scopes, audiences, and username/password (for the Password grant).
 
-Both _identity_ properties (override what the DSL declares) and _operational tuning_ properties are supported:
+Two call sites share a cached client **only when every field matches**. If any field differs — even a single scope — a separate `OidcClient` is created:
 
-.Identity overrides
-[cols="1,1,2"]
-|===
-| Property | Type | Description
+* **Same authority, same client, same grant, same scopes** → one cached client.
+* **Same authority, same client, different scopes** → two cached clients.
+* **Same authority, different token endpoint paths** → two cached clients, even if everything else matches.
+* **`oauth2(...)` vs `oidc(...)` for the same authority** → two cached clients, because the OAuth2-vs-OIDC flag differs.
 
-| `auth-server-url` | `String` | Base URL of the authorization server. Overrides the DSL `authority`.
-| `token-path` | `String` | Relative path or absolute URL of the token endpoint.
-| `discovery-enabled` | `Boolean` | Whether to use OIDC discovery (default: `false`).
-| `client-id` | `String` | Client ID. Overrides the DSL `clientId`.
-| `client-secret` | `String` | Client secret. Overrides the DSL `clientSecret`.
-| `client-secret-method` | `String` | Method to send the secret: `BASIC`, `POST`, `POST_JWT`.
-| `grant-type` | `String` | OAuth2 grant: `authorization_code`, `client_credentials`, `password`, `refresh_token`, `urn:ietf:params:oauth:grant-type:token-exchange`.
-| `scopes` | `List<String>` | OAuth2 scopes. Overrides the DSL scopes.
-| `audience` | `List<String>` | Target audiences. Overrides the DSL audiences.
-|===
+All cached clients are closed automatically on application shutdown.
 
-.Operational tuning
-[cols="1,1,2"]
-|===
-| Property | Type | Description
+[[client-lifecycle]]
+=== Who manages the lifecycle of these clients?
 
-| `access-token-expires-in` | `Duration` | Explicit expiry when the server response does not include `expires_in`.
-| `access-token-expiry-skew` | `Duration` | Safety margin before the access token's actual expiry.
-| `refresh-token-time-skew` | `Duration` | When to consider the refresh token expired.
-| `absolute-expires-in` | `Boolean` | Treat `expires_in` as an absolute timestamp rather than a duration.
-| `early-tokens-acquisition` | `Boolean` | Acquire the token eagerly at client creation time.
-| `headers` | `Map<String,String>` | Custom HTTP headers for the token request.
-| `refresh-interval` | `Duration` | Interval for asynchronous background token refresh.
-|===
+Quarkus Flow creates these clients dynamically through `OidcClients.newClient(...)`. Clients created this way are **not** registered with the `quarkus-oidc-client` extension: Quarkus does not track them, does not close them on shutdown, and does not schedule any background token refresh for them. Quarkus Flow therefore owns their full lifecycle:
 
-Headers merge additively across layers — a task-level header does not remove a global-level header with a different name.
+* **Creation** — a client is built lazily on the first call that needs it, using the application's managed Vert.x instance and the standard Quarkus TLS and proxy registries, so TLS and proxy configuration resolve exactly as for static `quarkus.oidc-client.*` clients.
+* **Caching** — the client is held in Quarkus Flow's internal cache, keyed as described in <<client-caching>>. Only the client is cached, never the tokens it negotiates.
+* **Token negotiation** — a new token is requested from the authorization server every time a call needs an `Authorization` header. There is no token caching, no expiry tracking and no background refresh; a `refresh-interval` setting has no effect on these clients.
+* **Shutdown** — Quarkus Flow closes every cached client when the application shuts down, releasing the underlying HTTP client resources.
+
+If you prefer clients whose configuration is fully managed by the `quarkus-oidc-client` extension, define a named client in `application.properties` and route the workflow to it, as described in <<route-to-named-client, section 10>>. Named clients are created and closed by the `quarkus-oidc-client` extension itself — but note that Quarkus Flow still requests a new token per call even when routing to a named client.
 
 [[configuration-reference]]
 == Configuration reference

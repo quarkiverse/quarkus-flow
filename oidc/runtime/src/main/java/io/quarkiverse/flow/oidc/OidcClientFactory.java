@@ -21,8 +21,9 @@ import io.quarkus.oidc.client.runtime.OidcClientConfig;
  * <p>
  * Clients are keyed by {@link CacheKey}, which covers every value baked into the {@link OidcClientConfig} (authority, token
  * endpoint, OAuth2-vs-OIDC flag, client id, client-authentication method, grant, scopes, audiences and the credential
- * material). Two call sites reuse a single {@link OidcClient} — and therefore its token cache and refresh logic — only when
- * all of those match.
+ * material). Two call sites reuse a single {@link OidcClient} only when all of those match. Only the client is cached:
+ * {@link OidcClient#getTokens()} performs a fresh token grant request on every invocation, so a new token is negotiated
+ * for each authenticated call.
  */
 @ApplicationScoped
 public class OidcClientFactory {
@@ -39,6 +40,10 @@ public class OidcClientFactory {
 
     public OidcClient get(CacheKey key, Supplier<OidcClientConfig> configSupplier) {
         return cache.computeIfAbsent(key, k -> oidcClients.newClient(configSupplier.get()).await().indefinitely());
+    }
+
+    public OidcClient getNamedClient(String name) {
+        return oidcClients.getClient(name);
     }
 
     @PreDestroy

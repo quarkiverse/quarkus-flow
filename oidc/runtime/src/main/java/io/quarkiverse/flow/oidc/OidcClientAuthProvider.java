@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClientConfigBuilder;
@@ -28,11 +29,12 @@ import io.serverlessworkflow.impl.auth.AuthProvider;
  * An {@link AuthProvider} that negotiates an OAuth2/OIDC access token using a Quarkus {@link OidcClient}.
  *
  * <p>
- * The workflow policy is mapped to an {@link OidcClientConfig} (client id/secret, grant type, authority/token endpoint,
- * scopes and audiences). Configuration overrides from {@code application.properties} are resolved by workflow+task
- * identity and applied on top of the DSL values. For the token-exchange grant the per-execution subject/actor tokens
- * are resolved from the workflow context and passed as dynamic grant parameters. The negotiated {@code access_token} is
- * returned and the SDK attaches it as {@code Authorization: Bearer <token>} to the downstream call.
+ * When a named Quarkus OIDC client is configured for the current workflow/task (via
+ * {@code quarkus.flow.oidc.client."...".name}), that pre-configured client is used directly. Otherwise the workflow
+ * policy is mapped to an {@link OidcClientConfig} built from the DSL values. For the token-exchange grant the
+ * per-execution subject/actor tokens are resolved from the workflow context and passed as dynamic grant parameters. The
+ * negotiated {@code access_token} is returned and the SDK attaches it as {@code Authorization: Bearer <token>} to the
+ * downstream call.
  */
 public final class OidcClientAuthProvider implements AuthProvider {
 
@@ -60,16 +62,37 @@ public final class OidcClientAuthProvider implements AuthProvider {
 
     @Override
     public String content(WorkflowContext workflow, TaskContext task, WorkflowModel model, URI uri) {
-        final OAuth2AuthenticationData data = policy.data();
-
         final WorkflowDefinitionId workflowId = workflow.definition().id();
         final String taskName = task.taskName();
-        final OidcConfigResolver.ResolvedOverride override = configResolver.resolve(workflowId, taskName, authPolicyName);
+        final Optional<String> namedClient = configResolver.resolve(workflowId, taskName, authPolicyName);
 
-        final ResolvedConfig resolved = resolveConfig(workflow, task, model, data, override);
+        if (namedClient.isPresent()) {
+            return negotiateWithNamedClient(namedClient.get(), workflow, task, model);
+        }
 
+        return negotiateWithDslClient(workflow, task, model);
+    }
+
+    private String negotiateWithNamedClient(String clientName, WorkflowContext workflow, TaskContext task,
+            WorkflowModel model) {
+        final OidcClient client = clientFactory.getNamedClient(clientName);
+        final Map<String, String> dynamicParams = dynamicParams(workflow, task, model, policy.data());
+        try {
+            final Tokens tokens = (dynamicParams.isEmpty() ? client.getTokens() : client.getTokens(dynamicParams))
+                    .await().indefinitely();
+            return tokens.getAccessToken();
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "Flow OIDC: failed to negotiate an access token from named client '" + clientName + "': "
+                            + e.getMessage(),
+                    e);
+        }
+    }
+
+    private String negotiateWithDslClient(WorkflowContext workflow, TaskContext task, WorkflowModel model) {
+        final OAuth2AuthenticationData data = policy.data();
+        final ResolvedConfig resolved = resolveConfig(workflow, task, model, data);
         final OidcClient client = clientFactory.get(resolved.cacheKey, () -> buildConfig(resolved));
-
         final Map<String, String> dynamicParams = dynamicParams(workflow, task, model, data);
         try {
             final Tokens tokens = (dynamicParams.isEmpty() ? client.getTokens() : client.getTokens(dynamicParams))
@@ -89,7 +112,7 @@ public final class OidcClientAuthProvider implements AuthProvider {
      * (the cache key and the config build) and guarantees the key covers every value baked into the cached client.
      */
     private ResolvedConfig resolveConfig(WorkflowContext workflow, TaskContext task, WorkflowModel model,
-            OAuth2AuthenticationData data, OidcConfigResolver.ResolvedOverride override) {
+            OAuth2AuthenticationData data) {
         final boolean oidc = policy.isOpenIdConnect();
         final String authority = resolve(workflow, task, model, authorityTemplate(data));
         final String tokenPath = oidc ? authority : tokenPath(data);
@@ -108,56 +131,30 @@ public final class OidcClientAuthProvider implements AuthProvider {
         }
 
         final CacheKey cacheKey = new CacheKey(authority, tokenPath, oidc, clientId, secretMethod, grant, scopes, audiences,
-                clientSecret, username, password, override);
+                clientSecret, username, password);
         return new ResolvedConfig(cacheKey, authority, tokenPath, clientId, clientSecret, secretMethod, grant, scopes,
-                audiences, username, password, override);
+                audiences, username, password);
     }
 
     private OidcClientConfig buildConfig(ResolvedConfig config) {
-        final OidcConfigResolver.ResolvedOverride override = config.override();
         final OidcClientConfigBuilder builder = new OidcClientConfigBuilder().id(config.cacheKey.configId());
 
-        final String effectiveAuthority = override.authServerUrl().orElse(config.authority());
-        final String effectiveTokenPath = override.tokenPath().orElse(config.tokenPath());
-        final boolean effectiveDiscovery = override.discoveryEnabled().orElse(false);
+        builder.authServerUrl(config.authority()).discoveryEnabled(false).tokenPath(config.tokenPath());
 
-        builder.authServerUrl(effectiveAuthority)
-                .discoveryEnabled(effectiveDiscovery)
-                .tokenPath(effectiveTokenPath);
-
-        final String effectiveClientId = override.clientId().orElse(config.clientId());
-        if (effectiveClientId != null) {
-            builder.clientId(effectiveClientId);
+        if (config.clientId() != null) {
+            builder.clientId(config.clientId());
+        }
+        if (config.clientSecret() != null) {
+            builder.credentials().clientSecret(config.clientSecret(), config.secretMethod()).end();
         }
 
-        final String effectiveClientSecret = override.clientSecret().orElse(config.clientSecret());
-        if (effectiveClientSecret != null) {
-            Credentials.Secret.Method effectiveMethod = config.secretMethod();
-            if (override.clientSecretMethod().isPresent()) {
-                effectiveMethod = parseSecretMethod(override.clientSecretMethod().get());
-            }
-            if (effectiveMethod == null) {
-                effectiveMethod = Credentials.Secret.Method.POST;
-            }
-            builder.credentials().clientSecret(effectiveClientSecret, effectiveMethod).end();
-        }
+        builder.grant(grantType(config.grant()));
 
-        final OidcClientConfig.Grant.Type effectiveGrantType;
-        if (override.grantType().isPresent()) {
-            effectiveGrantType = parseGrantType(override.grantType().get());
-        } else {
-            effectiveGrantType = grantType(config.grant());
+        if (config.scopes() != null && !config.scopes().isEmpty()) {
+            builder.scopes(config.scopes());
         }
-        builder.grant(effectiveGrantType);
-
-        final List<String> effectiveScopes = override.scopes().orElse(config.scopes());
-        if (effectiveScopes != null && !effectiveScopes.isEmpty()) {
-            builder.scopes(effectiveScopes);
-        }
-
-        final List<String> effectiveAudience = override.audience().orElse(config.audiences());
-        if (effectiveAudience != null && !effectiveAudience.isEmpty()) {
-            builder.audience(effectiveAudience);
+        if (config.audiences() != null && !config.audiences().isEmpty()) {
+            builder.audience(config.audiences());
         }
 
         if (config.grant() == OAuth2AuthenticationDataGrant.PASSWORD) {
@@ -169,17 +166,6 @@ public final class OidcClientAuthProvider implements AuthProvider {
                 passwordOptions.put("password", config.password());
             }
             builder.grantOptions("password", passwordOptions);
-        }
-
-        override.accessTokenExpiresIn().ifPresent(builder::accessTokenExpiresIn);
-        override.accessTokenExpirySkew().ifPresent(builder::accessTokenExpirySkew);
-        override.refreshTokenTimeSkew().ifPresent(builder::refreshTokenTimeSkew);
-        override.absoluteExpiresIn().ifPresent(builder::absoluteExpiresIn);
-        override.earlyTokensAcquisition().ifPresent(builder::earlyTokensAcquisition);
-        override.refreshInterval().ifPresent(builder::refreshInterval);
-
-        if (!override.headers().isEmpty()) {
-            builder.headers(override.headers());
         }
 
         return builder.build();
@@ -282,36 +268,12 @@ public final class OidcClientAuthProvider implements AuthProvider {
         };
     }
 
-    static Credentials.Secret.Method parseSecretMethod(String value) {
-        return switch (value.toUpperCase()) {
-            case "BASIC" -> Credentials.Secret.Method.BASIC;
-            case "POST_JWT" -> Credentials.Secret.Method.POST_JWT;
-            case "QUERY" -> Credentials.Secret.Method.QUERY;
-            default -> Credentials.Secret.Method.POST;
-        };
-    }
-
-    static OidcClientConfig.Grant.Type parseGrantType(String value) {
-        return switch (value) {
-            case "client-credentials", "client_credentials" -> OidcClientConfig.Grant.Type.CLIENT;
-            case "password" -> OidcClientConfig.Grant.Type.PASSWORD;
-            case "refresh-token", "refresh_token" -> OidcClientConfig.Grant.Type.REFRESH;
-            case "authorization-code", "authorization_code" -> OidcClientConfig.Grant.Type.CODE;
-            case "urn:ietf:params:oauth:grant-type:token-exchange", "exchange" -> OidcClientConfig.Grant.Type.EXCHANGE;
-            default -> throw new IllegalStateException(
-                    "Flow OIDC: unsupported grant type '" + value + "'; supported values are "
-                            + "authorization_code, client_credentials, password, refresh_token "
-                            + "and urn:ietf:params:oauth:grant-type:token-exchange");
-        };
-    }
-
     /**
      * The fully resolved view of a policy: every expression has been evaluated and the cache key computed, so the cached
      * {@link OidcClient} is built from immutable values rather than from the live workflow context.
      */
     private record ResolvedConfig(CacheKey cacheKey, String authority, String tokenPath, String clientId,
             String clientSecret, Credentials.Secret.Method secretMethod, OAuth2AuthenticationDataGrant grant,
-            List<String> scopes, List<String> audiences, String username, String password,
-            OidcConfigResolver.ResolvedOverride override) {
+            List<String> scopes, List<String> audiences, String username, String password) {
     }
 }
