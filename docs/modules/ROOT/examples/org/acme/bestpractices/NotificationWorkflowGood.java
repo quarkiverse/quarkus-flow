@@ -14,13 +14,13 @@ public class NotificationWorkflowGood extends Flow {
     @Override
     public Workflow descriptor() {
         return workflow("notify")
-                .use(u -> u.secrets("secrets"))
+                .use(u -> u.secrets("mySecrets"))
                 .tasks(
                         // NEVER hard-code tokens in the workflow definition
                         http("callApi")
                                 .POST()
                                 .endpoint("https://api.example.com/notify")
-                                .header("X-Api-Key", "${ $secrets.apiKey }"))
+                                .header("X-Api-Key", "${ $secret.mySecrets.apiKey }"))
                 .build();
     }
 }

@@ -67,7 +67,7 @@ In dev/test, provide the value in `application.properties`:
 
 [source,properties]
 ----
-secrets.apiKey=eyJhbGciOi...
+mySecrets.apiKey=eyJhbGciOi...
 ----
 
 In production, configure a `CredentialsProvider` (e.g., HashiCorp Vault) so that secret values are never stored in plain text.
