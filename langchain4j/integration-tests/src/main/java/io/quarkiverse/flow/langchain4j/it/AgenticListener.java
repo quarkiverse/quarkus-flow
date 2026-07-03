@@ -1,7 +1,7 @@
 package io.quarkiverse.flow.langchain4j.it;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -13,9 +13,9 @@ import io.serverlessworkflow.impl.lifecycle.WorkflowStartedEvent;
 @ApplicationScoped
 public class AgenticListener implements WorkflowExecutionListener {
 
-    public static final List<TaskStartedEvent> TASK_STARTED_EVENTS = new ArrayList<>();
-    public static final List<WorkflowCompletedEvent> WORKFLOW_COMPLETED_EVENTS = new ArrayList<>();
-    public static final List<WorkflowStartedEvent> WORKFLOW_STARTED_EVENTS = new ArrayList<>();
+    public static final List<TaskStartedEvent> TASK_STARTED_EVENTS = new CopyOnWriteArrayList<>();
+    public static final List<WorkflowCompletedEvent> WORKFLOW_COMPLETED_EVENTS = new CopyOnWriteArrayList<>();
+    public static final List<WorkflowStartedEvent> WORKFLOW_STARTED_EVENTS = new CopyOnWriteArrayList<>();
 
     public static void clearAll() {
         TASK_STARTED_EVENTS.clear();
