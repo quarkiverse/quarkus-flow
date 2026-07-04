@@ -49,18 +49,6 @@ quarkus.flow.http.client.connection-ttl=60
 quarkus.flow.http.client.user-agent=quarkus-flow/1.0
 ----
 
-[TIP]
-When a workflow uses regex-heavy or otherwise expensive `jq` expressions on
-untrusted data, keep timeout budgets explicit instead of relying on defaults.
-As a practical starting point:
-
-* simple extraction and field projection: 5 to 10 seconds
-* regex operations such as `match`, `test`, `gsub`, or `split`: 10 to 30 seconds
-* larger transformations over sizeable payloads: 30 to 60 seconds
-
-Tune those values to your payload size and latency budget, and pair them with
-workflow-level retries only when the operation is safe to repeat.
-
 == 3. Create named HTTP clients
 
 You can declare as many *named HTTP clients* as you need, each with its own tuning.
