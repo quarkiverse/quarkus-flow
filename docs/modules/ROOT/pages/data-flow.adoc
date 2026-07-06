@@ -155,7 +155,10 @@ application code.
 
 Complex regular expressions inside trusted workflow definitions can still be
 expensive to evaluate. When you process untrusted or high-volume input, keep
-task timeout budgets explicit instead of relying on defaults.
+task timeout budgets explicit instead of relying on defaults. The Serverless
+Workflow DSL defines task timeouts in the
+https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#timeout[`timeout`
+section of the specification].
 
 === jq Timeout recommendations
 
