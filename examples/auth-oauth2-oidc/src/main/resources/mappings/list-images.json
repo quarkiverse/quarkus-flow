@@ -1,0 +1,37 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/image-service/images",
+    "headers": {
+      "Accept": {
+        "contains": "application/json"
+      },
+      "Authorization": {
+        "matches": "^Bearer (.*)"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": [
+      {
+        "id": "{{randomValue type='UUID'}}",
+        "filename": "fjtirado.jpg"
+      },
+      {
+        "id": "{{randomValue type='UUID'}}",
+        "filename": "mcruzdev.jpg"
+      },
+      {
+        "id": "{{randomValue type='UUID'}}",
+        "filename": "ricardozanini.jpg"
+      }
+    ],
+    "transformers": [
+      "response-template"
+    ]
+  }
+}

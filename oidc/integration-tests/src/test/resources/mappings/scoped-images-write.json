@@ -1,0 +1,30 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/scoped-image-service/images",
+    "headers": {
+      "Accept": {
+        "contains": "application/json"
+      },
+      "Authorization": {
+        "equalTo": "Bearer token-scope-write"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": [
+      {
+        "id": "{{randomValue type='UUID'}}",
+        "filename": "write-only.jpg"
+      }
+    ],
+    "transformers": [
+      "response-template"
+    ]
+  }
+}
