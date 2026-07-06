@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.langchain4j.deployment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -41,7 +42,7 @@ public class FlowLangChain4jProcessorTest {
         WorkflowApplication app = Arc.container().instance(WorkflowApplication.class).get();
 
         WorkflowDefinition definition = app.workflowDefinitions().get(expectedId);
-        assertTrue(definition != null, "Expected workflow definition to be registered for TestSequenceAgent");
+        assertNotNull(definition, "Expected workflow definition to be registered for TestSequenceAgent");
 
         Workflow wf = definition.workflow();
 
@@ -63,6 +64,47 @@ public class FlowLangChain4jProcessorTest {
         // (we don't over-specify the structure, just ensure it's there)
         // TODO: add the schema
         // assertNotNull(wf.getInput(), "Workflow input should not be null (schema should be attached)");
+    }
+
+    @Test
+    void shouldRegisterWorkflowForSequenceAgentWithA2AClient() {
+        // The generated Flow uses WorkflowNameUtils.newId(iface) to name the workflow
+        WorkflowDefinitionId expectedId = WorkflowNameUtils.newId(Agents.SequenceWithA2AAgent.class);
+
+        WorkflowApplication app = Arc.container().instance(WorkflowApplication.class).get();
+
+        WorkflowDefinition definition = app.workflowDefinitions().get(expectedId);
+        assertNotNull(definition, "Expected workflow definition to be registered for SequenceWithA2AAgent");
+
+        Workflow wf = definition.workflow();
+
+        // Verify the basic identity matches what the generated Flow set
+        assertEquals(expectedId.name(), wf.getDocument().getName(), "Workflow name should match WorkflowNameUtils");
+        assertEquals(expectedId.namespace(), wf.getDocument().getNamespace(),
+                "Workflow namespace should match WorkflowNameUtils");
+        assertEquals(expectedId.version(), wf.getDocument().getVersion(),
+                "Workflow version should match WorkflowNameUtils");
+
+        // Ensure we actually got the "LC4J agent workflow for ..." summary from the generated Flow
+        String expectedSummaryPrefix = "LC4J agent workflow for " + Agents.SequenceWithA2AAgent.class.getName() + ".";
+        String summary = wf.getDocument().getSummary();
+        assertTrue(summary != null && summary.startsWith(expectedSummaryPrefix),
+                () -> "Summary should start with '" + expectedSummaryPrefix + "' but was '" + summary + "'");
+
+        // KEY VALIDATION: The workflow was successfully generated and registered.
+        // This proves that @A2AClientAgent annotation was recognized during build-time processing.
+        //
+        // If @A2AClientAgent was NOT in ALL_AGENT_ANNOTATIONS, the build would have failed with:
+        // "No suitable annotation found on method ... among @Agent, @SequenceAgent, ..., @A2AClientAgent"
+        //
+        // The successful workflow generation means:
+        // 1. The annotation was recognized in Lc4jAnnotations.ALL_AGENT_ANNOTATIONS
+        // 2. GizmoAgentFlowsHelper.computeTaskNames found the annotated method
+        // 3. The workflow was generated with RemoteDataFetcher (A2A) as a subagent
+        // 4. The workflow definition was registered in the WorkflowApplication
+
+        // Verify workflow has basic structure
+        assertNotNull(wf.getDocument(), "Workflow document should not be null");
     }
 
 }

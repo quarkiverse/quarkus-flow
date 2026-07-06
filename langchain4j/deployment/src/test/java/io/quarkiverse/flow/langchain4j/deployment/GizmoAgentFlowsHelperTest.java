@@ -21,6 +21,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import dev.langchain4j.agentic.Agent;
+import dev.langchain4j.agentic.declarative.A2AClientAgent;
 import dev.langchain4j.agentic.declarative.ParallelAgent;
 import dev.langchain4j.agentic.declarative.SequenceAgent;
 import dev.langchain4j.agentic.scope.AgenticScope;
@@ -163,7 +164,8 @@ class GizmoAgentFlowsHelperTest {
 
         assertThatThrownBy(() -> computeTaskNames(index, subAgents)).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("No agent method found").hasMessageContaining("ClassWithoutAgentAnnotation")
-                .hasMessageContaining("@Agent, @SequenceAgent, @ParallelAgent, @LoopAgent, or @ConditionalAgent");
+                .hasMessageContaining(
+                        "@Agent, @SequenceAgent, @ParallelAgent, @LoopAgent, @ConditionalAgent or @A2AClientAgent");
     }
 
     @Test
@@ -186,6 +188,17 @@ class GizmoAgentFlowsHelperTest {
         List<String> taskNames = computeTaskNames(index, subAgents);
 
         assertThat(taskNames).hasSize(1).containsExactly("parallel");
+    }
+
+    @Test
+    @DisplayName("computeTaskNames should find methods with @A2AClientAgent annotation")
+    void test_computeTaskNames_a2aClientAgent() throws IOException {
+        Index index = buildIndex(TestA2AClientAgent.class);
+        List<Type> subAgents = List.of(Type.create(DotName.createSimple(TestA2AClientAgent.class.getName()), Type.Kind.CLASS));
+
+        List<String> taskNames = computeTaskNames(index, subAgents);
+
+        assertThat(taskNames).hasSize(1).containsExactly("callRemoteAgent");
     }
 
     // ========== Helper Methods ==========
@@ -256,5 +269,13 @@ class GizmoAgentFlowsHelperTest {
     public interface TestParallelAgent {
         @ParallelAgent(subAgents = { TestAgent1.class, TestAgent2.class })
         String parallel();
+    }
+
+    /**
+     * Test agent with @A2AClientAgent annotation
+     */
+    public interface TestA2AClientAgent {
+        @A2AClientAgent(a2aServerUrl = "http://localhost:8080", outputKey = "result")
+        String callRemoteAgent(String request);
     }
 }
