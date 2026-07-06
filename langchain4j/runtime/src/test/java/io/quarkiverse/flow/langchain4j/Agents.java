@@ -1,8 +1,13 @@
 package io.quarkiverse.flow.langchain4j;
 
+import java.util.List;
+
 import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.agentic.declarative.A2AClientAgent;
+import dev.langchain4j.agentic.declarative.ParallelMapperAgent;
+import dev.langchain4j.agentic.declarative.PlannerAgent;
 import dev.langchain4j.agentic.declarative.SequenceAgent;
+import dev.langchain4j.agentic.declarative.SupervisorAgent;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 import io.quarkiverse.langchain4j.RegisterAiService;
@@ -93,5 +98,73 @@ public class Agents {
                 """)
         @Agent(description = "Process the fetched data locally", outputKey = "finalResult")
         String process(@V("remoteData") String data);
+    }
+
+    // ParallelMapperAgent test
+    @RegisterAiService
+    public interface SequenceWithParallelMapperAgent {
+        @SequenceAgent(outputKey = "results", subAgents = {
+                ItemsGenerator.class, ItemsMapper.class
+        })
+        List<String> processItems(@V("request") String request);
+    }
+
+    public interface ItemsGenerator {
+        @UserMessage("""
+                Generate a list of items based on: {{request}}
+                Return a comma-separated list.
+                """)
+        @Agent(description = "Generate items to process", outputKey = "items")
+        List<String> generateItems(@V("request") String request);
+    }
+
+    public interface ItemsMapper {
+        @ParallelMapperAgent(subAgent = ItemProcessor.class, outputKey = "results")
+        List<String> mapItems(@V("items") List<String> items);
+    }
+
+    public interface ItemProcessor {
+        @UserMessage("""
+                Process this item: {{item}}
+                Return the processed result.
+                """)
+        @Agent(description = "Process a single item", outputKey = "result")
+        String processItem(@V("item") String item);
+    }
+
+    // SupervisorAgent test
+    @RegisterAiService
+    public interface SequenceWithSupervisorAgent {
+        @SequenceAgent(outputKey = "finalResult", subAgents = {
+                TaskSupervisor.class
+        })
+        String superviseTasks(@V("request") String request);
+    }
+
+    public interface TaskSupervisor {
+        @UserMessage("""
+                You are a supervisor coordinating multiple agents.
+                Request: {{request}}
+                """)
+        @SupervisorAgent(subAgents = { CreativeWriter.class, AudienceEditor.class }, outputKey = "supervisorResult")
+        String supervise(@V("request") String request);
+    }
+
+    // PlannerAgent test
+    @RegisterAiService
+    public interface SequenceWithPlannerAgent {
+        @SequenceAgent(outputKey = "finalResult", subAgents = {
+                TaskPlanner.class
+        })
+        String planTasks(@V("request") String request);
+    }
+
+    public interface TaskPlanner {
+        @UserMessage("""
+                You are a planner creating execution plans.
+                Request: {{request}}
+                """)
+        @PlannerAgent(outputKey = "plan", subAgents = { CreativeWriter.class, StyleEditor.class })
+        String plan(@V("request") String request);
     }
 }

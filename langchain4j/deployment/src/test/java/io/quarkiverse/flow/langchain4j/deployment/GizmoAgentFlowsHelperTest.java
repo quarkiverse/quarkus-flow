@@ -22,8 +22,12 @@ import org.junit.jupiter.api.Test;
 
 import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.agentic.declarative.A2AClientAgent;
+import dev.langchain4j.agentic.declarative.McpClientAgent;
 import dev.langchain4j.agentic.declarative.ParallelAgent;
+import dev.langchain4j.agentic.declarative.ParallelMapperAgent;
+import dev.langchain4j.agentic.declarative.PlannerAgent;
 import dev.langchain4j.agentic.declarative.SequenceAgent;
+import dev.langchain4j.agentic.declarative.SupervisorAgent;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import io.quarkiverse.flow.Flow;
 import io.quarkiverse.flow.langchain4j.workflow.flow.AgenticFlow;
@@ -164,8 +168,11 @@ class GizmoAgentFlowsHelperTest {
 
         assertThatThrownBy(() -> computeTaskNames(index, subAgents)).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("No agent method found").hasMessageContaining("ClassWithoutAgentAnnotation")
-                .hasMessageContaining(
-                        "@Agent, @SequenceAgent, @ParallelAgent, @LoopAgent, @ConditionalAgent or @A2AClientAgent");
+                .hasMessageContaining("@Agent").hasMessageContaining("@SequenceAgent")
+                .hasMessageContaining("@ParallelAgent").hasMessageContaining("@ParallelMapperAgent")
+                .hasMessageContaining("@LoopAgent").hasMessageContaining("@ConditionalAgent")
+                .hasMessageContaining("@SupervisorAgent").hasMessageContaining("@PlannerAgent")
+                .hasMessageContaining("@A2AClientAgent").hasMessageContaining("@McpClientAgent");
     }
 
     @Test
@@ -199,6 +206,51 @@ class GizmoAgentFlowsHelperTest {
         List<String> taskNames = computeTaskNames(index, subAgents);
 
         assertThat(taskNames).hasSize(1).containsExactly("callRemoteAgent");
+    }
+
+    @Test
+    @DisplayName("computeTaskNames should find methods with @ParallelMapperAgent annotation")
+    void test_computeTaskNames_parallelMapperAgent() throws IOException {
+        Index index = buildIndex(TestParallelMapperAgent.class);
+        List<Type> subAgents = List.of(
+                Type.create(DotName.createSimple(TestParallelMapperAgent.class.getName()), Type.Kind.CLASS));
+
+        List<String> taskNames = computeTaskNames(index, subAgents);
+
+        assertThat(taskNames).hasSize(1).containsExactly("processItems");
+    }
+
+    @Test
+    @DisplayName("computeTaskNames should find methods with @SupervisorAgent annotation")
+    void test_computeTaskNames_supervisorAgent() throws IOException {
+        Index index = buildIndex(TestSupervisorAgent.class);
+        List<Type> subAgents = List.of(Type.create(DotName.createSimple(TestSupervisorAgent.class.getName()), Type.Kind.CLASS));
+
+        List<String> taskNames = computeTaskNames(index, subAgents);
+
+        assertThat(taskNames).hasSize(1).containsExactly("orchestrate");
+    }
+
+    @Test
+    @DisplayName("computeTaskNames should find methods with @PlannerAgent annotation")
+    void test_computeTaskNames_plannerAgent() throws IOException {
+        Index index = buildIndex(TestPlannerAgent.class);
+        List<Type> subAgents = List.of(Type.create(DotName.createSimple(TestPlannerAgent.class.getName()), Type.Kind.CLASS));
+
+        List<String> taskNames = computeTaskNames(index, subAgents);
+
+        assertThat(taskNames).hasSize(1).containsExactly("plan");
+    }
+
+    @Test
+    @DisplayName("computeTaskNames should find methods with @McpClientAgent annotation")
+    void test_computeTaskNames_mcpClientAgent() throws IOException {
+        Index index = buildIndex(TestMcpClientAgent.class);
+        List<Type> subAgents = List.of(Type.create(DotName.createSimple(TestMcpClientAgent.class.getName()), Type.Kind.CLASS));
+
+        List<String> taskNames = computeTaskNames(index, subAgents);
+
+        assertThat(taskNames).hasSize(1).containsExactly("callMcpServer");
     }
 
     // ========== Helper Methods ==========
@@ -277,5 +329,37 @@ class GizmoAgentFlowsHelperTest {
     public interface TestA2AClientAgent {
         @A2AClientAgent(a2aServerUrl = "http://localhost:8080", outputKey = "result")
         String callRemoteAgent(String request);
+    }
+
+    /**
+     * Test agent with @ParallelMapperAgent annotation
+     */
+    public interface TestParallelMapperAgent {
+        @ParallelMapperAgent(subAgent = TestAgent1.class)
+        List<String> processItems(List<String> items);
+    }
+
+    /**
+     * Test agent with @SupervisorAgent annotation
+     */
+    public interface TestSupervisorAgent {
+        @SupervisorAgent(subAgents = { TestAgent1.class, TestAgent2.class })
+        String orchestrate(String request);
+    }
+
+    /**
+     * Test agent with @PlannerAgent annotation
+     */
+    public interface TestPlannerAgent {
+        @PlannerAgent(outputKey = "result", subAgents = { TestAgent1.class, TestAgent2.class })
+        String plan(String input);
+    }
+
+    /**
+     * Test agent with @McpClientAgent annotation
+     */
+    public interface TestMcpClientAgent {
+        @McpClientAgent(outputKey = "result")
+        String callMcpServer(String request);
     }
 }
