@@ -36,7 +36,7 @@ CREATE TABLE task_info_entity
     iteration           INT          NOT NULL,
     task_type           INT          NOT NULL CHECK (task_type IN (1, 2)),
     is_end_node         BIT,
-    retry_attempt       SMALLINT,
+    retry_attempt       INT,
     instant             DATETIMEOFFSET(6),
     next_position       VARCHAR(255),
     context             VARBINARY(MAX),
