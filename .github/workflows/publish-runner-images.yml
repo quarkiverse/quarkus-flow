@@ -114,13 +114,13 @@ jobs:
           # All variants need runner/deployment
           case "${VARIANT}" in
             minimal)
-              DEPLOYMENT_MODULES="runner/deployment,persistence/mvstore/deployment"
+              DEPLOYMENT_MODULES="runner/deployment,persistence/mvstore/deployment,oidc/deployment"
               ;;
             standard)
-              DEPLOYMENT_MODULES="runner/deployment,persistence/jpa/deployment,durable-kubernetes/deployment"
+              DEPLOYMENT_MODULES="runner/deployment,persistence/jpa/deployment,durable-kubernetes/deployment,oidc/deployment"
               ;;
             messaging)
-              DEPLOYMENT_MODULES="runner/deployment,persistence/jpa/deployment,durable-kubernetes/deployment,messaging/deployment"
+              DEPLOYMENT_MODULES="runner/deployment,persistence/jpa/deployment,durable-kubernetes/deployment,messaging/deployment,oidc/deployment"
               ;;
           esac
 

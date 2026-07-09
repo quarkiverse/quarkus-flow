@@ -1,0 +1,19 @@
+name: Flow OIDC
+description: |
+  OAuth2 / OIDC token negotiation for Quarkus Flow backed by quarkus-oidc-client.
+  Please see the main extension for more details.
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+    - workflow
+    - workflows
+    - cncf
+    - serverless
+    - oauth2
+    - oidc
+    - security
+  guide: https://docs.quarkiverse.io/quarkus-flow/dev/
+  categories:
+    - "integration"
+    - "security"
+  status: "preview"

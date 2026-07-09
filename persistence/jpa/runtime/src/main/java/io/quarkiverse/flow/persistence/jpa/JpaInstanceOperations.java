@@ -35,7 +35,7 @@ import io.serverlessworkflow.impl.persistence.RetriedTaskInfo;
 public class JpaInstanceOperations implements PersistenceInstanceOperations {
 
     @Inject
-    ProcessInstanceRepository repository;
+    WorkflowInstanceRepository repository;
 
     @Inject
     CloudEventRepository ceRepository;
@@ -49,7 +49,7 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     @Override
     public void writeInstanceData(WorkflowContextData workflowContext) {
         WorkflowInstanceData instance = workflowContext.instanceData();
-        repository.persist(new ProcessInstanceEntity(workflowContext.definition().application().id(),
+        repository.persist(new WorkflowInstanceEntity(workflowContext.definition().application().id(),
                 workflowContext.definition().id(), instance.id(), instance.startedAt(), instance.input()));
     }
 
@@ -124,12 +124,12 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
         QuarkusTransaction.begin();
         WorkflowDefinitionId id = definition.id();
         return repository.stream(
-                "select x from ProcessInstanceEntity x where x.applicationId=?1 and x.workflowNamespace=?2 and x.workflowName=?3 and x.workflowVersion=?4",
+                "select x from WorkflowInstanceEntity x where x.applicationId=?1 and x.workflowNamespace=?2 and x.workflowName=?3 and x.workflowVersion=?4",
                 applicationId, id.namespace(), id.name(), id.version()).map(this::from)
                 .onClose(() -> QuarkusTransaction.commit());
     }
 
-    private PersistenceWorkflowInfo from(ProcessInstanceEntity x) {
+    private PersistenceWorkflowInfo from(WorkflowInstanceEntity x) {
         return new PersistenceWorkflowInfo(x.getInstanceId(), x.getStartedAt(), x.getInput(), x.getStatus(),
                 from(x.getTasks()));
     }
@@ -151,14 +151,14 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     @Override
     @Transactional
     public Optional<PersistenceWorkflowInfo> readWorkflowInfo(WorkflowDefinition definition, String instanceId) {
-        return repository.findByIdOptional(new ProcessInstanceKey(instanceId, definition.application().id())).map(this::from);
+        return repository.findByIdOptional(new WorkflowInstanceKey(instanceId, definition.application().id())).map(this::from);
     }
 
-    private ProcessInstanceEntity find(WorkflowContextData workflowContext) {
+    private WorkflowInstanceEntity find(WorkflowContextData workflowContext) {
         return repository.findById(toKey(workflowContext));
     }
 
-    private ProcessInstanceKey toKey(WorkflowContextData workflowContext) {
-        return new ProcessInstanceKey(workflowContext.instanceData().id(), workflowContext.definition().application().id());
+    private WorkflowInstanceKey toKey(WorkflowContextData workflowContext) {
+        return new WorkflowInstanceKey(workflowContext.instanceData().id(), workflowContext.definition().application().id());
     }
 }

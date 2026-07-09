@@ -24,6 +24,12 @@
             <artifactId>quarkus-flow-durable-kubernetes</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- Added after Fabric8 upgrade to 7.6.0+ that uses Netty self-signed certificate to warmup TLS on Kubernetes testing -->
+        <!-- Native image would fail if this dependency was not there -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit</artifactId>

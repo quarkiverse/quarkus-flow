@@ -1,0 +1,23 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/overridden/oauth2/token",
+    "bodyPatterns": [
+      {
+        "contains": "grant_type=client_credentials"
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "access_token": "overridden-access-token",
+      "token_type": "Bearer",
+      "expires_in": 3600,
+      "scope": "read"
+    }
+  }
+}

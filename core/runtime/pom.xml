@@ -61,6 +61,10 @@
             <groupId>io.serverlessworkflow</groupId>
             <artifactId>serverlessworkflow-impl-jackson-jwt</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.serverlessworkflow</groupId>
+            <artifactId>serverlessworkflow-impl-function</artifactId>
+        </dependency>
 
         <!-- Quarkus -->
         <dependency>
@@ -149,6 +153,8 @@
                             </conditionalDevDependencies>
                             <conditionalDependencies>
                                 <dependency>${project.groupId}:${project.artifactId}-messaging:${project.version}
+                                </dependency>
+                                <dependency>${project.groupId}:${project.artifactId}-oidc:${project.version}
                                 </dependency>
                             </conditionalDependencies>
                             <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}

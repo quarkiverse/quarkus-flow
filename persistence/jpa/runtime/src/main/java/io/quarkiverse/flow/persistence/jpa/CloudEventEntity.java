@@ -7,8 +7,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
-import org.hibernate.annotations.ColumnDefault;
-
 import io.cloudevents.CloudEvent;
 import io.cloudevents.CloudEventData;
 import io.cloudevents.SpecVersion;
@@ -23,7 +21,6 @@ public class CloudEventEntity {
     private String regId;
 
     @Column
-    @ColumnDefault("false")
     private boolean processedFlag;
 
     @Column(nullable = false)

@@ -69,7 +69,7 @@ jobs:
           # This also processes k8s manifests with Maven filtering (${project.version} replacement)
           # Must include deployment modules explicitly since -pl -am only builds runtime dependencies
           mvn -DskipTests -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp \
-              -pl runner/deployment,persistence/jpa/deployment,durable-kubernetes/deployment,runner/app -am -P image-standard install
+              -pl runner/deployment,persistence/jpa/deployment,durable-kubernetes/deployment,oidc/deployment,runner/app -am -P image-standard install
 
       - name: Build runner standard image
         working-directory: runner/app

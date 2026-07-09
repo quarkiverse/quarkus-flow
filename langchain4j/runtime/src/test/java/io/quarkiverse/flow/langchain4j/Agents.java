@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.langchain4j;
 
 import dev.langchain4j.agentic.Agent;
+import dev.langchain4j.agentic.declarative.A2AClientAgent;
 import dev.langchain4j.agentic.declarative.SequenceAgent;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
@@ -69,5 +70,28 @@ public class Agents {
         @Agent(description = "A dumb agent to workaround a dumb check", outputKey = "mood")
         String dumb4();
 
+    }
+
+    @RegisterAiService
+    public interface SequenceWithA2AAgent {
+        @SequenceAgent(outputKey = "finalResult", subAgents = {
+                RemoteDataFetcher.class, LocalProcessor.class
+        })
+        String processWithRemote(@V("request") String request);
+    }
+
+    public interface RemoteDataFetcher {
+        @A2AClientAgent(a2aServerUrl = "http://localhost:7777", description = "Fetch data from remote A2A agent", outputKey = "remoteData")
+        String fetchData(@V("request") String request);
+    }
+
+    public interface LocalProcessor {
+        @UserMessage("""
+                You are a data processor.
+                Process the following data and return a summary.
+                Data: {{remoteData}}
+                """)
+        @Agent(description = "Process the fetched data locally", outputKey = "finalResult")
+        String process(@V("remoteData") String data);
     }
 }

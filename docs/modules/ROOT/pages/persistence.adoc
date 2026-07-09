@@ -195,7 +195,8 @@ Then create a migration script at `src/main/resources/db/migration/V1__create_ta
 
 [tabs]
 ====
-+ H2::
+H2::
++
 --
 [source,sql]
 ----
@@ -203,7 +204,8 @@ include::{examples-dir}/persistence/V1__create_tables_h2.sql[]
 ----
 --
 
-+ MySQL::
+MySQL::
++
 --
 [source,sql]
 ----
@@ -211,7 +213,8 @@ include::{examples-dir}/persistence/V1__create_tables_mysql.sql[]
 ----
 --
 
-+ PostgreSQL::
+PostgreSQL::
++
 --
 [source,sql]
 ----
@@ -219,7 +222,8 @@ include::{examples-dir}/persistence/V1__create_tables_pg.sql[]
 ----
 --
 
-+ Oracle::
+Oracle::
++
 --
 [source,sql]
 ----
@@ -227,7 +231,8 @@ include::{examples-dir}/persistence/V1__create_tables_oracle.sql[]
 ----
 --
 
-+ MSSQL::
+MSSQL::
++
 --
 [source,sql]
 ----
