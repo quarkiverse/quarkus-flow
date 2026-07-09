@@ -108,7 +108,7 @@ When you annotate an agentic method with `@ScheduleOn`, Quarkus Flow generates a
 - The schedulable workflow (e.g., `GeneratedConferenceReviewerPlannerSchedulable`) that handles the trigger
 - The agentic workflow (e.g., `GeneratedConferenceReviewerPlanner`) that executes the actual agent logic
 
-* **DevUI visualization**: In the Quarkus Dev UI, schedulable workflows are displayed with a `-schedulable` suffix in their workflow ID for easy identification. For example, `conference-reviewer-planner-schedulable` is the schedulable wrapper that triggers `conference-reviewer-planner`.
+* **Dev UI visualization**: In the Quarkus Dev UI, schedulable workflows are displayed with a `-schedulable` suffix in their workflow ID for easy identification. For example, `conference-reviewer-planner-schedulable` is the schedulable wrapper that triggers `conference-reviewer-planner`.
 
 This design keeps your agent interface clean while automatically handling the scheduling infrastructure and maintaining a clear separation between trigger handling and agent execution.
 

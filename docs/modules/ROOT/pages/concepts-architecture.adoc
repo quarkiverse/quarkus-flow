@@ -38,7 +38,7 @@ For callback-driven resume flows, the workflow instance ID is usually captured f
 == Agentic AI Topology
 Quarkus Flow treats LangChain4j Agents as native task workers. Conceptually, an AI orchestration is not a separate engine; it is integrated directly into the standard workflow lifecycle.
 
-* **LLM Calls as Tasks:** Requesting a generation from an LLM is treated as call task. The workflow passes the current context to the prompt and waits for the response.
+* **LLM Calls as Tasks:** Requesting a generation from an LLM is treated as a call task. The workflow passes the current context to the prompt and waits for the response.
 * **Structured Outputs:** Because the workflow context is typed, LLM responses can be mapped directly into pure Java Records, ensuring the workflow continues with strictly structured data.
 * **Human-in-the-Loop (HITL):** For agentic loops requiring human oversight, the workflow can be designed to transition to a paused event-wait task. The AI's output is held in the context until a human explicitly emits a continuation event (often via a REST endpoint or event), demonstrating the synergy between standard event correlation and AI guardrails.
 
