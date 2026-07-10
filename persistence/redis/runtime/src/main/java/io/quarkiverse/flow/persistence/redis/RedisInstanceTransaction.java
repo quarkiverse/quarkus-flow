@@ -122,7 +122,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
         String key = taskId(workflowContext, taskContext);
         operations.add(tx -> hashCommands(tx).hset(key, STATUS, MarshallingUtils.writeEnum(factory, TaskStatus.RETRIED)));
         operations.add(tx -> hashCommands(tx).hset(key, RETRY_ATTEMPT,
-                MarshallingUtils.writeShort(factory, ((TaskContext) taskContext).retryAttempt())));
+                MarshallingUtils.writeInt(factory, ((TaskContext) taskContext).retryAttempt())));
     }
 
     @Override
@@ -349,7 +349,9 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
                     MarshallingUtils.readString(factory, data.get(NEXT)),
                     readInt(factory, data.get(ITERATION)));
         } else if (status == TaskStatus.RETRIED) {
-            return new RetriedTaskInfo(MarshallingUtils.readShort(factory, data.get(RETRY_ATTEMPT)));
+            byte[] retryBytes = data.get(RETRY_ATTEMPT);
+            return new RetriedTaskInfo(retryBytes.length == 4 ? MarshallingUtils.readInt(factory, retryBytes)
+                    : MarshallingUtils.readShort(factory, retryBytes));
         } else {
             throw new IllegalArgumentException("Unsupported status " + status);
         }

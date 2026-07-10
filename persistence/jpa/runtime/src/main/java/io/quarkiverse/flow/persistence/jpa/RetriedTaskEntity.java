@@ -12,14 +12,14 @@ public class RetriedTaskEntity extends TaskInfoEntity {
     }
 
     @Column
-    private short retryAttempt;
+    private int retryAttempt;
 
-    public RetriedTaskEntity(TaskInfoKey key, short retryAttempt) {
+    public RetriedTaskEntity(TaskInfoKey key, int retryAttempt) {
         super(key);
         this.retryAttempt = retryAttempt;
     }
 
-    public short getRetryAttempt() {
+    public int getRetryAttempt() {
         return retryAttempt;
     }
 
