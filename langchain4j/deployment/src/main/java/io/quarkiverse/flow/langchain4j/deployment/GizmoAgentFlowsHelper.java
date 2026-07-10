@@ -124,7 +124,9 @@ final class GizmoAgentFlowsHelper {
 
         throw new IllegalStateException(
                 "No agent method found in " + subAgentType.name() +
-                        ". Expected a method annotated with one of: @Agent, @SequenceAgent, @ParallelAgent, @LoopAgent, @ConditionalAgent or @A2AClientAgent. "
+                        ". Expected a method annotated with one of: @Agent, @SequenceAgent, @ParallelAgent, @ParallelMapperAgent, "
+                        +
+                        "@LoopAgent, @ConditionalAgent, @SupervisorAgent, @PlannerAgent, @A2AClientAgent, or @McpClientAgent. "
                         +
                         "Verify the class has the correct LangChain4j annotations.");
     }

@@ -107,4 +107,73 @@ public class FlowLangChain4jProcessorTest {
         assertNotNull(wf.getDocument(), "Workflow document should not be null");
     }
 
+    @Test
+    void shouldRegisterWorkflowForSequenceAgentWithParallelMapper() {
+        WorkflowDefinitionId expectedId = WorkflowNameUtils.newId(Agents.SequenceWithParallelMapperAgent.class);
+
+        WorkflowApplication app = Arc.container().instance(WorkflowApplication.class).get();
+
+        WorkflowDefinition definition = app.workflowDefinitions().get(expectedId);
+        assertNotNull(definition, "Expected workflow definition to be registered for SequenceWithParallelMapperAgent");
+
+        Workflow wf = definition.workflow();
+
+        // Verify the basic identity matches what the generated Flow set
+        assertEquals(expectedId.name(), wf.getDocument().getName(), "Workflow name should match WorkflowNameUtils");
+        assertEquals(expectedId.namespace(), wf.getDocument().getNamespace(),
+                "Workflow namespace should match WorkflowNameUtils");
+        assertEquals(expectedId.version(), wf.getDocument().getVersion(),
+                "Workflow version should match WorkflowNameUtils");
+
+        // KEY VALIDATION: The workflow was successfully generated and registered.
+        // This proves that @ParallelMapperAgent annotation was recognized during build-time processing.
+        assertNotNull(wf.getDocument(), "Workflow document should not be null");
+    }
+
+    @Test
+    void shouldRegisterWorkflowForSequenceAgentWithSupervisor() {
+        WorkflowDefinitionId expectedId = WorkflowNameUtils.newId(Agents.SequenceWithSupervisorAgent.class);
+
+        WorkflowApplication app = Arc.container().instance(WorkflowApplication.class).get();
+
+        WorkflowDefinition definition = app.workflowDefinitions().get(expectedId);
+        assertNotNull(definition, "Expected workflow definition to be registered for SequenceWithSupervisorAgent");
+
+        Workflow wf = definition.workflow();
+
+        // Verify the basic identity matches what the generated Flow set
+        assertEquals(expectedId.name(), wf.getDocument().getName(), "Workflow name should match WorkflowNameUtils");
+        assertEquals(expectedId.namespace(), wf.getDocument().getNamespace(),
+                "Workflow namespace should match WorkflowNameUtils");
+        assertEquals(expectedId.version(), wf.getDocument().getVersion(),
+                "Workflow version should match WorkflowNameUtils");
+
+        // KEY VALIDATION: The workflow was successfully generated and registered.
+        // This proves that @SupervisorAgent annotation was recognized during build-time processing.
+        assertNotNull(wf.getDocument(), "Workflow document should not be null");
+    }
+
+    @Test
+    void shouldRegisterWorkflowForSequenceAgentWithPlanner() {
+        WorkflowDefinitionId expectedId = WorkflowNameUtils.newId(Agents.SequenceWithPlannerAgent.class);
+
+        WorkflowApplication app = Arc.container().instance(WorkflowApplication.class).get();
+
+        WorkflowDefinition definition = app.workflowDefinitions().get(expectedId);
+        assertNotNull(definition, "Expected workflow definition to be registered for SequenceWithPlannerAgent");
+
+        Workflow wf = definition.workflow();
+
+        // Verify the basic identity matches what the generated Flow set
+        assertEquals(expectedId.name(), wf.getDocument().getName(), "Workflow name should match WorkflowNameUtils");
+        assertEquals(expectedId.namespace(), wf.getDocument().getNamespace(),
+                "Workflow namespace should match WorkflowNameUtils");
+        assertEquals(expectedId.version(), wf.getDocument().getVersion(),
+                "Workflow version should match WorkflowNameUtils");
+
+        // KEY VALIDATION: The workflow was successfully generated and registered.
+        // This proves that @PlannerAgent annotation was recognized during build-time processing.
+        assertNotNull(wf.getDocument(), "Workflow document should not be null");
+    }
+
 }
