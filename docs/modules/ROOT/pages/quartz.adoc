@@ -4,7 +4,7 @@ include::includes/attributes.adoc[]
 
 The Serverless Workflow specification allows you to define workflows that execute automatically on a recurring schedule.
 
-By default, the ServerlessWorkflow SDK engine uses a lightweight, in-memory implementation (based on `ScheduledExecutorService` and the `cron-utils` library) to trigger these executions. Additionally, Quakus flow provides a xref:scheduler.adoc[native Quarkus scheduler] for stand alone deployments. However, for a production-grade Quarkus application deployed in multiple clusters, **persistence Quartz scheduler must be used to guarantee proper function**. The contrary is also true, you must not use this one for stand alone deployments. 
+By default, the Serverless Workflow SDK engine uses a lightweight, in-memory implementation (based on `ScheduledExecutorService` and the `cron-utils` library) to trigger these executions. Additionally, Quarkus Flow provides a xref:scheduler.adoc[native Quarkus scheduler] for standalone deployments. However, for a production-grade Quarkus application deployed as a cluster of multiple instances, you must back the Quartz scheduler with a persistent, clustered JDBC job store (store-type=jdbc-cmt, clustered=true) to guarantee correct behavior. The reverse is also true: do not use it for standalone deployments.
 
 This guide shows how to:
 
@@ -17,7 +17,7 @@ This guide shows how to:
 
 == 1. Add the Quartz Scheduler dependency
 
-To replace the default engine scheduler with the Quartz Scheduler, first step is to add the `quarkus-flow-quartz-scheduler` extension to your project.
+To replace the default engine scheduler with the Quartz Scheduler, the first step is to add the `quarkus-flow-quartz-scheduler` extension to your project.
 
 .pom.xml
 [source,xml]
@@ -31,10 +31,10 @@ To replace the default engine scheduler with the Quartz Scheduler, first step is
 
 Adding this dependency automatically wires Quarkus Flow to use the underlying Quarkus Quartz scheduling infrastructure. This gives you access to robust application lifecycle management and all standard link:https://quarkus.io/guides/scheduler-reference#configuration-reference[Quarkus Scheduler configuration properties].
 
-Quarkus Quartz scheduler requires persistence to properly function in a clustered environment. Currently Quarkus Quartz only supports relational DB. Quarkus Flow provides a Flyway script that contains the definition of the tables required by quarkus. In order your Quarkus application to enable persistence for Quartz and use that script to automatically create the tables, you need to add following  configuration to your application.properties file. 
+Quarkus Quartz scheduler requires persistence to properly function in a clustered environment. Currently Quarkus Quartz only supports relational DB. Quarkus Flow provides a Flyway script that contains the definition of the tables required by Quarkus. To enable persistence for Quartz in your Quarkus application and use that script to automatically create the tables, you need to add the following configuration to your application.properties file.
 
 .application.properties
-[source,xml]
+[source,properties]
 ----
 # Quartz configuration
 quarkus.quartz.clustered=true
@@ -50,7 +50,7 @@ quarkus.flyway.baseline-version=1.0
 quarkus.flyway.baseline-description=Quartz
 ----
 
-In addition to these properties, you need to setup your DB connection details and driver as indicated in link:https://quarkus.io/guides/datasource[Quarkus Datasource guide]. For example,for a postgresql DB, you will need to update your application.properties and pom.xml files in the following way: 
+In addition to these properties, you need to set up your DB connection details and driver as indicated in link:https://quarkus.io/guides/datasource[Quarkus Datasource guide]. For example, for a postgresql DB, you will need to update your application.properties and pom.xml files in the following way:
 
 .application.properties
 [source,properties]
@@ -101,13 +101,13 @@ do:
         endpoint: "https://api.example.com/sync"
 ----
 
-=== Quartz cron format 
+=== Quartz cron format
 
 The Serverless Workflow specification mandates that CRON expressions follow the standard **Unix** format.
 
-The Quarkus Quartz Scheduler, however, use the link:https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html[Quartz] format. This means that, if you are using the Unix format in your workflow definition, you should change the CRON expression to use Quartz format. 
+The Quarkus Quartz Scheduler, however, uses the link:https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html[Quartz] format. This means that, if you are using the Unix format in your workflow definition, you should change the CRON expression to use Quartz format.
 
 == See also
 
-* link:https://quarkus.io/guides/quartz [Quarkus Quartz guide]
+* link:https://quarkus.io/guides/quartz[Quarkus Quartz guide]
 * link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#scheduling[Serverless Workflow Specification: Scheduling] — full details and edge cases for the `every`, `after`, and `cron` syntax.

@@ -188,7 +188,7 @@ do:
 
 
 == 7. Data Transformation (`set`)
-To format data without external services, use the `set` task. This allows you to construct new JSON objects or map existing state data[cite: 80, 81].
+To format data without external services, use the `set` task. This allows you to construct new JSON objects or map existing state data.
 
 [source,yaml]
 ----

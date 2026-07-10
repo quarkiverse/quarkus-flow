@@ -218,7 +218,7 @@ quarkus_flow_task_duration_seconds_bucket{workflow="simple-workflow",task="getPe
 [[fault-tolerance-metrics]]
 == Fault Tolerance Metrics
 
-Quarkus Flow HTTP calls xref:fault-tolerance.adoc[integrates with Smallrye Fault Tolerance] to provide resilience and fault tolerance capabilities.
+Quarkus Flow HTTP calls xref:fault-tolerance.adoc[integrate with SmallRye Fault Tolerance] to provide resilience and fault tolerance capabilities.
 Quarkus Flow exports metrics for xref:fault-tolerance.adoc#config-retries[Retry] and xref:fault-tolerance.adoc#configuring-circuit-breakers[Circuit Breaker] strategies.
 
 === Retry Metrics
