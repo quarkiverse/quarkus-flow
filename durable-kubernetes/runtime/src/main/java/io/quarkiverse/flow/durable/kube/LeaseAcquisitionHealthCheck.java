@@ -3,12 +3,12 @@ package io.quarkiverse.flow.durable.kube;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.eclipse.microprofile.health.Readiness;
 
+import io.quarkiverse.flow.durable.kube.config.FlowDurableKubeConfig;
 import io.quarkiverse.flow.durable.kube.config.LeaseGroupConfig;
 import io.quarkiverse.flow.durable.kube.config.PoolConfig;
 
@@ -33,12 +33,14 @@ public class LeaseAcquisitionHealthCheck implements HealthCheck {
     @Inject
     LocalStrategy localStrategy;
 
-    @ConfigProperty(name = "quarkus.flow.durable.kube.health.readiness.require-lease", defaultValue = "true")
-    boolean requireLease;
+    @Inject
+    FlowDurableKubeConfig durableKubeConfig;
 
     @Override
     public HealthCheckResponse call() {
         boolean enabled = leaseConfig.member().enabled() && !localStrategy.enabled();
+        boolean requireLease = durableKubeConfig.health().readiness().requireLease();
+
         String lease = memberLeaseCoordinator.currentLeaseOrNull();
 
         HealthCheckResponseBuilder b = HealthCheckResponse.named(NAME)

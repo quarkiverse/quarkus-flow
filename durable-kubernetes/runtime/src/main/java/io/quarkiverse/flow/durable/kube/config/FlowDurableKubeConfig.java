@@ -10,8 +10,12 @@ import io.smallrye.config.WithDefault;
 @ConfigMapping(prefix = "quarkus.flow.durable.kube")
 public interface FlowDurableKubeConfig {
 
+    Health health();
+
     @ConfigGroup
     interface Health {
+
+        Readiness readiness();
 
         @ConfigGroup
         interface Readiness {
