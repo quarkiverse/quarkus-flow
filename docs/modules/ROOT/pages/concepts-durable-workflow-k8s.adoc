@@ -155,7 +155,7 @@ spec:
 
 == 6. Verify the Architecture in Production
 
-Once deployed, you can use `kubectl` to verify the leader election and sharding is working correctly.
+Once deployed, you can use `kubectl` to verify the leader election and sharding are working correctly.
 
 === View the Leases
 [source,bash]

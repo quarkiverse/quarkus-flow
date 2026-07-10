@@ -81,7 +81,7 @@ include::{examples-dir}/org/acme/HttpOauth2Workflow.java[]
 
 [#events]
 == Event Consumption and Production
-To integrate the workflow with CloudEvents. Use `listen` to pause for events and `emit` to publish them.
+To integrate the workflow with CloudEvents, use `listen` to pause for events and `emit` to publish them.
 
 Listening for an Event:
 [source,java]
@@ -97,7 +97,7 @@ include::{examples-dir}/org/acme/EmitWorkflow.java[]
 
 [#conditional_logic]
 == Conditional Logic
-Branch execution based on data state using `switchCase(...)`, `switchWhen(...)` and `switchWhenOrElse(...)``.
+Branch execution based on data state using `switchCase(...)`, `switchWhen(...)` and `switchWhenOrElse(...)`.
 
 [source,java]
 ----

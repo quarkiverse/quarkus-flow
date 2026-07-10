@@ -191,59 +191,41 @@ quarkus.flyway.enabled=true
 quarkus.flyway.migrate-at-start=true
 ----
 
-Then create a migration script at `src/main/resources/db/migration/V1__create_tables.sql` with the three tables required by the JPA provider:
+Then create a migration script at `src/main/resources/db/migration/V1__create_tables.sql` with the three tables required by the JPA provider. Use the script that matches your target database:
 
-[tabs]
-====
-H2::
-+
---
+.H2
 [source,sql]
 ----
 include::{examples-dir}/persistence/V1__create_tables_h2.sql[]
 ----
---
 
-MySQL::
-+
---
+.MySQL
 [source,sql]
 ----
 include::{examples-dir}/persistence/V1__create_tables_mysql.sql[]
 ----
---
 
-PostgreSQL::
-+
---
+.PostgreSQL
 [source,sql]
 ----
 include::{examples-dir}/persistence/V1__create_tables_pg.sql[]
 ----
---
 
-Oracle::
-+
---
+.Oracle
 [source,sql]
 ----
 include::{examples-dir}/persistence/V1__create_tables_oracle.sql[]
 ----
---
 
-MSSQL::
-+
---
+.MSSQL
 [source,sql]
 ----
 include::{examples-dir}/persistence/V1__create_tables_mssql.sql[]
 ----
---
-====
 
 [NOTE]
 ====
-Each tab provides the migration script for a specific database. Pick the tab that matches your target database and adapt it further if your schema or naming conventions differ.
+Pick the script that matches your target database and adapt it further if your schema or naming conventions differ.
 Note that the `time` column is a reserved word in some databases, so it is quoted on MySQL (`` `time` ``) and MSSQL (`[time]`).
 ====
 
