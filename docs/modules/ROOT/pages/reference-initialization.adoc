@@ -132,7 +132,7 @@ When persistence support is available, the extension contributes a persistence h
 
 ==== Auto-Restore on Startup
 
-If `quarkus.flow.persistence.autoRestore=true`, interrupted workflows are restored automatically after the application becomes ready. The restore step looks up workflows owned by the current application ID and resumes them from their last checkpoint.
+If `quarkus.flow.persistence.auto-restore=true`, interrupted workflows are restored automatically after the application becomes ready. The restore step looks up workflows owned by the current application ID and resumes them from their last checkpoint.
 
 === Durable Kubernetes Lease Coordination
 
@@ -204,7 +204,7 @@ Understanding when each phase occurs:
 *Solution*:
 
 * Verify async warmup in production.
-* Temporarily disable auto-restore with `quarkus.flow.persistence.autoRestore=false`.
+* Temporarily disable auto-restore with `quarkus.flow.persistence.auto-restore=false`.
 * Profile startup with `-Dquarkus.profile.record-startup-method-times=true`.
 
 === Lease Acquisition Timeout (Kubernetes)
@@ -237,7 +237,7 @@ Understanding when each phase occurs:
 
 * Verify the persistence extension is installed.
 * Keep the application ID stable with `quarkus.application.name` or Durable Kubernetes.
-* Enable restore with `quarkus.flow.persistence.autoRestore=true`.
+* Enable restore with `quarkus.flow.persistence.auto-restore=true`.
 
 == Extension Points for Custom Initialization
 
