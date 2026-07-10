@@ -4,7 +4,7 @@ include::includes/attributes.adoc[]
 
 The Serverless Workflow specification allows you to define workflows that execute automatically on a recurring schedule.
 
-By default, the Serverless Workflow SDK engine uses a lightweight, in-memory implementation (based on `ScheduledExecutorService` and the `cron-utils` library) to trigger these executions. Additionally, Quarkus Flow provides a xref:scheduler.adoc[native Quarkus scheduler] for standalone deployments. However, for a production-grade Quarkus application deployed in multiple clusters, a **persistent Quartz scheduler must be used to guarantee proper function**. The contrary is also true: you must not use this one for standalone deployments.
+By default, the Serverless Workflow SDK engine uses a lightweight, in-memory implementation (based on `ScheduledExecutorService` and the `cron-utils` library) to trigger these executions. Additionally, Quarkus Flow provides a xref:scheduler.adoc[native Quarkus scheduler] for standalone deployments. However, for a production-grade Quarkus application deployed as a cluster of multiple instances, you must back the Quartz scheduler with a persistent, clustered JDBC job store (store-type=jdbc-cmt, clustered=true) to guarantee correct behavior. The reverse is also true: do not use it for standalone deployments.
 
 This guide shows how to:
 
