@@ -14,7 +14,7 @@
         <esbuild-maven-plugin.version>2.0.0</esbuild-maven-plugin.version>
         <react.version>19.2.7</react.version>
         <scheduler.version>0.27.0</scheduler.version>
-        <serverlessworkflow.diagram-editor.version>0.0.0</serverlessworkflow.diagram-editor.version>
+        <serverlessworkflow.diagram-editor.version>0.1.0</serverlessworkflow.diagram-editor.version>
         <use-sync-external-store.version>1.6.0</use-sync-external-store.version>
     </properties>
 
