@@ -79,9 +79,9 @@ The main question is how persistence affects latency as request rate increases.
 
 image::task_orchestration_diagram_comparison.png[Task Orchestration latency comparison,align=center]
 
-* At low load (linear scale) the performance differences between the high-efficiency persistence modes (NoPersistence, File) against JPA, Redis, and Valkey.
+* At low load (linear scale) the performance differences between the high-efficiency persistence modes (NoPersistence, File) and JPA, Redis, and Valkey are minimal.
 * In Redis and Valkey, the latency cost per task remains manageable at 20 req/s but explodes as the load hits 150 req/s, especially for the 100-step workflow.
-* At medium load and high load (logarithmic scale on the Y-axis to make the chart readable) Redis and Valkey exhibit massive latency spikes (RTT-induced delay exceeds the time between incoming requests), while NoPersistence and File modes remain stable at sub-10ms ranges.  JPA performs better than Redis/Valkey at 80 req/s (only 17 drops), due to efficient connection pooling.
+* At medium load and high load (logarithmic scale on the Y-axis to make the chart readable) Redis and Valkey exhibit massive latency spikes (RTT-induced delay exceeds the time between incoming requests), while NoPersistence and File modes remain stable at sub-10ms ranges. JPA performs better than Redis/Valkey at 80 req/s (only 17 drops), due to efficient connection pooling.
 
 == TaskOutput Processing
 

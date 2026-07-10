@@ -16,7 +16,7 @@ To understand how schedulable workflows are generated and how they relate to the
 This guide shows how to:
 
 * Trigger an agentic workflow from a CloudEvent.
-* Send the event that triggers the workflow, from Microprofile Reactive Messaging connector or from `EventPublisher`.
+* Send the event that triggers the workflow, from MicroProfile Reactive Messaging connector or from `EventPublisher`.
 * Trigger it on a recurring CRON schedule.
 * Trigger it periodically with a fixed every.
 * Understand why only one trigger can be configured per method.
@@ -144,7 +144,7 @@ The `proposalId` field maps to the `proposalId` parameter, and `reviewerName` ma
 
 An `event` trigger only fires when a CloudEvent of the configured type reaches the engine.
 
-==== Microprofile Reactive Messaging Bridge (recommended)
+==== MicroProfile Reactive Messaging Bridge (recommended)
 
 The most common way is to send it from an external system through the messaging bridge: publish a CloudEvent
 to the inbound `flow-in` channel and the engine matches its `type` against your
