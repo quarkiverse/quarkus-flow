@@ -31,11 +31,6 @@ public class ClientCredentialsFlow extends Flow {
     @Override
     public Workflow descriptor() {
         return FuncWorkflowBuilder.workflow(NAME, "quarkus-flow")
-                .use(use -> use.authentications(auth -> {
-                    auth.authentication("global", r -> r.oauth2(
-                            oauth2 -> oauth2.authority("https://api.github.com")
-                                    .grant(CLIENT_CREDENTIALS)));
-                }))
                 .tasks(
                         FuncDSL.call(
                                 FuncDSL.http("listImages")

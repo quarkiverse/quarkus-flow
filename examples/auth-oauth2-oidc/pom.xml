@@ -50,12 +50,12 @@
             <artifactId>quarkus-flow</artifactId>
             <version>${quarkus.flow.version}</version>
         </dependency>
-        <!-- quarkus-oidc-client on the classpath auto-activates the quarkus-flow-oidc extension
-             (declared as a conditional dependency of quarkus-flow), which delegates OAuth2/OIDC
-             token negotiation to quarkus-oidc-client. -->
+        <!-- quarkus-flow-oidc provides OAuth2/OIDC authentication for workflows
+             and brings quarkus-oidc-client as a transitive dependency. -->
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-oidc-client</artifactId>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-oidc</artifactId>
+            <version>${quarkus.flow.version}</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

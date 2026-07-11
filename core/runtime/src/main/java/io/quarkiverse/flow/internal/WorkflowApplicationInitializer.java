@@ -28,7 +28,7 @@ public class WorkflowApplicationInitializer {
     WorkflowApplication application;
 
     @Inject
-    Event<WorkflowApplicationReady> applicationReadyEvent;
+    Event<WorkflowApplicationReadyEvent> applicationReadyEvent;
 
     @Inject
     LaunchMode launchMode;
@@ -52,12 +52,11 @@ public class WorkflowApplicationInitializer {
     private void doStart() {
         try {
             // Force the CDI container to fully initialize the WorkflowApplication.
-            application.id();
-            LOG.info("Flow: WorkflowApplication is ready. Starting workflow definitions warmup.");
+            LOG.info("Flow: WorkflowApplication (id: '{}') is ready. Starting workflow definitions warmup.", application.id());
             warmUpWorkflowDefinitions();
             appInfo = new WorkflowApplicationInfo(application.id());
             LOG.info("Flow: Workflow definitions warmup complete.");
-            applicationReadyEvent.fire(new WorkflowApplicationReady(application.id()));
+            applicationReadyEvent.fire(new WorkflowApplicationReadyEvent(application.id()));
         } catch (Exception e) {
             LOG.error("Flow: Failed to initialize and warm up workflows", e);
             appInfo = new WorkflowApplicationInfo(e);

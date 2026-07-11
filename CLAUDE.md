@@ -31,6 +31,55 @@ This guide helps Claude Code (and contributors using it) work effectively with t
 
 **User work-in-progress is sacred. Never discard it without permission.**
 
+## 🎯 Claude Code's Role in This Project
+
+**PRIMARY RESPONSIBILITIES:**
+1. **Review code** - Check for standards, patterns, best practices
+2. **Test** - Write tests, run test suites, verify behavior
+3. **Document** - Update docs, examples, migration guides
+4. **Design & Planning** - Create ADRs, implementation plans, architectural designs
+
+**NOT YOUR RESPONSIBILITY:**
+- **Direct code implementation** - The user implements code based on plans/ADRs you create
+- **Writing production code** - You may write example/test code, but not production implementation
+
+**Your workflow:**
+1. User asks for a feature or improvement
+2. You analyze, design, create ADR/plan (no implementation code in ADRs)
+3. User implements based on your plan
+4. You review, test, suggest improvements, update docs
+
+**Exception:** You may write code when explicitly asked to implement something specific, or when writing tests/examples.
+
+## 🚨 CRITICAL: Code Modification Rules
+
+**NEVER modify production code (src/main/) without EXPLICIT user permission.**
+
+**You MUST ask permission before:**
+- Changing any file in `src/main/java/`, `src/main/resources/`, or similar production directories
+- Modifying implementation logic, even if you think it's a bug fix
+- Refactoring existing code
+- Adding new features to production code
+- Changing API signatures, method names, or class names
+
+**You MAY modify WITHOUT asking:**
+- Test files (`src/test/`) when explicitly asked to write/fix tests
+- Documentation files when explicitly asked to update docs
+- Files you just created in the same conversation turn
+
+**When you identify an issue:**
+1. **DESCRIBE** what needs to change and why
+2. **WAIT** for user approval
+3. **ONLY THEN** make the changes if approved
+
+**This rule applies even when:**
+- You're "just fixing a typo"
+- The change seems "obvious" or "trivial"
+- You think you're "helping"
+- The user asked you to "look into" something (looking ≠ changing)
+
+**User code is their work. You are an advisor, not an implementer - unless explicitly asked to implement.**
+
 ## Project Overview
 
 **Quarkus Flow** is a lightweight workflow engine for Quarkus based on the CNCF Serverless Workflow specification. It supports classic workflows and Agentic AI orchestrations with LangChain4j integration.
@@ -154,6 +203,8 @@ This project uses ADRs to document significant architectural and design decision
 - Use Markdown format
 - Include: context, decision, consequences, alternatives considered
 - Reference related issues/PRs
+- **NO implementation code** - use pseudo-code or high-level descriptions only
+- ADRs document "what" and "why", not "how" (implementation details go in code/docs)
 
 **When to create an ADR**:
 - New modules or extensions (e.g., `runner/` module)

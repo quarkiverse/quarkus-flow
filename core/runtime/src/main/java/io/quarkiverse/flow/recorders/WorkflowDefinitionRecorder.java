@@ -8,12 +8,12 @@ import jakarta.enterprise.inject.Any;
 
 import io.quarkiverse.flow.FlowMetadata;
 import io.quarkiverse.flow.Flowable;
+import io.quarkiverse.flow.internal.WorkflowRegistrarService;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.serverlessworkflow.api.WorkflowReader;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.api.types.WorkflowMetadata;
-import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.smallrye.common.annotation.Identifier;
 
@@ -23,6 +23,20 @@ import io.smallrye.common.annotation.Identifier;
 @Recorder
 public class WorkflowDefinitionRecorder {
 
+    /**
+     * Adds Flow-specific metadata to the workflow descriptor.
+     * This metadata is used to link workflows back to their Flow class.
+     */
+    private static Workflow addFlowableMetadata(Flowable flowable) {
+        final Workflow workflow = flowable.descriptor();
+        if (workflow.getDocument().getMetadata() == null) {
+            workflow.getDocument().setMetadata(new WorkflowMetadata());
+        }
+        workflow.getDocument().getMetadata().setAdditionalProperty(FlowMetadata.FLOW_IDENTIFIER_CLASS,
+                flowable.identifier());
+        return workflow;
+    }
+
     public Function<SyntheticCreationalContext<WorkflowDefinition>, WorkflowDefinition> workflowDefinitionCreator(
             String flowDescriptorClassName) {
         return context -> {
@@ -31,10 +45,9 @@ public class WorkflowDefinitionRecorder {
                 final Class<?> flowClass = Class.forName(flowDescriptorClassName, true, cl);
 
                 final Flowable flow = (Flowable) context.getInjectedReference(flowClass, Any.Literal.INSTANCE);
-                final WorkflowApplication app = context.getInjectedReference(WorkflowApplication.class);
+                final WorkflowRegistrarService registrarService = context.getInjectedReference(WorkflowRegistrarService.class);
 
-                Workflow workflow = addFlowableMetadata(flow);
-                return app.workflowDefinition(workflow);
+                return registrarService.register(addFlowableMetadata(flow));
             } catch (RuntimeException | ClassNotFoundException e) {
                 throw new RuntimeException("Failed to create WorkflowDefinition for " + flowDescriptorClassName, e);
             }
@@ -53,10 +66,9 @@ public class WorkflowDefinitionRecorder {
     public Function<SyntheticCreationalContext<WorkflowDefinition>, WorkflowDefinition> workflowDefinitionFromResourceCreator(
             String resourcePath) {
         return context -> {
-            final WorkflowApplication app = context.getInjectedReference(WorkflowApplication.class);
+            final WorkflowRegistrarService registrarService = context.getInjectedReference(WorkflowRegistrarService.class);
             try {
-                Workflow workflow = WorkflowReader.readWorkflowFromClasspath(resourcePath);
-                return app.workflowDefinition(workflow);
+                return registrarService.register(WorkflowReader.readWorkflowFromClasspath(resourcePath));
             } catch (IOException e) {
                 throw new UncheckedIOException("Failed to load workflow from resource: " + resourcePath, e);
             }
@@ -67,19 +79,5 @@ public class WorkflowDefinitionRecorder {
             String versionedIdentifier) {
         return context -> context.getInjectedReference(WorkflowDefinition.class,
                 Identifier.Literal.of(versionedIdentifier));
-    }
-
-    /**
-     * Adds Flow-specific metadata to the workflow descriptor.
-     * This metadata is used to link workflows back to their Flow class.
-     */
-    private static Workflow addFlowableMetadata(Flowable flowable) {
-        final Workflow workflow = flowable.descriptor();
-        if (workflow.getDocument().getMetadata() == null) {
-            workflow.getDocument().setMetadata(new WorkflowMetadata());
-        }
-        workflow.getDocument().getMetadata().setAdditionalProperty(FlowMetadata.FLOW_IDENTIFIER_CLASS,
-                flowable.identifier());
-        return workflow;
     }
 }

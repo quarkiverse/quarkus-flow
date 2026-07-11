@@ -2,8 +2,13 @@ package io.quarkiverse.flow.oidc;
 
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.quarkus.oidc.client.OidcClient;
 import io.serverlessworkflow.api.types.AuthenticationPolicyUnion;
 import io.serverlessworkflow.api.types.EndpointConfiguration;
+import io.serverlessworkflow.api.types.OAuth2AuthenticationData;
 import io.serverlessworkflow.api.types.ReferenceableAuthenticationPolicy;
 import io.serverlessworkflow.api.types.Use;
 import io.serverlessworkflow.api.types.UseAuthentications;
@@ -23,13 +28,20 @@ import io.serverlessworkflow.impl.auth.DefaultAuthProviderFactory;
  */
 public class OidcAuthProviderFactory implements AuthProviderFactory {
 
-    private final AuthProviderFactory delegate = DefaultAuthProviderFactory.factory();
-    private final OidcClientFactory clientFactory;
-    private final OidcConfigResolver configResolver;
+    private static final Logger LOG = LoggerFactory.getLogger(OidcAuthProviderFactory.class);
 
-    public OidcAuthProviderFactory(OidcClientFactory clientFactory, OidcConfigResolver configResolver) {
-        this.clientFactory = clientFactory;
+    private final AuthProviderFactory delegate = DefaultAuthProviderFactory.factory();
+    private final OidcClientRegistry clientRegistry;
+    private final FlowOidcConfig config;
+    private final OidcConfigResolver configResolver;
+    private final OidcWorkflowRegistrationListener workflowRegistration;
+
+    public OidcAuthProviderFactory(OidcClientRegistry clientRegistry, FlowOidcConfig config,
+            OidcConfigResolver configResolver, OidcWorkflowRegistrationListener workflowRegistration) {
+        this.clientRegistry = clientRegistry;
+        this.config = config;
         this.configResolver = configResolver;
+        this.workflowRegistration = workflowRegistration;
     }
 
     @Override
@@ -49,17 +61,36 @@ public class OidcAuthProviderFactory implements AuthProviderFactory {
     }
 
     private Optional<AuthProvider> build(WorkflowDefinition definition, ReferenceableAuthenticationPolicy auth) {
-        final String authPolicyName = authPolicyName(auth);
-        return OAuth2Policy.from(union(definition, auth))
-                .map(policy -> new OidcClientAuthProvider(definition.application(), policy, clientFactory, configResolver,
-                        authPolicyName));
-    }
+        final AuthenticationPolicyUnion policyUnion = union(definition, auth);
 
-    private static String authPolicyName(ReferenceableAuthenticationPolicy auth) {
-        if (auth != null && auth.getAuthenticationPolicyReference() != null) {
-            return auth.getAuthenticationPolicyReference().getUse();
+        if (policyUnion == null)
+            return Optional.empty();
+
+        // 1. Process workflow to create/register all OIDC clients
+        //    (listener handles all routing logic: task-level, workflow-level, named auth)
+        workflowRegistration.processWorkflow(definition.workflow());
+
+        // 2. Match by endpoint configuration
+        //    (listener already registered clients with correct routing applied)
+        final EndpointKey endpointKey = EndpointKey.from(policyUnion);
+        if (endpointKey == null)
+            return Optional.empty();
+
+        LOG.debug("Factory querying for EndpointKey: {}", endpointKey);
+        final OidcClient matchedClient = clientRegistry.getByEndpoint(endpointKey);
+
+        if (matchedClient == null) {
+            LOG.debug("No OIDC client found matching endpoint config: {}", endpointKey);
+            return Optional.empty(); // Delegate to SDK's default OAuth2 provider
         }
-        return null;
+
+        LOG.debug("Matched OIDC client for endpoint config: {}", endpointKey);
+
+        // Extract auth data for dynamic grant parameters (token exchange)
+        final OAuth2AuthenticationData authData = TokenAuthPolicy.tokenAuthData(policyUnion);
+
+        return Optional.of(new OidcClientAuthProvider(definition.application(), authData, matchedClient,
+                config.connectionTimeout()));
     }
 
     private AuthenticationPolicyUnion union(WorkflowDefinition definition, ReferenceableAuthenticationPolicy auth) {

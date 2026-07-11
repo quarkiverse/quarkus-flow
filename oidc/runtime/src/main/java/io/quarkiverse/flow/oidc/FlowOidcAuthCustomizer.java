@@ -22,7 +22,13 @@ public class FlowOidcAuthCustomizer implements WorkflowApplicationBuilderCustomi
     FlowOidcConfig flowOidcConfig;
 
     @Inject
-    OidcClientFactory clientFactory;
+    OidcClientRegistry clientRegistry;
+
+    @Inject
+    OidcConfigResolver configResolver;
+
+    @Inject
+    OidcWorkflowRegistrationListener listener;
 
     @Override
     public void customize(WorkflowApplication.Builder builder) {
@@ -30,8 +36,9 @@ public class FlowOidcAuthCustomizer implements WorkflowApplicationBuilderCustomi
             LOG.info("Flow OIDC: disabled; SDK default OAuth2/OIDC token negotiation in effect.");
             return;
         }
-        final OidcConfigResolver configResolver = new OidcConfigResolver(flowOidcConfig);
-        builder.withAuthProviderFactory(new OidcAuthProviderFactory(clientFactory, configResolver));
+        OidcAuthProviderFactory factory = new OidcAuthProviderFactory(clientRegistry, flowOidcConfig, configResolver, listener);
+        LOG.info("Flow OIDC: Registering OidcAuthProviderFactory: {}", factory);
+        builder.withAuthProviderFactory(factory);
         LOG.info("Flow OIDC: OAuth2/OIDC token negotiation delegated to quarkus-oidc-client.");
     }
 }

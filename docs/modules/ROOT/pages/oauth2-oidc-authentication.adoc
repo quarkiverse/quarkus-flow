@@ -21,17 +21,19 @@ A complete, runnable project covering every scenario below lives in https://gith
 * A Quarkus application with xref:getting-started.adoc[Quarkus Flow set up].
 * Familiarity with xref:http-openapi-tasks.adoc[HTTP and OpenAPI tasks] and xref:secrets.adoc[secrets].
 
-== 1. Add the OIDC client dependency
+== 1. Add the Flow OIDC extension
 
-Add `quarkus-oidc-client` to your project. Quarkus Flow's OIDC integration activates automatically when this dependency is on the classpath:
+Add `quarkus-flow-oidc` to your project to enable OAuth2/OIDC authentication in workflows:
 
 [source,xml]
 ----
 <dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-oidc-client</artifactId>
+    <groupId>io.quarkiverse.flow</groupId>
+    <artifactId>quarkus-flow-oidc</artifactId>
 </dependency>
 ----
+
+This extension brings `quarkus-oidc-client` as a transitive dependency and delegates token negotiation to it.
 
 To opt out, set `quarkus.flow.oidc.enabled=false` (see the <<configuration-reference>>).
 
