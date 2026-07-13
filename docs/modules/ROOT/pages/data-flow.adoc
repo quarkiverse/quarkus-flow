@@ -130,7 +130,7 @@ call("auditStep")
 == 5. jq Security Best Practices
 
 `jq` expressions in Quarkus Flow are part of the workflow definition itself. They
-are loaded from trusted YAML, JSON, or Java files when the workflow is parsed, then
+are loaded from trusted YAML, JSON, or Java files on your project's classpath during build time when the workflow is parsed, then
 evaluated against runtime data as plain JSON values.
 
 That means untrusted runtime input does not become executable `jq` code. For
