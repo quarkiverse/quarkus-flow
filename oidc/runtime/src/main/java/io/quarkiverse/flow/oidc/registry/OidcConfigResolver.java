@@ -65,6 +65,11 @@ public final class OidcConfigResolver {
         return override != null ? override.creationTimeout() : null;
     }
 
+    private static Duration overrideConnectionTimeout(Map<String, FlowOidcConfig.ClientOverrideConfig> overrides, String key) {
+        FlowOidcConfig.ClientOverrideConfig override = overrides.get(key);
+        return override != null ? override.connectionTimeout() : null;
+    }
+
     /**
      * Resolves the Quarkus OIDC client name for the given workflow, task, and named auth policy.
      *
@@ -73,7 +78,7 @@ public final class OidcConfigResolver {
      * @param authPolicyName the named authentication policy (maybe {@code null} or blank)
      * @return the resolved client name, or empty if no override matches (fall back to DSL)
      */
-    public Optional<String> resolve(WorkflowDefinitionId workflowId, String taskName, String authPolicyName) {
+    public Optional<String> resolveOidcClientName(WorkflowDefinitionId workflowId, String taskName, String authPolicyName) {
         Map<String, FlowOidcConfig.ClientOverrideConfig> clients = config.client();
 
         // Task-level overrides (progressive specificity)
@@ -137,7 +142,7 @@ public final class OidcConfigResolver {
 
     /**
      * Resolves the OIDC client-creation timeout for the given workflow, task, and named auth policy, following the same
-     * most-specific-wins cascade as {@link #resolve}.
+     * most-specific-wins cascade as {@link #resolveOidcClientName}.
      *
      * @param workflowId the workflow identity
      * @param taskName the task name within the workflow (maybe {@code null} or blank)
@@ -202,6 +207,75 @@ public final class OidcConfigResolver {
     }
 
     /**
+     * Resolves the OIDC connection timeout for the given workflow, task, and named auth policy, following the same
+     * most-specific-wins cascade as {@link #resolveOidcClientName}.
+     * <p>
+     * <b>Note:</b> For named clients (routed via {@code quarkus.flow.oidc.client.<key>.name}), the named client's
+     * own {@code connection-timeout} takes precedence over any Flow OIDC connection timeout override.
+     *
+     * @param workflowId the workflow identity
+     * @param taskName the task name within the workflow (maybe {@code null} or blank)
+     * @param authPolicyName the named authentication policy (maybe {@code null} or blank)
+     * @return the most specific overridden connection timeout, or the global {@code quarkus.flow.oidc.connection-timeout}
+     */
+    public Duration resolveConnectionTimeout(WorkflowDefinitionId workflowId, String taskName, String authPolicyName) {
+        Map<String, FlowOidcConfig.ClientOverrideConfig> clients = config.client();
+
+        // Task-level overrides (progressive specificity)
+        if (taskName != null && !taskName.isBlank()) {
+            // 1. Task-level full
+            Duration taskFull = overrideConnectionTimeout(clients, OidcNamingConvention.clientName(workflowId, taskName));
+            if (taskFull != null) {
+                return taskFull;
+            }
+
+            // 2. Task-level medium
+            Duration taskMedium = overrideConnectionTimeout(clients,
+                    OidcNamingConvention.taskConfigKeyMedium(workflowId, taskName));
+            if (taskMedium != null) {
+                return taskMedium;
+            }
+
+            // 3. Task-level short
+            Duration taskShort = overrideConnectionTimeout(clients,
+                    OidcNamingConvention.taskConfigKeyShort(workflowId, taskName));
+            if (taskShort != null) {
+                return taskShort;
+            }
+        }
+
+        // Workflow-level overrides (progressive specificity)
+        // 4. Workflow-level full
+        Duration workflowFull = overrideConnectionTimeout(clients, OidcNamingConvention.workflowConfigKeyFull(workflowId));
+        if (workflowFull != null) {
+            return workflowFull;
+        }
+
+        // 5. Workflow-level medium
+        Duration workflowMedium = overrideConnectionTimeout(clients, OidcNamingConvention.workflowConfigKeyMedium(workflowId));
+        if (workflowMedium != null) {
+            return workflowMedium;
+        }
+
+        // 6. Workflow-level short
+        Duration workflowShort = overrideConnectionTimeout(clients, OidcNamingConvention.workflowConfigKeyShort(workflowId));
+        if (workflowShort != null) {
+            return workflowShort;
+        }
+
+        // 7. Named authentication policy
+        if (authPolicyName != null && !authPolicyName.isBlank()) {
+            Duration namedTimeout = overrideConnectionTimeout(clients, authPolicyName);
+            if (namedTimeout != null) {
+                return namedTimeout;
+            }
+        }
+
+        // 8. No override — global default
+        return config.connectionTimeout();
+    }
+
+    /**
      * Resolves the connection timeout for token negotiation with the given OIDC client.
      * <p>
      * For user-configured Quarkus OIDC clients (quarkus.oidc-client.&lt;name&gt;), uses that client's
@@ -211,6 +285,8 @@ public final class OidcConfigResolver {
      * @return the connection timeout to use when awaiting token negotiation
      */
     public Duration namedConnectionTimeout(String clientName) {
+        if (clientName == null)
+            return config.connectionTimeout();
         final OidcClientConfig named = oidcClientsConfig.namedClients().get(clientName);
         return named != null && named.connectionTimeout() != null
                 ? named.connectionTimeout()

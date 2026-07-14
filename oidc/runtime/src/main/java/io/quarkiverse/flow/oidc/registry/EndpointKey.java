@@ -171,7 +171,7 @@ public record EndpointKey(
                 password);
     }
 
-    public String oidcId() {
+    public String defaultOidcId() {
         return "flow-oidc-" + (clientId != null ? clientId : authority);
     }
 

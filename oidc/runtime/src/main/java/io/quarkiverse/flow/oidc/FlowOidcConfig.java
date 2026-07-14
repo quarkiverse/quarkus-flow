@@ -64,5 +64,20 @@ public interface FlowOidcConfig {
          */
         @WithDefault("10s")
         Duration creationTimeout();
+
+        /**
+         * The number of seconds after which the current OIDC connection request times out.
+         * <p>
+         * This timeout is used for:
+         * <ul>
+         * <li>The internal HTTP client timeout when creating the OIDC client</li>
+         * <li>The await timeout when negotiating access tokens</li>
+         * </ul>
+         * <p>
+         * For named clients (via {@link #name()}), this setting is ignored and the named client's own
+         * {@code connection-timeout} is used instead.
+         */
+        @WithDefault("10s")
+        Duration connectionTimeout();
     }
 }

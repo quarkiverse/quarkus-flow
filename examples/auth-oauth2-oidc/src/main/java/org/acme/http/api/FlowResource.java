@@ -1,17 +1,17 @@
 package org.acme.http.api;
 
-import io.serverlessworkflow.impl.WorkflowModel;
-import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.core.Response;
 import org.acme.http.workflows.oauth2.ClientCredentialsFlow;
 import org.acme.http.workflows.oauth2.MultipleOAuth2ClientsFlow;
 import org.acme.http.workflows.oauth2.OidcClientFlow;
 import org.acme.http.workflows.oauth2.OpenAPIWithOAuth2Flow;
 import org.acme.http.workflows.oauth2.PasswordGrantTypeFlow;
 import org.acme.http.workflows.oauth2.TokenExchangeGrantTypeFlow;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import io.serverlessworkflow.impl.WorkflowModel;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Response;
 
 @Path("/quarkus-flow")
 public class FlowResource {
@@ -33,9 +33,6 @@ public class FlowResource {
 
     @Inject
     PasswordGrantTypeFlow passwordGrantType;
-
-    @ConfigProperty(name = "quarkus.wiremock.devservices.port")
-    Integer wireMockPort;
 
     @GET
     @Path("/oidc/images")

@@ -344,7 +344,7 @@ class EndpointKeyTest {
     }
 
     @Test
-    @DisplayName("oidcId() - uses clientId when available")
+    @DisplayName("defaultOidcId() - uses clientId when available")
     void oidc_id_uses_client_id() {
         // Given
         OAuth2ConnectAuthenticationProperties props = createOAuth2Props(
@@ -358,11 +358,11 @@ class EndpointKeyTest {
         EndpointKey key = EndpointKey.from(props);
 
         // When/Then
-        assertThat(key.oidcId()).isEqualTo("flow-oidc-my-client");
+        assertThat(key.defaultOidcId()).isEqualTo("flow-oidc-my-client");
     }
 
     @Test
-    @DisplayName("oidcId() - uses authority when clientId is null")
+    @DisplayName("defaultOidcId() - uses authority when clientId is null")
     void oidc_id_uses_authority_when_client_id_null() {
         // Given
         EndpointKey key = new EndpointKey(
@@ -380,7 +380,7 @@ class EndpointKeyTest {
                 null);
 
         // When/Then
-        assertThat(key.oidcId()).isEqualTo("flow-oidc-https://auth.example.com");
+        assertThat(key.defaultOidcId()).isEqualTo("flow-oidc-https://auth.example.com");
     }
 
     @Test

@@ -41,21 +41,18 @@ public final class OidcClientAuthProvider implements AuthProvider {
     private final OidcClientWorkflowRegistrar clientWorkflowRegistrar;
     private final String authPolicyName;
     private final RuntimeExpressionResolver expressionResolver;
-    private final Duration connectionTimeout;
 
     public OidcClientAuthProvider(OAuth2AuthenticationData authData,
             String authPolicyName,
             OidcClientRegistry clientRegistry,
             OidcConfigResolver configResolver,
             OidcClientWorkflowRegistrar clientWorkflowRegistrar,
-            RuntimeExpressionResolver expressionResolver,
-            Duration connectionTimeout) {
+            RuntimeExpressionResolver expressionResolver) {
         this.authData = authData;
         this.clientRegistry = clientRegistry;
         this.configResolver = configResolver;
         this.clientWorkflowRegistrar = clientWorkflowRegistrar;
         this.authPolicyName = authPolicyName;
-        this.connectionTimeout = connectionTimeout;
         this.expressionResolver = expressionResolver;
     }
 
@@ -66,16 +63,24 @@ public final class OidcClientAuthProvider implements AuthProvider {
 
     @Override
     public String content(WorkflowContext workflow, TaskContext task, WorkflowModel model, URI uri) {
-        // First get the configured static OidcClients built in build-time
-        final Optional<String> namedOidc = configResolver.resolve(workflow.definition().id(), task.taskName(), authPolicyName);
+        // First get the configured static OidcClients built in build-time or configured by users
+        final Optional<String> namedOidc = configResolver.resolveOidcClientName(workflow.definition().id(), task.taskName(),
+                authPolicyName);
         OidcClient client = clientRegistry.get(namedOidc.orElse(null));
 
         // Let's try to configure/find the OidcClient in runtime (might require runtime expression evaluation)
         if (client == null) {
-            final EndpointKey endpointKey = expressionResolver.resolveOne(workflow, task, model, authData);
+            final EndpointKey endpointKey = expressionResolver.resolveAll(workflow, task, model, authData);
             client = clientRegistry.getByEndpoint(endpointKey);
             if (client == null) {
-                client = clientWorkflowRegistrar.registerDynamicOidcClientFor(endpointKey);
+                // Resolve both timeouts using cascade logic
+                final Duration creationTimeout = configResolver.resolveCreationTimeout(
+                        workflow.definition().id(), task.taskName(), authPolicyName);
+                final Duration connectionTimeout = configResolver.resolveConnectionTimeout(
+                        workflow.definition().id(), task.taskName(), authPolicyName);
+
+                client = clientWorkflowRegistrar.registerDynamicOidcClientFor(endpointKey,
+                        creationTimeout, connectionTimeout);
             }
             if (client == null) {
                 throw new IllegalStateException("Unable to create OIDC client for " + workflow.definition().id() + ", task: "
@@ -85,6 +90,11 @@ public final class OidcClientAuthProvider implements AuthProvider {
 
         // Resolve dynamic grant parameters (for token exchange)
         final Map<String, String> dynamicParams = resolveDynamicGrantParams(workflow, task, model);
+
+        // Resolve connection timeout: named clients use their own timeout, others use cascade resolution
+        final Duration connectionTimeout = namedOidc.isPresent()
+                ? configResolver.namedConnectionTimeout(namedOidc.get())
+                : configResolver.resolveConnectionTimeout(workflow.definition().id(), task.taskName(), authPolicyName);
 
         try {
             final Tokens tokens = dynamicParams.isEmpty()

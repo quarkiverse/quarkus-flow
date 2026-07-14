@@ -78,7 +78,7 @@ public class RuntimeExpressionResolver {
      * @param authenticationData the authentication configuration (may contain expressions)
      * @return an EndpointKey with all expressions resolved to literal values
      */
-    public EndpointKey resolveOne(WorkflowContext workflow, TaskContext task, WorkflowModel model,
+    public EndpointKey resolveAll(WorkflowContext workflow, TaskContext task, WorkflowModel model,
             OAuth2AuthenticationData authenticationData) {
         final EndpointKey nonResolvedEndpointKey = EndpointKey.from(authenticationData);
 

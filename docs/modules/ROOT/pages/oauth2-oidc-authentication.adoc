@@ -43,8 +43,11 @@ Quarkus Flow does **not** cache or refresh tokens: a new token is requested from
 
 **Registration timing:**
 
-* **Static policies** (no runtime expressions like `${ $secret.xxx }`) → OIDC clients registered at application startup
-* **Dynamic policies** (with runtime expressions) → OIDC clients registered lazily on first use
+* **Build-time** (YAML/JSON workflows in classpath, no expressions) → OIDC clients configured at build time via generated `quarkus.oidc-client.*` properties
+* **Startup** (Java DSL workflows, no expressions) → OIDC clients registered at application startup
+* **Runtime** (any workflow with runtime expressions like `${ $secret.xxx }`) → OIDC clients registered lazily on first use
+
+YAML or JSON workflow definitions placed in `src/main/resources` (or anywhere on the classpath) are discovered at build time. If their authentication policies contain no runtime expressions, Quarkus Flow generates standard `quarkus.oidc-client.*` configuration properties automatically, and those clients are created by the `quarkus-oidc-client` extension at startup like any other named OIDC client.
 
 See <<client-caching-lifecycle>> for complete details.
 ====
@@ -274,7 +277,7 @@ quarkus.oidc-client.prod-auth.discovery-enabled=false
 +
 [source,properties]
 ----
-quarkus.flow.oidc."myns\:my-workflow".name=prod-auth
+quarkus.flow.oidc.client."myns\:my-workflow".name=prod-auth
 ----
 
 When the workflow runs, Quarkus Flow uses the `prod-auth` OIDC client instead of building one from the DSL. The DSL authentication still declares _which_ calls are authenticated — the routing only controls _how_ the token is obtained.
@@ -285,7 +288,7 @@ If a single task in a workflow needs a different OIDC client, use the task-level
 
 [source,properties]
 ----
-quarkus.flow.oidc."myns\:my-workflow\:1.0.0".task.callSlowApi.name=slow-api-auth
+quarkus.flow.oidc.client."myns\:my-workflow\:1.0.0.task.callSlowApi".name=slow-api-auth
 ----
 
 Only the `callSlowApi` task uses `slow-api-auth`. All other tasks in the same workflow fall through to the next matching level or use the DSL-derived client.
@@ -309,7 +312,7 @@ You can route all calls that reference `"keycloak"` to a named Quarkus OIDC clie
 
 [source,properties]
 ----
-quarkus.flow.oidc.keycloak.name=prod-auth
+quarkus.flow.oidc.client.keycloak.name=prod-auth
 ----
 
 This is useful when multiple workflows share the same named authentication and you want to control the OIDC client configuration in one place.
@@ -329,13 +332,13 @@ quarkus.oidc-client.internal-auth.grant.type=client
 quarkus.oidc-client.internal-auth.discovery-enabled=false
 
 # Route by versionless workflow identity — applies to all versions
-quarkus.flow.oidc."myns\:my-workflow".name=internal-auth
+quarkus.flow.oidc.client."myns\:my-workflow".name=internal-auth
 
 # Or route a specific version
-quarkus.flow.oidc."myns\:my-workflow\:2.0.0".name=internal-auth
+quarkus.flow.oidc.client."myns\:my-workflow\:2.0.0".name=internal-auth
 
 # Or route a specific task within a versioned workflow
-quarkus.flow.oidc."myns\:my-workflow\:1.0.0".task.fetchData.name=internal-auth
+quarkus.flow.oidc.client."myns\:my-workflow\:1.0.0.task.fetchData".name=internal-auth
 ----
 
 The workflow code stays free of credentials and auth-server URLs. Environment-specific OIDC configuration lives entirely in `application.properties` (or Kubernetes ConfigMaps, Vault, etc.).
@@ -344,10 +347,10 @@ The workflow code stays free of credentials and auth-server URLs. Environment-sp
 
 When multiple routing rules match, the most specific one wins:
 
-1. **Task-level** (most specific) — `quarkus.flow.oidc."<namespace>\:<name>\:<version>".task.<taskName>.name`
-2. **Versioned workflow** — `quarkus.flow.oidc."<namespace>\:<name>\:<version>".name`
-3. **Versionless workflow** — `quarkus.flow.oidc."<namespace>\:<name>".name`
-4. **Named authentication** — `quarkus.flow.oidc.<authPolicyName>.name`
+1. **Task-level** (most specific) — `quarkus.flow.oidc.client."<namespace>\:<name>\:<version>.task.<taskName>".name`
+2. **Versioned workflow** — `quarkus.flow.oidc.client."<namespace>\:<name>\:<version>".name`
+3. **Versionless workflow** — `quarkus.flow.oidc.client."<namespace>\:<name>".name`
+4. **Named authentication** — `quarkus.flow.oidc.client.<authPolicyName>.name`
 5. **DSL fallback** — no routing configured; an OIDC client is created from the DSL authentication
 
 [NOTE]
@@ -382,8 +385,9 @@ Quarkus Flow maintains a registry of OIDC clients with **dual lookup** capabilit
 
 **Registration timing:**
 
-* **Static policies** (no `${ ... }` expressions): Clients registered at application startup
-* **Dynamic policies** (with expressions like `${ $secret.xxx }`): Clients registered lazily on first use after expression resolution
+* **Build-time** (YAML/JSON workflows in classpath, no expressions): Client configuration generated at build time as `quarkus.oidc-client.*` properties, clients created by `quarkus-oidc-client` extension at startup
+* **Startup** (Java DSL workflows, no expressions): Clients registered at application startup by Quarkus Flow
+* **Runtime** (any workflow with expressions like `${ $secret.xxx }`): Clients registered lazily on first use after expression resolution
 
 **Cache key (EndpointKey):** The endpoint-based lookup uses a composite key covering all OAuth2/OIDC configuration fields:
 
@@ -410,12 +414,17 @@ All cached clients are closed automatically on application shutdown.
 [[client-lifecycle]]
 === Who manages the lifecycle of these clients?
 
-Quarkus Flow creates OIDC clients through `OidcClients.newClient(...)` at two different times:
+Quarkus Flow creates OIDC clients at three different times:
 
-* **Static registration** (application startup): Policies without runtime expressions (`${ ... }`) are registered when the workflow is first loaded
-* **Dynamic registration** (first HTTP request): Policies with expressions are registered lazily after expression resolution
+* **Build-time configuration** (YAML/JSON workflows in classpath): Policies without runtime expressions (`${ ... }`) in YAML or JSON workflow files on the classpath are converted to standard `quarkus.oidc-client.*` configuration properties at build time. The `quarkus-oidc-client` extension then creates and manages those clients at startup — Quarkus Flow simply looks them up by name at runtime.
+* **Startup registration** (Java DSL workflows): Policies without runtime expressions in Java DSL workflows are registered when the workflow is first loaded via `OidcClients.newClient(...)`
+* **Runtime registration** (any workflow with expressions): Policies with expressions are registered lazily after expression resolution on first HTTP request via `OidcClients.newClient(...)`
 
-Clients created this way are **not** registered with the `quarkus-oidc-client` extension: Quarkus does not track them, does not close them on shutdown, and does not schedule any background token refresh for them. Quarkus Flow therefore owns their full lifecycle:
+Clients created via **startup registration** and **runtime registration** are **not** registered with the `quarkus-oidc-client` extension: Quarkus does not track them, does not close them on shutdown, and does not schedule any background token refresh for them. Quarkus Flow therefore owns their full lifecycle.
+
+Clients created via **build-time configuration** (YAML/JSON workflows) **are** registered with the `quarkus-oidc-client` extension and managed by Quarkus throughout their lifecycle — Quarkus Flow only looks them up by name.
+
+**For startup and runtime registered clients:**
 
 * **Creation** — Built using the application's managed Vert.x instance and standard Quarkus TLS/proxy registries, so TLS and proxy configuration work exactly as for static `quarkus.oidc-client.*` clients
 * **Caching** — Stored in Quarkus Flow's internal registry with dual lookup (by name + by EndpointKey). Only the client is cached, never the tokens it negotiates

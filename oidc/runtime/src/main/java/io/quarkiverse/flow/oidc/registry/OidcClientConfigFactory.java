@@ -137,7 +137,7 @@ final class OidcClientConfigFactory {
         validateAuthority(endpointKey.authority());
 
         OidcClientConfigBuilder builder = new OidcClientConfigBuilder()
-                .id(endpointKey.oidcId())
+                .id(endpointKey.defaultOidcId())
                 .authServerUrl(endpointKey.authority())
                 .discoveryEnabled(endpointKey.isDiscoverable())
                 .connectionTimeout(connectionTimeout)

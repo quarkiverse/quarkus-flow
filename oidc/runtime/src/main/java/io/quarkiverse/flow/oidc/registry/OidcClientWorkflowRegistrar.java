@@ -1,5 +1,6 @@
 package io.quarkiverse.flow.oidc.registry;
 
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +38,16 @@ public class OidcClientWorkflowRegistrar {
     @Inject
     OidcConfigResolver configResolver;
 
+    public OidcClient registerDynamicOidcClientFor(EndpointKey endpointKey, Duration creationTimeout,
+            Duration connectionTimeout) {
+        final OidcClientConfig clientConfig = OidcClientConfigFactory.from(endpointKey, connectionTimeout);
+        final OidcClient client = oidcClients.newClient(clientConfig)
+                .await()
+                .atMost(creationTimeout);
+        registry.register(client, endpointKey);
+        return client;
+    }
+
     /**
      * Register static OAuth2 or OIDC definitions from the given workflow descriptor into {@link OidcClientRegistry}
      */
@@ -52,7 +63,7 @@ public class OidcClientWorkflowRegistrar {
 
             for (TokenAuthPolicy policy : policies) {
                 try {
-                    createAndRegisterClient(workflowId, policy);
+                    createAndRegisterStaticClient(workflowId, policy);
                 } catch (Exception e) {
                     throw new IllegalStateException(
                             "Failed to create OIDC client for policy: " + policy.name(), e);
@@ -65,22 +76,12 @@ public class OidcClientWorkflowRegistrar {
         }
     }
 
-    public OidcClient registerDynamicOidcClientFor(EndpointKey endpointKey) {
-        final OidcClientConfig clientConfig = OidcClientConfigFactory.from(endpointKey, config.connectionTimeout());
-        final OidcClient client = oidcClients.newClient(clientConfig)
-                .await()
-                .atMost(config.creationTimeout());
-        LOGGER.debug("Registering OIDC client '{}' with EndpointKey: {}", endpointKey.oidcId(), endpointKey);
-        registry.register(endpointKey.oidcId(), client, endpointKey);
-        return client;
-    }
-
-    private void createAndRegisterClient(WorkflowDefinitionId workflowId, TokenAuthPolicy policy) {
+    private void createAndRegisterStaticClient(WorkflowDefinitionId workflowId, TokenAuthPolicy policy) {
         final String taskName = policy.taskName().orElse(null);
         final String authPolicyName = taskName == null ? policy.name() : null;
 
         // Resolve client name (respecting user routing config)
-        final Optional<String> overrideName = configResolver.resolve(workflowId, taskName, authPolicyName);
+        final Optional<String> overrideName = configResolver.resolveOidcClientName(workflowId, taskName, authPolicyName);
         final String clientName = overrideName.orElse(policy.name());
 
         final OidcClient existingClient = registry.get(clientName);
@@ -93,11 +94,17 @@ public class OidcClientWorkflowRegistrar {
             return;
         }
 
+        // Resolve timeouts with cascade logic
+        final Duration connectionTimeout = overrideName.isPresent()
+                ? configResolver.namedConnectionTimeout(clientName)
+                : configResolver.resolveConnectionTimeout(workflowId, taskName, authPolicyName);
+        final Duration creationTimeout = configResolver.resolveCreationTimeout(workflowId, taskName, authPolicyName);
+
         // Create client
-        final OidcClientConfig clientConfig = OidcClientConfigFactory.from(policy, config.connectionTimeout());
+        final OidcClientConfig clientConfig = OidcClientConfigFactory.from(policy, connectionTimeout);
         final OidcClient client = oidcClients.newClient(clientConfig)
                 .await()
-                .atMost(config.creationTimeout());
+                .atMost(creationTimeout);
 
         // Register with resolved name and policy (for endpoint-based lookup)
         EndpointKey endpointKey = policy.endpointKey();

@@ -46,6 +46,11 @@ class OidcWorkflowRegistrarTest {
         when(config.connectionTimeout()).thenReturn(Duration.ofSeconds(10));
         when(config.creationTimeout()).thenReturn(Duration.ofSeconds(10));
 
+        // Mock timeout resolution - return default timeouts for all workflows/tasks
+        when(configResolver.resolveCreationTimeout(any(), any(), any())).thenReturn(Duration.ofSeconds(10));
+        when(configResolver.resolveConnectionTimeout(any(), any(), any())).thenReturn(Duration.ofSeconds(10));
+        when(configResolver.namedConnectionTimeout(any())).thenReturn(Duration.ofSeconds(10));
+
         // Mock successful client creation
         OidcClient mockClient = mock(OidcClient.class);
         Uni<OidcClient> clientUni = Uni.createFrom().item(mockClient);
@@ -71,7 +76,7 @@ class OidcWorkflowRegistrarTest {
         WorkflowDefinitionId workflowId = WorkflowDefinitionId.of(workflow);
 
         // No routing override
-        when(configResolver.resolve(eq(workflowId), eq(null), eq("keycloak")))
+        when(configResolver.resolveOidcClientName(eq(workflowId), eq(null), eq("keycloak")))
                 .thenReturn(Optional.empty());
 
         // When
@@ -96,7 +101,7 @@ class OidcWorkflowRegistrarTest {
         WorkflowDefinitionId workflowId = WorkflowDefinitionId.of(workflow);
 
         // Routing override to "prodKeycloak"
-        when(configResolver.resolve(eq(workflowId), eq(null), eq("keycloak")))
+        when(configResolver.resolveOidcClientName(eq(workflowId), eq(null), eq("keycloak")))
                 .thenReturn(Optional.of("prodKeycloak"));
 
         // When
@@ -126,7 +131,7 @@ class OidcWorkflowRegistrarTest {
         WorkflowDefinitionId workflowId = WorkflowDefinitionId.of(workflow);
 
         // No routing override (task name is auto-generated, use any())
-        when(configResolver.resolve(eq(workflowId), any(String.class), eq(null)))
+        when(configResolver.resolveOidcClientName(eq(workflowId), any(String.class), eq(null)))
                 .thenReturn(Optional.empty());
 
         // When
@@ -156,7 +161,7 @@ class OidcWorkflowRegistrarTest {
         WorkflowDefinitionId workflowId = WorkflowDefinitionId.of(workflow);
 
         // Routing override via quarkus.flow.oidc.orders.task.payment.name=customPaymentAuth
-        when(configResolver.resolve(eq(workflowId), any(String.class), eq(null)))
+        when(configResolver.resolveOidcClientName(eq(workflowId), any(String.class), eq(null)))
                 .thenReturn(Optional.of("customPaymentAuth"));
 
         // When
@@ -186,7 +191,7 @@ class OidcWorkflowRegistrarTest {
         WorkflowDefinitionId workflowId = WorkflowDefinitionId.of(workflow);
 
         // Routing override via quarkus.flow.oidc.orders.name=ordersAuth
-        when(configResolver.resolve(eq(workflowId), any(String.class), eq(null)))
+        when(configResolver.resolveOidcClientName(eq(workflowId), any(String.class), eq(null)))
                 .thenReturn(Optional.of("ordersAuth"));
 
         // When
@@ -211,7 +216,7 @@ class OidcWorkflowRegistrarTest {
         WorkflowDefinitionId workflowId = WorkflowDefinitionId.of(workflow);
 
         // No routing override
-        when(configResolver.resolve(eq(workflowId), eq(null), eq("keycloak")))
+        when(configResolver.resolveOidcClientName(eq(workflowId), eq(null), eq("keycloak")))
                 .thenReturn(Optional.empty());
 
         // User already configured "keycloak" client - skip via registry check
@@ -239,7 +244,7 @@ class OidcWorkflowRegistrarTest {
         WorkflowDefinitionId workflowId = WorkflowDefinitionId.of(workflow);
 
         // No routing override
-        when(configResolver.resolve(eq(workflowId), eq(null), eq("keycloak")))
+        when(configResolver.resolveOidcClientName(eq(workflowId), eq(null), eq("keycloak")))
                 .thenReturn(Optional.empty());
 
         // Not in user config
@@ -280,9 +285,9 @@ class OidcWorkflowRegistrarTest {
         WorkflowDefinitionId workflowId = WorkflowDefinitionId.of(workflow);
 
         // No routing overrides
-        when(configResolver.resolve(eq(workflowId), eq(null), eq("keycloak")))
+        when(configResolver.resolveOidcClientName(eq(workflowId), eq(null), eq("keycloak")))
                 .thenReturn(Optional.empty());
-        when(configResolver.resolve(eq(workflowId), any(String.class), eq(null)))
+        when(configResolver.resolveOidcClientName(eq(workflowId), any(String.class), eq(null)))
                 .thenReturn(Optional.empty());
 
         // When
@@ -294,7 +299,8 @@ class OidcWorkflowRegistrarTest {
 
         // Named policy uses exact name, inline uses auto-generated task name
         assertThat(nameCaptor.getAllValues()).contains("keycloak");
-        assertThat(nameCaptor.getAllValues().stream().filter(n -> n.startsWith("acme:orders:1.0.0.task.")).count())
-                .isEqualTo(1);
+        assertThat(nameCaptor.getAllValues().stream()
+                .filter(n -> n.startsWith("acme:orders:1.0.0.task."))
+                .count()).isEqualTo(1);
     }
 }

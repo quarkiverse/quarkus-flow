@@ -105,8 +105,7 @@ public class OidcAuthProviderFactory implements AuthProviderFactory {
                 clientRegistry,
                 configResolver,
                 workflowRegistrar,
-                expressionResolver,
-                config.connectionTimeout()));
+                expressionResolver));
     }
 
     private String authPolicyName(ReferenceableAuthenticationPolicy auth) {

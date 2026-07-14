@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.oidc;
+package io.quarkiverse.flow.oidc.impl;
 
 import static io.serverlessworkflow.api.types.OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -13,9 +13,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.quarkiverse.flow.oidc.impl.OidcAuthProviderFactory;
-import io.quarkiverse.flow.oidc.impl.OidcClientAuthProvider;
-import io.quarkiverse.flow.oidc.impl.RuntimeExpressionResolver;
+import io.quarkiverse.flow.oidc.FlowOidcConfig;
+import io.quarkiverse.flow.oidc.TokenAuthPolicy;
+import io.quarkiverse.flow.oidc.TokenAuthPolicyExtractor;
 import io.quarkiverse.flow.oidc.registry.EndpointKey;
 import io.quarkiverse.flow.oidc.registry.OidcClientRegistry;
 import io.quarkiverse.flow.oidc.registry.OidcClientWorkflowRegistrar;
