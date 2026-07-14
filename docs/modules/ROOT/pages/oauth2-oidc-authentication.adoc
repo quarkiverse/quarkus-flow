@@ -417,6 +417,25 @@ All cached clients are closed automatically on application shutdown.
 Quarkus Flow creates OIDC clients at three different times:
 
 * **Build-time configuration** (YAML/JSON workflows in classpath): Policies without runtime expressions (`${ ... }`) in YAML or JSON workflow files on the classpath are converted to standard `quarkus.oidc-client.*` configuration properties at build time. The `quarkus-oidc-client` extension then creates and manages those clients at startup — Quarkus Flow simply looks them up by name at runtime.
++
+[IMPORTANT]
+====
+**To use your own pre-configured OIDC client instead of the workflow-generated one**, use **routing configuration**:
+
+```properties
+# Your pre-configured client
+quarkus.oidc-client.myProdClient.auth-server-url=https://prod.example.com
+quarkus.oidc-client.myProdClient.client-id=prod-client-id
+...
+
+# Route the workflow's "myauth" policy to use your client
+quarkus.flow.oidc.client.myauth.name=myProdClient
+```
+
+This approach works for both YAML/JSON workflows (build-time) and Java DSL workflows (startup), and is the recommended way to override authentication configuration without modifying the workflow definition.
+
+See <<route-to-named-client, section 10>> for complete routing examples.
+====
 * **Startup registration** (Java DSL workflows): Policies without runtime expressions in Java DSL workflows are registered when the workflow is first loaded via `OidcClients.newClient(...)`
 * **Runtime registration** (any workflow with expressions): Policies with expressions are registered lazily after expression resolution on first HTTP request via `OidcClients.newClient(...)`
 
@@ -435,10 +454,290 @@ Clients created via **build-time configuration** (YAML/JSON workflows) **are** r
 
 If you prefer clients whose configuration is fully managed by the `quarkus-oidc-client` extension, define a named client in `application.properties` and route the workflow to it, as described in <<route-to-named-client, section 10>>. Named clients are created and closed by the `quarkus-oidc-client` extension itself — but note that Quarkus Flow still requests a new token per call even when routing to a named client.
 
-[[configuration-reference]]
-== Configuration reference
+[[best-practices]]
+== Best practices
 
-include::includes/quarkus-flow-oidc.adoc[]
+This section covers recommended patterns, common pitfalls, and practical advice for OAuth2/OIDC authentication in production workflows.
+
+[[security-best-practices]]
+=== Security
+
+**Always use secrets, never hardcode credentials**
+
+Use xref:secrets.adoc[secrets] with `${ $secret.* }` expressions to keep credentials out of your workflow code:
+
+[source,java]
+----
+// ❌ BAD - Hardcoded credentials in code
+.oauth2(authority, CLIENT_CREDENTIALS, "my-client-id", "hardcoded-secret-123")
+
+// ✅ GOOD - Credentials from secrets
+.oauth2(authority, CLIENT_CREDENTIALS,
+    "${ $secret.oauth.clientId }",
+    "${ $secret.oauth.clientSecret }")
+----
+
+Configure secrets in `application.properties`:
+[source,properties]
+----
+oauth.clientId=my-client-id
+oauth.clientSecret=${OAUTH_CLIENT_SECRET}  # From environment variable
+----
+
+**Separate dev/prod clients via routing**
+
+Keep workflows environment-agnostic by using routing configuration:
+
+[source,java]
+----
+// Workflow stays the same across environments
+workflow("orders")
+    .use(use -> use.authentications(auth ->
+        auth.authentication("payment-api", a -> a.oauth2(...))))
+    .tasks(http("charge").uri(uri, use("payment-api")))
+----
+
+[source,properties]
+----
+# application-dev.properties
+quarkus.flow.oidc.client.payment-api.name=payment-api-dev
+
+# application-prod.properties
+quarkus.flow.oidc.client.payment-api.name=payment-api-prod
+----
+
+**Use different clients for different environments**
+
+Pre-configure named OIDC clients per environment and route to them:
+
+[source,properties]
+----
+# Dev client - localhost auth server
+quarkus.oidc-client.payment-api-dev.auth-server-url=http://localhost:8089
+quarkus.oidc-client.payment-api-dev.client-id=dev-client
+
+# Prod client - production auth server
+quarkus.oidc-client.payment-api-prod.auth-server-url=https://auth.prod.example.com
+quarkus.oidc-client.payment-api-prod.client-id=prod-client
+quarkus.oidc-client.payment-api-prod.credentials.secret=${PROD_SECRET}
+----
+
+[[performance-best-practices]]
+=== Performance
+
+**Use named policies to share OIDC clients**
+
+When multiple tasks call the same protected service, declare authentication **once** under `use(...)` and reference by name:
+
+[source,java]
+----
+// ❌ BAD - Inline auth creates 3 separate OIDC clients
+workflow("orders")
+    .tasks(
+        http("reserve").uri(inventory, oauth2(...)),   // Client 1
+        http("confirm").uri(inventory, oauth2(...)),   // Client 2
+        http("release").uri(inventory, oauth2(...)))   // Client 3
+
+// ✅ GOOD - Named policy creates 1 shared OIDC client
+workflow("orders")
+    .use(use -> use.authentications(auth ->
+        auth.authentication("inventory", a -> a.oauth2(...))))
+    .tasks(
+        http("reserve").uri(inventory, use("inventory")),   // Shared client
+        http("confirm").uri(inventory, use("inventory")),   // Shared client
+        http("release").uri(inventory, use("inventory")))   // Shared client
+----
+
+**Why inline auth creates isolated clients:** Inline authentication is task-specific by design. Even with identical credentials, each inline `oauth2(...)` or `oidc(...)` call gets its own isolated OIDC client. This follows the 1:1 DSL semantics: one inline declaration = one isolated client.
+
+**Understand when clients are shared**
+
+Two call sites share a cached client **only when their `EndpointKey` matches exactly** — meaning **all** of these fields are identical:
+
+* Authority URL
+* Token endpoint path
+* Client ID and client secret
+* Grant type
+* Scopes and audiences
+* Discovery flag (OAuth2 vs OIDC)
+
+Even a single scope difference creates a separate client:
+
+[source,java]
+----
+// ❌ Different scopes = 2 separate clients (not shared)
+.authentication("read", a -> a.oauth2(o -> o.scopes("read")))
+.authentication("write", a -> a.oauth2(o -> o.scopes("write")))
+
+// ✅ Same scopes = 1 shared client (if using named policy)
+.authentication("api", a -> a.oauth2(o -> o.scopes("read", "write")))
+----
+
+**Why tokens aren't cached**
+
+Quarkus Flow requests a **new token from the authorization server on every authenticated call**. Tokens are never cached.
+
+**Why:**
+
+* **Simplicity** — No expiry tracking, no refresh logic, no clock skew handling
+* **Security** — Expired tokens never used, revoked tokens detected immediately
+* **Correctness** — Dynamic grant parameters (PASSWORD, TOKEN_EXCHANGE) resolved fresh per request
+
+**What IS cached:** The `OidcClient` itself (HTTP connection pool, TLS config, resolved configuration). Only token negotiation happens per request.
+
+If token caching is critical for your use case, configure a pre-authenticated HTTP client and pass tokens via xref:http-openapi-tasks.adoc[request decorators] instead.
+
+[[configuration-best-practices]]
+=== Configuration
+
+**YAML/JSON workflows for build-time optimization**
+
+For workflows without runtime expressions, use YAML or JSON files in `src/main/resources` to enable build-time OIDC client configuration:
+
+* **Build-time generation** — OIDC client config generated as `quarkus.oidc-client.*` properties
+* **Startup creation** — Clients created by `quarkus-oidc-client` extension at startup
+* **Managed lifecycle** — Quarkus handles creation, shutdown, and background operations
+
+Place workflows in `src/main/resources/flow/` or any classpath location:
+
+[source,yaml]
+----
+# src/main/resources/flow/orders-workflow.yaml
+document:
+  dsl: '1.0.0-alpha1'
+  name: orders
+use:
+  authentications:
+    inventory:
+      oauth2:
+        authority: https://auth.example.com
+        grant: client_credentials
+        # No expressions = build-time config generation
+----
+
+**Use routing for environment-specific overrides**
+
+Override authentication configuration per environment **without changing workflow code**:
+
+[source,properties]
+----
+# Dev environment
+%dev.quarkus.flow.oidc.client.payment-api.name=payment-dev
+
+# Prod environment
+%prod.quarkus.flow.oidc.client.payment-api.name=payment-prod
+----
+
+**Timeout configuration strategy**
+
+Configure timeouts at the appropriate level using the 8-level cascade:
+
+[source,properties]
+----
+# Global default for all workflows
+quarkus.flow.oidc.creation-timeout=10s
+quarkus.flow.oidc.connection-timeout=10s
+
+# Override for a specific workflow
+quarkus.flow.oidc.client.slow-workflow.creation-timeout=30s
+quarkus.flow.oidc.client.slow-workflow.connection-timeout=30s
+
+# Override for a specific task
+quarkus.flow.oidc.client."orders.task.payment".connection-timeout=45s
+----
+
+**Timeout types:**
+
+* **Creation timeout** — How long to wait for OIDC client initialization (includes discovery)
+* **Connection timeout** — How long to wait for token negotiation HTTP requests
+
+[[common-pitfalls]]
+=== Common pitfalls
+
+**Inline auth creates isolated clients**
+
+⚠️ **Pitfall:** Using inline `oauth2(...)` or `oidc(...)` on multiple tasks with identical credentials still creates separate OIDC clients.
+
+✅ **Solution:** Use named authentication policies under `use(...)` to share a single client across tasks.
+
+**YAML workflow + manual OIDC client config collision**
+
+⚠️ **Pitfall:** If your YAML workflow defines a policy named `myauth` and you manually configure `quarkus.oidc-client.myauth.*`, the behavior depends on Quarkus config priority and may not work as expected.
+
+✅ **Solution:** Use **routing configuration** to explicitly override:
+
+[source,properties]
+----
+# Your pre-configured client
+quarkus.oidc-client.myProdClient.auth-server-url=...
+
+# Route the workflow's "myauth" policy to use your client
+quarkus.flow.oidc.client.myauth.name=myProdClient
+----
+
+**Same clientId, different secrets = different clients**
+
+⚠️ **Pitfall:** Two OAuth2 configurations with the same `clientId` but different `clientSecret` values create **two separate OIDC clients**, not one.
+
+✅ **Why:** The `EndpointKey` includes **all** configuration fields, including `clientSecret`. Different secrets = different keys = different cached clients.
+
+**OIDC vs OAuth2 creates different clients**
+
+⚠️ **Pitfall:** `oidc(...)` and `oauth2(...)` for the same authority create **two separate clients** even if all other fields match.
+
+✅ **Why:** OIDC enables discovery (`discovery-enabled=true`), OAuth2 disables it (`discovery-enabled=false`). Different discovery flags = different `EndpointKey`.
+
+**Expressions prevent build-time optimization**
+
+⚠️ **Pitfall:** Using `${ $secret.xxx }` expressions in a YAML workflow prevents build-time client configuration generation.
+
+✅ **Expected:** Policies with expressions are registered **lazily at runtime** after expression resolution, not at build-time. This is by design — the values aren't known until runtime.
+
+[[troubleshooting]]
+=== Troubleshooting
+
+**Enable debug logging**
+
+See which OIDC clients are created and when:
+
+[source,properties]
+----
+quarkus.log.category."io.quarkiverse.flow.oidc".level=DEBUG
+----
+
+Look for log messages like:
+[source,text]
+----
+DEBUG [io.qua.flo.oid.reg.OidcClientWorkflowRegistrar] Registering OIDC client 'keycloak' with EndpointKey: ...
+DEBUG [io.qua.flo.oid.reg.OidcClientRegistry] Registered OIDC client with name 'keycloak' and endpoint key.
+----
+
+**401 Unauthorized errors**
+
+Check:
+
+1. **Credentials are correct** — Verify `clientId` and `clientSecret` match your auth server configuration
+2. **Token endpoint is correct** — For OAuth2, verify `.endpoints(e -> e.token("/oauth2/token"))`
+3. **Grant type is correct** — `CLIENT_CREDENTIALS`, `PASSWORD`, `TOKEN_EXCHANGE`, etc.
+4. **Scopes are valid** — Some auth servers require specific scopes
+
+**Timeout errors**
+
+If token negotiation times out:
+
+1. **Increase connection timeout** — `quarkus.flow.oidc.connection-timeout=30s`
+2. **Increase creation timeout** — `quarkus.flow.oidc.creation-timeout=20s`
+3. **Check auth server availability** — Verify the `authority` URL is reachable
+4. **Check network configuration** — Proxies, firewalls, VPNs
+
+**OIDC client not found**
+
+If you get "OIDC client not found" errors:
+
+1. **Check client name** — Named policies: use exact policy name. Inline auth: auto-generated as `namespace:name:version.task.taskName`
+2. **Check routing config** — If using `quarkus.flow.oidc.client.<key>.name`, verify the target client exists
+3. **Check logs** — Look for "Registering OIDC client" messages to see what was created
+
 
 == What's next
 

@@ -258,7 +258,6 @@ class FlowProcessor {
                 .addQualifier().annotation(DotNames.IDENTIFIER).addValue("value", it.className()).done()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(it.className())),
                         AnnotationInstance.builder(DotName.createSimple(Any.class)).build())
-                //.addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowApplication.class)))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowRegistrarService.class)))
                 .createWith(recorder.workflowDefinitionCreator(it.className()))
                 .done());

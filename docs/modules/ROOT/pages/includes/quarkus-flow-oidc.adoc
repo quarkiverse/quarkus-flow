@@ -112,6 +112,36 @@ endif::add-copy-button-to-env-var[]
 |link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow-oidc_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
 |`+++10S+++`
 
+a| [[quarkus-flow-oidc_quarkus-flow-oidc-client-client-connection-timeout]] [.property-path]##link:#quarkus-flow-oidc_quarkus-flow-oidc-client-client-connection-timeout[`+++quarkus.flow.oidc.client."client".connection-timeout+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.oidc.client."client".connection-timeout+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The number of seconds after which the current OIDC connection request times out.
+
+This timeout is used for:
+
+ - The internal HTTP client timeout when creating the OIDC client
+ - The await timeout when negotiating access tokens
+
+
+
+For named clients (via `name()`), this setting is ignored and the named client's own `connection-timeout` is used instead.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_OIDC_CLIENT__CLIENT__CONNECTION_TIMEOUT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_OIDC_CLIENT__CLIENT__CONNECTION_TIMEOUT+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow-oidc_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
+|`+++10S+++`
+
 |===
 
 ifndef::no-duration-note[]

@@ -41,7 +41,6 @@ class OidcAuthProviderFactoryIntegrationTest {
 
     private OidcClientRegistry registry;
     private OidcAuthProviderFactory factory;
-    private FlowOidcConfig config;
     private OidcClientWorkflowRegistrar mockListener;
     private OidcClients mockOidcClients;
 
@@ -58,14 +57,11 @@ class OidcAuthProviderFactoryIntegrationTest {
             throw new RuntimeException(e);
         }
 
-        config = mock(FlowOidcConfig.class);
-        when(config.connectionTimeout()).thenReturn(Duration.ofSeconds(10));
-
         mockListener = mock(OidcClientWorkflowRegistrar.class);
         RuntimeExpressionResolver mockExpressionResolver = mock(RuntimeExpressionResolver.class);
         OidcConfigResolver mockConfigResolver = mock(OidcConfigResolver.class);
 
-        factory = new OidcAuthProviderFactory(registry, config, mockListener, mockExpressionResolver, mockConfigResolver);
+        factory = new OidcAuthProviderFactory(registry, mockListener, mockExpressionResolver, mockConfigResolver);
     }
 
     @Test

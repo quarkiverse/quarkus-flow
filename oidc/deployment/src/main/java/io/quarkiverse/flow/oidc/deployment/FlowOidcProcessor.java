@@ -68,6 +68,10 @@ public class FlowOidcProcessor {
                         discoveredWorkflow.workflowDefinitionId());
 
                 for (TokenAuthPolicy policy : policies) {
+                    // Generate OIDC client config from workflow policy
+                    // To override with your own pre-configured client, use routing config:
+                    //   quarkus.flow.oidc.client.<policyName>.name=<yourClientName>
+                    // See: https://docs.quarkiverse.io/quarkus-flow/dev/oauth2-oidc-authentication.html#route-to-named-client
                     if (policy.oauth2().isPresent()) {
                         generateOAuth2Config(runtimeConfig, policy);
                     } else if (policy.oidc().isPresent()) {

@@ -47,16 +47,13 @@ public class OidcAuthProviderFactory implements AuthProviderFactory {
     private final OidcClientRegistry clientRegistry;
     private final RuntimeExpressionResolver expressionResolver;
     private final OidcConfigResolver configResolver;
-    private final FlowOidcConfig config;
     private final OidcClientWorkflowRegistrar workflowRegistrar;
 
     public OidcAuthProviderFactory(OidcClientRegistry clientRegistry,
-            FlowOidcConfig config,
             OidcClientWorkflowRegistrar workflowRegistrar,
             RuntimeExpressionResolver expressionResolver,
             OidcConfigResolver configResolver) {
         this.clientRegistry = clientRegistry;
-        this.config = config;
         this.workflowRegistrar = workflowRegistrar;
         this.expressionResolver = expressionResolver;
         this.configResolver = configResolver;

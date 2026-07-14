@@ -1,12 +1,6 @@
 package io.quarkiverse.flow.oidc.impl;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.net.URI;
-import java.time.Duration;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +29,11 @@ import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
 import io.serverlessworkflow.impl.auth.AuthProvider;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 class OidcAuthProviderFactoryTest {
 
     private OidcAuthProviderFactory factory;
@@ -48,14 +47,12 @@ class OidcAuthProviderFactoryTest {
     @BeforeEach
     void setUp() {
         mockRegistry = mock(OidcClientRegistry.class);
-        mockConfig = mock(FlowOidcConfig.class);
         mockListener = mock(OidcClientWorkflowRegistrar.class);
-        when(mockConfig.connectionTimeout()).thenReturn(Duration.ofSeconds(10));
 
         RuntimeExpressionResolver mockResolver = mock(RuntimeExpressionResolver.class);
         OidcConfigResolver mockConfigResolver = mock(OidcConfigResolver.class);
 
-        factory = new OidcAuthProviderFactory(mockRegistry, mockConfig, mockListener, mockResolver, mockConfigResolver);
+        factory = new OidcAuthProviderFactory(mockRegistry, mockListener, mockResolver, mockConfigResolver);
 
         // Setup workflow definition mocks
         mockDefinition = mock(WorkflowDefinition.class);
