@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import io.serverlessworkflow.api.types.OAuth2AuthenticationData;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
@@ -22,7 +23,7 @@ class TokenAuthPolicyExtractorTest {
                                 .grant(CLIENT_CREDENTIALS)))))
                 .build();
 
-        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractTokenAuthPolicies(workflow);
+        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractStaticTokenAuthPolicies(workflow);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).name()).isEqualTo("keycloak");
@@ -37,7 +38,7 @@ class TokenAuthPolicyExtractorTest {
                                 .grant(CLIENT_CREDENTIALS)))))
                 .build();
 
-        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractTokenAuthPolicies(workflow);
+        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractStaticTokenAuthPolicies(workflow);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).name()).isEqualTo("auth-server");
@@ -55,7 +56,7 @@ class TokenAuthPolicyExtractorTest {
                                                 e -> e.token("/oauth2/token")))))
                 .build();
 
-        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractTokenAuthPolicies(workflow);
+        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractStaticTokenAuthPolicies(workflow);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).name()).startsWith("org.acme:orders:0.0.1.task.");
@@ -72,7 +73,7 @@ class TokenAuthPolicyExtractorTest {
                                         FuncDSL.oidc("https://oidc.example.com", CLIENT_CREDENTIALS, "client", "secret"))))
                 .build();
 
-        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractTokenAuthPolicies(workflow);
+        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractStaticTokenAuthPolicies(workflow);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).name()).startsWith("org.acme:orders:0.0.1.task.");
@@ -91,7 +92,7 @@ class TokenAuthPolicyExtractorTest {
                                 .uri(URI.create("https://api.example.com"), FuncDSL.use("keycloak"))))
                 .build();
 
-        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractTokenAuthPolicies(workflow);
+        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractStaticTokenAuthPolicies(workflow);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).name()).isEqualTo("keycloak");
@@ -114,7 +115,7 @@ class TokenAuthPolicyExtractorTest {
                                 .uri(URI.create("https://api2.example.com"), FuncDSL.use("auth0"))))
                 .build();
 
-        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractTokenAuthPolicies(workflow);
+        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractStaticTokenAuthPolicies(workflow);
 
         assertThat(result).hasSize(2);
         assertThat(result).extracting(TokenAuthPolicy::name).containsExactlyInAnyOrder("keycloak", "auth0");
@@ -124,7 +125,7 @@ class TokenAuthPolicyExtractorTest {
     void extract_empty_workflow() {
         Workflow workflow = FuncWorkflowBuilder.workflow("empty").build();
 
-        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractTokenAuthPolicies(workflow);
+        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractStaticTokenAuthPolicies(workflow);
 
         assertThat(result).isEmpty();
     }
@@ -139,8 +140,106 @@ class TokenAuthPolicyExtractorTest {
                                 .uri(URI.create("https://api.example.com"), FuncDSL.use("basic"))))
                 .build();
 
-        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractTokenAuthPolicies(workflow);
+        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractStaticTokenAuthPolicies(workflow);
 
         assertThat(result).isEmpty();
+    }
+
+    @Test
+    void skip_named_policy_with_expression_in_username() {
+        Workflow workflow = FuncWorkflowBuilder.workflow("orders")
+                .use(use -> use.authentications(auth -> auth.authentication("dynamic-auth", r -> r.oauth2(
+                        oauth2 -> oauth2.authority("https://auth.example.com")
+                                .grant(OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.PASSWORD)
+                                .username("${ $secret.username }")
+                                .password("${ $secret.password }")))))
+                .build();
+
+        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractStaticTokenAuthPolicies(workflow);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void skip_named_policy_with_expression_in_client_id() {
+        Workflow workflow = FuncWorkflowBuilder.workflow("orders")
+                .use(use -> use.authentications(auth -> auth.authentication("dynamic-auth", r -> r.oauth2(
+                        oauth2 -> oauth2.authority("https://auth.example.com")
+                                .grant(CLIENT_CREDENTIALS)
+                                .client(c -> c.id("${ $secret.client_id }").secret("client-secret"))))))
+                .build();
+
+        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractStaticTokenAuthPolicies(workflow);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void skip_named_policy_with_expression_in_client_secret() {
+        Workflow workflow = FuncWorkflowBuilder.workflow("orders")
+                .use(use -> use.authentications(auth -> auth.authentication("dynamic-auth", r -> r.oauth2(
+                        oauth2 -> oauth2.authority("https://auth.example.com")
+                                .grant(CLIENT_CREDENTIALS)
+                                .client(c -> c.id("client-id").secret("${ $secret.client_secret }"))))))
+                .build();
+
+        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractStaticTokenAuthPolicies(workflow);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void skip_inline_oauth2_with_expression_in_authority() {
+        Workflow workflow = FuncWorkflowBuilder.workflow("orders")
+                .tasks(FuncDSL.call(
+                        FuncDSL.http("payment")
+                                .POST()
+                                .uri(URI.create("https://api.example.com/payment"),
+                                        FuncDSL.oauth2("https://auth.example.com", CLIENT_CREDENTIALS, "${ $secret.client_id }",
+                                                "secret",
+                                                e -> e.token("/oauth2/token")))))
+                .build();
+
+        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractStaticTokenAuthPolicies(workflow);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void skip_inline_oauth2_with_expression_in_client_credentials() {
+        Workflow workflow = FuncWorkflowBuilder.workflow("orders")
+                .tasks(FuncDSL.call(
+                        FuncDSL.http("payment")
+                                .POST()
+                                .uri(URI.create("https://api.example.com/payment"),
+                                        FuncDSL.oauth2("https://auth.example.com", CLIENT_CREDENTIALS, "${ $secret.client_id }",
+                                                "${ $secret.client_secret }",
+                                                e -> e.token("/oauth2/token")))))
+                .build();
+
+        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractStaticTokenAuthPolicies(workflow);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void extract_mixed_static_and_dynamic_policies() {
+        Workflow workflow = FuncWorkflowBuilder.workflow("orders")
+                .use(use -> use.authentications(auth -> auth
+                        .authentication("static-auth", r -> r.oauth2(
+                                oauth2 -> oauth2.authority("https://auth.example.com")
+                                        .grant(CLIENT_CREDENTIALS)
+                                        .client(c -> c.id("static-client").secret("static-secret"))))
+                        .authentication("dynamic-auth", r -> r.oauth2(
+                                oauth2 -> oauth2.authority("https://auth.example.com")
+                                        .grant(CLIENT_CREDENTIALS)
+                                        .client(c -> c.id("${ $secret.client_id }").secret("${ $secret.client_secret }"))))))
+                .build();
+
+        List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractStaticTokenAuthPolicies(workflow);
+
+        // Only the static policy should be extracted
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).name()).isEqualTo("static-auth");
     }
 }

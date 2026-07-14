@@ -13,6 +13,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.quarkiverse.flow.oidc.impl.OidcAuthProviderFactory;
+import io.quarkiverse.flow.oidc.impl.OidcClientAuthProvider;
+import io.quarkiverse.flow.oidc.impl.RuntimeExpressionResolver;
+import io.quarkiverse.flow.oidc.registry.EndpointKey;
+import io.quarkiverse.flow.oidc.registry.OidcClientRegistry;
+import io.quarkiverse.flow.oidc.registry.OidcClientWorkflowRegistrar;
+import io.quarkiverse.flow.oidc.registry.OidcConfigResolver;
 import io.quarkus.oidc.client.OidcClient;
 import io.serverlessworkflow.api.types.AuthenticationPolicyUnion;
 import io.serverlessworkflow.api.types.EndpointConfiguration;
@@ -35,8 +42,7 @@ class OidcAuthProviderFactoryTest {
     private OidcAuthProviderFactory factory;
     private OidcClientRegistry mockRegistry;
     private FlowOidcConfig mockConfig;
-    private OidcConfigResolver mockResolver;
-    private OidcWorkflowRegistrationListener mockListener;
+    private OidcClientWorkflowRegistrar mockListener;
     private WorkflowDefinition mockDefinition;
     private WorkflowApplication mockApplication;
     private Workflow mockWorkflow;
@@ -45,11 +51,13 @@ class OidcAuthProviderFactoryTest {
     void setUp() {
         mockRegistry = mock(OidcClientRegistry.class);
         mockConfig = mock(FlowOidcConfig.class);
-        mockResolver = mock(OidcConfigResolver.class);
-        mockListener = mock(OidcWorkflowRegistrationListener.class);
+        mockListener = mock(OidcClientWorkflowRegistrar.class);
         when(mockConfig.connectionTimeout()).thenReturn(Duration.ofSeconds(10));
 
-        factory = new OidcAuthProviderFactory(mockRegistry, mockConfig, mockResolver, mockListener);
+        RuntimeExpressionResolver mockResolver = mock(RuntimeExpressionResolver.class);
+        OidcConfigResolver mockConfigResolver = mock(OidcConfigResolver.class);
+
+        factory = new OidcAuthProviderFactory(mockRegistry, mockConfig, mockListener, mockResolver, mockConfigResolver);
 
         // Setup workflow definition mocks
         mockDefinition = mock(WorkflowDefinition.class);
@@ -91,11 +99,9 @@ class OidcAuthProviderFactoryTest {
         // When
         Optional<AuthProvider> result = factory.getAuth(mockDefinition, endpoint);
 
-        // Then: Delegates to SDK's DefaultAuthProviderFactory
-        // SDK creates its own OAuth2AuthProvider (not our OidcClientAuthProvider)
+        // Then: Returns OidcClientAuthProvider (lazy registration will happen at runtime)
         assertThat(result).isPresent();
-        assertThat(result.get()).isNotInstanceOf(OidcClientAuthProvider.class);
-        assertThat(result.get().getClass().getName()).contains("OAuth2AuthProvider");
+        assertThat(result.get()).isInstanceOf(OidcClientAuthProvider.class);
     }
 
     @Test
@@ -157,10 +163,9 @@ class OidcAuthProviderFactoryTest {
         // When
         Optional<AuthProvider> result = factory.getAuth(mockDefinition, authRef, "GET");
 
-        // Then: Delegates to SDK's DefaultAuthProviderFactory
+        // Then: Returns OidcClientAuthProvider (lazy registration will happen at runtime)
         assertThat(result).isPresent();
-        assertThat(result.get()).isNotInstanceOf(OidcClientAuthProvider.class);
-        assertThat(result.get().getClass().getName()).contains("OAuth2AuthProvider");
+        assertThat(result.get()).isInstanceOf(OidcClientAuthProvider.class);
     }
 
     @Test

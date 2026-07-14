@@ -40,10 +40,16 @@ public class FlowOidcProcessor {
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans) {
         beans.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClasses(FlowOidcAuthCustomizer.class,
-                        io.quarkiverse.flow.oidc.OidcClientRegistry.class,
-                        io.quarkiverse.flow.oidc.OidcWorkflowRegistrationListener.class,
-                        io.quarkiverse.flow.oidc.OidcConfigResolver.class)
+                .addBeanClass(FlowOidcAuthCustomizer.class)
+                .setUnremovable()
+                .build());
+
+        // Register runtime beans by name (they're in runtime module, not available here at build time)
+        beans.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClass("io.quarkiverse.flow.oidc.registry.OidcClientRegistry")
+                .addBeanClass("io.quarkiverse.flow.oidc.registry.OidcClientWorkflowRegistrar")
+                .addBeanClass("io.quarkiverse.flow.oidc.registry.OidcConfigResolver")
+                .addBeanClass("io.quarkiverse.flow.oidc.impl.RuntimeExpressionResolver")
                 .setUnremovable()
                 .build());
     }
@@ -56,7 +62,7 @@ public class FlowOidcProcessor {
         for (DiscoveredWorkflowBuildItem discoveredWorkflow : discoveredWorkflows) {
             if (discoveredWorkflow.fromSpec()) {
                 final List<TokenAuthPolicy> policies = TokenAuthPolicyExtractor
-                        .extractTokenAuthPolicies(discoveredWorkflow.workflowFromSpec());
+                        .extractStaticTokenAuthPolicies(discoveredWorkflow.workflowFromSpec());
 
                 LOG.debug("Discovered {} token auth policies in workflow {}", policies.size(),
                         discoveredWorkflow.workflowDefinitionId());

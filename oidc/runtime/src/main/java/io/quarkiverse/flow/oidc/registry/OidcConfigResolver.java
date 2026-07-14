@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.oidc;
+package io.quarkiverse.flow.oidc.registry;
 
 import java.time.Duration;
 import java.util.Map;
@@ -7,6 +7,8 @@ import java.util.Optional;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import io.quarkiverse.flow.oidc.FlowOidcConfig;
+import io.quarkiverse.flow.oidc.OidcNamingConvention;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.client.runtime.OidcClientConfig;
 import io.quarkus.oidc.client.runtime.OidcClientsConfig;

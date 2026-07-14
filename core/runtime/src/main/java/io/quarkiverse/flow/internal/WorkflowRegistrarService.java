@@ -1,7 +1,6 @@
 package io.quarkiverse.flow.internal;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 
 import org.slf4j.Logger;
@@ -13,6 +12,9 @@ import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
+/**
+ * Central internal API for {@link WorkflowDefinition} logic.
+ */
 @ApplicationScoped
 @Unremovable
 public class WorkflowRegistrarService {
@@ -22,13 +24,9 @@ public class WorkflowRegistrarService {
     @Inject
     WorkflowApplication application;
 
-    @Inject
-    Event<WorkflowDescriptorRegisteredEvent> event;
-
     public WorkflowDefinition register(Workflow workflow) {
         LOGGER.debug("Registering workflow {}", WorkflowDefinitionId.of(workflow));
         final WorkflowDefinition definition = application.workflowDefinition(workflow);
-        event.fire(new WorkflowDescriptorRegisteredEvent(workflow));
         return definition;
     }
 

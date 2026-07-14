@@ -6,8 +6,10 @@ import java.util.Objects;
 
 import io.serverlessworkflow.api.types.AuthenticationPolicyUnion;
 import io.serverlessworkflow.api.types.EndpointConfiguration;
+import io.serverlessworkflow.api.types.OAuth2AuthenticationData;
 import io.serverlessworkflow.api.types.TaskItem;
 import io.serverlessworkflow.api.types.Workflow;
+import io.serverlessworkflow.impl.expressions.ExpressionUtils;
 
 /**
  * Extracts OAuth2 and OIDC authentication policies from workflow definitions.
@@ -21,11 +23,19 @@ public final class TokenAuthPolicyExtractor {
     }
 
     /**
-     * Extracts all token authentication policies from a workflow.
+     * Extracts all static (non-expression-based) token authentication policies from a workflow.
+     * <p>
+     * Static policies have all configuration values as literals (no runtime expressions like {@code ${ $secret.xxx }}).
+     * These policies can be registered eagerly at build-time or application startup.
+     * <p>
+     * Policies containing expressions in any field (authority, credentials, scopes, etc.) are skipped
+     * and must be resolved and registered lazily at workflow execution time when the runtime context
+     * is available for expression evaluation.
      *
-     * @return list of OAuth2/OIDC policies found in named policies and task-level inline auth
+     * @param workflow the workflow to scan for authentication policies
+     * @return list of static OAuth2/OIDC policies found in named policies and task-level inline auth
      */
-    public static List<TokenAuthPolicy> extractTokenAuthPolicies(Workflow workflow) {
+    public static List<TokenAuthPolicy> extractStaticTokenAuthPolicies(Workflow workflow) {
         Objects.requireNonNull(workflow, "workflow must not be null");
         final List<TokenAuthPolicy> tokenAuthPolicies = new ArrayList<>();
 
@@ -35,12 +45,42 @@ public final class TokenAuthPolicyExtractor {
                     .getAuthentications()
                     .getAdditionalProperties()
                     .forEach((key, value) -> TokenAuthPolicy.from(key, value)
-                            .ifPresent(tokenAuthPolicies::add));
+                            .ifPresent(t -> {
+                                if (!containsExpressions(t))
+                                    tokenAuthPolicies.add(t);
+                            }));
         }
 
         extractTokenAuthPoliciesInto(workflow, workflow.getDo(), tokenAuthPolicies);
 
         return tokenAuthPolicies;
+    }
+
+    private static boolean containsExpressions(TokenAuthPolicy policy) {
+        return containsExpressions(policy.commonAuth());
+    }
+
+    private static boolean containsExpressions(OAuth2AuthenticationData data) {
+        if (data == null)
+            return false;
+
+        if (data.getAuthority() != null) {
+            String authority = data.getAuthority().getLiteralUriTemplate();
+            if (ExpressionUtils.isExpr(authority)) {
+                return true;
+            }
+        }
+
+        if (data.getClient() != null) {
+            if (ExpressionUtils.isExpr(data.getClient().getId()))
+                return true;
+            if (ExpressionUtils.isExpr(data.getClient().getSecret()))
+                return true;
+        }
+
+        if (ExpressionUtils.isExpr(data.getUsername()))
+            return true;
+        return ExpressionUtils.isExpr(data.getPassword());
     }
 
     private static void extractTokenAuthPoliciesInto(Workflow workflow, List<TaskItem> tasks,
@@ -143,20 +183,27 @@ public final class TokenAuthPolicyExtractor {
     private static void extractInlinePolicy(Workflow workflow, TaskItem task,
             AuthenticationPolicyUnion policyUnion,
             List<TokenAuthPolicy> tokenAuthPolicies) {
-        if (policyUnion == null) {
+        if (policyUnion == null)
             return;
-        }
-
-        final String compositeName = OidcNamingConvention.clientName(workflow, task);
-        final String taskName = task.getName();
 
         if (policyUnion.getOAuth2AuthenticationPolicy() != null) {
-            var oauth2Data = policyUnion.getOAuth2AuthenticationPolicy().getOauth2().getOAuth2ConnectAuthenticationProperties();
-            tokenAuthPolicies.add(new TokenAuthPolicy(compositeName, taskName, oauth2Data));
+            if (!containsExpressions(
+                    policyUnion.getOAuth2AuthenticationPolicy().getOauth2().getOAuth2ConnectAuthenticationProperties()))
+                tokenAuthPolicies.add(
+                        new TokenAuthPolicy(
+                                OidcNamingConvention.clientName(workflow, task),
+                                task.getName(),
+                                policyUnion.getOAuth2AuthenticationPolicy().getOauth2()
+                                        .getOAuth2ConnectAuthenticationProperties()));
         } else if (policyUnion.getOpenIdConnectAuthenticationPolicy() != null) {
-            var oidcData = policyUnion.getOpenIdConnectAuthenticationPolicy().getOidc()
-                    .getOpenIdConnectAuthenticationProperties();
-            tokenAuthPolicies.add(new TokenAuthPolicy(compositeName, taskName, oidcData));
+            if (!containsExpressions(
+                    policyUnion.getOpenIdConnectAuthenticationPolicy().getOidc().getOpenIdConnectAuthenticationProperties()))
+                tokenAuthPolicies.add(
+                        new TokenAuthPolicy(
+                                OidcNamingConvention.clientName(workflow, task),
+                                task.getName(),
+                                policyUnion.getOpenIdConnectAuthenticationPolicy().getOidc()
+                                        .getOpenIdConnectAuthenticationProperties()));
         }
     }
 

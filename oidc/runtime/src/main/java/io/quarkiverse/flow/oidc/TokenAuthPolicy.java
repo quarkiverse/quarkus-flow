@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
+import io.quarkiverse.flow.oidc.registry.EndpointKey;
+import io.quarkiverse.flow.oidc.registry.OidcClientRegistry;
 import io.serverlessworkflow.api.types.AuthenticationPolicyUnion;
 import io.serverlessworkflow.api.types.EndpointConfiguration;
 import io.serverlessworkflow.api.types.OAuth2AuthenticationData;

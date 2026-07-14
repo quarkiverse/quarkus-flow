@@ -1,11 +1,13 @@
-package io.quarkiverse.flow.oidc;
+package io.quarkiverse.flow.oidc.registry;
 
 import java.util.List;
 import java.util.Objects;
 
-import io.serverlessworkflow.api.types.AuthenticationPolicyUnion;
+import com.fasterxml.jackson.annotation.JsonIgnoreType;
+
 import io.serverlessworkflow.api.types.OAuth2AuthenticationData;
 import io.serverlessworkflow.api.types.OAuth2AuthenticationData.OAuth2AuthenticationDataGrant;
+import io.serverlessworkflow.api.types.OAuth2AuthenticationDataClient;
 import io.serverlessworkflow.api.types.OAuth2AuthenticationPropertiesEndpoints;
 import io.serverlessworkflow.api.types.OAuth2ConnectAuthenticationProperties;
 
@@ -18,11 +20,36 @@ import io.serverlessworkflow.api.types.OAuth2ConnectAuthenticationProperties;
  * Used as a Map key in {@link OidcClientRegistry} to match SDK authentication policies
  * to registered OIDC clients.
  * <p>
- * <b>Security Notice:</b> This record contains sensitive credential data (clientSecret, username, password)
- * in plaintext. While {@link #toString()} masks these fields, the actual values are stored in memory
- * and visible via reflection/debugging tools. Do not serialize, log at non-debug levels, or persist
- * instances of this class.
+ * <b>Security Notice - Credential Storage:</b>
+ * <p>
+ * This record stores plaintext credentials (clientSecret, username, password) for the following reasons:
+ * <ol>
+ * <li><b>Must pass to auth server:</b> OAuth2/OIDC protocols require sending actual credential values
+ * to the authorization server for token negotiation. Hashing would make them unusable.</li>
+ * <li><b>Exact matching required:</b> Two policies with identical configs must resolve to the same
+ * OIDC client. Even slight differences (like different secrets) create distinct clients.</li>
+ * <li><b>Cache key semantics:</b> EndpointKey serves as a cache key - credentials are part of
+ * the unique identity of an OIDC client configuration.</li>
+ * </ol>
+ * <p>
+ * <b>Mitigations:</b>
+ * <ul>
+ * <li>{@link #toString()} masks sensitive fields (shows "***" instead of actual values)</li>
+ * <li>{@code @JsonIgnoreType} prevents accidental Jackson serialization</li>
+ * <li>Credentials are typically loaded from secure sources ({@code $secret} expressions)</li>
+ * <li>Keys exist only in application memory (not serialized or persisted)</li>
+ * </ul>
+ * <p>
+ * <b>Security Guidelines:</b>
+ * <ul>
+ * <li>❌ Do NOT serialize EndpointKey instances</li>
+ * <li>❌ Do NOT log EndpointKey at INFO/WARN/ERROR levels</li>
+ * <li>❌ Do NOT persist EndpointKey to disk/database</li>
+ * <li>✅ Use DEBUG logging if needed (toString() masks secrets)</li>
+ * <li>✅ Store credentials in Quarkus Vault or Kubernetes Secrets</li>
+ * </ul>
  */
+@JsonIgnoreType
 public record EndpointKey(
         String authority,
         String tokenPath,
@@ -30,6 +57,7 @@ public record EndpointKey(
         boolean openIdConnect,
         String clientId,
         String clientSecret,
+        OAuth2AuthenticationDataClient.ClientAuthentication clientAuthMethod,
         OAuth2AuthenticationDataGrant grant,
         List<String> scopes,
         List<String> audiences,
@@ -55,10 +83,23 @@ public record EndpointKey(
         // requests no additional scopes beyond the default.
         scopes = scopes != null ? List.copyOf(scopes) : List.of();
         audiences = audiences != null ? List.copyOf(audiences) : List.of();
+        // Force authority since we used to identify the OidcClient object in the registry.
+        Objects.requireNonNull(authority == null ? null : (authority.isBlank() ? null : authority),
+                "Authority is required for OIDC authentication.");
     }
 
-    public static EndpointKey from(AuthenticationPolicyUnion policyUnion) {
-        return from(TokenAuthPolicy.tokenAuthData(policyUnion));
+    public static EndpointKey fromNonResolved(String authority, String clientId, String clientSecret, String username,
+            String password, EndpointKey nonResolvedEndpointKey) {
+        return new EndpointKey(
+                authority, nonResolvedEndpointKey.tokenPath,
+                nonResolvedEndpointKey.revocationPath,
+                nonResolvedEndpointKey.openIdConnect,
+                clientId, clientSecret,
+                nonResolvedEndpointKey.clientAuthMethod,
+                nonResolvedEndpointKey.grant,
+                nonResolvedEndpointKey.scopes,
+                nonResolvedEndpointKey.audiences,
+                username, password);
     }
 
     public static EndpointKey from(OAuth2AuthenticationData data) {
@@ -98,9 +139,14 @@ public record EndpointKey(
         // Client credentials
         String clientId = data.getClient() != null ? data.getClient().getId() : null;
         String clientSecret = data.getClient() != null ? data.getClient().getSecret() : null;
+        OAuth2AuthenticationDataClient.ClientAuthentication clientAuthMethod = data.getClient() != null
+                ? data.getClient().getAuthentication()
+                : OAuth2AuthenticationDataClient.ClientAuthentication.CLIENT_SECRET_POST;
 
         // Grant type
-        OAuth2AuthenticationData.OAuth2AuthenticationDataGrant grant = data.getGrant();
+        OAuth2AuthenticationData.OAuth2AuthenticationDataGrant grant = data.getGrant() == null
+                ? OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS
+                : data.getGrant();
 
         // Scopes and audiences
         List<String> scopes = data.getScopes();
@@ -117,11 +163,20 @@ public record EndpointKey(
                 isOidc,
                 clientId,
                 clientSecret,
+                clientAuthMethod,
                 grant,
                 scopes,
                 audiences,
                 username,
                 password);
+    }
+
+    public String oidcId() {
+        return "flow-oidc-" + (clientId != null ? clientId : authority);
+    }
+
+    public boolean isDiscoverable() {
+        return openIdConnect;
     }
 
     @Override

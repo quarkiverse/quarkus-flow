@@ -1,51 +1,70 @@
-# OIDC Client Delegation Implementation Plan
+# OIDC Client Delegation Implementation
 
-> **Configuration Pattern:** This implementation uses the **unified client naming pattern** defined in `2026-07-07-unified-client-naming-pattern.md`. OIDC routing configuration follows the same structure as HTTP and gRPC for consistency.
+> **Status:** ✅ Implemented (2026-07-13)
 
-**Goal:** Delegate OIDC client management to `quarkus-oidc-client` by generating build-time config for SPEC workflows, using CDI events for runtime workflows, and implementing a simple name-based client registry.
+**Goal:** Delegate OIDC client management to `quarkus-oidc-client` by registering clients at workflow startup and runtime, using endpoint-based caching for efficient client reuse.
 
 **Architecture:**
-- **SPEC Workflows (build-time)**: Generate full `quarkus.oidc-client.<name>.*` config → `quarkus-oidc-client` creates clients automatically
-- **SOURCE/Runner Workflows (runtime)**: Fire CDI event (`WorkflowRegisteredEvent`) → listener creates clients via `OidcClients.newClient()`
-- **Named Auth Policies**: Extract `use("name")` references → OIDC clients named `"name"` (auto-created, config OPTIONAL for overrides)
-- **Inline Task Auth**: Generate composite client name `namespace:name:version.task.taskName` → create lazily on first use
-- **User Override**: Uses unified routing config pattern with progressive specificity (see below)
+- **Static Registration (startup)**: Workflows without runtime expressions → OIDC clients registered eagerly via SDK `AuthProviderFactory`
+- **Dynamic Registration (runtime)**: Workflows with expressions (`${ $secret.xxx }`) → OIDC clients created lazily on first use
+- **Named Auth Policies**: Extract `use("name")` references → clients named by policy name
+- **Inline Task Auth**: Generate composite name `namespace:name:version.task.taskName` → clients created on-demand
+- **Client Matching**: `EndpointKey` (authority + credentials + grant + scopes) → enables client reuse for identical configs
+- **User Override**: Optional routing config to redirect policy names to user-configured Quarkus OIDC clients
 
-**Unified Routing Config Pattern:**
+**Routing Config Pattern:**
 ```properties
-# OPTIONAL - only needed to override auto-generated client names
+# OPTIONAL - only needed to override auto-generated client names to user-configured Quarkus OIDC clients
+
+# Named policy override - route to existing quarkus.oidc-client.*
+quarkus.flow.oidc.keycloak.name=prodKeycloak
 
 # Short form (99% case - no namespace/version)
 quarkus.flow.oidc.orders.task.payment.name=customPaymentAuth
 quarkus.flow.oidc.orders.name=customOrdersAuth
 
-# Medium form (namespaced - all versions)
+# Medium form (namespaced - all versions)  
 quarkus.flow.oidc."acme\:orders".task.payment.name=acmePaymentAuth
 
 # Full form (version-specific)
 quarkus.flow.oidc."acme\:orders\:1.0.0".task.payment.name=ordersV1Auth
-
-# Named policy override (OIDC-specific)
-quarkus.flow.oidc.keycloak.name=prodKeycloak
 ```
 
 **Tech Stack:**
-- Build-time: `RunTimeConfigurationDefaultBuildItem` for SPEC workflows
-- Runtime: CDI Events (`@Observes WorkflowRegisteredEvent`) for SOURCE/Runner workflows
-- `quarkus-oidc-client` (`OidcClients`, `OidcClientConfig`)
-- Serverless Workflow DSL authentication policies
-- Unified client routing pattern (consistent with HTTP/gRPC)
+- SDK Integration: `AuthProviderFactory` interface for auth provider creation
+- Static Registration: `OidcClientWorkflowRegistrar` called once at startup per workflow  
+- Dynamic Registration: `RuntimeExpressionResolver` + lazy client creation
+- Client Storage: `OidcClientRegistry` with name-based and `EndpointKey`-based lookups
+- `quarkus-oidc-client` (`OidcClients`, `OidcClientConfig`, `OidcClientConfigBuilder`)
+- Expression Detection: `TokenAuthPolicyExtractor` filters static vs dynamic policies
 
-## Global Constraints
+## Implementation Decisions
 
-- Java 17+ (project baseline)
-- Quarkus extension runtime/deployment separation must be maintained
-- All existing integration tests must pass without modification
-- **BREAKING CHANGE**: Config structure updated to use unified naming pattern (`workflow()` instead of `client()`)
-- User-configured OIDC clients (`quarkus.oidc-client.*`) always take precedence
-- Support both named auth policies (`use("name")`) and inline task auth
-- OAuth2 authentication properties support literal values and property expressions (`${config.key}`), not JQ expressions
-- Routing config is **OPTIONAL** - auto-generation works by default, config only needed for overrides
+**SDK Lifecycle Integration:**
+- The Serverless Workflow SDK calls `AuthProviderFactory.getAuth()` **once at startup** per workflow (not per request)
+- We register static OIDC clients eagerly in this factory call
+- Dynamic clients (with expressions) are registered lazily on first HTTP request
+
+**Static vs Dynamic Policy Detection:**
+- Policies WITHOUT expressions (`${ ... }`) → registered at startup (static)
+- Policies WITH expressions → skipped at startup, registered at runtime (dynamic)
+- `TokenAuthPolicyExtractor` uses `ExpressionUtils.isExpr()` to detect expressions in ALL fields
+
+**Client Matching via EndpointKey:**
+- `EndpointKey` = (authority, tokenPath, grant, clientId, clientSecret, scopes, audiences, username, password)
+- Two policies with identical `EndpointKey` → reuse same OIDC client
+- Credentials stored in plaintext (required by OAuth2 protocol to send to auth servers)
+- `EndpointKey` acts as immutable cache key with proper equals/hashCode
+
+**PASSWORD Grant Support:**
+- Username/password resolved from expressions at runtime via `RuntimeExpressionResolver`
+- Added to dynamic grant parameters map alongside TOKEN_EXCHANGE support
+- Passed to `OidcClient.getTokens(Map<String, String>)` for token negotiation
+
+**OAuth2 vs OIDC Token Paths:**
+- OIDC (`FuncDSL.oidc()`) → discovery enabled, NO explicit tokenPath
+- OAuth2 (`FuncDSL.oauth2()`) → discovery disabled, explicit tokenPath required
+- Default tokenPath: `/oauth2/token` per CNCF Serverless Workflow spec
 
 ## Design Philosophy: Authentication Reuse
 
@@ -100,365 +119,363 @@ No hidden optimization, no magic deduplication - just pure DSL semantics. Users 
 
 ---
 
-## Implementation Tasks
+## Architecture Components
+## Architecture Components
 
-### Task 1: Create CDI Event Infrastructure
+### 1. SDK Integration: OidcAuthProviderFactory
 
-**Goal:** Enable workflow registration to trigger CDI events that OIDC (and other modules) can observe.
+**File:** `oidc/runtime/src/main/java/io/quarkiverse/flow/oidc/impl/OidcAuthProviderFactory.java`
 
-**Files to create:**
-- `core/runtime/.../events/WorkflowRegisteredEvent.java` - CDI event payload
-- `core/runtime/.../recorders/WorkflowRegistrationService.java` - Service that wraps workflow registration and fires events
+**Lifecycle:** Called by Serverless Workflow SDK **once at application startup** per workflow, not per HTTP request.
 
-**Files to modify:**
-- `core/runtime/.../recorders/WorkflowDefinitionRecorder.java` - Use registration service instead of direct SDK call
-- `runner/runtime/.../WorkflowDefinitionRuntimeLoader.java` - Use registration service for runtime-loaded workflows
+**Responsibilities:**
+- Implements `AuthProviderFactory` interface from Serverless Workflow SDK
+- Called when SDK needs an auth provider for OAuth2/OIDC authentication
+- Triggers static OIDC client registration via `OidcClientWorkflowRegistrar`
+- Returns `OidcClientAuthProvider` instance to SDK (SDK caches it)
+- Delegates non-OAuth2/OIDC auth to SDK's `DefaultAuthProviderFactory`
 
-**What it does:**
-- `WorkflowRegisteredEvent`: Simple CDI event containing the registered `Workflow` instance
-- `WorkflowRegistrationService`: Wraps `WorkflowApplication.workflowDefinition()`, fires CDI event after registration
-- Both recorders updated to inject and use the service
-
-**Why:** Allows OIDC module to observe workflow registration and create clients for SOURCE/Runner workflows at runtime.
-
----
-
-### Task 2: Extract OAuth2/OIDC Policies from Workflows
-
-**Goal:** Create utility to scan workflows and extract all OAuth2/OIDC authentication policies.
-
-**Files to create:**
-- `oidc/deployment/.../OidcPolicyExtractor.java` - Extracts auth policies from `Workflow` instances
-
-**What it does:**
-- Scans `workflow.use.authentications` map for named policies with OAuth2/OIDC
-- Scans all tasks for inline `EndpointConfiguration.authentication` with OAuth2/OIDC
-- Returns structured data: `Map<String, OAuth2Policy>` for named policies, `List<InlineAuth>` for task-level auth
-- Handles both `oauth2` and `openIdConnect` authentication types
-
-**Algorithm:**
+**Key Flow:**
 ```
-extractPolicies(Workflow):
-  namedPolicies = {}
-  inlineAuths = []
-  
-  // Extract named policies from workflow.use.authentications
-  for (name, policy) in workflow.use.authentications:
-    if isOAuth2OrOIDC(policy):
-      namedPolicies[name] = policy
-  
-  // Extract inline auth from tasks
-  for task in workflow.tasks:
-    if task.endpoint.authentication exists and isOAuth2OrOIDC:
-      inlineAuths.add({
-        taskName: task.name,
-        policy: task.endpoint.authentication
-      })
-  
-  return (namedPolicies, inlineAuths)
+SDK calls getAuth() at startup
+  → Check if OAuth2/OIDC policy
+  → Call OidcClientWorkflowRegistrar.registerStaticOidcClientsFor(workflow)
+  → Return new OidcClientAuthProvider(authData, ...)
+  → SDK caches the provider for all future executions
 ```
 
 ---
 
-### Task 3: Generate Build-Time Config for SPEC Workflows
+### 2. Policy Extraction: TokenAuthPolicyExtractor
 
-**Goal:** Generate `quarkus.oidc-client.<name>.*` properties for SPEC workflows at build time.
+**File:** `oidc/runtime/src/main/java/io/quarkiverse/flow/oidc/TokenAuthPolicyExtractor.java`
 
-**Files to modify:**
-- `oidc/deployment/.../FlowOidcProcessor.java` - Add build step that generates config
+**Responsibilities:**
+- Scans workflows for all OAuth2/OIDC authentication policies
+- Extracts both named policies (`use("name")`) and inline task auth
+- **Filters out policies with runtime expressions** (`${ $secret.xxx }`)
+- Returns only **static policies** that can be registered at startup
 
-**What it does:**
-- Use `WorkflowsPathBuildItem` to get all SPEC workflow descriptors
-- For each workflow:
-  - Extract OAuth2/OIDC policies (named + inline)
-  - Generate OIDC client config properties
-  - Emit `RunTimeConfigurationDefaultBuildItem`
-- Named policies → `quarkus.oidc-client.<policyName>.*`
-- Inline auth → `quarkus.oidc-client.<namespace:name:version.task.taskName>.*`
+**Expression Detection:**
+- Uses SDK's `ExpressionUtils.isExpr()` to detect runtime expressions
+- Checks ALL fields: authority, clientId, clientSecret, username, password, scopes
+- Policies with ANY expression → skipped (registered lazily at runtime)
+- Policies with ALL literals → included (registered eagerly at startup)
 
-**Property generation:**
-```
-For named policy "keycloak":
-  quarkus.oidc-client.keycloak.auth-server-url=${authority}
-  quarkus.oidc-client.keycloak.discovery-enabled=false
-  quarkus.oidc-client.keycloak.token-path=${tokenPath}
-  quarkus.oidc-client.keycloak.grant-type=${grant}
-  quarkus.oidc-client.keycloak.client-id=${clientId}
-  quarkus.oidc-client.keycloak.credentials.secret=${clientSecret}
-  quarkus.oidc-client.keycloak.credentials.client-secret.method=${method}
-  quarkus.oidc-client.keycloak.scopes=${scopes}
-  quarkus.oidc-client.keycloak.audience=${audiences}
-
-For inline auth in task "payment":
-  quarkus.oidc-client."org-acme:orders:1.0.0.task.payment".auth-server-url=${authority}
-  ... (same structure as named policy)
-```
-
-**Why:** SPEC workflows can have native Quarkus OIDC clients created at build time - zero runtime overhead.
-
----
-
-### Task 4: Create Runtime OIDC Client Registry
-
-**Goal:** Manage dynamically-created OIDC clients (SOURCE/Runner workflows, inline auth).
-
-**Files to create:**
-- `oidc/runtime/.../OidcClientRegistry.java` - Thread-safe registry for runtime-created clients
-
-**What it does:**
-- `getOrCreateClient(name, configSupplier)`: Get existing or create new client
-- Uses `ConcurrentHashMap<String, OidcClient>` internally
-- Delegates to `OidcClients.newClient()` for actual creation
-- Handles lifecycle (`@PreDestroy` cleanup)
-
-**API:**
-```
-interface OidcClientRegistry:
-  getOrCreateClient(name: String, config: () -> OidcClientConfig): OidcClient
-  getClient(name: String): Optional<OidcClient>
-  close(): void
-```
-
-**Why:** `OidcClients.newClient()` creates a client but doesn't register it in the static map, so we need our own registry for runtime-created clients.
-
----
-
-### Task 5: Create Runtime Workflow Registration Listener
-
-**Goal:** Observe `WorkflowRegisteredEvent` and create OIDC clients for SOURCE/Runner workflows.
-
-**Files to create:**
-- `oidc/runtime/.../OidcWorkflowRegistrationListener.java` - CDI observer for workflow registration
-
-**What it does:**
-- Observes `WorkflowRegisteredEvent` via `@Observes`
-- Extracts OAuth2/OIDC policies from the workflow
-- For each named policy: create OIDC client via `OidcClientRegistry.getOrCreateClient(policyName, config)`
-- For inline auth: clients are created lazily when first used (see Task 6)
-
-**Pseudo-code:**
-```
-@ApplicationScoped
-class OidcWorkflowRegistrationListener:
-  @Inject OidcClientRegistry registry
-  @Inject FlowOidcConfig config
-  
-  void onWorkflowRegistered(@Observes WorkflowRegisteredEvent event):
-    workflow = event.getWorkflow()
-    (namedPolicies, inlineAuths) = extractPolicies(workflow)
-    
-    for (name, policy) in namedPolicies:
-      // Check if user override exists
-      if not userConfiguredClient(name):
-        clientConfig = buildOidcClientConfig(policy)
-        registry.getOrCreateClient(name, () -> clientConfig)
-```
-
-**Why:** SOURCE/Runner workflows are only known at runtime, so we create their clients on-demand when they're registered.
-
----
-
-### Task 6: Update OidcClientAuthProvider
-
-**Goal:** Use unified routing config pattern and delegate to registry/named clients.
-
-**Files to modify:**
-- `oidc/runtime/.../OidcClientAuthProvider.java` - Update resolution logic
-
-**What it does:**
-- Use `OidcConfigResolver` to check for routing config override
-- For named policies:
-  - Check routing override: `quarkus.flow.oidc.<policyName>.name`
-  - If override exists, use that client name
-  - Otherwise use policy name directly
-  - Get client via `OidcClients.getClient(name)` (Quarkus registry)
-- For inline auth:
-  - Generate composite name: `namespace:name:version.task.taskName`
-  - Check routing override (progressive specificity)
-  - If override exists, use that client name
-  - Otherwise use composite name
-  - Get or create via `OidcClientRegistry.getOrCreateClient(name, config)`
-
-**Resolution flow:**
-```
-resolveClient(workflowId, taskName, authPolicyName, inlinePolicy):
-  // Named policy path
-  if authPolicyName:
-    override = resolver.resolve(workflowId, taskName, authPolicyName)
-    clientName = override.orElse(authPolicyName)
-    return OidcClients.getClient(clientName)  // Pre-created
-  
-  // Inline auth path
-  compositeName = generateCompositeName(workflowId, taskName)
-  override = resolver.resolve(workflowId, taskName, null)
-  clientName = override.orElse(compositeName)
-  return registry.getOrCreateClient(clientName, () -> buildConfig(inlinePolicy))
+**Output:**
+```java
+List<TokenAuthPolicy> extractStaticTokenAuthPolicies(Workflow workflow)
+  → Returns: List of policies safe to register at startup
+  → Skips: Policies requiring runtime expression resolution
 ```
 
 ---
 
-### Task 7: Update FlowOidcConfig
+### 3. Static Registration: OidcClientWorkflowRegistrar
 
-**Goal:** Use unified routing config structure.
+**File:** `oidc/runtime/src/main/java/io/quarkiverse/flow/oidc/registry/OidcClientWorkflowRegistrar.java`
 
-**Files to modify:**
-- `oidc/runtime/.../FlowOidcConfig.java` - Update config interface
+**Lifecycle:** Called once at startup per workflow by `OidcAuthProviderFactory`.
 
-**What changes:**
-- Replace `Map<String, ClientOverrideConfig> client()` with `Map<String, WorkflowRoutingConfig> workflow()`
-- Add `WorkflowRoutingConfig` interface with `name()` and `task()` map
-- Add `TaskRoutingConfig` interface with `name()`
-- Remove `ClientOverrideConfig` (no longer needed)
-- Keep `enabled()`, `creationTimeout()`, `connectionTimeout()` as-is
+**Responsibilities:**
+- Registers static OIDC clients (policies without expressions)
+- Checks if client already exists (user-configured or previously registered)
+- Creates new OIDC clients via `OidcClients.newClient(OidcClientConfig)`
+- Registers clients by NAME and by ENDPOINT KEY in `OidcClientRegistry`
+- Handles dynamic client registration for runtime-expression policies
 
-**Structure:**
+**Registration Flow:**
 ```
-@ConfigMapping(prefix = "quarkus.flow.oidc")
-interface FlowOidcConfig:
-  enabled(): boolean
-  creationTimeout(): Duration
-  connectionTimeout(): Duration
-  workflow(): Map<String, WorkflowRoutingConfig>
-  
-  interface WorkflowRoutingConfig:
-    name(): Optional<String>
-    task(): Map<String, TaskRoutingConfig>
-  
-  interface TaskRoutingConfig:
-    name(): Optional<String>
+registerStaticOidcClientsFor(workflow):
+  1. Extract static policies via TokenAuthPolicyExtractor
+  2. For each policy:
+     a. Resolve client name (check routing config override)
+     b. Check if user already configured quarkus.oidc-client.<name>
+     c. Check if already in our registry
+     d. If not exists: create via OidcClients.newClient()
+     e. Register by NAME: registry.register(name, client, endpointKey)
+     f. Enables lookup by name OR by endpoint configuration
+```
+
+**Dynamic Registration:**
+```
+registerDynamicOidcClientFor(EndpointKey endpointKey):
+  1. Called at runtime when expression-based policy is first used
+  2. Create OidcClientConfig from EndpointKey (all fields resolved)
+  3. Call OidcClients.newClient(config)
+  4. Register in registry for future reuse
 ```
 
 ---
 
-### Task 8: Update OidcConfigResolver
+### 4. Client Storage: OidcClientRegistry
 
-**Goal:** Implement progressive specificity resolution (short/medium/full).
+**File:** `oidc/runtime/src/main/java/io/quarkiverse/flow/oidc/registry/OidcClientRegistry.java`
 
-**Files to modify:**
-- `oidc/runtime/.../OidcConfigResolver.java` - Update resolution algorithm
+**Responsibilities:**
+- Stores OIDC clients created by Quarkus Flow
+- Dual lookup: by **name** (string) AND by **EndpointKey** (config hash)
+- Thread-safe via `ConcurrentHashMap`
+- Lifecycle management (`@PreDestroy` cleanup)
 
-**What changes:**
-- Update to use `FlowOidcConfig.workflow()` map
-- Implement three-level specificity:
-  1. Try `namespace:name:version` (full)
-  2. Try `namespace:name` (medium)
-  3. Try `name` (short)
-- For each level, check task-level first, then workflow-level
-- Named policy override: check for `workflow().get(policyName).name()`
-
-**Algorithm:**
+**Storage:**
+```java
+ConcurrentHashMap<String, OidcClient> clientsByName
+ConcurrentHashMap<EndpointKey, OidcClient> clientsByEndpoint
 ```
-resolve(workflowId, taskName, authPolicyName):
+
+**Lookup Methods:**
+- `get(String name)` → user routing overrides, named policies
+- `getByEndpoint(EndpointKey key)` → client reuse for identical configs
+- `register(String name, OidcClient client, EndpointKey key)` → stores both indexes
+
+**Why Dual Lookup:**
+- Name lookup: Fast path for named policies and routing overrides
+- Endpoint lookup: Enables client reuse when two policies have identical OAuth2 config
+
+---
+
+### 5. Cache Key: EndpointKey
+
+**File:** `oidc/runtime/src/main/java/io/quarkiverse/flow/oidc/registry/EndpointKey.java`
+
+**Purpose:** Immutable value object representing complete OAuth2/OIDC configuration for client matching.
+
+**Fields:**
+```java
+record EndpointKey(
+    String authority,
+    String tokenPath,
+    String revocationPath,
+    boolean openIdConnect,
+    String clientId,
+    String clientSecret,
+    ClientAuthentication clientAuthMethod,
+    OAuth2AuthenticationDataGrant grant,
+    List<String> scopes,
+    List<String> audiences,
+    String username,  // PASSWORD grant
+    String password   // PASSWORD grant
+)
+```
+
+**Security:**
+- Stores plaintext credentials (required to send to OAuth2 server)
+- `@JsonIgnoreType` prevents accidental serialization
+- `toString()` masks sensitive fields (shows "***")
+- Exists only in memory, never persisted
+
+**Equality:**
+- Two policies with identical EndpointKey → same OIDC client reused
+- Enables client sharing without duplicate token negotiations
+- Normalizes null collections to empty for consistent equality
+
+---
+
+### 6. Expression Resolution: RuntimeExpressionResolver
+
+**File:** `oidc/runtime/src/main/java/io/quarkiverse/flow/oidc/impl/RuntimeExpressionResolver.java`
+
+**Lifecycle:** Runtime only - resolves expressions when workflow executes.
+
+**Responsibilities:**
+- Resolves `${ $secret.xxx }` expressions using workflow context
+- Creates `EndpointKey` with resolved values (plaintext credentials)
+- Supports expressions in ALL OAuth2 fields: authority, clientId, clientSecret, username, password
+
+**Resolution:**
+```java
+EndpointKey resolveAll(WorkflowContext workflow, TaskContext task, WorkflowModel model, OAuth2AuthenticationData authData)
+  → Resolves all expression fields
+  → Returns EndpointKey with plaintext values
+  → Used for dynamic client lookup/creation
+```
+
+**Expression Resolution:**
+- Uses `WorkflowApplication.buildFilter()` to evaluate expressions
+- Accesses secrets via workflow context (Quarkus Vault, K8s Secrets, etc.)
+- Resolves at HTTP request time (when workflow executes)
+
+---
+
+### 7. Runtime Auth Provider: OidcClientAuthProvider
+
+**File:** `oidc/runtime/src/main/java/io/quarkiverse/flow/oidc/impl/OidcClientAuthProvider.java`
+
+**Lifecycle:** Created once at startup by `OidcAuthProviderFactory`, used for all HTTP requests.
+
+**Responsibilities:**
+- Implements `AuthProvider` interface (returns "Bearer" + token)
+- Resolves client name via routing config (optional override)
+- Gets client from registry (or creates dynamically if needed)
+- Resolves dynamic grant parameters (PASSWORD grant, TOKEN_EXCHANGE)
+- Negotiates access token via `OidcClient.getTokens()`
+
+**Client Resolution Flow:**
+```
+content(WorkflowContext, TaskContext, WorkflowModel, URI):
+  1. Check for routing config override via OidcConfigResolver
+     → quarkus.flow.oidc.<policyName>.name=<override>
+  2. Try get client by name: registry.get(overrideOrPolicyName)
+  3. If not found, resolve endpoint key from expressions
+  4. Try get client by endpoint: registry.getByEndpoint(endpointKey)
+  5. If still not found, create dynamic client: registerDynamicOidcClientFor(endpointKey)
+  6. Resolve dynamic grant params (username/password for PASSWORD grant)
+  7. Get token: client.getTokens(dynamicParams).await()
+  8. Return access token (SDK adds "Bearer " prefix)
+```
+
+**Dynamic Grant Parameters:**
+- **PASSWORD grant**: Adds `username` and `password` to token request
+- **TOKEN_EXCHANGE grant**: Adds `subject_token`, `actor_token`, and token types
+- All other grants: Empty map
+
+---
+
+### 8. Config & Routing: OidcConfigResolver
+
+**File:** `oidc/runtime/src/main/java/io/quarkiverse/flow/oidc/registry/OidcConfigResolver.java`
+
+**Responsibilities:**
+- Resolves routing config overrides (OPTIONAL - only for user overrides)
+- Progressive specificity: `name` → `namespace:name` → `namespace:name:version`
+- Task-level overrides take precedence over workflow-level
+
+**Resolution Algorithm:**
+```
+resolve(WorkflowDefinitionId id, String taskName, String authPolicyName):
   // Named policy override
-  if authPolicyName:
-    override = resolveWorkflow(authPolicyName, null)
-    if override.present: return override
-    return empty  // Caller uses policyName directly
+  if authPolicyName != null:
+    return config.workflow().get(authPolicyName).name()
   
-  // Progressive specificity for workflows
-  keys = [
-    namespace + ":" + name + ":" + version,  // Full
-    namespace + ":" + name,                   // Medium
-    name                                       // Short
-  ]
+  // Progressive specificity for workflow + task
+  for key in [name, namespace:name, namespace:name:version]:
+    workflowConfig = config.workflow().get(key)
+    if workflowConfig exists:
+      if taskName != null and workflowConfig.task().get(taskName) exists:
+        return workflowConfig.task().get(taskName).name()
+      else:
+        return workflowConfig.name()
   
-  for key in keys:
-    result = resolveWorkflow(key, taskName)
-    if result.present: return result
-  
-  return empty
-
-resolveWorkflow(workflowId, taskName):
-  wfConfig = config.workflow().get(workflowId)
-  if not wfConfig: return empty
-  
-  // Task-level first
-  if taskName:
-    taskConfig = wfConfig.task().get(taskName)
-    if taskConfig and taskConfig.name().present:
-      return taskConfig.name()
-  
-  // Workflow-level fallback
-  return wfConfig.name()
+  return empty  // No override, use auto-generated name
 ```
 
 ---
 
-### Task 9: Remove CacheKey and Simplify OidcClientFactory
+### 9. Client Config Factory: OidcClientConfigFactory
 
-**Goal:** Remove complex cache key, rely on simple name-based registry.
+**File:** `oidc/runtime/src/main/java/io/quarkiverse/flow/oidc/registry/OidcClientConfigFactory.java`
 
-**Files to modify:**
-- `oidc/runtime/.../OidcClientFactory.java` - Simplify to name-based lookups
+**Responsibilities:**
+- Converts `TokenAuthPolicy` → `OidcClientConfig` (Quarkus format)
+- Converts `EndpointKey` → `OidcClientConfig` (for dynamic clients)
+- Maps grant types: `CLIENT_CREDENTIALS` → `Grant.Type.CLIENT`, etc.
+- Maps client auth methods: `CLIENT_SECRET_POST`, `CLIENT_SECRET_BASIC`, etc.
+- Validates authority URLs (must be http/https with valid host)
 
-**Files to delete:**
-- `oidc/runtime/.../CacheKey.java` - No longer needed
+**Key Mappings:**
+- **Grant types**: Normalizes to uppercase (`client_credentials` → `CLIENT_CREDENTIALS`)
+- **Token paths**: Only set for OAuth2, NOT for OIDC (discovery finds it)
+- **Client secret method**: Defaults to `POST` per CNCF spec
+- **Default endpoints**: `/oauth2/token`, `/oauth2/revoke` per CNCF spec
 
-**What changes:**
-- Remove `ConcurrentHashMap<CacheKey, OidcClient> cache`
-- Remove `CacheKey` class entirely
-- Keep helper methods: `getNamedClient(name)`, timeouts
-- Inline client creation moves to `OidcClientRegistry`
-
-**Simplified API:**
+**OAuth2 vs OIDC:**
+```java
+if (isOidc) {
+  builder.discoveryEnabled(true)
+  // Do NOT set tokenPath - OIDC uses .well-known/openid-configuration
+} else {
+  builder.discoveryEnabled(false)
+  builder.tokenPath(tokenPath)  // OAuth2 needs explicit token endpoint
+}
 ```
-@ApplicationScoped
-class OidcClientFactory:
-  @Inject OidcClients oidcClients
+
+---
+
+## Client Registration Flowchart
+
+```
+Application Startup
+  ↓
+SDK calls AuthProviderFactory.getAuth() per workflow
+  ↓
+OidcAuthProviderFactory.getAuth()
+  ↓
+  ├─ Check if OAuth2/OIDC policy? 
+  │  No → Delegate to DefaultAuthProviderFactory
+  │  Yes ↓
+  ├─ Call OidcClientWorkflowRegistrar.registerStaticOidcClientsFor(workflow)
+  │    ↓
+  │    TokenAuthPolicyExtractor.extractStaticTokenAuthPolicies(workflow)
+  │    → Filters out policies with expressions (${ ... })
+  │    → Returns only static policies
+  │    ↓
+  │    For each static policy:
+  │      1. Resolve client name (check routing override)
+  │      2. Check if already exists (user config or registry)
+  │      3. If not: Create via OidcClients.newClient()
+  │      4. Register: registry.register(name, client, endpointKey)
+  │
+  └─ Return new OidcClientAuthProvider(...) → SDK caches it
   
-  getNamedClient(name: String): OidcClient
-  clientCreationTimeout(): Duration
-  connectionTimeout(): Duration
-  namedConnectionTimeout(name: String): Duration
+HTTP Request Time (workflow executes)
+  ↓
+SDK calls OidcClientAuthProvider.content()
+  ↓
+  ├─ Check routing override (OidcConfigResolver)
+  ├─ Try get client by name: registry.get(name)
+  ├─ If not found:
+  │    ├─ Resolve expressions → RuntimeExpressionResolver.resolveAll()
+  │    ├─ Create EndpointKey with resolved values
+  │    ├─ Try get by endpoint: registry.getByEndpoint(endpointKey)
+  │    └─ If still not found: registerDynamicOidcClientFor(endpointKey)
+  │
+  ├─ Resolve dynamic grant params:
+  │    ├─ PASSWORD grant → add username/password
+  │    └─ TOKEN_EXCHANGE → add subject/actor tokens
+  │
+  ├─ Get token: client.getTokens(dynamicParams).await()
+  └─ Return access token
+       ↓
+SDK adds "Authorization: Bearer <token>" to HTTP request
 ```
 
 ---
 
-### Task 10: Update Tests
+## Test Coverage
 
-**Goal:** Verify all paths work (build-time, runtime, named, inline, overrides).
+**Runtime Unit Tests (62 tests):**
+- `TokenAuthPolicyExtractorTest` (14 tests) - Expression filtering, policy extraction
+- `OidcAuthProviderFactoryTest` (9 tests) - Factory behavior, delegation
+- `OidcWorkflowRegistrarTest` (8 tests) - Client registration, name resolution
+- `OidcAuthProviderFactoryIntegrationTest` (3 tests) - End-to-end flows
+- `EndpointKeyTest` (18 tests) - Equality, caching, security (toString masking)
+- `TokenAuthPolicyTest` (5 tests) - Policy data structures
+- `OidcClientNameResolutionTest` (5 tests) - Name generation
 
-**Tests to add/update:**
-- **Build-time config generation** test:
-  - SPEC workflow with named policy → verify `quarkus.oidc-client.<name>.*` properties generated
-  - SPEC workflow with inline auth → verify composite-named client properties generated
-- **Runtime registration** test:
-  - SOURCE workflow with named policy → verify client created on registration
-  - Runner workflow with inline auth → verify client created lazily
-- **Routing override** test:
-  - Named policy override: `quarkus.flow.oidc.keycloak.name=prodKeycloak`
-  - Task-level override (short): `quarkus.flow.oidc.orders.task.payment.name=customAuth`
-  - Task-level override (medium): `quarkus.flow.oidc."acme\:orders".task.payment.name=acmeAuth`
-  - Task-level override (full): `quarkus.flow.oidc."acme\:orders\:1.0.0".task.payment.name=v1Auth`
-- **Existing integration tests** must pass without modification
+**Deployment Tests (3 tests):**
+- Build-time configuration generation
+- Bean registration
 
----
+**Integration Tests (5 tests):**
+- CLIENT_CREDENTIALS grant with static config
+- PASSWORD grant with expressions
+- Scope-based authorization
+- Endpoint path caching
+- Named client usage
+- Config override routing
 
-### Task 11: Update Documentation
+**Example Tests (6 tests):**
+- Client credentials flow
+- Password grant flow
+- Multiple OAuth2 clients
+- OpenAPI with OAuth2
+- OIDC client usage
+- Token exchange grant
 
-**Goal:** Document new behavior, migration path, best practices.
-
-**Files to update:**
-- `docs/modules/ROOT/pages/oidc.adoc` - Main OIDC documentation
-
-**What to document:**
-- **Configuration is OPTIONAL** - auto-generation works by default
-- **Named policies** vs **inline auth** (when to use each)
-- **Routing config pattern** (progressive specificity)
-- **Migration guide** from old config structure
-- **Examples** showing:
-  - Named policy (no config needed)
-  - Named policy with override
-  - Inline auth (short/medium/full overrides)
-  - Authentication reuse pattern
-
-**Key messaging:**
-- 1:1 DSL mapping (no magic)
-- Config only for overrides
-- Named policies for reuse, inline for one-off
+**Total:** 76 tests passing ✅
 
 ---
-
 ## Migration Strategy
 
 **Breaking change:** Config structure changes from `client()` to `workflow()` with `.task.` handler.
@@ -501,38 +518,47 @@ quarkus.flow.oidc.keycloak.name=prodKeycloak
 
 ## Summary
 
-**Unified client naming pattern** applied to OIDC:
-- Progressive specificity: short (99%) → medium (namespaced) → full (versioned)
-- Task-level syntax: `.task.<taskName>`
-- Config is OPTIONAL (overrides only)
-- 1:1 DSL mapping (named policies share, inline isolates)
+**Implementation Approach:**
+- **SDK Integration**: Hook into `AuthProviderFactory` called once at startup
+- **Static vs Dynamic**: Expression detection determines registration timing
+- **Endpoint-Based Caching**: `EndpointKey` enables client reuse for identical configs
+- **Lazy Registration**: Dynamic clients created on first use (expressions resolved at runtime)
+- **Optional Routing Config**: Override auto-generated names to user-configured clients
 
-**Client creation flow:**
+**Client Creation Flow:**
 
 ```
-Named Policies:
-  SPEC (build-time):
-    FlowOidcProcessor → extract policies → RunTimeConfigurationDefaultBuildItem
-      → quarkus-oidc-client creates clients automatically ✅
-  
-  SOURCE/Runner (runtime):
-    WorkflowRegisteredEvent → OidcWorkflowRegistrationListener
-      → OidcClientRegistry.getOrCreateClient() ✅
+Application Startup:
+  SDK calls AuthProviderFactory.getAuth()
+    → OidcAuthProviderFactory.getAuth()
+    → OidcClientWorkflowRegistrar.registerStaticOidcClientsFor()
+    → TokenAuthPolicyExtractor filters policies (skip if has expressions)
+    → For each static policy: OidcClients.newClient() + registry.register()
+    → Return OidcClientAuthProvider (SDK caches it)
 
-Inline Task Auth (all types):
-  Runtime (lazy):
-    OidcClientAuthProvider → OidcClientRegistry.getOrCreateClient()
-      → composite name: namespace:name:version.task.taskName ✅
+HTTP Request Time (workflow executes):
+  SDK calls OidcClientAuthProvider.content()
+    → Check routing override (optional)
+    → Try registry.get(name) - static clients
+    → If not found: RuntimeExpressionResolver.resolveAll()
+    → Create EndpointKey with resolved values
+    → Try registry.getByEndpoint(endpointKey) - check for match
+    → If still not found: registerDynamicOidcClientFor()
+    → Resolve dynamic grant params (PASSWORD, TOKEN_EXCHANGE)
+    → client.getTokens(dynamicParams).await()
+    → Return access token
 ```
 
 **Benefits:**
-- ✅ SPEC workflows get native Quarkus OIDC clients (build-time)
-- ✅ Zero runtime overhead for SPEC workflows
-- ✅ Property expressions supported (`${config.key}`)
-- ✅ User config always wins
-- ✅ Works for all workflow types (SPEC, SOURCE, Runner)
-- ✅ Consistent with HTTP/gRPC routing patterns
-- ✅ Simple, predictable, no magic
+- ✅ Static clients registered at startup (zero runtime resolution overhead)
+- ✅ Dynamic clients cached by endpoint config (expression-based policies)
+- ✅ Runtime expression support via `${ $secret.xxx }`
+- ✅ PASSWORD grant with username/password in dynamic params
+- ✅ TOKEN_EXCHANGE grant with subject/actor tokens
+- ✅ Client reuse via `EndpointKey` matching (identical configs share clients)
+- ✅ User-configured Quarkus OIDC clients take precedence
+- ✅ Comprehensive test coverage (76 tests across unit/integration/examples)
+- ✅ OAuth2 vs OIDC token path handling (discovery vs explicit)
 
 ---
 

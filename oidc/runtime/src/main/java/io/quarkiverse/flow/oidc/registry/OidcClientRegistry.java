@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.oidc;
+package io.quarkiverse.flow.oidc.registry;
 
 import java.io.IOException;
 import java.util.Map;
@@ -27,11 +27,11 @@ public class OidcClientRegistry {
      *
      * @param clientName the client name (e.g., namespace:name:version.task.taskName)
      * @param client the OIDC client instance
-     * @param policy the token auth policy (used to build endpoint key for matching)
+     * @param endpointKey the endpoint key (used to build endpoint key for matching)
      */
-    public void register(String clientName, OidcClient client, TokenAuthPolicy policy) {
+    public void register(String clientName, OidcClient client, EndpointKey endpointKey) {
         runtimeOidcClients.put(clientName, client);
-        endpointToName.put(policy.endpointKey(), clientName);
+        endpointToName.put(endpointKey, clientName);
     }
 
     /**
@@ -41,6 +41,9 @@ public class OidcClientRegistry {
      * @return the OIDC client, or null if not found
      */
     public OidcClient get(String clientName) {
+        if (clientName == null)
+            return null;
+
         var client = clients.getClient(clientName);
         if (client == null) {
             return runtimeOidcClients.get(clientName);

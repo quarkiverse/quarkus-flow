@@ -30,10 +30,11 @@ public class OpenAPIWithOAuth2Flow extends Flow {
                             .operation("listImages")
                             .parameters(Map.of(
                                     "Accept", "application/json"))
-                            .authentication(FuncDSL.oidc(
+                            .authentication(FuncDSL.oauth2(
                                     baseUrl,
                                     OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS,
-                                    "${ $secret.openapi.\"client-id\" }", "${ $secret.openapi.\"client-secret\" }")));
+                                    "${ $secret.openapi.\"client-id\" }", "${ $secret.openapi.\"client-secret\" }",
+                                    e -> e.token("/protocol/openid-connect/token"))));
                 })
                 .build();
     }

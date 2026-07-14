@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.oidc;
+package io.quarkiverse.flow.oidc.registry;
 
 import java.util.HashSet;
 import java.util.List;
@@ -6,13 +6,14 @@ import java.util.Optional;
 import java.util.Set;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.quarkiverse.flow.internal.WorkflowDescriptorRegisteredEvent;
+import io.quarkiverse.flow.oidc.FlowOidcConfig;
+import io.quarkiverse.flow.oidc.TokenAuthPolicy;
+import io.quarkiverse.flow.oidc.TokenAuthPolicyExtractor;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClients;
@@ -22,46 +23,56 @@ import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
 @ApplicationScoped
 @Unremovable
-public class OidcWorkflowRegistrationListener {
+public class OidcClientWorkflowRegistrar {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(OidcWorkflowRegistrationListener.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(OidcClientWorkflowRegistrar.class.getName());
+    private final Set<WorkflowDefinitionId> processedWorkflows = new HashSet<>();
 
     @Inject
     OidcClients oidcClients;
-
     @Inject
     OidcClientRegistry registry;
-
     @Inject
     FlowOidcConfig config;
-
     @Inject
     OidcConfigResolver configResolver;
 
-    private final Set<WorkflowDefinitionId> processedWorkflows = new HashSet<>();
-
-    void onWorkflowRegistered(@Observes WorkflowDescriptorRegisteredEvent event) {
-        this.processWorkflow(event.workflow());
-    }
-
-    public void processWorkflow(Workflow workflow) {
+    /**
+     * Register static OAuth2 or OIDC definitions from the given workflow descriptor into {@link OidcClientRegistry}
+     */
+    public void registerStaticOidcClientsFor(Workflow workflow) {
         final WorkflowDefinitionId workflowId = WorkflowDefinitionId.of(workflow);
-        if (processedWorkflows.contains(workflowId)) {
+        // guardrail for concurrency
+        if (!processedWorkflows.add(workflowId))
             // skips if we already processed it
             return;
-        }
 
-        final List<TokenAuthPolicy> policies = TokenAuthPolicyExtractor.extractTokenAuthPolicies(workflow);
+        try {
+            final List<TokenAuthPolicy> policies = TokenAuthPolicyExtractor.extractStaticTokenAuthPolicies(workflow);
 
-        for (TokenAuthPolicy policy : policies) {
-            try {
-                createAndRegisterClient(workflowId, policy);
-            } catch (Exception e) {
-                throw new IllegalStateException(
-                        "Failed to create OIDC client for policy: " + policy.name(), e);
+            for (TokenAuthPolicy policy : policies) {
+                try {
+                    createAndRegisterClient(workflowId, policy);
+                } catch (Exception e) {
+                    throw new IllegalStateException(
+                            "Failed to create OIDC client for policy: " + policy.name(), e);
+                }
             }
+            processedWorkflows.add(workflowId);
+        } catch (Exception e) {
+            processedWorkflows.remove(workflowId);
+            throw e;
         }
-        processedWorkflows.add(workflowId);
+    }
+
+    public OidcClient registerDynamicOidcClientFor(EndpointKey endpointKey) {
+        final OidcClientConfig clientConfig = OidcClientConfigFactory.from(endpointKey, config.connectionTimeout());
+        final OidcClient client = oidcClients.newClient(clientConfig)
+                .await()
+                .atMost(config.creationTimeout());
+        LOGGER.debug("Registering OIDC client '{}' with EndpointKey: {}", endpointKey.oidcId(), endpointKey);
+        registry.register(endpointKey.oidcId(), client, endpointKey);
+        return client;
     }
 
     private void createAndRegisterClient(WorkflowDefinitionId workflowId, TokenAuthPolicy policy) {
@@ -78,7 +89,7 @@ public class OidcWorkflowRegistrationListener {
             LOGGER.debug("Client '{}' already exists, registering policy with EndpointKey: {}", clientName, endpointKey);
             // Client exists (pre-configured or from earlier registration), but we still need to
             // register this policy for endpoint-based matching in the factory
-            registry.register(clientName, existingClient, policy);
+            registry.register(clientName, existingClient, endpointKey);
             return;
         }
 
@@ -91,7 +102,7 @@ public class OidcWorkflowRegistrationListener {
         // Register with resolved name and policy (for endpoint-based lookup)
         EndpointKey endpointKey = policy.endpointKey();
         LOGGER.debug("Registering OIDC client '{}' with EndpointKey: {}", clientName, endpointKey);
-        registry.register(clientName, client, policy);
+        registry.register(clientName, client, endpointKey);
 
         if (overrideName.isPresent()) {
             LOGGER.info("Created runtime OIDC client: {} (routed from policy: {})", clientName, policy.name());
