@@ -6,14 +6,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.quarkiverse.flow.oidc.FlowOidcConfig;
 import io.quarkiverse.flow.oidc.TokenAuthPolicy;
 import io.quarkiverse.flow.oidc.TokenAuthPolicyExtractor;
 import io.quarkiverse.flow.oidc.registry.EndpointKey;

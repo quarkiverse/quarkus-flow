@@ -59,7 +59,7 @@ class TokenAuthPolicyExtractorTest {
         List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractStaticTokenAuthPolicies(workflow);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).name()).startsWith("org.acme:orders:0.0.1.task.");
+        assertThat(result.get(0).name()).startsWith("org-acme:orders:0.0.1.task.");
         assertThat(result.get(0).oauth2()).isPresent();
     }
 
@@ -76,7 +76,7 @@ class TokenAuthPolicyExtractorTest {
         List<TokenAuthPolicy> result = TokenAuthPolicyExtractor.extractStaticTokenAuthPolicies(workflow);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).name()).startsWith("org.acme:orders:0.0.1.task.");
+        assertThat(result.get(0).name()).startsWith("org-acme:orders:0.0.1.task.");
         assertThat(result.get(0).oidc()).isPresent();
     }
 

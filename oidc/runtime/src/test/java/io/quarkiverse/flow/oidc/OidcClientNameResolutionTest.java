@@ -29,7 +29,7 @@ class OidcClientNameResolutionTest {
 
         String result = OidcNamingConvention.clientName(workflow, task);
 
-        assertThat(result).isEqualTo("org.acme:orders:0.0.1.task.shipping");
+        assertThat(result).isEqualTo("org-acme:orders:0.0.1.task.shipping");
     }
 
     @Test

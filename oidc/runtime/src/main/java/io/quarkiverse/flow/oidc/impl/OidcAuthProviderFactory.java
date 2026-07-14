@@ -2,7 +2,6 @@ package io.quarkiverse.flow.oidc.impl;
 
 import java.util.Optional;
 
-import io.quarkiverse.flow.oidc.FlowOidcConfig;
 import io.quarkiverse.flow.oidc.registry.OidcClientRegistry;
 import io.quarkiverse.flow.oidc.registry.OidcClientWorkflowRegistrar;
 import io.quarkiverse.flow.oidc.registry.OidcConfigResolver;
