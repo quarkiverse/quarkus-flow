@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.oidc.impl;
 
 import static io.serverlessworkflow.api.types.OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS;
+import static io.serverlessworkflow.api.types.OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.PASSWORD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -21,6 +22,11 @@ import io.quarkiverse.flow.oidc.registry.OidcConfigResolver;
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClients;
 import io.serverlessworkflow.api.types.EndpointConfiguration;
+import io.serverlessworkflow.api.types.OAuth2AuthenticationData;
+import io.serverlessworkflow.api.types.OAuth2AuthenticationDataClient;
+import io.serverlessworkflow.api.types.OAuth2AuthenticationPropertiesEndpoints;
+import io.serverlessworkflow.api.types.OAuth2ConnectAuthenticationProperties;
+import io.serverlessworkflow.api.types.UriTemplate;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
@@ -108,7 +114,7 @@ class OidcAuthProviderFactoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("End-to-end: Different credentials create different clients")
+    @DisplayName("End-to-end: Different clientId/clientSecret create different clients")
     void end_to_end_different_credentials_create_different_clients() {
         // Step 1: Create two workflows with same endpoint but different credentials
         Workflow workflow1 = FuncWorkflowBuilder.workflow("workflow1")
@@ -178,6 +184,34 @@ class OidcAuthProviderFactoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("End-to-end: Different username/password with PASSWORD grant reuses same client")
+    void end_to_end_password_grant_different_users_reuse_same_client() {
+        // Given: Extract static policy from PASSWORD grant workflow (no expressions in username/password)
+        // In practice, PASSWORD grant would use expressions like "${ $secret.username }", making it dynamic.
+        // But this test proves that if username/password WERE static, they wouldn't create separate clients.
+
+        // Create endpoint key manually for PASSWORD grant with same endpoint but different username/password
+        EndpointKey key1 = EndpointKey.from(
+                mockPasswordAuthData("https://auth.example.com", "my-client", "my-secret", "alice", "password123"));
+
+        EndpointKey key2 = EndpointKey.from(
+                mockPasswordAuthData("https://auth.example.com", "my-client", "my-secret", "bob", "secret456"));
+
+        // Then: Keys should be EQUAL - username/password are NOT part of client identity
+        assertThat(key1).isEqualTo(key2);
+        assertThat(key1.hashCode()).isEqualTo(key2.hashCode());
+
+        // And: Registry lookup will return the SAME client for both
+        OidcClient sharedClient = mock(OidcClient.class);
+        registry.register("shared-password-client", sharedClient, key1);
+
+        // Both keys map to the same client
+        assertThat(registry.getByEndpoint(key1)).isEqualTo(sharedClient);
+        assertThat(registry.getByEndpoint(key2)).isEqualTo(sharedClient);
+        assertThat(registry.getByEndpoint(key2)).isSameAs(registry.getByEndpoint(key1));
+    }
+
+    @Test
     @DisplayName("End-to-end: Unregistered endpoint delegates to SDK")
     void end_to_end_unregistered_endpoint_delegates_to_sdk() {
         // Step 1: Create workflow with OAuth2
@@ -224,5 +258,29 @@ class OidcAuthProviderFactoryIntegrationTest {
         }
 
         return def;
+    }
+
+    private OAuth2AuthenticationData mockPasswordAuthData(String authority, String clientId, String clientSecret,
+            String username, String password) {
+        OAuth2ConnectAuthenticationProperties props = mock(OAuth2ConnectAuthenticationProperties.class);
+
+        UriTemplate authorityTemplate = mock(UriTemplate.class);
+        when(authorityTemplate.getLiteralUri()).thenReturn(URI.create(authority));
+        when(props.getAuthority()).thenReturn(authorityTemplate);
+
+        OAuth2AuthenticationDataClient client = mock(OAuth2AuthenticationDataClient.class);
+        when(client.getId()).thenReturn(clientId);
+        when(client.getSecret()).thenReturn(clientSecret);
+        when(props.getClient()).thenReturn(client);
+
+        when(props.getGrant()).thenReturn(PASSWORD);
+        when(props.getUsername()).thenReturn(username);
+        when(props.getPassword()).thenReturn(password);
+
+        OAuth2AuthenticationPropertiesEndpoints endpoints = mock(OAuth2AuthenticationPropertiesEndpoints.class);
+        when(endpoints.getToken()).thenReturn("/oauth2/token");
+        when(props.getEndpoints()).thenReturn(endpoints);
+
+        return props;
     }
 }

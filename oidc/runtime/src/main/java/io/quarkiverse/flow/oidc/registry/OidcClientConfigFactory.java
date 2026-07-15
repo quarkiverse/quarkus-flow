@@ -3,6 +3,9 @@ package io.quarkiverse.flow.oidc.registry;
 import java.net.URI;
 import java.time.Duration;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.quarkiverse.flow.oidc.TokenAuthPolicy;
 import io.quarkus.oidc.client.OidcClientConfigBuilder;
 import io.quarkus.oidc.client.runtime.OidcClientConfig;
@@ -13,11 +16,25 @@ import io.serverlessworkflow.api.types.OAuth2ConnectAuthenticationProperties;
 
 final class OidcClientConfigFactory {
 
+    private static final Logger LOG = LoggerFactory.getLogger(OidcClientConfigFactory.class);
+
     /**
      * Default OAuth2 token endpoint path per CNCF Serverless Workflow specification.
      * Used when endpoints.token is not explicitly specified in OAuth2 authentication.
      */
     private static final String DEFAULT_TOKEN_PATH = "/oauth2/token";
+
+    /**
+     * Default OAuth2 revocation endpoint path per CNCF Serverless Workflow specification.
+     * Used when endpoints.revocation is not explicitly specified in OAuth2 authentication.
+     */
+    private static final String DEFAULT_REVOCATION_PATH = "/oauth2/revoke";
+
+    /**
+     * Default OAuth2 introspection endpoint path per CNCF Serverless Workflow specification.
+     * Not used - Quarkus OIDC Client does not support introspection configuration.
+     */
+    private static final String DEFAULT_INTROSPECTION_PATH = "/oauth2/introspect";
 
     /**
      * Maps Open Workflow Specification grant types to Quarkus OIDC Grant.Type enum.
@@ -101,13 +118,30 @@ final class OidcClientConfigFactory {
 
         if (!isOidc) {
             final var oauthEndpoints = ((OAuth2ConnectAuthenticationProperties) authData).getEndpoints();
-            String tokenPath = DEFAULT_TOKEN_PATH; // Spec default
 
-            if (oauthEndpoints != null && oauthEndpoints.getToken() != null) {
-                tokenPath = oauthEndpoints.getToken();
+            // Apply CNCF spec defaults, then override with explicit values if provided
+            String tokenPath = DEFAULT_TOKEN_PATH;
+            String revocationPath = DEFAULT_REVOCATION_PATH;
+
+            if (oauthEndpoints != null) {
+                if (oauthEndpoints.getToken() != null) {
+                    tokenPath = oauthEndpoints.getToken();
+                }
+                if (oauthEndpoints.getRevocation() != null) {
+                    revocationPath = oauthEndpoints.getRevocation();
+                }
+                // Warn if introspection endpoint is configured - not supported by Quarkus OIDC Client
+                if (oauthEndpoints.getIntrospection() != null
+                        && !oauthEndpoints.getIntrospection().equals(DEFAULT_INTROSPECTION_PATH)) {
+                    LOG.warn(
+                            "OAuth2 introspection endpoint '{}' is configured for policy '{}' but will be ignored. "
+                                    + "Quarkus OIDC Client does not support token introspection configuration.",
+                            oauthEndpoints.getIntrospection(), policy.name());
+                }
             }
 
             builder.tokenPath(tokenPath);
+            builder.revokePath(revocationPath);
         }
 
         final String clientId = authData.getClient() != null ? authData.getClient().getId() : policy.name();
@@ -148,9 +182,14 @@ final class OidcClientConfigFactory {
                 .scopes(endpointKey.scopes())
                 .audience(endpointKey.audiences());
 
-        // Only set tokenPath for OAuth2 (not OIDC with discovery)
-        if (!endpointKey.isDiscoverable() && endpointKey.tokenPath() != null) {
-            builder.tokenPath(endpointKey.tokenPath());
+        // Only set endpoint paths for OAuth2 (not OIDC with discovery)
+        if (!endpointKey.isDiscoverable()) {
+            if (endpointKey.tokenPath() != null) {
+                builder.tokenPath(endpointKey.tokenPath());
+            }
+            if (endpointKey.revocationPath() != null) {
+                builder.revokePath(endpointKey.revocationPath());
+            }
         }
 
         return builder.build();

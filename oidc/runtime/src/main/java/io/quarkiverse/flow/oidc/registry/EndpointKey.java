@@ -15,20 +15,26 @@ import io.serverlessworkflow.api.types.OAuth2ConnectAuthenticationProperties;
  * Identifies an OIDC client by its complete endpoint configuration.
  * <p>
  * Two endpoint configurations produce the same OIDC client only when ALL fields match.
- * This includes authority, endpoints, credentials, grant type, scopes, and audiences.
+ * This includes authority, endpoints, clientSecret, grant type, scopes, and audiences.
  * <p>
  * Used as a Map key in {@link OidcClientRegistry} to match SDK authentication policies
  * to registered OIDC clients.
  * <p>
+ * <b>Dynamic Grant Parameters:</b>
+ * <p>
+ * Username and password are NOT part of the client identity. They are passed as dynamic
+ * grant parameters at token request time via {@code client.getTokens(dynamicParams)}.
+ * This allows a single OIDC client to serve multiple users with PASSWORD grant.
+ * <p>
  * <b>Security Notice - Credential Storage:</b>
  * <p>
- * This record stores plaintext credentials (clientSecret, username, password) for the following reasons:
+ * This record stores plaintext clientSecret for the following reasons:
  * <ol>
  * <li><b>Must pass to auth server:</b> OAuth2/OIDC protocols require sending actual credential values
- * to the authorization server for token negotiation. Hashing would make them unusable.</li>
+ * to the authorization server for token negotiation. Hashing would make it unusable.</li>
  * <li><b>Exact matching required:</b> Two policies with identical configs must resolve to the same
  * OIDC client. Even slight differences (like different secrets) create distinct clients.</li>
- * <li><b>Cache key semantics:</b> EndpointKey serves as a cache key - credentials are part of
+ * <li><b>Cache key semantics:</b> EndpointKey serves as a cache key - clientSecret is part of
  * the unique identity of an OIDC client configuration.</li>
  * </ol>
  * <p>
@@ -60,9 +66,7 @@ public record EndpointKey(
         OAuth2AuthenticationDataClient.ClientAuthentication clientAuthMethod,
         OAuth2AuthenticationDataGrant grant,
         List<String> scopes,
-        List<String> audiences,
-        String username,
-        String password) {
+        List<String> audiences) {
 
     /**
      * Default OAuth2 token endpoint path per CNCF Serverless Workflow specification.
@@ -88,8 +92,8 @@ public record EndpointKey(
                 "Authority is required for OIDC authentication.");
     }
 
-    public static EndpointKey fromNonResolved(String authority, String clientId, String clientSecret, String username,
-            String password, EndpointKey nonResolvedEndpointKey) {
+    public static EndpointKey fromNonResolved(String authority, String clientId, String clientSecret,
+            EndpointKey nonResolvedEndpointKey) {
         return new EndpointKey(
                 authority, nonResolvedEndpointKey.tokenPath,
                 nonResolvedEndpointKey.revocationPath,
@@ -98,8 +102,7 @@ public record EndpointKey(
                 nonResolvedEndpointKey.clientAuthMethod,
                 nonResolvedEndpointKey.grant,
                 nonResolvedEndpointKey.scopes,
-                nonResolvedEndpointKey.audiences,
-                username, password);
+                nonResolvedEndpointKey.audiences);
     }
 
     public static EndpointKey from(OAuth2AuthenticationData data) {
@@ -152,10 +155,6 @@ public record EndpointKey(
         List<String> scopes = data.getScopes();
         List<String> audiences = data.getAudiences();
 
-        // Username/password (for password grant)
-        String username = data.getUsername();
-        String password = data.getPassword();
-
         return new EndpointKey(
                 authority,
                 tokenPath,
@@ -166,9 +165,7 @@ public record EndpointKey(
                 clientAuthMethod,
                 grant,
                 scopes,
-                audiences,
-                username,
-                password);
+                audiences);
     }
 
     public String defaultOidcId() {
@@ -190,8 +187,6 @@ public record EndpointKey(
                 ", grant=" + grant +
                 ", scopes=" + scopes +
                 ", audiences=" + audiences +
-                ", username='" + (username != null ? "***" : null) + '\'' +
-                ", password='" + (password != null ? "***" : null) + '\'' +
                 ", clientSecret='" + (clientSecret != null ? "***" : null) + '\'' +
                 '}';
     }
@@ -211,14 +206,12 @@ public record EndpointKey(
                 Objects.equals(clientSecret, that.clientSecret) &&
                 grant == that.grant &&
                 Objects.equals(scopes, that.scopes) &&
-                Objects.equals(audiences, that.audiences) &&
-                Objects.equals(username, that.username) &&
-                Objects.equals(password, that.password);
+                Objects.equals(audiences, that.audiences);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(authority, tokenPath, revocationPath, openIdConnect, clientId,
-                clientSecret, grant, scopes, audiences, username, password);
+                clientSecret, grant, scopes, audiences);
     }
 }

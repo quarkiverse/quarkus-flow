@@ -265,13 +265,9 @@ class EndpointKeyTest {
 
         // Then: Should mask sensitive fields
         assertThat(result).contains("clientSecret='***'");
-        assertThat(result).contains("username='***'");
-        assertThat(result).contains("password='***'");
 
         // Should NOT contain actual values
         assertThat(result).doesNotContain("my-secret");
-        assertThat(result).doesNotContain("myuser");
-        assertThat(result).doesNotContain("mypass");
 
         // Should contain non-sensitive fields
         assertThat(result).contains("authority='https://auth.example.com'");
@@ -279,26 +275,30 @@ class EndpointKeyTest {
     }
 
     @Test
-    @DisplayName("toString() - shows null for absent credentials")
+    @DisplayName("toString() - shows null for absent clientSecret")
     void toString_shows_null_for_absent_credentials() {
-        // Given: EndpointKey without password grant (no username/password)
-        OAuth2ConnectAuthenticationProperties props = createOAuth2Props(
-                "https://auth.example.com",
-                "my-client",
-                "my-secret",
-                OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS,
-                null,
-                null);
+        // Given: EndpointKey without clientSecret
+        OAuth2ConnectAuthenticationProperties props = mock(OAuth2ConnectAuthenticationProperties.class);
+
+        UriTemplate authority = mock(UriTemplate.class);
+        when(authority.getLiteralUri()).thenReturn(URI.create("https://auth.example.com"));
+        when(props.getAuthority()).thenReturn(authority);
+
+        OAuth2AuthenticationDataClient client = mock(OAuth2AuthenticationDataClient.class);
+        when(client.getId()).thenReturn("my-client");
+        when(client.getSecret()).thenReturn(null);
+        when(props.getClient()).thenReturn(client);
+
+        when(props.getGrant()).thenReturn(OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS);
+        when(props.getEndpoints()).thenReturn(null);
 
         EndpointKey key = EndpointKey.from(props);
 
         // When
         String result = key.toString();
 
-        // Then: Should show null for absent fields
-        assertThat(result).contains("username='null'");
-        assertThat(result).contains("password='null'");
-        assertThat(result).contains("clientSecret='***'"); // secret still masked
+        // Then: Should show null for absent clientSecret
+        assertThat(result).contains("clientSecret='null'");
     }
 
     @Test
@@ -314,8 +314,6 @@ class EndpointKeyTest {
                 "my-secret",
                 OAuth2AuthenticationDataClient.ClientAuthentication.CLIENT_SECRET_POST,
                 OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS,
-                null,
-                null,
                 null,
                 null))
                 .isInstanceOf(NullPointerException.class)
@@ -335,8 +333,6 @@ class EndpointKeyTest {
                 "my-secret",
                 OAuth2AuthenticationDataClient.ClientAuthentication.CLIENT_SECRET_POST,
                 OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS,
-                null,
-                null,
                 null,
                 null))
                 .isInstanceOf(NullPointerException.class)
@@ -375,8 +371,6 @@ class EndpointKeyTest {
                 OAuth2AuthenticationDataClient.ClientAuthentication.CLIENT_SECRET_POST,
                 OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS,
                 null,
-                null,
-                null,
                 null);
 
         // When/Then
@@ -396,8 +390,6 @@ class EndpointKeyTest {
                 "my-secret",
                 OAuth2AuthenticationDataClient.ClientAuthentication.CLIENT_SECRET_POST,
                 OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS,
-                null,
-                null,
                 null,
                 null);
 
@@ -424,7 +416,7 @@ class EndpointKeyTest {
     }
 
     @Test
-    @DisplayName("from() - applies default token endpoint")
+    @DisplayName("from() - applies default token and revocation endpoints")
     void from_applies_default_token_endpoint() {
         // Given: OAuth2 config without explicit token endpoint
         OAuth2ConnectAuthenticationProperties props = mock(OAuth2ConnectAuthenticationProperties.class);
@@ -446,7 +438,7 @@ class EndpointKeyTest {
         // When
         EndpointKey key = EndpointKey.from(props);
 
-        // Then: Should apply CNCF spec default
+        // Then: Should apply CNCF spec defaults for supported endpoints
         assertThat(key.tokenPath()).isEqualTo("/oauth2/token");
         assertThat(key.revocationPath()).isEqualTo("/oauth2/revoke");
     }
@@ -465,17 +457,13 @@ class EndpointKeyTest {
                 OAuth2AuthenticationDataClient.ClientAuthentication.CLIENT_SECRET_POST,
                 OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS,
                 List.of("read"),
-                List.of("api://example"),
-                null,
-                null);
+                List.of("api://example"));
 
         // When: Create resolved key from runtime values
         EndpointKey resolved = EndpointKey.fromNonResolved(
                 "https://resolved-auth.example.com",
                 "resolved-client-id",
                 "resolved-secret",
-                null,
-                null,
                 unresolvedKey);
 
         // Then: Should have resolved values for credentials/authority
@@ -489,6 +477,34 @@ class EndpointKeyTest {
         assertThat(resolved.grant()).isEqualTo(OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS);
         assertThat(resolved.scopes()).containsExactly("read");
         assertThat(resolved.audiences()).containsExactly("api://example");
+    }
+
+    @Test
+    @DisplayName("equals() - same endpoint config with different username/password produces equal keys")
+    void equals_same_config_different_username_password() {
+        // Given: Two PASSWORD grant configs with same endpoint but different username/password
+        OAuth2ConnectAuthenticationProperties props1 = createOAuth2PropsWithPassword(
+                "https://auth.example.com",
+                "my-client",
+                "my-secret",
+                "alice",
+                "password123");
+
+        OAuth2ConnectAuthenticationProperties props2 = createOAuth2PropsWithPassword(
+                "https://auth.example.com",
+                "my-client",
+                "my-secret",
+                "bob",
+                "secret456");
+
+        // When
+        EndpointKey key1 = EndpointKey.from(props1);
+        EndpointKey key2 = EndpointKey.from(props2);
+
+        // Then: Should be EQUAL - username/password are NOT part of client identity
+        // They're passed as dynamic grant params at token request time
+        assertThat(key1).isEqualTo(key2);
+        assertThat(key1.hashCode()).isEqualTo(key2.hashCode());
     }
 
     // Helper methods

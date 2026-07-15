@@ -1,5 +1,7 @@
 package io.quarkiverse.flow.oidc.impl;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -12,6 +14,8 @@ import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowContext;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.serverlessworkflow.impl.WorkflowUtils;
+import io.serverlessworkflow.impl.WorkflowValueResolver;
+import io.serverlessworkflow.impl.expressions.ExpressionUtils;
 
 /**
  * Resolves runtime expressions in OAuth2/OIDC authentication configurations.
@@ -46,6 +50,8 @@ public class RuntimeExpressionResolver {
     @Inject
     WorkflowApplication application;
 
+    private final ConcurrentHashMap<String, WorkflowValueResolver<String>> filterCache = new ConcurrentHashMap<>();
+
     private static String resolveAuthorityTemplate(UriTemplate authority) {
         if (authority == null) {
             throw new IllegalStateException("OAuth2/OIDC authentication policy is missing the required 'authority'");
@@ -68,9 +74,14 @@ public class RuntimeExpressionResolver {
      * This method:
      * <ol>
      * <li>Creates a non-resolved EndpointKey template (with expressions intact)</li>
-     * <li>Resolves each field that may contain expressions (authority, clientId, clientSecret, username, password)</li>
+     * <li>Resolves each field that may contain expressions (authority, clientId, clientSecret)</li>
      * <li>Returns a new EndpointKey with all expressions replaced by their runtime values</li>
      * </ol>
+     * <p>
+     * <b>Note:</b> Username and password are NOT included in EndpointKey. They are resolved
+     * separately in {@link OidcClientAuthProvider#resolveDynamicGrantParams(WorkflowContext, TaskContext, WorkflowModel)} and
+     * passed as
+     * dynamic grant parameters at token request time.
      *
      * @param workflow the workflow execution context
      * @param task the task execution context
@@ -86,21 +97,20 @@ public class RuntimeExpressionResolver {
         final String clientId = resolveOne(workflow, task, model, nonResolvedEndpointKey.clientId());
         final String clientSecret = resolveOne(workflow, task, model, nonResolvedEndpointKey.clientSecret());
 
-        String username = null;
-        String password = null;
-        if (authenticationData.getGrant() == OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.PASSWORD) {
-            username = resolveOne(workflow, task, model, authenticationData.getUsername());
-            password = resolveOne(workflow, task, model, authenticationData.getPassword());
-        }
-
-        return EndpointKey.fromNonResolved(authority, clientId, clientSecret, username, password, nonResolvedEndpointKey);
+        return EndpointKey.fromNonResolved(authority, clientId, clientSecret, nonResolvedEndpointKey);
     }
 
     public String resolveOne(WorkflowContext workflow, TaskContext task, WorkflowModel model, String template) {
         if (template == null) {
             return null;
         }
-        return WorkflowUtils.buildStringFilter(application, template).apply(workflow, task, model);
+
+        if (!ExpressionUtils.isExpr(template)) {
+            return template;
+        }
+
+        return filterCache.computeIfAbsent(template, k -> WorkflowUtils.buildStringFilter(application, template))
+                .apply(workflow, task, model);
     }
 
 }

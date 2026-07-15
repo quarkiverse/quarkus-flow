@@ -96,16 +96,10 @@ public final class OidcClientAuthProvider implements AuthProvider {
                 ? configResolver.namedConnectionTimeout(namedOidc.get())
                 : configResolver.resolveConnectionTimeout(workflow.definition().id(), task.taskName(), authPolicyName);
 
-        try {
-            final Tokens tokens = dynamicParams.isEmpty()
-                    ? client.getTokens().await().atMost(connectionTimeout)
-                    : client.getTokens(dynamicParams).await().atMost(connectionTimeout);
-            return tokens.getAccessToken();
-        } catch (Exception e) {
-            throw new IllegalStateException(
-                    "Flow OIDC: failed to negotiate an access token: " + e.getMessage(),
-                    e);
-        }
+        final Tokens tokens = dynamicParams.isEmpty()
+                ? client.getTokens().await().atMost(connectionTimeout)
+                : client.getTokens(dynamicParams).await().atMost(connectionTimeout);
+        return tokens.getAccessToken();
     }
 
     /**
