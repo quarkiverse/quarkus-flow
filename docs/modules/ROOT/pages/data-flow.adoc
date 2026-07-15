@@ -161,6 +161,19 @@ Workflow DSL defines task timeouts in the
 https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#timeout[`timeout`
 section of the specification].
 
+For example, this regex-heavy task is limited to 30 seconds:
+
+[source,yaml]
+----
+do:
+  - validateEmail:
+      set:
+        isValidEmail: ${ .userInput | test("^([[:alnum:]]+[._-]?){1,20}@([[:alnum:]]+[.-]?)+[.][[:alpha:]]{2,}$") }
+      timeout:
+        after:
+          seconds: 30
+----
+
 === jq Timeout recommendations
 
 As a practical starting point:
