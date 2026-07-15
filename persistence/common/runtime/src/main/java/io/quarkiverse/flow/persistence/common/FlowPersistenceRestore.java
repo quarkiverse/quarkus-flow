@@ -13,7 +13,7 @@ import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.quarkiverse.flow.internal.WorkflowApplicationReady;
+import io.quarkiverse.flow.internal.WorkflowApplicationReadyEvent;
 import io.quarkus.arc.Unremovable;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
@@ -33,7 +33,7 @@ public class FlowPersistenceRestore {
     @Inject
     FlowPersistenceConfig config;
 
-    void restoreInstances(@Observes WorkflowApplicationReady event) {
+    void restoreInstances(@Observes WorkflowApplicationReadyEvent event) {
         // Check runtime config to see if auto-restore is enabled
         if (!config.autoRestore()) {
             LOG.debug("Auto-restore is disabled, skipping workflow instance restoration");

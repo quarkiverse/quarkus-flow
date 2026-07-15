@@ -35,7 +35,8 @@ public class ClientCredentialsFlow extends Flow {
                                                 FuncDSL.oauth2(baseUrl,
                                                         CLIENT_CREDENTIALS,
                                                         "${ $secret.clientCredentials.clientId }",
-                                                        "${ $secret.clientCredentials.clientSecret }"))
+                                                        "${ $secret.clientCredentials.clientSecret }",
+                                                        e -> e.token("/protocol/openid-connect/token")))
 
                         ))
                 .build();

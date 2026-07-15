@@ -32,10 +32,11 @@ public class OidcClientFlow extends Flow {
                                         .GET()
                                         .header("Accept", "application/json")
                                         .uri(URI.create(imageService),
-                                                FuncDSL.oidc(baseUrl,
+                                                FuncDSL.oauth2(baseUrl,
                                                         CLIENT_CREDENTIALS,
                                                         "${ $secret.oidcClient.\"client-id\" }",
-                                                        "${ $secret.oidcClient.\"client-secret\" }"))
+                                                        "${ $secret.oidcClient.\"client-secret\" }",
+                                                        e -> e.token("/protocol/openid-connect/token")))
 
                         ))
                 .build();

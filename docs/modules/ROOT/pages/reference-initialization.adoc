@@ -114,7 +114,7 @@ After the `WorkflowApplication` is initialized, the registry warmup step loads w
 
 === 1. Startup Event Observation
 
-The warmup step runs after application startup. In development mode it is synchronous for immediate feedback; in production it is asynchronous so startup is not delayed. Internally, the extension emits `WorkflowApplicationReady` after warmup so supporting extensions can react to the initialized application state. We do not recommend user code listening to that event directly.
+The warmup step runs after application startup. In development mode it is synchronous for immediate feedback; in production it is asynchronous so startup is not delayed. Internally, the extension emits `WorkflowApplicationReadyEvent` after warmup so supporting extensions can react to the initialized application state. We do not recommend user code listening to that event directly.
 
 === 2. Registry Warmup Process
 

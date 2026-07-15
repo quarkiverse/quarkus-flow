@@ -154,8 +154,6 @@
                             <conditionalDependencies>
                                 <dependency>${project.groupId}:${project.artifactId}-messaging:${project.version}
                                 </dependency>
-                                <dependency>${project.groupId}:${project.artifactId}-oidc:${project.version}
-                                </dependency>
                             </conditionalDependencies>
                             <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}
                             </deployment>

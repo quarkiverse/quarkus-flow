@@ -1,0 +1,19 @@
+document:
+  dsl: '1.0.0-alpha1'
+  namespace: test
+  name: oidc-workflow
+  version: '1.0.0'
+do:
+  - callSecureApi:
+      call: http
+      with:
+        method: post
+        endpoint:
+          uri: https://api.example.com/secure
+          authentication:
+            oidc:
+              authority: http://localhost:8089
+              grant: client_credentials
+              client:
+                id: oidc-client
+                secret: oidc-secret

@@ -27,6 +27,7 @@ import com.github.zafarkhaja.semver.Version;
 import io.quarkiverse.flow.config.FlowDefinitionsConfig;
 import io.quarkiverse.flow.internal.WorkflowApplicationInitializer;
 import io.quarkiverse.flow.internal.WorkflowNameUtils;
+import io.quarkiverse.flow.internal.WorkflowRegistrarService;
 import io.quarkiverse.flow.metrics.MicrometerExecutionListener;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
 import io.quarkiverse.flow.providers.FaultToleranceProvider;
@@ -74,7 +75,6 @@ class FlowProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(FlowProcessor.class); // NEW
 
     private static final String FEATURE = "flow";
-    private static final String DEFAULT_STRUCTURED_LOG_HANDLER = "FLOW_EVENTS";
 
     /**
      * Groups workflows by their versionless identifier (namespace:name) and selects
@@ -116,7 +116,7 @@ class FlowProcessor {
                 .setRuntimeInit()
                 .addQualifier().annotation(DotNames.IDENTIFIER)
                 .addValue("value", identifier).done()
-                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowApplication.class)));
+                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowRegistrarService.class)));
 
         // Load workflow from classpath resource at runtime
         return configurator.createWith(recorder.workflowDefinitionFromResourceCreator(workflow.definitionResourcePath()))
@@ -258,7 +258,7 @@ class FlowProcessor {
                 .addQualifier().annotation(DotNames.IDENTIFIER).addValue("value", it.className()).done()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(it.className())),
                         AnnotationInstance.builder(DotName.createSimple(Any.class)).build())
-                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowApplication.class)))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowRegistrarService.class)))
                 .createWith(recorder.workflowDefinitionCreator(it.className()))
                 .done());
         identifiers.produce(new FlowIdentifierBuildItem(Set.of(it.className())));
