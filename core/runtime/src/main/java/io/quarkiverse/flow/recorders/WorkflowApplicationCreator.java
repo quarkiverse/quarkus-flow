@@ -31,6 +31,7 @@ import io.serverlessworkflow.api.types.CallOpenAPI;
 import io.serverlessworkflow.api.types.TaskBase;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowApplication.Builder;
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.serverlessworkflow.impl.config.ConfigManager;
 import io.serverlessworkflow.impl.config.SecretManager;
@@ -230,9 +231,9 @@ public class WorkflowApplicationCreator {
     private void injectHttpClientProvider(final Builder builder) {
         LOG.debug("Flow: Bound HttpClientProvider bean: {}", httpClientProvider.getClass().getName());
         builder.withAdditionalObject(HttpClientResolver.HTTP_CLIENT_PROVIDER, ((workflowContextData, taskContextData) -> {
-            final String workflowName = workflowContextData.definition().workflow().getDocument().getName();
+            final WorkflowDefinitionId workflowId = workflowContextData.definition().id();
             final String taskName = taskContextData.taskName();
-            return httpClientProvider.clientFor(workflowName, taskName);
+            return httpClientProvider.clientFor(workflowId, taskName);
         }));
     }
 
@@ -252,10 +253,10 @@ public class WorkflowApplicationCreator {
             @Override
             public CallableTask build(CallableTask delegate) {
                 return (workflowContext, taskContext, input) -> {
-                    String workflowName = workflowContext.definition().workflow().getDocument().getName();
+                    WorkflowDefinitionId workflowId = workflowContext.definition().id();
                     String taskName = taskContext.taskName();
-                    TypedGuard<CompletionStage<WorkflowModel>> guard = faultToleranceProvider
-                            .guardFor(new WorkflowTaskContext(workflowName, taskName, isMicrometerSupported));
+                    WorkflowTaskContext ctx = new WorkflowTaskContext(workflowId, taskName, isMicrometerSupported);
+                    TypedGuard<CompletionStage<WorkflowModel>> guard = faultToleranceProvider.guardFor(ctx);
 
                     return guard.get(() -> delegate.apply(workflowContext, taskContext, input)).toCompletableFuture();
                 };
