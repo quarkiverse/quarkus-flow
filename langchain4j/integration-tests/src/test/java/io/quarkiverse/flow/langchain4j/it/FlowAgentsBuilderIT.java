@@ -26,6 +26,9 @@ public class FlowAgentsBuilderIT {
     Agents.EveningPlannerAgent eveningPlannerAgent;
 
     @Inject
+    Agents.MoodPlannerAgent moodPlannerAgent;
+
+    @Inject
     Agents.ExpertRouterAgent expertRouterAgent;
 
     @Inject
@@ -43,6 +46,13 @@ public class FlowAgentsBuilderIT {
         assertThat(eveningPlannerAgent).isNotNull();
         final List<Agents.EveningPlan> plan = eveningPlannerAgent.plan("romantic");
         assertThat(plan).hasSize(3);
+    }
+
+    @Test
+    void checkParallelWorkflowInSequence() {
+        assertThat(moodPlannerAgent).isNotNull();
+        final List<Agents.EveningPlan> result = moodPlannerAgent.plan("I'm alone with my girlfriend");
+        assertThat(result).hasSize(3);
     }
 
     @Test

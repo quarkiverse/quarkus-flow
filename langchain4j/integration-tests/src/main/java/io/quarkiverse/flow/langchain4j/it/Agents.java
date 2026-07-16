@@ -18,7 +18,6 @@ import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
-import io.quarkiverse.langchain4j.RegisterAiService;
 
 public class Agents {
 
@@ -31,12 +30,10 @@ public class Agents {
         UNKNOWN
     }
 
-    @RegisterAiService
     public interface StoryCreatorWithConfigurableStyleEditor {
         @SequenceAgent(outputKey = "story", subAgents = {
                 CreativeWriter.class, AudienceEditor.class, StyleEditor.class
         })
-        @Agent(description = "write", outputKey = "story")
         String write(@V("topic") String topic, @V("style") String style, @V("audience") String audience);
     }
 
@@ -73,7 +70,6 @@ public class Agents {
         String editStory(@V("story") String story, @V("style") String style);
     }
 
-    @RegisterAiService
     public interface EveningPlannerAgent {
         @Output
         static List<EveningPlan> createPlans(@V("movies") List<String> movies, @V("meals") List<String> meals) {
@@ -112,6 +108,22 @@ public class Agents {
                 """)
         @Agent(outputKey = "movies")
         List<String> findMovie(@V("mood") String mood);
+    }
+
+    public interface MoodPlannerAgent {
+        @SequenceAgent(outputKey = "plans", subAgents = { MoodExtractor.class, EveningPlannerAgent.class })
+        List<EveningPlan> plan(@V("request") String request);
+    }
+
+    public interface MoodExtractor {
+        @UserMessage("""
+                You are a psychological expert.
+                Analyze the following user request and extract the mood.
+                The user request is {{request}}.
+                Provide the mood as a single word or phrase.
+                """)
+        @Agent(outputKey = "mood")
+        String extractMood(@V("request") String request);
     }
 
     public interface CategoryRouter {
@@ -176,7 +188,6 @@ public class Agents {
         }
     }
 
-    @RegisterAiService
     public interface ExpertsAgent {
 
         @ActivationCondition(MedicalExpert.class)
@@ -242,7 +253,6 @@ public class Agents {
         double scoreStyle(@V("story") String story, @V("style") String style);
     }
 
-    @RegisterAiService
     public interface StyleReviewLoopAgentWithCounter {
 
         @ExitCondition(testExitAtLoopEnd = true)
@@ -256,10 +266,8 @@ public class Agents {
         String write(@V("story") String story);
     }
 
-    @RegisterAiService
     public interface StoryCreatorWithReviewWithCounter {
         @SequenceAgent(outputKey = "story", subAgents = { CreativeWriter.class, StyleReviewLoopAgentWithCounter.class })
-        @Agent("write")
         ResultWithAgenticScope<String> write(@V("topic") String topic, @V("style") String style);
     }
 
