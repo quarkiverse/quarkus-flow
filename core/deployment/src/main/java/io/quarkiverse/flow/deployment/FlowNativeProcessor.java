@@ -61,7 +61,6 @@ final class FlowNativeProcessor {
                 "org.hibernate.validator.internal.constraintvalidators.bv.PatternValidator",
                 "org.hibernate.validator.internal.constraintvalidators.bv.NotNullValidator",
                 // Jackson serializers for WorkflowModel - needed when WorkflowModel is returned directly from REST endpoint
-                "io.serverlessworkflow.impl.model.jackson.JacksonModel",
                 "io.serverlessworkflow.impl.model.jackson.JacksonModelSerializer",
                 "io.serverlessworkflow.impl.model.jackson.JacksonModelDeserializer")
                 .queryConstructors(true)
