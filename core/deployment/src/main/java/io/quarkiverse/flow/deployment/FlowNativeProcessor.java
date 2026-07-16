@@ -50,7 +50,7 @@ final class FlowNativeProcessor {
 
     @BuildStep
     void registerSerializableFunctions(CombinedIndexBuildItem indexedClasses,
-                                       BuildProducer<LambdaCapturingTypeBuildItem> producer) {
+            BuildProducer<LambdaCapturingTypeBuildItem> producer) {
         indexedClasses.getIndex().getAllKnownImplementations(Flowable.class).stream().map(ClassInfo::toString)
                 .map(LambdaCapturingTypeBuildItem::new).forEach(producer::produce);
     }
@@ -58,12 +58,12 @@ final class FlowNativeProcessor {
     @BuildStep
     ReflectiveClassBuildItem registerForReflection() {
         return ReflectiveClassBuildItem.builder(
-                        "org.hibernate.validator.internal.constraintvalidators.bv.PatternValidator",
-                        "org.hibernate.validator.internal.constraintvalidators.bv.NotNullValidator",
-                        // Jackson serializers for WorkflowModel - needed when WorkflowModel is returned directly from REST endpoint
-                        "io.serverlessworkflow.impl.model.jackson.JacksonModel",
-                        "io.serverlessworkflow.impl.model.jackson.JacksonModelSerializer",
-                        "io.serverlessworkflow.impl.model.jackson.JacksonModelDeserializer")
+                "org.hibernate.validator.internal.constraintvalidators.bv.PatternValidator",
+                "org.hibernate.validator.internal.constraintvalidators.bv.NotNullValidator",
+                // Jackson serializers for WorkflowModel - needed when WorkflowModel is returned directly from REST endpoint
+                "io.serverlessworkflow.impl.model.jackson.JacksonModel",
+                "io.serverlessworkflow.impl.model.jackson.JacksonModelSerializer",
+                "io.serverlessworkflow.impl.model.jackson.JacksonModelDeserializer")
                 .constructors(true)
                 .methods(true)
                 .fields(true)
