@@ -64,6 +64,7 @@ final class FlowNativeProcessor {
                 "io.serverlessworkflow.impl.model.jackson.JacksonModel",
                 "io.serverlessworkflow.impl.model.jackson.JacksonModelSerializer",
                 "io.serverlessworkflow.impl.model.jackson.JacksonModelDeserializer")
+                .queryConstructors(true)
                 .constructors(true)
                 .methods(true)
                 .fields(true)

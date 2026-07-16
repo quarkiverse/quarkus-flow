@@ -73,6 +73,6 @@ public class FlowResource {
     @Path("/read-all-emails")
     public Response readAllEmails() {
         WorkflowModel model = multipleOAuth2Client.instance().start().join();
-        return Response.ok(model.asJavaObject()).build();
+        return Response.ok(model).build();
     }
 }
