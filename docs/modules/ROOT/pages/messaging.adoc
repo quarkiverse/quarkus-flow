@@ -45,6 +45,34 @@ Once enabled, the engine creates two default channels:
 * `flow-in` (Inbound): Consumes CloudEvents (structured or binary) to start or wake up workflows.
 * `flow-out` (Outbound): Publishes CloudEvents emitted by workflows via SmallRye's `OutgoingCloudEventMetadata`.
 
+=== Dev/test shortcut: automatic Kafka configuration with DevServices
+
+In dev and test mode, instead of manually enabling the bridge and configuring every `mp.messaging.*` property, you can let Quarkus Flow set up the full Kafka stack automatically with a single flag:
+
+[source,properties]
+----
+quarkus.flow.messaging.devservices-kafka-enabled=true
+----
+
+This single property:
+
+* Enables the default messaging bridge (`quarkus.flow.messaging.defaults-enabled=true`)
+* Enables lifecycle events (`quarkus.flow.messaging.lifecycle-enabled=true`)
+* Injects the Kafka connector (`smallrye-kafka`) on all three default channels:
+** `flow-in` (inbound) — `topic=flow-in`, `StringDeserializer` / `ByteArrayDeserializer`
+** `flow-out` (outbound) — `topic=flow-out`, `StringSerializer` / `ByteArraySerializer`
+** `flow-lifecycle-out` (outbound) — `topic=flow-lifecycle-out`, `StringSerializer` / `ByteArraySerializer`
+* Triggers Quarkus DevServices to start an ephemeral Kafka broker automatically
+
+Quarkus DevServices start log confirms the injected configuration so you can see exactly what was set.
+
+You can override any of the injected defaults in your `application.properties` — the injected values are low-priority defaults.
+
+[IMPORTANT]
+====
+This shortcut only applies in dev and test mode. In production you must activate the bridge with `quarkus.flow.messaging.defaults-enabled=true` and map the channels to your broker as shown in the next section.
+====
+
 == 2. Map channels to Kafka topics
 
 Configure MicroProfile Reactive Messaging to connect the default Flow channels to your Kafka topics.

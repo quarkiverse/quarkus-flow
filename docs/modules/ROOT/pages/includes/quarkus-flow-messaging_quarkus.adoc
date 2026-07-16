@@ -49,6 +49,29 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |`+++false+++`
 
+a|icon:lock[title=Fixed at build time] [[quarkus-flow-messaging_quarkus-devservices-kafka-enabled]] [.property-path]##link:#quarkus-flow-messaging_quarkus-devservices-kafka-enabled[`+++quarkus.flow.messaging.devservices-kafka-enabled+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.messaging.devservices-kafka-enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+[.description]
+--
+Automatically configure Kafka for Quarkus Flow messaging channels in dev and test mode.
+When enabled, this injects all necessary runtime configuration defaults so a developer
+does not need to manually set `quarkus.flow.messaging.defaults-enabled`,
+`quarkus.flow.messaging.lifecycle-enabled`, or any `mp.messaging.*` Kafka
+connector properties. All injected defaults can be overridden in `application.properties`.
+Quarkus DevServices will automatically start a Kafka broker when
+`quarkus.kafka.devservices.enabled` is not set to `false`.
+--
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_MESSAGING_DEVSERVICES_KAFKA_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_MESSAGING_DEVSERVICES_KAFKA_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+|boolean  |`+++false+++`
+
 a|icon:lock[title=Fixed at build time] [[quarkus-flow-messaging_quarkus-enable-metadata-correlation]] [.property-path]##link:#quarkus-flow-messaging_quarkus-enable-metadata-correlation[`+++quarkus.enable-metadata-correlation+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.enable-metadata-correlation+++[]
