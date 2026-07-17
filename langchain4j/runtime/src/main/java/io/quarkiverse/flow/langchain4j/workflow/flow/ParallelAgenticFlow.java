@@ -22,7 +22,7 @@ public abstract class ParallelAgenticFlow extends AgenticFlow {
                         String branchName = taskNames.get(i) + "-" + i;
                         fork.branches(withInstanceId(branchName,
                                 (String instanceId, DefaultAgenticScope scope) -> {
-                                    executeAgent(scope, index);
+                                    executeAgent(instanceId, scope, index);
                                     return null;
                                 },
                                 DefaultAgenticScope.class));

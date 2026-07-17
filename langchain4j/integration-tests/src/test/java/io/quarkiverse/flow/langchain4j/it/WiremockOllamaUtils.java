@@ -1,8 +1,65 @@
 package io.quarkiverse.flow.langchain4j.it;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.containing;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
+
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.common.ConsoleNotifier;
+
 public class WiremockOllamaUtils {
 
     private WiremockOllamaUtils() {
+    }
+
+    public static WireMockServer startOllamaMock() {
+        WireMockServer wireMock = new WireMockServer(options()
+                .dynamicPort()
+                .notifier(new ConsoleNotifier(true)));
+        wireMock.start();
+        return wireMock;
+    }
+
+    public static void stubEmailSummaryAgent(WireMockServer wireMock) {
+        wireMock.stubFor(post(urlEqualTo("/api/chat"))
+                .withRequestBody(containing("email tools"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(ollamaResponse("You do not have emails!"))));
+    }
+
+    public static void stubWhatsAppSummaryAgent(WireMockServer wireMock) {
+        wireMock.stubFor(post(urlEqualTo("/api/chat"))
+                .withRequestBody(containing("WhatsApp tools"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(ollamaResponse("You do not have messages!"))));
+    }
+
+    public static void stubConferenceReviewerImprover(WireMockServer wireMock) {
+        wireMock.stubFor(post(urlEqualTo("/api/chat"))
+                .withRequestBody(containing("improve and refine"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(ollamaResponse(
+                                "Strengths: the title is concise and on-topic.\\n"
+                                        + "Weaknesses: the abstract is too short and lacks technical depth.\\n"
+                                        + "Suggestions: expand the description with concrete examples and a clearer "
+                                        + "title such as 'Streamlining Java and AI Orchestration with Quarkus Flow'."))));
+    }
+
+    public static void stubConferenceReviewerScore(WireMockServer wireMock) {
+        wireMock.stubFor(post(urlEqualTo("/api/chat"))
+                .withRequestBody(containing("single integer"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(ollamaResponse("8"))));
     }
 
     /**
@@ -33,7 +90,6 @@ public class WiremockOllamaUtils {
      * The content is already JSON so we escape inner quotes properly.
      */
     public static String ollamaResponseRaw(String jsonContent) {
-        // Escape quotes inside the JSON content for embedding in the outer JSON string
         String escaped = jsonContent.replace("\"", "\\\"");
         return """
                 {

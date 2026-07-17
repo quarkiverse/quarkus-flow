@@ -59,7 +59,8 @@ public abstract class ConditionalAgenticFlow extends AgenticFlow {
                         tasks.function(
                                 taskName,
                                 fn -> fn.function(
-                                        (DefaultAgenticScope scope, WorkflowContextData ctx) -> executeAgent(scope,
+                                        (DefaultAgenticScope scope, WorkflowContextData ctx) -> executeAgent(
+                                                ctx.instanceData().id(), scope,
                                                 index),
                                         DefaultAgenticScope.class)
                                         .when(predicate == null ? scope -> true : predicate, AgenticScope.class)

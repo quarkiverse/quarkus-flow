@@ -69,7 +69,7 @@
             <artifactId>quarkus-flow-scheduler</artifactId>
             <version>${project.version}</version>
         </dependency>
-         <dependency>
+        <dependency>
             <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow-scheduler-deployment</artifactId>
             <version>${project.version}</version>
