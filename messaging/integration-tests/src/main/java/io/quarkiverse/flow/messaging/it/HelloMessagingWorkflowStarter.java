@@ -9,7 +9,7 @@ import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.quarkiverse.flow.internal.WorkflowApplicationReady;
+import io.quarkiverse.flow.internal.WorkflowApplicationReadyEvent;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.Quarkus;
 
@@ -36,7 +36,7 @@ public class HelloMessagingWorkflowStarter {
     @Inject
     HelloMessagingFlow workflow;
 
-    void onStart(@Observes WorkflowApplicationReady ev) {
+    void onStart(@Observes WorkflowApplicationReadyEvent ev) {
         workflow.instance(Map.of()).start().whenComplete((result, err) -> {
             if (err != null)
                 LOG.error("Workflow failed", err);

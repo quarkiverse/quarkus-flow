@@ -1,0 +1,25 @@
+document:
+  dsl: '1.0.0-alpha1'
+  namespace: test
+  name: named-auth-workflow
+  version: '1.0.0'
+use:
+  authentications:
+    keycloak:
+      oauth2:
+        authority: http://localhost:8089
+        grant: client_credentials
+        client:
+          id: named-client
+          secret: named-secret
+        endpoints:
+          token: /oauth2/token
+do:
+  - callWithNamedAuth:
+      call: http
+      with:
+        method: get
+        endpoint:
+          uri: https://api.example.com/protected
+          authentication:
+            use: keycloak

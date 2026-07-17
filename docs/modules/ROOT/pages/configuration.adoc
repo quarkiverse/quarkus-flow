@@ -19,3 +19,6 @@ include::includes/quarkus-flow-mvstore.adoc[leveloffset=+1, opts=optional]
 
 == Runner
 include::includes/quarkus-flow-runner.adoc[leveloffset=+1, opts=optional]
+
+== OIDC
+include::includes/quarkus-flow-oidc.adoc[leveloffset=+1, opts=optional]

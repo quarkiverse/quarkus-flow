@@ -28,7 +28,7 @@ When the server boots, any workflow instance that was running when the JVM previ
 If you need to disable this auto-resume behavior, add this to your `application.properties`:
 [source,properties]
 ----
-quarkus.flow.persistence.autoRestore=false
+quarkus.flow.persistence.auto-restore=false
 ----
 
 == 2. Excluding Workflows from Persistence

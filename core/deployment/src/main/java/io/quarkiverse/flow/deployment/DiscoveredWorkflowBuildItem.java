@@ -2,6 +2,7 @@ package io.quarkiverse.flow.deployment;
 
 import io.quarkiverse.flow.internal.WorkflowNameUtils;
 import io.quarkus.builder.item.MultiBuildItem;
+import io.serverlessworkflow.api.WorkflowReader;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
@@ -17,22 +18,12 @@ import io.serverlessworkflow.impl.WorkflowDefinitionId;
  */
 public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
 
-    private enum From {
-        /**
-         * Workflow definition comes from a Java Source file, (e.g. a DSL descriptor).
-         */
-        SOURCE,
-        /**
-         * Workflow definition described as a YAML or JSON file in a target path.
-         */
-        SPEC
-    }
-
+    private final From from;
     private String definitionResourcePath;
     private WorkflowDefinitionId workflowDefinitionId;
+    private Workflow workflowFromSpec;
     private String specIdentifier;
     private String className;
-    private final From from;
 
     private DiscoveredWorkflowBuildItem(String definitionResourcePath, Workflow workflow) {
         this.definitionResourcePath = definitionResourcePath;
@@ -41,6 +32,7 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
                 workflowDefinitionId.namespace(),
                 workflowDefinitionId.name(),
                 workflowDefinitionId.version());
+        this.workflowFromSpec = workflow;
         this.from = From.SPEC;
     }
 
@@ -54,7 +46,6 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
      *
      * @param definitionResourcePath the classpath workflow definition resource path
      * @param workflow the parsed workflow model
-     *
      * @return a new {@link DiscoveredWorkflowBuildItem}
      */
     public static DiscoveredWorkflowBuildItem fromSpec(String definitionResourcePath, Workflow workflow) {
@@ -116,10 +107,30 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
 
     /**
      * Returns the classpath resource path for this workflow definition.
+     * <p/>
+     * May be used to read a workflow definition, usually with {@link WorkflowReader}
      *
      * @return the resource path (e.g., "flow/subdir/order-workflow.yaml")
      */
     public String definitionResourcePath() {
         return definitionResourcePath;
+    }
+
+    /**
+     * @return Workflow descriptor parsed from {@link From#SPEC}, null otherwise.
+     */
+    public Workflow workflowFromSpec() {
+        return workflowFromSpec;
+    }
+
+    private enum From {
+        /**
+         * Workflow definition comes from a Java Source file, (e.g. a DSL descriptor).
+         */
+        SOURCE,
+        /**
+         * Workflow definition described as a YAML or JSON file in a target path.
+         */
+        SPEC
     }
 }

@@ -15,12 +15,12 @@ import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.quarkiverse.flow.internal.WorkflowApplicationReady;
+import io.quarkiverse.flow.internal.WorkflowApplicationReadyEvent;
 import io.quarkiverse.flow.internal.WorkflowNameUtils;
+import io.quarkiverse.flow.internal.WorkflowRegistrarService;
 import io.quarkus.arc.Unremovable;
 import io.serverlessworkflow.api.WorkflowReader;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
 @ApplicationScoped
@@ -30,12 +30,12 @@ public class WorkflowDefinitionRuntimeLoader {
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowDefinitionRuntimeLoader.class.getName());
 
     @Inject
-    WorkflowApplication application;
+    WorkflowRegistrarService registrarService;
 
     @Inject
     FlowRunnerConfig config;
 
-    void onStart(@Observes WorkflowApplicationReady ev) {
+    void onStart(@Observes WorkflowApplicationReadyEvent ev) {
         if (!config.enabled()) {
             LOGGER.info("Flow Runner: Workflow runner is disabled. Skipping loading Workflow Definitions from file system.");
             return;
@@ -106,7 +106,7 @@ public class WorkflowDefinitionRuntimeLoader {
             }
 
             // Register with WorkflowApplication - creates WorkflowDefinition
-            application.workflowDefinition(workflow);
+            registrarService.register(workflow);
 
             LOGGER.debug("Flow Runner: Registered workflow {}:{}:{} from {}",
                     workflow.getDocument().getNamespace(),

@@ -24,12 +24,15 @@ class AuthFlowResourceTest {
     @Test
     @DisplayName("Should use multiple client/authorization servers in the same workflow")
     void should_use_multiple_clients_requesting_token_on_multiple_auth_servers_successfully() {
-        RestAssured.given()
-                .accept(ContentType.JSON)
-                .contentType(ContentType.JSON)
-                .get("/quarkus-flow/read-all-emails")
-                .then()
-                .statusCode(200);
+        // Execute workflow multiple times to ensure OIDC clients are not overridden
+        for (int i = 0; i < 3; i++) {
+            RestAssured.given()
+                    .accept(ContentType.JSON)
+                    .contentType(ContentType.JSON)
+                    .get("/quarkus-flow/read-all-emails")
+                    .then()
+                    .statusCode(200);
+        }
     }
 
     @Test

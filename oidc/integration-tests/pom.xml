@@ -8,7 +8,7 @@
     </parent>
     <properties>
         <skipITs>true</skipITs>
-        <quarkus.wiremock.version>1.5.1</quarkus.wiremock.version>
+        <quarkus.wiremock.version>1.6.3</quarkus.wiremock.version>
     </properties>
 
     <artifactId>quarkus-flow-oidc-integration-tests</artifactId>
@@ -24,10 +24,6 @@
             <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow-oidc</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-oidc-client</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

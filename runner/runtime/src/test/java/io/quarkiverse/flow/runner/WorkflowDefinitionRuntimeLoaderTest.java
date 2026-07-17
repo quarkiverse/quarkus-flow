@@ -19,9 +19,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import io.quarkiverse.flow.internal.WorkflowApplicationReady;
+import io.quarkiverse.flow.internal.WorkflowApplicationReadyEvent;
+import io.quarkiverse.flow.internal.WorkflowRegistrarService;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 
 @DisplayName("WorkflowDefinitionRuntimeLoader Tests")
@@ -31,18 +31,18 @@ class WorkflowDefinitionRuntimeLoaderTest {
     Path tempDir;
 
     private WorkflowDefinitionRuntimeLoader loader;
-    private WorkflowApplication mockApplication;
+    private WorkflowRegistrarService mockRegistrar;
     private FlowRunnerConfig mockConfig;
     private FlowRunnerConfig.Source mockSource;
 
     @BeforeEach
     void setUp() {
         loader = new WorkflowDefinitionRuntimeLoader();
-        mockApplication = mock(WorkflowApplication.class);
+        mockRegistrar = mock(WorkflowRegistrarService.class);
         mockConfig = mock(FlowRunnerConfig.class);
         mockSource = mock(FlowRunnerConfig.Source.class);
 
-        loader.application = mockApplication;
+        loader.registrarService = mockRegistrar;
         loader.config = mockConfig;
 
         when(mockConfig.source()).thenReturn(mockSource);
@@ -55,10 +55,10 @@ class WorkflowDefinitionRuntimeLoaderTest {
         when(mockConfig.enabled()).thenReturn(false);
 
         // When
-        loader.onStart(new WorkflowApplicationReady("ABC123"));
+        loader.onStart(new WorkflowApplicationReadyEvent("ABC123"));
 
         // Then
-        verify(mockApplication, never()).workflowDefinition(any(Workflow.class));
+        verify(mockRegistrar, never()).register(any(Workflow.class));
     }
 
     @Test
@@ -69,10 +69,10 @@ class WorkflowDefinitionRuntimeLoaderTest {
         when(mockSource.path()).thenReturn(Optional.empty());
 
         // When
-        loader.onStart(new WorkflowApplicationReady("ABC123"));
+        loader.onStart(new WorkflowApplicationReadyEvent("ABC123"));
 
         // Then
-        verify(mockApplication, never()).workflowDefinition(any(Workflow.class));
+        verify(mockRegistrar, never()).register(any(Workflow.class));
     }
 
     @Test
@@ -83,7 +83,7 @@ class WorkflowDefinitionRuntimeLoaderTest {
         when(mockSource.path()).thenReturn(Optional.of("/nonexistent/path"));
 
         // When/Then
-        assertThatThrownBy(() -> loader.onStart(new WorkflowApplicationReady("ABC123")))
+        assertThatThrownBy(() -> loader.onStart(new WorkflowApplicationReadyEvent("ABC123")))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Workflow directory does not exist");
     }
@@ -99,7 +99,7 @@ class WorkflowDefinitionRuntimeLoaderTest {
         when(mockSource.path()).thenReturn(Optional.of(file.toString()));
 
         // When/Then
-        assertThatThrownBy(() -> loader.onStart(new WorkflowApplicationReady("ABC123")))
+        assertThatThrownBy(() -> loader.onStart(new WorkflowApplicationReadyEvent("ABC123")))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Workflow path is not a directory");
     }
@@ -112,10 +112,10 @@ class WorkflowDefinitionRuntimeLoaderTest {
         when(mockSource.path()).thenReturn(Optional.of(tempDir.toString()));
 
         // When
-        loader.onStart(new WorkflowApplicationReady("ABC123"));
+        loader.onStart(new WorkflowApplicationReadyEvent("ABC123"));
 
         // Then
-        verify(mockApplication, never()).workflowDefinition(any(Workflow.class));
+        verify(mockRegistrar, never()).register(any(Workflow.class));
     }
 
     @Test
@@ -138,16 +138,16 @@ class WorkflowDefinitionRuntimeLoaderTest {
         Files.writeString(workflowFile, workflowYaml);
 
         WorkflowDefinition mockDefinition = mock(WorkflowDefinition.class);
-        when(mockApplication.workflowDefinition(any(Workflow.class))).thenReturn(mockDefinition);
+        when(mockRegistrar.register(any(Workflow.class))).thenReturn(mockDefinition);
 
         when(mockConfig.enabled()).thenReturn(true);
         when(mockSource.path()).thenReturn(Optional.of(tempDir.toString()));
 
         // When
-        loader.onStart(new WorkflowApplicationReady("ABC123"));
+        loader.onStart(new WorkflowApplicationReadyEvent("ABC123"));
 
         // Then
-        verify(mockApplication, times(1)).workflowDefinition(any(Workflow.class));
+        verify(mockRegistrar, times(1)).register(any(Workflow.class));
     }
 
     @Test
@@ -170,16 +170,16 @@ class WorkflowDefinitionRuntimeLoaderTest {
         Files.writeString(workflowFile, workflowYml);
 
         WorkflowDefinition mockDefinition = mock(WorkflowDefinition.class);
-        when(mockApplication.workflowDefinition(any(Workflow.class))).thenReturn(mockDefinition);
+        when(mockRegistrar.register(any(Workflow.class))).thenReturn(mockDefinition);
 
         when(mockConfig.enabled()).thenReturn(true);
         when(mockSource.path()).thenReturn(Optional.of(tempDir.toString()));
 
         // When
-        loader.onStart(new WorkflowApplicationReady("ABC123"));
+        loader.onStart(new WorkflowApplicationReadyEvent("ABC123"));
 
         // Then
-        verify(mockApplication, times(1)).workflowDefinition(any(Workflow.class));
+        verify(mockRegistrar, times(1)).register(any(Workflow.class));
     }
 
     @Test
@@ -210,16 +210,16 @@ class WorkflowDefinitionRuntimeLoaderTest {
         Files.writeString(workflowFile, workflowJson);
 
         WorkflowDefinition mockDefinition = mock(WorkflowDefinition.class);
-        when(mockApplication.workflowDefinition(any(Workflow.class))).thenReturn(mockDefinition);
+        when(mockRegistrar.register(any(Workflow.class))).thenReturn(mockDefinition);
 
         when(mockConfig.enabled()).thenReturn(true);
         when(mockSource.path()).thenReturn(Optional.of(tempDir.toString()));
 
         // When
-        loader.onStart(new WorkflowApplicationReady("ABC123"));
+        loader.onStart(new WorkflowApplicationReadyEvent("ABC123"));
 
         // Then
-        verify(mockApplication, times(1)).workflowDefinition(any(Workflow.class));
+        verify(mockRegistrar, times(1)).register(any(Workflow.class));
     }
 
     @Test
@@ -254,16 +254,16 @@ class WorkflowDefinitionRuntimeLoaderTest {
         Files.writeString(tempDir.resolve("workflow-2.yaml"), workflow2);
 
         WorkflowDefinition mockDefinition = mock(WorkflowDefinition.class);
-        when(mockApplication.workflowDefinition(any(Workflow.class))).thenReturn(mockDefinition);
+        when(mockRegistrar.register(any(Workflow.class))).thenReturn(mockDefinition);
 
         when(mockConfig.enabled()).thenReturn(true);
         when(mockSource.path()).thenReturn(Optional.of(tempDir.toString()));
 
         // When
-        loader.onStart(new WorkflowApplicationReady("ABC123"));
+        loader.onStart(new WorkflowApplicationReadyEvent("ABC123"));
 
         // Then
-        verify(mockApplication, times(2)).workflowDefinition(any(Workflow.class));
+        verify(mockRegistrar, times(2)).register(any(Workflow.class));
     }
 
     @Test
@@ -301,16 +301,16 @@ class WorkflowDefinitionRuntimeLoaderTest {
         Files.writeString(subDir.resolve("sub-workflow.yaml"), workflow2);
 
         WorkflowDefinition mockDefinition = mock(WorkflowDefinition.class);
-        when(mockApplication.workflowDefinition(any(Workflow.class))).thenReturn(mockDefinition);
+        when(mockRegistrar.register(any(Workflow.class))).thenReturn(mockDefinition);
 
         when(mockConfig.enabled()).thenReturn(true);
         when(mockSource.path()).thenReturn(Optional.of(tempDir.toString()));
 
         // When
-        loader.onStart(new WorkflowApplicationReady("ABC123"));
+        loader.onStart(new WorkflowApplicationReadyEvent("ABC123"));
 
         // Then
-        verify(mockApplication, times(2)).workflowDefinition(any(Workflow.class));
+        verify(mockRegistrar, times(2)).register(any(Workflow.class));
     }
 
     @Test
@@ -334,16 +334,16 @@ class WorkflowDefinitionRuntimeLoaderTest {
         Files.writeString(tempDir.resolve("valid.yaml"), validWorkflow);
 
         WorkflowDefinition mockDefinition = mock(WorkflowDefinition.class);
-        when(mockApplication.workflowDefinition(any(Workflow.class))).thenReturn(mockDefinition);
+        when(mockRegistrar.register(any(Workflow.class))).thenReturn(mockDefinition);
 
         when(mockConfig.enabled()).thenReturn(true);
         when(mockSource.path()).thenReturn(Optional.of(tempDir.toString()));
 
         // When
-        loader.onStart(new WorkflowApplicationReady("ABC123"));
+        loader.onStart(new WorkflowApplicationReadyEvent("ABC123"));
 
         // Then - Only the valid workflow should be loaded
-        verify(mockApplication, times(1)).workflowDefinition(any(Workflow.class));
+        verify(mockRegistrar, times(1)).register(any(Workflow.class));
     }
 
     @Test
@@ -357,7 +357,7 @@ class WorkflowDefinitionRuntimeLoaderTest {
         when(mockSource.path()).thenReturn(Optional.of(tempDir.toString()));
 
         // When/Then
-        assertThatThrownBy(() -> loader.onStart(new WorkflowApplicationReady("ABC123")))
+        assertThatThrownBy(() -> loader.onStart(new WorkflowApplicationReadyEvent("ABC123")))
                 .isInstanceOf(UncheckedIOException.class)
                 .hasMessageContaining("Failed to load workflow");
     }
@@ -382,7 +382,7 @@ class WorkflowDefinitionRuntimeLoaderTest {
         when(mockSource.path()).thenReturn(Optional.of(tempDir.toString()));
 
         // When/Then - SDK parser throws IOException for missing required fields
-        assertThatThrownBy(() -> loader.onStart(new WorkflowApplicationReady("ABC123")))
+        assertThatThrownBy(() -> loader.onStart(new WorkflowApplicationReadyEvent("ABC123")))
                 .isInstanceOf(UncheckedIOException.class)
                 .hasMessageContaining("Failed to load workflow");
     }
@@ -416,7 +416,7 @@ class WorkflowDefinitionRuntimeLoaderTest {
         Files.writeString(tempDir.resolve("workflow-2.yaml"), workflow2);
         when(mockConfig.enabled()).thenReturn(true);
         when(mockSource.path()).thenReturn(Optional.of(tempDir.toString()));
-        assertThatThrownBy(() -> loader.onStart(new WorkflowApplicationReady("ABC123")))
+        assertThatThrownBy(() -> loader.onStart(new WorkflowApplicationReadyEvent("ABC123")))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Duplicated workflow definition")
                 .hasMessageContaining("test-namespace")
