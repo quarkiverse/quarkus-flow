@@ -181,9 +181,9 @@
                         <artifactId>diagram-editor</artifactId>
                         <version>${openworkflowspec.diagram-editor.version}</version>
                         <exclusions>
-                            <!-- Required because @openworkflowspec/sdk is an npm dependency, not available on mvnpm as alpha version, but is already bundled in @openworkflowspec/diagram-editor's dist. -->
+                            <!-- Required because @serverlessworkflow/sdk is an npm dependency, not available on mvnpm as alpha version, but is already bundled in @serverlessworkflow/diagram-editor's dist. -->
                             <exclusion>
-                                <groupId>org.mvnpm.at.openworkflowspec</groupId>
+                                <groupId>org.mvnpm.at.serverlessworkflow</groupId>
                                 <artifactId>sdk</artifactId>
                             </exclusion>
                             <!-- D3 is already bundled in @openworkflowspec/diagram-editor, avoid version conflicts for transitive D3 dependencies. -->
