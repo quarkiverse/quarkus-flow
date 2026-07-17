@@ -1,7 +1,5 @@
 package io.quarkiverse.flow.langchain4j.it.schedulable;
 
-import jakarta.enterprise.context.RequestScoped;
-
 import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.agentic.declarative.Output;
 import dev.langchain4j.agentic.declarative.SequenceAgent;
@@ -25,26 +23,26 @@ public class MessageSummaryAgentic {
 
     public interface EmailSummaryAgentic {
 
-        @ScheduleOn(every = "PT3S")
-        @SequenceAgent(subAgents = { EmailSummary.class })
-        String emailSummary();
-
         @Output
         static String summary(@V("emailSummary") String emailSummary) {
             return summaryTemplate(emailSummary);
         }
+
+        @ScheduleOn(every = "PT3S")
+        @SequenceAgent(subAgents = { EmailSummary.class })
+        String emailSummary();
     }
 
     public interface WhatsAppSummaryAgentic {
-
-        @ScheduleOn(cron = "* * * * *")
-        @SequenceAgent(subAgents = { WhatsAppSummary.class })
-        String whatsAppSummary();
 
         @Output
         static String summary(@V("whatsAppSummary") String whatsAppSummary) {
             return summaryTemplate(whatsAppSummary);
         }
+
+        @ScheduleOn(cron = "* * * * *")
+        @SequenceAgent(subAgents = { WhatsAppSummary.class })
+        String whatsAppSummary();
     }
 
     public interface EmailSummary {
