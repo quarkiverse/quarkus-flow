@@ -48,12 +48,12 @@ public class FlowAgentsBuilderIT {
         assertThat(plan).hasSize(3);
     }
 
-    //    @Test
-    //    void checkParallelWorkflowInSequence() {
-    //        assertThat(moodPlannerAgent).isNotNull();
-    //        final List<Agents.EveningPlan> result = moodPlannerAgent.plan("I'm alone with my girlfriend");
-    //        assertThat(result).hasSize(3);
-    //    }
+    @Test
+    void checkParallelWorkflowInSequence() {
+        assertThat(moodPlannerAgent).isNotNull();
+        final List<Agents.EveningPlan> result = moodPlannerAgent.plan("I'm alone with my girlfriend");
+        assertThat(result).hasSize(3);
+    }
 
     @Test
     void checkConditionalRouterWorkflow() {

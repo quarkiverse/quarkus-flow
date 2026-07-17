@@ -6,6 +6,7 @@ import dev.langchain4j.agentic.declarative.SequenceAgent;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
+import io.quarkiverse.flow.langchain4j.annotations.ScheduleOn;
 
 public class MessageSummaryAgentic {
 
@@ -27,7 +28,7 @@ public class MessageSummaryAgentic {
             return summaryTemplate(emailSummary);
         }
 
-        //@ScheduleOn(every = "PT3S")
+        @ScheduleOn(every = "PT3S")
         @SequenceAgent(subAgents = { EmailSummary.class })
         String emailSummary();
     }
@@ -39,7 +40,7 @@ public class MessageSummaryAgentic {
             return summaryTemplate(whatsAppSummary);
         }
 
-        //@ScheduleOn(cron = "* * * * *")
+        @ScheduleOn(cron = "* * * * *")
         @SequenceAgent(subAgents = { WhatsAppSummary.class })
         String whatsAppSummary();
     }

@@ -24,7 +24,6 @@ public class FlowScheduleOllamaMockResource implements QuarkusTestResourceLifecy
                 .dynamicPort()
                 .notifier(new ConsoleNotifier(true))); // Enable verbose logging
         wireMock.start();
-        //WireMock.configureFor("0.0.0.0", wireMock.port());
 
         // Catch-all stub for any unmatched requests - helps debugging
         // Register FIRST so it has LOWEST priority
@@ -76,7 +75,6 @@ public class FlowScheduleOllamaMockResource implements QuarkusTestResourceLifecy
                         .withHeader("Content-Type", "application/json")
                         .withBody(ollamaResponse("8"))));
 
-        // Use 127.0.0.1 instead of localhost to avoid IPv4/IPv6 resolution issues in CI
         return Map.of("quarkus.langchain4j.ollama.base-url", wireMock.baseUrl());
     }
 
