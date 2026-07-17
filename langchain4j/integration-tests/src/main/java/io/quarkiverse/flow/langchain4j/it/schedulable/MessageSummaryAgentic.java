@@ -6,7 +6,6 @@ import dev.langchain4j.agentic.declarative.SequenceAgent;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
-import io.quarkiverse.flow.langchain4j.annotations.ScheduleOn;
 
 public class MessageSummaryAgentic {
 

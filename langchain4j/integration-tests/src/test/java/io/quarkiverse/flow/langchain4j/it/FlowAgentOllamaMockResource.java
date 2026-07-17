@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.client.WireMock;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
@@ -22,7 +21,7 @@ public class FlowAgentOllamaMockResource implements QuarkusTestResourceLifecycle
 
     @Override
     public Map<String, String> start() {
-        wireMock = new WireMockServer(options().port(9696));
+        wireMock = new WireMockServer(options().dynamicPort());
         wireMock.start();
         //WireMock.configureFor("0.0.0.0", wireMock.port());
 
@@ -97,7 +96,7 @@ public class FlowAgentOllamaMockResource implements QuarkusTestResourceLifecycle
                         .withBody(ollamaResponse("0.85"))));
 
         // Use 127.0.0.1 instead of localhost to avoid IPv4/IPv6 resolution issues in CI
-        return Map.of("quarkus.langchain4j.ollama.base-url", "http://localhost:9696");
+        return Map.of("quarkus.langchain4j.ollama.base-url", wireMock.baseUrl());
     }
 
     @Override
