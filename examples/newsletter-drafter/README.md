@@ -115,7 +115,6 @@ public record NewsletterDraft(String title, String lead, String body) {}
 The AI Inner loop is defined using LangChain4j's powerful `@SequenceAgent`. With a single annotation, Quarkus wires together multiple specialized agents:
 
 ```java
-@RegisterAiService
 public interface AutoDraftCriticAgent {
     @SequenceAgent(
         outputKey = "draft", 

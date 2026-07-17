@@ -13,7 +13,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.agentic.declarative.SequenceAgent;
 import io.quarkiverse.flow.langchain4j.annotations.ScheduleOn;
-import io.quarkiverse.langchain4j.RegisterAiService;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class FlowLangChain4JSchedulableProcessorTest {
@@ -33,7 +32,6 @@ public class FlowLangChain4JSchedulableProcessorTest {
 
     static class Agentic {
 
-        @RegisterAiService
         public interface StoryPlanner {
             @SequenceAgent(subAgents = {
                     StoryCreator.class

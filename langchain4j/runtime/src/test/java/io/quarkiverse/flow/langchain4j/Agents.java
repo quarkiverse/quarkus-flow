@@ -10,11 +10,9 @@ import dev.langchain4j.agentic.declarative.SequenceAgent;
 import dev.langchain4j.agentic.declarative.SupervisorAgent;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
-import io.quarkiverse.langchain4j.RegisterAiService;
 
 public class Agents {
 
-    @RegisterAiService
     public interface StoryCreatorWithConfigurableStyleEditor {
         @SequenceAgent(outputKey = "story", subAgents = {
                 CreativeWriter.class, AudienceEditor.class, StyleEditor.class
@@ -77,7 +75,6 @@ public class Agents {
 
     }
 
-    @RegisterAiService
     public interface SequenceWithA2AAgent {
         @SequenceAgent(outputKey = "finalResult", subAgents = {
                 RemoteDataFetcher.class, LocalProcessor.class
@@ -101,7 +98,6 @@ public class Agents {
     }
 
     // ParallelMapperAgent test
-    @RegisterAiService
     public interface SequenceWithParallelMapperAgent {
         @SequenceAgent(outputKey = "results", subAgents = {
                 ItemsGenerator.class, ItemsMapper.class
@@ -133,7 +129,6 @@ public class Agents {
     }
 
     // SupervisorAgent test
-    @RegisterAiService
     public interface SequenceWithSupervisorAgent {
         @SequenceAgent(outputKey = "finalResult", subAgents = {
                 TaskSupervisor.class
@@ -151,7 +146,6 @@ public class Agents {
     }
 
     // PlannerAgent test
-    @RegisterAiService
     public interface SequenceWithPlannerAgent {
         @SequenceAgent(outputKey = "finalResult", subAgents = {
                 TaskPlanner.class

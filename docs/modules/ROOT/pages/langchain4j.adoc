@@ -299,7 +299,7 @@ The `quarkus-flow-langchain4j` extension acts as an ahead-of-time compiler for L
 
 When you start your application in dev mode (`./mvnw quarkus:dev`):
 
-1. Quarkus Flow scans your `@RegisterAiService` interfaces for Agentic Workflow annotations
+1. Quarkus Flow scans your interfaces for Agentic Workflow annotations (like `@SequenceAgent` or `@ParallelAgent`)
 2. It generates a standalone `WorkflowDefinition` for each annotated method at build time
 3. It derives JSON Schema from the method parameters for input validation
 4. The generated workflows are registered as first-class citizens in the workflow registry

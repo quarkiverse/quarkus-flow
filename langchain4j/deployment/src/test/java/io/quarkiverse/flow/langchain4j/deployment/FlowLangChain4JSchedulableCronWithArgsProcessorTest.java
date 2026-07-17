@@ -14,7 +14,6 @@ import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.agentic.declarative.SequenceAgent;
 import dev.langchain4j.service.V;
 import io.quarkiverse.flow.langchain4j.annotations.ScheduleOn;
-import io.quarkiverse.langchain4j.RegisterAiService;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class FlowLangChain4JSchedulableCronWithArgsProcessorTest {
@@ -34,7 +33,6 @@ public class FlowLangChain4JSchedulableCronWithArgsProcessorTest {
 
     static class Agentic {
 
-        @RegisterAiService
         public interface StoryPlanner {
             @SequenceAgent(subAgents = {
                     StoryCreator.class
