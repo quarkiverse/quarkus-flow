@@ -5,13 +5,9 @@ import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
-import io.quarkiverse.langchain4j.RegisterAiService;
-import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.newsletter.domain.CriticReview;
 import org.acme.newsletter.domain.NewsletterDraft;
 
-@ApplicationScoped
-@RegisterAiService
 @SystemMessage("""
         You are a strict compliance and logic editor for a financial newsletter.
         Your job is to revise the provided draft based ONLY on the automated critic's feedback.

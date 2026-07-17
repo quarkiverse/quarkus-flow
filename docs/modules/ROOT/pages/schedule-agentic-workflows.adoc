@@ -74,7 +74,6 @@ Use `event` to start the workflow whenever a CloudEvent of the given type is rec
 
 [source,java]
 ----
-@RegisterAiService
 public interface ConferenceReviewerPlanner {
 
     @ScheduleOn(event = "proposal.submitted")

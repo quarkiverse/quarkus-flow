@@ -29,7 +29,6 @@
  * <pre>
  * {
  *     &#64;code
- *     &#64;RegisterAiService
  *     public interface StoryWriter {
  *         @SequenceAgent(subAgents = { Writer.class, Editor.class })
  *         String writeStory(String topic);

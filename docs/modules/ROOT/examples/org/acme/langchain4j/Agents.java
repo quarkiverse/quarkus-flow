@@ -9,20 +9,16 @@ import dev.langchain4j.agentic.declarative.SequenceAgent;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
-import io.quarkiverse.langchain4j.RegisterAiService;
 
 /**
  * Example LangChain4j agentic workflows backed by Quarkus Flow.
  * <p>
  * When the app boots, quarkus-langchain4j creates beans for these
- *
- * @RegisterAiService interfaces. The quarkus-flow-langchain4j extension transparently builds WorkflowDefinitions for
- *                    the
- *
- * @SequenceAgent and @ParallelAgent methods and registers them in the Quarkus Flow runtime.
- *                <p>
- *                You will see them under the Quarkus Flow Dev UI: - document.name ~=
- *                "story-creator-with-configurable-style-editor" - document.name ~= "evening-planner-agent"
+ * <p>
+ * {@link SequenceAgent} and {@link ParallelAgent} methods and registers them in the Quarkus Flow runtime.
+ * <p>
+ * You will see them under the Quarkus Flow Dev UI: - document.name ~=
+ * "story-creator-with-configurable-style-editor" - document.name ~= "evening-planner-agent"
  */
 public final class Agents {
 
@@ -49,7 +45,6 @@ public final class Agents {
      * The Quarkus Flow integration builds a workflow whose input schema matches the method parameters (topic, style,
      * audience). In Dev UI, you’ll see a workflow with a document name derived from this class.
      */
-    @RegisterAiService
     public interface StoryCreatorWithConfigurableStyleEditor {
 
         @SequenceAgent(outputKey = "story", subAgents = { CreativeWriter.class, AudienceEditor.class,
@@ -57,7 +52,6 @@ public final class Agents {
         String write(@V("topic") String topic, @V("style") String style, @V("audience") String audience);
     }
 
-    @RegisterAiService
     public interface CreativeWriter {
 
         @Agent(name = "Creative writer", description = "Draft a short story about a topic.", outputKey = "story")
@@ -73,7 +67,6 @@ public final class Agents {
         String draft(@V("topic") String topic);
     }
 
-    @RegisterAiService
     public interface AudienceEditor {
 
         @Agent(name = "Audience editor", description = "Adapt story to a target audience.", outputKey = "story")
@@ -91,7 +84,6 @@ public final class Agents {
         String adapt(@V("story") String story, @V("audience") String audience);
     }
 
-    @RegisterAiService
     public interface StyleEditor {
 
         @Agent(name = "Style editor", description = "Adapt story to a specific writing style.", outputKey = "story")
@@ -121,7 +113,6 @@ public final class Agents {
      * The Quarkus Flow integration builds a fork-join style workflow where each branch represents one of the sub-agents
      * below.
      */
-    @RegisterAiService
     public interface EveningPlannerAgent {
         /**
          * LC4J post-processor that builds the final EveningPlan from the values written by the sub-agents + original
@@ -159,7 +150,6 @@ public final class Agents {
         String audience();
     }
 
-    @RegisterAiService
     public interface DinnerAgent {
 
         @Agent(name = "Dinner planner", outputKey = "dinner")
@@ -176,7 +166,6 @@ public final class Agents {
         String suggestDinner(@V("city") String city, @V("mood") Mood mood);
     }
 
-    @RegisterAiService
     public interface DrinksAgent {
 
         @Agent(name = "Drinks planner", outputKey = "drinks")
@@ -192,7 +181,6 @@ public final class Agents {
         String suggestDrinks(@V("city") String city, @V("mood") Mood mood);
     }
 
-    @RegisterAiService
     public interface ActivityAgent {
 
         @Agent(name = "Activity planner", outputKey = "activity")

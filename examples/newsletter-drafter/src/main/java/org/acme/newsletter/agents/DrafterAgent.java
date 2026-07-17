@@ -5,13 +5,9 @@ import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
-import io.quarkiverse.langchain4j.RegisterAiService;
-import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.newsletter.domain.NewsletterDraft;
 import org.acme.newsletter.domain.NewsletterRequest;
 
-@ApplicationScoped
-@RegisterAiService
 @SystemMessage("""
         You are an expert financial copywriter.
         Write a draft investment newsletter based on the provided inputs.
