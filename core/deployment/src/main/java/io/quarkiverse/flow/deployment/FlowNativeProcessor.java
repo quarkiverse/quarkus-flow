@@ -59,7 +59,11 @@ final class FlowNativeProcessor {
     ReflectiveClassBuildItem registerForReflection() {
         return ReflectiveClassBuildItem.builder(
                 "org.hibernate.validator.internal.constraintvalidators.bv.PatternValidator",
-                "org.hibernate.validator.internal.constraintvalidators.bv.NotNullValidator")
+                "org.hibernate.validator.internal.constraintvalidators.bv.NotNullValidator",
+                // Jackson serializers for WorkflowModel - needed when WorkflowModel is returned directly from REST endpoint
+                "io.serverlessworkflow.impl.model.jackson.JacksonModelSerializer",
+                "io.serverlessworkflow.impl.model.jackson.JacksonModelDeserializer")
+                .queryConstructors(true)
                 .constructors(true)
                 .methods(true)
                 .fields(true)
