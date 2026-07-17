@@ -36,7 +36,7 @@ CREATE TABLE task_info_entity
     iteration           NUMBER(10, 0) NOT NULL,
     task_type           NUMBER(10, 0) NOT NULL CHECK (task_type IN (1, 2)),
     is_end_node         NUMBER(1, 0),
-    retry_attempt       NUMBER(10, 0),
+    retry_attempt       NUMBER(5, 0),
     instant             TIMESTAMP(6) WITH TIME ZONE,
     next_position       VARCHAR2(255),
     context             BLOB,

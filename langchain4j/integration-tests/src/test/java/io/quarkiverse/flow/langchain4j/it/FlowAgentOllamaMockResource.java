@@ -22,9 +22,11 @@ public class FlowAgentOllamaMockResource implements QuarkusTestResourceLifecycle
 
     @Override
     public Map<String, String> start() {
-        wireMock = new WireMockServer(options().dynamicPort());
+        wireMock = new WireMockServer(options()
+                .dynamicPort()
+                .bindAddress("127.0.0.1")); // Explicitly bind to IPv4 loopback
         wireMock.start();
-        WireMock.configureFor("localhost", wireMock.port());
+        WireMock.configureFor("127.0.0.1", wireMock.port());
 
         // CreativeWriter
         wireMock.stubFor(post(urlEqualTo("/api/chat"))
@@ -96,7 +98,8 @@ public class FlowAgentOllamaMockResource implements QuarkusTestResourceLifecycle
                         .withTransformerParameter("scoreCallCount", scoreCallCount)
                         .withBody(ollamaResponse("0.85"))));
 
-        return Map.of("quarkus.langchain4j.ollama.base-url", wireMock.baseUrl());
+        // Use 127.0.0.1 instead of localhost to avoid IPv4/IPv6 resolution issues in CI
+        return Map.of("quarkus.langchain4j.ollama.base-url", "http://127.0.0.1:" + wireMock.port());
     }
 
     @Override

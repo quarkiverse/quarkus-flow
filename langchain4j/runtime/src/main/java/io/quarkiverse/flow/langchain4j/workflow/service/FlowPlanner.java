@@ -58,7 +58,7 @@ public class FlowPlanner implements Planner {
     @Override
     public Action firstAction(PlanningContext planningContext) {
         final WorkflowInstance instance = definition.instance(planningContext.agenticScope());
-        planningContext.agenticScope().writeExecutionContext(FlowPlanner.class, this);
+        planningContext.agenticScope().writeExecutionContext(instance.id(), this);
 
         // Starts workflow on a different thread
         // Despite returning a CompletableFuture, the start() method executes on the same thread by design.

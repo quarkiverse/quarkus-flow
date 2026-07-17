@@ -57,11 +57,10 @@ jobs:
           else
             DB_ARGS="-Ddb=${{ matrix.kind }} -Dquarkus.test.profile=${{ matrix.kind }}"
           fi
-          mvn -B verify \
+          mvn -B clean verify \
             -pl langchain4j/integration-tests \
             $DB_ARGS \
             -DskipITs=false \
-            -Dquarkus.log.level=OFF \
             -Dquarkus.profile=${{ matrix.kind }} \
             -Dquarkus.langchain4j.ollama.devservices.enabled=false \
             -ntp

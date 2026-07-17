@@ -36,7 +36,7 @@ CREATE TABLE task_info_entity
     iteration           INTEGER      NOT NULL,
     task_type           INTEGER      NOT NULL CHECK (task_type IN (1, 2)),
     is_end_node         BOOLEAN,
-    retry_attempt       INTEGER,
+    retry_attempt       SMALLINT,
     instant             TIMESTAMP(6) WITH TIME ZONE,
     next_position       VARCHAR(255),
     context             VARBINARY,

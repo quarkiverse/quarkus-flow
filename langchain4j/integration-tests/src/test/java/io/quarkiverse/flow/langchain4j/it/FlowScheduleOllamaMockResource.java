@@ -20,24 +20,43 @@ public class FlowScheduleOllamaMockResource implements QuarkusTestResourceLifecy
 
     @Override
     public Map<String, String> start() {
-        wireMock = new WireMockServer(options().dynamicPort());
+        wireMock = new WireMockServer(options()
+                .dynamicPort()
+                .bindAddress("127.0.0.1") // Explicitly bind to IPv4 loopback
+                .notifier(new com.github.tomakehurst.wiremock.common.ConsoleNotifier(true))); // Enable verbose logging
         wireMock.start();
-        WireMock.configureFor("localhost", wireMock.port());
+        WireMock.configureFor("127.0.0.1", wireMock.port());
 
-        // ConferenceReviewer score (Integer 0..10) — matched on text unique to the
-        // proposal-scoring system prompt so it does not collide with the improver stub.
+        // Catch-all stub for any unmatched requests - helps debugging
+        // Register FIRST so it has LOWEST priority
         wireMock.stubFor(post(urlEqualTo("/api/chat"))
-                .withRequestBody(containing("single integer score from 0 to 10"))
-                .withRequestBody(containing("Quarkus Flow, Java and IA Orchestration"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
-                        .withBody(ollamaResponse("8"))));
+                        .withBody(ollamaResponse("5")))); // Default score if nothing else matches
+
+        // Email summary agent - match on unique text
+        wireMock.stubFor(post(urlEqualTo("/api/chat"))
+                .withRequestBody(containing("email tools"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(ollamaResponse(
+                                "You do not have emails!"))));
+
+        // WhatsApp summary agent - match on unique text
+        wireMock.stubFor(post(urlEqualTo("/api/chat"))
+                .withRequestBody(containing("WhatsApp tools"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(ollamaResponse(
+                                "You do not have messages!"))));
 
         // ConferenceReviewer improver — returns free-form, actionable feedback.
+        // Match on "improve and refine" which is unique to the improver prompt
         wireMock.stubFor(post(urlEqualTo("/api/chat"))
-                .withRequestBody(containing("improve and refine talk proposals"))
-                .withRequestBody(containing("Quarkus Flow, Java and IA Orchestration"))
+                .withRequestBody(containing("improve and refine"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -47,23 +66,19 @@ public class FlowScheduleOllamaMockResource implements QuarkusTestResourceLifecy
                                         + "Suggestions: expand the description with concrete examples and a clearer "
                                         + "title such as 'Streamlining Java and AI Orchestration with Quarkus Flow'."))));
 
+        // ConferenceReviewer score (Integer 0..10) — matched on text unique to the
+        // proposal-scoring system prompt so it does not collide with the improver stub.
+        // Match on "single integer" since that's unique to the scoring prompt
+        // REGISTERED LAST = HIGHEST PRIORITY (WireMock matches in reverse order)
         wireMock.stubFor(post(urlEqualTo("/api/chat"))
-                .withRequestBody(containing("You are an agent which use email tools to summary email inbox"))
+                .withRequestBody(containing("single integer"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
-                        .withBody(ollamaResponse(
-                                "You do not have emails!"))));
+                        .withBody(ollamaResponse("8"))));
 
-        wireMock.stubFor(post(urlEqualTo("/api/chat"))
-                .withRequestBody(containing("You are an agent which use WhatsApp tools to summary WhatsApp messages"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(ollamaResponse(
-                                "You do not have messages!"))));
-
-        return Map.of("quarkus.langchain4j.ollama.base-url", wireMock.baseUrl());
+        // Use 127.0.0.1 instead of localhost to avoid IPv4/IPv6 resolution issues in CI
+        return Map.of("quarkus.langchain4j.ollama.base-url", "http://127.0.0.1:" + wireMock.port());
     }
 
     @Override

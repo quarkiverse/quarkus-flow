@@ -9,7 +9,7 @@ import io.serverlessworkflow.impl.WorkflowApplication;
 /**
  * Provides a dedicated WorkflowApplication instance for runtime-created agentic workflows.
  * <p>
- * This separated instance prevents workflow definition caching conflicts between:
+ * This separate instance prevents workflow definition caching conflicts between:
  * <ul>
  * <li>Build-time generated workflows (registered in the main CDI WorkflowApplication)</li>
  * <li>Runtime-created workflows (programmatic API usage, often in tests)</li>

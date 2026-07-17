@@ -94,8 +94,8 @@ public abstract class AgenticFlow extends Flow {
         };
     }
 
-    protected Object executeAgent(DefaultAgenticScope scope, int subAgentIndex) {
-        FlowPlanner planner = scope.executionContextAs(FlowPlanner.class);
+    protected Object executeAgent(String instanceId, DefaultAgenticScope scope, int subAgentIndex) {
+        FlowPlanner planner = scope.executionContextAs(instanceId, FlowPlanner.class);
         return planner.executeAgent(subAgentIndex).join();
     }
 
