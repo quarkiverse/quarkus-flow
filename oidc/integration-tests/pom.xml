@@ -8,7 +8,7 @@
     </parent>
     <properties>
         <skipITs>true</skipITs>
-        <quarkus.wiremock.version>1.6.3</quarkus.wiremock.version>
+        <quarkus.wiremock.version>1.5.1</quarkus.wiremock.version>
     </properties>
 
     <artifactId>quarkus-flow-oidc-integration-tests</artifactId>

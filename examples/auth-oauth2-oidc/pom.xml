@@ -16,7 +16,7 @@
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.version>3.37.0</quarkus.platform.version>
         <quarkus.flow.version>1.0.0-SNAPSHOT</quarkus.flow.version>
-        <quarkus.wiremock.version>1.6.3</quarkus.wiremock.version>
+        <quarkus.wiremock.version>1.5.1</quarkus.wiremock.version>
         <surefire-plugin.version>3.5.6</surefire-plugin.version>
         <failsafe-plugin.version>3.5.4</failsafe-plugin.version>
         <version.assertj>3.27.7</version.assertj>
