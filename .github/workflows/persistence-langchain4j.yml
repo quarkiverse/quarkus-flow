@@ -57,7 +57,7 @@ jobs:
           else
             DB_ARGS="-Ddb=${{ matrix.kind }} -Dquarkus.test.profile=${{ matrix.kind }}"
           fi
-          mvn -B clean verify \
+          mvn -B verify \
             -pl langchain4j/integration-tests \
             $DB_ARGS \
             -DskipITs=false \
