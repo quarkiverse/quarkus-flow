@@ -5,10 +5,8 @@ import java.time.Instant;
 import java.util.function.Consumer;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.Job;
 import org.quartz.JobBuilder;
@@ -24,6 +22,7 @@ import org.quartz.TriggerBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.quarkus.arc.lookup.LookupUnlessProperty;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
@@ -32,6 +31,7 @@ import io.serverlessworkflow.impl.scheduler.EventWorkflowScheduler;
 import io.serverlessworkflow.impl.scheduler.ScheduledInstanceRunnable;
 
 @ApplicationScoped
+@LookupUnlessProperty(name = "quarkus.scheduler.enabled", stringValue = "false")
 public class FlowQuartz extends EventWorkflowScheduler {
 
     private static final String DEFINITION_VERSION = "definitionVersion";
@@ -40,11 +40,8 @@ public class FlowQuartz extends EventWorkflowScheduler {
 
     private final static Logger logger = LoggerFactory.getLogger(FlowQuartz.class);
 
-    @ConfigProperty(name = "quarkus.scheduler.enabled", defaultValue = "true")
-    Boolean schedulerEnabled;
-
     @Inject
-    Instance<Scheduler> scheduler;
+    Scheduler scheduler;
 
     public static class QuartzJob implements Job {
         @Inject
@@ -75,13 +72,6 @@ public class FlowQuartz extends EventWorkflowScheduler {
     }
 
     private Cancellable scheduleJob(WorkflowDefinition definition, Consumer<TriggerBuilder<Trigger>> setup) {
-        if (!schedulerEnabled || scheduler.isUnsatisfied()) {
-            logger.debug("Scheduler is disabled (quarkus.scheduler.enabled), skipping schedule of workflow {}",
-                    definition.id());
-            return () -> {
-            };
-        }
-        Scheduler quartzScheduler = scheduler.get();
         JobDetail job = JobBuilder.newJob(QuartzJob.class).usingJobData(DEFINITION_NAMESPACE, definition.id().namespace())
                 .usingJobData(DEFINITION_NAME, definition.id().name())
                 .usingJobData(DEFINITION_VERSION, definition.id().version()).build();
@@ -89,13 +79,13 @@ public class FlowQuartz extends EventWorkflowScheduler {
         setup.accept(triggerBuilder);
         Trigger trigger = triggerBuilder.build();
         try {
-            quartzScheduler.scheduleJob(job, trigger);
+            scheduler.scheduleJob(job, trigger);
         } catch (SchedulerException e) {
             throw new IllegalStateException("Error scheduling workflow definition " + definition.id(), e);
         }
         return () -> {
             try {
-                quartzScheduler.unscheduleJob(trigger.getKey());
+                scheduler.unscheduleJob(trigger.getKey());
             } catch (SchedulerException e) {
                 logger.error("Error unscheduling job with key {} for definition {}", trigger.getKey(),
                         definition.id(),

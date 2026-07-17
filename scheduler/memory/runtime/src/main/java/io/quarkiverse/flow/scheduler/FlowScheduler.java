@@ -7,10 +7,7 @@ import java.util.function.Consumer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import io.quarkus.arc.lookup.LookupUnlessProperty;
 import io.quarkus.scheduler.Scheduler;
 import io.quarkus.scheduler.Scheduler.JobDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinition;
@@ -20,18 +17,14 @@ import io.serverlessworkflow.impl.scheduler.ExecutorServiceWorkflowScheduler;
 import io.serverlessworkflow.impl.scheduler.ScheduledInstanceRunnable;
 
 @ApplicationScoped
+@LookupUnlessProperty(name = "quarkus.scheduler.enabled", stringValue = "false")
 public class FlowScheduler extends EventWorkflowScheduler {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(FlowScheduler.class.getName());
 
     @Inject
     Scheduler scheduler;
 
     @Inject
     ScheduledExecutorService service;
-
-    @ConfigProperty(name = "quarkus.scheduler.enabled", defaultValue = "true")
-    Boolean schedulerEnabled;
 
     @Override
     public Cancellable scheduleEvery(WorkflowDefinition definition, Duration interval) {
@@ -50,13 +43,6 @@ public class FlowScheduler extends EventWorkflowScheduler {
 
     @SuppressWarnings("rawtypes")
     private Cancellable scheduleJob(WorkflowDefinition definition, Consumer<JobDefinition> setup) {
-        if (!schedulerEnabled) {
-            LOGGER.debug("Scheduler is disabled (quarkus.scheduler.enabled), skipping schedule of workflow {}",
-                    definition.id());
-            return () -> {
-            };
-        }
-
         String id = jobId(definition);
         JobDefinition job = scheduler.newJob(id).setTask(t -> ScheduledInstanceRunnable.runScheduledInstance(definition,
                 definition.application().modelFactory().fromNull()));

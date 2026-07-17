@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.scheduler;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import io.quarkiverse.flow.recorders.WorkflowApplicationBuilderCustomizer;
@@ -12,10 +13,12 @@ import io.serverlessworkflow.impl.WorkflowApplication;
 public class FlowSchedulerApplicationBuilderCustomizer implements WorkflowApplicationBuilderCustomizer {
 
     @Inject
-    FlowScheduler scheduler;
+    Instance<FlowScheduler> scheduler;
 
     @Override
     public void customize(WorkflowApplication.Builder builder) {
-        builder.withScheduler(scheduler);
+        if (scheduler.isResolvable()) {
+            builder.withScheduler(scheduler.get());
+        }
     }
 }

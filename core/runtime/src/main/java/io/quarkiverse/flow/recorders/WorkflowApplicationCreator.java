@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.config.FlowMetricsConfig;
 import io.quarkiverse.flow.config.FlowTracingConfig;
+import io.quarkiverse.flow.internal.NoOpScheduler;
 import io.quarkiverse.flow.metrics.MicrometerExecutionListener;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
 import io.quarkiverse.flow.providers.FaultToleranceProvider;
@@ -98,6 +99,9 @@ public class WorkflowApplicationCreator {
     LaunchMode launchMode;
 
     @Inject
+    NoOpScheduler scheduler;
+
+    @Inject
     FlowTracingConfig tracingConfig;
 
     @Inject
@@ -115,6 +119,7 @@ public class WorkflowApplicationCreator {
         }
 
         builder.withContextFactory(new JavaModelFactory()).withModelFactory(new JacksonModelFactory());
+        builder.withScheduler(scheduler);
 
         injectAppId(builder);
         injectExecutorServiceFactory(builder);
