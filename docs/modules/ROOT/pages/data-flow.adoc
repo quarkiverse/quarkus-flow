@@ -127,9 +127,67 @@ call("auditStep")
 * **Keep tasks ignorant:** Use `inputFrom` heavily. A task should only know about the exact data it needs to execute, not the entire workflow payload.
 * **Lean on Java Records:** If you are building Agentic workflows or complex orchestrations, define your workflow context as a Java Record. Using the typed Java function overloads for `inputFrom` and `exportAs` provides compile-time safety that jq expressions cannot.
 
+== 5. jq Security Best Practices
+
+`jq` expressions in Quarkus Flow are part of the workflow definition itself. They
+are loaded from trusted YAML, JSON, or Java files on your project's classpath during build time when the workflow is parsed, then
+evaluated against runtime data as plain JSON values.
+
+That means untrusted runtime input does not become executable `jq` code. For
+example, if a workflow contains:
+
+[source,yaml]
+----
+do:
+  - processInput:
+      set:
+        result: ${ .userInput }
+----
+
+and the caller sends `{"userInput":"${ system(\"rm -rf /\") }"}`, Quarkus Flow
+treats that value as a literal string. It is data flowing through a pre-defined
+expression, not a new expression compiled at runtime.
+
+[IMPORTANT]
+Workflow definition files should still be treated as trusted source code. Apply
+version control, code review, and access control to them just as you would for
+application code.
+
+Complex regular expressions inside trusted workflow definitions, including ones
+backed by Java DSL filters, can still be expensive to evaluate. When you
+process untrusted or high-volume input, keep task timeout budgets explicit
+instead of relying on defaults. The Serverless
+Workflow DSL defines task timeouts in the
+https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#timeout[`timeout`
+section of the specification].
+
+For example, this regex-heavy task is limited to 30 seconds:
+
+[source,yaml]
+----
+do:
+  - validateEmail:
+      set:
+        isValidEmail: ${ .userInput | test("^([[:alnum:]]+[._-]?){1,20}@([[:alnum:]]+[.-]?)+[.][[:alpha:]]{2,}$") }
+      timeout:
+        after:
+          seconds: 30
+----
+
+=== jq Timeout recommendations
+
+As a practical starting point:
+
+* simple extraction and field projection: 5 to 10 seconds
+* regex operations such as `match`, `test`, `gsub`, or `split`: 10 to 30 seconds
+* larger transformations over sizeable payloads: 30 to 60 seconds
+
+Tune those values to your payload size and latency budget, and pair them with
+workflow-level retries only when the operation is safe to repeat.
+
 For a compact list of all DSL data flow operators, see the xref:dsl-cheatsheet.adoc[Java DSL cheatsheet].
 
-== 5. Which one should I use?
+== 6. Which one should I use?
 
 A practical rule of thumb:
 
