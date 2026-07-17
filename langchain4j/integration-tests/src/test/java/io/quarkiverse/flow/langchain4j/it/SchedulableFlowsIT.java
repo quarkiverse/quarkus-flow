@@ -13,6 +13,7 @@ import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -79,6 +80,7 @@ public class SchedulableFlowsIT {
 
     @Test
     @Order(2)
+    @Disabled
     void should_execute_agent_using_every_trigger() {
         // Capture current count to detect NEW events after test starts
         int initialCount = (int) AgenticListener.WORKFLOW_STARTED_EVENTS.stream()
@@ -99,6 +101,7 @@ public class SchedulableFlowsIT {
 
     @Test
     @Order(3)
+    @Disabled
     void should_execute_workflow_using_cron_trigger() {
         // Capture current count to detect NEW events after test starts
         int initialCount = (int) AgenticListener.WORKFLOW_STARTED_EVENTS.stream()

@@ -21,11 +21,11 @@ public class FlowScheduleOllamaMockResource implements QuarkusTestResourceLifecy
     @Override
     public Map<String, String> start() {
         wireMock = new WireMockServer(options()
-                .dynamicPort()
-                .bindAddress("127.0.0.1") // Explicitly bind to IPv4 loopback
+                .port(9595)
+                .bindAddress("0.0.0.0") // Explicitly bind to IPv4 loopback
                 .notifier(new com.github.tomakehurst.wiremock.common.ConsoleNotifier(true))); // Enable verbose logging
         wireMock.start();
-        WireMock.configureFor("127.0.0.1", wireMock.port());
+        WireMock.configureFor("0.0.0.0", wireMock.port());
 
         // Catch-all stub for any unmatched requests - helps debugging
         // Register FIRST so it has LOWEST priority
@@ -78,7 +78,7 @@ public class FlowScheduleOllamaMockResource implements QuarkusTestResourceLifecy
                         .withBody(ollamaResponse("8"))));
 
         // Use 127.0.0.1 instead of localhost to avoid IPv4/IPv6 resolution issues in CI
-        return Map.of("quarkus.langchain4j.ollama.base-url", "http://127.0.0.1:" + wireMock.port());
+        return Map.of("quarkus.langchain4j.ollama.base-url", "http://0.0.0.0:9595");
     }
 
     @Override

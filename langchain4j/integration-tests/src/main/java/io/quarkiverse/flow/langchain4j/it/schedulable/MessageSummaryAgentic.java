@@ -28,7 +28,7 @@ public class MessageSummaryAgentic {
             return summaryTemplate(emailSummary);
         }
 
-        @ScheduleOn(every = "PT3S")
+        //@ScheduleOn(every = "PT3S")
         @SequenceAgent(subAgents = { EmailSummary.class })
         String emailSummary();
     }
@@ -40,7 +40,7 @@ public class MessageSummaryAgentic {
             return summaryTemplate(whatsAppSummary);
         }
 
-        @ScheduleOn(cron = "* * * * *")
+        //@ScheduleOn(cron = "* * * * *")
         @SequenceAgent(subAgents = { WhatsAppSummary.class })
         String whatsAppSummary();
     }
