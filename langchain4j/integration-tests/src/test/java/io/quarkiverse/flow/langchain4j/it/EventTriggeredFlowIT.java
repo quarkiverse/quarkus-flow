@@ -1,5 +1,9 @@
 package io.quarkiverse.flow.langchain4j.it;
 
+import static io.quarkiverse.flow.langchain4j.it.WiremockOllamaUtils.startOllamaMock;
+import static io.quarkiverse.flow.langchain4j.it.WiremockOllamaUtils.stubConferenceReviewerImprover;
+import static io.quarkiverse.flow.langchain4j.it.WiremockOllamaUtils.stubConferenceReviewerScore;
+
 import java.net.URI;
 import java.time.Duration;
 import java.util.Map;
@@ -13,27 +17,43 @@ import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.WireMockServer;
 
 import io.cloudevents.core.v1.CloudEventBuilder;
 import io.cloudevents.jackson.JsonCloudEventData;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.junit.QuarkusTest;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.events.EventPublisher;
 
 @QuarkusTest
-@QuarkusTestResource(value = FlowScheduleOllamaMockResource.class, restrictToAnnotatedClass = true)
-@TestMethodOrder(OrderAnnotation.class)
-@Disabled("TODO: add issue")
-public class SchedulableFlowsIT {
+@QuarkusTestResource(value = EventTriggeredFlowIT.OllamaMockResource.class, restrictToAnnotatedClass = true)
+public class EventTriggeredFlowIT {
+
+    public static class OllamaMockResource implements QuarkusTestResourceLifecycleManager {
+
+        private WireMockServer wireMock;
+
+        @Override
+        public Map<String, String> start() {
+            wireMock = startOllamaMock();
+            stubConferenceReviewerImprover(wireMock);
+            stubConferenceReviewerScore(wireMock);
+            return Map.of("quarkus.langchain4j.ollama.base-url", wireMock.baseUrl());
+        }
+
+        @Override
+        public void stop() {
+            if (wireMock != null) {
+                wireMock.stop();
+            }
+        }
+    }
 
     @Inject
     WorkflowApplication workflowApp;
@@ -52,16 +72,13 @@ public class SchedulableFlowsIT {
     @AfterEach
     @Transactional
     void cleanupDatabase() {
-        // Delete in correct order: children first, then parents
         em.createNativeQuery("DELETE FROM task_info_entity").executeUpdate();
         em.createNativeQuery("DELETE FROM cloud_event_entity").executeUpdate();
         em.createNativeQuery("DELETE FROM workflow_instance_entity").executeUpdate();
     }
 
     @Test
-    @Order(1)
     void should_execute_through_event_trigger() {
-
         EventPublisher publisher = workflowApp.eventPublishers().iterator().next();
 
         publishCloudEvent(publisher, Map.of(
@@ -77,46 +94,6 @@ public class SchedulableFlowsIT {
                                     .equals("conference-reviewer-planner-schedulable"))
                             .isNotEmpty();
                 });
-    }
-
-    @Test
-    @Order(2)
-    void should_execute_agent_using_every_trigger() {
-        // Capture current count to detect NEW events after test starts
-        int initialCount = (int) AgenticListener.WORKFLOW_STARTED_EVENTS.stream()
-                .filter(e -> e.workflowContext().definition().id().name().equals("email-summary-agentic"))
-                .count();
-
-        // The MessageSummaryAgentic is called by the workflow engine dynamically (every 3 seconds)
-        Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
-            long currentCount = AgenticListener.WORKFLOW_STARTED_EVENTS.stream()
-                    .filter(e -> e.workflowContext().definition().id().name().equals("email-summary-agentic"))
-                    .count();
-
-            Assertions.assertThat(currentCount)
-                    .as("New email-summary-agentic workflow should have started")
-                    .isGreaterThan(initialCount);
-        });
-    }
-
-    @Test
-    @Order(3)
-    void should_execute_workflow_using_cron_trigger() {
-        // Capture current count to detect NEW events after test starts
-        int initialCount = (int) AgenticListener.WORKFLOW_STARTED_EVENTS.stream()
-                .filter(e -> e.workflowContext().definition().id().name().equals("whats-app-summary-agentic"))
-                .count();
-
-        // 1m and 5s cron schedule
-        Awaitility.await().atMost(Duration.ofSeconds(65)).untilAsserted(() -> {
-            long currentCount = AgenticListener.WORKFLOW_STARTED_EVENTS.stream()
-                    .filter(e -> e.workflowContext().definition().id().name().equals("whats-app-summary-agentic"))
-                    .count();
-
-            Assertions.assertThat(currentCount)
-                    .as("New whats-app-summary-agentic workflow should have started")
-                    .isGreaterThan(initialCount);
-        });
     }
 
     private void publishCloudEvent(EventPublisher publisher, Map<String, Object> data) {

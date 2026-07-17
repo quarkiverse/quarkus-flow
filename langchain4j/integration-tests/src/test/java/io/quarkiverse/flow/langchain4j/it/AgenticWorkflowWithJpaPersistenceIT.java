@@ -23,7 +23,7 @@ import io.serverlessworkflow.impl.WorkflowModel;
  * workflow-completion lifecycle (completed instances are not retained, so counting rows is meaningless).
  */
 @QuarkusTest
-@QuarkusTestResource(FlowAgentOllamaMockResource.class)
+@QuarkusTestResource(value = FlowAgentOllamaMockResource.class, restrictToAnnotatedClass = true)
 public class AgenticWorkflowWithJpaPersistenceIT {
 
     @Inject
