@@ -1,14 +1,14 @@
 import { LitElement, html, css } from 'lit';
 import '@vaadin/progress-bar';
 import {
-  renderServerlessWorkflowDiagramEditor,
-  unmountServerlessWorkflowDiagramEditor,
+  renderOpenWorkflowSpecDiagramEditor,
+  unmountOpenWorkflowSpecDiagramEditor,
 } from '../bundle.js';
 import { JsonRpc } from 'jsonrpc';
 
 const diagramEditorStylesUrl = new URL('../bundle.css', import.meta.url).href;
 
-export class ServerlessWorkflowDiagramEditorElement extends LitElement {
+export class OpenWorkflowSpecDiagramEditorElement extends LitElement {
   _workflowDefinition = null;
 
   static properties = {
@@ -67,7 +67,7 @@ export class ServerlessWorkflowDiagramEditorElement extends LitElement {
             </div>
           `
         : html`
-            <div id="container" class="serverless-workflow-diagram-editor-container"></div>
+            <div id="container" class="openworkflowspec-diagram-editor-container"></div>
           `}
     `;
   }
@@ -116,7 +116,7 @@ export class ServerlessWorkflowDiagramEditorElement extends LitElement {
       return;
     }
 
-    renderServerlessWorkflowDiagramEditor(container, {
+    renderOpenWorkflowSpecDiagramEditor(container, {
       content: this._workflowDefinition,
       isReadOnly: this.readonly,
       workflowKey: this.workflowKey,
@@ -127,12 +127,12 @@ export class ServerlessWorkflowDiagramEditorElement extends LitElement {
     const container = this.renderRoot?.querySelector('#container');
 
     if (container) {
-      unmountServerlessWorkflowDiagramEditor(container);
+      unmountOpenWorkflowSpecDiagramEditor(container);
     }
   }
 }
 
 customElements.define(
-  'qwc-serverless-workflow-diagram-editor',
-  ServerlessWorkflowDiagramEditorElement
+  'qwc-openworkflowspec-diagram-editor',
+  OpenWorkflowSpecDiagramEditorElement
 );

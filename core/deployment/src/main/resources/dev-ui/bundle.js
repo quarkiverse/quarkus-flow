@@ -1,11 +1,11 @@
 import * as React from "react";
 import { createRoot } from "react-dom/client";
-import { DiagramEditor } from "@serverlessworkflow/diagram-editor";
-import "@serverlessworkflow/diagram-editor/styles.css";
+import { DiagramEditor } from "@openworkflowspec/diagram-editor";
+import "@openworkflowspec/diagram-editor/styles.css";
 
 const roots = new WeakMap();
 
-export function renderServerlessWorkflowDiagramEditor(container, props) {
+export function renderOpenWorkflowSpecDiagramEditor(container, props) {
   let root = roots.get(container);
 
   if (!root) {
@@ -18,7 +18,7 @@ export function renderServerlessWorkflowDiagramEditor(container, props) {
   return root;
 }
 
-export function unmountServerlessWorkflowDiagramEditor(container) {
+export function unmountOpenWorkflowSpecDiagramEditor(container) {
   const root = roots.get(container);
 
   if (root) {

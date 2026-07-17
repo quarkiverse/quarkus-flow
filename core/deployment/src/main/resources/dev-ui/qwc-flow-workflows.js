@@ -7,7 +7,7 @@ import '@vaadin/icon';
 import '@vaadin/dialog';
 import { dialogRenderer } from '@vaadin/dialog/lit.js';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
-import './components/serverless-workflow-diagram-editor.js';
+import './components/openworkflowspec-diagram-editor.js';
 import './qwc-flow-workflow-execution.js';
 import { themeState } from 'theme-state';
 
@@ -138,11 +138,11 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
 
     _diagramEditorContent() {
         return html`
-            <qwc-serverless-workflow-diagram-editor
+            <qwc-openworkflowspec-diagram-editor
                     .workflow=${this._currentDiagramEditorWorkflow}
                     .readonly=${true}
                     .workflowKey="show-${this._generateDiagramEditorId(this._currentDiagramEditorWorkflow.id)}">
-            </qwc-serverless-workflow-diagram-editor>
+            </qwc-openworkflowspec-diagram-editor>
         `;
     }
 
