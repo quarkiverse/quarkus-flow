@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.quartz;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import io.quarkiverse.flow.recorders.WorkflowApplicationBuilderCustomizer;
@@ -12,10 +13,12 @@ import io.serverlessworkflow.impl.WorkflowApplication;
 public class FlowQuartzApplicationBuilderCustomizer implements WorkflowApplicationBuilderCustomizer {
 
     @Inject
-    FlowQuartz scheduler;
+    Instance<FlowQuartz> scheduler;
 
     @Override
     public void customize(WorkflowApplication.Builder builder) {
-        builder.withScheduler(scheduler);
+        if (scheduler.isResolvable()) {
+            builder.withScheduler(scheduler.get());
+        }
     }
 }
