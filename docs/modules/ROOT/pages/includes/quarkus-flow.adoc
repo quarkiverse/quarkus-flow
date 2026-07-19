@@ -1592,6 +1592,8 @@ endif::add-copy-button-to-config-props[]
 --
 Enables or disables metrics collection for Quarkus Flow.
 
+When not explicitly configured, metrics are auto-enabled if Micrometer is present on the classpath, and auto-disabled otherwise.
+
 When set to `false`, no metrics are published.
 
 *Restart required:* Changing this property requires an application restart to take effect.
@@ -1605,7 +1607,7 @@ Environment variable: `+++QUARKUS_FLOW_METRICS_ENABLED+++`
 endif::add-copy-button-to-env-var[]
 --
 |boolean
-|`+++true+++`
+|
 
 a| [[quarkus-flow_quarkus-flow-metrics-prefix]] [.property-path]##link:#quarkus-flow_quarkus-flow-metrics-prefix[`+++quarkus.flow.metrics.prefix+++`]##
 ifdef::add-copy-button-to-config-props[]

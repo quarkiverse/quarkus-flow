@@ -107,15 +107,11 @@ public class WorkflowApplicationCreator {
     @Inject
     FlowMetricsConfig metricsConfig;
 
-    public WorkflowApplication create(boolean isMicrometerSupported) {
+    public WorkflowApplication create() {
         final Builder builder = WorkflowApplication.builder();
         if (tracingConfig.enabled().orElse(launchMode.isDevOrTest())) {
             LOG.debug("Flow: Tracing enabled");
             builder.withListener(new TraceLoggerExecutionListener());
-        }
-        if (metricsConfig.enabled() && !isMicrometerSupported) {
-            LOG.warn("Quarkus Flow metrics enabled but Micrometer not available. " +
-                    "Add 'quarkus-micrometer-registry-prometheus' dependency to enable metrics.");
         }
 
         builder.withContextFactory(new JavaModelFactory()).withModelFactory(new JacksonModelFactory());
@@ -130,7 +126,7 @@ public class WorkflowApplicationCreator {
         injectConfigManager(builder);
         injectHttpClientProvider(builder);
         injectMicrometerListener(builder);
-        injectFaultTolerance(builder, isMicrometerSupported);
+        injectFaultTolerance(builder);
         injectCustomListeners(builder);
 
         customizers.stream().forEachOrdered(customizer -> customizer.customize(builder));
@@ -251,7 +247,7 @@ public class WorkflowApplicationCreator {
         builder.withExpressionFactory(new JQExpressionFactory(jqScopeSupplier));
     }
 
-    private void injectFaultTolerance(Builder builder, boolean isMicrometerSupported) {
+    private void injectFaultTolerance(Builder builder) {
         LOG.debug("Flow: Bound FaultToleranceProvider bean: {}", faultToleranceProvider.getClass().getName());
         builder.withCallableProxy(new CallableTaskProxyBuilder() {
             @Override
@@ -260,7 +256,7 @@ public class WorkflowApplicationCreator {
                     String workflowName = workflowContext.definition().workflow().getDocument().getName();
                     String taskName = taskContext.taskName();
                     TypedGuard<CompletionStage<WorkflowModel>> guard = faultToleranceProvider
-                            .guardFor(new WorkflowTaskContext(workflowName, taskName, isMicrometerSupported));
+                            .guardFor(new WorkflowTaskContext(workflowName, taskName));
 
                     return guard.get(() -> delegate.apply(workflowContext, taskContext, input)).toCompletableFuture();
                 };

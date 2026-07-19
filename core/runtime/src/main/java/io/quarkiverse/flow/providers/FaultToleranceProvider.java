@@ -135,7 +135,7 @@ public class FaultToleranceProvider {
             circuitBreakerBuilder.failOn(DEFAULT_CLASSES);
         }
 
-        if (ctx.isMicrometerSupported() && flowMetricsConfig.enabled()) {
+        if (flowMetricsConfig.enabled().orElse(true)) {
             circuitBreakerBuilder
                     .onFailure(() -> sendCircuitBreakerFailure(ctx))
                     .onPrevented(() -> sendCircuitBreakerPrevented(ctx))
@@ -151,7 +151,7 @@ public class FaultToleranceProvider {
             HttpClientConfig.ResilienceConfig resilienceConfig) {
         TypedGuard.Builder.RetryBuilder<CompletionStage<WorkflowModel>> retryBuilder = builder.withRetry();
 
-        if (ctx.isMicrometerSupported() && flowMetricsConfig.enabled()) {
+        if (flowMetricsConfig.enabled().orElse(true)) {
             retryBuilder
                     .onRetry(() -> sendOnRetryMetric(ctx))
                     .onFailure(() -> sendOnFailureMetric(ctx));
