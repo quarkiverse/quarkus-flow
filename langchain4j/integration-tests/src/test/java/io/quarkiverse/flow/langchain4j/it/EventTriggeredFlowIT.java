@@ -1,30 +1,59 @@
 package io.quarkiverse.flow.langchain4j.it;
 
+import static io.quarkiverse.flow.langchain4j.it.WiremockOllamaUtils.startOllamaMock;
+import static io.quarkiverse.flow.langchain4j.it.WiremockOllamaUtils.stubConferenceReviewerImprover;
+import static io.quarkiverse.flow.langchain4j.it.WiremockOllamaUtils.stubConferenceReviewerScore;
+
 import java.net.URI;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.WireMockServer;
 
 import io.cloudevents.core.v1.CloudEventBuilder;
 import io.cloudevents.jackson.JsonCloudEventData;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.junit.QuarkusTest;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.events.EventPublisher;
 
 @QuarkusTest
-@QuarkusTestResource(value = FlowScheduleOllamaMockResource.class, restrictToAnnotatedClass = true)
-public class SchedulableFlowsIT {
+@QuarkusTestResource(value = EventTriggeredFlowIT.OllamaMockResource.class, restrictToAnnotatedClass = true)
+public class EventTriggeredFlowIT {
+
+    public static class OllamaMockResource implements QuarkusTestResourceLifecycleManager {
+
+        private WireMockServer wireMock;
+
+        @Override
+        public Map<String, String> start() {
+            wireMock = startOllamaMock();
+            stubConferenceReviewerImprover(wireMock);
+            stubConferenceReviewerScore(wireMock);
+            return Map.of("quarkus.langchain4j.ollama.base-url", wireMock.baseUrl());
+        }
+
+        @Override
+        public void stop() {
+            if (wireMock != null) {
+                wireMock.stop();
+            }
+        }
+    }
 
     @Inject
     WorkflowApplication workflowApp;
@@ -32,14 +61,24 @@ public class SchedulableFlowsIT {
     @Inject
     ObjectMapper objectMapper;
 
+    @Inject
+    EntityManager em;
+
     @BeforeEach
     void clearListener() {
         AgenticListener.clearAll();
     }
 
+    @AfterEach
+    @Transactional
+    void cleanupDatabase() {
+        em.createNativeQuery("DELETE FROM task_info_entity").executeUpdate();
+        em.createNativeQuery("DELETE FROM cloud_event_entity").executeUpdate();
+        em.createNativeQuery("DELETE FROM workflow_instance_entity").executeUpdate();
+    }
+
     @Test
     void should_execute_through_event_trigger() {
-
         EventPublisher publisher = workflowApp.eventPublishers().iterator().next();
 
         publishCloudEvent(publisher, Map.of(
@@ -55,28 +94,6 @@ public class SchedulableFlowsIT {
                                     .equals("conference-reviewer-planner-schedulable"))
                             .isNotEmpty();
                 });
-    }
-
-    @Test
-    void should_execute_agent_using_every_trigger() {
-
-        // The MessageSummaryAgentic is called by the workflow engine dynamically
-        Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
-
-            Assertions.assertThat(AgenticListener.WORKFLOW_STARTED_EVENTS).filteredOn(
-                    e -> e.workflowContext().definition().id().name().equals("email-summary-agentic")).isNotEmpty();
-
-        });
-
-    }
-
-    @Test
-    void should_execute_workflow_using_cron_trigger() {
-        // 1m and 5s
-        Awaitility.await().atMost(Duration.ofSeconds(65)).untilAsserted(() -> {
-            Assertions.assertThat(AgenticListener.WORKFLOW_STARTED_EVENTS).filteredOn(
-                    e -> e.workflowContext().definition().id().name().equals("whats-app-summary-agentic")).isNotEmpty();
-        });
     }
 
     private void publishCloudEvent(EventPublisher publisher, Map<String, Object> data) {

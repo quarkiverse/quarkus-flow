@@ -20,7 +20,7 @@ When you add the `quarkus-flow-langchain4j` extension to your project, Quarkus F
 It does not run a separate "AI Engine" at runtime. Instead, during the Quarkus build phase, it translates LangChain4j semantics directly into the CNCF Serverless Workflow vocabulary.
 
 === The Compilation Process
-1. **Scanning:** The extension scans your `@RegisterAiService` interfaces for methods annotated with Agentic routing annotations (like `@SequenceAgent` or `@ParallelAgent`).
+1. **Scanning:** The extension scans your interfaces for methods annotated with Agentic routing annotations (like `@SequenceAgent` or `@ParallelAgent`).
 2. **Translation:** For each annotated method, it programmatically generates a standard `WorkflowDefinition` bean.
 * A `@SequenceAgent` is translated into a linear sequence of standard `call` tasks.
 * A `@ParallelAgent` is translated into a `fork` / `join` state topology.

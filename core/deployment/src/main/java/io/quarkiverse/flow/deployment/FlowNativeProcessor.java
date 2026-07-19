@@ -21,6 +21,7 @@ import io.serverlessworkflow.impl.executors.TaskExecutorFactory;
 import io.serverlessworkflow.impl.executors.func.DataTypeConverter;
 import io.serverlessworkflow.impl.executors.http.HttpRequestDecorator;
 import io.serverlessworkflow.impl.expressions.ExpressionFactory;
+import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener;
 
 final class FlowNativeProcessor {
 
@@ -33,6 +34,7 @@ final class FlowNativeProcessor {
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(TaskExecutorFactory.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(EventConsumer.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(EventPublisher.class.getName()));
+        sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(WorkflowExecutionListener.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(WorkflowModelFactory.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(HttpRequestDecorator.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(JWTConverter.class.getName()));
@@ -59,7 +61,11 @@ final class FlowNativeProcessor {
     ReflectiveClassBuildItem registerForReflection() {
         return ReflectiveClassBuildItem.builder(
                 "org.hibernate.validator.internal.constraintvalidators.bv.PatternValidator",
-                "org.hibernate.validator.internal.constraintvalidators.bv.NotNullValidator")
+                "org.hibernate.validator.internal.constraintvalidators.bv.NotNullValidator",
+                // Jackson serializers for WorkflowModel - needed when WorkflowModel is returned directly from REST endpoint
+                "io.serverlessworkflow.impl.model.jackson.JacksonModelSerializer",
+                "io.serverlessworkflow.impl.model.jackson.JacksonModelDeserializer")
+                .queryConstructors(true)
                 .constructors(true)
                 .methods(true)
                 .fields(true)

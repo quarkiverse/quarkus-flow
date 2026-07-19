@@ -347,9 +347,9 @@ final class GizmoAgentFlowsHelper {
     static void generateSchedulableConsumeMethod(FlowAgenticWorkflowBuildItem workflow, ClassCreator classCreator,
             FieldDescriptor agentFieldDescriptor) {
         // Object consume(CloudEvent ce):
-        //   - parameterless agent method (cron/every triggers carry no payload): invoke directly;
-        //   - otherwise: read the CloudEvent JSON payload and convert it to the agent method
-        //     parameter type(s) via the injected ObjectMapper, then invoke the agent.
+        //   - Parse CloudEvent data (if parameters exist)
+        //   - Call agent method with parsed parameters
+        //   - AbstractSchedulableFlow will handle @MemoryId parameter detection and workflow instance ID injection
         try (MethodCreator consume = classCreator.getMethodCreator("consume", Object.class, CloudEvent.class)
                 .setModifiers(Modifier.PUBLIC)) {
 

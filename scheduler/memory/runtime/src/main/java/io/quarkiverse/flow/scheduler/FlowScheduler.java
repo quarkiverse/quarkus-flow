@@ -7,6 +7,7 @@ import java.util.function.Consumer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import io.quarkus.arc.lookup.LookupUnlessProperty;
 import io.quarkus.scheduler.Scheduler;
 import io.quarkus.scheduler.Scheduler.JobDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinition;
@@ -16,10 +17,12 @@ import io.serverlessworkflow.impl.scheduler.ExecutorServiceWorkflowScheduler;
 import io.serverlessworkflow.impl.scheduler.ScheduledInstanceRunnable;
 
 @ApplicationScoped
+@LookupUnlessProperty(name = "quarkus.scheduler.enabled", stringValue = "false")
 public class FlowScheduler extends EventWorkflowScheduler {
 
     @Inject
     Scheduler scheduler;
+
     @Inject
     ScheduledExecutorService service;
 

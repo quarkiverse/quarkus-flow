@@ -10,7 +10,6 @@ import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 import io.quarkiverse.flow.langchain4j.annotations.ScheduleOn;
-import io.quarkiverse.langchain4j.RegisterAiService;
 
 public final class Call4PapersAgentic {
 
@@ -19,7 +18,6 @@ public final class Call4PapersAgentic {
     private Call4PapersAgentic() {
     }
 
-    @RegisterAiService
     public interface ConferenceReviewerPlanner {
 
         @Output
@@ -34,7 +32,6 @@ public final class Call4PapersAgentic {
         ProposalReview proposalReview(@V("proposal") Proposal proposal);
     }
 
-    @RegisterAiService
     public interface ScoreJavaProposal {
 
         @Agent(name = "Java Talk Reviewer", outputKey = "proposalScore")
@@ -66,7 +63,6 @@ public final class Call4PapersAgentic {
         Integer scoreProposal(@V("proposal") Proposal proposal);
     }
 
-    @RegisterAiService
     public interface ProposalImproverAgent {
 
         @Agent(name = "Conference reviewer", outputKey = "considerations")

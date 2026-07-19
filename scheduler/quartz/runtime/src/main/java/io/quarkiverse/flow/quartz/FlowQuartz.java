@@ -22,6 +22,7 @@ import org.quartz.TriggerBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.quarkus.arc.lookup.LookupUnlessProperty;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
@@ -30,6 +31,7 @@ import io.serverlessworkflow.impl.scheduler.EventWorkflowScheduler;
 import io.serverlessworkflow.impl.scheduler.ScheduledInstanceRunnable;
 
 @ApplicationScoped
+@LookupUnlessProperty(name = "quarkus.scheduler.enabled", stringValue = "false")
 public class FlowQuartz extends EventWorkflowScheduler {
 
     private static final String DEFINITION_VERSION = "definitionVersion";

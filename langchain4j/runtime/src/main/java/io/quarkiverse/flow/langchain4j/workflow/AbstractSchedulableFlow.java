@@ -1,6 +1,5 @@
 package io.quarkiverse.flow.langchain4j.workflow;
 
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.slf4j.Logger;
@@ -18,7 +17,6 @@ import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
 /**
  * A template method class to serve as skeleton for generating schedulable workflows with Gizmo.
  */
-@ApplicationScoped
 public abstract class AbstractSchedulableFlow extends Flow {
 
     static final Logger log = LoggerFactory.getLogger(AbstractSchedulableFlow.class);

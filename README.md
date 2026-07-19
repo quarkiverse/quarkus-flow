@@ -250,31 +250,26 @@ Quarkus Flow discovers these methods at build time and registers generated workf
 
 ```java
 import dev.langchain4j.agentic.declarative.SequenceAgent;
-import io.quarkiverse.langchain4j.RegisterAiService;
 
 public final class Agents {
 
   // A generated workflow: chain sub-agents sequentially
-  @RegisterAiService
   public interface StoryCreatorWithConfigurableStyleEditor {
     @SequenceAgent(outputKey = "story", subAgents = { CreativeWriter.class, AudienceEditor.class, StyleEditor.class })
       String write(@V("topic") String topic, @V("style") String style, @V("audience") String audience);
   }
 
   // pseudo-snippet
-  @RegisterAiService
   public interface CreativeWriter {
 
   }
 
   // pseudo-snippet
-  @RegisterAiService
   public interface AudienceEditor {
 
   }
 
   // pseudo-snippet
-  @RegisterAiService
   public interface StyleEditor {
 
   }

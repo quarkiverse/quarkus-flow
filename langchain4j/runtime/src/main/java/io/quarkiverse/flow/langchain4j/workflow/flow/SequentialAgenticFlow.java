@@ -22,7 +22,8 @@ public abstract class SequentialAgenticFlow extends AgenticFlow {
                         tasks.function(
                                 taskName,
                                 fn -> fn.function(
-                                        (DefaultAgenticScope scope, WorkflowContextData ctx) -> executeAgent(scope,
+                                        (DefaultAgenticScope scope, WorkflowContextData ctx) -> executeAgent(
+                                                ctx.instanceData().id(), scope,
                                                 index),
                                         DefaultAgenticScope.class)
                                         .outputAs((out, wf, tf) -> agenticScopePassthrough(tf.rawInput())));
