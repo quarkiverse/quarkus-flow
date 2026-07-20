@@ -21,8 +21,6 @@ import io.smallrye.faulttolerance.api.TypedGuard;
 
 public class FaultToleranceRetryTest {
 
-    private static final boolean micrometerNotSupported = false;
-
     @Test
     void should_create_type_guard_with_retry_enabled_and_five_retries() {
 
@@ -39,7 +37,7 @@ public class FaultToleranceRetryTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("any", "any", micrometerNotSupported));
+                .guardFor(new WorkflowTaskContext("any", "any"));
 
         AtomicInteger atomicInteger = new AtomicInteger(0);
 
@@ -73,7 +71,7 @@ public class FaultToleranceRetryTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("any", "any", micrometerNotSupported));
+                .guardFor(new WorkflowTaskContext("any", "any"));
 
         AtomicInteger atomicInteger = new AtomicInteger(0);
 
@@ -108,7 +106,7 @@ public class FaultToleranceRetryTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("any", "any", micrometerNotSupported));
+                .guardFor(new WorkflowTaskContext("any", "any"));
 
         AtomicInteger atomicInteger = new AtomicInteger(0);
 
@@ -145,7 +143,7 @@ public class FaultToleranceRetryTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("transfer", "any", micrometerNotSupported));
+                .guardFor(new WorkflowTaskContext("transfer", "any"));
 
         AtomicInteger atomicInteger = new AtomicInteger(0);
 
@@ -186,7 +184,7 @@ public class FaultToleranceRetryTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("transfer", "notify", micrometerNotSupported));
+                .guardFor(new WorkflowTaskContext("transfer", "notify"));
 
         AtomicInteger atomicInteger = new AtomicInteger(0);
 
@@ -223,7 +221,7 @@ public class FaultToleranceRetryTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> guard = sut
-                .guardFor(new WorkflowTaskContext("transfer", "notify", micrometerNotSupported));
+                .guardFor(new WorkflowTaskContext("transfer", "notify"));
 
         List<Long> executionTimes = new CopyOnWriteArrayList<>();
 
@@ -264,7 +262,7 @@ public class FaultToleranceRetryTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("any", "any", micrometerNotSupported));
+                .guardFor(new WorkflowTaskContext("any", "any"));
 
         AtomicInteger atomicInteger = new AtomicInteger(0);
 

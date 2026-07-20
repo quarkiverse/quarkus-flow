@@ -14,10 +14,11 @@ import io.smallrye.config.WithDefault;
  * <strong>Note:</strong> Changes to metrics configuration require an application restart to take effect.
  * The metrics listener is registered at startup and cannot be dynamically added or removed.
  * <p>
- * To enable metrics:
+ * Metrics are auto-enabled when Micrometer is present on the classpath.
+ * To explicitly control metrics, configure:
  *
  * <pre>
- * <code>quarkus.flow.metrics.enabled=true</code>
+ * <code>quarkus.flow.metrics.enabled=true</code> or <code>quarkus.flow.metrics.enabled=false</code>
  * </pre>
  *
  * Then restart the application (no rebuild required).
@@ -34,12 +35,14 @@ public interface FlowMetricsConfig {
     /**
      * Enables or disables metrics collection for Quarkus Flow.
      * <p>
+     * When not explicitly configured, metrics are auto-enabled if Micrometer is present on the classpath,
+     * and auto-disabled otherwise.
+     * <p>
      * When set to {@code false}, no metrics are published.
      * <p>
      * <strong>Restart required:</strong> Changing this property requires an application restart to take effect.
      */
-    @WithDefault("true")
-    boolean enabled();
+    Optional<Boolean> enabled();
 
     /**
      * Prefix applied to all exported metric names.

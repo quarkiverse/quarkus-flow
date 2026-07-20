@@ -18,8 +18,6 @@ import io.smallrye.faulttolerance.api.TypedGuard;
 
 public class FaultToleranceCircuitBreakerTest {
 
-    private static final boolean micrometerNotSupported = false;
-
     @Test
     void should_open_circuit_breaker_after_failure_threshold() {
         FlowHttpConfig flowHttpConfig = new SmallRyeConfigBuilder()
@@ -41,7 +39,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("payment", "process", micrometerNotSupported));
+                .guardFor(new WorkflowTaskContext("payment", "process"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -81,7 +79,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("payment", "process", micrometerNotSupported));
+                .guardFor(new WorkflowTaskContext("payment", "process"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -125,7 +123,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("payment", "process", micrometerNotSupported));
+                .guardFor(new WorkflowTaskContext("payment", "process"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -169,7 +167,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("payment", "validate", micrometerNotSupported));
+                .guardFor(new WorkflowTaskContext("payment", "validate"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -208,7 +206,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("order", "create", micrometerNotSupported));
+                .guardFor(new WorkflowTaskContext("order", "create"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -246,7 +244,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("inventory", "check", micrometerNotSupported));
+                .guardFor(new WorkflowTaskContext("inventory", "check"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -301,7 +299,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("shipping", "calculate", micrometerNotSupported));
+                .guardFor(new WorkflowTaskContext("shipping", "calculate"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -350,7 +348,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("notification", "send", micrometerNotSupported));
+                .guardFor(new WorkflowTaskContext("notification", "send"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -402,7 +400,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("user", "register", micrometerNotSupported));
+                .guardFor(new WorkflowTaskContext("user", "register"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -448,7 +446,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("billing", "charge", micrometerNotSupported));
+                .guardFor(new WorkflowTaskContext("billing", "charge"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -486,7 +484,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("analytics", "track", micrometerNotSupported));
+                .guardFor(new WorkflowTaskContext("analytics", "track"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -537,7 +535,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("cache", "invalidate", micrometerNotSupported));
+                .guardFor(new WorkflowTaskContext("cache", "invalidate"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 

@@ -310,18 +310,14 @@ class FlowProcessor {
     @BuildStep
     void registerWorkflowApp(WorkflowApplicationRecorder recorder,
             ShutdownContextBuildItem shutdown,
-            Optional<MetricsCapabilityBuildItem> metricsCapability,
             BuildProducer<SyntheticBeanBuildItem> beans) {
-
-        boolean isMicrometerSupported = metricsCapability
-                .map(capability -> capability.metricsSupported(MetricsFactory.MICROMETER)).orElse(false);
 
         beans.produce(SyntheticBeanBuildItem.configure(WorkflowApplication.class)
                 .scope(ApplicationScoped.class)
                 .unremovable()
                 .setRuntimeInit()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(WorkflowApplicationCreator.class)))
-                .createWith(recorder.workflowAppCreator(shutdown, isMicrometerSupported))
+                .createWith(recorder.workflowAppCreator(shutdown))
                 .done());
         LOG.info("Flow: Registering Workflow Application bean: {}", WorkflowApplication.class.getName());
     }
