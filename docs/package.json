@@ -5,7 +5,7 @@
   },
   "dependencies": {
     "@mermaid-js/mermaid-cli": "^11.6.0",
-    "asciidoctor": "^3.0.4",
+    "asciidoctor": "^4.0.0",
     "asciidoctor-kroki": "^0.18.1",
     "phantomjs": "^2.1.7"
   }
