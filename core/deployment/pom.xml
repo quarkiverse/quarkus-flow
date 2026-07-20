@@ -10,6 +10,14 @@
     <artifactId>quarkus-flow-deployment</artifactId>
     <name>Quarkus Flow :: Core :: Deployment</name>
 
+    <properties>
+        <esbuild-maven-plugin.version>2.0.0</esbuild-maven-plugin.version>
+        <react.version>19.2.7</react.version>
+        <scheduler.version>0.27.0</scheduler.version>
+        <openworkflowspec.diagram-editor.version>0.2.0</openworkflowspec.diagram-editor.version>
+        <use-sync-external-store.version>1.6.0</use-sync-external-store.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -117,6 +125,16 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <!-- Do not copy the raw bundle source, esbuild will generate the compiled version -->
+                    <exclude>dev-ui/bundle.js</exclude>
+                </excludes>
+            </resource>
+        </resources>
+
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -134,6 +152,75 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>io.mvnpm</groupId>
+                <artifactId>esbuild-maven-plugin</artifactId>
+                <version>${esbuild-maven-plugin.version}</version>
+
+                <executions>
+                    <execution>
+                        <id>esbuild</id>
+                        <goals>
+                            <goal>esbuild</goal>
+                        </goals>
+                    </execution>
+                </executions>
+
+                <configuration>
+                    <sourceDirectory>src/main/resources/dev-ui</sourceDirectory>
+                    <outputDirectory>target/classes/dev-ui</outputDirectory>
+                    <entryPoint>bundle.js</entryPoint>
+                </configuration>
+
+                <dependencies>
+                    <!-- OpenWorkflowSpec Diagram Editor (mvnpm) -->
+                    <dependency>
+                        <groupId>org.mvnpm.at.openworkflowspec</groupId>
+                        <artifactId>diagram-editor</artifactId>
+                        <version>${openworkflowspec.diagram-editor.version}</version>
+                        <exclusions>
+                            <!-- Required because @serverlessworkflow/sdk is an npm dependency, not available on mvnpm as alpha version, but is already bundled in @serverlessworkflow/diagram-editor's dist. -->
+                            <exclusion>
+                                <groupId>org.mvnpm.at.serverlessworkflow</groupId>
+                                <artifactId>sdk</artifactId>
+                            </exclusion>
+                            <!-- D3 is already bundled in @openworkflowspec/diagram-editor, avoid version conflicts for transitive D3 dependencies. -->
+                            <exclusion>
+                                <groupId>org.mvnpm</groupId>
+                                <artifactId>d3-interpolate</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+
+                    <!-- @openworkflowspec/diagram-editor peerDependency -->
+                    <dependency>
+                        <groupId>org.mvnpm</groupId>
+                        <artifactId>react</artifactId>
+                        <version>${react.version}</version>
+                    </dependency>
+                    <!-- @openworkflowspec/diagram-editor peerDependency -->
+                    <dependency>
+                        <groupId>org.mvnpm</groupId>
+                        <artifactId>react-dom</artifactId>
+                        <version>${react.version}</version>
+                    </dependency>
+
+                    <!-- Required by react-dom -->
+                    <dependency>
+                        <groupId>org.mvnpm</groupId>
+                        <artifactId>scheduler</artifactId>
+                        <version>${scheduler.version}</version>
+                    </dependency>
+
+                    <!-- Required because use-sync-external-store is kept external by @openworkflowspec/diagram-editor to avoid bundling it as CJS into the final Dev UI bundle. -->
+                    <dependency>
+                        <groupId>org.mvnpm</groupId>
+                        <artifactId>use-sync-external-store</artifactId>
+                        <version>${use-sync-external-store.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>

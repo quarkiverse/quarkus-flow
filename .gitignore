@@ -64,6 +64,10 @@ pom.xml.versionsBackup
 release.properties
 .m2/
 
+# Esbuild Maven Plugin for dev-ui
+node_modules/
+build.js
+
 # Claude Code
 .claude/settings.local.json
 

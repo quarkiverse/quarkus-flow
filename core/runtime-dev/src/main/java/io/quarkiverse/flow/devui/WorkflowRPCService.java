@@ -26,6 +26,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.annotations.JsonRpcDescription;
+import io.serverlessworkflow.api.WorkflowFormat;
 import io.serverlessworkflow.api.types.Input;
 import io.serverlessworkflow.api.types.SchemaInline;
 import io.serverlessworkflow.api.types.SchemaUnion;
@@ -83,6 +84,18 @@ public class WorkflowRPCService {
             LOG.warn("Workflow with id '{}' has no diagram available or failed to generate it", id.name());
         }
         return mermaidDefinition;
+    }
+
+    @JsonRpcDescription("Get the workflow definition")
+    public String getWorkflowDefinition(
+            @JsonRpcDescription("Workflow's id") WorkflowDefinitionId id) {
+        final Workflow workflow = Objects.requireNonNull(registryCache.get(id), "Workflow with id '" + id + "' not found");
+
+        try {
+            return WorkflowFormat.JSON.mapper().writeValueAsString(workflow);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize workflow definition", e);
+        }
     }
 
     @Blocking
