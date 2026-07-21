@@ -3,6 +3,7 @@ package io.quarkiverse.flow.deployment;
 import org.jboss.jandex.ClassInfo;
 
 import io.quarkiverse.flow.Flowable;
+import io.quarkiverse.flow.dsl.executors.DataTypeConverter;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -18,7 +19,6 @@ import io.serverlessworkflow.impl.events.EventConsumer;
 import io.serverlessworkflow.impl.events.EventPublisher;
 import io.serverlessworkflow.impl.executors.CallableTaskBuilder;
 import io.serverlessworkflow.impl.executors.TaskExecutorFactory;
-import io.serverlessworkflow.impl.executors.func.DataTypeConverter;
 import io.serverlessworkflow.impl.executors.http.HttpRequestDecorator;
 import io.serverlessworkflow.impl.expressions.ExpressionFactory;
 import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener;
@@ -64,7 +64,21 @@ final class FlowNativeProcessor {
                 "org.hibernate.validator.internal.constraintvalidators.bv.NotNullValidator",
                 // Jackson serializers for WorkflowModel - needed when WorkflowModel is returned directly from REST endpoint
                 "io.serverlessworkflow.impl.model.jackson.JacksonModelSerializer",
-                "io.serverlessworkflow.impl.model.jackson.JacksonModelDeserializer")
+                "io.serverlessworkflow.impl.model.jackson.JacksonModelDeserializer",
+                // DSL Jackson serializers/deserializers
+                "io.quarkiverse.flow.dsl.serialization.jackson.FuncExportAsDeserializer",
+                "io.quarkiverse.flow.dsl.serialization.jackson.FuncExportAsSerializer",
+                "io.quarkiverse.flow.dsl.serialization.jackson.FuncInputFromDeserializer",
+                "io.quarkiverse.flow.dsl.serialization.jackson.FuncInputFromSerializer",
+                "io.quarkiverse.flow.dsl.serialization.jackson.FuncOutputAsDeserializer",
+                "io.quarkiverse.flow.dsl.serialization.jackson.FuncOutputAsSerializer",
+                "io.quarkiverse.flow.dsl.serialization.jackson.FunctionArgumentsDeserializer",
+                "io.quarkiverse.flow.dsl.serialization.jackson.FunctionArgumentsSerializer",
+                "io.quarkiverse.flow.dsl.serialization.jackson.FunctionDeserializer",
+                "io.quarkiverse.flow.dsl.serialization.jackson.SerializableFunctionSerializer",
+                "io.quarkiverse.flow.dsl.serialization.jackson.SerializedLambdaDeserializer",
+                "io.quarkiverse.flow.dsl.serialization.jackson.TaskMetadataDeserializer",
+                "io.quarkiverse.flow.dsl.serialization.jackson.TaskMetadataSerializer")
                 .queryConstructors(true)
                 .constructors(true)
                 .methods(true)

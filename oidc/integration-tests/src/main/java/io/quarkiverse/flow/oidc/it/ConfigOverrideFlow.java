@@ -9,9 +9,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.dsl.FlowDSL;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
-import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
 
 /**
  * A workflow whose OIDC auth-server-url is overridden from {@code application.properties}. The DSL declares
@@ -33,14 +33,14 @@ public class ConfigOverrideFlow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow(NAME, NAMESPACE)
+        return FlowWorkflowBuilder.workflow(NAME, NAMESPACE)
                 .tasks(
-                        FuncDSL.call(
-                                FuncDSL.http("listOverriddenImages")
-                                        .GET()
+                        FlowDSL.call(
+                                FlowDSL.http("listOverriddenImages")
+                                        .get()
                                         .header("Accept", "application/json")
                                         .uri(URI.create(imageService),
-                                                FuncDSL.oauth2(baseUrl, CLIENT_CREDENTIALS, "quarkus-flow",
+                                                FlowDSL.oauth2(baseUrl, CLIENT_CREDENTIALS, "quarkus-flow",
                                                         "dummy-client-secret",
                                                         e -> e.token("/oauth2/token")))))
                 .build();

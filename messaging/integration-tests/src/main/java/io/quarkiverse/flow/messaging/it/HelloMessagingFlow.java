@@ -1,18 +1,18 @@
 package io.quarkiverse.flow.messaging.it;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.emit;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.listen;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.produced;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.set;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.toOne;
+import static io.quarkiverse.flow.dsl.FlowDSL.emit;
+import static io.quarkiverse.flow.dsl.FlowDSL.listen;
+import static io.quarkiverse.flow.dsl.FlowDSL.produced;
+import static io.quarkiverse.flow.dsl.FlowDSL.set;
+import static io.quarkiverse.flow.dsl.FlowDSL.toOne;
 
 import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 
 @ApplicationScoped
 public class HelloMessagingFlow extends Flow {
@@ -34,7 +34,7 @@ public class HelloMessagingFlow extends Flow {
      */
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow()
+        return FlowWorkflowBuilder.workflow()
                 // We are listening to one and only one event coming to our broker with the type "io.quarkiverse.flow.messaging.hello.request"
                 // Each event produced by the broker with this type will kick a new workflow instance.
                 // To learn more see the base specification: https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#listen

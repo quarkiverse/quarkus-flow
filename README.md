@@ -127,15 +127,15 @@ Create a workflow (extend `io.quarkiverse.flow.Flow`):
 import jakarta.enterprise.context.ApplicationScoped;
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.spec.FuncWorkflowBuilder;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+import static io.quarkiverse.flow.dsl.FlowDSL.*;
 
 @ApplicationScoped
 public class HelloWorkflow extends Flow {
   @Override
   public Workflow descriptor() {
-    return FuncWorkflowBuilder.workflow("hello")
+    return FlowWorkflowBuilder.workflow("hello")
       .tasks(set("{ message: \"hello world!\" }"))
       .build();
   }

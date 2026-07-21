@@ -98,7 +98,6 @@
             <artifactId>wiremock</artifactId>
         </dependency>
 
-
     </dependencies>
 
     <build>

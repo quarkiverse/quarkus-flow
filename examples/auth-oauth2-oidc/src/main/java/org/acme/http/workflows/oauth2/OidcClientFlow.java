@@ -2,8 +2,8 @@ package org.acme.http.workflows.oauth2;
 
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
-import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
+import io.quarkiverse.flow.dsl.FlowDSL;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -24,15 +24,15 @@ public class OidcClientFlow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow(
+        return FlowWorkflowBuilder.workflow(
                 OIDC_CLIENT_WORKFLOW_NAME, "quarkus-flow")
                 .tasks(
-                        FuncDSL.call(
-                                FuncDSL.http("listImages")
-                                        .GET()
+                        FlowDSL.call(
+                                FlowDSL.http("listImages")
+                                        .get()
                                         .header("Accept", "application/json")
                                         .uri(URI.create(imageService),
-                                                FuncDSL.oauth2(baseUrl,
+                                                FlowDSL.oauth2(baseUrl,
                                                         CLIENT_CREDENTIALS,
                                                         "${ $secret.oidcClient.\"client-id\" }",
                                                         "${ $secret.oidcClient.\"client-secret\" }",

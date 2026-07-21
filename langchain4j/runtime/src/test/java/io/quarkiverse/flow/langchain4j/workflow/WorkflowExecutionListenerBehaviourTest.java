@@ -17,11 +17,11 @@ import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
 import dev.langchain4j.service.V;
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.quarkiverse.flow.langchain4j.workflow.runtime.RuntimeWorkflowApplicationProvider;
 import io.quarkiverse.flow.langchain4j.workflow.service.FlowSequentialAgentService;
 import io.quarkus.test.junit.QuarkusTest;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import io.serverlessworkflow.impl.WorkflowContext;
 import io.serverlessworkflow.impl.lifecycle.TaskCompletedEvent;
 import io.serverlessworkflow.impl.lifecycle.WorkflowCompletedEvent;
@@ -69,7 +69,7 @@ public class WorkflowExecutionListenerBehaviourTest {
      *
      * <p>
      * <b>Finding:</b> The cast always succeeds. The {@code context(WorkflowModel)} setter
-     * updates the workflow's shared running context object, but FuncDSL task functions receive
+     * updates the workflow's shared running context object, but FlowDSL task functions receive
      * their input from the workflow's INPUT model (what was passed to {@code startInstance()}),
      * not from the workflow's running {@code context()}. Keys injected via
      * {@code ctx.context(factory.from(Map.of("key", "value")))} are therefore NOT visible
@@ -94,11 +94,11 @@ public class WorkflowExecutionListenerBehaviourTest {
                 .isTrue();
 
         // INJECTION: the key injected via ctx.context(factory.from(Map)) does NOT reach
-        // FuncDSL task function input — task receives its input from the workflow INPUT model,
+        // FlowDSL task function input — task receives its input from the workflow INPUT model,
         // not from the running workflow context() object.
         assertThat(result)
                 .as("""
-                        FINDING: context(WorkflowModel) setter does NOT flow to FuncDSL task input.
+                        FINDING: context(WorkflowModel) setter does NOT flow to FlowDSL task input.
                         The task function returned '%s' — if injection worked it would be 'hello-from-casehub'.
                         Implication: casehub-engine cannot use this setter to inject traceId/causedByEntryId
                         into sub-workflow task inputs. Must use startInstance(Map) input instead.
@@ -205,7 +205,7 @@ public class WorkflowExecutionListenerBehaviourTest {
      * correctly and its result is the workflow output.
      *
      * <p>
-     * <b>Finding:</b> {@code Uni<T>} return types from FuncDSL function tasks are handled
+     * <b>Finding:</b> {@code Uni<T>} return types from FlowDSL function tasks are handled
      * correctly via {@code Uni2CompletableFuture} — the engine awaits the {@code CompletableFuture}
      * before completing the workflow. No thread is blocked.
      *
@@ -294,7 +294,7 @@ public class WorkflowExecutionListenerBehaviourTest {
     static class Q1ContextInjectWorkflow extends Flow {
         @Override
         public Workflow descriptor() {
-            return FuncWorkflowBuilder.workflow("q1ContextInject")
+            return FlowWorkflowBuilder.workflow("q1ContextInject")
                     .tasks(tasks -> tasks.function(f -> f.function(input -> {
                         if (input instanceof Map<?, ?> map) {
                             Object injected = map.get("listener_injected");
@@ -313,7 +313,7 @@ public class WorkflowExecutionListenerBehaviourTest {
     static class Q4UniWorkflow extends Flow {
         @Override
         public Workflow descriptor() {
-            return FuncWorkflowBuilder.workflow("q4UniDispatch")
+            return FlowWorkflowBuilder.workflow("q4UniDispatch")
                     .tasks(tasks -> tasks.function(f -> f.function(
                             input -> Uni.createFrom().item("from-uni-async"))))
                     .build();

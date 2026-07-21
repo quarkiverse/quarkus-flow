@@ -13,10 +13,10 @@ This page shows:
 ====
 Source of truth for the DSL classes:
 
-- Builder: `io.serverlessworkflow.fluent.func.spec.FuncWorkflowBuilder`
-- Shortcuts (task providers): `io.serverlessworkflow.fluent.func.dsl.FuncDSL` (import statically)
-- Transformations: `io.serverlessworkflow.fluent.func.spi.FuncTransformations` and `io.serverlessworkflow.fluent.func.spi.FuncTaskTransformations`
-- HTTP / OpenAPI steps: `io.serverlessworkflow.fluent.func.dsl.FuncCallHttpStep`, `io.serverlessworkflow.fluent.func.dsl.FuncCallOpenAPIStep`
+- Builder: `io.quarkiverse.flow.dsl.FlowWorkflowBuilder`
+- Shortcuts (task providers): `io.quarkiverse.flow.dsl.FlowDSL` (import statically)
+- Transformations: `io.quarkiverse.flow.dsl.spi.FuncTransformations` and `io.quarkiverse.flow.dsl.spi.FuncTaskTransformations`
+- HTTP / OpenAPI steps: `io.quarkiverse.flow.dsl.FuncCallHttpStep`, `io.quarkiverse.flow.dsl.FuncCallOpenAPIStep`
 ====
 
 == Define a workflow class (required)
@@ -33,11 +33,11 @@ include::{examples-dir}/org/acme/HelloWorkflow.java[]
 [source,java]
 ----
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.spec.FuncWorkflowBuilder;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 
 // Static imports recommended for brevity:
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
-import static io.serverlessworkflow.fluent.func.spec.FuncWorkflowBuilder.workflow;
+import static io.quarkiverse.flow.dsl.FlowDSL.*;
+import static io.quarkiverse.flow.dsl.FlowWorkflowBuilder.workflow;
 ----
 
 == Complete task providers (chainable)
@@ -261,17 +261,17 @@ All helpers below return a chainable provider/step (e.g., `FuncTaskConfigurer`, 
 |`http()`
 |`FuncCallHttpStep`
 |Start a fluent HTTP call spec (method, headers, body, etc.). Pass it directly to `.tasks(...)` or through `call("name", http(...))` to force a name.
-|`http().GET().endpoint("https://service/api").acceptJSON()`
+|`http().get().endpoint("https://service/api").acceptJSON()`
 
 |`http(String name)`
 |`FuncCallHttpStep`
 |Named HTTP call spec.
-|`http("fetchUsers").GET().endpoint("https://service/users")`
+|`http("fetchUsers").get().endpoint("https://service/users")`
 
 |`http(String urlExpr, AuthenticationConfigurer auth)`
 |`FuncCallHttpStep`
 |HTTP spec preconfigured with endpoint expression + auth.
-|`http("http://service/api", auth -> auth.use("my-auth")).GET()`
+|`http("http://service/api", auth -> auth.use("my-auth")).get()`
 
 |`http(URI url, AuthenticationConfigurer auth)`
 |`FuncCallHttpStep`
@@ -341,22 +341,22 @@ All helpers below return a chainable provider/step (e.g., `FuncTaskConfigurer`, 
 |`call(FuncCallHttpStep spec)`
 |`FuncTaskConfigurer`
 |Attach an HTTP spec as a task (unnamed or using its internal name).
-|`call(http().GET().endpoint("https://service/ping"))`
+|`call(http().get().endpoint("https://service/ping"))`
 
 |`call(String name, FuncCallHttpStep spec)`
 |`FuncTaskConfigurer`
 |Attach an HTTP spec as a **named** task (overrides internal name).
-|`call("pingService", http().GET().endpoint("https://service/ping"))`
+|`call("pingService", http().get().endpoint("https://service/ping"))`
 
 |`call(FuncCallHttpConfigurer configurer)`
 |`FuncTaskConfigurer`
 |Low-level HTTP call based on a builder configurer.
-|`call(b -> b.GET().endpoint("https://service/ping"))`
+|`call(b -> b.get().endpoint("https://service/ping"))`
 
 |`call(String name, FuncCallHttpConfigurer configurer)`
 |`FuncTaskConfigurer`
 |Named low-level HTTP call.
-|`call("pingService", b -> b.GET().endpoint("https://service/ping"))`
+|`call("pingService", b -> b.get().endpoint("https://service/ping"))`
 
 |`openapi()`
 |`FuncCallOpenAPIStep`
@@ -513,8 +513,8 @@ Workflow w = workflow("intelligent-newsletter")
 * **Name** tasks you branch to: stable task names make `switchWhen*` targets explicit and work well with `withUniqueId`/`agent` memory ids.
 * Keep transformations **close to the step** that needs them (`inputFrom`, `exportAs`, `outputAs`) for readability.
 * HTTP/OpenAPI: you can either:
-** use fluent specs directly as steps: `tasks(http().GET().endpoint("..."))`, or
-** wrap them with `call("name", http().GET()...)` / `call("name", openapi().operation("..."))` to force an explicit task name.
+** use fluent specs directly as steps: `tasks(http().get().endpoint("..."))`, or
+** wrap them with `call("name", http().get()...)` / `call("name", openapi().operation("..."))` to force an explicit task name.
 * Remember: the workflow context is often JSON; your domain objects are (de)serialized via **Jackson**, so you can keep typed payloads in your steps while still using jq for quick projections.
 
 == See also

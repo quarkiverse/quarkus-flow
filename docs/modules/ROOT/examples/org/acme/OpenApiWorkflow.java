@@ -1,6 +1,6 @@
 package org.acme;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+import static io.quarkiverse.flow.dsl.FlowDSL.*;
 
 // Static imports recommended for brevity:
 import java.util.Map;
@@ -10,8 +10,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 
 @ApplicationScoped
 public class OpenApiWorkflow extends Flow {
@@ -21,7 +21,7 @@ public class OpenApiWorkflow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("openapi-call-workflow")
+        return FlowWorkflowBuilder.workflow("openapi-call-workflow")
                 .tasks(
                         openapi()
                                 .document(wiremockUrl + "/v2/swagger.json")

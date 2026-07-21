@@ -1,7 +1,7 @@
 package io.quarkiverse.flow.it;
 
-import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.get;
+import static io.quarkiverse.flow.dsl.FlowDSL.get;
+import static io.quarkiverse.flow.dsl.FlowWorkflowBuilder.workflow;
 
 import jakarta.enterprise.context.ApplicationScoped;
 

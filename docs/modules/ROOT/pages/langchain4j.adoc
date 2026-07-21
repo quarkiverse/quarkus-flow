@@ -58,7 +58,7 @@ Inject the agent (or call it via method reference) using the `agent(name, fn, Re
 
 [source,java]
 ----
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+import static io.quarkiverse.flow.dsl.FlowDSL.*;
 
 public class NewsletterFlow extends Flow {
     @Override
@@ -108,7 +108,7 @@ Inject the annotated bean into your `Flow` class and orchestrate it alongside st
 ----
 import org.acme.langchain4j.Agents;
 import jakarta.inject.Inject;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+import static io.quarkiverse.flow.dsl.FlowDSL.*;
 
 public class OrderWorkflow extends Flow {
 

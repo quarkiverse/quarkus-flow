@@ -1,15 +1,15 @@
 package org.acme;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+import static io.quarkiverse.flow.dsl.FlowDSL.*;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.serverlessworkflow.api.types.FlowDirectiveEnum;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 
 @ApplicationScoped
 public class ConditionalWorkflow extends Flow {
@@ -19,7 +19,7 @@ public class ConditionalWorkflow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("conditional-routing")
+        return FlowWorkflowBuilder.workflow("conditional-routing")
                 .tasks(
                         // 1. Evaluate the condition and branch
                         switchWhenOrElse((ScorePayload p) -> p.score() >= 80, "approveTask", "rejectTask"),

@@ -63,7 +63,7 @@ mp.messaging.outgoing.flow-lifecycle-out.value.serializer=org.apache.kafka.commo
 public class HelloMessagingFlow extends Flow {
   @Override
   public Workflow descriptor() {
-    return FuncWorkflowBuilder.workflow("hello-messaging").tasks(
+    return FlowWorkflowBuilder.workflow("hello-messaging").tasks(
       listen("waitHello", to().one(event("org.acme.hello.request")))
         .outputAs((java.util.Collection<Object> c) -> c.iterator().next()),
       set("{ message: \"Hello \" + .name }"),

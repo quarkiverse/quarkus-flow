@@ -1,14 +1,14 @@
 package io.quarkiverse.flow.persistence.test.durable;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.listen;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.toOne;
+import static io.quarkiverse.flow.dsl.FlowDSL.function;
+import static io.quarkiverse.flow.dsl.FlowDSL.listen;
+import static io.quarkiverse.flow.dsl.FlowDSL.toOne;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import io.serverlessworkflow.impl.WorkflowModel;
 
 @ApplicationScoped
@@ -18,7 +18,7 @@ public class RecoveryWorkflow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("recoveryWorkflow")
+        return FlowWorkflowBuilder.workflow("recoveryWorkflow")
                 .tasks(
                         function("task1", o -> {
                             RecoveryResource.TASK1_TIMES.incrementAndGet();

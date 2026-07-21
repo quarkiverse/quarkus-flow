@@ -1,0 +1,3 @@
+io.quarkiverse.flow.dsl.model.JavaModelMarshaller
+io.quarkiverse.flow.dsl.model.JavaModelCollectionMarshaller
+io.quarkiverse.flow.dsl.model.SerializableObjectMarshaller

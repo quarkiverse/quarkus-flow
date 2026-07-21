@@ -7,8 +7,8 @@ import java.util.function.Predicate;
 import dev.langchain4j.agentic.declarative.DeclarativeUtil;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import io.serverlessworkflow.impl.WorkflowContextData;
 
 public abstract class ConditionalAgenticFlow extends AgenticFlow {
@@ -47,7 +47,7 @@ public abstract class ConditionalAgenticFlow extends AgenticFlow {
     public Workflow descriptor() {
         Map<Integer, Predicate<AgenticScope>> predicates = activationPredicates();
 
-        return FuncWorkflowBuilder.workflow()
+        return FlowWorkflowBuilder.workflow()
                 .document(buildDocument())
                 .input(inputSchema())
                 .tasks(tasks -> {

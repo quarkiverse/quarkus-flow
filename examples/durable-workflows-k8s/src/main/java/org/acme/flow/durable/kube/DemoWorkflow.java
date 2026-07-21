@@ -11,11 +11,11 @@ import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
 import jakarta.enterprise.context.ApplicationScoped;
 
-import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.emit;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.get;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.produced;
+import static io.quarkiverse.flow.dsl.FlowWorkflowBuilder.workflow;
+import static io.quarkiverse.flow.dsl.FlowDSL.emit;
+import static io.quarkiverse.flow.dsl.FlowDSL.function;
+import static io.quarkiverse.flow.dsl.FlowDSL.get;
+import static io.quarkiverse.flow.dsl.FlowDSL.produced;
 
 @ApplicationScoped
 public class DemoWorkflow extends Flow {

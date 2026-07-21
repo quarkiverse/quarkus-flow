@@ -81,7 +81,7 @@ do:
 //
 // [source,java]
 // ----
-// import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+// import static io.quarkiverse.flow.dsl.FlowDSL.*;
 //
 // public class ScheduledFlow extends Flow {
 //     @Override

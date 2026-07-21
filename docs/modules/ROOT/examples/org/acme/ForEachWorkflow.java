@@ -1,14 +1,14 @@
 package org.acme;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+import static io.quarkiverse.flow.dsl.FlowDSL.*;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 
 @ApplicationScoped
 public class ForEachWorkflow extends Flow {
@@ -18,7 +18,7 @@ public class ForEachWorkflow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("foreach-workflow")
+        return FlowWorkflowBuilder.workflow("foreach-workflow")
                 .tasks(
                         forEach(OrdersPayload::orders,
                                 tasks(

@@ -16,8 +16,8 @@ import org.acme.orchestrator.service.TaskStateStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+import static io.quarkiverse.flow.dsl.FlowWorkflowBuilder.workflow;
+import static io.quarkiverse.flow.dsl.FlowDSL.*;
 
 /**
  * Task Workflow - executes individual build tasks with resume support.

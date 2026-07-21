@@ -6,8 +6,8 @@ import io.quarkus.logging.Log;
 import io.serverlessworkflow.api.types.OAuth2AuthenticationData.OAuth2AuthenticationDataGrant;
 import io.serverlessworkflow.api.types.OAuth2AuthenticationDataClient.ClientAuthentication;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
-import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
+import io.quarkiverse.flow.dsl.FlowDSL;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -33,7 +33,7 @@ public class MultipleOAuth2ClientsFlow extends Flow {
     @Override
     public Workflow descriptor() {
 
-        return FuncWorkflowBuilder.workflow(
+        return FlowWorkflowBuilder.workflow(
                 "multiple-oauth2-clients", "quarkus-flow")
                 .use(use -> {
                     use.secrets("joogle", "jahoo")
@@ -64,14 +64,14 @@ public class MultipleOAuth2ClientsFlow extends Flow {
 
                 })
                 .tasks(
-                        FuncDSL.fork(
-                                FuncDSL.http("getEmailsFromJoogle").GET()
+                        FlowDSL.fork(
+                                FlowDSL.http("getEmailsFromJoogle").get()
                                         .header("Accept", "application/json")
-                                        .uri(URI.create(wireMock + "/joogle/inbox"), FuncDSL.use("joogle")),
-                                FuncDSL.http("getEmailsFromJahoo").GET()
+                                        .uri(URI.create(wireMock + "/joogle/inbox"), FlowDSL.use("joogle")),
+                                FlowDSL.http("getEmailsFromJahoo").get()
                                         .header("Accept", "application/json")
-                                        .uri(URI.create(wireMock + "/jahoo/inbox"), FuncDSL.use("jahoo"))),
-                        FuncDSL.function("merge", o -> o))
+                                        .uri(URI.create(wireMock + "/jahoo/inbox"), FlowDSL.use("jahoo"))),
+                        FlowDSL.function("merge", o -> o))
                 .build();
     }
 }

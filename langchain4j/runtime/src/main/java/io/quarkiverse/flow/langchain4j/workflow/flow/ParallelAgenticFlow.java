@@ -1,18 +1,18 @@
 package io.quarkiverse.flow.langchain4j.workflow.flow;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.withInstanceId;
+import static io.quarkiverse.flow.dsl.FlowDSL.withInstanceId;
 
 import java.util.List;
 
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 
 public abstract class ParallelAgenticFlow extends AgenticFlow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow()
+        return FlowWorkflowBuilder.workflow()
                 .document(buildDocument())
                 .input(inputSchema())
                 .tasks(tasks -> tasks.fork("parallel", fork -> {

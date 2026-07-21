@@ -21,7 +21,7 @@ For HTTP client timeouts, TLS, proxies, and connection pooling, see xref:http-cl
 
 == 1. Call HTTP endpoints
 
-HTTP calls are represented in the CNCF Workflow Spec as `call` tasks. In Quarkus Flow, you define these using the fluent shortcuts from `io.serverlessworkflow.fluent.func.dsl.FuncDSL`.
+HTTP calls are represented in the CNCF Workflow Spec as `call` tasks. In Quarkus Flow, you define these using the fluent shortcuts from `io.quarkiverse.flow.dsl.FlowDSL`.
 
 === 1.1 Simple GET / POST
 
@@ -29,7 +29,7 @@ For the majority of use cases, you can rely on the quick `get(...)` and `post(..
 
 [source,java]
 ----
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+import static io.quarkiverse.flow.dsl.FlowDSL.*;
 
 public class ApiWorkflow extends Flow {
     @Override
@@ -96,7 +96,7 @@ get("https://api.example.com/secure", auth -> auth.use("my-basic-secret"));
 
 // Bearer Token
 http("fetchData")
-    .GET()
+    .get()
     .endpoint("https://api.example.com/v1/resource")
     .auth(auth -> auth.bearer("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."));
 
@@ -142,7 +142,7 @@ In your workflow, use the `openapi()` builder to reference the document and invo
 
 [source,java]
 ----
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+import static io.quarkiverse.flow.dsl.FlowDSL.*;
 
 public class PetstoreFlow extends Flow {
     @Override

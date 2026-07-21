@@ -86,8 +86,8 @@ include::{examples-dir}org/acme/dataflow/Call4PapersFlow.java[tag=last-tasks]
 ----
 <1> Just pass the `ProposalScore` through without transformation (identity function)
 <2> Use `exportAs` with `JavaFilterFunction` to commit enriched data to workflow data
-<3> Use `FuncDSL.output()` to get type-safe access to the current task's output
-<4> Use `FuncDSL.input()` to get type-safe access to original workflow input
+<3> Use `FlowDSL.output()` to get type-safe access to the current task's output
+<4> Use `FlowDSL.input()` to get type-safe access to original workflow input
 <5> Create enriched payload combining data from multiple sources
 <6> HTTP task receives the committed NotificationPayload from workflow data.
 The body will be the `NotificationPayload` as JSON
@@ -126,8 +126,8 @@ public void submitProposal() {
 * Use **`inputFrom`** to give tasks a focused, typed view of the data they need
 * Use **`exportAs`** to control what gets persisted in the workflow data document
 * Use **`outputAs`** to pass data to the next step without committing to workflow data
-* Use **`FuncDSL.input(workflowContext, Type.class)`** for type-safe access to the original workflow input
-* Use **`FuncDSL.output(taskContext, Type.class)`** for type-safe access to the current task's output
+* Use **`FlowDSL.input(workflowContext, Type.class)`** for type-safe access to the original workflow input
+* Use **`FlowDSL.output(taskContext, Type.class)`** for type-safe access to the current task's output
 * Access workflow and task context in transformations to combine data from multiple sources
 
 == Next steps

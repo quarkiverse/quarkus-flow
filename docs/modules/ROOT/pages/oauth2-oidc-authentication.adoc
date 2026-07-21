@@ -60,10 +60,10 @@ You can attach an authentication **inline** on a single call, or declare it **on
 
 [source,java]
 ----
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+import static io.quarkiverse.flow.dsl.FlowDSL.*;
 
 http("listImages")
-    .GET()
+    .get()
     .header("Accept", "application/json")
     .uri(URI.create(imageService),
          oauth2(baseUrl, CLIENT_CREDENTIALS, clientId, clientSecret)); // <1>
@@ -76,7 +76,7 @@ If several calls share the same authority, declare the authentication once and r
 
 [source,java]
 ----
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+import static io.quarkiverse.flow.dsl.FlowDSL.*;
 
 workflow("orders")
     .use(use -> use.authentications(auth ->
@@ -85,9 +85,9 @@ workflow("orders")
             .grant(CLIENT_CREDENTIALS)
             .client(c -> c.id(clientId).secret(clientSecret))))))
     .tasks(
-        http("reserve").GET()
+        http("reserve").get()
             .uri(URI.create(inventory + "/reserve"), use("inventory")), // <1>
-        http("confirm").GET()
+        http("confirm").get()
             .uri(URI.create(inventory + "/confirm"), use("inventory")))
     .build();
 ----
@@ -111,15 +111,15 @@ public class ClientCredentialsFlow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("client-credentials", "quarkus-flow")
+        return FlowWorkflowBuilder.workflow("client-credentials", "quarkus-flow")
                 .use(u -> u.secrets("clientCredentials")) // <1>
                 .tasks(
-                        FuncDSL.call(
-                                FuncDSL.http("listImages")
-                                        .GET()
+                        FlowDSL.call(
+                                FlowDSL.http("listImages")
+                                        .get()
                                         .header("Accept", "application/json")
                                         .uri(URI.create(imageService),
-                                                FuncDSL.oauth2(baseUrl, CLIENT_CREDENTIALS,
+                                                FlowDSL.oauth2(baseUrl, CLIENT_CREDENTIALS,
                                                         "${ $secret.clientCredentials.clientId }",
                                                         "${ $secret.clientCredentials.clientSecret }")))) // <2>
                 .build();
@@ -147,16 +147,16 @@ If the authorization server is an OpenID Connect provider, use `oidc(...)` inste
 
 [source,java]
 ----
-FuncDSL.http("listImages")
-        .GET()
+FlowDSL.http("listImages")
+        .get()
         .header("Accept", "application/json")
         .uri(URI.create(imageService),
-                FuncDSL.oauth2(baseUrl, CLIENT_CREDENTIALS,                    // <1>
+                FlowDSL.oauth2(baseUrl, CLIENT_CREDENTIALS,                    // <1>
                         "${ $secret.oidcClient.\"client-id\" }",
                         "${ $secret.oidcClient.\"client-secret\" }",
                         e -> e.token("/protocol/openid-connect/token")));      // <2>
 ----
-<1> For OIDC with discovery, use `FuncDSL.oidc()` - it discovers the token endpoint automatically.
+<1> For OIDC with discovery, use `FlowDSL.oidc()` - it discovers the token endpoint automatically.
 <2> For OAuth2, explicitly specify the token endpoint path. When a secret key contains a dash, quote it inside the JQ path: `${ $secret.oidcClient.\"client-id\" }`.
 
 == 5. Use the Password grant
@@ -165,10 +165,10 @@ If the service requires a username and password alongside client credentials, us
 
 [source,java]
 ----
-FuncDSL.http()
+FlowDSL.http()
         .method("DELETE")
         .uri(URI.create(imageService + "/attrs/" + id),
-                FuncDSL.oauth2(oauth2 -> oauth2
+                FlowDSL.oauth2(oauth2 -> oauth2
                         .authority(baseUrl)
                         .grant(PASSWORD)
                         .client(c -> c.id("${ $secret.\"password-grant\".\"client-id\" }")
@@ -184,7 +184,7 @@ If you need to exchange a subject (and optional actor) token for a new one scope
 
 [source,java]
 ----
-FuncDSL.oauth2(oauth2 -> oauth2
+FlowDSL.oauth2(oauth2 -> oauth2
         .endpoints(token -> token.token("/oauth2/token"))
         .client(c -> c.id("my-client").secret("my-secret"))
         .subject(s -> s.token("${ $secret.exchangeSecrets.subjectToken }")
@@ -203,7 +203,7 @@ If your workflow calls services protected by different authorization servers, de
 
 [source,java]
 ----
-return FuncWorkflowBuilder.workflow("multiple-oauth2-clients", "quarkus-flow")
+return FlowWorkflowBuilder.workflow("multiple-oauth2-clients", "quarkus-flow")
         .use(use -> use.secrets("joogle", "jahoo") // <1>
                 .authentications(auth -> {
                     auth.authentication("joogle", a -> a.oauth2(o -> o
@@ -222,11 +222,11 @@ return FuncWorkflowBuilder.workflow("multiple-oauth2-clients", "quarkus-flow")
                             .grant(CLIENT_CREDENTIALS)));
                 }))
         .tasks(
-                FuncDSL.fork( // <2>
-                        FuncDSL.http("getEmailsFromJoogle").GET()
-                                .uri(URI.create(wireMock + "/joogle/inbox"), FuncDSL.use("joogle")),
-                        FuncDSL.http("getEmailsFromJahoo").GET()
-                                .uri(URI.create(wireMock + "/jahoo/inbox"), FuncDSL.use("jahoo"))))
+                FlowDSL.fork( // <2>
+                        FlowDSL.http("getEmailsFromJoogle").get()
+                                .uri(URI.create(wireMock + "/joogle/inbox"), FlowDSL.use("joogle")),
+                        FlowDSL.http("getEmailsFromJahoo").get()
+                                .uri(URI.create(wireMock + "/jahoo/inbox"), FlowDSL.use("jahoo"))))
         .build();
 ----
 <1> Declare the secret groups for both clients together.
@@ -238,13 +238,13 @@ If you use xref:http-openapi-tasks.adoc[OpenAPI tasks], supply the credentials t
 
 [source,java]
 ----
-FuncWorkflowBuilder.workflow()
+FlowWorkflowBuilder.workflow()
         .use(u -> u.secrets("openapi"))
         .tasks(t -> t.openapi("imageService", f -> f
                 .document(openApiDocumentUrl)
                 .operation("listImages")
                 .parameters(Map.of("Accept", "application/json"))
-                .authentication(FuncDSL.oidc(baseUrl, CLIENT_CREDENTIALS,
+                .authentication(FlowDSL.oidc(baseUrl, CLIENT_CREDENTIALS,
                         "${ $secret.openapi.\"client-id\" }",
                         "${ $secret.openapi.\"client-secret\" }"))))
         .build();
@@ -303,7 +303,7 @@ workflow("orders")
     .use(use -> use.authentications(auth ->
         auth.authentication("keycloak", a -> a.oauth2(o -> o ...))))
     .tasks(
-        http("reserve").GET()
+        http("reserve").get()
             .uri(URI.create(url), use("keycloak")))
     .build();
 ----

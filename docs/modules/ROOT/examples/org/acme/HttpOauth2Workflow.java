@@ -1,7 +1,7 @@
 package org.acme;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.oauth2;
+import static io.quarkiverse.flow.dsl.FlowDSL.*;
+import static io.quarkiverse.flow.dsl.FlowDSL.oauth2;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -9,9 +9,9 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.serverlessworkflow.api.types.OAuth2AuthenticationData;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 
 @ApplicationScoped
 public class HttpOauth2Workflow extends Flow {
@@ -22,11 +22,11 @@ public class HttpOauth2Workflow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("oauth2-authentication-workflow")
+        return FlowWorkflowBuilder.workflow("oauth2-authentication-workflow")
                 .tasks(
                         call("getPets",
                                 http()
-                                        .GET()
+                                        .get()
                                         .query("petId", "${ .petId }")
                                         .uri(wiremockSecureUrl + "/v2/pet",
                                                 oauth2(wiremockSecureUrl + "/realms/fake-authority",

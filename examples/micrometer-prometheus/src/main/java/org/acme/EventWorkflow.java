@@ -1,9 +1,9 @@
 package org.acme;
 
-import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.consume;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.listen;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.toOne;
+import static io.quarkiverse.flow.dsl.FlowWorkflowBuilder.workflow;
+import static io.quarkiverse.flow.dsl.FlowDSL.consume;
+import static io.quarkiverse.flow.dsl.FlowDSL.listen;
+import static io.quarkiverse.flow.dsl.FlowDSL.toOne;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkiverse.flow.Flow;

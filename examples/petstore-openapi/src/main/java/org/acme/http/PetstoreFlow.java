@@ -1,10 +1,10 @@
 package org.acme.http;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.openapi;
+import static io.quarkiverse.flow.dsl.FlowDSL.openapi;
 
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.net.URI;
 
@@ -15,7 +15,7 @@ public class PetstoreFlow extends Flow {
     public Workflow descriptor() {
         final URI petstoreUri = URI.create("openapi/petstore.json");
 
-        return FuncWorkflowBuilder.workflow("petstore")
+        return FlowWorkflowBuilder.workflow("petstore")
                 // You find the operation in the spec file, field operationId.
                 .tasks(openapi("findPetByStatus").document(petstoreUri).operation("findPetsByStatus")
                         .parameter("status", "sold")

@@ -45,6 +45,9 @@
 ** xref:concepts-durable-workflow-k8s.adoc[Durable Workflows in Kubernetes]
 ** xref:idempotency-correlation.adoc[Idempotency and Correlation]
 
+* Migration Guides
+** xref:migration-0.13-to-0.14.adoc[0.13.x to 0.14.0]
+
 * Reference
 ** xref:dsl-cheatsheet.adoc[Java DSL cheatsheet]
 ** xref:reference-initialization.adoc[Initialization Process]

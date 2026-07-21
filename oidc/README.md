@@ -4,7 +4,7 @@ Delegates OAuth2 / OIDC **token negotiation** in Quarkus Flow workflows to
 [`quarkus-oidc-client`](https://quarkus.io/guides/security-openid-connect-client-reference).
 
 When a workflow call declares an OAuth2/OIDC authentication — inline on the call
-(`FuncDSL.oauth2(...)` / `FuncDSL.oidc(...)`) or once under
+(`FlowDSL.oauth2(...)` / `FlowDSL.oidc(...)`) or once under
 `use(use -> use.authentications("name", auth -> auth.oauth2(...)))` and referenced by name — this
 extension obtains the access token through a Quarkus `OidcClient` and lets the Serverless Workflow
 engine attach it as `Authorization: Bearer <token>` to the downstream HTTP/OpenAPI call. Supported
