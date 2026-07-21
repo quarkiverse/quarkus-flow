@@ -11,6 +11,8 @@ import java.util.stream.StreamSupport;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.json.JsonString;
+import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
@@ -137,11 +139,29 @@ public class NamespaceAuthorizationService {
      */
     @SuppressWarnings("unchecked")
     private Set<String> convertToSet(Object attr) {
-        if (attr instanceof Set) {
-            return (Set<String>) attr;
-        } else if (attr instanceof Collection) {
-            return new HashSet<>((Collection<String>) attr);
+        if (attr instanceof Collection<?> collection) {
+            return collection.stream()
+                    .map(this::claimValueAsString)
+                    .filter(value -> value != null)
+                    .map(String::trim)
+                    .filter(value -> !value.isBlank())
+                    .collect(Collectors.toCollection(HashSet::new));
+        } else if (attr instanceof JsonNode jsonNode) {
+            if (jsonNode.isNull() || jsonNode.isMissingNode()) {
+                return null;
+            }
+
+            if (jsonNode.isArray()) {
+                return StreamSupport.stream(jsonNode.spliterator(), false)
+                        .map(JsonNode::asText)
+                        .filter(value -> !value.isBlank())
+                        .collect(Collectors.toSet());
+            }
+
+            String value = jsonNode.asText();
+            return value.isBlank() ? null : Set.of(value);
         } else if (attr instanceof String ns) {
+            ns = ns.trim();
             // Handle JSON array string: ["ns1","ns2"] or ["ns1", "ns2"]
             if (ns.startsWith("[") && ns.endsWith("]")) {
                 try {
@@ -156,6 +176,7 @@ public class NamespaceAuthorizationService {
                     // Not valid JSON, fall through to other parsing strategies
                 }
             }
+
             // Handle comma-separated string: ns1,ns2
             if (ns.contains(",")) {
                 return Arrays.stream(ns.split(","))
@@ -163,9 +184,31 @@ public class NamespaceAuthorizationService {
                         .filter(s -> !s.isBlank())
                         .collect(Collectors.toSet());
             }
+
             return ns.isBlank() ? null : Set.of(ns);
         }
-        return Set.of(attr.toString());
+
+        String value = claimValueAsString(attr);
+        return value == null || value.isBlank()
+                ? null
+                : Set.of(value);
     }
 
+    private String claimValueAsString(Object value) {
+        if (value == null || value == JsonValue.NULL) {
+            return null;
+        }
+
+        if (value instanceof JsonString jsonString) {
+            return jsonString.getString();
+        }
+
+        if (value instanceof JsonNode jsonNode) {
+            return jsonNode.isNull() || jsonNode.isMissingNode()
+                    ? null
+                    : jsonNode.asText();
+        }
+
+        return value.toString();
+    }
 }
