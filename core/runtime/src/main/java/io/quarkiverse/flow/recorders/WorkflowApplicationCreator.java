@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.config.FlowMetricsConfig;
 import io.quarkiverse.flow.config.FlowTracingConfig;
+import io.quarkiverse.flow.dsl.model.JavaModelFactory;
 import io.quarkiverse.flow.internal.NoOpScheduler;
 import io.quarkiverse.flow.metrics.MicrometerExecutionListener;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
@@ -43,7 +44,6 @@ import io.serverlessworkflow.impl.executors.http.HttpClientResolver;
 import io.serverlessworkflow.impl.expressions.jq.JQExpressionFactory;
 import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionCompletableListener;
 import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener;
-import io.serverlessworkflow.impl.model.func.JavaModelFactory;
 import io.serverlessworkflow.impl.model.jackson.JacksonModelFactory;
 import io.smallrye.faulttolerance.api.TypedGuard;
 

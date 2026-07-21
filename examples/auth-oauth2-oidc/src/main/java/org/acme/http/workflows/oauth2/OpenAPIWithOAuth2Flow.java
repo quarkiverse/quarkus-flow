@@ -3,8 +3,8 @@ package org.acme.http.workflows.oauth2;
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.OAuth2AuthenticationData;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
-import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
+import io.quarkiverse.flow.dsl.FlowDSL;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -21,7 +21,7 @@ public class OpenAPIWithOAuth2Flow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow()
+        return FlowWorkflowBuilder.workflow()
                 .use(u -> u.secrets("openapi"))
                 .tasks(t -> {
                     t.openapi("imageService", f ->
@@ -30,7 +30,7 @@ public class OpenAPIWithOAuth2Flow extends Flow {
                             .operation("listImages")
                             .parameters(Map.of(
                                     "Accept", "application/json"))
-                            .authentication(FuncDSL.oauth2(
+                            .authentication(FlowDSL.oauth2(
                                     baseUrl,
                                     OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS,
                                     "${ $secret.openapi.\"client-id\" }", "${ $secret.openapi.\"client-secret\" }",

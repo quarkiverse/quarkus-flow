@@ -4,8 +4,8 @@ import io.quarkiverse.flow.Flow;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.serverlessworkflow.api.types.FlowDirectiveEnum;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
-import io.serverlessworkflow.fluent.func.dsl.FuncCallStep;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
+import io.quarkiverse.flow.dsl.FuncCallStep;
 import io.serverlessworkflow.impl.WorkflowError;
 import io.serverlessworkflow.impl.WorkflowException;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -13,9 +13,9 @@ import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.tasks;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.tryCatch;
+import static io.quarkiverse.flow.dsl.FlowDSL.function;
+import static io.quarkiverse.flow.dsl.FlowDSL.tasks;
+import static io.quarkiverse.flow.dsl.FlowDSL.tryCatch;
 
 @ApplicationScoped
 public class OrderFulfillmentWorkflow extends Flow {
@@ -42,7 +42,7 @@ public class OrderFulfillmentWorkflow extends Flow {
         FuncCallStep<OrderStep, OrderStep> cancelPayment = function("cancelPayment",
                 (OrderStep o) -> cancelPayment(o.orderId()));
 
-        return FuncWorkflowBuilder.workflow("order-fulfillment", "examples")
+        return FlowWorkflowBuilder.workflow("order-fulfillment", "examples")
                 .tasks(
                         tryCatch(
                                 "tryStockReservation",

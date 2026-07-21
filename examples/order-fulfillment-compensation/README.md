@@ -106,7 +106,7 @@ The workflow uses Quarkus Flow's fluent DSL with nested `tryCatch` blocks. Each 
 
 ```java
 public Workflow descriptor() {
-    return FuncWorkflowBuilder.workflow("order-fulfillment", "examples")
+    return FlowWorkflowBuilder.workflow("order-fulfillment", "examples")
         .tasks(
             // Step 1: Try to reserve stock
             tryCatch("tryStockReservation",

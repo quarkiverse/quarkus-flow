@@ -29,8 +29,8 @@ import io.smallrye.mutiny.Uni;
  *
  * <pre>
  * {@code
- * import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
- * import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.get;
+ * import static io.quarkiverse.flow.dsl.FlowWorkflowBuilder.workflow;
+ * import static io.quarkiverse.flow.dsl.FlowDSL.get;
  *
  * &#64;ApplicationScoped
  * public class CustomerProfileFlow extends Flow {
@@ -150,8 +150,8 @@ public abstract class Flow implements Flowable {
      * </ul>
      *
      * @return the workflow descriptor defining the workflow structure, must not be null
-     * @see io.serverlessworkflow.fluent.func.FuncWorkflowBuilder
-     * @see io.serverlessworkflow.fluent.func.dsl.FuncDSL
+     * @see io.quarkiverse.flow.dsl.FlowWorkflowBuilder
+     * @see io.quarkiverse.flow.dsl.FlowDSL
      */
     public abstract Workflow descriptor();
 

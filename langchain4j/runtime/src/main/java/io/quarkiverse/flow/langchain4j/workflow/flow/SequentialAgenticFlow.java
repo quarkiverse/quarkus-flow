@@ -3,15 +3,15 @@ package io.quarkiverse.flow.langchain4j.workflow.flow;
 import java.util.List;
 
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import io.serverlessworkflow.impl.WorkflowContextData;
 
 public abstract class SequentialAgenticFlow extends AgenticFlow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow()
+        return FlowWorkflowBuilder.workflow()
                 .document(buildDocument())
                 .input(inputSchema())
                 .tasks(tasks -> {

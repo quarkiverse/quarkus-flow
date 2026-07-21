@@ -1,7 +1,7 @@
 package org.acme;
 
-import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.set;
+import static io.quarkiverse.flow.dsl.FlowWorkflowBuilder.workflow;
+import static io.quarkiverse.flow.dsl.FlowDSL.set;
 
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;

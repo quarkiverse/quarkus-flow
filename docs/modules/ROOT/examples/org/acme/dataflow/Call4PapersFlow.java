@@ -1,8 +1,8 @@
 package org.acme.dataflow;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.http;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.output;
+import static io.quarkiverse.flow.dsl.FlowDSL.function;
+import static io.quarkiverse.flow.dsl.FlowDSL.http;
+import static io.quarkiverse.flow.dsl.FlowDSL.output;
 
 import java.net.URI;
 import java.util.function.Function;
@@ -12,9 +12,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.dsl.FlowDSL;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
-import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
 
 // tag::validate-proposal[]
 @ApplicationScoped // <1>
@@ -25,7 +25,7 @@ public class Call4PapersFlow extends Flow { // <2>
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("call4papers")
+        return FlowWorkflowBuilder.workflow("call4papers")
                 .tasks(
                         // tag::validate-and-score[]
                         // Step 1: Validate proposal with inputFrom transformation
@@ -56,7 +56,7 @@ public class Call4PapersFlow extends Flow { // <2>
 
                                     ProposalScore taskOutput = output(taskContextData, ProposalScore.class); // <3>
 
-                                    ProposalSubmission submission = FuncDSL.input(workflowContext, // <4>
+                                    ProposalSubmission submission = FlowDSL.input(workflowContext, // <4>
                                             ProposalSubmission.class);
 
                                     return new NotificationPayload( // <5>
@@ -68,7 +68,7 @@ public class Call4PapersFlow extends Flow { // <2>
 
                         // Step 4: Send notification via HTTP
                         http("sendNotification")
-                                .POST()
+                                .post()
                                 .body("${ $context }") // <6>
                                 .header("Content-Type", "application/json")
                                 .uri(URI.create(baseUrl + "/notifications")))

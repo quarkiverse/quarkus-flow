@@ -128,11 +128,11 @@ public interface AutoDraftCriticAgent {
 
 ## 🔁 The Quarkus Flow Definition
 
-The Serverless Workflow is orchestrated using the fluent `FuncWorkflowBuilder`. Notice how business logic is completely decoupled from AI prompt engineering:
+The Serverless Workflow is orchestrated using the fluent `FlowWorkflowBuilder`. Notice how business logic is completely decoupled from AI prompt engineering:
 
 ```java
 public Workflow descriptor() {
-    return FuncWorkflowBuilder
+    return FlowWorkflowBuilder
         .workflow("intelligent-newsletter")
         .tasks(
             // 1. Run the LangChain4j Agent Sequence

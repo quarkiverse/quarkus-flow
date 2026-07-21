@@ -1,15 +1,15 @@
 package org.acme.agentic;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.agent;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.switchWhenOrElse;
+import static io.quarkiverse.flow.dsl.FlowDSL.agent;
+import static io.quarkiverse.flow.dsl.FlowDSL.switchWhenOrElse;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.serverlessworkflow.api.types.FlowDirectiveEnum;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 
 /*
  * =========================================================
@@ -27,7 +27,7 @@ public class HelloAgenticWorkflow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("hello-agentic")
+        return FlowWorkflowBuilder.workflow("hello-agentic")
                 .tasks(
                         // Build a single brief string from topic + notes and feed it to the drafter
                         // (jq-style expression produces a String)

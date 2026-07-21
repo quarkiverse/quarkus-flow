@@ -43,8 +43,8 @@ A REST API under `/quarkus-flow` that triggers one workflow per authentication s
 
 The workflow declares an OAuth2 / OIDC authentication and Quarkus Flow performs the token request
 against the authorization server, caches the result, and attaches `Authorization: Bearer <token>`
-automatically. The authentication can be attached **inline** on the call (`FuncDSL.oauth2(...)` /
-`FuncDSL.oidc(...)`) or declared once under `use(...)` and referenced by name with `FuncDSL.use(...)`.
+automatically. The authentication can be attached **inline** on the call (`FlowDSL.oauth2(...)` /
+`FlowDSL.oidc(...)`) or declared once under `use(...)` and referenced by name with `FlowDSL.use(...)`.
 
 * `ClientCredentialsFlow` — Client Credentials grant attached inline.
 * `OidcClientFlow` — same grant, but via the OIDC (`oidc(...)`) variant.
@@ -144,7 +144,7 @@ must be quoted in the JQ path, e.g. `${ $secret.oidcClient."client-id" }`.
 
 The workflow asks the authorization server for a token using the **Client Credentials** grant and
 uses it to call the image service. The OAuth2 configuration is attached **inline** to the HTTP call
-via `FuncDSL.oauth2(...)`, and the client id/secret are resolved from secrets:
+via `FlowDSL.oauth2(...)`, and the client id/secret are resolved from secrets:
 
 ```java
 @ApplicationScoped
@@ -158,15 +158,15 @@ public class ClientCredentialsFlow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("client-credentials", "quarkus-flow")
+        return FlowWorkflowBuilder.workflow("client-credentials", "quarkus-flow")
                 .use(u -> u.secrets("clientCredentials"))
                 .tasks(
-                        FuncDSL.call(
-                                FuncDSL.http("listImages")
+                        FlowDSL.call(
+                                FlowDSL.http("listImages")
                                         .GET()
                                         .header("Accept", "application/json")
                                         .uri(URI.create(imageService),
-                                                FuncDSL.oauth2(baseUrl, CLIENT_CREDENTIALS,
+                                                FlowDSL.oauth2(baseUrl, CLIENT_CREDENTIALS,
                                                         "${ $secret.clientCredentials.clientId }",
                                                         "${ $secret.clientCredentials.clientSecret }"))
                         ))
@@ -177,18 +177,18 @@ public class ClientCredentialsFlow extends Flow {
 
 Quarkus Flow performs the token request against `base-url`, caches the result, and adds the
 `Authorization: Bearer <token>` header to the downstream call automatically. The
-`OidcClientFlow` is identical but swaps `FuncDSL.oauth2(...)` for `FuncDSL.oidc(...)`.
+`OidcClientFlow` is identical but swaps `FlowDSL.oauth2(...)` for `FlowDSL.oidc(...)`.
 
 ---
 
 ## 2. Multiple OAuth2 clients in one workflow (`/quarkus-flow/read-all-emails`)
 
 When a workflow talks to several services, each with its own authorization server, declare the
-authentications **once** under `use(...)` and reference them by name with `FuncDSL.use("name")`.
+authentications **once** under `use(...)` and reference them by name with `FlowDSL.use("name")`.
 The two calls run in parallel via `fork`:
 
 ```java
-return FuncWorkflowBuilder.workflow("multiple-oauth2-clients", "quarkus-flow")
+return FlowWorkflowBuilder.workflow("multiple-oauth2-clients", "quarkus-flow")
         .use(use -> use.secrets("joogle", "jahoo")
                 .authentications(auth -> {
                     auth.authentication("joogle", a -> a.oauth2(oauth2 ->
@@ -207,14 +207,14 @@ return FuncWorkflowBuilder.workflow("multiple-oauth2-clients", "quarkus-flow")
                                   .grant(CLIENT_CREDENTIALS)));
                 }))
         .tasks(
-                FuncDSL.fork(
-                        FuncDSL.http("getEmailsFromJoogle").GET()
+                FlowDSL.fork(
+                        FlowDSL.http("getEmailsFromJoogle").GET()
                                 .header("Accept", "application/json")
-                                .uri(URI.create(wireMock + "/joogle/inbox"), FuncDSL.use("joogle")),
-                        FuncDSL.http("getEmailsFromJahoo").GET()
+                                .uri(URI.create(wireMock + "/joogle/inbox"), FlowDSL.use("joogle")),
+                        FlowDSL.http("getEmailsFromJahoo").GET()
                                 .header("Accept", "application/json")
-                                .uri(URI.create(wireMock + "/jahoo/inbox"), FuncDSL.use("jahoo"))),
-                FuncDSL.function("merge", o -> { Log.info("Merging emails: " + o); return o; })
+                                .uri(URI.create(wireMock + "/jahoo/inbox"), FlowDSL.use("jahoo"))),
+                FlowDSL.function("merge", o -> { Log.info("Merging emails: " + o); return o; })
         )
         .build();
 ```
@@ -231,13 +231,13 @@ The **Resource Owner Password** grant uses the full `oauth2(...)` builder so the
 (also read from secrets) can be supplied alongside the client credentials:
 
 ```java
-return FuncWorkflowBuilder.workflow("grant-type-password", "quarkus.flow")
+return FlowWorkflowBuilder.workflow("grant-type-password", "quarkus.flow")
         .use(u -> u.secrets("password-grant"))
         .tasks(
-                FuncDSL.http()
+                FlowDSL.http()
                         .method("DELETE")
                         .uri(URI.create(imageService + "/attrs/dcb507bd-4dc4-46ba-a4ae-eb622b817d62"),
-                                FuncDSL.oauth2(oauth2 -> oauth2
+                                FlowDSL.oauth2(oauth2 -> oauth2
                                         .authority(baseUrl)
                                         .grant(PASSWORD)
                                         .client(c -> c.id("${ $secret.\"password-grant\".\"client-id\" }")
@@ -256,13 +256,13 @@ to a target audience. The builder exposes `subject(...)`, `actor(...)`, `scopes(
 `audiences(...)`:
 
 ```java
-return FuncWorkflowBuilder.workflow("token-exchange", "quarkus.flow")
+return FlowWorkflowBuilder.workflow("token-exchange", "quarkus.flow")
         .use(use -> use.secrets("exchangeSecrets"))
         .tasks(
-                FuncDSL.http()
+                FlowDSL.http()
                         .method("DELETE")
                         .uri(URI.create(imageService + "/attrs/dcb507bd-4dc4-46ba-a4ae-eb622b817d62"),
-                                FuncDSL.oauth2(oauth2 -> oauth2
+                                FlowDSL.oauth2(oauth2 -> oauth2
                                         .endpoints(token -> token.token("/oauth2/token"))
                                         .client(c -> c.id("my-client").secret("my-secret"))
                                         .subject(s -> s.token("${ $secret.exchangeSecrets.subjectToken }")
@@ -282,17 +282,17 @@ return FuncWorkflowBuilder.workflow("token-exchange", "quarkus.flow")
 
 Instead of a raw HTTP call, this workflow drives an **OpenAPI operation**. The OpenAPI document
 (`__files/openapi-oauth2.yaml`, served by WireMock) declares an OAuth2/OIDC security scheme, and the
-DSL supplies the credentials through `FuncDSL.oidc(...)`:
+DSL supplies the credentials through `FlowDSL.oidc(...)`:
 
 ```java
-return FuncWorkflowBuilder.workflow()
+return FlowWorkflowBuilder.workflow()
         .use(u -> u.secrets("openapi"))
         .tasks(t -> t.openapi("imageService", f ->
                 // WireMock replaces the {{wireMockPort}} using response-template transformations
                 f.document("http://localhost:" + wireMockPort + "/openapi/openapi-oauth2.yaml?wireMockPort=" + wireMockPort)
                  .operation("listImages")
                  .parameters(Map.of("Accept", "application/json"))
-                 .authentication(FuncDSL.oidc(
+                 .authentication(FlowDSL.oidc(
                          baseUrl, CLIENT_CREDENTIALS,
                          "${ $secret.openapi.\"client-id\" }",
                          "${ $secret.openapi.\"client-secret\" }"))))

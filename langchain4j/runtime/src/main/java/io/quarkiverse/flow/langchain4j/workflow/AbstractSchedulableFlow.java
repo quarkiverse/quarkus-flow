@@ -9,10 +9,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.cloudevents.CloudEvent;
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.dsl.FlowDSL;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.quarkiverse.flow.langchain4j.schedule.ScheduleType;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
-import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
 
 /**
  * A template method class to serve as skeleton for generating schedulable workflows with Gizmo.
@@ -45,9 +45,9 @@ public abstract class AbstractSchedulableFlow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        FuncWorkflowBuilder builder = FuncWorkflowBuilder
+        FlowWorkflowBuilder builder = FlowWorkflowBuilder
                 .workflow(name(), namespace(), version())
-                .tasks(FuncDSL.function(taskName(), cloudEvent -> {
+                .tasks(FlowDSL.function(taskName(), cloudEvent -> {
                     if (cloudEvent != null) {
                         log.trace("Handling CloudEvent#data: {}", cloudEvent.getData());
                     }

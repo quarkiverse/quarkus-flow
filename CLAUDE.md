@@ -176,7 +176,7 @@ Each module follows Quarkus extension structure:
 
 ### Serverless Workflow DSL
 - Workflows extend `io.quarkiverse.flow.Flow`
-- Use the fluent DSL from `io.serverlessworkflow.fluent.func.dsl.FuncDSL`
+- Use the fluent DSL from `io.quarkiverse.flow.dsl.FlowDSL`
 - Support both Java DSL and YAML workflow definitions
 
 ## Documentation

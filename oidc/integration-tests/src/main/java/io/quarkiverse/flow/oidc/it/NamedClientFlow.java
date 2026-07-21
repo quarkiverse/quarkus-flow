@@ -9,9 +9,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.dsl.FlowDSL;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
-import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
 
 @ApplicationScoped
 public class NamedClientFlow extends Flow {
@@ -27,16 +27,16 @@ public class NamedClientFlow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow(NAME, NAMESPACE)
+        return FlowWorkflowBuilder.workflow(NAME, NAMESPACE)
                 .use(use -> use.authentications(auth -> auth.authentication("keycloak", r -> r.oauth2(
                         oauth2 -> oauth2.authority(baseUrl)
                                 .grant(CLIENT_CREDENTIALS)))))
                 .tasks(
-                        FuncDSL.call(
-                                FuncDSL.http("listNamedImages")
-                                        .GET()
+                        FlowDSL.call(
+                                FlowDSL.http("listNamedImages")
+                                        .get()
                                         .header("Accept", "application/json")
-                                        .uri(URI.create(imageService), FuncDSL.use("keycloak"))))
+                                        .uri(URI.create(imageService), FlowDSL.use("keycloak"))))
                 .build();
     }
 }

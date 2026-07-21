@@ -1,6 +1,6 @@
 package org.acme.secrets;
 
-import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
+import static io.quarkiverse.flow.dsl.FlowWorkflowBuilder.workflow;
 
 import jakarta.enterprise.context.ApplicationScoped;
 

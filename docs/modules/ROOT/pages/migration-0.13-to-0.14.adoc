@@ -1,0 +1,149 @@
+= Migration Guide: 0.13.x to 0.14.0
+include::includes/attributes.adoc[]
+
+Quarkus Flow 0.14.0 internalizes the Serverless Workflow Java Fluent DSL.
+The DSL classes previously lived in the SDK (`io.serverlessworkflow.impl.expression.func` and related packages) and are now part of Quarkus Flow itself under a new `io.quarkiverse.flow.dsl` namespace.
+
+This is a **source-level breaking change**: your workflow code will need import updates, but the DSL behavior is identical.
+
+== Why the move?
+
+The DSL was experimental in the SDK and tightly coupled to Quarkus Flow's runtime.
+Bringing it into the extension gives us:
+
+* Faster iteration without cross-repo coordination.
+* A clear ownership boundary (DSL lives where it is used).
+* Aligned naming (`FlowDSL`, `FlowWorkflowBuilder`) that signals Quarkus Flow identity.
+
+== What changed
+
+[cols="1,1",options="header"]
+|===
+| Before (0.13.x) | After (0.14.0)
+
+| `io.serverlessworkflow.impl.expression.func.FuncDSL`
+| `io.quarkiverse.flow.dsl.FlowDSL`
+
+| `io.serverlessworkflow.impl.expression.func.FuncWorkflowBuilder`
+| `io.quarkiverse.flow.dsl.FlowWorkflowBuilder`
+
+| `io.serverlessworkflow.impl.expression.func.FuncCallHttpStep`
+| `io.quarkiverse.flow.dsl.FuncCallHttpStep`
+
+| `io.serverlessworkflow.impl.expression.func.FuncCallOpenAPIStep`
+| `io.quarkiverse.flow.dsl.FuncCallOpenAPIStep`
+
+| `io.serverlessworkflow.impl.expression.func.spi.*`
+| `io.quarkiverse.flow.dsl.spi.*`
+
+| `io.serverlessworkflow.impl.expression.func.configurers.*`
+| `io.quarkiverse.flow.dsl.configurers.*`
+
+| `io.serverlessworkflow.impl.expression.func.executors.*`
+| `io.quarkiverse.flow.dsl.executors.*`
+
+| `io.serverlessworkflow.impl.expression.func.model.*`
+| `io.quarkiverse.flow.dsl.model.*`
+
+| `io.serverlessworkflow.impl.expression.func.serialization.jackson.*`
+| `io.quarkiverse.flow.dsl.serialization.jackson.*`
+
+| `io.serverlessworkflow.impl.expression.func.expressions.*`
+| `io.quarkiverse.flow.dsl.expressions.*`
+
+| `io.serverlessworkflow.experimental.types.*`
+| `io.quarkiverse.flow.dsl.types.*`
+|===
+
+=== Class renames
+
+Two classes were renamed to reflect Quarkus Flow ownership:
+
+[cols="1,1",options="header"]
+|===
+| Old name | New name
+| `FuncDSL` | `FlowDSL`
+| `FuncWorkflowBuilder` | `FlowWorkflowBuilder`
+|===
+
+All other class names remain unchanged (e.g., `FuncCallHttpStep`, `FuncTaskTransformations`).
+
+== Step-by-step migration
+
+=== 1. Update your POM
+
+Remove the explicit SDK experimental dependencies if you declared them directly.
+The `quarkus-flow` extension now bundles everything:
+
+[source,xml]
+----
+<!-- Remove these if present in your pom.xml -->
+<dependency>
+    <groupId>io.serverlessworkflow</groupId>
+    <artifactId>serverlessworkflow-experimental-fluent-func</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.serverlessworkflow</groupId>
+    <artifactId>serverlessworkflow-experimental-lambda</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.serverlessworkflow</groupId>
+    <artifactId>serverlessworkflow-experimental-model</artifactId>
+</dependency>
+----
+
+=== 2. Update imports
+
+A global find-and-replace handles most cases:
+
+[cols="1,1",options="header"]
+|===
+| Find | Replace with
+| `io.serverlessworkflow.impl.expression.func.FuncDSL` | `io.quarkiverse.flow.dsl.FlowDSL`
+| `io.serverlessworkflow.impl.expression.func.FuncWorkflowBuilder` | `io.quarkiverse.flow.dsl.FlowWorkflowBuilder`
+| `io.serverlessworkflow.impl.expression.func` | `io.quarkiverse.flow.dsl`
+| `io.serverlessworkflow.experimental.types` | `io.quarkiverse.flow.dsl.types`
+|===
+
+TIP: Run the replacements in the order listed — the specific class renames first, then the package-level catch-all.
+
+For a shell-based approach:
+
+[source,bash]
+----
+# Rename the two user-facing classes
+find src -name '*.java' -exec sed -i '' \
+  's/FuncDSL/FlowDSL/g; s/FuncWorkflowBuilder/FlowWorkflowBuilder/g' {} +
+
+# Update package imports
+find src -name '*.java' -exec sed -i '' \
+  's/io\.serverlessworkflow\.impl\.expression\.func/io.quarkiverse.flow.dsl/g; \
+   s/io\.serverlessworkflow\.experimental\.types/io.quarkiverse.flow.dsl.types/g' {} +
+----
+
+=== 3. Update static imports
+
+If you use static imports (the recommended pattern), update them:
+
+[source,java]
+----
+// Before
+import static io.serverlessworkflow.impl.expression.func.FuncDSL.*;
+
+// After
+import static io.quarkiverse.flow.dsl.FlowDSL.*;
+----
+
+=== 4. Verify
+
+Rebuild your project to confirm all imports resolve:
+
+[source,bash]
+----
+mvn clean compile
+----
+
+== No behavioral changes
+
+The DSL API surface, task providers, and workflow execution semantics are identical.
+This migration is purely a namespace change — no workflow logic needs updating.

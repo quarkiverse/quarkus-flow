@@ -101,7 +101,7 @@ public Response processPayment(@HeaderParam("X-Order-Id") String orderId,
 
 [source,java]
 ----
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+import static io.quarkiverse.flow.dsl.FlowDSL.*;
 
 public class PaymentWorkflow extends Flow {
 
@@ -299,7 +299,7 @@ This lets you build resume/callback flows without inventing your own instance lo
 
 [source,java]
 ----
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+import static io.quarkiverse.flow.dsl.FlowDSL.*;
 
 public class NewsletterWorkflow extends Flow {
 
@@ -357,7 +357,7 @@ The `consumed(...)` DSL provides several data-based filtering methods:
 
 [source,java]
 ----
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+import static io.quarkiverse.flow.dsl.FlowDSL.*;
 
 public class OrderApprovalWorkflow extends Flow {
 

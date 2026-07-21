@@ -11,10 +11,10 @@ import dev.langchain4j.agentic.internal.AgentUtil;
 import dev.langchain4j.agentic.planner.AgentArgument;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
+import io.quarkiverse.flow.dsl.FuncTaskItemListBuilder;
+import io.quarkiverse.flow.dsl.types.LoopPredicateIndex;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.api.types.func.LoopPredicateIndex;
-import io.serverlessworkflow.fluent.func.FuncTaskItemListBuilder;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import io.serverlessworkflow.impl.TaskContext;
 import io.serverlessworkflow.impl.WorkflowContextData;
 
@@ -132,7 +132,7 @@ public abstract class LoopAgenticFlow extends AgenticFlow {
         BiPredicate<AgenticScope, Integer> exitPredicate = exit != null ? exit
                 : (scope, idx) -> false;
 
-        return FuncWorkflowBuilder.workflow()
+        return FlowWorkflowBuilder.workflow()
                 .document(buildDocument())
                 .input(inputSchema())
                 .tasks(tasks -> {

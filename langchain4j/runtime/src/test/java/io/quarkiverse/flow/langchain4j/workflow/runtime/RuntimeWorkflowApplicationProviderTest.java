@@ -66,7 +66,7 @@ public class RuntimeWorkflowApplicationProviderTest {
         WorkflowApplication runtimeApp = runtimeAppProvider.getRuntimeApplication();
 
         // Create a simple test workflow
-        var workflow = io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow("test-runtime-workflow")
+        var workflow = io.quarkiverse.flow.dsl.FlowWorkflowBuilder.workflow("test-runtime-workflow")
                 .tasks(tasks -> tasks.function(f -> f.function(input -> "test-result")))
                 .build();
 
@@ -83,14 +83,14 @@ public class RuntimeWorkflowApplicationProviderTest {
         WorkflowApplication runtimeApp = runtimeAppProvider.getRuntimeApplication();
 
         // Register a workflow in the runtime application
-        var runtimeWorkflow = io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow("runtime-only-workflow")
+        var runtimeWorkflow = io.quarkiverse.flow.dsl.FlowWorkflowBuilder.workflow("runtime-only-workflow")
                 .tasks(tasks -> tasks.function(f -> f.function(input -> "runtime")))
                 .build();
 
         runtimeApp.workflowDefinition(runtimeWorkflow);
 
         // Register a different workflow with the same ID in the build-time application
-        var buildTimeWorkflow = io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow("buildtime-only-workflow")
+        var buildTimeWorkflow = io.quarkiverse.flow.dsl.FlowWorkflowBuilder.workflow("buildtime-only-workflow")
                 .tasks(tasks -> tasks.function(f -> f.function(input -> "buildtime")))
                 .build();
 

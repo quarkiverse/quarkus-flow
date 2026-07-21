@@ -1,7 +1,7 @@
 package io.quarkiverse.flow.it;
 
-import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.http;
+import static io.quarkiverse.flow.dsl.FlowDSL.http;
+import static io.quarkiverse.flow.dsl.FlowWorkflowBuilder.workflow;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -23,7 +23,7 @@ public class SubmissionWorkflow extends Flow {
                         http()
                                 .uri(reviewServiceUrl + "/reviewers")
                                 .header("Authorization", "${ \"Bearer \" + (.token) }")
-                                .GET().outputAs("{ reviewers: . }"))
+                                .get().outputAs("{ reviewers: . }"))
                 .build();
     }
 }

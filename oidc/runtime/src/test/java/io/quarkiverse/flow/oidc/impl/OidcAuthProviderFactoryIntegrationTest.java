@@ -13,6 +13,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.quarkiverse.flow.dsl.FlowDSL;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.quarkiverse.flow.oidc.TokenAuthPolicy;
 import io.quarkiverse.flow.oidc.TokenAuthPolicyExtractor;
 import io.quarkiverse.flow.oidc.registry.EndpointKey;
@@ -28,8 +30,6 @@ import io.serverlessworkflow.api.types.OAuth2AuthenticationPropertiesEndpoints;
 import io.serverlessworkflow.api.types.OAuth2ConnectAuthenticationProperties;
 import io.serverlessworkflow.api.types.UriTemplate;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
-import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
@@ -72,11 +72,11 @@ class OidcAuthProviderFactoryIntegrationTest {
     @DisplayName("End-to-end: Register workflow with inline OAuth2, factory retrieves client by endpoint")
     void end_to_end_inline_oauth2_registration_and_retrieval() {
         // Step 1: Create workflow with inline OAuth2 authentication
-        Workflow workflow = FuncWorkflowBuilder.workflow("test")
-                .tasks(FuncDSL.call(
-                        FuncDSL.http("payment-api")
+        Workflow workflow = FlowWorkflowBuilder.workflow("test")
+                .tasks(FlowDSL.call(
+                        FlowDSL.http("payment-api")
                                 .uri(URI.create("https://api.example.com/payments"),
-                                        FuncDSL.oauth2("https://auth.example.com", CLIENT_CREDENTIALS, "my-client", "my-secret",
+                                        FlowDSL.oauth2("https://auth.example.com", CLIENT_CREDENTIALS, "my-client", "my-secret",
                                                 e -> e.token("/oauth2/token")))))
                 .build();
 
@@ -117,19 +117,19 @@ class OidcAuthProviderFactoryIntegrationTest {
     @DisplayName("End-to-end: Different clientId/clientSecret create different clients")
     void end_to_end_different_credentials_create_different_clients() {
         // Step 1: Create two workflows with same endpoint but different credentials
-        Workflow workflow1 = FuncWorkflowBuilder.workflow("workflow1")
-                .tasks(FuncDSL.call(
-                        FuncDSL.http("api")
+        Workflow workflow1 = FlowWorkflowBuilder.workflow("workflow1")
+                .tasks(FlowDSL.call(
+                        FlowDSL.http("api")
                                 .uri(URI.create("https://api.example.com"),
-                                        FuncDSL.oauth2("https://auth.example.com", CLIENT_CREDENTIALS, "client-A", "secret-A",
+                                        FlowDSL.oauth2("https://auth.example.com", CLIENT_CREDENTIALS, "client-A", "secret-A",
                                                 e -> e.token("/oauth2/token")))))
                 .build();
 
-        Workflow workflow2 = FuncWorkflowBuilder.workflow("workflow2")
-                .tasks(FuncDSL.call(
-                        FuncDSL.http("api")
+        Workflow workflow2 = FlowWorkflowBuilder.workflow("workflow2")
+                .tasks(FlowDSL.call(
+                        FlowDSL.http("api")
                                 .uri(URI.create("https://api.example.com"),
-                                        FuncDSL.oauth2("https://auth.example.com", CLIENT_CREDENTIALS, "client-B", "secret-B",
+                                        FlowDSL.oauth2("https://auth.example.com", CLIENT_CREDENTIALS, "client-B", "secret-B",
                                                 e -> e.token("/oauth2/token")))))
                 .build();
 
@@ -215,11 +215,11 @@ class OidcAuthProviderFactoryIntegrationTest {
     @DisplayName("End-to-end: Unregistered endpoint delegates to SDK")
     void end_to_end_unregistered_endpoint_delegates_to_sdk() {
         // Step 1: Create workflow with OAuth2
-        Workflow workflow = FuncWorkflowBuilder.workflow("test")
-                .tasks(FuncDSL.call(
-                        FuncDSL.http("api")
+        Workflow workflow = FlowWorkflowBuilder.workflow("test")
+                .tasks(FlowDSL.call(
+                        FlowDSL.http("api")
                                 .uri(URI.create("https://api.example.com"),
-                                        FuncDSL.oauth2("https://auth.example.com", CLIENT_CREDENTIALS, "my-client", "my-secret",
+                                        FlowDSL.oauth2("https://auth.example.com", CLIENT_CREDENTIALS, "my-client", "my-secret",
                                                 e -> e.token("/oauth2/token")))))
                 .build();
 

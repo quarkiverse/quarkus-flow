@@ -7,9 +7,9 @@ import java.net.URI;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.dsl.FlowDSL;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
-import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
 
 /**
  * Base for flows that call an OAuth2 (Client Credentials) protected HTTP service requesting a specific {@code scope}. Two
@@ -30,14 +30,14 @@ public abstract class ScopedImagesFlow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow(workflowName(), "quarkus-flow")
+        return FlowWorkflowBuilder.workflow(workflowName(), "quarkus-flow")
                 .tasks(
-                        FuncDSL.call(
-                                FuncDSL.http("listImages")
-                                        .GET()
+                        FlowDSL.call(
+                                FlowDSL.http("listImages")
+                                        .get()
                                         .header("Accept", "application/json")
                                         .uri(URI.create(imageService),
-                                                FuncDSL.oauth2(oauth2 -> oauth2
+                                                FlowDSL.oauth2(oauth2 -> oauth2
                                                         .authority(baseUrl)
                                                         .client(c -> c.id("quarkus-flow").secret("dummy-client-secret"))
                                                         .grant(CLIENT_CREDENTIALS)

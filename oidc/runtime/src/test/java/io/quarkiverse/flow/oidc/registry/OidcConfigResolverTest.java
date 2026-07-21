@@ -13,11 +13,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.quarkiverse.flow.oidc.FlowOidcConfig;
 import io.quarkus.oidc.client.runtime.OidcClientConfig;
 import io.quarkus.oidc.client.runtime.OidcClientsConfig;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
 class OidcConfigResolverTest {
@@ -306,7 +306,7 @@ class OidcConfigResolverTest {
     // ========== Helper Methods ==========
 
     private WorkflowDefinitionId createWorkflowId(String namespace, String name, String version) {
-        Workflow workflow = FuncWorkflowBuilder.workflow(name, namespace, version).build();
+        Workflow workflow = FlowWorkflowBuilder.workflow(name, namespace, version).build();
         return WorkflowDefinitionId.of(workflow);
     }
 

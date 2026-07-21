@@ -1,6 +1,6 @@
 package io.quarkiverse.flow.deployment.test.http;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.post;
+import static io.quarkiverse.flow.dsl.FlowDSL.post;
 
 import java.util.Map;
 
@@ -9,8 +9,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 
 @ApplicationScoped
 public class HttpRestFlow extends Flow {
@@ -20,7 +20,7 @@ public class HttpRestFlow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder
+        return FlowWorkflowBuilder
                 .workflow("rest")
                 .tasks(post(Map.of("hello", "${ .message }"), endpoint))
                 .build();

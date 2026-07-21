@@ -1,7 +1,7 @@
 package org.acme.example;
 
-import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.get;
+import static io.quarkiverse.flow.dsl.FlowDSL.get;
+import static io.quarkiverse.flow.dsl.FlowWorkflowBuilder.workflow;
 import static io.serverlessworkflow.fluent.spec.dsl.DSL.basic;
 import static io.serverlessworkflow.fluent.spec.dsl.DSL.secret;
 

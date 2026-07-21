@@ -1,7 +1,7 @@
 package org.acme.example;
 
-import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.openapi;
+import static io.quarkiverse.flow.dsl.FlowDSL.openapi;
+import static io.quarkiverse.flow.dsl.FlowWorkflowBuilder.workflow;
 
 import java.net.URI;
 

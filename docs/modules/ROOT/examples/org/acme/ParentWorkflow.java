@@ -1,19 +1,19 @@
 package org.acme;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+import static io.quarkiverse.flow.dsl.FlowDSL.*;
 
 // Static imports recommended for brevity:
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 
 @ApplicationScoped
 public class ParentWorkflow extends Flow {
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("parent-workflow-with-children", "org.acme", "1.0")
+        return FlowWorkflowBuilder.workflow("parent-workflow-with-children", "org.acme", "1.0")
                 .tasks(
                         // Using workflow(...) shortcut to reference existing workflow
                         subflow("executeHttpWorkflow",

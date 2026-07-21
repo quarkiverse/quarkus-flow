@@ -1,22 +1,22 @@
 package io.quarkiverse.flow.it;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
+import static io.quarkiverse.flow.dsl.FlowDSL.function;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.Entity;
 import jakarta.transaction.Transactional;
 
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 
 @ApplicationScoped
 public class SaveProposalWorkflow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("saveProposalWorkflow")
+        return FlowWorkflowBuilder.workflow("saveProposalWorkflow")
                 .tasks(function("doSave", this::save, String.class).outputAs((Long o) -> o))
                 .build();
     }

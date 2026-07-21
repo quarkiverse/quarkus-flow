@@ -1,18 +1,18 @@
 package org.acme.newsletter;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.agent;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.consume;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.consumed;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.emitJson;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.listen;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.switchWhenOrElse;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.toOne;
+import static io.quarkiverse.flow.dsl.FlowDSL.agent;
+import static io.quarkiverse.flow.dsl.FlowDSL.consume;
+import static io.quarkiverse.flow.dsl.FlowDSL.consumed;
+import static io.quarkiverse.flow.dsl.FlowDSL.emitJson;
+import static io.quarkiverse.flow.dsl.FlowDSL.function;
+import static io.quarkiverse.flow.dsl.FlowDSL.listen;
+import static io.quarkiverse.flow.dsl.FlowDSL.switchWhenOrElse;
+import static io.quarkiverse.flow.dsl.FlowDSL.toOne;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Map;
@@ -37,7 +37,7 @@ public class NewsletterWorkflow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("intelligent-newsletter")
+        return FlowWorkflowBuilder.workflow("intelligent-newsletter")
                 .tasks(agent("draftAgent", draftAgent::write, NewsletterRequest.class),
                         emitJson("draftReady", "org.acme.email.review.required", NewsletterDraft.class),
                         listen("waitHumanReview",

@@ -7,9 +7,9 @@ import java.net.URI;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.dsl.FlowDSL;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
-import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
 
 public abstract class DistinctEndpointImagesFlow extends Flow {
 
@@ -25,14 +25,14 @@ public abstract class DistinctEndpointImagesFlow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow(workflowName(), "quarkus-flow")
+        return FlowWorkflowBuilder.workflow(workflowName(), "quarkus-flow")
                 .tasks(
-                        FuncDSL.call(
-                                FuncDSL.http("listImages")
-                                        .GET()
+                        FlowDSL.call(
+                                FlowDSL.http("listImages")
+                                        .get()
                                         .header("Accept", "application/json")
                                         .uri(URI.create(imageService),
-                                                FuncDSL.oauth2(baseUrl, CLIENT_CREDENTIALS, "quarkus-flow",
+                                                FlowDSL.oauth2(baseUrl, CLIENT_CREDENTIALS, "quarkus-flow",
                                                         "dummy-client-secret", e -> e.token(tokenPath())))))
                 .build();
     }

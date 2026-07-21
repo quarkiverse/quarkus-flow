@@ -101,7 +101,7 @@ public class PetstoreFlow extends Flow {
     public Workflow descriptor() {
         final URI petstoreUri = URI.create("openapi/petstore.json");
 
-        return FuncWorkflowBuilder
+        return FlowWorkflowBuilder
                 .workflow("petstore")
                 .tasks(
                         // 1) Find sold pets
@@ -228,7 +228,7 @@ This example is intentionally small so you can use it as a starting point for yo
 
 * Quarkus Flow docs:
   [https://docs.quarkiverse.io/quarkus-flow/dev/](https://docs.quarkiverse.io/quarkus-flow/dev/)
-* Java DSL cheatsheet (FuncDSL): see **“Java DSL cheatsheet”** in the docs.
+* Java DSL cheatsheet (FlowDSL): see **“Java DSL cheatsheet”** in the docs.
 * HTTP / OpenAPI tasks: see the **HTTP & OpenAPI** section in the Quarkus Flow documentation.
 
 You can:

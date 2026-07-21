@@ -9,7 +9,7 @@ This cookbook provides a comprehensive collection of practical, copy-and-paste e
 
 All workflows in Quarkus Flow are defined as CDI beans by extending the `Flow` class and overriding the `descriptor()` method.
 
-We recommend using the `FuncWorkflowBuilder` with `FuncDSL`.
+We recommend using the `FlowWorkflowBuilder` with `FlowDSL`.
 
 :sectnums!:
 == Essential Setup
@@ -21,17 +21,17 @@ package org.acme;
 
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.spec.FuncWorkflowBuilder;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 
 // Recommended Static Imports
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.*;
+import static io.quarkiverse.flow.dsl.FlowDSL.*;
 
 @ApplicationScoped
 public class MyWorkflow extends Flow {
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("my-workflow-id")
+        return FlowWorkflowBuilder.workflow("my-workflow-id")
             .tasks(
                 // tasks go here
             )

@@ -18,13 +18,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import io.quarkiverse.flow.dsl.FlowDSL;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.quarkiverse.flow.oidc.FlowOidcConfig;
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClients;
 import io.serverlessworkflow.api.types.OAuth2AuthenticationData;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
-import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
 import io.smallrye.mutiny.Uni;
 
@@ -67,7 +67,7 @@ class OidcWorkflowRegistrarTest {
     @DisplayName("Named policy without routing override - uses policy name")
     void named_policy_no_override_uses_policy_name() {
         // Given: workflow with named policy "keycloak"
-        Workflow workflow = FuncWorkflowBuilder.workflow("orders", "acme", "1.0.0")
+        Workflow workflow = FlowWorkflowBuilder.workflow("orders", "acme", "1.0.0")
                 .use(use -> use.authentications(auth -> auth.authentication("keycloak", a -> a.oauth2(
                         oauth2 -> oauth2.authority("https://auth.example.com")
                                 .grant(OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS)))))
@@ -92,7 +92,7 @@ class OidcWorkflowRegistrarTest {
     @DisplayName("Named policy with routing override - uses override name")
     void named_policy_with_override_uses_override_name() {
         // Given: workflow with named policy "keycloak"
-        Workflow workflow = FuncWorkflowBuilder.workflow("orders", "acme", "1.0.0")
+        Workflow workflow = FlowWorkflowBuilder.workflow("orders", "acme", "1.0.0")
                 .use(use -> use.authentications(auth -> auth.authentication("keycloak", a -> a.oauth2(
                         oauth2 -> oauth2.authority("https://auth.example.com")
                                 .grant(OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS)))))
@@ -117,12 +117,12 @@ class OidcWorkflowRegistrarTest {
     @DisplayName("Inline auth without routing override - uses composite name")
     void inline_auth_no_override_uses_composite_name() {
         // Given: workflow with inline auth on task "payment"
-        Workflow workflow = FuncWorkflowBuilder.workflow("orders", "acme", "1.0.0")
-                .tasks(FuncDSL.call(
-                        FuncDSL.http("payment")
-                                .POST()
+        Workflow workflow = FlowWorkflowBuilder.workflow("orders", "acme", "1.0.0")
+                .tasks(FlowDSL.call(
+                        FlowDSL.http("payment")
+                                .post()
                                 .uri(URI.create("https://api.example.com/payment"),
-                                        FuncDSL.oauth2("https://auth.example.com",
+                                        FlowDSL.oauth2("https://auth.example.com",
                                                 OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS,
                                                 "client", "secret",
                                                 e -> e.token("/oauth2/token")))))
@@ -147,12 +147,12 @@ class OidcWorkflowRegistrarTest {
     @DisplayName("Inline auth with task-level routing override - uses override name")
     void inline_auth_with_task_override_uses_override_name() {
         // Given: workflow with inline auth on task "payment"
-        Workflow workflow = FuncWorkflowBuilder.workflow("orders", "acme", "1.0.0")
-                .tasks(FuncDSL.call(
-                        FuncDSL.http("payment")
-                                .POST()
+        Workflow workflow = FlowWorkflowBuilder.workflow("orders", "acme", "1.0.0")
+                .tasks(FlowDSL.call(
+                        FlowDSL.http("payment")
+                                .post()
                                 .uri(URI.create("https://api.example.com/payment"),
-                                        FuncDSL.oauth2("https://auth.example.com",
+                                        FlowDSL.oauth2("https://auth.example.com",
                                                 OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS,
                                                 "client", "secret",
                                                 e -> e.token("/oauth2/token")))))
@@ -177,12 +177,12 @@ class OidcWorkflowRegistrarTest {
     @DisplayName("Inline auth with workflow-level routing override - uses override name")
     void inline_auth_with_workflow_override_uses_override_name() {
         // Given: workflow with inline auth on task "payment"
-        Workflow workflow = FuncWorkflowBuilder.workflow("orders", "acme", "1.0.0")
-                .tasks(FuncDSL.call(
-                        FuncDSL.http("payment")
-                                .POST()
+        Workflow workflow = FlowWorkflowBuilder.workflow("orders", "acme", "1.0.0")
+                .tasks(FlowDSL.call(
+                        FlowDSL.http("payment")
+                                .post()
                                 .uri(URI.create("https://api.example.com/payment"),
-                                        FuncDSL.oauth2("https://auth.example.com",
+                                        FlowDSL.oauth2("https://auth.example.com",
                                                 OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS,
                                                 "client", "secret",
                                                 e -> e.token("/oauth2/token")))))
@@ -207,7 +207,7 @@ class OidcWorkflowRegistrarTest {
     @DisplayName("User-configured client exists - skips creation but registers policy")
     void user_configured_client_exists_skips_creation() {
         // Given: workflow with named policy "keycloak"
-        Workflow workflow = FuncWorkflowBuilder.workflow("orders", "acme", "1.0.0")
+        Workflow workflow = FlowWorkflowBuilder.workflow("orders", "acme", "1.0.0")
                 .use(use -> use.authentications(auth -> auth.authentication("keycloak", a -> a.oauth2(
                         oauth2 -> oauth2.authority("https://auth.example.com")
                                 .grant(OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS)))))
@@ -235,7 +235,7 @@ class OidcWorkflowRegistrarTest {
     @DisplayName("Client already in registry - skips creation but registers policy")
     void client_already_in_registry_skips_creation() {
         // Given: workflow with named policy "keycloak"
-        Workflow workflow = FuncWorkflowBuilder.workflow("orders", "acme", "1.0.0")
+        Workflow workflow = FlowWorkflowBuilder.workflow("orders", "acme", "1.0.0")
                 .use(use -> use.authentications(auth -> auth.authentication("keycloak", a -> a.oauth2(
                         oauth2 -> oauth2.authority("https://auth.example.com")
                                 .grant(OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS)))))
@@ -266,17 +266,17 @@ class OidcWorkflowRegistrarTest {
     @DisplayName("Multiple policies in same workflow - all registered correctly")
     void multiple_policies_all_registered() {
         // Given: workflow with both named and inline auth
-        Workflow workflow = FuncWorkflowBuilder.workflow("orders", "acme", "1.0.0")
+        Workflow workflow = FlowWorkflowBuilder.workflow("orders", "acme", "1.0.0")
                 .use(use -> use.authentications(auth -> auth.authentication("keycloak", a -> a.oauth2(
                         oauth2 -> oauth2.authority("https://auth.example.com")
                                 .grant(OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS)))))
                 .tasks(
-                        FuncDSL.call(FuncDSL.http("auth-task").uri(URI.create("https://api1.example.com"),
-                                FuncDSL.use("keycloak"))),
-                        FuncDSL.call(FuncDSL.http("payment")
-                                .POST()
+                        FlowDSL.call(FlowDSL.http("auth-task").uri(URI.create("https://api1.example.com"),
+                                FlowDSL.use("keycloak"))),
+                        FlowDSL.call(FlowDSL.http("payment")
+                                .post()
                                 .uri(URI.create("https://api.example.com/payment"),
-                                        FuncDSL.oauth2("https://auth.example.com",
+                                        FlowDSL.oauth2("https://auth.example.com",
                                                 OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS,
                                                 "client", "secret",
                                                 e -> e.token("/oauth2/token")))))

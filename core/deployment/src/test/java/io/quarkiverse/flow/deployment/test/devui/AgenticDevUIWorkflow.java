@@ -1,13 +1,13 @@
 package io.quarkiverse.flow.deployment.test.devui;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.set;
+import static io.quarkiverse.flow.dsl.FlowDSL.set;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.quarkiverse.flow.internal.WorkflowInvocationMetadata;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 
 /**
  * Minimal workflow that is "agentic" from the Dev UI POV:
@@ -18,7 +18,7 @@ public class AgenticDevUIWorkflow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        Workflow wf = FuncWorkflowBuilder
+        Workflow wf = FlowWorkflowBuilder
                 .workflow("devui-agentic")
                 .tasks(set("${ . }"))
                 .build();

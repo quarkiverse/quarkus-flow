@@ -2,8 +2,8 @@ package org.acme.http.workflows.oauth2;
 
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
-import io.serverlessworkflow.fluent.func.dsl.FuncDSL;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
+import io.quarkiverse.flow.dsl.FlowDSL;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -22,15 +22,15 @@ public class TokenExchangeGrantTypeFlow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow(
+        return FlowWorkflowBuilder.workflow(
                 "token-exchange", "quarkus.flow")
                 .use(use -> use.secrets("exchangeSecrets"))
                 .tasks(
-                        FuncDSL.http()
+                        FlowDSL.http()
                                 .method("DELETE")
                                 .uri(URI.create(imageService + "/attrs/dcb507bd-4dc4-46ba-a4ae-eb622b817d62"),
 
-                                        FuncDSL.oauth2(oauth2 -> {
+                                        FlowDSL.oauth2(oauth2 -> {
                                             oauth2
                                                     .endpoints(token -> token.token("/oauth2/token"))
                                                     .client(client -> {

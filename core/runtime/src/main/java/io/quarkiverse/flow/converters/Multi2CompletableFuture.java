@@ -2,7 +2,7 @@ package io.quarkiverse.flow.converters;
 
 import java.util.concurrent.CompletableFuture;
 
-import io.serverlessworkflow.impl.executors.func.DataTypeConverter;
+import io.quarkiverse.flow.dsl.executors.DataTypeConverter;
 import io.smallrye.mutiny.Multi;
 
 @SuppressWarnings("rawtypes")

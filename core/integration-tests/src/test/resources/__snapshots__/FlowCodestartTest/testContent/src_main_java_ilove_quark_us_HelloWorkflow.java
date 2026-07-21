@@ -2,10 +2,10 @@ package ilove.quark.us;
 
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.set;
+import static io.quarkiverse.flow.dsl.FlowDSL.set;
 
 @ApplicationScoped
 public class HelloWorkflow extends Flow {
@@ -13,7 +13,7 @@ public class HelloWorkflow extends Flow {
     @Override
     public Workflow descriptor () {
 
-        return FuncWorkflowBuilder.workflow("hello")
+        return FlowWorkflowBuilder.workflow("hello")
                 // jq expression to set our context to the JSON object `message`
                 .tasks(set("{ message: \"hello world!\" }"))
                 .build();

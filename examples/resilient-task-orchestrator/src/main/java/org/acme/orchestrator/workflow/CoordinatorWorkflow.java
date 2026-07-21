@@ -13,12 +13,12 @@ import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowContextData;
 import jakarta.enterprise.context.ApplicationScoped;
 
-import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.emitJson;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.forEach;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.listen;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.toAll;
+import static io.quarkiverse.flow.dsl.FlowWorkflowBuilder.workflow;
+import static io.quarkiverse.flow.dsl.FlowDSL.emitJson;
+import static io.quarkiverse.flow.dsl.FlowDSL.forEach;
+import static io.quarkiverse.flow.dsl.FlowDSL.function;
+import static io.quarkiverse.flow.dsl.FlowDSL.listen;
+import static io.quarkiverse.flow.dsl.FlowDSL.toAll;
 
 /**
  * Coordinator Workflow - orchestrates the build pipeline.

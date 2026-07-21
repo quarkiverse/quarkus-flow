@@ -164,7 +164,7 @@ Why this matters:
 ### Serverless Workflow DSL
 
 - Workflows extend `io.quarkiverse.flow.Flow`
-- Use the fluent DSL: `io.serverlessworkflow.fluent.func.dsl.FuncDSL`
+- Use the fluent DSL: `io.quarkiverse.flow.dsl.FlowDSL`
 - Support both Java DSL and YAML definitions
 
 ### Commit Messages
