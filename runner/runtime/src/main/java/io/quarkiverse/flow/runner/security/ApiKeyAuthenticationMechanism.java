@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Alternative;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
 
@@ -25,10 +24,25 @@ import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
+/**
+ * Authenticates requests using configured API keys.
+ * <p>
+ * Each API key is mapped to a principal, a set of roles, and a normalized set
+ * of authorized namespaces. The namespace configuration is propagated to the
+ * resulting {@link SecurityIdentity} through the
+ * {@link AuthzConsts#CLAIM_NAMESPACES} attribute.
+ * <p>
+ * Namespace values are normalized by trimming surrounding whitespace and
+ * removing null or blank entries. Consequently, values such as {@code " * "}
+ * are normalized to the exact wildcard value {@code "*"}.
+ * <p>
+ * This authentication mechanism does not make namespace authorization
+ * decisions. The exact value {@code "*"} and explicit namespace values are
+ * interpreted by the namespace authorization layer.
+ */
 @ApplicationScoped
 @Unremovable
 @Priority(Priorities.AUTHENTICATION)
-@Alternative
 public class ApiKeyAuthenticationMechanism implements HttpAuthenticationMechanism {
 
     @Inject
@@ -72,26 +86,21 @@ public class ApiKeyAuthenticationMechanism implements HttpAuthenticationMechanis
 
         if (matchingKey.isPresent()) {
             String keyName = matchingKey.get().getKey();
-            Set<String> roles = matchingKey.get().getValue().roles();
-            Optional<Set<String>> namespacesOpt = matchingKey.get().getValue().namespaces();
 
-            // Build security identity with principal name and roles
+            FlowRunnerConfig.Security.ApiKey apiKeyConfig = matchingKey.get().getValue();
+
+            Set<String> roles = apiKeyConfig.roles();
+            Set<String> namespaces = normalizeNamespaces(apiKeyConfig.namespaces());
+
+            // Build security identity with principal name and roles.
             QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder()
                     .setPrincipal(() -> "api-key:" + keyName);
+
             roles.forEach(builder::addRole);
 
-            // Add namespaces attribute if configured
-            namespacesOpt.ifPresent(namespaces -> {
-                if (!namespaces.isEmpty()) {
-                    Set<String> nonBlankNs = namespaces.stream()
-                            .filter(Objects::nonNull)
-                            .filter(ns -> !ns.isBlank())
-                            .collect(Collectors.toSet());
-                    if (!nonBlankNs.isEmpty()) {
-                        builder.addAttribute(CLAIM_NAMESPACES, nonBlankNs);
-                    }
-                }
-            });
+            // Always propagate the normalized namespace set, including an empty set.
+            // The namespace authorization layer interprets "*" and enforces access.
+            builder.addAttribute(CLAIM_NAMESPACES, namespaces);
 
             return Uni.createFrom().item(builder.build());
         }
@@ -109,4 +118,31 @@ public class ApiKeyAuthenticationMechanism implements HttpAuthenticationMechanis
         return Uni.createFrom().item(new ChallengeData(401, "Bearer", "Invalid or missing API Key"));
     }
 
+    /**
+     * Normalizes the namespace values configured for an API key.
+     * <p>
+     * Null and blank entries are removed, and surrounding whitespace is trimmed.
+     * An absent or empty namespace set is normalized to an empty set. The exact
+     * wildcard value {@code "*"} is preserved; values such as {@code " * "} are
+     * normalized to {@code "*"}.
+     * <p>
+     * This method does not interpret namespace permissions. In particular, it
+     * does not implement wildcard matching. The normalized values are propagated
+     * to the {@link SecurityIdentity}, and the authorization layer determines
+     * whether a namespace is allowed.
+     *
+     * @param namespaces the configured namespace values
+     * @return an immutable, normalized namespace set
+     */
+    private Set<String> normalizeNamespaces(Set<String> namespaces) {
+        if (namespaces == null || namespaces.isEmpty()) {
+            return Set.of();
+        }
+
+        return namespaces.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(namespace -> !namespace.isEmpty())
+                .collect(Collectors.toUnmodifiableSet());
+    }
 }

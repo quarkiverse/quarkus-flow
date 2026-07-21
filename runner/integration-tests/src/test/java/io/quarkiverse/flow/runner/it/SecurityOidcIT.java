@@ -12,6 +12,8 @@ import io.quarkiverse.flow.runner.model.ExecutionResponse;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.security.TestSecurity;
+import io.quarkus.test.security.oidc.Claim;
+import io.quarkus.test.security.oidc.OidcSecurity;
 import io.serverlessworkflow.impl.WorkflowStatus;
 
 /**
@@ -98,6 +100,7 @@ class SecurityOidcIT {
 
     @Test
     @TestSecurity(user = "bob", roles = "flow-invoker")
+    @OidcSecurity(claims = { @Claim(key = "namespace", value = "test-namespace") })
     @DisplayName("test_execute_workflow_with_invoker_role")
     void test_execute_workflow_with_invoker_role() {
         Map<String, Object> input = Map.of("name", "OIDC Invoker");
@@ -132,6 +135,7 @@ class SecurityOidcIT {
 
     @Test
     @TestSecurity(user = "bob", roles = "flow-invoker")
+    @OidcSecurity(claims = { @Claim(key = "namespace", value = "test-namespace") })
     @DisplayName("test_get_definition_yaml_with_valid_token")
     void test_get_definition_yaml_with_valid_token() {
         given()
@@ -191,6 +195,7 @@ class SecurityOidcIT {
 
     @Test
     @TestSecurity(user = "alice", roles = "flow-invoker")
+    @OidcSecurity(claims = { @Claim(key = "namespace", value = "test-namespace") })
     @DisplayName("test_execute_latest_workflow_version")
     void test_execute_latest_workflow_version() {
         Map<String, Object> input = Map.of("name", "Latest Version");

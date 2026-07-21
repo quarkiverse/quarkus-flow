@@ -28,11 +28,13 @@ import io.smallrye.config.WithDefault;
  * quarkus.flow.runner.security.type=api-key
  * quarkus.flow.runner.security.api-keys."invoker".secret=${FLOW_API_KEY}
  * quarkus.flow.runner.security.api-keys."invoker".roles=flow-invoker
+ * quarkus.flow.runner.security.api-keys."invoker".namespaces=*
  * </pre>
  *
  * @see <a href="https://github.com/quarkiverse/quarkus-flow/issues/52">Issue #52</a>
  * @see <a href="https://docs.quarkiverse.io/quarkus-flow/dev/">Quarkus Flow Documentation</a>
  */
+
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 @ConfigMapping(prefix = "quarkus.flow.runner")
 public interface FlowRunnerConfig {
@@ -141,19 +143,25 @@ public interface FlowRunnerConfig {
         /**
          * API Key definitions (only used when {@code type=API_KEY}).
          * <p>
-         * Each key is mapped to a set of roles. Example:
+         * Each key is mapped to roles and authorized namespaces. Example:
          *
          * <pre>
+         * # Administrators always have access to all namespaces
          * quarkus.flow.runner.security.api-keys."admin".secret=${ADMIN_KEY}
          * quarkus.flow.runner.security.api-keys."admin".roles=flow-admin
          *
+         * # Explicit unrestricted access for a non-admin key
          * quarkus.flow.runner.security.api-keys."invoker".secret=${INVOKER_KEY}
          * quarkus.flow.runner.security.api-keys."invoker".roles=flow-invoker
+         * quarkus.flow.runner.security.api-keys."invoker".namespaces=*
+         *
+         * # Restricted access
+         * quarkus.flow.runner.security.api-keys."team-a".secret=${TEAM_A_KEY}
+         * quarkus.flow.runner.security.api-keys."team-a".roles=flow-invoker
+         * quarkus.flow.runner.security.api-keys."team-a".namespaces=team-a
          * </pre>
          * <p>
-         * Clients send the secret in the {@code Authorization: Bearer <secret>} header.
-         * The key name (e.g., "admin", "invoker") is for configuration organization only
-         * and is not sent by clients.
+         * The {@code namespaces} property defaults to {@code "*"} when omitted.
          *
          * @return map of API key names to their configuration
          */
@@ -229,24 +237,15 @@ public interface FlowRunnerConfig {
             Set<String> roles();
 
             /**
-             * Namespaces allowed for this API key.
+             * Namespaces authorized for this API key.
              * <p>
-             * When not configured (empty), the key has access to all namespaces.
-             * When configured, the key can only access workflows in the specified namespaces.
-             * <p>
-             * Example:
+             * The value {@code "*"} grants access to all namespaces. When omitted, this
+             * property defaults to {@code "*"} for backward compatibility.
              *
-             * <pre>
-             * # Restrict to specific namespaces
-             * quarkus.flow.runner.security.api-keys."team-key".namespaces=team-a,team-b
-             *
-             * # Or leave empty for all namespaces (default)
-             * quarkus.flow.runner.security.api-keys."admin-key".roles=flow-admin
-             * </pre>
-             *
-             * @return optional set of authorized namespace names, empty means all namespaces allowed
+             * @return the configured authorized namespaces
              */
-            Optional<Set<String>> namespaces();
+            @WithDefault("*")
+            Set<String> namespaces();
         }
 
         /**
@@ -257,39 +256,54 @@ public interface FlowRunnerConfig {
          */
         interface Namespace {
             /**
-             * JWT claim name containing authorized namespace(s).
+             * JWT claim containing the namespaces authorized for the current identity.
              * <p>
              * Used when {@code type=OIDC}. The claim can contain:
              * <ul>
-             * <li>Single string value (e.g., {@code "my-namespace"})</li>
-             * <li>Array of strings (e.g., {@code ["ns1", "ns2"]})</li>
+             * <li>A single namespace, for example {@code "team-a"}</li>
+             * <li>An array of namespaces, for example
+             * {@code ["team-a", "team-b"]}</li>
+             * <li>A comma-separated string, for example
+             * {@code "team-a,team-b"}</li>
+             * <li>The exact value {@code "*"} to authorize all current and future
+             * namespaces</li>
              * </ul>
+             * <p>
+             * For a non-admin OIDC identity, a missing, null, empty, or blank claim grants
+             * no namespace access when namespace validation is enabled. Identities with
+             * the {@code flow-admin} role bypass namespace restrictions.
+             * <p>
+             * Namespace matching is exact and case-sensitive. Partial wildcard values
+             * such as {@code "team-*"} are not supported.
              * <p>
              * Example:
              *
              * <pre>
-             * quarkus.flow.runner.security.namespace.claim=namespace
-             * # or for multi-namespace support:
-             * quarkus.flow.runner.security.namespace.claim=namespaces
+             * quarkus.flow.runner.security.namespace.claim = namespace
              * </pre>
              *
-             * @return the JWT claim name (default: {@code "namespace"})
+             * @return the JWT claim name, defaulting to {@code "namespace"}
              */
             @WithDefault("namespace")
             String claim();
 
             /**
-             * Enable or disable namespace validation.
+             * Enables or disables namespace authorization.
              * <p>
-             * When {@code true}, requests are validated against the namespace in the
-             * request path and the user's authorized namespaces (from JWT claim or
-             * API key configuration).
+             * When enabled:
+             * <ul>
+             * <li>Identities with the {@code flow-admin} role can access all
+             * namespaces.</li>
+             * <li>The exact namespace value {@code "*"} authorizes all namespaces.</li>
+             * <li>Explicit namespace values authorize only those namespaces.</li>
+             * <li>A missing, null, empty, or blank namespace set grants no access to a
+             * non-admin identity.</li>
+             * </ul>
              * <p>
-             * When {@code false}, namespace validation is skipped (all users can
-             * access all namespaces). Use only in development.
+             * When disabled, namespace authorization is skipped and access is controlled
+             * only through role-based authorization.
              *
-             * @return {@code true} if namespace validation is enabled (default),
-             *         {@code false} to disable
+             * @return {@code true} when namespace validation is enabled
              */
             @WithDefault("true")
             boolean validate();
