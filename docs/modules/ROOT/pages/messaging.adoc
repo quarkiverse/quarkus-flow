@@ -33,17 +33,28 @@ You do *not* need a separate `quarkus-flow-messaging` artifact. The bridge is au
 </dependency>
 ----
 
-To activate the bridge, enable the default domain event channels in your `application.properties`:
+=== Automatic Kafka configuration with DevServices
+
+Instead of manually configuring every `mp.messaging.*` property, you can let Quarkus Flow set the full Kafka stack automatically in dev and test mode with a single flag:
 
 [source,properties]
 ----
-quarkus.flow.messaging.defaults-enabled=true
+quarkus.flow.messaging.devservices-kafka-enabled=true
 ----
 
-Once enabled, the engine creates two default channels:
+This single property:
 
-* `flow-in` (Inbound): Consumes structured CloudEvents JSON to start or wake up workflows.
-* `flow-out` (Outbound): Publishes structured CloudEvents JSON emitted by workflows.
+* Enables the default messaging bridge (`quarkus.flow.messaging.defaults-enabled=true`)
+* Enables lifecycle events (`quarkus.flow.messaging.lifecycle-enabled=true`)
+* Injects the Kafka connector (`smallrye-kafka`) on all three default channels:
+** `flow-in` (inbound) — `topic=flow-in`, `StringDeserializer` / `ByteArrayDeserializer`
+** `flow-out` (outbound) — `topic=flow-out`, `StringSerializer` / `ByteArraySerializer`
+** `flow-lifecycle-out` (outbound) — `topic=flow-lifecycle-out`, `StringSerializer` / `ByteArraySerializer`
+* Triggers Quarkus DevServices to start an ephemeral Kafka broker automatically
+
+Quarkus DevServices start log confirms the injected configuration so you can see exactly what was set.
+
+You can override any of the injected defaults in your `application.properties` — the injected values are low-priority defaults.
 
 == 2. Map channels to Kafka topics
 

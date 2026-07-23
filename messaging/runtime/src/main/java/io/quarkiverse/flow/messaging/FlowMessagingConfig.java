@@ -29,6 +29,19 @@ public interface FlowMessagingConfig {
     Optional<Boolean> enableMetadataCorrelation();
 
     /**
+     * Automatically configure Kafka connector properties for the default Flow messaging channels
+     * ('flow-in', 'flow-out'). When enabled, the engine injects all necessary Kafka connector,
+     * topic, and serializer/deserializer defaults. These defaults can always be overridden in
+     * {@code application.properties}.
+     * <p>
+     * This setting is available in any launch mode (dev, test, or production) and does not require
+     * DevServices. To also enable the lifecycle channel, use
+     * {@code quarkus.flow.messaging.lifecycle-enabled=true}.
+     */
+    @WithDefault("false")
+    Optional<Boolean> defaultKafkaEnabled();
+
+    /**
      * Configure the metadata key used in correlation propagation.
      * <p>
      * Allows customization of the metadata keys used for correlation information.
@@ -53,7 +66,6 @@ public interface FlowMessagingConfig {
          * Configure the metadata Workflow Instance ID used in correlation propagation.
          */
         MetadataItemConfig instanceId();
-
     }
 
     interface MetadataItemConfig {
