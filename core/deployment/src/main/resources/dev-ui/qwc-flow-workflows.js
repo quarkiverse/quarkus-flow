@@ -115,7 +115,8 @@ export class QwcFlow extends observeState(QwcHotReloadElement) {
 
     _visualizeDiagramEditor(workflow) {
         this._diagramEditorDialogOpened = true;
-        this._currentDiagramEditorWorkflow = workflow;
+        // Force new object to trigger re-render and not use stale workflow reference
+        this._currentDiagramEditorWorkflow = {...workflow};
     }
 
     _diagramEditorDialog() {
