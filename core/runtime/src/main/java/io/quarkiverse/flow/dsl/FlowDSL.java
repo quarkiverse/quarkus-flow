@@ -72,6 +72,13 @@ import io.serverlessworkflow.impl.WorkflowContextData;
  * }</pre>
  */
 public final class FlowDSL {
+
+    /**
+     * Default CloudEvent {@code source} applied by the emit helpers when no source is provided.
+     * Later calls to {@code source(...)} override it, since property steps are applied in order.
+     */
+    public static final String DEFAULT_EMIT_SOURCE = "quarkus-flow:local";
+
     private static final CommonFuncOps OPS = new CommonFuncOps() {
     };
 
@@ -226,7 +233,8 @@ public final class FlowDSL {
      */
     public static <T> Consumer<FuncEmitTaskBuilder> produced(
             String type, SerializableFunction<T, CloudEventData> function) {
-        return event -> event.event(e -> e.type(type).data(function, ReflectionUtils.inferInputType(function)));
+        return event -> event
+                .event(e -> e.source(DEFAULT_EMIT_SOURCE).type(type).data(function, ReflectionUtils.inferInputType(function)));
     }
 
     /**
@@ -241,17 +249,19 @@ public final class FlowDSL {
      */
     public static <T> Consumer<FuncEmitTaskBuilder> produced(
             String type, Function<T, CloudEventData> function, Class<T> inputClass) {
-        return event -> event.event(e -> e.type(type).data(function, inputClass));
+        return event -> event.event(e -> e.source(DEFAULT_EMIT_SOURCE).type(type).data(function, inputClass));
     }
 
     public static <T> Consumer<FuncEmitTaskBuilder> produced(
             String type, ContextFunction<T, CloudEventData> function) {
-        return event -> event.event(e -> e.type(type).data(function, ReflectionUtils.inferInputType(function)));
+        return event -> event
+                .event(e -> e.source(DEFAULT_EMIT_SOURCE).type(type).data(function, ReflectionUtils.inferInputType(function)));
     }
 
     public static <T> Consumer<FuncEmitTaskBuilder> produced(
             String type, FilterFunction<T, CloudEventData> function) {
-        return event -> event.event(e -> e.type(type).data(function, ReflectionUtils.inferInputType(function)));
+        return event -> event
+                .event(e -> e.source(DEFAULT_EMIT_SOURCE).type(type).data(function, ReflectionUtils.inferInputType(function)));
     }
 
     /**
@@ -264,7 +274,7 @@ public final class FlowDSL {
      * @return a consumer to configure {@link FuncEmitTaskBuilder}
      */
     public static <T> Consumer<FuncEmitTaskBuilder> producedJson(String type, Class<T> inputClass) {
-        return b -> new FuncEmitSpec().type(type).jsonData(inputClass).accept(b);
+        return b -> new FuncEmitSpec().source(DEFAULT_EMIT_SOURCE).type(type).jsonData(inputClass).accept(b);
     }
 
     /**
@@ -278,7 +288,7 @@ public final class FlowDSL {
      */
     public static <T> Consumer<FuncEmitTaskBuilder> producedBytes(
             String type, Function<T, byte[]> serializer, Class<T> inputClass) {
-        return b -> new FuncEmitSpec().type(type).bytesData(serializer, inputClass).accept(b);
+        return b -> new FuncEmitSpec().source(DEFAULT_EMIT_SOURCE).type(type).bytesData(serializer, inputClass).accept(b);
     }
 
     /**
@@ -289,7 +299,7 @@ public final class FlowDSL {
      * @return a consumer to configure {@link FuncEmitTaskBuilder}
      */
     public static Consumer<FuncEmitTaskBuilder> producedBytesUtf8(String type) {
-        return b -> new FuncEmitSpec().type(type).bytesDataUtf8().accept(b);
+        return b -> new FuncEmitSpec().source(DEFAULT_EMIT_SOURCE).type(type).bytesDataUtf8().accept(b);
     }
 
     /**
@@ -299,7 +309,7 @@ public final class FlowDSL {
      * @return a new {@link FuncEmitSpec} instance pre-configured with the event type
      */
     public static FuncEmitSpec produced(String type) {
-        return new FuncEmitSpec().type(type);
+        return new FuncEmitSpec().source(DEFAULT_EMIT_SOURCE).type(type);
     }
 
     /**

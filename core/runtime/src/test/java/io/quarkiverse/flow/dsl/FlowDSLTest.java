@@ -9,6 +9,7 @@ import static io.quarkiverse.flow.dsl.FlowDSL.grpc;
 import static io.quarkiverse.flow.dsl.FlowDSL.http;
 import static io.quarkiverse.flow.dsl.FlowDSL.listen;
 import static io.quarkiverse.flow.dsl.FlowDSL.produced;
+import static io.quarkiverse.flow.dsl.FlowDSL.producedJson;
 import static io.quarkiverse.flow.dsl.FlowDSL.switchWhenOrElse;
 import static io.quarkiverse.flow.dsl.FlowDSL.toOne;
 import static io.serverlessworkflow.fluent.spec.dsl.DSL.use;
@@ -28,6 +29,7 @@ import io.quarkiverse.flow.dsl.types.FilterFunction;
 import io.serverlessworkflow.api.types.CallFunction;
 import io.serverlessworkflow.api.types.CallGRPC;
 import io.serverlessworkflow.api.types.CallHTTP;
+import io.serverlessworkflow.api.types.EmitTask;
 import io.serverlessworkflow.api.types.Export;
 import io.serverlessworkflow.api.types.FlowDirectiveEnum;
 import io.serverlessworkflow.api.types.RunTask;
@@ -118,6 +120,34 @@ class FlowDSLTest {
         assertNotNull(ex.getAs(), "'as' should be populated");
         assertNull(
                 ex.getAs().getString(), "Export 'as' must not be a literal string when using function");
+    }
+
+    @Test
+    @DisplayName("emit helpers default the CloudEvent source to quarkus-flow:local")
+    void emit_helpers_default_source() {
+        Workflow wf = FlowWorkflowBuilder.workflow("emit-default-source")
+                .tasks(emit(producedJson("org.acme.created", String.class)))
+                .build();
+
+        EmitTask et = wf.getDo().get(0).getTask().getEmitTask();
+        assertNotNull(et, "EmitTask expected");
+        assertEquals(
+                FlowDSL.DEFAULT_EMIT_SOURCE,
+                et.getEmit().getEvent().getWith().getSource().getUriTemplate().getLiteralUri().toString());
+    }
+
+    @Test
+    @DisplayName("an explicit source overrides the default")
+    void emit_explicit_source_overrides_default() {
+        Workflow wf = FlowWorkflowBuilder.workflow("emit-explicit-source")
+                .tasks(emit(produced("org.acme.created").source("https://acme.org/orders").bytesDataUtf8()))
+                .build();
+
+        EmitTask et = wf.getDo().get(0).getTask().getEmitTask();
+        assertNotNull(et, "EmitTask expected");
+        assertEquals(
+                "https://acme.org/orders",
+                et.getEmit().getEvent().getWith().getSource().getUriTemplate().getLiteralUri().toString());
     }
 
     @Test
