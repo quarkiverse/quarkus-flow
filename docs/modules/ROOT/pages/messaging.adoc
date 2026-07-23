@@ -90,6 +90,26 @@ With this in place:
 * External producers can send CloudEvents to the `flow-in` topic to *start or continue* workflows.
 * Workflows can `emit` CloudEvents, which are then written to the `flow-out` topic.
 
+[#default-event-source]
+=== Default event `source`
+
+The CloudEvents specification requires every event to carry a `source`. If an `emit` task does not set one explicitly, Quarkus Flow injects a traceable default derived from the emitting workflow's identity, in the form `namespace:name:version` (for example `org.acme.events:order-emitter:1.0.0`). This applies to `emit` tasks anywhere in the workflow, including those nested inside `fork`, `try`/`catch`, `for`, and `listen` iterators.
+
+You can customize this behavior:
+
+[source,properties]
+----
+# Use a single fixed source for every emitted event instead of the workflow identity
+quarkus.flow.cloud-events.source=urn:acme:orders
+
+# Or disable the default entirely and leave source handling to the underlying SDK
+quarkus.flow.cloud-events.derive-source-from-workflow=false
+----
+
+An explicit `source` on an individual `emit` (for example `produced("event.type").source("https://my-app")`) always takes precedence over both the configured value and the identity-derived default.
+
+NOTE: The event `time` is set by the underlying runtime at emission and is out of scope for this DSL-level default.
+
 == 4. Enable lifecycle events (Optional)
 
 You can configure the engine to publish its internal state changes (e.g., when a workflow starts, suspends, or faults) to a dedicated Kafka topic. This is highly useful for building observability dashboards or audit logs.
