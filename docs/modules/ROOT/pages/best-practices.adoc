@@ -1,0 +1,175 @@
+= Best practices
+:page-role: howto
+include::includes/attributes.adoc[]
+
+This guide collects practical recommendations that help you avoid common pitfalls when building workflows with Quarkus Flow.
+
+== 1. Persist data with `@Transactional`
+
+Workflow tasks can execute **after the original HTTP request has completed**.
+When that happens, the request-scoped CDI context is no longer active, and any attempt to manage transactions manually with `QuarkusTransaction.begin()` will fail with a _context not active_ exception.
+
+The safe approach is to delegate persistence to a CDI bean whose method is annotated with `@Transactional`.
+The CDI proxy activates the transaction context automatically, regardless of when the workflow task runs.
+
+=== What to avoid
+
+[source,java]
+----
+include::{examples-dir}org/acme/bestpractices/OrderWorkflowBad.java[tag=bad]
+----
+
+=== Recommended approach
+
+Create a bean with a `@Transactional` method and call it from the workflow task:
+
+[source,java]
+----
+include::{examples-dir}org/acme/bestpractices/OrderService.java[tag=transactional-service]
+----
+
+[source,java]
+----
+include::{examples-dir}org/acme/bestpractices/OrderWorkflowGood.java[tag=good]
+----
+
+[TIP]
+====
+This pattern applies to any side-effect that depends on a CDI context scope: JPA operations, messaging producers, audit logging, and so on.
+If the operation touches the database, put it behind `@Transactional`.
+====
+
+== 2. Never hard-code secrets
+
+Workflow beans are **discovered and wired at build time**.
+Hard-coding credentials directly in a workflow definition means they are embedded in the compiled output and visible to anyone with access to the artifact.
+
+Always reference secrets by handle using `${ $secret.<handle>.<key> }` expressions.
+At runtime, Quarkus Flow resolves the handle through the `CredentialsProvider` SPI or, in dev/test, from `application.properties`.
+
+=== What to avoid
+
+[source,java]
+----
+include::{examples-dir}org/acme/bestpractices/NotificationWorkflowBad.java[]
+----
+
+=== Recommended approach
+
+Declare the secret handle and reference it via the authentication configurer or a `$secret` expression:
+
+[source,java]
+----
+include::{examples-dir}org/acme/bestpractices/NotificationWorkflowGood.java[]
+----
+
+In dev/test, provide the value in `application.properties`:
+
+[source,properties]
+----
+mySecrets.apiKey=my-api-key
+----
+
+In production, configure a `CredentialsProvider` (e.g., HashiCorp Vault, https://quarkus.io/guides/kubernetes-config[Kubernetes]) so that secret values are never stored in plain text.
+
+[TIP]
+====
+For a complete walkthrough of declaring, resolving, and testing secrets, see xref:secrets.adoc[Resolve secrets securely].
+====
+
+== 3. Name your tasks
+
+When a task does not have an explicit name,
+the Serverless Workflow SDK assigns a default task name automatically based in the type and the order of the task.
+
+That generated task name then appears in **every** observability signal: logs, metrics, and traces.
+
+Debugging a production incident becomes much harder when your dashboard shows `task="http-0"` instead of `task="fetchCustomerProfile"`.
+
+=== What to avoid
+
+[source,java]
+----
+return workflow("order-flow")
+        .tasks(
+                // No task names — the SDK generates
+                function(orderService::validate, OrderRequest.class),
+                function(paymentService::charge, PaymentRequest.class),
+                function(notificationService::send, NotificationRequest.class))
+        .build();
+----
+
+=== Recommended approach
+
+Always provide a descriptive, unique name for each task:
+
+[source,java]
+----
+return workflow("order-flow")
+        .tasks(
+                function("validateOrder", orderService::validate, OrderRequest.class),
+                function("chargePayment", paymentService::charge, PaymentRequest.class),
+                function("sendConfirmation", notificationService::send, NotificationRequest.class))
+        .build();
+----
+
+[NOTE]
+====
+The combination of workflow name and task name is used as metric label (e.g., `quarkus_flow_task_duration_seconds{workflow="order-flow",task="chargePayment"}`).
+Unique, descriptive names improve filtering, aggregation, and dashboard visualization.
+
+For the full list of metrics and how task names affect them, see xref:metrics-prometheus.adoc[Observability with Prometheus and Micrometer].
+====
+
+== 4. Separate business retries from infrastructure retries
+
+Quarkus Flow supports retries at two distinct levels. Mixing them up leads to workflows that either mask infrastructure failures or bury business logic in configuration files.
+
+=== Infrastructure retries (configuration)
+
+Network timeouts, HTTP 503 responses, and rate-limit errors are **infrastructure concerns**.
+Handle them with SmallRye Fault Tolerance configuration properties — the engine retries transparently, without changing your workflow logic:
+
+[source,properties]
+----
+quarkus.flow.http.client.resilience.retry.max-retries=3
+quarkus.flow.http.client.resilience.retry.delay=0
+quarkus.flow.http.client.resilience.retry.jitter=200ms
+----
+
+For details, see xref:fault-tolerance.adoc[Fault tolerance and resilience].
+
+=== Business retries (workflow DSL)
+
+A manager who has not yet approved a vacation request is a **business concern**, not a transient failure.
+Model this kind of retry as part of the workflow definition itself using the `tryCatch` construct with a `retry` policy:
+
+[source,java]
+----
+include::{examples-dir}org/acme/bestpractices/VacationApproveWorkflow.java[]
+----
+
+The `retry` policy on the catch handler tells the engine to re-execute the try block up to 3 times, with a 1-hour delay between attempts.
+This makes the business rule (re-submit if rejected) visible in the workflow definition, not hidden in configuration files.
+
+=== Rule of thumb
+
+[cols="1,1,1"]
+|===
+| Concern | Where it lives | Example
+
+| Transient network failures
+| `application.properties` (Fault Tolerance)
+| HTTP 503, connection timeout, rate limit
+
+| Business process conditions
+| Workflow DSL (`tryCatch` with `retry`)
+| Manager rejection, pending approval, missing document
+|===
+
+== See also
+* xref:secrets.adoc[Resolve secrets securely] — declaring and resolving secrets.
+* xref:metrics-prometheus.adoc[Observability with Prometheus and Micrometer] — how task names affect metrics.
+* xref:fault-tolerance.adoc[Fault tolerance and resilience] — infrastructure retries and circuit breakers.
+* xref:http-client.adoc[Configure the HTTP client] — per-client resilience tuning.
+* xref:dsl-cheatsheet.adoc[Java DSL cheatsheet] — complete list of task providers and naming patterns.

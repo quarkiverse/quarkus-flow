@@ -36,6 +36,7 @@
 *** xref:custom-listeners.adoc[Listen to workflow events]
 ** Testing
 *** xref:test-debug.adoc[Test and debug workflows]
+** xref:best-practices.adoc[Best practices]
 
 * Architecture & Concepts
 ** xref:concepts-architecture.adoc[Engine Architecture]
