@@ -96,6 +96,11 @@
             </dependency>
             <dependency>
                 <groupId>io.cloudevents</groupId>
+                <artifactId>cloudevents-core</artifactId>
+                <version>${io.cloudevents.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.cloudevents</groupId>
                 <artifactId>cloudevents-json-jackson</artifactId>
                 <version>${io.cloudevents.version}</version>
             </dependency>
