@@ -38,7 +38,7 @@ public final class WorkflowNameUtils {
         int lastDollar = classNamePart.lastIndexOf('$');
         String simpleName = lastDollar >= 0 ? classNamePart.substring(lastDollar + 1) : classNamePart;
 
-        return new WorkflowDefinitionId(packageName, safeName(simpleName),
+        return new WorkflowDefinitionId(safeName(packageName), safeName(simpleName),
                 WorkflowDefinitionId.DEFAULT_VERSION);
     }
 
