@@ -19,7 +19,7 @@ public final class WorkflowNameUtils {
     }
 
     public static WorkflowDefinitionId newId(Class<?> clazz) {
-        return new WorkflowDefinitionId(clazz.getPackageName(), safeNameFromClass(clazz, null),
+        return new WorkflowDefinitionId(safeName(clazz.getPackageName()), safeNameFromClass(clazz, null),
                 WorkflowDefinitionId.DEFAULT_VERSION);
     }
 

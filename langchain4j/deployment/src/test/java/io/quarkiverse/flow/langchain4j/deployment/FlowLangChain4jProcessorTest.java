@@ -34,10 +34,13 @@ public class FlowLangChain4jProcessorTest {
                     .addClasses(Agents.class)
                     .addAsResource(new StringAsset("quarkus.http.test-port=0"), "application.properties"));
 
+    private static WorkflowDefinitionId expectedId(Class<?> agentInterface) {
+        return WorkflowNameUtils.newId(agentInterface.getName());
+    }
+
     @Test
     void shouldRegisterPlaceholderWorkflowForSequenceAgent() {
-        // The generated Flow uses WorkflowNameUtils.newId(iface) to name the workflow
-        WorkflowDefinitionId expectedId = WorkflowNameUtils.newId(Agents.StoryCreatorWithConfigurableStyleEditor.class);
+        WorkflowDefinitionId expectedId = expectedId(Agents.StoryCreatorWithConfigurableStyleEditor.class);
 
         WorkflowApplication app = Arc.container().instance(WorkflowApplication.class).get();
 
@@ -69,7 +72,7 @@ public class FlowLangChain4jProcessorTest {
     @Test
     void shouldRegisterWorkflowForSequenceAgentWithA2AClient() {
         // The generated Flow uses WorkflowNameUtils.newId(iface) to name the workflow
-        WorkflowDefinitionId expectedId = WorkflowNameUtils.newId(Agents.SequenceWithA2AAgent.class);
+        WorkflowDefinitionId expectedId = expectedId(Agents.SequenceWithA2AAgent.class);
 
         WorkflowApplication app = Arc.container().instance(WorkflowApplication.class).get();
 
@@ -109,7 +112,7 @@ public class FlowLangChain4jProcessorTest {
 
     @Test
     void shouldRegisterWorkflowForSequenceAgentWithParallelMapper() {
-        WorkflowDefinitionId expectedId = WorkflowNameUtils.newId(Agents.SequenceWithParallelMapperAgent.class);
+        WorkflowDefinitionId expectedId = expectedId(Agents.SequenceWithParallelMapperAgent.class);
 
         WorkflowApplication app = Arc.container().instance(WorkflowApplication.class).get();
 
@@ -132,7 +135,7 @@ public class FlowLangChain4jProcessorTest {
 
     @Test
     void shouldRegisterWorkflowForSequenceAgentWithSupervisor() {
-        WorkflowDefinitionId expectedId = WorkflowNameUtils.newId(Agents.SequenceWithSupervisorAgent.class);
+        WorkflowDefinitionId expectedId = expectedId(Agents.SequenceWithSupervisorAgent.class);
 
         WorkflowApplication app = Arc.container().instance(WorkflowApplication.class).get();
 
@@ -155,7 +158,7 @@ public class FlowLangChain4jProcessorTest {
 
     @Test
     void shouldRegisterWorkflowForSequenceAgentWithPlanner() {
-        WorkflowDefinitionId expectedId = WorkflowNameUtils.newId(Agents.SequenceWithPlannerAgent.class);
+        WorkflowDefinitionId expectedId = expectedId(Agents.SequenceWithPlannerAgent.class);
 
         WorkflowApplication app = Arc.container().instance(WorkflowApplication.class).get();
 
