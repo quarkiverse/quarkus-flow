@@ -26,6 +26,7 @@
         <module>quarkus-platform-checks</module>
         <module>runner</module>
         <module>docs-rag</module>
+        <module>opentelemetry</module>
     </modules>
 
     <scm>

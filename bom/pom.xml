@@ -173,6 +173,17 @@
         <artifactId>quarkus-flow-runner-deployment</artifactId>
         <version>${project.version}</version>
       </dependency>
+
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-opentelemetry</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-opentelemetry-deployment</artifactId>
+        <version>${project.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 

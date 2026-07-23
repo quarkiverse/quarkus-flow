@@ -1,0 +1,17 @@
+document:
+  dsl: '1.0.0'
+  namespace: otel
+  name: otel-raise-task
+  version: '1.0.0'
+do:
+  - setBeforeRaise:
+      set:
+        set-before-raise: Set before raise
+  - raiseTask:
+      raise:
+        error:
+          type: https://example.com/errors/runtime
+          status: 500
+  - setAfterRaise:
+      set:
+        set-after-raise: Set after raise

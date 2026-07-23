@@ -1,0 +1,30 @@
+document:
+  dsl: '1.0.0'
+  namespace: otel
+  name: otel-try-task
+  version: '1.0.0'
+do:
+  - tryTask:
+      try:
+        - failingTask:
+            raise:
+              error:
+                type: https://example.com/errors/runtime
+                status: 500
+      catch:
+        errors:
+          with:
+            type: https://example.com/errors/runtime
+            status: 500
+        do:
+          - executeAfterFailingTask:
+              set:
+                set-after-failing-task: Set after failing task
+        retry:
+          delay:
+            seconds: 1
+          backoff:
+            exponential: {}
+          limit:
+            attempt:
+              count: 3
