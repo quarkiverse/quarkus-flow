@@ -19,7 +19,7 @@ public final class WorkflowNameUtils {
     }
 
     public static WorkflowDefinitionId newId(Class<?> clazz) {
-        return new WorkflowDefinitionId(clazz.getPackageName(), safeNameFromClass(clazz, null),
+        return new WorkflowDefinitionId(safeName(clazz.getPackageName()), safeNameFromClass(clazz, null),
                 WorkflowDefinitionId.DEFAULT_VERSION);
     }
 
@@ -38,7 +38,7 @@ public final class WorkflowNameUtils {
         int lastDollar = classNamePart.lastIndexOf('$');
         String simpleName = lastDollar >= 0 ? classNamePart.substring(lastDollar + 1) : classNamePart;
 
-        return new WorkflowDefinitionId(packageName, safeName(simpleName),
+        return new WorkflowDefinitionId(safeName(packageName), safeName(simpleName),
                 WorkflowDefinitionId.DEFAULT_VERSION);
     }
 
