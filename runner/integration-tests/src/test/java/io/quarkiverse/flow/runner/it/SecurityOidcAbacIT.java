@@ -27,7 +27,7 @@ import io.quarkus.test.security.oidc.OidcSecurity;
 class SecurityOidcAbacIT {
 
     @Test
-    @TestSecurity(user = "alice", roles = "flow-admin")
+    @TestSecurity(user = "alice", roles = "flow-invoker")
     @OidcSecurity(claims = { @Claim(key = "namespace", value = "test-namespace") })
     @DisplayName("test_access_allowed_to_authorized_namespace")
     void test_access_allowed_to_authorized_namespace() {
@@ -86,7 +86,7 @@ class SecurityOidcAbacIT {
     }
 
     @Test
-    @TestSecurity(user = "carol", roles = "flow-admin")
+    @TestSecurity(user = "carol", roles = "flow-invoker")
     @OidcSecurity(claims = { @Claim(key = "namespace", value = "[\"test-namespace\",\"team-a\"]") })
     @DisplayName("test_multiple_namespaces_in_jwt_claim")
     void test_multiple_namespaces_in_jwt_claim() {
@@ -119,7 +119,7 @@ class SecurityOidcAbacIT {
     }
 
     @Test
-    @TestSecurity(user = "alice", roles = "flow-admin")
+    @TestSecurity(user = "alice", roles = "flow-invoker")
     @OidcSecurity(claims = { @Claim(key = "namespace", value = "test-namespace") })
     @DisplayName("test_list_all_definitions_filtered_by_namespaces")
     void test_list_all_definitions_filtered_by_namespaces() {
@@ -147,7 +147,7 @@ class SecurityOidcAbacIT {
     }
 
     @Test
-    @TestSecurity(user = "alice", roles = "flow-admin")
+    @TestSecurity(user = "alice", roles = "flow-invoker")
     @OidcSecurity(claims = { @Claim(key = "namespace", value = "test-namespace") })
     @DisplayName("test_get_specific_definition_with_namespace_validation")
     void test_get_specific_definition_with_namespace_validation() {
@@ -162,7 +162,7 @@ class SecurityOidcAbacIT {
     }
 
     @Test
-    @TestSecurity(user = "bob", roles = "flow-admin")
+    @TestSecurity(user = "bob", roles = "flow-invoker")
     @OidcSecurity(claims = { @Claim(key = "namespace", value = "team-a") })
     @DisplayName("test_get_specific_definition_unauthorized_namespace")
     void test_get_specific_definition_unauthorized_namespace() {
@@ -194,12 +194,60 @@ class SecurityOidcAbacIT {
 
     @Test
     @TestSecurity(user = "admin", roles = "flow-admin")
-    @OidcSecurity(claims = { @Claim(key = "namespace", value = "team-a") })
-    @DisplayName("test_admin_role_still_requires_namespace_authorization")
-    void test_admin_role_still_requires_namespace_authorization() {
-        // Even flow-admin role must respect namespace restrictions
+    @OidcSecurity
+    @DisplayName("test_oidc_admin_without_namespace_claim_allows_all_namespaces")
+    void test_oidc_admin_without_namespace_claim_allows_all_namespaces() {
+        given()
+                .queryParam("namespace", "test-namespace")
+                .when()
+                .get("/q/flow/definitions")
+                .then()
+                .statusCode(200);
 
-        // Admin can access team-a
+        given()
+                .queryParam("namespace", "another-namespace")
+                .when()
+                .get("/q/flow/definitions")
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
+    @TestSecurity(user = "bob", roles = "flow-invoker")
+    @OidcSecurity
+    @DisplayName("test_oidc_invoker_without_namespace_claim_is_denied")
+    void test_oidc_invoker_without_namespace_claim_is_denied() {
+        given()
+                .queryParam("namespace", "test-namespace")
+                .when()
+                .get("/q/flow/definitions")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "bob", roles = "flow-invoker")
+    @OidcSecurity(claims = {
+            @Claim(key = "namespace", value = "")
+    })
+    @DisplayName("test_oidc_invoker_with_blank_namespace_claim_is_denied")
+    void test_oidc_invoker_with_blank_namespace_claim_is_denied() {
+        given()
+                .queryParam("namespace", "test-namespace")
+                .when()
+                .get("/q/flow/definitions")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "flow-admin")
+    @OidcSecurity(claims = {
+            @Claim(key = "namespace", value = "team-a")
+    })
+    @DisplayName("test_admin_role_bypasses_namespace_authorization")
+    void test_admin_role_bypasses_namespace_authorization() {
+        // Explicitly listed namespace.
         given()
                 .queryParam("namespace", "team-a")
                 .when()
@@ -207,13 +255,13 @@ class SecurityOidcAbacIT {
                 .then()
                 .statusCode(200);
 
-        // But admin cannot access test-namespace (not in their namespace claim)
+        // Namespace not listed in the claim is still allowed for admins.
         given()
                 .queryParam("namespace", "test-namespace")
                 .when()
                 .get("/q/flow/definitions")
                 .then()
-                .statusCode(403);
+                .statusCode(200);
     }
 
     @Test
@@ -239,7 +287,7 @@ class SecurityOidcAbacIT {
     }
 
     @Test
-    @TestSecurity(user = "alice", roles = "flow-admin")
+    @TestSecurity(user = "alice", roles = "flow-invoker")
     @OidcSecurity(claims = { @Claim(key = "namespace", value = "test-namespace") })
     @DisplayName("test_get_latest_definition_with_namespace_validation")
     void test_get_latest_definition_with_namespace_validation() {

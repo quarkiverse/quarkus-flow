@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Alternative;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
 
@@ -28,7 +27,6 @@ import io.vertx.ext.web.RoutingContext;
 @ApplicationScoped
 @Unremovable
 @Priority(Priorities.AUTHENTICATION)
-@Alternative
 public class ApiKeyAuthenticationMechanism implements HttpAuthenticationMechanism {
 
     @Inject
