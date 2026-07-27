@@ -221,6 +221,26 @@ public class Agents {
         ResultWithAgenticScope<String> ask(@V("request") String request);
     }
 
+    public interface CreativeWriterWithLimit {
+        @UserMessage("""
+                You are a creative writer.
+                Generate a draft of a story of exactly {{maxSentences}} sentences around the given topic.
+                Return only the story and nothing else.
+                The topic is {{topic}}.
+                """)
+        @Agent(description = "Generate a story with a sentence limit", outputKey = "story")
+        String generateStory(@V("topic") String topic, @V("maxSentences") Integer maxSentences);
+    }
+
+    public interface StoryCreatorWithMaxSentences {
+        @SequenceAgent(outputKey = "story", subAgents = {
+                CreativeWriterWithLimit.class, AudienceEditor.class, StyleEditor.class
+        })
+        @Agent(description = "write with sentence limit", outputKey = "story")
+        String write(@V("topic") String topic, @V("style") String style, @V("audience") String audience,
+                @V("maxSentences") Integer maxSentences);
+    }
+
     public interface DumbAgent {
         @Agent(description = "A dumb agent to workaround a dumb check", outputKey = "loopCounter")
         int dumb(@V("request") String request);
@@ -239,6 +259,9 @@ public class Agents {
 
         @Agent(description = "A dumb agent to workaround a dumb check", outputKey = "mood")
         String dumb4();
+
+        @Agent(description = "A dumb agent to workaround a dumb check", outputKey = "maxSentences")
+        Integer dumb5();
 
     }
 

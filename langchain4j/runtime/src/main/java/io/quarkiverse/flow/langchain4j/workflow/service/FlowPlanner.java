@@ -19,6 +19,7 @@ import dev.langchain4j.agentic.planner.AgenticSystemTopology;
 import dev.langchain4j.agentic.planner.InitPlanningContext;
 import dev.langchain4j.agentic.planner.Planner;
 import dev.langchain4j.agentic.planner.PlanningContext;
+import io.quarkiverse.flow.langchain4j.spec.AgenticAwareModelFactory;
 import io.quarkiverse.flow.langchain4j.workflow.flow.*;
 import io.quarkiverse.flow.langchain4j.workflow.runtime.*;
 import io.serverlessworkflow.impl.WorkflowDefinition;
@@ -57,6 +58,13 @@ public class FlowPlanner implements Planner {
 
     @Override
     public Action firstAction(PlanningContext planningContext) {
+        if (!(definition.application().modelFactory() instanceof AgenticAwareModelFactory)) {
+            throw new IllegalStateException(
+                    "AgenticAwareModelFactory is not registered as the workflow model factory. "
+                            + "AgenticScope parameters will be silently lost during workflow execution. "
+                            + "Actual factory: " + definition.application().modelFactory().getClass().getName());
+        }
+
         final WorkflowInstance instance = definition.instance(planningContext.agenticScope());
         planningContext.agenticScope().writeExecutionContext(instance.id(), this);
 
