@@ -12,7 +12,7 @@
 
     <properties>
         <esbuild-maven-plugin.version>2.0.0</esbuild-maven-plugin.version>
-        <react.version>19.2.7</react.version>
+        <react.version>19.2.8</react.version>
         <scheduler.version>0.27.0</scheduler.version>
         <openworkflowspec.diagram-editor.version>0.2.0</openworkflowspec.diagram-editor.version>
         <use-sync-external-store.version>1.6.0</use-sync-external-store.version>
