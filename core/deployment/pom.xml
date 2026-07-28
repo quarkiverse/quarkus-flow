@@ -12,7 +12,7 @@
 
     <properties>
         <esbuild-maven-plugin.version>2.0.0</esbuild-maven-plugin.version>
-        <react.version>19.2.7</react.version>
+        <react.version>19.2.8</react.version>
         <scheduler.version>0.27.0</scheduler.version>
         <openworkflowspec.diagram-editor.version>1.0.0</openworkflowspec.diagram-editor.version>
         <use-sync-external-store.version>1.6.0</use-sync-external-store.version>
@@ -177,9 +177,9 @@
                         <artifactId>diagram-editor</artifactId>
                         <version>${openworkflowspec.diagram-editor.version}</version>
                         <exclusions>
-                            <!-- Required because @serverlessworkflow/sdk is an npm dependency, not available on mvnpm as alpha version, but is already bundled in @serverlessworkflow/diagram-editor's dist. -->
+                            <!-- Required because @openworkflowspec/sdk is an npm dependency, not available on mvnpm as alpha version, but is already bundled in @openworkflowspec/diagram-editor's dist. -->
                             <exclusion>
-                                <groupId>org.mvnpm.at.serverlessworkflow</groupId>
+                                <groupId>org.mvnpm.at.openworkflowspec</groupId>
                                 <artifactId>sdk</artifactId>
                             </exclusion>
                             <!-- D3 is already bundled in @openworkflowspec/diagram-editor, avoid version conflicts for transitive D3 dependencies. -->
