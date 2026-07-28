@@ -325,12 +325,15 @@ public Response sendReview(HumanReview review, @HeaderParam("X-Flow-Instance-Id"
     throws JsonProcessingException {
   byte[] body = objectMapper.writeValueAsBytes(review);
 
-  CloudEvent ce = CloudEventBuilder.v1().withId(UUID.randomUUID().toString())
+  OutgoingCloudEventMetadata<?> ceMeta = OutgoingCloudEventMetadata.builder()
+    .withId(UUID.randomUUID().toString())
+    .withSource(URI.create("api:/newsletter"))
+    .withType("org.acme.newsletter.review.done")
+    .withDataContentType("application/json")
     .withExtension("flowinstanceid", instanceId)
-    .withSource(URI.create("api:/newsletter")).withType("org.acme.newsletter.review.done")
-    .withDataContentType("application/json").withData(body).build();
+    .build();
 
-  flowIn.send(CE_JSON.serialize(ce));
+  flowIn.send(Message.of(body).addMetadata(ceMeta));
   return Response.accepted().build();
 }
 ----

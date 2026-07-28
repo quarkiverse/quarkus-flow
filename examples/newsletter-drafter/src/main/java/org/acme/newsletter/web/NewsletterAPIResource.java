@@ -2,11 +2,8 @@ package org.acme.newsletter.web;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.cloudevents.CloudEvent;
-import io.cloudevents.core.builder.CloudEventBuilder;
-import io.cloudevents.core.provider.EventFormatProvider;
-import io.cloudevents.jackson.JsonFormat;
 import io.serverlessworkflow.impl.WorkflowInstance;
+import io.smallrye.reactive.messaging.ce.OutgoingCloudEventMetadata;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
@@ -16,18 +13,15 @@ import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import org.acme.newsletter.NewsletterWorkflow;
 import org.acme.newsletter.domain.HumanReview;
 import org.acme.newsletter.domain.NewsletterRequest;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
+import org.eclipse.microprofile.reactive.messaging.Message;
 
 @Path("/api")
 public class NewsletterAPIResource {
-
-    private static final JsonFormat CE_JSON = (JsonFormat) EventFormatProvider.getInstance()
-            .resolveFormat(JsonFormat.CONTENT_TYPE);
 
     @Inject
     NewsletterWorkflow newsletterWorkflow;
@@ -63,13 +57,15 @@ public class NewsletterAPIResource {
             throws JsonProcessingException {
         byte[] body = objectMapper.writeValueAsBytes(review);
 
-        CloudEvent ce = CloudEventBuilder.v1().withId(UUID.randomUUID().toString())
+        OutgoingCloudEventMetadata<?> ceMeta = OutgoingCloudEventMetadata.builder()
+                .withId(UUID.randomUUID().toString())
+                .withSource(URI.create("api:/newsletter"))
+                .withType("org.acme.newsletter.review.done")
+                .withDataContentType("application/json")
                 .withExtension("flowinstanceid", instanceId)
-                .withSource(URI.create("api:/newsletter")).withType("org.acme.newsletter.review.done")
-                .withDataContentType("application/json").withData(body).build();
+                .build();
 
-        byte[] ceBytes = CE_JSON.serialize(ce);
-        flowIn.send(ceBytes);
+        flowIn.send(Message.of(body).addMetadata(ceMeta));
 
         return Response.accepted().build();
     }
