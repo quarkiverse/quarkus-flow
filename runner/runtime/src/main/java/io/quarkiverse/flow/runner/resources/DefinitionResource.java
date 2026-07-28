@@ -27,11 +27,13 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import io.quarkiverse.flow.internal.WorkflowVersionComparator;
+import io.quarkiverse.flow.runner.FlowRunnerConfig;
 import io.quarkiverse.flow.runner.model.WorkflowDefinitionHeader;
 import io.quarkiverse.flow.runner.model.WorkflowFormatUtils;
 import io.quarkiverse.flow.runner.security.AuthzConsts;
 import io.quarkiverse.flow.runner.security.FlowRunnerEndpoint;
 import io.quarkiverse.flow.runner.security.NamespaceAuthorizationService;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.serverlessworkflow.api.WorkflowFormat;
 import io.serverlessworkflow.api.WorkflowWriter;
 import io.serverlessworkflow.api.types.Document;
@@ -51,6 +53,12 @@ public class DefinitionResource {
     @Inject
     NamespaceAuthorizationService namespaceAuth;
 
+    @Inject
+    FlowRunnerConfig config;
+
+    @Inject
+    SecurityIdentity securityIdentity;
+
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "List workflow definitions", description = "Returns metadata for all registered workflow definitions. "
@@ -62,27 +70,41 @@ public class DefinitionResource {
     @APIResponse(responseCode = "401", description = "Authentication required - missing or invalid credentials")
     @APIResponse(responseCode = "403", description = "Access denied to requested namespace (when namespace query parameter is provided)")
     public Response listDefinitions(
-            @Parameter(description = "Filter workflows by specific namespace (optional). " +
-                    "If provided and namespace validation is enabled, user must have access to this namespace. " +
-                    "If omitted, returns workflows from all authorized namespaces.") @QueryParam("namespace") String namespace) {
+            @Parameter(description = "Filter workflows by specific namespace (optional). "
+                    + "If provided and namespace validation is enabled, user must have access to this namespace. "
+                    + "If omitted, returns workflows from all authorized namespaces.") @QueryParam("namespace") String namespace) {
+
         Stream<WorkflowDefinition> definitions = application.workflowDefinitions().values().stream();
 
-        if (namespace != null) {
-            // Specific filter for the required namespace
-            // our ContainerFilter should block access to the method if user doesn't have access to it
-            definitions = definitions.filter(def -> namespace.equals(def.workflow().getDocument().getNamespace()));
-        } else {
-            // Filter by namespaces that our user has access
+        if (namespace != null && !namespace.isBlank()) {
+            // Access to this namespace is validated by NamespaceAuthorizationFilter.
+            definitions = definitions.filter(
+                    definition -> namespace.equals(
+                            definition.workflow()
+                                    .getDocument()
+                                    .getNamespace()));
+        } else if (config.security().namespace().validate()
+                && !securityIdentity.hasRole(AuthzConsts.ROLE_ADMIN)) {
+
             Set<String> authorizedNamespaces = namespaceAuth.getAuthorizedNamespaces();
-            if (authorizedNamespaces != null && !authorizedNamespaces.isEmpty()) {
-                definitions = definitions
-                        .filter(def -> authorizedNamespaces.contains(def.workflow().getDocument().getNamespace()));
+
+            if (authorizedNamespaces == null
+                    || authorizedNamespaces.isEmpty()) {
+                definitions = Stream.empty();
+            } else if (!authorizedNamespaces.contains("*")) {
+                definitions = definitions.filter(
+                        definition -> authorizedNamespaces.contains(
+                                definition.workflow()
+                                        .getDocument()
+                                        .getNamespace()));
             }
         }
 
-        return Response.ok(definitions
-                .map(definition -> WorkflowDefinitionHeader.from(definition.workflow()))
-                .toList())
+        return Response.ok(
+                definitions
+                        .map(definition -> WorkflowDefinitionHeader.from(
+                                definition.workflow()))
+                        .toList())
                 .build();
     }
 

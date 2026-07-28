@@ -1,5 +1,7 @@
 package io.quarkiverse.flow.runner.security;
 
+import static io.quarkiverse.flow.runner.security.AuthzConsts.ALL_NAMESPACES;
+
 import java.util.Set;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -11,6 +13,7 @@ import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 
 import io.quarkiverse.flow.runner.FlowRunnerConfig;
 import io.quarkus.arc.Unremovable;
+import io.quarkus.security.identity.SecurityIdentity;
 
 /**
  * Modern RESTEasy Reactive filter that enforces namespace-level authorization (ABAC).
@@ -28,12 +31,13 @@ import io.quarkus.arc.Unremovable;
  * the filter allows the request through and the resource method handles filtering
  * by authorized namespaces.
  * <p>
- * Authorized namespaces are extracted from {@link io.quarkus.security.identity.SecurityIdentity} attributes
- * set by authentication mechanisms during login. An empty or null namespace set
- * means the user has access to all namespaces.
+ * Authorized namespaces are extracted from {@link SecurityIdentity} attributes
+ * set by the active authentication mechanism.
  * <p>
- * <strong>Implementation Note:</strong> Uses {@code @ServerRequestFilter} (RESTEasy Reactive modern approach)
- * instead of the legacy {@code ContainerRequestFilter} interface.
+ * For non-admin identities, a null, empty, or blank namespace set grants no
+ * namespace access. The normalized value {@code "*"} grants access to all
+ * current and future namespaces. Identities with the {@code flow-admin} role
+ * bypass namespace authorization.
  *
  * @see NamespaceAuthorizationService
  */
@@ -50,6 +54,9 @@ public class NamespaceAuthorizationFilter {
 
     @Inject
     UriInfo uriInfo;
+
+    @Inject
+    SecurityIdentity securityIdentity;
 
     /**
      * Server request filter method that validates namespace access.
@@ -79,26 +86,73 @@ public class NamespaceAuthorizationFilter {
      * <p>
      * Authorization logic:
      * <ul>
-     * <li>If authorized namespaces is null or empty → all namespaces allowed (pass)</li>
-     * <li>If namespace is in authorized set → allowed (pass)</li>
-     * <li>Otherwise → denied (throws 403 Forbidden)</li>
+     * <li>If the identity has the {@code flow-admin} role, all namespaces are
+     * allowed.</li>
+     * <li>If the authorized namespace set is null, empty, or contains only blank
+     * values, access is denied.</li>
+     * <li>If the authorized namespace set contains the exact value {@code "*"},
+     * all namespaces are allowed.</li>
+     * <li>If the authorized namespace set contains the requested namespace,
+     * access is allowed.</li>
+     * <li>Otherwise, access is denied with {@code 403 Forbidden}.</li>
      * </ul>
+     * <p>
+     * Namespace matching is exact and case-sensitive. Values such as
+     * {@code "team-*"}, {@code "my*"}, or {@code "**"} are not wildcard
+     * expressions.
      *
      * @param namespace the namespace to validate access for
-     * @throws ForbiddenException if user does not have access to the namespace
+     * @throws ForbiddenException if the current user is not authorized for the
+     *         namespace
      */
     private void validateNamespaceAccess(String namespace) {
-        Set<String> authorizedNamespaces = namespaceAuthzService.getAuthorizedNamespaces();
-
-        // Empty or null = all namespaces allowed
-        if (authorizedNamespaces == null || authorizedNamespaces.isEmpty()) {
+        // Admin bypass applies to every authentication mechanism.
+        if (securityIdentity.hasRole(AuthzConsts.ROLE_ADMIN)) {
             return;
         }
 
-        // Check specific namespace
-        if (!authorizedNamespaces.contains(namespace)) {
-            throw new ForbiddenException("Access denied to namespace: " + namespace);
+        Set<String> authorizedNamespaces = namespaceAuthzService.getAuthorizedNamespaces();
+
+        if (hasNoAuthorizedNamespaces(authorizedNamespaces)) {
+            throw new ForbiddenException(
+                    "The authenticated identity has no authorized namespaces");
         }
+
+        if (authorizedNamespaces.contains(ALL_NAMESPACES)
+                || authorizedNamespaces.contains(namespace)) {
+            return;
+        }
+
+        throw new ForbiddenException(
+                "The authenticated identity is not authorized for namespace: "
+                        + namespace);
+    }
+
+    /**
+     * Determines whether the authorized namespace set grants no namespace access.
+     * <p>
+     * A namespace set grants no access when it is:
+     * <ul>
+     * <li>{@code null}</li>
+     * <li>Empty</li>
+     * <li>Composed only of {@code null}, empty, or blank values</li>
+     * </ul>
+     * <p>
+     * This helper does not evaluate roles. The caller must apply the
+     * {@code flow-admin} bypass before calling this method.
+     *
+     * @param authorizedNamespaces the configured namespaces for the current
+     *        identity, or {@code null} when none are available
+     * @return {@code true} when no non-blank authorized namespace is present;
+     *         otherwise {@code false}
+     */
+    private boolean hasNoAuthorizedNamespaces(
+            Set<String> authorizedNamespaces) {
+
+        return authorizedNamespaces == null
+                || authorizedNamespaces.isEmpty()
+                || authorizedNamespaces.stream()
+                        .allMatch(namespace -> namespace == null || namespace.isBlank());
     }
 
     /**

@@ -18,6 +18,9 @@ public class SecurityAbacNamespaceProfile implements QuarkusTestProfile {
         // Enable API Key authentication
         config.put("quarkus.flow.runner.security.type", "api-key");
 
+        // Disable the default OIDC tenant in every non-OIDC user
+        config.put("quarkus.oidc.tenant-enabled", "false");
+
         // Admin key with access to ALL namespaces (no restriction)
         config.put("quarkus.flow.runner.security.api-keys.admin-key.secret", "admin-all-namespaces");
         config.put("quarkus.flow.runner.security.api-keys.admin-key.roles", "flow-admin");

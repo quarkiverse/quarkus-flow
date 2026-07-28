@@ -222,7 +222,13 @@ quarkus.flow.runner.security.namespace.claim=namespace
 **JWT token requirements:**
 
 * Must contain a `roles` claim with `flow-admin` or `flow-invoker`
-* Must contain a `namespace` claim (string or array) for namespace authorization
+* A user with the `flow-admin` role can access all namespaces. The namespace
+  claim is optional and is not used to restrict an administrator.
+* A non-admin user must have an authorized namespace claim when namespace
+  validation is enabled.
+* For non-admin users, a missing, null, empty, or blank namespace claim grants
+  no namespace access and requests to a namespace are rejected with
+  `403 Forbidden`.
 * Example token payload:
 
 [source,json]
@@ -233,6 +239,31 @@ quarkus.flow.runner.security.namespace.claim=namespace
   "namespace": ["examples", "team-a"]
 }
 ----
+
+**Non-admin with unrestricted namespace access:**
+
+[source,json]
+----
+{
+  "sub": "automation@example.com",
+  "roles": ["flow-invoker"],
+  "namespace": ["*"]
+}
+----
+
+**Administrator without a namespace claim:**
+
+[source,json]
+----
+{
+  "sub": "administrator@example.com",
+  "roles": ["flow-admin"]
+}
+----
+
+The administrator can access every namespace even though the token does not
+contain a namespace claim.
+
 [[rest-api]]
 **API usage:**
 
@@ -450,6 +481,13 @@ The claim can contain:
 * Single namespace: `"namespace": "team-a"`
 * Array of namespaces: `"namespace": ["team-a", "team-b"]`
 * Comma-separated string: `"namespace": "team-a,team-b"`
+* Wildcard `*`, which grants access to all namespaces: `"namespace": "*"`
+  The wildcard can also be included in an array: `"namespace": ["*"]`
+
+IMPORTANT: Only the exact namespace value `*` grants access to all namespaces.
+Namespace matching is exact and case-sensitive. Values such as `team-*`,
+`my*`, `**`, or ` * ` are treated as ordinary namespace names and do not act
+as wildcard patterns.
 
 **Disabling namespace validation:**
 
@@ -820,7 +858,7 @@ yamllint workflows/
 **Causes:**
 
 * User not authorized for the workflow's namespace
-* Namespace claim missing from JWT token (OIDC mode)
+* Namespace claim missing, empty or contains only blank values from JWT token (OIDC mode and non-admin)
 * API key not configured with required namespaces (API_KEY mode)
 
 **Solutions:**
