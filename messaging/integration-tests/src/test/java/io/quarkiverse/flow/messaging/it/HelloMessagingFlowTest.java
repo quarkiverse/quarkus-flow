@@ -11,11 +11,15 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
+import jakarta.inject.Inject;
+
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -32,6 +36,7 @@ import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.kafka.InjectKafkaCompanion;
 import io.quarkus.test.kafka.KafkaCompanionResource;
+import io.smallrye.reactive.messaging.ce.OutgoingCloudEventMetadata;
 import io.smallrye.reactive.messaging.kafka.companion.ConsumerTask;
 import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
 
@@ -46,6 +51,10 @@ public class HelloMessagingFlowTest {
 
     @InjectKafkaCompanion
     KafkaCompanion companion;
+
+    @Inject
+    @Channel("flow-in-outgoing")
+    Emitter<byte[]> flowIn;
 
     @Test
     @DisplayName("greet_roundtrip_with_structured_cloud_event")
@@ -77,17 +86,15 @@ public class HelloMessagingFlowTest {
                 .consumeWithDeserializers(StringDeserializer.class, CloudEventDeserializer.class)
                 .fromTopics("flow-out");
 
-        // Binary mode: data in Kafka value, CE attributes in ce_* headers
         byte[] data = "{\"name\":\"Elisa\"}".getBytes();
-        RecordHeaders headers = new RecordHeaders();
-        headers.add("ce_specversion", "1.0".getBytes());
-        headers.add("ce_id", UUID.randomUUID().toString().getBytes());
-        headers.add("ce_source", "test:/it".getBytes());
-        headers.add("ce_type", "io.quarkiverse.flow.messaging.hello.request".getBytes());
-        headers.add("ce_datacontenttype", "application/json".getBytes());
+        OutgoingCloudEventMetadata<?> ceMeta = OutgoingCloudEventMetadata.builder()
+                .withId(UUID.randomUUID().toString())
+                .withSource(URI.create("test:/it"))
+                .withType("io.quarkiverse.flow.messaging.hello.request")
+                .withDataContentType("application/json")
+                .build();
 
-        companion.produceWithSerializers(StringSerializer.class, ByteArraySerializer.class)
-                .fromRecords(new ProducerRecord<>("flow-in", null, null, null, data, headers));
+        flowIn.send(Message.of(data).addMetadata(ceMeta));
 
         CloudEvent ce = awaitResponseCE(out);
         assertResponseCE(ce, "Elisa");
@@ -130,7 +137,11 @@ public class HelloMessagingFlowTest {
         public Map<String, String> getConfigOverrides() {
             return Map.of(
                     "quarkus.flow.messaging.metadata.instance-id.key", "custominstanceid",
-                    "quarkus.flow.messaging.metadata.task-id.key", "customtaskid");
+                    "quarkus.flow.messaging.metadata.task-id.key", "customtaskid",
+                    "mp.messaging.outgoing.flow-in-outgoing.connector", "smallrye-kafka",
+                    "mp.messaging.outgoing.flow-in-outgoing.topic", "flow-in",
+                    "mp.messaging.outgoing.flow-in-outgoing.value.serializer",
+                    "org.apache.kafka.common.serialization.ByteArraySerializer");
         }
     }
 }

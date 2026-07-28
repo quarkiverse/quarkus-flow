@@ -14,6 +14,9 @@ import java.util.concurrent.TimeUnit;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,10 +31,10 @@ import io.cloudevents.jackson.JsonFormat;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
+import io.smallrye.reactive.messaging.ce.OutgoingCloudEventMetadata;
 import io.vertx.amqp.AmqpClient;
 import io.vertx.amqp.AmqpClientOptions;
 import io.vertx.amqp.AmqpMessage;
-import io.vertx.amqp.AmqpMessageBuilder;
 import io.vertx.amqp.AmqpReceiver;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -47,6 +50,10 @@ public class HelloMessagingFlowAmqpTest {
 
     @Inject
     HelloMessagingFlow workflow;
+
+    @Inject
+    @Channel("flow-in-outgoing")
+    Emitter<byte[]> flowIn;
 
     @ConfigProperty(name = "amqp-host")
     String amqpHost;
@@ -109,18 +116,14 @@ public class HelloMessagingFlowAmqpTest {
         CompletableFuture<AmqpMessage> responseFuture = listenOnFlowOut();
 
         byte[] data = "{\"name\":\"Elisa\"}".getBytes();
-        AmqpMessageBuilder msgBuilder = AmqpMessage.create()
-                .withBufferAsBody(Buffer.buffer(data))
-                .contentType("application/json");
+        OutgoingCloudEventMetadata<?> ceMeta = OutgoingCloudEventMetadata.builder()
+                .withId(UUID.randomUUID().toString())
+                .withSource(URI.create("test:/it"))
+                .withType("io.quarkiverse.flow.messaging.hello.request")
+                .withDataContentType("application/json")
+                .build();
 
-        msgBuilder.applicationProperties(new JsonObject()
-                .put("cloudEvents:specversion", "1.0")
-                .put("cloudEvents:id", UUID.randomUUID().toString())
-                .put("cloudEvents:source", "test:/it")
-                .put("cloudEvents:type", "io.quarkiverse.flow.messaging.hello.request")
-                .put("cloudEvents:datacontenttype", "application/json"));
-
-        sendToFlowIn(msgBuilder.build());
+        flowIn.send(Message.of(data).addMetadata(ceMeta));
 
         AmqpMessage response = responseFuture.get(15, TimeUnit.SECONDS);
         assertResponseMessage(response, "Elisa");
@@ -189,7 +192,9 @@ public class HelloMessagingFlowAmqpTest {
         public Map<String, String> getConfigOverrides() {
             return Map.of(
                     "quarkus.flow.messaging.metadata.instance-id.key", "custominstanceid",
-                    "quarkus.flow.messaging.metadata.task-id.key", "customtaskid");
+                    "quarkus.flow.messaging.metadata.task-id.key", "customtaskid",
+                    "mp.messaging.outgoing.flow-in-outgoing.connector", "smallrye-amqp",
+                    "mp.messaging.outgoing.flow-in-outgoing.address", "flow-in");
         }
     }
 }
