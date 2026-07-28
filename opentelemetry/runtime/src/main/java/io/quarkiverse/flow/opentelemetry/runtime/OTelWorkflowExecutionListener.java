@@ -15,7 +15,6 @@ import static io.quarkiverse.flow.opentelemetry.runtime.WorkflowEventType.WORKFL
 
 import java.time.Instant;
 
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -46,7 +45,6 @@ import io.serverlessworkflow.impl.lifecycle.WorkflowResumedEvent;
 import io.serverlessworkflow.impl.lifecycle.WorkflowStartedEvent;
 import io.serverlessworkflow.impl.lifecycle.WorkflowSuspendedEvent;
 
-@ApplicationScoped
 public class OTelWorkflowExecutionListener implements WorkflowExecutionListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OTelWorkflowExecutionListener.class);

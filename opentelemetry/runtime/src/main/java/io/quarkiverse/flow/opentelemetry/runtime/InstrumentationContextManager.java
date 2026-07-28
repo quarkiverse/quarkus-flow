@@ -4,12 +4,9 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import jakarta.enterprise.context.ApplicationScoped;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ApplicationScoped
 public class InstrumentationContextManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InstrumentationContextManager.class);

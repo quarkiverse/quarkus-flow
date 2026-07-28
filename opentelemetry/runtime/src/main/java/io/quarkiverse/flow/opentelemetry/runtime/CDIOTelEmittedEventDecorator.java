@@ -1,6 +1,5 @@
 package io.quarkiverse.flow.opentelemetry.runtime;
 
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.slf4j.Logger;
@@ -11,13 +10,10 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.quarkiverse.flow.opentelemetry.runtime.config.FlowOTelConfig;
-import io.quarkus.arc.Unremovable;
 import io.serverlessworkflow.impl.TaskContext;
 import io.serverlessworkflow.impl.WorkflowContext;
 import io.serverlessworkflow.impl.events.EmittedEventDecorator;
 
-@ApplicationScoped
-@Unremovable
 public class CDIOTelEmittedEventDecorator implements EmittedEventDecorator {
     private static final Logger LOGGER = LoggerFactory.getLogger(CDIOTelEmittedEventDecorator.class);
     @Inject

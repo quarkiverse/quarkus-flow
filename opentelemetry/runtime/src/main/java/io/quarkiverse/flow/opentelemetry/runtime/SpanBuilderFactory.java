@@ -1,6 +1,5 @@
 package io.quarkiverse.flow.opentelemetry.runtime;
 
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -8,7 +7,6 @@ import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 
-@ApplicationScoped
 public class SpanBuilderFactory {
 
     static final String FLOW_WF_APPLICATION_ID_ATTR = "flow.application.id";
