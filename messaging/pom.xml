@@ -15,6 +15,7 @@
         <module>runtime</module>
         <module>deployment</module>
         <module>integration-tests</module>
+        <module>integration-tests-amqp</module>
     </modules>
 
 </project>
