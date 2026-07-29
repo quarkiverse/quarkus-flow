@@ -1,6 +1,5 @@
 package org.acme.orchestrator.workflow;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.FlowDirectiveEnum;
 import io.serverlessworkflow.api.types.Workflow;
@@ -53,7 +52,7 @@ public class TaskWorkflow extends Flow {
     public Workflow descriptor() {
         return workflow("build-task")
                 // 1. Listen for task start event from coordinator
-                .schedule(on(one("org.acme.build.task.started")))
+                .schedule(on(one("org.acme.build.task.started").first()))
                 .tasks(
                         // 2. Extract BuildTask from CloudEvent and reconcile state
                         function("extractAndReconcile", (BuildTask task) -> {
@@ -68,8 +67,7 @@ public class TaskWorkflow extends Flow {
 
                             LOG.info("Task {} reconciliation successful: {}", task.id(), result.message());
                             return task;
-                        })// Extract BuildTask from CloudEvent structure: schedule() returns array of CloudEvents
-                                .inputFrom((JsonNode node) -> node.isArray() ? node.get(0).get("data") : node.get("data")),
+                        }),
 
                         // 3. Execute task (idempotent, can retry)
                         function("execute", (BuildTask task) -> {

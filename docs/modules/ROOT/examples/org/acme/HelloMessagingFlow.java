@@ -2,7 +2,6 @@ package org.acme;
 
 import static io.quarkiverse.flow.dsl.FlowDSL.*;
 
-import java.util.Collection;
 import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -18,10 +17,7 @@ public class HelloMessagingFlow extends Flow {
     public Workflow descriptor() {
         return FlowWorkflowBuilder.workflow("hello-messaging")
                 .tasks(
-                        // Wait for one request event
-                        listen("waitHello", toOne("org.acme.hello.request"))
-                                // listen() returns a collection; pick the first
-                                .outputAs((Collection<Object> c) -> c.iterator().next()),
+                        listen("waitHello", toOne("org.acme.hello.request").first()),
 
                         // Build a response with jq
                         set("{ message: \"Hello \" + .name }"),

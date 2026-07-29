@@ -4,6 +4,7 @@ import static io.quarkiverse.flow.dsl.FlowDSL.after;
 import static io.quarkiverse.flow.dsl.FlowDSL.allOfType;
 import static io.quarkiverse.flow.dsl.FlowDSL.cron;
 import static io.quarkiverse.flow.dsl.FlowDSL.every;
+import static io.quarkiverse.flow.dsl.FlowDSL.function;
 import static io.quarkiverse.flow.dsl.FlowDSL.on;
 import static io.quarkiverse.flow.dsl.FlowDSL.one;
 import static io.quarkiverse.flow.dsl.FlowDSL.timeoutHours;
@@ -15,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.serverlessworkflow.api.types.InputFrom;
 import io.serverlessworkflow.api.types.Schedule;
 import io.serverlessworkflow.api.types.Workflow;
 
@@ -105,6 +107,82 @@ class FlowDSLScheduleTest {
                 "org.acme.startup",
                 schedule.getOn().getOneEventConsumptionStrategy().getOne().getWith().getType(),
                 "Event type should match");
+    }
+
+    @Test
+    @DisplayName("schedule(on(one(event).first())) sets schedule and inputFrom to extract CE data")
+    void schedule_on_one_first_sets_schedule_and_inputFrom() {
+        Workflow wf = FlowWorkflowBuilder.workflow("schedule-first")
+                .schedule(on(one("com.example.booking.confirmed").first()))
+                .tasks(function("process", String::trim, String.class))
+                .build();
+
+        Schedule schedule = wf.getSchedule();
+        assertNotNull(schedule, "Schedule should be configured");
+        assertNotNull(schedule.getOn(), "On configuration should be set");
+        assertNotNull(
+                schedule.getOn().getOneEventConsumptionStrategy(),
+                "One consumption strategy should be set");
+        assertEquals(
+                "com.example.booking.confirmed",
+                schedule.getOn().getOneEventConsumptionStrategy().getOne().getWith().getType(),
+                "Event type should match");
+
+        assertNotNull(wf.getInput(), "Input should be set (from first)");
+        assertNotNull(wf.getInput().getFrom(), "Input.from should be set");
+        InputFrom from = wf.getInput().getFrom();
+        assertNotNull(from.getObject(), "Input.from should contain a Java function");
+        assertNull(from.getString(), "Input.from should not be a JQ expression");
+    }
+
+    @Test
+    @DisplayName("schedule(on(one(event).envelope().first())) sets schedule and inputFrom for full CE")
+    void schedule_on_one_envelope_first_sets_schedule_and_inputFrom() {
+        Workflow wf = FlowWorkflowBuilder.workflow("schedule-envelope-first")
+                .schedule(on(one("com.example.booking.confirmed").envelope().first()))
+                .tasks(function("process", String::trim, String.class))
+                .build();
+
+        Schedule schedule = wf.getSchedule();
+        assertNotNull(schedule, "Schedule should be configured");
+        assertNotNull(
+                schedule.getOn().getOneEventConsumptionStrategy(),
+                "One consumption strategy should be set");
+
+        assertNotNull(wf.getInput(), "Input should be set (from envelope().first())");
+        assertNotNull(wf.getInput().getFrom(), "Input.from should be set");
+        InputFrom from = wf.getInput().getFrom();
+        assertNotNull(from.getObject(), "Input.from should contain a Java function");
+    }
+
+    @Test
+    @DisplayName("schedule(on(one(event))) without first does NOT set inputFrom")
+    void schedule_on_one_without_first_does_not_set_inputFrom() {
+        Workflow wf = FlowWorkflowBuilder.workflow("schedule-no-first")
+                .schedule(on(one("org.acme.event")))
+                .tasks(function("process", String::trim, String.class))
+                .build();
+
+        Schedule schedule = wf.getSchedule();
+        assertNotNull(schedule, "Schedule should be configured");
+        assertNull(wf.getInput(), "Input should NOT be set when first is not called");
+    }
+
+    @Test
+    @DisplayName("first inputFrom can be overridden by explicit inputFrom")
+    void first_inputFrom_can_be_overridden() {
+        Workflow wf = FlowWorkflowBuilder.workflow("schedule-override")
+                .schedule(on(one("com.example.event").first()))
+                .inputFrom(".custom_expression")
+                .tasks(function("process", String::trim, String.class))
+                .build();
+
+        assertNotNull(wf.getInput(), "Input should be set");
+        assertNotNull(wf.getInput().getFrom(), "Input.from should be set");
+        assertEquals(
+                ".custom_expression",
+                wf.getInput().getFrom().getString(),
+                "Explicit inputFrom should override first's inputFrom");
     }
 
     @Test
