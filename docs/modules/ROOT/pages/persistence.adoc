@@ -187,6 +187,7 @@ Enable migration at startup and disable Hibernate ORM schema generation in your 
 [source,properties]
 ----
 quarkus.hibernate-orm.database.generation=none
+quarkus.hibernate-orm.physical-naming-strategy=org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
 quarkus.flyway.enabled=true
 quarkus.flyway.migrate-at-start=true
 ----
