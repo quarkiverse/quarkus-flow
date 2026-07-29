@@ -1,9 +1,9 @@
 package io.quarkiverse.flow.dsl;
 
 import java.util.Collection;
-import java.util.function.Function;
 
 import io.quarkiverse.flow.dsl.configurers.FuncListenConfigurer;
+import io.quarkiverse.flow.dsl.types.SerializableFunction;
 import io.serverlessworkflow.api.types.ListenTaskConfiguration;
 
 /**
@@ -75,8 +75,8 @@ public final class FuncListenSpec extends BaseFuncListenSpec<FuncListenSpec, Fun
                 funcListenTaskBuilder.read(ListenTaskConfiguration.ListenAndReadAs.ENVELOPE);
             }
             funcListenTaskBuilder.outputAs(
-                    (Function<Collection<Object>, Object>) col -> {
-                        if (!col.isEmpty()) {
+                    (SerializableFunction<Collection<Object>, Object>) col -> {
+                        if (col != null && !col.isEmpty()) {
                             return col.iterator().next();
                         }
                         return col;

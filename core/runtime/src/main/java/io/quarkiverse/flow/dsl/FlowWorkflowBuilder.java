@@ -52,9 +52,9 @@ public class FlowWorkflowBuilder
         schedule((Consumer<ScheduleBuilder>) spec);
         if (spec.isFirst()) {
             if (spec.isEnvelope()) {
-                inputFrom(ce -> ce, CloudEvent.class);
+                inputFrom(ce -> ce);
             } else {
-                inputFrom(CloudEvent::getData, CloudEvent.class);
+                inputFrom(CloudEvent::getData);
             }
         }
         return this;

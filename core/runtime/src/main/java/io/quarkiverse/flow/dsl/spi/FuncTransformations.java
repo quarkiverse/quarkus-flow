@@ -1,9 +1,8 @@
 package io.quarkiverse.flow.dsl.spi;
 
-import java.util.function.Function;
-
 import io.quarkiverse.flow.dsl.types.ContextFunction;
 import io.quarkiverse.flow.dsl.types.FilterFunction;
+import io.quarkiverse.flow.dsl.types.SerializableFunction;
 import io.quarkiverse.flow.dsl.types.TypedContextFunction;
 import io.quarkiverse.flow.dsl.types.TypedFilterFunction;
 import io.quarkiverse.flow.dsl.types.TypedFunction;
@@ -17,13 +16,13 @@ public interface FuncTransformations<SELF extends FuncTransformations<SELF>>
         extends TransformationHandlers {
 
     @SuppressWarnings("unchecked")
-    default <T, V> SELF inputFrom(Function<T, V> function) {
+    default <T, V> SELF inputFrom(SerializableFunction<T, V> function) {
         setInput(new Input().withFrom(new InputFrom().withObject(function)));
         return (SELF) this;
     }
 
     @SuppressWarnings("unchecked")
-    default <T, V> SELF inputFrom(Function<T, V> function, Class<T> argClass) {
+    default <T, V> SELF inputFrom(SerializableFunction<T, V> function, Class<T> argClass) {
         setInput(
                 new Input().withFrom(new InputFrom().withObject(new TypedFunction<>(function, argClass))));
         return (SELF) this;
@@ -64,13 +63,13 @@ public interface FuncTransformations<SELF extends FuncTransformations<SELF>>
     }
 
     @SuppressWarnings("unchecked")
-    default <T, V> SELF outputAs(Function<T, V> function) {
+    default <T, V> SELF outputAs(SerializableFunction<T, V> function) {
         setOutput(new Output().withAs(new OutputAs().withObject(function)));
         return (SELF) this;
     }
 
     @SuppressWarnings("unchecked")
-    default <T, V> SELF outputAs(Function<T, V> function, Class<T> argClass) {
+    default <T, V> SELF outputAs(SerializableFunction<T, V> function, Class<T> argClass) {
         setOutput(
                 new Output().withAs(new OutputAs().withObject(new TypedFunction<>(function, argClass))));
         return (SELF) this;
