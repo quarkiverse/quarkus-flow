@@ -71,8 +71,12 @@ public class HelloMessagingFlowTest {
                 .withData("{\"name\":\"Elisa\"}".getBytes())
                 .build();
 
+        @SuppressWarnings("unchecked")
+        ProducerRecord<Object, Object> structuredRecord = new ProducerRecord<>("flow-in",
+                (Object) CE_JSON.serialize(greet));
+        structuredRecord.headers().add("content-type", "application/cloudevents+json; charset=UTF-8".getBytes());
         companion.produceWithSerializers(StringSerializer.class, ByteArraySerializer.class)
-                .fromRecords(new ProducerRecord<>("flow-in", CE_JSON.serialize(greet)));
+                .fromRecords(structuredRecord);
 
         CloudEvent ce = awaitResponseCE(out);
         assertResponseCE(ce, "Elisa");

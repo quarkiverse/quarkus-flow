@@ -3,7 +3,6 @@ package io.quarkiverse.flow.messaging;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -22,8 +21,6 @@ import org.slf4j.LoggerFactory;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.builder.CloudEventBuilder;
 import io.cloudevents.core.data.BytesCloudEventData;
-import io.cloudevents.core.provider.EventFormatProvider;
-import io.cloudevents.jackson.JsonFormat;
 import io.serverlessworkflow.impl.events.AbstractTypeConsumer;
 import io.smallrye.reactive.messaging.ce.IncomingCloudEventMetadata;
 
@@ -32,53 +29,19 @@ public class FlowMessagingConsumer
         extends AbstractTypeConsumer {
 
     private static final Logger LOG = LoggerFactory.getLogger(FlowMessagingConsumer.class);
-    private static final JsonFormat FORMAT = (JsonFormat) EventFormatProvider.getInstance()
-            .resolveFormat(JsonFormat.CONTENT_TYPE);
     private final Map<String, Consumer<CloudEvent>> topicMap = new ConcurrentHashMap<>();
     private final AtomicReference<Consumer<CloudEvent>> allConsumerRef = new AtomicReference<>();
+
     @Inject
     ManagedExecutor executor;
 
-    private static CloudEvent parseStructuredCE(byte[] json) {
-        if (FORMAT == null)
-            throw new IllegalStateException("CloudEvents JSON format not available");
-        return FORMAT.deserialize(json);
-    }
-
-    private static byte[] toBytes(Object raw) {
-        if (raw instanceof byte[] b) {
-            return b;
-        }
-        if (raw instanceof String s) {
-            return s.getBytes(StandardCharsets.UTF_8);
-        }
-        if (raw != null) {
-            return raw.toString().getBytes(StandardCharsets.UTF_8);
-        }
-        return new byte[0];
-    }
-
     private static CloudEvent resolveCloudEvent(Message<?> msg) {
-        byte[] payload = toBytes(msg.getPayload());
-        if (payload.length > 0) {
-            try {
-                return parseStructuredCE(payload);
-            } catch (Exception structuredEx) {
-                LOG.debug("Flow: Structured CE parse failed, trying binary mode", structuredEx);
-            }
-        }
-
-        // Binary mode: CE attributes in transport headers via SmallRye metadata
-        Optional<IncomingCloudEventMetadata<?>> ceMeta = msg
+        IncomingCloudEventMetadata<?> meta = (IncomingCloudEventMetadata<?>) msg
                 .getMetadata(IncomingCloudEventMetadata.class)
-                .map(m -> (IncomingCloudEventMetadata<?>) m);
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Message does not carry CloudEvent metadata. "
+                                + "Ensure the channel has cloud-events enabled (the default)."));
 
-        if (ceMeta.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Message is neither a structured CloudEvent nor carries binary CE metadata");
-        }
-
-        IncomingCloudEventMetadata<?> meta = ceMeta.get();
         CloudEventBuilder builder = CloudEventBuilder.v1()
                 .withId(meta.getId())
                 .withSource(meta.getSource())
@@ -104,8 +67,11 @@ public class FlowMessagingConsumer
             }
         }
 
-        if (payload.length > 0) {
-            builder.withData(BytesCloudEventData.wrap(payload));
+        Object data = meta.getData();
+        if (data instanceof byte[] bytes) {
+            builder.withData(BytesCloudEventData.wrap(bytes));
+        } else if (data != null) {
+            builder.withData(BytesCloudEventData.wrap(data.toString().getBytes(StandardCharsets.UTF_8)));
         }
 
         return builder.build();
