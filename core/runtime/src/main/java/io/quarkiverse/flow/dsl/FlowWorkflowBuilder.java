@@ -3,12 +3,10 @@ package io.quarkiverse.flow.dsl;
 import static io.serverlessworkflow.types.Defaults.DEFAULT_NAMESPACE;
 import static io.serverlessworkflow.types.Defaults.DEFAULT_VERSION;
 
-import java.util.Collection;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
+import io.cloudevents.CloudEvent;
 import io.quarkiverse.flow.dsl.spi.FuncTransformations;
 import io.serverlessworkflow.fluent.spec.BaseWorkflowBuilder;
 import io.serverlessworkflow.fluent.spec.ScheduleBuilder;
@@ -54,23 +52,9 @@ public class FlowWorkflowBuilder
         schedule((Consumer<ScheduleBuilder>) spec);
         if (spec.isFirst()) {
             if (spec.isEnvelope()) {
-                inputFrom((Function<Collection<Object>, Object>) col -> {
-                    if (!col.isEmpty()) {
-                        return col.iterator().next();
-                    }
-                    return col;
-                });
+                inputFrom(ce -> ce, CloudEvent.class);
             } else {
-                inputFrom((Function<Collection<Object>, Object>) col -> {
-                    Object target = col;
-                    if (!col.isEmpty()) {
-                        target = col.iterator().next();
-                    }
-                    if (target instanceof Map<?, ?> map && map.containsKey("data")) {
-                        return map.get("data");
-                    }
-                    return target;
-                });
+                inputFrom(CloudEvent::getData, CloudEvent.class);
             }
         }
         return this;
