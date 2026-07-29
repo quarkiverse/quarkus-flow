@@ -19,10 +19,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.cloudevents.CloudEvent;
+import io.cloudevents.CloudEventData;
 import io.cloudevents.core.builder.CloudEventBuilder;
 import io.cloudevents.core.data.BytesCloudEventData;
 import io.serverlessworkflow.impl.events.AbstractTypeConsumer;
 import io.smallrye.reactive.messaging.ce.IncomingCloudEventMetadata;
+import io.vertx.core.json.JsonObject;
 
 @ApplicationScoped
 public class FlowMessagingConsumer
@@ -69,7 +71,13 @@ public class FlowMessagingConsumer
 
         Object data = meta.getData();
         if (data instanceof byte[] bytes) {
-            builder.withData(BytesCloudEventData.wrap(bytes));
+            builder.withData(bytes);
+        } else if (data instanceof CloudEventData cloudEventData) {
+            builder.withData(cloudEventData);
+        } else if (data instanceof String text) {
+            builder.withData(text.getBytes(StandardCharsets.UTF_8));
+        } else if (data instanceof JsonObject jsonObject) {
+            builder.withData(jsonObject.encode().getBytes(StandardCharsets.UTF_8));
         } else if (data != null) {
             builder.withData(BytesCloudEventData.wrap(data.toString().getBytes(StandardCharsets.UTF_8)));
         }
