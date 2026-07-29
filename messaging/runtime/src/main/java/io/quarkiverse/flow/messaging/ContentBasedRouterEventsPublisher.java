@@ -1,5 +1,8 @@
 package io.quarkiverse.flow.messaging;
 
+import java.time.ZoneOffset;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
@@ -7,24 +10,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.cloudevents.CloudEvent;
-import io.cloudevents.core.format.EventFormat;
-import io.cloudevents.core.provider.EventFormatProvider;
-import io.cloudevents.jackson.JsonFormat;
 import io.serverlessworkflow.impl.events.EventPublisher;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.smallrye.reactive.messaging.ce.OutgoingCloudEventMetadata;
 
 /**
  * A content-based router {@link EventPublisher}.
+ * <p>
+ * CloudEvent attributes are propagated via {@link OutgoingCloudEventMetadata},
+ * letting SmallRye Reactive Messaging handle transport-specific encoding
+ * (Kafka headers, AMQP properties, etc.) rather than manually serializing
+ * the full CloudEvent envelope.
  *
- * @see <a href="https://www.enterpriseintegrationpatterns.com/patterns/messaging/ContentBasedRouter.html>Messaging Patterns -
+ * @see <a href="https://www.enterpriseintegrationpatterns.com/patterns/messaging/ContentBasedRouter.html">Messaging Patterns -
  *      Content-Based Router</a>
  */
 public abstract class ContentBasedRouterEventsPublisher implements EventPublisher {
 
     private static final String ENGINE_PREFIX = "io.serverlessworkflow";
     private static final Logger LOG = LoggerFactory.getLogger(ContentBasedRouterEventsPublisher.class);
-    private static final EventFormat FORMAT = EventFormatProvider.getInstance()
-            .resolveFormat(JsonFormat.CONTENT_TYPE);
 
     protected boolean isLifecycleEvent(CloudEvent event) {
         final String type = event.getType();
@@ -37,11 +41,43 @@ public abstract class ContentBasedRouterEventsPublisher implements EventPublishe
             return CompletableFuture.completedFuture(null);
 
         try {
-            byte[] structured = FORMAT.serialize(event);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Flow: Publishing on channel {} event={}", channelName(), new String(structured));
+            byte[] data = event.getData() != null ? event.getData().toBytes() : new byte[0];
 
-            return outEmitter().sendMessage(Message.of(structured)).subscribeAsCompletionStage();
+            var builder = OutgoingCloudEventMetadata.builder()
+                    .withId(event.getId())
+                    .withSource(event.getSource())
+                    .withType(event.getType());
+
+            if (event.getDataContentType() != null) {
+                builder.withDataContentType(event.getDataContentType());
+            }
+            if (event.getDataSchema() != null) {
+                builder.withDataSchema(event.getDataSchema());
+            }
+            if (event.getSubject() != null) {
+                builder.withSubject(event.getSubject());
+            }
+            if (event.getTime() != null) {
+                builder.withTimestamp(event.getTime().atZoneSameInstant(ZoneOffset.UTC));
+            }
+
+            if (!event.getExtensionNames().isEmpty()) {
+                Map<String, Object> extensions = new HashMap<>();
+                for (String name : event.getExtensionNames()) {
+                    extensions.put(name, event.getExtension(name));
+                }
+                builder.withExtensions(extensions);
+            }
+
+            OutgoingCloudEventMetadata<?> ceMetadata = builder.build();
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Flow: Publishing on channel {} CE id={} type={} source={}",
+                        channelName(), event.getId(), event.getType(), event.getSource());
+            }
+
+            return outEmitter().sendMessage(Message.of(data).addMetadata(ceMetadata))
+                    .subscribeAsCompletionStage();
         } catch (Exception e) {
             final CompletableFuture<Void> cf = new CompletableFuture<>();
             cf.completeExceptionally(e);

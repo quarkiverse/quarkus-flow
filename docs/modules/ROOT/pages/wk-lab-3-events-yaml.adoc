@@ -85,22 +85,20 @@ Now, connect the engine's internal channels to actual Kafka topics. Add these st
 # Inbound (Listen for 'demo.message.incoming')
 mp.messaging.incoming.flow-in.connector=smallrye-kafka
 mp.messaging.incoming.flow-in.topic=flow-in
-mp.messaging.incoming.flow-in.value.deserializer=org.apache.kafka.common.serialization.ByteArrayDeserializer
-mp.messaging.incoming.flow-in.key.deserializer=org.apache.kafka.common.serialization.StringDeserializer
 
 # Outbound (Emit 'demo.message.uppercased')
 mp.messaging.outgoing.flow-out.connector=smallrye-kafka
 mp.messaging.outgoing.flow-out.topic=flow-out
-mp.messaging.outgoing.flow-out.value.serializer=org.apache.kafka.common.serialization.ByteArraySerializer
-mp.messaging.outgoing.flow-out.key.serializer=org.apache.kafka.common.serialization.StringSerializer
 ----
+
+NOTE: You don't need to configure serializers or deserializers. SmallRye handles CloudEvent encoding automatically via transport headers.
 
 == 4. Drive the workflow
 
 Run your application in dev mode: `./mvnw quarkus:dev`. You can now trigger the workflow in two different ways.
 
 === 4.1 Trigger via an Event (Asynchronous)
-If you have a Kafka producer, you can send a structured CloudEvent to the `flow-in` topic.
+If you have a Kafka producer, you can send a CloudEvent to the `flow-in` topic. You can use either structured mode (full JSON envelope) or binary mode (CE attributes in Kafka headers, data in the value).
 
 TIP: You can use the **Kafka Dev UI** in the Quarkus Dev UI to produce a message directly to the topic.
 

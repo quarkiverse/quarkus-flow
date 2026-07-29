@@ -1,0 +1,142 @@
+= Migration Guide: 0.14.x to 0.15.0
+include::includes/attributes.adoc[]
+
+Quarkus Flow 0.15.0 fixes CloudEvent encoding on the messaging bridge.
+The `flow-out` producer and `flow-in` consumer now use SmallRye Reactive Messaging's native CloudEvent support instead of manual JSON serialization.
+
+This is a **wire-format breaking change**: the outgoing message payload on `flow-out` is now the event _data_ only — CloudEvent attributes travel via transport headers (Kafka `ce_*`, AMQP `cloudEvents:*`).
+Code that reads raw bytes from `flow-out` and calls `JsonFormat.deserialize()` must be updated.
+
+== Why the change?
+
+In 0.14.x the publisher serialized the full CloudEvent JSON envelope into the message body via `JsonFormat.serialize()` and sent it as opaque `byte[]`.
+No transport-level headers were set.
+This caused two problems:
+
+* Consumers using the standard `CloudEventDeserializer` from the CloudEvents Kafka SDK failed with `CloudEventRWException: Unknown encoding` because neither the `content-type` header (structured mode) nor the `ce_specversion` header (binary mode) was present.
+* The approach was Kafka-specific.
+  Adding Kafka headers would have broken AMQP and other connectors.
+
+0.15.0 delegates CloudEvent encoding to SmallRye via `OutgoingCloudEventMetadata` (outbound) and `IncomingCloudEventMetadata` (inbound).
+SmallRye maps CE attributes to the appropriate transport mechanism for each connector, keeping the bridge transport-agnostic.
+
+== What changed
+
+=== Outbound (`flow-out`)
+
+[cols="1,1",options="header"]
+|===
+| Before (0.14.x) | After (0.15.0)
+
+| Message body = full CE JSON envelope (`specversion`, `type`, `source`, `data`, …)
+| Message body = CE _data_ payload only
+
+| No transport headers
+| CE attributes in transport headers (Kafka `ce_*`, AMQP `cloudEvents:*`)
+
+| Manual `JsonFormat.serialize()`
+| SmallRye `OutgoingCloudEventMetadata`
+|===
+
+=== Inbound (`flow-in`)
+
+[cols="1,1",options="header"]
+|===
+| Before (0.14.x) | After (0.15.0)
+
+| Only structured CloudEvents (full JSON envelope in body)
+| Structured _and_ binary CloudEvents
+
+| `Message<byte[]>` — rejects non-byte payloads
+| `Message<?>` — handles `byte[]`, `String`, and `JsonObject` payloads (AMQP support)
+|===
+
+=== AMQP connector support
+
+0.15.0 adds first-class support for the SmallRye AMQP connector (`quarkus-messaging-amqp`).
+Both structured and binary CloudEvents work on AMQP out of the box — no additional dependencies or configuration required.
+
+== Step-by-step migration
+
+=== 1. Update consumers reading from `flow-out`
+
+If you consume from `flow-out` using the CloudEvents SDK deserializer, your code now works correctly — no changes needed.
+This was broken in 0.14.x.
+
+If you consume raw bytes and call `JsonFormat.deserialize(payload)`, you must update to use SmallRye's `CloudEventMetadata`:
+
+[source,java]
+----
+// Before (0.14.x) — payload was the full CE JSON envelope
+byte[] payload = msg.getPayload();
+CloudEvent event = CE_JSON.deserialize(payload);
+String type = event.getType();
+byte[] data = event.getData().toBytes();
+
+// After (0.15.0) — CE attributes in metadata, payload is data only
+CloudEventMetadata<?> ceMeta = msg.getMetadata(CloudEventMetadata.class)
+    .orElseThrow();
+String type = ceMeta.getType();
+byte[] data = msg.getPayload();
+----
+
+Required import:
+
+[source,java]
+----
+import io.smallrye.reactive.messaging.ce.CloudEventMetadata;
+----
+
+No new dependencies — `CloudEventMetadata` comes from `smallrye-reactive-messaging-api`, which is already on the classpath via the Quarkus Messaging connector.
+
+=== 2. Update Kafka consumer configuration (if applicable)
+
+If you configured an external Kafka consumer (outside SmallRye) with `CloudEventDeserializer`, it now works without changes — the transport headers are correctly set.
+
+If you previously worked around the missing headers by using `ByteArrayDeserializer` and manual parsing, you can simplify to:
+
+[source,properties]
+----
+mp.messaging.incoming.my-channel.value.deserializer=io.cloudevents.kafka.CloudEventDeserializer
+----
+
+=== 3. Verify
+
+Rebuild your project and run your messaging integration tests:
+
+[source,bash]
+----
+mvn clean verify
+----
+
+== New capabilities
+
+=== Binary CloudEvents on `flow-in`
+
+Producers can now send binary-mode CloudEvents to `flow-in`.
+The consumer auto-detects the encoding:
+
+* **Kafka**: CE attributes in `ce_*` record headers, data in the value.
+* **AMQP**: CE attributes in `cloudEvents:*` application properties, data in the body.
+
+No configuration is needed — detection is automatic via SmallRye.
+
+=== AMQP connector
+
+You can now use the AMQP connector as a drop-in replacement for Kafka:
+
+[source,properties]
+----
+mp.messaging.incoming.flow-in.connector=smallrye-amqp
+mp.messaging.incoming.flow-in.address=flow-in
+
+mp.messaging.outgoing.flow-out.connector=smallrye-amqp
+mp.messaging.outgoing.flow-out.address=flow-out
+----
+
+No additional serializer/deserializer configuration is required for AMQP.
+
+== No other behavioral changes
+
+Workflow execution semantics, the Java DSL, lifecycle events, and correlation metadata (`flowinstanceid`, `flowtaskid`) are unchanged.
+The correlation attributes are now carried as CloudEvent extension attributes in the transport headers rather than embedded in the JSON body.

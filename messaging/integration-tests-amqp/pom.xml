@@ -10,8 +10,8 @@
         <skipITs>true</skipITs>
     </properties>
 
-    <artifactId>quarkus-flow-messaging-integration-tests</artifactId>
-    <name>Quarkus Flow :: Messaging :: Integration Tests</name>
+    <artifactId>quarkus-flow-messaging-integration-tests-amqp</artifactId>
+    <name>Quarkus Flow :: Messaging :: Integration Tests :: AMQP</name>
 
     <dependencies>
         <dependency>
@@ -19,10 +19,10 @@
             <artifactId>quarkus-flow</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!-- Since we are using Kafka, we use its connector - but can be any SmallRye connector -->
+        <!-- AMQP connector (SmallRye Reactive Messaging) -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-messaging-kafka</artifactId>
+            <artifactId>quarkus-messaging-amqp</artifactId>
         </dependency>
 
         <dependency>
@@ -31,8 +31,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-test-kafka-companion</artifactId>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-amqp-client</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -47,7 +47,7 @@
         </dependency>
         <dependency>
             <groupId>io.cloudevents</groupId>
-            <artifactId>cloudevents-kafka</artifactId>
+            <artifactId>cloudevents-json-jackson</artifactId>
             <version>${io.cloudevents.version}</version>
             <scope>test</scope>
         </dependency>
@@ -93,16 +93,6 @@
                         <maven.home>${maven.home}</maven.home>
                     </systemPropertyVariables>
                 </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

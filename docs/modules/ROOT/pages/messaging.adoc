@@ -42,32 +42,32 @@ quarkus.flow.messaging.defaults-enabled=true
 
 Once enabled, the engine creates two default channels:
 
-* `flow-in` (Inbound): Consumes structured CloudEvents JSON to start or wake up workflows.
-* `flow-out` (Outbound): Publishes structured CloudEvents JSON emitted by workflows.
+* `flow-in` (Inbound): Consumes CloudEvents (structured or binary) to start or wake up workflows.
+* `flow-out` (Outbound): Publishes CloudEvents emitted by workflows via SmallRye's `OutgoingCloudEventMetadata`.
 
 == 2. Map channels to Kafka topics
 
 Configure MicroProfile Reactive Messaging to connect the default Flow channels to your Kafka topics.
 
-Notice that Quarkus Flow uses `byte[]` for the payload on the wire; the engine handles the serialization and deserialization of the CloudEvent JSON envelope automatically.
+CloudEvent encoding is handled automatically by SmallRye Reactive Messaging.
+The message payload carries the event _data_, while CE attributes (`specversion`, `type`, `source`, …) travel via transport headers — Kafka `ce_*` headers or AMQP `cloudEvents:*` application properties.
+You do not need to configure custom serializers or deserializers.
 
 [source,properties]
 ----
 # Inbound (Listens for events to start or resume workflows)
 mp.messaging.incoming.flow-in.connector=smallrye-kafka
 mp.messaging.incoming.flow-in.topic=flow-in
-mp.messaging.incoming.flow-in.value.deserializer=org.apache.kafka.common.serialization.ByteArrayDeserializer
-mp.messaging.incoming.flow-in.key.deserializer=org.apache.kafka.common.serialization.StringDeserializer
 
 # Outbound (Publishes events emitted by the workflow)
 mp.messaging.outgoing.flow-out.connector=smallrye-kafka
 mp.messaging.outgoing.flow-out.topic=flow-out
-mp.messaging.outgoing.flow-out.value.serializer=org.apache.kafka.common.serialization.ByteArraySerializer
-mp.messaging.outgoing.flow-out.key.serializer=org.apache.kafka.common.serialization.StringSerializer
 
 # Optional if Dev Services is off:
 # kafka.bootstrap.servers=localhost:9092
 ----
+
+TIP: The same channels work with the AMQP connector — just replace `smallrye-kafka` with `smallrye-amqp` and `topic` with `address`.
 
 == 3. Emit and Listen in the Java DSL
 
@@ -92,7 +92,7 @@ With this in place:
 
 == 4. Enable lifecycle events (Optional)
 
-You can configure the engine to publish its internal state changes (e.g., when a workflow starts, suspends, or faults) to a dedicated Kafka topic. This is highly useful for building observability dashboards or audit logs.
+You can configure the engine to publish its internal state changes (e.g., when a workflow starts, suspends, or faults) to a dedicated topic. This is highly useful for building observability dashboards or audit logs.
 
 [source,properties]
 ----
@@ -100,8 +100,6 @@ quarkus.flow.messaging.lifecycle-enabled=true
 
 mp.messaging.outgoing.flow-lifecycle-out.connector=smallrye-kafka
 mp.messaging.outgoing.flow-lifecycle-out.topic=flow-lifecycle-out
-mp.messaging.outgoing.flow-lifecycle-out.key.serializer=org.apache.kafka.common.serialization.StringSerializer
-mp.messaging.outgoing.flow-lifecycle-out.value.serializer=org.apache.kafka.common.serialization.ByteArraySerializer
 ----
 
 Common lifecycle event types published to this topic include:

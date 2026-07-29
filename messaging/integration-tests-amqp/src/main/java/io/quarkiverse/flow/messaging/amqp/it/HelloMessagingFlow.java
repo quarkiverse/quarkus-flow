@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.messaging.it;
+package io.quarkiverse.flow.messaging.amqp.it;
 
 import static io.quarkiverse.flow.dsl.FlowDSL.emit;
 import static io.quarkiverse.flow.dsl.FlowDSL.listen;

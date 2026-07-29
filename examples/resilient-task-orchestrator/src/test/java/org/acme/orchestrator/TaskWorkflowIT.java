@@ -1,10 +1,7 @@
 package org.acme.orchestrator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.cloudevents.CloudEvent;
-import io.cloudevents.core.builder.CloudEventBuilder;
-import io.cloudevents.core.provider.EventFormatProvider;
-import io.cloudevents.jackson.JsonFormat;
+import io.smallrye.reactive.messaging.ce.OutgoingCloudEventMetadata;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.acme.orchestrator.model.BuildTask;
@@ -13,6 +10,7 @@ import org.acme.orchestrator.model.TaskStatus;
 import org.acme.orchestrator.service.TaskStateStore;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,9 +38,6 @@ import static org.awaitility.Awaitility.await;
 class TaskWorkflowIT {
 
     private static final Logger LOG = LoggerFactory.getLogger(TaskWorkflowIT.class);
-
-    private static final JsonFormat CE_JSON = (JsonFormat) EventFormatProvider.getInstance()
-            .resolveFormat(JsonFormat.CONTENT_TYPE);
 
     @Inject
     ObjectMapper objectMapper;
@@ -276,22 +271,17 @@ class TaskWorkflowIT {
         }
     }
 
-    /**
-     * Helper method to emit a task.started CloudEvent.
-     */
     private void emitTaskStartedEvent(BuildTask task) throws Exception {
         byte[] taskData = objectMapper.writeValueAsBytes(task);
 
-        CloudEvent ce = CloudEventBuilder.v1()
+        OutgoingCloudEventMetadata<?> ceMeta = OutgoingCloudEventMetadata.builder()
                 .withId(UUID.randomUUID().toString())
                 .withSource(URI.create("test:/task-workflow"))
                 .withType("org.acme.build.task.started")
                 .withDataContentType("application/json")
-                .withData(taskData)
                 .build();
 
-        byte[] ceBytes = CE_JSON.serialize(ce);
-        flowIn.send(ceBytes);
+        flowIn.send(Message.of(taskData).addMetadata(ceMeta));
 
         LOG.info("Emitted task.started event for task: {} ({})",
                 task.id(), task.name());
