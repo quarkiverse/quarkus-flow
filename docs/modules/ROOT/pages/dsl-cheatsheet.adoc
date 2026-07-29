@@ -180,13 +180,13 @@ All helpers below return a chainable provider/step (e.g., `FuncTaskConfigurer`, 
 
 |`listen(FuncListenSpec spec)`
 |`ListenStep`
-|Listen using a spec (e.g., `toOne`, `toAny`, `toAll`).
-|`listen(toAny("org.acme.done", "org.acme.skipped"))`
+|Listen using a spec (e.g., `toOne`, `toAny`, `toAll`). Chain `.first()` on the spec to extract the first event from the collection.
+|`listen(toOne("org.acme.done").first())`
 
 |`listen(String name, FuncListenSpec spec)`
 |`ListenStep`
-|Named listen.
-|`listen("waitHuman", toOne("org.acme.review.done"))`
+|Named listen. Chain `.first()` to unwrap, `.envelope().first()` to keep the full CE.
+|`listen("waitHuman", toOne("org.acme.review.done").first())`
 
 |`switchCase(Consumer<FuncSwitchTaskBuilder> switchConsumer)`
 |`FuncTaskConfigurer`
@@ -392,7 +392,8 @@ All helpers below return a chainable provider/step (e.g., `FuncTaskConfigurer`, 
 [NOTE]
 Helpers that help you **build** specs for emit/listen/switch/HTTP/OpenAPI but are not task providers themselves:
 
-- Events & listen: `event(...)`, `eventJson(...)`, `eventBytes(...)`, `to()`, `toOne(...)`, `toAny(...)`, `toAll(...)`
+- Events & listen: `event(...)`, `eventJson(...)`, `eventBytes(...)`, `to()`, `toOne(...)`, `toAny(...)`, `toAll(...)`. Call `.first()` on a `toOne(...)` spec to extract the first element from the event collection (the spec always delivers events as a collection). Chain `.envelope().first()` to keep the full CloudEvent envelope instead of just the data payload.
+- Schedule events: `one(...)`, `allOfType(...)`, `on(...)`. Call `.first()` on `one(...)` to auto-extract the first CloudEvent data via `inputFrom`. Chain `.envelope().first()` to keep the full envelope.
 - Switch helpers: `cases(...)`, `caseOf(...)`, `caseDefault(...)`
 
 You pass the *resulting* steps/specs (e.g. `listen(...)`, `emitJson(...)`, `openapi()`, `http()`, `get(...)`, `post(...)`) into `.tasks(...)`.
@@ -485,9 +486,8 @@ Workflow w = workflow("intelligent-newsletter")
     // 3) Emit review request for human oversight
     emitJson("org.acme.newsletter.review.required", CriticAgentReview.class),
 
-    // 4) Wait for human review; transform the raw event collection into a single result
-    listen("waitHumanReview", toOne("org.acme.newsletter.review.done"))
-      .outputAs((java.util.Collection<Object> c) -> c.iterator().next()),
+    // 4) Wait for human review; extract the first event from the collection
+    listen("waitHumanReview", toOne("org.acme.newsletter.review.done").first()),
 
     // 5) Branch: revision loop or final send based on human input
     switchWhenOrElse(
@@ -509,7 +509,7 @@ Workflow w = workflow("intelligent-newsletter")
 
 == Tips
 
-* Prefer **static imports**: `workflow`, `set`, `function`, `withContext`, `withFilter`, `withUniqueId`, `agent`, `emitJson`, `listen`, `switchWhenOrElse`, `consume`, `to`, `event`, `http`, `get`, `post`, `openapi`, `call`.
+* Prefer **static imports**: `workflow`, `set`, `function`, `withContext`, `withFilter`, `withUniqueId`, `agent`, `emitJson`, `listen`, `switchWhenOrElse`, `consume`, `to`, `toOne`, `event`, `on`, `one`, `http`, `get`, `post`, `openapi`, `call`.
 * **Name** tasks you branch to: stable task names make `switchWhen*` targets explicit and work well with `withUniqueId`/`agent` memory ids.
 * Keep transformations **close to the step** that needs them (`inputFrom`, `exportAs`, `outputAs`) for readability.
 * HTTP/OpenAPI: you can either:
