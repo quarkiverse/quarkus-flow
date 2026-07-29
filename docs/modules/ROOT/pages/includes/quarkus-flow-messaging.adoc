@@ -7,26 +7,28 @@ h|[.header-title]##Configuration property##
 h|Type
 h|Default
 
-a|icon:lock[title=Fixed at build time] [[quarkus-flow-messaging_quarkus-flow-messaging-devservices-kafka-enabled]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-devservices-kafka-enabled[`+++quarkus.flow.messaging.devservices-kafka-enabled+++`]##
+a|icon:lock[title=Fixed at build time] [[quarkus-flow-messaging_quarkus-flow-messaging-devservices-messaging-enabled]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-devservices-messaging-enabled[`+++quarkus.flow.messaging.devservices-messaging-enabled+++`]##
 ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.messaging.devservices-kafka-enabled+++[]
+config_property_copy_button:+++quarkus.flow.messaging.devservices-messaging-enabled+++[]
 endif::add-copy-button-to-config-props[]
 
 
 [.description]
 --
-Automatically configure Kafka connector properties for the default Flow messaging channels ('flow-in', 'flow-out', 'flow-lifecycle-out') in dev and test mode. When enabled, the build step injects all necessary Kafka defaults so a developer does not need to manually set any `mp.messaging.++*++` property. All injected defaults can be overridden in `application.properties`.
+Automatically configure the default Flow messaging channels ('flow-in', 'flow-out', 'flow-lifecycle-out') in dev and test mode. When enabled, the build step detects the Quarkus Messaging connector present in the application (Kafka or AMQP) and injects all necessary connector defaults so a developer does not need to manually set any `mp.messaging.++*++` property. All injected defaults can be overridden in `application.properties`.
 
-Quarkus DevServices will automatically start a Kafka broker when `quarkus.kafka.devservices.enabled` is not set to `false`.
+Quarkus DevServices will automatically start the matching broker unless its `devservices.enabled` property is set to `false`.
+
+If no supported connector (or more than one) is present, no channel configuration is injected: a warning is logged unless the default channels are already configured manually.
 
 Ignored in production.
 
 
 ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_MESSAGING_DEVSERVICES_KAFKA_ENABLED+++[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_MESSAGING_DEVSERVICES_MESSAGING_ENABLED+++[]
 endif::add-copy-button-to-env-var[]
 ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_MESSAGING_DEVSERVICES_KAFKA_ENABLED+++`
+Environment variable: `+++QUARKUS_FLOW_MESSAGING_DEVSERVICES_MESSAGING_ENABLED+++`
 endif::add-copy-button-to-env-var[]
 --
 |boolean
@@ -101,29 +103,6 @@ endif::add-copy-button-to-env-var[]
 --
 |boolean
 |`+++true+++`
-
-a| [[quarkus-flow-messaging_quarkus-flow-messaging-default-kafka-enabled]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-default-kafka-enabled[`+++quarkus.flow.messaging.default-kafka-enabled+++`]##
-ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.messaging.default-kafka-enabled+++[]
-endif::add-copy-button-to-config-props[]
-
-
-[.description]
---
-Automatically configure Kafka connector properties for the default Flow messaging channels ('flow-in', 'flow-out'). When enabled, the engine injects all necessary Kafka connector, topic, and serializer/deserializer defaults. These defaults can always be overridden in `application.properties`.
-
-This setting is available in any launch mode (dev, test, or production) and does not require DevServices. To also enable the lifecycle channel, use `quarkus.flow.messaging.lifecycle-enabled=true`.
-
-
-ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_MESSAGING_DEFAULT_KAFKA_ENABLED+++[]
-endif::add-copy-button-to-env-var[]
-ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_MESSAGING_DEFAULT_KAFKA_ENABLED+++`
-endif::add-copy-button-to-env-var[]
---
-|boolean
-|`+++false+++`
 
 a| [[quarkus-flow-messaging_quarkus-flow-messaging-metadata-task-id-key]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-metadata-task-id-key[`+++quarkus.flow.messaging.metadata.task-id.key+++`]##
 ifdef::add-copy-button-to-config-props[]

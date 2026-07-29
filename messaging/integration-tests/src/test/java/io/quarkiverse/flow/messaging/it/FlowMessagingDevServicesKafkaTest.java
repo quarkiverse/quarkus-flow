@@ -50,7 +50,7 @@ public class FlowMessagingDevServicesKafkaTest {
 
         assertThat(config.getOptionalValue("mp.messaging.incoming.flow-in.value.deserializer", String.class))
                 .isPresent()
-                .hasValue("org.apache.kafka.common.serialization.ByteArrayDeserializer");
+                .hasValue("org.apache.kafka.common.serialization.StringDeserializer");
     }
 
     @Test
@@ -63,13 +63,9 @@ public class FlowMessagingDevServicesKafkaTest {
                 .isPresent()
                 .hasValue("flow-out");
 
-        assertThat(config.getOptionalValue("mp.messaging.outgoing.flow-out.key.serializer", String.class))
-                .isPresent()
-                .hasValue("org.apache.kafka.common.serialization.StringSerializer");
-
         assertThat(config.getOptionalValue("mp.messaging.outgoing.flow-out.value.serializer", String.class))
                 .isPresent()
-                .hasValue("org.apache.kafka.common.serialization.ByteArraySerializer");
+                .hasValue("org.apache.kafka.common.serialization.StringSerializer");
     }
 
     @Test
@@ -82,13 +78,9 @@ public class FlowMessagingDevServicesKafkaTest {
                 .isPresent()
                 .hasValue("flow-lifecycle-out");
 
-        assertThat(config.getOptionalValue("mp.messaging.outgoing.flow-lifecycle-out.key.serializer", String.class))
-                .isPresent()
-                .hasValue("org.apache.kafka.common.serialization.StringSerializer");
-
         assertThat(config.getOptionalValue("mp.messaging.outgoing.flow-lifecycle-out.value.serializer", String.class))
                 .isPresent()
-                .hasValue("org.apache.kafka.common.serialization.ByteArraySerializer");
+                .hasValue("org.apache.kafka.common.serialization.StringSerializer");
     }
 
     @Test
@@ -102,7 +94,7 @@ public class FlowMessagingDevServicesKafkaTest {
         @Override
         public java.util.Map<String, String> getConfigOverrides() {
             return java.util.Map.of(
-                    "quarkus.flow.messaging.devservices-kafka-enabled", "true");
+                    "quarkus.flow.messaging.devservices-messaging-enabled", "true");
         }
     }
 }

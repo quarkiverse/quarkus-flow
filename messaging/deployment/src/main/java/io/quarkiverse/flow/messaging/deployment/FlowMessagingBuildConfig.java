@@ -10,19 +10,23 @@ import io.smallrye.config.WithDefault;
 public interface FlowMessagingBuildConfig {
 
     /**
-     * Automatically configure Kafka connector properties for the default Flow messaging channels
-     * ('flow-in', 'flow-out', 'flow-lifecycle-out') in dev and test mode.
-     * When enabled, the build step injects all necessary Kafka defaults so a developer
+     * Automatically configure the default Flow messaging channels ('flow-in', 'flow-out',
+     * 'flow-lifecycle-out') in dev and test mode.
+     * When enabled, the build step detects the Quarkus Messaging connector present in the
+     * application (Kafka or AMQP) and injects all necessary connector defaults so a developer
      * does not need to manually set any {@code mp.messaging.*} property.
      * All injected defaults can be overridden in {@code application.properties}.
      * <p>
-     * Quarkus DevServices will automatically start a Kafka broker when
-     * {@code quarkus.kafka.devservices.enabled} is not set to {@code false}.
+     * Quarkus DevServices will automatically start the matching broker unless its
+     * {@code devservices.enabled} property is set to {@code false}.
+     * <p>
+     * If no supported connector (or more than one) is present, no channel configuration is
+     * injected: a warning is logged unless the default channels are already configured manually.
      * <p>
      * Ignored in production.
      */
     @WithDefault("false")
-    boolean devservicesKafkaEnabled();
+    boolean devservicesMessagingEnabled();
 
     /**
      * Register the default consumer/publisher beans bound to 'flow-in'/'flow-out' channels.

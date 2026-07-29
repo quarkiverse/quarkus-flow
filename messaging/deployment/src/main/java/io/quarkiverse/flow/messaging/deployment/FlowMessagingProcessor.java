@@ -1,5 +1,9 @@
 package io.quarkiverse.flow.messaging.deployment;
 
+import java.util.List;
+
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -7,6 +11,7 @@ import io.quarkiverse.flow.messaging.FlowDomainEventsPublisher;
 import io.quarkiverse.flow.messaging.FlowLifecycleEventsPublisher;
 import io.quarkiverse.flow.messaging.FlowMessagingConsumer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -21,12 +26,11 @@ public class FlowMessagingProcessor {
     private static final String INCOMING_PREFIX = "mp.messaging.incoming.";
     private static final String OUTGOING_PREFIX = "mp.messaging.outgoing.";
 
-    private static final String KAFKA = "smallrye-kafka";
+    private static final String KAFKA_CONNECTOR = "smallrye-kafka";
+    private static final String AMQP_CONNECTOR = "smallrye-amqp";
 
     private static final String STR_DESERIALIZER = "org.apache.kafka.common.serialization.StringDeserializer";
-    private static final String BYTES_DESERIALIZER = "org.apache.kafka.common.serialization.ByteArrayDeserializer";
     private static final String STR_SERIALIZER = "org.apache.kafka.common.serialization.StringSerializer";
-    private static final String BYTES_SERIALIZER = "org.apache.kafka.common.serialization.ByteArraySerializer";
 
     private static final Logger LOG = LoggerFactory.getLogger(FlowMessagingProcessor.class.getName());
 
@@ -35,41 +39,74 @@ public class FlowMessagingProcessor {
         runtimeConfig.produce(new RunTimeConfigurationDefaultBuildItem(key, value));
     }
 
-    private static void inbound(BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfig,
-            String topic, String keyDeserializer, String valueDeserializer) {
-        String base = INCOMING_PREFIX + topic;
-        produce(runtimeConfig, base + ".connector", KAFKA);
-        produce(runtimeConfig, base + ".topic", topic);
-        produce(runtimeConfig, base + ".key.deserializer", keyDeserializer);
-        produce(runtimeConfig, base + ".value.deserializer", valueDeserializer);
+    private static void kafkaInbound(BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfig,
+            String channel) {
+        String base = INCOMING_PREFIX + channel;
+        produce(runtimeConfig, base + ".connector", KAFKA_CONNECTOR);
+        produce(runtimeConfig, base + ".topic", channel);
+        produce(runtimeConfig, base + ".key.deserializer", STR_DESERIALIZER);
+        produce(runtimeConfig, base + ".value.deserializer", STR_DESERIALIZER);
     }
 
-    private static void outbound(BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfig,
-            String topic, String keySerializer, String valueSerializer) {
-        String base = OUTGOING_PREFIX + topic;
-        produce(runtimeConfig, base + ".connector", KAFKA);
-        produce(runtimeConfig, base + ".topic", topic);
-        produce(runtimeConfig, base + ".key.serializer", keySerializer);
-        produce(runtimeConfig, base + ".value.serializer", valueSerializer);
+    private static void kafkaOutbound(BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfig,
+            String channel) {
+        String base = OUTGOING_PREFIX + channel;
+        produce(runtimeConfig, base + ".connector", KAFKA_CONNECTOR);
+        produce(runtimeConfig, base + ".topic", channel);
+        produce(runtimeConfig, base + ".value.serializer", STR_SERIALIZER);
     }
 
-    private static void logInjectedDefaults() {
-        LOG.debug("Flow: dev-services Kafka - injected defaults (override in application.properties):\n"
+    private static void amqpChannel(BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfig,
+            String prefix, String channel) {
+        String base = prefix + channel;
+        produce(runtimeConfig, base + ".connector", AMQP_CONNECTOR);
+        produce(runtimeConfig, base + ".address", channel);
+    }
+
+    private static boolean hasFeature(List<FeatureBuildItem> features, Feature feature) {
+        return features.stream().anyMatch(f -> feature.getName().equals(f.getName()));
+    }
+
+    private static boolean flowChannelsManuallyConfigured() {
+        Config config = ConfigProvider.getConfig();
+        return config.getOptionalValue(INCOMING_PREFIX + "flow-in.connector", String.class).isPresent()
+                || config.getOptionalValue(OUTGOING_PREFIX + "flow-out.connector", String.class).isPresent()
+                || config.getOptionalValue(OUTGOING_PREFIX + "flow-lifecycle-out.connector", String.class).isPresent();
+    }
+
+    /**
+     * Called when the connector detection is inconclusive (no supported connector, or both present):
+     * quietly steps aside if the user already configured the default channels, warns otherwise.
+     */
+    private static void logSkippedAutoConfiguration(boolean kafka) {
+        if (flowChannelsManuallyConfigured()) {
+            LOG.debug("Flow: '{}devservices-messaging-enabled' is set and the default channels are already "
+                    + "configured; skipping automatic channel configuration.", PROP_PREFIX);
+        } else if (!kafka) {
+            LOG.warn("Flow: '{}devservices-messaging-enabled' is set but no supported messaging connector "
+                    + "(Kafka or AMQP) is present. No channel configuration was injected. "
+                    + "Add 'quarkus-messaging-kafka' or 'quarkus-messaging-amqp', or configure the "
+                    + "'mp.messaging.*' channels manually.",
+                    PROP_PREFIX);
+        } else {
+            LOG.warn("Flow: '{}devservices-messaging-enabled' is set but both the Kafka and AMQP connectors "
+                    + "are present. No channel configuration was injected because the target "
+                    + "connector is ambiguous. Configure the 'mp.messaging.*' channels manually.",
+                    PROP_PREFIX);
+        }
+    }
+
+    private static void logInjectedDefaults(String connector) {
+        LOG.debug("Flow: dev-services messaging - injected defaults (override in application.properties):\n"
                 + "  {}defaults-enabled=true\n"
                 + "  {}lifecycle-enabled=true\n"
                 + "  {}{}.connector={}\n"
-                + "  {}{}.topic={}\n"
                 + "  {}{}.connector={}\n"
-                + "  {}{}.topic={}\n"
-                + "  {}{}.connector={}\n"
-                + "  {}{}.topic={}",
+                + "  {}{}.connector={}",
                 PROP_PREFIX, PROP_PREFIX,
-                INCOMING_PREFIX, "flow-in", KAFKA,
-                INCOMING_PREFIX, "flow-in", "flow-in",
-                OUTGOING_PREFIX, "flow-out", KAFKA,
-                OUTGOING_PREFIX, "flow-out", "flow-out",
-                OUTGOING_PREFIX, "flow-lifecycle-out", KAFKA,
-                OUTGOING_PREFIX, "flow-lifecycle-out", "flow-lifecycle-out");
+                INCOMING_PREFIX, "flow-in", connector,
+                OUTGOING_PREFIX, "flow-out", connector,
+                OUTGOING_PREFIX, "flow-lifecycle-out", connector);
     }
 
     @BuildStep
@@ -77,9 +114,20 @@ public class FlowMessagingProcessor {
         return new FeatureBuildItem(FEATURE);
     }
 
+    private static boolean isDevOrTest(LaunchModeBuildItem launchMode) {
+        return launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT
+                || launchMode.getLaunchMode() == LaunchMode.TEST;
+    }
+
     @BuildStep
-    void registerDefaults(BuildProducer<AdditionalBeanBuildItem> beans, FlowMessagingBuildConfig config) {
+    void registerDefaults(LaunchModeBuildItem launchMode, BuildProducer<AdditionalBeanBuildItem> beans,
+            FlowMessagingBuildConfig config) {
         if (!config.defaultsEnabled()) {
+            return;
+        }
+
+        // the devservicesMessaging step owns bean registration when the devservices flag is active
+        if (config.devservicesMessagingEnabled() && isDevOrTest(launchMode)) {
             return;
         }
 
@@ -102,29 +150,42 @@ public class FlowMessagingProcessor {
     }
 
     @BuildStep
-    void devservicesKafka(LaunchModeBuildItem launchMode,
+    void devservicesMessaging(LaunchModeBuildItem launchMode,
+            List<FeatureBuildItem> features,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfig,
             BuildProducer<AdditionalBeanBuildItem> beans,
             FlowMessagingBuildConfig buildConfig) {
-        boolean isDevOrTest = launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT
-                || launchMode.getLaunchMode() == LaunchMode.TEST;
-
-        if (!isDevOrTest || !buildConfig.devservicesKafkaEnabled()) {
+        if (!isDevOrTest(launchMode) || !buildConfig.devservicesMessagingEnabled()) {
             return;
         }
 
-        LOG.info(
-                "Flow: dev-services Kafka enabled in {}, injecting runtime config defaults.",
-                launchMode.getLaunchMode());
+        boolean kafka = hasFeature(features, Feature.MESSAGING_KAFKA);
+        boolean amqp = hasFeature(features, Feature.MESSAGING_AMQP);
+        boolean exactlyOneConnector = kafka != amqp;
+
+        if (!exactlyOneConnector) {
+            logSkippedAutoConfiguration(kafka);
+            return;
+        }
+
+        String connector = kafka ? KAFKA_CONNECTOR : AMQP_CONNECTOR;
+        LOG.info("Flow: dev-services messaging enabled in {}, injecting runtime config defaults for the '{}' connector.",
+                launchMode.getLaunchMode(), connector);
 
         produce(runtimeConfig, PROP_PREFIX + "defaults-enabled", "true");
         produce(runtimeConfig, PROP_PREFIX + "lifecycle-enabled", "true");
 
-        inbound(runtimeConfig, "flow-in", STR_DESERIALIZER, BYTES_DESERIALIZER);
-        outbound(runtimeConfig, "flow-out", STR_SERIALIZER, BYTES_SERIALIZER);
-        outbound(runtimeConfig, "flow-lifecycle-out", STR_SERIALIZER, BYTES_SERIALIZER);
+        if (kafka) {
+            kafkaInbound(runtimeConfig, "flow-in");
+            kafkaOutbound(runtimeConfig, "flow-out");
+            kafkaOutbound(runtimeConfig, "flow-lifecycle-out");
+        } else {
+            amqpChannel(runtimeConfig, INCOMING_PREFIX, "flow-in");
+            amqpChannel(runtimeConfig, OUTGOING_PREFIX, "flow-out");
+            amqpChannel(runtimeConfig, OUTGOING_PREFIX, "flow-lifecycle-out");
+        }
 
-        logInjectedDefaults();
+        logInjectedDefaults(connector);
 
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder()
                 .addBeanClass(FlowMessagingConsumer.class)
