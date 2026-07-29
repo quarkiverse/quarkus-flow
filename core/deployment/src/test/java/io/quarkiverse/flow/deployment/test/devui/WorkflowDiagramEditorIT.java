@@ -1,18 +1,19 @@
 package io.quarkiverse.flow.deployment.test.devui;
 
-import java.util.HashMap;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.List;
-import java.util.Map;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Locator;
@@ -25,98 +26,90 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class WorkflowDiagramEditorIT {
 
     @RegisterExtension
-    static QuarkusDevModeTest devMode = new QuarkusDevModeTest()
+    static final QuarkusDevModeTest devMode = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(EchoNameWorkflow.class));
 
-    static BrowserType.LaunchOptions launchOptions;
+    static final String DIAGRAM_EDITOR_ID = "diagramEditor-flow-echo-name-0-1-0";
+    static final String BUTTON_SELECTOR = "#see-" + DIAGRAM_EDITOR_ID;
+    static final String DEV_UI_URL = "http://localhost:8080/q/dev-ui/quarkus-flow/workflows";
+
+    static Playwright playwright;
+    static BrowserContext browserContext;
+    Page page;
 
     @BeforeAll
-    static void setUp() {
-        launchOptions = new BrowserType.LaunchOptions()
-                .setHeadless(true)
-                .setChromiumSandbox(false)
-                .setChannel("")
-                .setArgs(List.of("--disable-gpu"));
+    static void startPlaywright() {
+        playwright = Playwright.create();
+        browserContext = playwright.chromium()
+                .launch(new BrowserType.LaunchOptions()
+                        .setHeadless(true)
+                        .setChromiumSandbox(false)
+                        .setArgs(List.of("--disable-gpu")))
+                .newContext();
+    }
+
+    @BeforeEach
+    void openPage() {
+        page = browserContext.newPage();
+    }
+
+    @AfterEach
+    void closePage() {
+        page.close();
     }
 
     @Test
-    @DisplayName("Should show loading state before DiagramEditor renders")
+    @DisplayName("loading state is shown before DiagramEditor renders")
     void shouldShowLoadingBeforeDiagramEditor() {
-        final Map<String, String> env = new HashMap<>(System.getenv());
-        env.put("DEBUG", "pw:api");
+        page.navigate(DEV_UI_URL);
+        page.waitForSelector(BUTTON_SELECTOR);
+        page.locator(BUTTON_SELECTOR).click();
 
-        try (Playwright playwright = Playwright.create(new Playwright.CreateOptions().setEnv(env))) {
-            try (Browser browser = playwright.chromium().launch(launchOptions)) {
-                Page page = browser.newPage();
-                page.navigate("http://localhost:8080/q/dev-ui/quarkus-flow/workflows");
+        ElementHandle dialog = page.waitForSelector("vaadin-dialog[opened]",
+                new Page.WaitForSelectorOptions().setState(WaitForSelectorState.ATTACHED));
 
-                String diagramEditorId = "diagramEditor-flow-echo-name-0-1-0";
-                String buttonSelector = "#see-" + diagramEditorId;
+        String initialHtml = dialog.innerHTML();
+        boolean hasLoadingState = initialHtml.contains("Loading workflow definition") ||
+                dialog.querySelector("vaadin-progress-bar[indeterminate]") != null;
 
-                page.waitForSelector(buttonSelector);
-                Locator eyeButton = page.locator(buttonSelector);
+        assertThat(hasLoadingState)
+                .as("loading state (progress bar or text) must be visible immediately after dialog opens")
+                .isTrue();
 
-                eyeButton.click();
+        assertThat(dialog.querySelector("[data-testid='diagram-container']"))
+                .as("DiagramEditor must NOT be visible during loading state")
+                .isNull();
 
-                ElementHandle dialog = page.waitForSelector("vaadin-dialog[opened]", new Page.WaitForSelectorOptions()
-                        .setState(WaitForSelectorState.ATTACHED));
+        page.waitForSelector("[data-testid='diagram-container']");
 
-                String initialHtml = dialog.innerHTML();
-                boolean hasLoadingState = initialHtml.contains("Loading workflow definition") ||
-                        dialog.querySelector("vaadin-progress-bar[indeterminate]") != null;
-
-                Assertions.assertTrue(hasLoadingState,
-                        "Loading state (progress bar or text) must be visible immediately after dialog opens");
-
-                ElementHandle editorBeforeLoad = dialog.querySelector("[data-testid='diagram-container']");
-                Assertions.assertNull(editorBeforeLoad,
-                        "DiagramEditor should NOT be visible during loading state");
-
-                page.waitForSelector("[data-testid='diagram-container']");
-
-                ElementHandle progressBarAfter = dialog.querySelector("vaadin-progress-bar[indeterminate]");
-                Assertions.assertNull(progressBarAfter,
-                        "Progress bar should be removed after loading completes");
-            }
-        }
+        assertThat(dialog.querySelector("vaadin-progress-bar[indeterminate]"))
+                .as("progress bar must be removed after loading completes")
+                .isNull();
     }
 
     @Test
-    @DisplayName("Should render DiagramEditor with greet node")
-    void shouldRenderDiagramEditorWithGreetNode() {
-        final Map<String, String> env = new HashMap<>(System.getenv());
-        env.put("DEBUG", "pw:api");
+    @DisplayName("DiagramEditor renders the setEcho task node")
+    void shouldRenderDiagramEditorWithSetEchoNode() {
+        page.navigate(DEV_UI_URL);
+        page.waitForSelector(BUTTON_SELECTOR);
+        page.locator(BUTTON_SELECTOR).click();
 
-        try (Playwright playwright = Playwright.create(new Playwright.CreateOptions().setEnv(env))) {
-            try (Browser browser = playwright.chromium().launch(launchOptions)) {
-                Page page = browser.newPage();
-                page.navigate("http://localhost:8080/q/dev-ui/quarkus-flow/workflows");
+        page.waitForSelector("vaadin-dialog[opened]",
+                new Page.WaitForSelectorOptions().setState(WaitForSelectorState.ATTACHED));
 
-                String diagramEditorId = "diagramEditor-flow-echo-name-0-1-0";
-                String buttonSelector = "#see-" + diagramEditorId;
+        page.waitForSelector("[data-testid='diagram-container']");
 
-                page.waitForSelector(buttonSelector);
-                Locator eyeButton = page.locator(buttonSelector);
+        String nodeSelector = "[data-testid='set-node-/do/0/setEcho']";
+        page.waitForSelector(nodeSelector);
+        Locator setEchoNode = page.locator(nodeSelector);
 
-                eyeButton.click();
+        assertThat(setEchoNode.count())
+                .as("DiagramEditor must render the setEcho node with data-testid='set-node-/do/0/setEcho'")
+                .isGreaterThan(0);
 
-                ElementHandle dialog = page.waitForSelector("vaadin-dialog[opened]", new Page.WaitForSelectorOptions()
-                        .setState(WaitForSelectorState.ATTACHED));
-
-                page.waitForSelector("[data-testid='diagram-container']");
-
-                String nodeSelector = "[data-testid='set-node-/do/0/setEcho']";
-                page.waitForSelector(nodeSelector);
-                ElementHandle setEchoNode = dialog.querySelector(nodeSelector);
-
-                Assertions.assertNotNull(setEchoNode,
-                        "DiagramEditor should render the setEcho node with data-testid='set-node-/do/0/setEcho'");
-
-                String nodeText = setEchoNode.textContent();
-                Assertions.assertTrue(nodeText.contains("setEcho"),
-                        "setEcho node should contain the text 'setEcho'");
-            }
-        }
+        assertThat(setEchoNode.first().textContent())
+                .as("setEcho node must contain the text 'setEcho'")
+                .contains("setEcho");
     }
 }
