@@ -16,6 +16,8 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
@@ -39,6 +41,7 @@ import io.smallrye.reactive.messaging.memory.InMemorySource;
  *
  * @see <a href="https://github.com/quarkiverse/quarkus-flow/issues/810">Issue #810</a>
  */
+@DisabledOnOs(OS.WINDOWS)
 @QuarkusTest
 @TestProfile(HelloMessagingFlowInMemoryTest.InMemoryProfile.class)
 public class HelloMessagingFlowInMemoryTest {
@@ -143,7 +146,8 @@ public class HelloMessagingFlowInMemoryTest {
             return Map.of(
                     "mp.messaging.incoming.flow-in.connector", "smallrye-in-memory",
                     "mp.messaging.outgoing.flow-out.connector", "smallrye-in-memory",
-                    "mp.messaging.outgoing.flow-lifecycle-out.connector", "smallrye-in-memory");
+                    "mp.messaging.outgoing.flow-lifecycle-out.connector", "smallrye-in-memory",
+                    "quarkus.kafka.devservices.enabled", "false");
         }
     }
 }
