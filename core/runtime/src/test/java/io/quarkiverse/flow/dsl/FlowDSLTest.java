@@ -123,22 +123,22 @@ class FlowDSLTest {
     }
 
     @Test
-    @DisplayName("emit helpers default the CloudEvent source to quarkus-flow:local")
-    void emit_helpers_default_source() {
+    @DisplayName("emit helpers leave the CloudEvent source unset, so the SDK resolves it at runtime")
+    void emit_helpers_leave_source_unset() {
         Workflow wf = FlowWorkflowBuilder.workflow("emit-default-source")
                 .tasks(emit(producedJson("org.acme.created", String.class)))
                 .build();
 
         EmitTask et = wf.getDo().get(0).getTask().getEmitTask();
         assertNotNull(et, "EmitTask expected");
-        assertEquals(
-                FlowDSL.DEFAULT_EMIT_SOURCE,
-                et.getEmit().getEvent().getWith().getSource().getUriTemplate().getLiteralUri().toString());
+        assertNull(
+                et.getEmit().getEvent().getWith().getSource(),
+                "source should be left unset so EmitSourceResolver can default it to /{appId}/{namespace}/{name}/{version}");
     }
 
     @Test
-    @DisplayName("an explicit source overrides the default")
-    void emit_explicit_source_overrides_default() {
+    @DisplayName("an explicit source is set on the emitted event")
+    void emit_explicit_source_is_set() {
         Workflow wf = FlowWorkflowBuilder.workflow("emit-explicit-source")
                 .tasks(emit(produced("org.acme.created").source("https://acme.org/orders").bytesDataUtf8()))
                 .build();
