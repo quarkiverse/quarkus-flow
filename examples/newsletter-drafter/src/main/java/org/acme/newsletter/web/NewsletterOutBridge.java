@@ -2,7 +2,6 @@ package org.acme.newsletter.web;
 
 import io.smallrye.reactive.messaging.ce.CloudEventMetadata;
 import jakarta.enterprise.context.ApplicationScoped;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletionStage;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
@@ -22,18 +21,17 @@ public class NewsletterOutBridge {
     private static final String REVIEW_REQUIRED_TYPE = "org.acme.email.review.required";
 
     @Incoming("flow-out-incoming")
-    public CompletionStage<Void> onFlowOut(Message<byte[]> msg) {
+    public CompletionStage<Void> onFlowOut(Message<String> msg) {
         try {
             CloudEventMetadata<?> ceMeta = msg.getMetadata(CloudEventMetadata.class).orElse(null);
             if (ceMeta == null || ceMeta.getType() == null)
                 return msg.ack();
 
             if (REVIEW_REQUIRED_TYPE.equals(ceMeta.getType())) {
-                byte[] data = msg.getPayload();
-                // If there's no data, send a minimal envelope so the UI can handle it.
-                String json = (data == null || data.length == 0)
+                String data = msg.getPayload();
+                String json = (data == null || data.isEmpty())
                         ? "{\"type\":\"" + REVIEW_REQUIRED_TYPE + "\",\"payload\":null}"
-                        : new String(data, StandardCharsets.UTF_8);
+                        : data;
 
                 LOG.info("Received review (workflow instance: {}) required event: {}",
                         ceMeta.getExtension("flowinstanceid"), json);

@@ -46,10 +46,10 @@ public class FlowMessagingDefaultConfigOverrideTest {
 
     @Test
     void userDefinedDeserializerShouldOverrideDefault() {
-        // Verify that the user-defined deserializer overrides the default ByteArrayDeserializer
+        // Verify that the user-defined deserializer overrides the default StringDeserializer
         String valueDeserializer = config.getValue("mp.messaging.incoming.flow-in.value.deserializer", String.class);
         assertEquals(CUSTOM_VALUE_DESERIALIZER, valueDeserializer,
-                "User-defined value.deserializer should override the default ByteArrayDeserializer");
+                "User-defined value.deserializer should override the default StringDeserializer");
     }
 
     @Test
@@ -80,7 +80,7 @@ public class FlowMessagingDefaultConfigOverrideTest {
                     // Override topic names
                     "mp.messaging.incoming.flow-in.topic", CUSTOM_FLOW_IN_TOPIC,
                     "mp.messaging.outgoing.flow-out.topic", CUSTOM_FLOW_OUT_TOPIC,
-                    // Override value deserializer (default is ByteArrayDeserializer)
+                    // Override value deserializer (default is StringDeserializer)
                     "mp.messaging.incoming.flow-in.value.deserializer", CUSTOM_VALUE_DESERIALIZER);
         }
     }

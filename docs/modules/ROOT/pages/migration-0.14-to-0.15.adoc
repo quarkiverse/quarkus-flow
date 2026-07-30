@@ -1,7 +1,7 @@
-= Migration Guide: 0.14.x to 0.15.0
+= Migration Guide: 0.14.x to 0.15.1
 include::includes/attributes.adoc[]
 
-Quarkus Flow 0.15.0 fixes CloudEvent encoding on the messaging bridge.
+Quarkus Flow 0.15.1 fixes CloudEvent encoding on the messaging bridge.
 The `flow-out` producer and `flow-in` consumer now use SmallRye Reactive Messaging's native CloudEvent support instead of manual JSON serialization.
 
 This is a **wire-format breaking change**: the outgoing message payload on `flow-out` is now the event _data_ only — CloudEvent attributes travel via transport headers (Kafka `ce_*`, AMQP `cloudEvents:*`).
@@ -17,7 +17,7 @@ This caused two problems:
 * The approach was Kafka-specific.
   Adding Kafka headers would have broken AMQP and other connectors.
 
-0.15.0 delegates CloudEvent encoding to SmallRye via `OutgoingCloudEventMetadata` (outbound) and `IncomingCloudEventMetadata` (inbound).
+0.15.1 delegates CloudEvent encoding to SmallRye via `OutgoingCloudEventMetadata` (outbound) and `IncomingCloudEventMetadata` (inbound).
 SmallRye maps CE attributes to the appropriate transport mechanism for each connector, keeping the bridge transport-agnostic.
 
 == What changed
@@ -26,7 +26,7 @@ SmallRye maps CE attributes to the appropriate transport mechanism for each conn
 
 [cols="1,1",options="header"]
 |===
-| Before (0.14.x) | After (0.15.0)
+| Before (0.14.x) | After (0.15.1)
 
 | Message body = full CE JSON envelope (`specversion`, `type`, `source`, `data`, …)
 | Message body = CE _data_ payload only
@@ -42,7 +42,7 @@ SmallRye maps CE attributes to the appropriate transport mechanism for each conn
 
 [cols="1,1",options="header"]
 |===
-| Before (0.14.x) | After (0.15.0)
+| Before (0.14.x) | After (0.15.1)
 
 | Only structured CloudEvents (full JSON envelope in body)
 | Structured _and_ binary CloudEvents
@@ -53,7 +53,7 @@ SmallRye maps CE attributes to the appropriate transport mechanism for each conn
 
 === AMQP connector support
 
-0.15.0 adds first-class support for the SmallRye AMQP connector (`quarkus-messaging-amqp`).
+0.15.1 adds first-class support for the SmallRye AMQP connector (`quarkus-messaging-amqp`).
 Both structured and binary CloudEvents work on AMQP out of the box — no additional dependencies or configuration required.
 
 == Step-by-step migration
@@ -63,7 +63,8 @@ Both structured and binary CloudEvents work on AMQP out of the box — no additi
 If you consume from `flow-out` using the CloudEvents SDK deserializer, your code now works correctly — no changes needed.
 This was broken in 0.14.x.
 
-If you consume raw bytes and call `JsonFormat.deserialize(payload)`, you must update to use SmallRye's `CloudEventMetadata`:
+If you consume raw bytes and call `JsonFormat.deserialize(payload)`, you must update to use SmallRye's `CloudEventMetadata`.
+As of 0.15.1, the message payload is a `String` (not `byte[]`):
 
 [source,java]
 ----
@@ -73,11 +74,11 @@ CloudEvent event = CE_JSON.deserialize(payload);
 String type = event.getType();
 byte[] data = event.getData().toBytes();
 
-// After (0.15.0) — CE attributes in metadata, payload is data only
+// After (0.15.1) — CE attributes in metadata, payload is data only
 CloudEventMetadata<?> ceMeta = msg.getMetadata(CloudEventMetadata.class)
     .orElseThrow();
 String type = ceMeta.getType();
-byte[] data = msg.getPayload();
+String data = msg.getPayload();
 ----
 
 Required import:
@@ -88,6 +89,11 @@ import io.smallrye.reactive.messaging.ce.CloudEventMetadata;
 ----
 
 No new dependencies — `CloudEventMetadata` comes from `smallrye-reactive-messaging-api`, which is already on the classpath via the Quarkus Messaging connector.
+
+IMPORTANT: Do *not* use `io.cloudevents.CloudEvent` as the parameter type in an `@Incoming` method.
+SmallRye Reactive Messaging does not auto-deserialize the payload into a `CloudEvent` object — the CE attributes are carried in transport headers and exposed via `CloudEventMetadata`.
+Using `CloudEvent` directly will cause a `ClassCastException`.
+See xref:messaging.adoc#_5_cloudevent_correlation_headers[CloudEvent Correlation Headers] for a complete consumer example.
 
 === 2. Update Kafka consumer configuration (if applicable)
 

@@ -54,7 +54,7 @@ class BuildPipelineIT {
 
     @Inject
     @Channel("flow-in")
-    io.smallrye.mutiny.Multi<Message<byte[]>> flowInEvents;
+    io.smallrye.mutiny.Multi<Message<String>> flowInEvents;
 
     // Track emitted events across tests
     private Set<String> emittedTaskIds;
@@ -69,7 +69,7 @@ class BuildPipelineIT {
             try {
                 CloudEventMetadata<?> ceMeta = msg.getMetadata(CloudEventMetadata.class).orElse(null);
                 if (ceMeta != null && "org.acme.build.task.started".equals(ceMeta.getType())) {
-                    BuildTask task = objectMapper.readValue(msg.getPayload(), BuildTask.class);
+                    BuildTask task = objectMapper.readValue(msg.getPayload().getBytes(), BuildTask.class);
                     emittedTaskIds.add(task.id());
                     LOG.info("Task started event captured: {}", task.id());
                 }

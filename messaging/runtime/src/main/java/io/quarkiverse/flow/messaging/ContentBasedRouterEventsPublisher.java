@@ -1,5 +1,6 @@
 package io.quarkiverse.flow.messaging;
 
+import java.nio.charset.StandardCharsets;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,7 +42,7 @@ public abstract class ContentBasedRouterEventsPublisher implements EventPublishe
             return CompletableFuture.completedFuture(null);
 
         try {
-            byte[] data = event.getData() != null ? event.getData().toBytes() : new byte[0];
+            final String data = event.getData() != null ? new String(event.getData().toBytes(), StandardCharsets.UTF_8) : null;
 
             var builder = OutgoingCloudEventMetadata.builder()
                     .withId(event.getId())
@@ -90,7 +91,7 @@ public abstract class ContentBasedRouterEventsPublisher implements EventPublishe
         // no-op;
     }
 
-    protected abstract MutinyEmitter<byte[]> outEmitter();
+    protected abstract MutinyEmitter<String> outEmitter();
 
     /**
      * Whether we should accept the event based on child's class criteria

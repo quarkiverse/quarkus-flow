@@ -55,7 +55,7 @@ class CoordinatorWorkflowIT {
     // Subscribe to flow-in to capture emitted events
     @Inject
     @Channel("flow-in")
-    Multi<Message<byte[]>> flowInEvents;
+    Multi<Message<String>> flowInEvents;
 
     private List<BuildTask> capturedTasks;
 
@@ -70,7 +70,7 @@ class CoordinatorWorkflowIT {
 
                 // Filter for task.started events
                 if (ceMeta != null && "org.acme.build.task.started".equals(ceMeta.getType())) {
-                    BuildTask task = objectMapper.readValue(msg.getPayload(), BuildTask.class);
+                    BuildTask task = objectMapper.readValue(msg.getPayload().getBytes(), BuildTask.class);
                     capturedTasks.add(task);
                     LOG.debug("Captured emitted task: {} ({})", task.name(), task.id());
                 }
