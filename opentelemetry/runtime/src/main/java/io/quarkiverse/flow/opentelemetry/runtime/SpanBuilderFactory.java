@@ -57,7 +57,7 @@ public class SpanBuilderFactory {
                 eventInfo.wfInstanceId(),
                 eventInfo.wfVersion());
         builder.setAttribute(FLOW_TASK_ID_ATTR, eventInfo.taskId())
-                .setAttribute(FLOW_TASK_TYPE_ATTR, eventInfo.taskType().name())
+                .setAttribute(FLOW_TASK_TYPE_ATTR, eventInfo.taskType().toString())
                 .setAttribute(FLOW_TASK_NAME_ATTR, eventInfo.taskName())
                 .setAttribute(FLOW_TASK_ITERATION_ATTR, eventInfo.taskInstanceIteration())
                 .setAttribute(FLOW_TASK_RETRYING_ATTR, eventInfo.taskInstanceRetrying())

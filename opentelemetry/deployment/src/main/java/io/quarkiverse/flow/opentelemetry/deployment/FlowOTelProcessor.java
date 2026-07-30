@@ -7,9 +7,6 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.quarkiverse.flow.opentelemetry.runtime.CDIDecoratorProvider;
-import io.quarkiverse.flow.opentelemetry.runtime.CDIOTelEmittedEventDecorator;
-import io.quarkiverse.flow.opentelemetry.runtime.InstrumentationContextManager;
 import io.quarkiverse.flow.opentelemetry.runtime.OTelWorkflowExecutionListener;
 import io.quarkiverse.flow.opentelemetry.runtime.SpanBuilderFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -39,10 +36,7 @@ class FlowOTelProcessor {
         if (otelEnabled && tracingEnabled) {
             additionalBeans.produce(AdditionalBeanBuildItem.builder()
                     .addBeanClass(SpanBuilderFactory.class)
-                    .addBeanClass(InstrumentationContextManager.class)
                     .addBeanClass(OTelWorkflowExecutionListener.class)
-                    .addBeanClass(CDIOTelEmittedEventDecorator.class)
-                    .addBeanClass(CDIDecoratorProvider.class)
                     .setDefaultScope(SINGLETON)
                     .setUnremovable()
                     .build());

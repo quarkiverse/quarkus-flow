@@ -1,0 +1,408 @@
+= OpenTelemetry
+:page-role: howto
+include::includes/attributes.adoc[]
+
+Quarkus Flow provides built-in OpenTelemetry instrumentation, enabling observational insight into your workflow executions.
+
+[IMPORTANT]
+====
+This functionality is tech preview and is currently best suited for straight-through workflow executions.
+====
+
+== Configuring OpenTelemetry
+
+To enable OpenTelemetry, you must add the following dependency to your project:
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkiverse.flow</groupId>
+  <artifactId>quarkus-flow-opentelemetry</artifactId>
+</dependency>
+----
+
+Once the dependency is added, workflow executions will start producing OpenTelemetry information automatically.
+
+
+[NOTE]
+====
+The `quarkus-flow-opentelemetry` extension is built on top of `quarkus-opentelemetry`. All standard configurations related to trace exporters and OTLP endpoints are managed via the standard Quarkus OpenTelemetry extensions. For full configuration details, refer to the link:https://quarkus.io/guides/opentelemetry[Quarkus OpenTelemetry Guide].
+====
+
+To disable the instrumentation, set `quarkus.flow.otel.enabled=false` (in application.properties or as a system/environment property at startup), or simply remove the dependency.
+
+== Produced Spans
+
+Quarkus Flow generates two main types of spans to trace workflow execution:
+
+**Workflow Spans**: Represent the end-to-end lifecycle of a workflow instance, from its initial trigger to completion or failure.
+
+**Task Spans**: Represent the execution of a workflow task within the context of a parent workflow.
+
+Task spans automatically reflect the workflow hierarchy, attaching as children to either the parent workflow span or another task span.
+
+=== Workflow Spans
+
+Workflow spans represent the overall execution of a workflow instance and includes the following information:
+
+* Span Name Format: `workflow.execute <workflow-name>`
+* Example, `workflow.execute order-processing`
+
+[cols="2,2,4",options="header"]
+|===
+| Attribute Name | Type | Description
+
+| `flow.application.id`
+| String
+| Identifier of the Quarkus Flow application.
+
+| `flow.workflow.name`
+| String
+| Name of the executed workflow.
+
+| `flow.workflow.id`
+| String
+| Unique execution id generated for this specific workflow run.
+
+| `flow.workflow.namespace`
+| String
+| Namespace of the executed workflow.
+
+| `flow.workflow.version`
+| String
+| Version of the executed workflow.
+|===
+
+=== Task Spans
+
+Task spans represent the execution of a workflow task and includes the following information:
+
+* Span Name Format: `task.execute <task-name>`
+* Example, `task.execute Submit Order`
+
+[cols="2,2,4",options="header"]
+|===
+| Attribute Name | Type | Description
+
+| `flow.application.id`
+| String
+| Identifier of the Quarkus Flow application.
+
+| `flow.workflow.name`
+| String
+| Name of the executed parent workflow.
+
+| `flow.workflow.id`
+| String
+| Unique execution id of the parent workflow execution.
+
+| `flow.workflow.namespace`
+| String
+| Namespace of the executed parent workflow.
+
+| `flow.workflow.version`
+| String
+| Version of the executed parent workflow.
+
+| `flow.task.name`
+| String
+| Name of the executed task.
+
+| `flow.task.type`
+| String
+| Type of executed task. Can be any of the following values: `do`, `emit`, `for`, `fork`, `listen`, `raise`, `run`, `set`, `switch`, `try`, `wait`, `call_http`, `call_asyncapi`, `call_grpc`, `call_openapi`, `call_a2a`, `call_function`.
+
+| `flow.task.id`
+| String
+| Identifier of the executed task.
+
+| `flow.task.iteration`
+| Integer
+| Number of the current task iteration.
+
+| `flow.task.retrying`
+| Boolean
+| True if the task execution is a retry of a previous failing attempt, false in any other case.
+
+| `flow.task.retry_attempt`
+| Integer
+| Number of retry if the task execution is a retry of a previous failing attempt, 0 in any other case.
+|===
+
+[TIP]
+====
+Use meaningful names for your workflows and tasks. Because span names and attributes directly reflect your workflow definitions, well-named tasks result in much cleaner and readable traces in your telemetry UI.
+====
+
+==== Task-Specific Attributes
+
+In addition to the standard task attributes, certain task types produce specialized attributes relevant to their execution.
+
+===== Call Http Task Attributes
+
+Tasks of type `call_http` produce these additional attributes:
+
+[cols="2,2,4",options="header"]
+|===
+| Attribute Name | Type | Description
+
+| `flow.task.call.http.request.method`
+| String
+| HTTP request method configured in the workflow definition.
+
+| `flow.task.call.http.url.full`
+| String
+| URL configured in the workflow definition.
+|===
+
+===== Call gRPC Task Attributes
+
+Tasks of type `call_grpc` produce these additional attributes:
+
+[cols="2,2,4",options="header"]
+|===
+| Attribute Name | Type | Description
+
+| `flow.task.call.grpc.method`
+| String
+| GRPC method configured in the workflow definition.
+
+| `flow.task.call.grpc.service`
+| String
+| GRPC service configured in the workflow definition.
+
+| `flow.task.call.grpc.server.address`
+| String
+| GRPC host configured in the workflow definition.
+
+| `flow.task.call.grpc.server.port`
+| Integer
+| GRPC port configured in the workflow definition.
+|===
+
+===== Call OpenAPI Task Attributes
+
+Tasks of type `call_openapi` produce these additional attributes:
+
+[cols="2,2,4",options="header"]
+|===
+| Attribute Name | Type | Description
+
+| `flow.task.call.openapi.operation_id`
+| String
+| The id of the OpenAPI operation to call configured in the workflow definition.
+
+| `flow.task.call.openapi.document.name`
+| String
+| Name of the referred external resource with the OpenAPI document. Only present if configured in the workflow definition.
+
+| `flow.task.call.openapi.document.url.full`
+| String
+| URL of the OpenAPI document. Only present if configured in the workflow definition.
+|===
+
+===== Call Function Task Attributes
+
+Tasks of type `call_function` produce these additional attributes:
+
+[cols="2,2,4",options="header"]
+|===
+| Attribute Name | Type | Description
+
+| `flow.task.call.function.name`
+| String
+| Name of the function to call configured in the workflow definition.
+|===
+
+===== Call A2A Task Attributes
+
+Tasks of type `call_a2a` produce these additional attributes:
+
+[cols="2,2,4",options="header"]
+|===
+| Attribute Name | Type | Description
+
+| `flow.task.call.a2a.method`
+| String
+| Name of the A2A JSON-RPC method to execute configured in the workflow definition.
+
+| `flow.task.call.a2a.server.url.full`
+| String
+| URI of the A2A server to call. Only present if configured in the workflow definition.
+
+| `flow.task.call.a2a.agent_card.name`
+| String
+| Name of the referred external resource with the AgentCard that describes the agent to call. Only present if configured in the workflow definition.
+
+| `flow.task.call.a2a.agent_card.url.full`
+| String
+| URL of the resource with the AgentCard that describes the agent to call. Only present if configured in the workflow definition.
+|===
+
+===== Run Task Attributes
+
+Tasks of type `run` produce these additional attributes based on the executed kind: `workflow`, `container`, `script` or `shell`.
+
+[cols="2,1,1,3",options="header"]
+|===
+| Attribute Name | Type | Applies When | Description
+
+| `flow.task.run.kind`
+| String
+| Always
+| Reflects the configured execution variant in the workflow definition: `workflow`, `container`, `script`, or `shell`.
+
+| `flow.task.run.workflow.namespace`
+| String
+| `workflow`
+| Namespace of the workflow to run configured in the workflow definition.
+
+| `flow.task.run.workflow.name`
+| String
+| `workflow`
+| Name of the workflow to run configured in the workflow definition.
+
+| `flow.task.run.workflow.version`
+| String
+| `workflow`
+| Version of the workflow to run configured in the workflow definition.
+
+| `flow.task.run.container.name`
+| String
+| `container`
+| Name of the container to run configured in the workflow definition.
+
+| `flow.task.run.container.image.name`
+| String
+| `container`
+| Full container image name and tag configured in the workflow definition.
+
+| `flow.task.run.container.command`
+| String
+| `container`
+| Container command to execute configured in the workflow definition.
+
+| `flow.task.run.script.language`
+| String
+| `script`
+| Language of the script to execute configured in the workflow definition.
+
+| `flow.task.run.script.code`
+| String
+| `script`
+| Inline script code to execute. Only present if configured in the workflow definition.
+
+| `flow.task.run.script.source.name`
+| String
+| `script`
+| Name of the referred external resource with the source of the script to execute. Only present if configured in the workflow definition.
+
+| `flow.task.run.script.source.url.full`
+| String
+| `script`
+| Full URL of the document with the source of the script to execute. Only present if configured in the workflow definition.
+
+| `flow.task.run.shell.command`
+| String
+| `shell`
+| Command to execute configured in the workflow definition.
+|===
+
+===== Wait Task Attributes
+
+Tasks of type `wait` produce these additional attributes:
+
+[cols="2,2,4",options="header"]
+|===
+| Attribute Name | Type | Description
+
+| `flow.task.wait.duration.literal`
+| String
+| Literal ISO 8601 duration. Only present if configured in the workflow definition.
+
+| `flow.task.wait.duration.expression`
+| String
+| Duration expression. Only present if configured in the workflow definition.
+
+| `flow.task.wait.duration.days`
+| Integer
+| Days of the configured duration. Only present if configured in the workflow definition.
+
+| `flow.task.wait.duration.hours`
+| Integer
+| Hours of the configured duration. Only present if configured in the workflow definition.
+
+| `flow.task.wait.duration.minutes`
+| Integer
+| Minutes of the configured duration. Only present if configured in the workflow definition.
+
+| `flow.task.wait.duration.seconds`
+| Integer
+| Seconds of the configured duration. Only present if configured in the workflow definition.
+
+| `flow.task.wait.duration.milliseconds`
+| Integer
+| Milliseconds of the configured duration. Only present if configured in the workflow definition.
+|===
+
+===== Emit Task Attributes
+
+Tasks of type `emit` produce these additional attributes:
+
+[cols="2,2,4",options="header"]
+|===
+| Attribute Name | Type | Description
+
+| `flow.task.emit.event.id`
+| String
+| Identifier of the emitted event. Only present if configured in the workflow definition.
+
+| `flow.task.emit.event.type`
+| String
+| Type of the emitted event. Only present if configured in the workflow definition.
+
+| `flow.task.emit.event.source`
+| String
+| Source of the emitted event. Only present if configured in the workflow definition.
+
+| `flow.task.emit.event.subject`
+| String
+| Subject of the emitted event. Only present if configured in the workflow definition.
+|===
+
+===== Raise Task Attributes
+
+Tasks of type `raise` produce these additional attributes:
+
+[cols="2,2,4",options="header"]
+|===
+| Attribute Name | Type | Description
+
+| `flow.task.raise.error.reference`
+| String
+| Name of the referred error. Only present if configured in the workflow definition.
+
+| `flow.task.raise.error.type.expression`
+| String
+| Expression defining the error type. Only present if configured in the workflow definition.
+
+| `flow.task.raise.error.type.uri`
+| String
+| URI defining the error type. Only present if configured in the workflow definition.
+
+| `flow.task.raise.error.status`
+| Integer
+| Error status code. Only present if configured in the workflow definition.
+
+| `flow.task.raise.error.instance`
+| String
+| Error instance. Only present if configured in the workflow definition.
+
+| `flow.task.raise.error.title`
+| String
+| Error title. Only present if configured in the workflow definition.
+
+| `flow.task.raise.error.details`
+| String
+| Error details. Only present if configured in the workflow definition.
+|===

@@ -128,7 +128,7 @@ public class SpanUtils {
         return switch (TaskType.fromTask(task)) {
             case CALL_HTTP -> (span, sourceTask) -> enrichCallHTTP(span, (CallHTTP) sourceTask);
             case CALL_GRPC -> (span, sourceTask) -> enrichCallGRPC(span, (CallGRPC) sourceTask);
-            case CALL_OPEN_API -> (span, sourceTask) -> enrichCallOpenAPI(span, (CallOpenAPI) sourceTask);
+            case CALL_OPENAPI -> (span, sourceTask) -> enrichCallOpenAPI(span, (CallOpenAPI) sourceTask);
             case CALL_FUNCTION -> (span, sourceTask) -> enrichCallFunction(span, (CallFunction) sourceTask);
             case CALL_A2A -> (span, sourceTask) -> enrichA2A(span, (CallA2A) sourceTask);
             case RUN -> (span, sourceTask) -> enrichRunTask(span, (RunTask) sourceTask);

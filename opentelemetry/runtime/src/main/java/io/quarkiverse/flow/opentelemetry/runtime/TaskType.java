@@ -24,28 +24,30 @@ import io.serverlessworkflow.api.types.TryTask;
 import io.serverlessworkflow.api.types.WaitTask;
 
 public enum TaskType {
-    CALL_HTTP(CallHTTP.class),
-    CALL_ASYNC_API(CallAsyncAPI.class),
-    CALL_GRPC(CallGRPC.class),
-    CALL_OPEN_API(CallOpenAPI.class),
-    CALL_A2A(CallA2A.class),
-    CALL_FUNCTION(CallFunction.class),
-    DO(DoTask.class),
-    EMIT(EmitTask.class),
-    FOR(ForTask.class),
-    FORK(ForkTask.class),
-    LISTEN(ListenTask.class),
-    RAISE(RaiseTask.class),
-    RUN(RunTask.class),
-    SET(SetTask.class),
-    SWITCH(SwitchTask.class),
-    TRY(TryTask.class),
-    WAIT(WaitTask.class);
+    CALL_HTTP(CallHTTP.class, "call_http"),
+    CALL_ASYNCAPI(CallAsyncAPI.class, "call_asyncapi"),
+    CALL_GRPC(CallGRPC.class, "call_grpc"),
+    CALL_OPENAPI(CallOpenAPI.class, "call_openapi"),
+    CALL_A2A(CallA2A.class, "call_a2a"),
+    CALL_FUNCTION(CallFunction.class, "call_function"),
+    DO(DoTask.class, "do"),
+    EMIT(EmitTask.class, "emit"),
+    FOR(ForTask.class, "for"),
+    FORK(ForkTask.class, "fork"),
+    LISTEN(ListenTask.class, "listen"),
+    RAISE(RaiseTask.class, "raise"),
+    RUN(RunTask.class, "run"),
+    SET(SetTask.class, "set"),
+    SWITCH(SwitchTask.class, "switch"),
+    TRY(TryTask.class, "try"),
+    WAIT(WaitTask.class, "wait");
 
     private final Class<? extends TaskBase> taskClass;
+    private final String value;
 
-    TaskType(Class<? extends TaskBase> taskClass) {
+    TaskType(Class<? extends TaskBase> taskClass, String value) {
         this.taskClass = taskClass;
+        this.value = value;
     }
 
     private static final Map<Class<? extends TaskBase>, TaskType> BY_CLASS = new ConcurrentHashMap<>();
@@ -65,5 +67,10 @@ public enum TaskType {
             throw new NoSuchElementException("TaskBase: " + taskBase.getClass() + " is not recognized.");
         }
         return type;
+    }
+
+    @Override
+    public String toString() {
+        return value;
     }
 }
