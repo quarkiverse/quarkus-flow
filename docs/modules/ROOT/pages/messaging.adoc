@@ -119,21 +119,52 @@ By default, every event published to `flow-out` will include:
 * `flowinstanceid`: The ULID of the executing `WorkflowInstance`.
 * `flowtaskid`: The JSON Pointer of the specific task that emitted the event (e.g., `do/0/task`).
 
-If you are writing a custom consumer downstream, you can extract these attributes directly from the `CloudEvent`:
+If you are writing a custom consumer downstream, use SmallRye's `CloudEventMetadata` to access attributes and read the payload as a `String`:
 
 [source,java]
 ----
-import io.cloudevents.CloudEvent;
+import java.util.concurrent.CompletionStage;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Message;
+
 import io.quarkus.logging.Log;
+import io.smallrye.reactive.messaging.ce.CloudEventMetadata;
 
-public void printCorrelation(CloudEvent event) {
-    String instanceId = (String) event.getExtension("flowinstanceid");
-    String taskId = (String) event.getExtension("flowtaskid");
+@ApplicationScoped
+public class FlowOutConsumer {
 
-    Log.infof("Flow Instance ID: %s", instanceId);
-    Log.infof("Flow Task ID: %s", taskId);
+    @Incoming("flow-out-consumer")      // <1>
+    public CompletionStage<Void> consume(Message<String> msg) {
+        CloudEventMetadata<?> ce = msg.getMetadata(CloudEventMetadata.class)
+                .orElseThrow(() -> new IllegalArgumentException("Missing CE metadata"));
+
+        String type = ce.getType();
+        String instanceId = ce.<String>getExtension("flowinstanceid").orElse(null);
+        String taskId = ce.<String>getExtension("flowtaskid").orElse(null);
+        String data = msg.getPayload();     // <2>
+
+        Log.infof("CE type: %s, instance: %s, task: %s", type, instanceId, taskId);
+        Log.infof("Payload: %s", data);
+
+        return msg.ack();
+    }
 }
 ----
+<1> Use a different channel name than `flow-out` (which is the engine's outbound channel). Point it at the same topic/address.
+<2> The payload is the event _data_ only. CE attributes (`type`, `source`, extensions, …) are in the message metadata, not in the payload.
+
+The matching channel configuration:
+
+[source,properties]
+----
+mp.messaging.incoming.flow-out-consumer.connector=smallrye-kafka
+mp.messaging.incoming.flow-out-consumer.topic=flow-out
+----
+
+IMPORTANT: Do *not* use `io.cloudevents.CloudEvent` as the parameter type in an `@Incoming` method. SmallRye Reactive Messaging does not auto-deserialize the payload into a `CloudEvent` object — the CE attributes are carried in transport headers (Kafka `ce_*`, AMQP `cloudEvents:*`) and exposed via `CloudEventMetadata`. Using `CloudEvent` directly will cause a `ClassCastException`.
 
 If you need to rename these keys to match your enterprise naming conventions, or disable them entirely:
 [source,properties]

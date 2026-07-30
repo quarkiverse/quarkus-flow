@@ -66,21 +66,20 @@ class EmitEventWorkflowTest {
 
         // And - Verify event was emitted to flow-out channel
         await().atMost(ofSeconds(5)).untilAsserted(() -> {
-            InMemorySink<byte[]> sink = connector.sink("flow-out");
+            InMemorySink<String> sink = connector.sink("flow-out");
 
-            List<? extends Message<byte[]>> messages = sink.received();
+            List<? extends Message<String>> messages = sink.received();
             assertThat(messages)
                     .as("Events should have been emitted to flow-out channel")
                     .isNotEmpty();
 
-            Message<byte[]> msg = messages.get(0);
+            Message<String> msg = messages.get(0);
             CloudEventMetadata<?> ceMeta = msg.getMetadata(CloudEventMetadata.class).orElse(null);
             assertThat(ceMeta).as("Message should carry CloudEvent metadata").isNotNull();
             assertThat(ceMeta.getType()).isEqualTo("org.quarkiverse.flow.runner.app.response");
             assertThat(ceMeta.getSource().toString()).isEqualTo("uri://org.quarkiverse.flow.runner.app.test");
 
-            String eventData = new String(msg.getPayload());
-            assertThat(eventData).contains("Test User");
+            assertThat(msg.getPayload()).contains("Test User");
         });
     }
 

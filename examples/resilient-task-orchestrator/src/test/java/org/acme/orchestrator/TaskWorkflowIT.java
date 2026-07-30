@@ -48,7 +48,7 @@ class TaskWorkflowIT {
     // Kafka/messaging emitter for flow-in channel
     @Inject
     @Channel("flow-in-outgoing")
-    Emitter<byte[]> flowIn;
+    Emitter<String> flowIn;
 
     @BeforeEach
     void setUp() {
@@ -272,7 +272,7 @@ class TaskWorkflowIT {
     }
 
     private void emitTaskStartedEvent(BuildTask task) throws Exception {
-        byte[] taskData = objectMapper.writeValueAsBytes(task);
+        String taskData = objectMapper.writeValueAsString(task);
 
         OutgoingCloudEventMetadata<?> ceMeta = OutgoingCloudEventMetadata.builder()
                 .withId(UUID.randomUUID().toString())

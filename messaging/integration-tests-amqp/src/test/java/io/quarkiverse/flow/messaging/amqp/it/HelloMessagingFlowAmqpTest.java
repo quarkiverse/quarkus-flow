@@ -183,7 +183,7 @@ public class HelloMessagingFlowAmqpTest {
 
     private void assertResponseMessage(AmqpMessage msg, String name) {
         assertThat(msg).as("Response message was not received").isNotNull();
-        String body = msg.bodyAsBinary().toString(StandardCharsets.UTF_8);
+        String body = msg.bodyAsString();
         assertThat(body).contains("\"Hello " + name + "!\"");
     }
 

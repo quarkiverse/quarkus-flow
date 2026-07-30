@@ -43,7 +43,7 @@ public class NewsletterWorkflowIT {
 
     @Inject
     @Channel("flow-out-incoming")
-    io.smallrye.mutiny.Multi<Message<byte[]>> flowOutEvents;
+    io.smallrye.mutiny.Multi<Message<String>> flowOutEvents;
 
     @InjectMock
     MailService mailService;
@@ -138,9 +138,9 @@ public class NewsletterWorkflowIT {
                 .contentType("application/json").body(review).when().put("/api/newsletter").then().statusCode(202);
     }
 
-    private NewsletterDraft parseNewsletterDraft(byte[] data) {
+    private NewsletterDraft parseNewsletterDraft(String data) {
         try {
-            if (data == null || data.length == 0)
+            if (data == null || data.isEmpty())
                 return null;
             return JsonUtils.mapper().readValue(data, NewsletterDraft.class);
         } catch (Exception e) {

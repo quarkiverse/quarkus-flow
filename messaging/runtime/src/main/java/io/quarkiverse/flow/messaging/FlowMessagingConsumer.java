@@ -23,7 +23,7 @@ import io.cloudevents.CloudEventData;
 import io.cloudevents.core.builder.CloudEventBuilder;
 import io.cloudevents.core.data.BytesCloudEventData;
 import io.serverlessworkflow.impl.events.AbstractTypeConsumer;
-import io.smallrye.reactive.messaging.ce.IncomingCloudEventMetadata;
+import io.smallrye.reactive.messaging.ce.CloudEventMetadata;
 import io.vertx.core.json.JsonObject;
 
 @ApplicationScoped
@@ -38,8 +38,8 @@ public class FlowMessagingConsumer
     ManagedExecutor executor;
 
     private static CloudEvent resolveCloudEvent(Message<?> msg) {
-        IncomingCloudEventMetadata<?> meta = (IncomingCloudEventMetadata<?>) msg
-                .getMetadata(IncomingCloudEventMetadata.class)
+        CloudEventMetadata<?> meta = (CloudEventMetadata<?>) msg
+                .getMetadata(CloudEventMetadata.class)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Message does not carry CloudEvent metadata. "
                                 + "Ensure the channel has cloud-events enabled (the default)."));
@@ -70,6 +70,9 @@ public class FlowMessagingConsumer
         }
 
         Object data = meta.getData();
+        if (data == null) {
+            data = msg.getPayload();
+        }
         if (data instanceof byte[] bytes) {
             builder.withData(bytes);
         } else if (data instanceof CloudEventData cloudEventData) {

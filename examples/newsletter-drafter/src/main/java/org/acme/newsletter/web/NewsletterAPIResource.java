@@ -32,7 +32,7 @@ public class NewsletterAPIResource {
     // Kafka producer bound to topic `flow-in`
     @Inject
     @Channel("flow-in-outgoing")
-    Emitter<byte[]> flowIn;
+    Emitter<String> flowIn;
 
     /**
      * Starts the workflow to create a new newsletter draft.
@@ -55,7 +55,7 @@ public class NewsletterAPIResource {
     @Path("/newsletter")
     public Response sendReview(HumanReview review, @HeaderParam("X-Flow-Instance-Id") String instanceId)
             throws JsonProcessingException {
-        byte[] body = objectMapper.writeValueAsBytes(review);
+        String body = objectMapper.writeValueAsString(review);
 
         OutgoingCloudEventMetadata<?> ceMeta = OutgoingCloudEventMetadata.builder()
                 .withId(UUID.randomUUID().toString())

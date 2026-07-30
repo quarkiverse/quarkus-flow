@@ -34,7 +34,7 @@ public class HelloMessagingFlow extends Flow {
      */
     @Override
     public Workflow descriptor() {
-        return FlowWorkflowBuilder.workflow()
+        return FlowWorkflowBuilder.workflow("hello-messaging-flow")
                 // We are listening to one and only one event coming to our broker with the type "io.quarkiverse.flow.messaging.hello.request"
                 // Each event produced by the broker with this type will kick a new workflow instance.
                 // To learn more see the base specification: https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#listen
