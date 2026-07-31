@@ -2,7 +2,6 @@ package io.quarkiverse.flow.runner.security;
 
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Alternative;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
 
@@ -17,7 +16,6 @@ import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
-@Alternative
 @Priority(Priorities.AUTHENTICATION)
 @ApplicationScoped
 @Unremovable

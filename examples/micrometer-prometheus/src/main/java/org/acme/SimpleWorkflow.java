@@ -12,6 +12,6 @@ public class SimpleWorkflow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return workflow("simple-workflow", "quarkus.flow").tasks(set("{ message: \"Ana Sara\" }")).build();
+        return workflow("simple-workflow", "quarkus-flow").tasks(set("{ message: \"Ana Sara\" }")).build();
     }
 }

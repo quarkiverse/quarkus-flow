@@ -2,7 +2,6 @@ package org.acme.orchestrator;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -10,6 +9,7 @@ import org.acme.orchestrator.model.BuildSpec;
 import org.acme.orchestrator.model.BuildTask;
 import org.acme.orchestrator.workflow.CoordinatorWorkflow;
 import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,9 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.cloudevents.CloudEvent;
-import io.cloudevents.core.provider.EventFormatProvider;
-import io.cloudevents.jackson.JsonFormat;
+import io.smallrye.reactive.messaging.ce.CloudEventMetadata;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
@@ -48,9 +46,6 @@ class CoordinatorWorkflowIT {
 
     private static final Logger LOG = LoggerFactory.getLogger(CoordinatorWorkflowIT.class);
 
-    private static final JsonFormat CE_JSON = (JsonFormat) EventFormatProvider.getInstance()
-            .resolveFormat(JsonFormat.CONTENT_TYPE);
-
     @Inject
     CoordinatorWorkflow coordinatorWorkflow;
 
@@ -60,7 +55,7 @@ class CoordinatorWorkflowIT {
     // Subscribe to flow-in to capture emitted events
     @Inject
     @Channel("flow-in")
-    Multi<byte[]> flowInEvents;
+    Multi<Message<String>> flowInEvents;
 
     private List<BuildTask> capturedTasks;
 
@@ -69,16 +64,17 @@ class CoordinatorWorkflowIT {
         capturedTasks = new CopyOnWriteArrayList<>();
 
         // Subscribe to incoming events and parse BuildTask CloudEvents
-        flowInEvents.subscribe().with(eventBytes -> {
+        flowInEvents.subscribe().with(msg -> {
             try {
-                CloudEvent ce = CE_JSON.deserialize(eventBytes);
+                CloudEventMetadata<?> ceMeta = msg.getMetadata(CloudEventMetadata.class).orElse(null);
 
                 // Filter for task.started events
-                if (ce.getType().equals("org.acme.build.task.started")) {
-                    BuildTask task = objectMapper.readValue(Objects.requireNonNull(ce.getData()).toBytes(), BuildTask.class);
+                if (ceMeta != null && "org.acme.build.task.started".equals(ceMeta.getType())) {
+                    BuildTask task = objectMapper.readValue(msg.getPayload().getBytes(), BuildTask.class);
                     capturedTasks.add(task);
                     LOG.debug("Captured emitted task: {} ({})", task.name(), task.id());
                 }
+                msg.ack();
             } catch (Exception e) {
                 LOG.error("Failed to parse CloudEvent", e);
             }

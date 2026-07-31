@@ -42,6 +42,14 @@ final class JandexMethodInputJsonSchema {
     private static final DotName MAP = DotName.createSimple(Map.class.getName());
     private static final DotName COLLECTION = DotName.createSimple(Collection.class.getName());
 
+    private static final java.util.Set<DotName> BOXED_NUMBER_TYPES = java.util.Set.of(
+            DotName.createSimple("java.lang.Byte"),
+            DotName.createSimple("java.lang.Short"),
+            DotName.createSimple("java.lang.Integer"),
+            DotName.createSimple("java.lang.Long"),
+            DotName.createSimple("java.lang.Float"),
+            DotName.createSimple("java.lang.Double"));
+
     private JandexMethodInputJsonSchema() {
     }
 
@@ -282,7 +290,7 @@ final class JandexMethodInputJsonSchema {
         if (typeName.equals(BOOLEAN)) {
             return false;
         }
-        if (isAssignableFrom(index, typeName, NUMBER)) {
+        if (BOXED_NUMBER_TYPES.contains(typeName) || isAssignableFrom(index, typeName, NUMBER)) {
             return false;
         }
         if (isAssignableFrom(index, typeName, MAP)) {
@@ -293,7 +301,7 @@ final class JandexMethodInputJsonSchema {
         }
 
         ClassInfo classInfo = index.getClassByName(typeName);
-        return classInfo == null || !classInfo.isEnum();
+        return classInfo != null && !classInfo.isEnum();
     }
 
     /**
@@ -350,7 +358,7 @@ final class JandexMethodInputJsonSchema {
             return "boolean";
         }
 
-        if (isAssignableFrom(index, typeName, NUMBER)) {
+        if (BOXED_NUMBER_TYPES.contains(typeName) || isAssignableFrom(index, typeName, NUMBER)) {
             return "number";
         }
 

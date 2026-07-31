@@ -260,8 +260,7 @@ You can easily pause an AI orchestration to wait for human approval by combining
 emitJson("org.acme.email.review.required", CriticAgentReview.class),
 
 // 2. Pause the workflow and wait for the human's response event
-listen("waitHumanReview", toOne("org.acme.newsletter.review.done"))
-  .outputAs((java.util.Collection<Object> c) -> c.iterator().next()),
+listen("waitHumanReview", toOne("org.acme.newsletter.review.done").first()),
 
 // 3. Branch based on the human's decision
 switchWhenOrElse(

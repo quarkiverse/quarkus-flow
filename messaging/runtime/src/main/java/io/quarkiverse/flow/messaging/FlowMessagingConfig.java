@@ -53,7 +53,6 @@ public interface FlowMessagingConfig {
          * Configure the metadata Workflow Instance ID used in correlation propagation.
          */
         MetadataItemConfig instanceId();
-
     }
 
     interface MetadataItemConfig {

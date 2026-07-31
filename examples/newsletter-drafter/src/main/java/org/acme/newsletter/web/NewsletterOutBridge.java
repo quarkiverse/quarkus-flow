@@ -1,11 +1,10 @@
 package org.acme.newsletter.web;
 
-import io.cloudevents.CloudEvent;
-import io.cloudevents.core.provider.EventFormatProvider;
-import io.cloudevents.jackson.JsonFormat;
+import io.smallrye.reactive.messaging.ce.CloudEventMetadata;
 import jakarta.enterprise.context.ApplicationScoped;
-import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletionStage;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,34 +15,32 @@ import org.slf4j.LoggerFactory;
 @ApplicationScoped
 public class NewsletterOutBridge {
 
-    private static final JsonFormat CE_JSON = (JsonFormat) EventFormatProvider.getInstance()
-            .resolveFormat(JsonFormat.CONTENT_TYPE);
     private static final Logger LOG = LoggerFactory.getLogger(NewsletterOutBridge.class);
 
     // match the type emitted by our workflow: "org.acme.email.review.required"
     private static final String REVIEW_REQUIRED_TYPE = "org.acme.email.review.required";
 
     @Incoming("flow-out-incoming")
-    public void onFlowOut(byte[] record) {
+    public CompletionStage<Void> onFlowOut(Message<String> msg) {
         try {
-            CloudEvent ce = CE_JSON.deserialize(record);
-            if (ce == null || ce.getType() == null)
-                return;
+            CloudEventMetadata<?> ceMeta = msg.getMetadata(CloudEventMetadata.class).orElse(null);
+            if (ceMeta == null || ceMeta.getType() == null)
+                return msg.ack();
 
-            if (REVIEW_REQUIRED_TYPE.equals(ce.getType())) {
-                byte[] data = ce.getData() != null ? ce.getData().toBytes() : null;
-                // If there's no data, send a minimal envelope so the UI can handle it.
-                String json = (data == null || data.length == 0)
+            if (REVIEW_REQUIRED_TYPE.equals(ceMeta.getType())) {
+                String data = msg.getPayload();
+                String json = (data == null || data.isEmpty())
                         ? "{\"type\":\"" + REVIEW_REQUIRED_TYPE + "\",\"payload\":null}"
-                        : new String(data, StandardCharsets.UTF_8);
+                        : data;
 
                 LOG.info("Received review (workflow instance: {}) required event: {}",
-                        ce.getExtension("flowinstanceid"), json);
+                        ceMeta.getExtension("flowinstanceid"), json);
 
                 NewsletterUpdatesSocket.broadcast(json);
             }
         } catch (Exception ex) {
-            LOG.error("Failed to consume event {}", new String(record), ex);
+            LOG.error("Failed to consume event", ex);
         }
+        return msg.ack();
     }
 }

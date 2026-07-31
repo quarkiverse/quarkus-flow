@@ -34,15 +34,13 @@ public class HelloMessagingFlow extends Flow {
      */
     @Override
     public Workflow descriptor() {
-        return FlowWorkflowBuilder.workflow()
+        return FlowWorkflowBuilder.workflow("hello-messaging-flow")
                 // We are listening to one and only one event coming to our broker with the type "io.quarkiverse.flow.messaging.hello.request"
                 // Each event produced by the broker with this type will kick a new workflow instance.
                 // To learn more see the base specification: https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#listen
-                .tasks(listen(toOne("io.quarkiverse.flow.messaging.hello.request")),
+                .tasks(listen(toOne("io.quarkiverse.flow.messaging.hello.request").first()),
                         // "name" is expected in the message body payload
-                        // by design, we receive an array from the listen task, since it's only one we are expecting it's safe to index
-                        // on more a more robust scenario, you should use `forEach`.
-                        set("{ message: \"Hello \" + .[0].name + \"!\" }"),
+                        set("{ message: \"Hello \" + .name + \"!\" }"),
                         // We emit a new event with the specified type having the property `message` in the body that we built in the previous `set` task.
                         emit(produced("io.quarkiverse.flow.messaging.hello.response").jsonData(Map.class)))
                 .build();

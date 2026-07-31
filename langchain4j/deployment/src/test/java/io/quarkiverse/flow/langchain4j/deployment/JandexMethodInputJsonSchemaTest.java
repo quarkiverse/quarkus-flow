@@ -232,6 +232,22 @@ class JandexMethodInputJsonSchemaTest {
     }
 
     @Test
+    @DisplayName("test_boxed_jdk_types_do_not_throw_npe")
+    void test_boxed_jdk_types_do_not_throw_npe() throws Exception {
+        MethodInfo method = getMethod("withBoxedTypes", Integer.class, Long.class, Double.class, Boolean.class);
+
+        ObjectNode schema = JandexMethodInputJsonSchema.generateSchemaNode(index, method);
+
+        assertThat(schema).isNotNull();
+
+        ObjectNode properties = (ObjectNode) schema.get("properties");
+        assertThat(properties.get("travelers").get("type").asText()).isEqualTo("number");
+        assertThat(properties.get("distance").get("type").asText()).isEqualTo("number");
+        assertThat(properties.get("price").get("type").asText()).isEqualTo("number");
+        assertThat(properties.get("active").get("type").asText()).isEqualTo("boolean");
+    }
+
+    @Test
     @DisplayName("test_only_framework_params_returns_null")
     void test_only_framework_params_returns_null() throws Exception {
         MethodInfo method = getMethod("onlyFrameworkParams", AgenticScope.class);
@@ -296,6 +312,9 @@ class JandexMethodInputJsonSchemaTest {
         }
 
         public void onlyFrameworkParams(AgenticScope scope) {
+        }
+
+        public void withBoxedTypes(Integer travelers, Long distance, Double price, Boolean active) {
         }
     }
 

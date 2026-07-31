@@ -42,32 +42,62 @@ quarkus.flow.messaging.defaults-enabled=true
 
 Once enabled, the engine creates two default channels:
 
-* `flow-in` (Inbound): Consumes structured CloudEvents JSON to start or wake up workflows.
-* `flow-out` (Outbound): Publishes structured CloudEvents JSON emitted by workflows.
+* `flow-in` (Inbound): Consumes CloudEvents (structured or binary) to start or wake up workflows.
+* `flow-out` (Outbound): Publishes CloudEvents emitted by workflows via SmallRye's `OutgoingCloudEventMetadata`.
+
+=== Dev/test shortcut: automatic messaging configuration with DevServices
+
+In dev and test mode, instead of manually enabling the bridge and configuring every `mp.messaging.*` property, you can let Quarkus Flow set up the full messaging stack automatically with a single flag:
+
+[source,properties]
+----
+quarkus.flow.messaging.devservices-messaging-enabled=true
+----
+
+This single property:
+
+* Enables the default messaging bridge (`quarkus.flow.messaging.defaults-enabled=true`)
+* Enables lifecycle events (`quarkus.flow.messaging.lifecycle-enabled=true`)
+* Detects the Quarkus Messaging connector on the classpath and configures the three default channels (`flow-in`, `flow-out`, `flow-lifecycle-out`) accordingly:
+** *Kafka* (`quarkus-messaging-kafka`) — `connector=smallrye-kafka`, `topic=<channel name>`, `String` serializers/deserializers on each channel (the bridge payload is the CloudEvent JSON as `String`)
+** *AMQP* (`quarkus-messaging-amqp`) — `connector=smallrye-amqp`, `address=<channel name>` on each channel
+* Triggers Quarkus DevServices to start an ephemeral broker for the detected connector automatically
+
+You can override any of the injected defaults in your `application.properties` — the injected values are low-priority defaults.
+
+[NOTE]
+====
+If no supported connector — or more than one — is present, Quarkus Flow injects nothing: with an ambiguous or missing connector you must configure the `mp.messaging.*` channels manually. A warning is logged in that case, unless the default channels are already configured in your `application.properties` (then the flag quietly steps aside).
+====
+
+[IMPORTANT]
+====
+This shortcut only applies in dev and test mode. In production you must activate the bridge with `quarkus.flow.messaging.defaults-enabled=true` and map the channels to your broker as shown in the next section.
+====
 
 == 2. Map channels to Kafka topics
 
 Configure MicroProfile Reactive Messaging to connect the default Flow channels to your Kafka topics.
 
-Notice that Quarkus Flow uses `byte[]` for the payload on the wire; the engine handles the serialization and deserialization of the CloudEvent JSON envelope automatically.
+CloudEvent encoding is handled automatically by SmallRye Reactive Messaging.
+The message payload carries the event _data_, while CE attributes (`specversion`, `type`, `source`, …) travel via transport headers — Kafka `ce_*` headers or AMQP `cloudEvents:*` application properties.
+You do not need to configure custom serializers or deserializers.
 
 [source,properties]
 ----
 # Inbound (Listens for events to start or resume workflows)
 mp.messaging.incoming.flow-in.connector=smallrye-kafka
 mp.messaging.incoming.flow-in.topic=flow-in
-mp.messaging.incoming.flow-in.value.deserializer=org.apache.kafka.common.serialization.ByteArrayDeserializer
-mp.messaging.incoming.flow-in.key.deserializer=org.apache.kafka.common.serialization.StringDeserializer
 
 # Outbound (Publishes events emitted by the workflow)
 mp.messaging.outgoing.flow-out.connector=smallrye-kafka
 mp.messaging.outgoing.flow-out.topic=flow-out
-mp.messaging.outgoing.flow-out.value.serializer=org.apache.kafka.common.serialization.ByteArraySerializer
-mp.messaging.outgoing.flow-out.key.serializer=org.apache.kafka.common.serialization.StringSerializer
 
 # Optional if Dev Services is off:
 # kafka.bootstrap.servers=localhost:9092
 ----
+
+TIP: The same channels work with the AMQP connector — just replace `smallrye-kafka` with `smallrye-amqp` and `topic` with `address`.
 
 == 3. Emit and Listen in the Java DSL
 
@@ -92,7 +122,7 @@ With this in place:
 
 == 4. Enable lifecycle events (Optional)
 
-You can configure the engine to publish its internal state changes (e.g., when a workflow starts, suspends, or faults) to a dedicated Kafka topic. This is highly useful for building observability dashboards or audit logs.
+You can configure the engine to publish its internal state changes (e.g., when a workflow starts, suspends, or faults) to a dedicated topic. This is highly useful for building observability dashboards or audit logs.
 
 [source,properties]
 ----
@@ -100,8 +130,6 @@ quarkus.flow.messaging.lifecycle-enabled=true
 
 mp.messaging.outgoing.flow-lifecycle-out.connector=smallrye-kafka
 mp.messaging.outgoing.flow-lifecycle-out.topic=flow-lifecycle-out
-mp.messaging.outgoing.flow-lifecycle-out.key.serializer=org.apache.kafka.common.serialization.StringSerializer
-mp.messaging.outgoing.flow-lifecycle-out.value.serializer=org.apache.kafka.common.serialization.ByteArraySerializer
 ----
 
 Common lifecycle event types published to this topic include:
@@ -121,21 +149,52 @@ By default, every event published to `flow-out` will include:
 * `flowinstanceid`: The ULID of the executing `WorkflowInstance`.
 * `flowtaskid`: The JSON Pointer of the specific task that emitted the event (e.g., `do/0/task`).
 
-If you are writing a custom consumer downstream, you can extract these attributes directly from the `CloudEvent`:
+If you are writing a custom consumer downstream, use SmallRye's `CloudEventMetadata` to access attributes and read the payload as a `String`:
 
 [source,java]
 ----
-import io.cloudevents.CloudEvent;
+import java.util.concurrent.CompletionStage;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Message;
+
 import io.quarkus.logging.Log;
+import io.smallrye.reactive.messaging.ce.CloudEventMetadata;
 
-public void printCorrelation(CloudEvent event) {
-    String instanceId = (String) event.getExtension("flowinstanceid");
-    String taskId = (String) event.getExtension("flowtaskid");
+@ApplicationScoped
+public class FlowOutConsumer {
 
-    Log.infof("Flow Instance ID: %s", instanceId);
-    Log.infof("Flow Task ID: %s", taskId);
+    @Incoming("flow-out-consumer")      // <1>
+    public CompletionStage<Void> consume(Message<String> msg) {
+        CloudEventMetadata<?> ce = msg.getMetadata(CloudEventMetadata.class)
+                .orElseThrow(() -> new IllegalArgumentException("Missing CE metadata"));
+
+        String type = ce.getType();
+        String instanceId = ce.<String>getExtension("flowinstanceid").orElse(null);
+        String taskId = ce.<String>getExtension("flowtaskid").orElse(null);
+        String data = msg.getPayload();     // <2>
+
+        Log.infof("CE type: %s, instance: %s, task: %s", type, instanceId, taskId);
+        Log.infof("Payload: %s", data);
+
+        return msg.ack();
+    }
 }
 ----
+<1> Use a different channel name than `flow-out` (which is the engine's outbound channel). Point it at the same topic/address.
+<2> The payload is the event _data_ only. CE attributes (`type`, `source`, extensions, …) are in the message metadata, not in the payload.
+
+The matching channel configuration:
+
+[source,properties]
+----
+mp.messaging.incoming.flow-out-consumer.connector=smallrye-kafka
+mp.messaging.incoming.flow-out-consumer.topic=flow-out
+----
+
+IMPORTANT: Do *not* use `io.cloudevents.CloudEvent` as the parameter type in an `@Incoming` method. SmallRye Reactive Messaging does not auto-deserialize the payload into a `CloudEvent` object — the CE attributes are carried in transport headers (Kafka `ce_*`, AMQP `cloudEvents:*`) and exposed via `CloudEventMetadata`. Using `CloudEvent` directly will cause a `ClassCastException`.
 
 If you need to rename these keys to match your enterprise naming conventions, or disable them entirely:
 [source,properties]

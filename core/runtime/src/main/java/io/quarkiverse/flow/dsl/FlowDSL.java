@@ -2521,21 +2521,45 @@ public final class FlowDSL {
         return DSL.on(strategy);
     }
 
+    /**
+     * Wraps a {@link FuncScheduleEventSpec} into a {@link FuncScheduleSpec} so that
+     * the {@link FuncScheduleEventSpec#first()} and {@link FuncScheduleEventSpec#envelope()}
+     * flags are propagated through the {@code schedule(on(one("type").first()))} chain.
+     *
+     * @param eventSpec the event spec (typically from {@link #one(String)})
+     * @return a schedule spec that carries the first/envelope flags
+     */
+    public static FuncScheduleSpec on(FuncScheduleEventSpec eventSpec) {
+        return new FuncScheduleSpec(eventSpec);
+    }
+
     // ---- Schedule Event Strategies ----//
 
     /**
+     * Creates a {@link FuncScheduleEventSpec} for consuming exactly one event of the given type.
+     * The returned spec supports {@link FuncScheduleEventSpec#first()} to extract the
+     * CloudEvent payload before the first task receives it.
+     *
+     * @param eventType the CloudEvent type to consume
+     * @return a schedule event spec that can be chained with {@code .first()} or
+     *         {@code .envelope().first()}
      * @see DSL#one(String)
      */
-    public static Consumer<AbstractEventConsumptionStrategyBuilder<?, ?, ?>> one(String eventType) {
-        return DSL.one(eventType);
+    public static FuncScheduleEventSpec one(String eventType) {
+        return new FuncScheduleEventSpec(eventType);
     }
 
     /**
+     * Creates a {@link FuncScheduleEventSpec} for consuming exactly one event matching the given
+     * filter. The returned spec supports {@link FuncScheduleEventSpec#first()}.
+     *
+     * @param filter the event filter
+     * @return a schedule event spec that can be chained with {@code .first()} or
+     *         {@code .envelope().first()}
      * @see DSL#one(Consumer)
      */
-    public static Consumer<AbstractEventConsumptionStrategyBuilder<?, ?, ?>> one(
-            Consumer<EventFilterBuilder> filter) {
-        return DSL.one(filter);
+    public static FuncScheduleEventSpec one(Consumer<EventFilterBuilder> filter) {
+        return new FuncScheduleEventSpec(filter);
     }
 
     /**

@@ -301,6 +301,8 @@ mp.messaging.incoming.flow-in.connector=smallrye-kafka
 mp.messaging.outgoing.flow-out.connector=smallrye-kafka
 ```
 
+In dev and test mode you can skip the manual configuration entirely: set `quarkus.flow.messaging.devservices-messaging-enabled=true` and Quarkus Flow detects the connector on the classpath (Kafka or AMQP), configures the default channels, and lets Dev Services start an ephemeral broker for you.
+
 See the [Messaging doc](https://docs.quarkiverse.io/quarkus-flow/dev/messaging.html) for full details.
 
 ## Examples

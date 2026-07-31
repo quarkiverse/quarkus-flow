@@ -162,19 +162,9 @@ endif::add-copy-button-to-config-props[]
 
 [.description]
 --
-Namespaces allowed for this API key.
+Namespaces authorized for this API key.
 
-When not configured (empty), the key has access to all namespaces. When configured, the key can only access workflows in the specified namespaces.
-
-Example:
-
-```
-# Restrict to specific namespaces
-quarkus.flow.runner.security.api-keys."team-key".namespaces=team-a,team-b
-
-# Or leave empty for all namespaces (default)
-quarkus.flow.runner.security.api-keys."admin-key".roles=flow-admin
-```
+The value `"++*++"` grants access to all namespaces. When omitted, this property defaults to `"++*++"` for backward compatibility.
 
 
 ifdef::add-copy-button-to-env-var[]
@@ -185,7 +175,7 @@ Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__NAMES
 endif::add-copy-button-to-env-var[]
 --
 |list of string
-|
+|`+++*+++`
 
 a| [[quarkus-flow-runner_quarkus-flow-runner-security-namespace-claim]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-namespace-claim[`+++quarkus.flow.runner.security.namespace.claim+++`]##
 ifdef::add-copy-button-to-config-props[]
@@ -195,21 +185,25 @@ endif::add-copy-button-to-config-props[]
 
 [.description]
 --
-JWT claim name containing authorized namespace(s).
+JWT claim containing the namespaces authorized for the current identity.
 
 Used when `type=OIDC`. The claim can contain:
 
- - Single string value (e.g., `"my-namespace"`)
- - Array of strings (e.g., `++[++"ns1", "ns2"++]++`)
+ - A single namespace, for example `"team-a"`
+ - An array of namespaces, for example `++[++"team-a", "team-b"++]++`
+ - A comma-separated string, for example `"team-a,team-b"`
+ - The exact value `"++*++"` to authorize all current and future namespaces
 
 
+
+For a non-admin OIDC identity, a missing, null, empty, or blank claim grants no namespace access when namespace validation is enabled. Identities with the `flow-admin` role bypass namespace restrictions.
+
+Namespace matching is exact and case-sensitive. Partial wildcard values such as `"team-++*++"` are not supported.
 
 Example:
 
 ```
-quarkus.flow.runner.security.namespace.claim=namespace
-# or for multi-namespace support:
-quarkus.flow.runner.security.namespace.claim=namespaces
+quarkus.flow.runner.security.namespace.claim = namespace
 ```
 
 
@@ -231,11 +225,18 @@ endif::add-copy-button-to-config-props[]
 
 [.description]
 --
-Enable or disable namespace validation.
+Enables or disables namespace authorization.
 
-When `true`, requests are validated against the namespace in the request path and the user's authorized namespaces (from JWT claim or API key configuration).
+When enabled:
 
-When `false`, namespace validation is skipped (all users can access all namespaces). Use only in development.
+ - Identities with the `flow-admin` role can access all namespaces.
+ - The exact namespace value `"++*++"` authorizes all namespaces.
+ - Explicit namespace values authorize only those namespaces.
+ - A missing, null, empty, or blank namespace set grants no access to a non-admin identity.
+
+
+
+When disabled, namespace authorization is skipped and access is controlled only through role-based authorization.
 
 
 ifdef::add-copy-button-to-env-var[]

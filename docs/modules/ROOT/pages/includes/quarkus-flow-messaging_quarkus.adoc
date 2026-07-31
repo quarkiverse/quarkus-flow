@@ -7,48 +7,6 @@ h|[.header-title]##Configuration property##
 h|Type
 h|Default
 
-a|icon:lock[title=Fixed at build time] [[quarkus-flow-messaging_quarkus-defaults-enabled]] [.property-path]##link:#quarkus-flow-messaging_quarkus-defaults-enabled[`+++quarkus.defaults-enabled+++`]##
-ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.defaults-enabled+++[]
-endif::add-copy-button-to-config-props[]
-
-
-[.description]
---
-Register default consumer/publisher beans bound to 'flow-in'/'flow-out' channels
-
-
-ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_DEFAULTS_ENABLED+++[]
-endif::add-copy-button-to-env-var[]
-ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_DEFAULTS_ENABLED+++`
-endif::add-copy-button-to-env-var[]
---
-|boolean
-|`+++false+++`
-
-a|icon:lock[title=Fixed at build time] [[quarkus-flow-messaging_quarkus-lifecycle-enabled]] [.property-path]##link:#quarkus-flow-messaging_quarkus-lifecycle-enabled[`+++quarkus.lifecycle-enabled+++`]##
-ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.lifecycle-enabled+++[]
-endif::add-copy-button-to-config-props[]
-
-
-[.description]
---
-Register the default events lifecycle publisher to the 'flow-lifecycle-out'. By default, the application won't publish any lifecycle event to this channel.
-
-
-ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_LIFECYCLE_ENABLED+++[]
-endif::add-copy-button-to-env-var[]
-ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_LIFECYCLE_ENABLED+++`
-endif::add-copy-button-to-env-var[]
---
-|boolean
-|`+++false+++`
-
 a|icon:lock[title=Fixed at build time] [[quarkus-flow-messaging_quarkus-enable-metadata-correlation]] [.property-path]##link:#quarkus-flow-messaging_quarkus-enable-metadata-correlation[`+++quarkus.enable-metadata-correlation+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.enable-metadata-correlation+++[]

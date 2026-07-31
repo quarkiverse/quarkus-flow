@@ -7,6 +7,33 @@ h|[.header-title]##Configuration property##
 h|Type
 h|Default
 
+a|icon:lock[title=Fixed at build time] [[quarkus-flow-messaging_quarkus-flow-messaging-devservices-messaging-enabled]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-devservices-messaging-enabled[`+++quarkus.flow.messaging.devservices-messaging-enabled+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.messaging.devservices-messaging-enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Automatically configure the default Flow messaging channels ('flow-in', 'flow-out', 'flow-lifecycle-out') in dev and test mode. When enabled, the build step detects the Quarkus Messaging connector present in the application (Kafka or AMQP) and injects all necessary connector defaults so a developer does not need to manually set any `mp.messaging.++*++` property. All injected defaults can be overridden in `application.properties`.
+
+Quarkus DevServices will automatically start the matching broker unless its `devservices.enabled` property is set to `false`.
+
+If no supported connector (or more than one) is present, no channel configuration is injected: a warning is logged unless the default channels are already configured manually.
+
+Ignored in production.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_MESSAGING_DEVSERVICES_MESSAGING_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_MESSAGING_DEVSERVICES_MESSAGING_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++false+++`
+
 a|icon:lock[title=Fixed at build time] [[quarkus-flow-messaging_quarkus-flow-messaging-defaults-enabled]] [.property-path]##link:#quarkus-flow-messaging_quarkus-flow-messaging-defaults-enabled[`+++quarkus.flow.messaging.defaults-enabled+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.messaging.defaults-enabled+++[]
@@ -15,7 +42,7 @@ endif::add-copy-button-to-config-props[]
 
 [.description]
 --
-Register default consumer/publisher beans bound to 'flow-in'/'flow-out' channels
+Register the default consumer/publisher beans bound to 'flow-in'/'flow-out' channels.
 
 
 ifdef::add-copy-button-to-env-var[]

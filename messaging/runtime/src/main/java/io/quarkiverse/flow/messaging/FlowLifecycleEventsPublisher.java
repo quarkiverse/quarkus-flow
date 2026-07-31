@@ -15,10 +15,10 @@ public class FlowLifecycleEventsPublisher extends ContentBasedRouterEventsPublis
 
     @Inject
     @Channel(CHANNEL_NAME)
-    MutinyEmitter<byte[]> out;
+    MutinyEmitter<String> out;
 
     @Override
-    protected MutinyEmitter<byte[]> outEmitter() {
+    protected MutinyEmitter<String> outEmitter() {
         return out;
     }
 

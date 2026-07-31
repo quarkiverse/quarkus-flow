@@ -4,13 +4,15 @@ import static io.quarkiverse.flow.runner.security.AuthzConsts.CLAIM_NAMESPACES;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.json.JsonString;
+import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
@@ -92,7 +94,7 @@ public class NamespaceAuthorizationService {
         }
 
         if (attr == null) {
-            return null; // All namespaces allowed
+            return Set.of();
         }
 
         return convertToSet(attr);
@@ -137,35 +139,94 @@ public class NamespaceAuthorizationService {
      */
     @SuppressWarnings("unchecked")
     private Set<String> convertToSet(Object attr) {
-        if (attr instanceof Set) {
-            return (Set<String>) attr;
-        } else if (attr instanceof Collection) {
-            return new HashSet<>((Collection<String>) attr);
-        } else if (attr instanceof String ns) {
-            // Handle JSON array string: ["ns1","ns2"] or ["ns1", "ns2"]
-            if (ns.startsWith("[") && ns.endsWith("]")) {
+        if (attr instanceof Collection<?> collection) {
+            return collection.stream()
+                    .map(this::normalizeNamespaceValue)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toUnmodifiableSet());
+        }
+
+        if (attr instanceof JsonNode jsonNode) {
+            if (jsonNode.isNull() || jsonNode.isMissingNode()) {
+                return Set.of();
+            }
+
+            if (jsonNode.isArray()) {
+                return StreamSupport.stream(jsonNode.spliterator(), false)
+                        .map(this::normalizeNamespaceValue)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toUnmodifiableSet());
+            }
+
+            String value = normalizeNamespaceValue(jsonNode);
+            return value == null ? Set.of() : Set.of(value);
+        }
+
+        if (attr instanceof String rawValue) {
+            String value = rawValue.trim();
+
+            if (value.isEmpty()) {
+                return Set.of();
+            }
+
+            // JSON array represented as a string.
+            if (value.startsWith("[") && value.endsWith("]")) {
                 try {
-                    JsonNode jsonNode = objectMapper.readTree(ns);
+                    JsonNode jsonNode = objectMapper.readTree(value);
+
                     if (jsonNode.isArray()) {
-                        return StreamSupport.stream(jsonNode.spliterator(), false)
-                                .map(JsonNode::asText)
-                                .filter(s -> !s.isBlank())
-                                .collect(Collectors.toSet());
+                        return StreamSupport.stream(
+                                jsonNode.spliterator(),
+                                false)
+                                .map(this::normalizeNamespaceValue)
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toUnmodifiableSet());
                     }
-                } catch (Exception e) {
-                    // Not valid JSON, fall through to other parsing strategies
+                } catch (Exception ignored) {
+                    // Not valid JSON; continue with the other formats.
                 }
             }
-            // Handle comma-separated string: ns1,ns2
-            if (ns.contains(",")) {
-                return Arrays.stream(ns.split(","))
+
+            if (value.contains(",")) {
+                return Arrays.stream(value.split(","))
                         .map(String::trim)
-                        .filter(s -> !s.isBlank())
-                        .collect(Collectors.toSet());
+                        .filter(namespace -> !namespace.isEmpty())
+                        .collect(Collectors.toUnmodifiableSet());
             }
-            return ns.isBlank() ? null : Set.of(ns);
+
+            return Set.of(value);
         }
-        return Set.of(attr.toString());
+
+        String value = normalizeNamespaceValue(attr);
+        return value == null ? Set.of() : Set.of(value);
     }
 
+    private String claimValueAsString(Object value) {
+        if (value == null || value == JsonValue.NULL) {
+            return null;
+        }
+
+        if (value instanceof JsonString jsonString) {
+            return jsonString.getString();
+        }
+
+        if (value instanceof JsonNode jsonNode) {
+            return jsonNode.isNull() || jsonNode.isMissingNode()
+                    ? null
+                    : jsonNode.asText();
+        }
+
+        return value.toString();
+    }
+
+    private String normalizeNamespaceValue(Object value) {
+        String namespace = claimValueAsString(value);
+
+        if (namespace == null) {
+            return null;
+        }
+
+        namespace = namespace.trim();
+        return namespace.isEmpty() ? null : namespace;
+    }
 }

@@ -23,7 +23,7 @@ public class TokenExchangeGrantTypeFlow extends Flow {
     @Override
     public Workflow descriptor() {
         return FlowWorkflowBuilder.workflow(
-                "token-exchange", "quarkus.flow")
+                "token-exchange", "quarkus-flow")
                 .use(use -> use.secrets("exchangeSecrets"))
                 .tasks(
                         FlowDSL.http()

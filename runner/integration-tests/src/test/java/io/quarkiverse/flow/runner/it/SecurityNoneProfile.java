@@ -16,6 +16,9 @@ public class SecurityNoneProfile implements QuarkusTestProfile {
                 // Disable security (development mode)
                 "quarkus.flow.runner.security.type", "none",
 
+                // Disable the default OIDC tenant in every non-OIDC user
+                "quarkus.oidc.tenant-enabled", "false",
+
                 // Use random port to avoid conflicts
                 "quarkus.http.test-port", "0",
 

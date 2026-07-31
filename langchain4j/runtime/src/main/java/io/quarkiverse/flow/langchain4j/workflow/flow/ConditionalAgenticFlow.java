@@ -43,7 +43,6 @@ public abstract class ConditionalAgenticFlow extends AgenticFlow {
     }
 
     @Override
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     public Workflow descriptor() {
         Map<Integer, Predicate<AgenticScope>> predicates = activationPredicates();
 

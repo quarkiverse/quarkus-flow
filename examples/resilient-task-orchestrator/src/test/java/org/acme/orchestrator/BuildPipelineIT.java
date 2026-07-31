@@ -1,7 +1,6 @@
 package org.acme.orchestrator;
 
-import io.cloudevents.CloudEvent;
-import io.cloudevents.jackson.JsonFormat;
+import io.smallrye.reactive.messaging.ce.CloudEventMetadata;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
@@ -13,6 +12,7 @@ import org.acme.orchestrator.model.TaskState;
 import org.acme.orchestrator.model.TaskStatus;
 import org.acme.orchestrator.service.TaskStateStore;
 import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,14 +48,13 @@ class BuildPipelineIT {
 
     private static final Logger LOG = LoggerFactory.getLogger(BuildPipelineIT.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
-    private static final JsonFormat CE_JSON = new JsonFormat();
 
     @Inject
     TaskStateStore stateStore;
 
     @Inject
     @Channel("flow-in")
-    io.smallrye.mutiny.Multi<byte[]> flowInEvents;
+    io.smallrye.mutiny.Multi<Message<String>> flowInEvents;
 
     // Track emitted events across tests
     private Set<String> emittedTaskIds;
@@ -66,14 +65,15 @@ class BuildPipelineIT {
         emittedTaskIds = ConcurrentHashMap.newKeySet();
 
         // Subscribe to flow-in events to track which tasks were actually emitted
-        flowInEvents.subscribe().with(eventBytes -> {
+        flowInEvents.subscribe().with(msg -> {
             try {
-                CloudEvent ce = CE_JSON.deserialize(eventBytes);
-                if (ce.getType().equals("org.acme.build.task.started")) {
-                    BuildTask task = objectMapper.readValue(ce.getData().toBytes(), BuildTask.class);
+                CloudEventMetadata<?> ceMeta = msg.getMetadata(CloudEventMetadata.class).orElse(null);
+                if (ceMeta != null && "org.acme.build.task.started".equals(ceMeta.getType())) {
+                    BuildTask task = objectMapper.readValue(msg.getPayload().getBytes(), BuildTask.class);
                     emittedTaskIds.add(task.id());
                     LOG.info("Task started event captured: {}", task.id());
                 }
+                msg.ack();
             } catch (Exception e) {
                 LOG.error("Failed to process event", e);
             }

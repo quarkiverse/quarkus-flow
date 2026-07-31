@@ -300,7 +300,7 @@ abstract class Step<SELF extends Step<SELF, B>, B> implements FuncTaskConfigurer
      * @return this step for method chaining
      * @see io.quarkiverse.flow.dsl.spi.FuncTransformations#outputAs(Function, Class)
      */
-    public <T, R> SELF outputAs(Function<T, R> function, Class<T> taskResultClass) {
+    public <T, R> SELF outputAs(SerializableFunction<T, R> function, Class<T> taskResultClass) {
         postConfigurers.add(b -> ((FuncTaskTransformations<?>) b).outputAs(function, taskResultClass));
         return self();
     }
@@ -474,7 +474,7 @@ abstract class Step<SELF extends Step<SELF, B>, B> implements FuncTaskConfigurer
      * @return this step for method chaining
      * @see io.quarkiverse.flow.dsl.spi.FuncTransformations#inputFrom(Function, Class)
      */
-    public <T, R> SELF inputFrom(Function<T, R> function, Class<T> inputClass) {
+    public <T, R> SELF inputFrom(SerializableFunction<T, R> function, Class<T> inputClass) {
         postConfigurers.add(b -> ((FuncTaskTransformations<?>) b).inputFrom(function, inputClass));
         return self();
     }

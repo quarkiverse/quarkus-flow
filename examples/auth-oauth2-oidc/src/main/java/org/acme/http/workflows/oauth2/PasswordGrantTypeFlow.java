@@ -22,7 +22,7 @@ public class PasswordGrantTypeFlow extends Flow {
     @Override
     public Workflow descriptor() {
         return FlowWorkflowBuilder.workflow(
-                "grant-type-password", "quarkus.flow")
+                "grant-type-password", "quarkus-flow")
                 .use(u -> u.secrets("password-grant"))
                 .tasks(
                         FlowDSL.http()

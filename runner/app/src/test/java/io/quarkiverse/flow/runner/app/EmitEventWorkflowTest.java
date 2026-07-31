@@ -7,7 +7,6 @@ import static org.awaitility.Awaitility.await;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.Any;
 import jakarta.inject.Inject;
@@ -17,14 +16,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.cloudevents.CloudEvent;
-import io.cloudevents.core.provider.EventFormatProvider;
-import io.cloudevents.jackson.JsonFormat;
 import io.quarkiverse.flow.runner.model.ExecutionResponse;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.serverlessworkflow.impl.WorkflowStatus;
+import io.smallrye.reactive.messaging.ce.CloudEventMetadata;
 import io.smallrye.reactive.messaging.memory.InMemoryConnector;
 import io.smallrye.reactive.messaging.memory.InMemorySink;
 
@@ -34,9 +31,6 @@ import io.smallrye.reactive.messaging.memory.InMemorySink;
 @QuarkusTest
 @TestProfile(EmitEventWorkflowTest.MessagingProfile.class)
 class EmitEventWorkflowTest {
-
-    private static final JsonFormat CE_JSON = (JsonFormat) EventFormatProvider.getInstance()
-            .resolveFormat(JsonFormat.CONTENT_TYPE);
 
     @Inject
     @Any
@@ -72,26 +66,20 @@ class EmitEventWorkflowTest {
 
         // And - Verify event was emitted to flow-out channel
         await().atMost(ofSeconds(5)).untilAsserted(() -> {
-            InMemorySink<byte[]> sink = connector.sink("flow-out");
+            InMemorySink<String> sink = connector.sink("flow-out");
 
-            // Deserialize CloudEvent payloads from byte arrays
-            List<CloudEvent> events = sink.received().stream()
-                    .map(Message::getPayload)
-                    .map(CE_JSON::deserialize)
-                    .collect(Collectors.toList());
-
-            assertThat(events)
+            List<? extends Message<String>> messages = sink.received();
+            assertThat(messages)
                     .as("Events should have been emitted to flow-out channel")
                     .isNotEmpty();
 
-            CloudEvent event = events.get(0);
-            assertThat(event.getType()).isEqualTo("org.quarkiverse.flow.runner.app.response");
-            assertThat(event.getSource().toString()).isEqualTo("uri://org.quarkiverse.flow.runner.app.test");
+            Message<String> msg = messages.get(0);
+            CloudEventMetadata<?> ceMeta = msg.getMetadata(CloudEventMetadata.class).orElse(null);
+            assertThat(ceMeta).as("Message should carry CloudEvent metadata").isNotNull();
+            assertThat(ceMeta.getType()).isEqualTo("org.quarkiverse.flow.runner.app.response");
+            assertThat(ceMeta.getSource().toString()).isEqualTo("uri://org.quarkiverse.flow.runner.app.test");
 
-            // Verify the event data contains the transformed input
-            assertThat(event.getData()).isNotNull();
-            String eventData = new String(event.getData().toBytes());
-            assertThat(eventData).contains("Test User");
+            assertThat(msg.getPayload()).contains("Test User");
         });
     }
 

@@ -14,7 +14,7 @@ The example include a REST service exposing APIs to start a new workflow, suspen
 The API that creates the workflow returns an identifier. That identifier can be used to call other services to suspend, resume and cancel that workflow execution. 
 
 The example persist workflow execution progress using MVStore DB, which writes information to a local file (location can be changed using `quarkus.flow.persistence.mvstore.db-path` property)
-If user stops the JVM and run another one, workflow execution is automatically restored. This means that if any workflow was running before Quarkus was stopped, it will continue running when restarted. If it was suspended, it will remain suspended till restored. And, at any moment, user can cancel the execution (once cancelled, the workflow instance does not exist anymore) 
+If user stops the JVM and run another one, workflow execution is automatically restored. This means that if any workflow was running before Quarkus was stopped, it will continue running when restarted. If it was suspended, it will remain suspended till resumed. And, at any moment, user can cancel the execution (once cancelled, the workflow instance does not exist anymore) 
 
 ---
 

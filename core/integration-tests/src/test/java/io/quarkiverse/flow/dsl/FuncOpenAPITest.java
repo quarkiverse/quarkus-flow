@@ -4,7 +4,9 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static io.quarkiverse.flow.dsl.FlowDSL.openapi;
+import static io.quarkiverse.flow.dsl.TestSerializationUtils.writeAndReadInMemory;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 
@@ -38,7 +40,7 @@ public class FuncOpenAPITest {
     }
 
     @Test
-    void test_openapi_document_with_non_jq_uri_string() {
+    void test_openapi_document_with_non_jq_uri_string() throws IOException {
         int port = WireMockTestResource.server.port();
 
         String mockedSwaggerDoc = """
@@ -88,7 +90,7 @@ public class FuncOpenAPITest {
                                 .parameters(Map.of("status", "available")))
                 .build();
 
-        WorkflowDefinition def = app.workflowDefinition(w);
+        WorkflowDefinition def = app.workflowDefinition(writeAndReadInMemory(w));
         WorkflowInstance instance = def.instance(Map.of());
         WorkflowModel model = instance.start().join();
 

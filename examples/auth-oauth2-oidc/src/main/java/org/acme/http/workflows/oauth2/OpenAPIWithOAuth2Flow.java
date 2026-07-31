@@ -21,7 +21,7 @@ public class OpenAPIWithOAuth2Flow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FlowWorkflowBuilder.workflow()
+        return FlowWorkflowBuilder.workflow("openapi-with-oauth2", "quarkus-flow")
                 .use(u -> u.secrets("openapi"))
                 .tasks(t -> {
                     t.openapi("imageService", f ->
