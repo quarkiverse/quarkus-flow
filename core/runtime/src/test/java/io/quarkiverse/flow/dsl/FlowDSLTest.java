@@ -19,12 +19,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.cloudevents.CloudEvent;
 import io.quarkiverse.flow.dsl.types.FilterFunction;
 import io.serverlessworkflow.api.types.CallFunction;
 import io.serverlessworkflow.api.types.CallGRPC;
@@ -37,6 +40,8 @@ import io.serverlessworkflow.api.types.RunWorkflow;
 import io.serverlessworkflow.api.types.Task;
 import io.serverlessworkflow.api.types.TaskItem;
 import io.serverlessworkflow.api.types.Workflow;
+import io.serverlessworkflow.impl.WorkflowApplication;
+import io.serverlessworkflow.impl.events.EventPublisher;
 
 /** Tests for Step chaining (exportAs/when) over function/emit/listen. */
 class FlowDSLTest {
@@ -123,17 +128,44 @@ class FlowDSLTest {
     }
 
     @Test
-    @DisplayName("emit helpers leave the CloudEvent source unset, so the SDK resolves it at runtime")
-    void emit_helpers_leave_source_unset() {
+    @DisplayName("emit helpers leave the CloudEvent source blank, so the SDK fills in the default at runtime")
+    void emit_helpers_leave_source_unset() throws Exception {
         Workflow wf = FlowWorkflowBuilder.workflow("emit-default-source")
                 .tasks(emit(producedJson("org.acme.created", String.class)))
                 .build();
 
         EmitTask et = wf.getDo().get(0).getTask().getEmitTask();
         assertNotNull(et, "EmitTask expected");
-        assertNull(
-                et.getEmit().getEvent().getWith().getSource(),
-                "source should be left unset so EmitSourceResolver can default it to /{appId}/{namespace}/{name}/{version}");
+        assertNull(et.getEmit().getEvent().getWith().getSource(), "source should be left unset in the DSL");
+
+        List<CloudEvent> published = new ArrayList<>();
+        try (WorkflowApplication app = WorkflowApplication.builder()
+                .withId("test-app")
+                .withEventPublisher(new EventPublisher() {
+                    @Override
+                    public CompletableFuture<Void> publish(CloudEvent event) {
+                        published.add(event);
+                        return CompletableFuture.completedFuture(null);
+                    }
+
+                    @Override
+                    public void publishLifeCycle(CloudEvent event) {
+                        // ignore workflow lifecycle events, we only care about the emitted business event
+                    }
+
+                    @Override
+                    public void close() {
+                    }
+                })
+                .build()) {
+            app.workflowDefinition(wf).instance("hello").start().join();
+        }
+
+        assertEquals(1, published.size(), "the emit task should have published exactly one CloudEvent");
+        assertEquals(
+                "/test-app/org-acme/emit-default-source/0.0.1",
+                published.get(0).getSource().toString(),
+                "SDK's EmitSourceResolver should default the source to /{appId}/{namespace}/{name}/{version}");
     }
 
     @Test
