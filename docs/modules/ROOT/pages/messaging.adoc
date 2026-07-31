@@ -45,6 +45,36 @@ Once enabled, the engine creates two default channels:
 * `flow-in` (Inbound): Consumes CloudEvents (structured or binary) to start or wake up workflows.
 * `flow-out` (Outbound): Publishes CloudEvents emitted by workflows via SmallRye's `OutgoingCloudEventMetadata`.
 
+=== Dev/test shortcut: automatic messaging configuration with DevServices
+
+In dev and test mode, instead of manually enabling the bridge and configuring every `mp.messaging.*` property, you can let Quarkus Flow set up the full messaging stack automatically with a single flag:
+
+[source,properties]
+----
+quarkus.flow.messaging.devservices-messaging-enabled=true
+----
+
+This single property:
+
+* Enables the default messaging bridge (`quarkus.flow.messaging.defaults-enabled=true`)
+* Enables lifecycle events (`quarkus.flow.messaging.lifecycle-enabled=true`)
+* Detects the Quarkus Messaging connector on the classpath and configures the three default channels (`flow-in`, `flow-out`, `flow-lifecycle-out`) accordingly:
+** *Kafka* (`quarkus-messaging-kafka`) — `connector=smallrye-kafka`, `topic=<channel name>`, `String` serializers/deserializers on each channel (the bridge payload is the CloudEvent JSON as `String`)
+** *AMQP* (`quarkus-messaging-amqp`) — `connector=smallrye-amqp`, `address=<channel name>` on each channel
+* Triggers Quarkus DevServices to start an ephemeral broker for the detected connector automatically
+
+You can override any of the injected defaults in your `application.properties` — the injected values are low-priority defaults.
+
+[NOTE]
+====
+If no supported connector — or more than one — is present, Quarkus Flow injects nothing: with an ambiguous or missing connector you must configure the `mp.messaging.*` channels manually. A warning is logged in that case, unless the default channels are already configured in your `application.properties` (then the flag quietly steps aside).
+====
+
+[IMPORTANT]
+====
+This shortcut only applies in dev and test mode. In production you must activate the bridge with `quarkus.flow.messaging.defaults-enabled=true` and map the channels to your broker as shown in the next section.
+====
+
 == 2. Map channels to Kafka topics
 
 Configure MicroProfile Reactive Messaging to connect the default Flow channels to your Kafka topics.
