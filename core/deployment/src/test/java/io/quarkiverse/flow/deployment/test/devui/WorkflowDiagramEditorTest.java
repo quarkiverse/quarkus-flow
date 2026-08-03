@@ -23,7 +23,7 @@ import com.microsoft.playwright.options.WaitForSelectorState;
 
 import io.quarkus.test.QuarkusDevModeTest;
 
-public class WorkflowDiagramEditorIT {
+public class WorkflowDiagramEditorTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest devMode = new QuarkusDevModeTest()
