@@ -2,8 +2,8 @@
 
 **Labels:** `test`, `dev-ui`, `enhancement`
 **Module:** `core/deployment`
-**Test type:** Integration Test (IT) — Playwright
-**Existing test file:** `WorkflowDiagramEditorIT.java`
+**Test type:** Dev Mode Test — Playwright
+**Existing test file:** `WorkflowDiagramEditorTest.java`
 
 ---
 
@@ -23,13 +23,13 @@ There is currently **no automated test** that validates this full round-trip end
 - That the JSON serialised by the backend is *semantically equivalent* to the original workflow definition (no field loss, no mutation introduced by the integration layer).
 - That the original `Workflow` Java object is **not mutated** by the serialisation or RPC call (side-effect check).
 
-`WorkflowDiagramEditorIT` already exists and uses raw `com.microsoft.playwright` API directly, but it does not yet cover the full round-trip, does not use the `quarkus-playwright` extension, and does not validate semantic equivalence of the definition.
+`WorkflowDiagramEditorTest` already exists and uses raw `com.microsoft.playwright` API directly, but it does not yet cover the full round-trip, does not use the `quarkus-playwright` extension, and does not validate semantic equivalence of the definition.
 
 ---
 
 ## Proposed Solution
 
-### 1. Extend `WorkflowDiagramEditorIT` with `@QuarkusPlaywright`
+### 1. Extend `WorkflowDiagramEditorTest` with `@QuarkusPlaywright`
 
 Migrate the test class to use the `quarkus-playwright` extension (`io.quarkiverse.playwright:quarkus-playwright`, already present as a test dependency in `core/deployment/pom.xml` at version `${io.quarkiverse.playwright}`). This replaces the manual `Playwright.create()` / `Browser` lifecycle management with the CDI-managed `@InjectPlaywright` and `@InjectPage` mechanism.
 
@@ -58,15 +58,15 @@ Place the Playwright-based round-trip test in a new file alongside the existing 
 
 ```
 core/deployment/src/test/java/io/quarkiverse/flow/deployment/test/devui/
-  WorkflowDiagramEditorRoundTripIT.java   ← new (Playwright round-trip)
-  WorkflowDiagramEditorIT.java            ← existing (keep, extend or supersede)
+  WorkflowDiagramEditorRoundTripTest.java   ← new (Playwright round-trip)
+  WorkflowDiagramEditorTest.java            ← existing (keep, extend or supersede)
 ```
 
 Skeleton structure (pseudo-code):
 
 ```java
 @QuarkusPlaywright   // from io.quarkiverse.playwright
-class WorkflowDiagramEditorRoundTripIT {
+class WorkflowDiagramEditorRoundTripTest {
 
     @RegisterExtension
     static QuarkusDevModeTest devMode = new QuarkusDevModeTest()
@@ -150,7 +150,7 @@ class WorkflowDefinitionRoundTripJsonRPCTest extends DevUIJsonRPCTest {
 
 ## Acceptance Criteria
 
-- [ ] Tests live in `core/deployment` test sources, run as ITs (`*IT.java`) via Failsafe with `-DskipITs=false`.
+- [ ] Tests live in `core/deployment` test sources, run as `*Test.java` via Surefire with `mvn test`.
 - [ ] Use `@QuarkusPlaywright` / `@InjectPage` from `quarkus-playwright` — no manual Playwright lifecycle.
 - [ ] Both Java DSL and YAML-based workflows are covered as parametrised cases.
 - [ ] Rendering round-trip is validated: the DOM node matching each workflow task is found with the correct `data-testid` and text.
@@ -171,10 +171,10 @@ class WorkflowDefinitionRoundTripJsonRPCTest extends DevUIJsonRPCTest {
 
 ## Related
 
-- Existing test: `core/deployment/src/test/java/…/devui/WorkflowDiagramEditorIT.java`
+- Existing test: `core/deployment/src/test/java/…/devui/WorkflowDiagramEditorTest.java`
 - Existing JSON-RPC test: `FlowWorkflowDefinitionDevUIJsonRPCTest.java`
 - Integration layer: `WorkflowRPCService#getWorkflowDefinition` (`core/runtime-dev`)
 - Frontend entry: `openworkflowspec-diagram-editor.js` (`core/deployment/src/main/resources/dev-ui`)
 - Playwright version property: `${io.quarkiverse.playwright}` = `2.3.7` (defined in root `pom.xml`)
 
-> **Note on the existing `WorkflowDiagramEditorIT`:** The file already exists and validates loading state and node rendering using raw Playwright API. The new suite either extends it to adopt `@QuarkusPlaywright` or adds a parallel class. The decision is left to the implementer — both approaches are valid; the round-trip and side-effect tests are the new value-add.
+> **Note on the existing `WorkflowDiagramEditorTest`:** The file already exists and validates loading state and node rendering using raw Playwright API. The new suite either extends it to adopt `@QuarkusPlaywright` or adds a parallel class. The decision is left to the implementer — both approaches are valid; the round-trip and side-effect tests are the new value-add.
