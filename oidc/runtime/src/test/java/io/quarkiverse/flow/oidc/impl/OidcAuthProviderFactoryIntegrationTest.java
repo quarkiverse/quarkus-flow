@@ -62,10 +62,9 @@ class OidcAuthProviderFactoryIntegrationTest {
         }
 
         mockListener = mock(OidcClientWorkflowRegistrar.class);
-        RuntimeExpressionResolver mockExpressionResolver = mock(RuntimeExpressionResolver.class);
         OidcConfigResolver mockConfigResolver = mock(OidcConfigResolver.class);
 
-        factory = new OidcAuthProviderFactory(registry, mockListener, mockExpressionResolver, mockConfigResolver);
+        factory = new OidcAuthProviderFactory(registry, mockListener, mockConfigResolver);
     }
 
     @Test

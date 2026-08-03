@@ -49,10 +49,9 @@ class OidcAuthProviderFactoryTest {
         mockRegistry = mock(OidcClientRegistry.class);
         mockListener = mock(OidcClientWorkflowRegistrar.class);
 
-        RuntimeExpressionResolver mockResolver = mock(RuntimeExpressionResolver.class);
         OidcConfigResolver mockConfigResolver = mock(OidcConfigResolver.class);
 
-        factory = new OidcAuthProviderFactory(mockRegistry, mockListener, mockResolver, mockConfigResolver);
+        factory = new OidcAuthProviderFactory(mockRegistry, mockListener, mockConfigResolver);
 
         // Setup workflow definition mocks
         mockDefinition = mock(WorkflowDefinition.class);

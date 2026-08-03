@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.oidc.impl.OidcAuthProviderFactory;
-import io.quarkiverse.flow.oidc.impl.RuntimeExpressionResolver;
 import io.quarkiverse.flow.oidc.registry.OidcClientRegistry;
 import io.quarkiverse.flow.oidc.registry.OidcClientWorkflowRegistrar;
 import io.quarkiverse.flow.oidc.registry.OidcConfigResolver;
@@ -33,9 +32,6 @@ public class FlowOidcAuthCustomizer implements WorkflowApplicationBuilderCustomi
     OidcClientWorkflowRegistrar workflowRegistrar;
 
     @Inject
-    RuntimeExpressionResolver expressionResolver;
-
-    @Inject
     OidcConfigResolver configResolver;
 
     @Override
@@ -44,7 +40,7 @@ public class FlowOidcAuthCustomizer implements WorkflowApplicationBuilderCustomi
             LOG.info("Flow OIDC: disabled; SDK default OAuth2/OIDC token negotiation in effect.");
             return;
         }
-        OidcAuthProviderFactory factory = new OidcAuthProviderFactory(clientRegistry, workflowRegistrar, expressionResolver,
+        OidcAuthProviderFactory factory = new OidcAuthProviderFactory(clientRegistry, workflowRegistrar,
                 configResolver);
         LOG.info("Flow OIDC: Registering OidcAuthProviderFactory: {}", factory);
         builder.withAuthProviderFactory(factory);
