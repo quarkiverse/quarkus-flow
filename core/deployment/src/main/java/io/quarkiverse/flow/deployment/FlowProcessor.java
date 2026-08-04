@@ -238,7 +238,7 @@ class FlowProcessor {
         }
 
         List<DiscoveredWorkflowBuildItem> fromSpec = discoveredWorkflows.stream()
-                .filter(DiscoveredWorkflowBuildItem::fromSpec)
+                .filter(workflow -> workflow.fromSpec() || workflow.fromDependencySpec())
                 .toList();
 
         for (DiscoveredWorkflowBuildItem d : fromSpec) {
@@ -298,7 +298,8 @@ class FlowProcessor {
             WorkflowDefinitionRecorder recorder,
             FlowDefinitionsConfig flowDefinitionsConfig) {
 
-        List<DiscoveredWorkflowBuildItem> fromSpec = workflows.stream().filter(DiscoveredWorkflowBuildItem::fromSpec)
+        List<DiscoveredWorkflowBuildItem> fromSpec = workflows.stream()
+                .filter(workflow -> workflow.fromSpec() || workflow.fromDependencySpec())
                 .toList();
 
         GeneratedBeanGizmoAdaptor gizmo = new GeneratedBeanGizmoAdaptor(classes);
@@ -358,8 +359,10 @@ class FlowProcessor {
 
         // Watch workflow resource files for changes in dev mode
         // Since workflows are now loaded from classpath resources, we watch the resource paths
+        // Dependency-provided paths are a no-op for packaged JARs, but enable live reload when
+        // the dependency is a local module in a multi-module dev mode workspace
         List<String> resourcePaths = workflows.stream()
-                .filter(DiscoveredWorkflowBuildItem::fromSpec)
+                .filter(workflow -> workflow.fromSpec() || workflow.fromDependencySpec())
                 .map(DiscoveredWorkflowBuildItem::definitionResourcePath)
                 .toList();
 
