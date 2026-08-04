@@ -7,6 +7,7 @@ import static io.quarkus.arc.processor.DotNames.SINGLETON;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -349,9 +350,12 @@ class FlowProcessor {
 
         // Watch workflow resource files for changes in dev mode
         // Since workflows are now loaded from classpath resources, we watch the resource paths
+        // Dependency-provided paths are a no-op for packaged JARs, but enable live reload when
+        // the dependency is a local module in a multi-module dev mode workspace
         List<String> resourcePaths = workflows.stream()
-                .filter(DiscoveredWorkflowBuildItem::fromSpec)
+                .filter(workflow -> workflow.fromSpec() || workflow.fromRootArchive())
                 .map(DiscoveredWorkflowBuildItem::definitionResourcePath)
+                .filter(Objects::nonNull)
                 .toList();
 
         for (String resourcePath : resourcePaths) {
