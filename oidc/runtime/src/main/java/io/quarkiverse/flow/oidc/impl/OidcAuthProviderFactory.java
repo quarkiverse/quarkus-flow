@@ -83,7 +83,7 @@ public class OidcAuthProviderFactory extends DefaultAuthProviderFactory {
             OAuth2AuthenticationData authData) {
         if (authData.getGrant() == OAuth2AuthenticationDataGrant.PASSWORD) {
             WorkflowValueResolver<String> userFilter = WorkflowUtils.buildStringFilter(app, authData.getUsername());
-            WorkflowValueResolver<String> passwordFilter = WorkflowUtils.buildStringFilter(app, authData.getUsername());
+            WorkflowValueResolver<String> passwordFilter = WorkflowUtils.buildStringFilter(app, authData.getPassword());
             return (workflow, task, model) -> {
                 Map<String, String> params = new HashMap<>();
                 String username = userFilter.apply(workflow, task, model);

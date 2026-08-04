@@ -1,8 +1,8 @@
 package io.quarkiverse.flow.oidc.impl;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import io.quarkiverse.flow.oidc.registry.EndpointKey;
@@ -64,24 +64,24 @@ public final class OidcClientAuthProvider implements AuthProvider {
     @Override
     public CompletableFuture<String> content(WorkflowContext workflow, TaskContext task, WorkflowModel model, URI uri) {
         // First get the configured static OidcClients built in build-time or configured by users
-        final Optional<String> namedOidc = configResolver.resolveOidcClientName(workflow.definition().id(), task.taskName(),
-                authPolicyName);
-        OidcClient client = clientRegistry.get(namedOidc.orElse(null));
+        OidcClient client = clientRegistry.get(configResolver.resolveOidcClientName(workflow.definition().id(), task.taskName(),
+                authPolicyName).orElse(null));
+        Duration connectionTimeout = configResolver.resolveConnectionTimeout(
+                workflow.definition().id(), task.taskName(), authPolicyName);
         // Let's try to configure/find the OidcClient in runtime (might require runtime expression evaluation)
         if (client == null) {
             final EndpointKey endpointKey = endPointKeyResolver.apply(workflow, task, model);
             client = clientRegistry.getByEndpoint(endpointKey);
             if (client == null) {
-                // Resolve both timeouts using cascade logic
                 client = clientWorkflowRegistrar.registerDynamicOidcClientFor(endpointKey,
                         configResolver.resolveCreationTimeout(
                                 workflow.definition().id(), task.taskName(), authPolicyName),
-                        configResolver.resolveConnectionTimeout(
-                                workflow.definition().id(), task.taskName(), authPolicyName));
-            }
-            if (client == null) {
-                throw new IllegalStateException("Unable to create OIDC client for " + workflow.definition().id() + ", task: "
-                        + task.taskName() + " to access URI " + uri);
+                        connectionTimeout);
+                if (client == null) {
+                    throw new IllegalStateException(
+                            "Unable to create OIDC client for " + workflow.definition().id() + ", task: "
+                                    + task.taskName() + " to access URI " + uri);
+                }
             }
         }
         // Resolve dynamic grant parameters (for token exchange)
@@ -89,6 +89,7 @@ public final class OidcClientAuthProvider implements AuthProvider {
         final Uni<Tokens> tokens = dynamicParams.isEmpty()
                 ? client.getTokens()
                 : client.getTokens(dynamicParams);
-        return tokens.subscribeAsCompletionStage().thenApply(t -> t.getAccessToken());
+        return tokens.ifNoItem().after(connectionTimeout).fail().subscribeAsCompletionStage()
+                .thenApply(t -> t.getAccessToken());
     }
 }

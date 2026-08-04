@@ -61,7 +61,7 @@ public class OidcClientWorkflowRegistrar {
                     createAndRegisterStaticClient(workflowId, policy);
                 } catch (Exception e) {
                     throw new IllegalStateException(
-                            "Failed to create OIDC client for workflow " + workflowId + "policy: " + policy.name(), e);
+                            "Failed to create OIDC client for workflow " + workflowId + " policy: " + policy.name(), e);
                 }
             }
         }
