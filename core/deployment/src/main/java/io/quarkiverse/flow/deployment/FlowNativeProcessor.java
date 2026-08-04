@@ -60,25 +60,22 @@ final class FlowNativeProcessor {
     @BuildStep
     ReflectiveClassBuildItem registerForReflection() {
         return ReflectiveClassBuildItem.builder(
+                // Jakarta validation's constraints used by the Open Workflow Specification sdk-java types.
                 "org.hibernate.validator.internal.constraintvalidators.bv.PatternValidator",
                 "org.hibernate.validator.internal.constraintvalidators.bv.NotNullValidator",
-                // Jackson serializers for WorkflowModel - needed when WorkflowModel is returned directly from REST endpoint
-                "io.serverlessworkflow.impl.model.jackson.JacksonModelSerializer",
-                "io.serverlessworkflow.impl.model.jackson.JacksonModelDeserializer",
-                // DSL Jackson serializers/deserializers
-                "io.quarkiverse.flow.dsl.serialization.jackson.FuncExportAsDeserializer",
-                "io.quarkiverse.flow.dsl.serialization.jackson.FuncExportAsSerializer",
-                "io.quarkiverse.flow.dsl.serialization.jackson.FuncInputFromDeserializer",
-                "io.quarkiverse.flow.dsl.serialization.jackson.FuncInputFromSerializer",
-                "io.quarkiverse.flow.dsl.serialization.jackson.FuncOutputAsDeserializer",
-                "io.quarkiverse.flow.dsl.serialization.jackson.FuncOutputAsSerializer",
-                "io.quarkiverse.flow.dsl.serialization.jackson.FunctionArgumentsDeserializer",
-                "io.quarkiverse.flow.dsl.serialization.jackson.FunctionArgumentsSerializer",
-                "io.quarkiverse.flow.dsl.serialization.jackson.FunctionDeserializer",
-                "io.quarkiverse.flow.dsl.serialization.jackson.SerializableFunctionSerializer",
-                "io.quarkiverse.flow.dsl.serialization.jackson.SerializedLambdaDeserializer",
-                "io.quarkiverse.flow.dsl.serialization.jackson.TaskMetadataDeserializer",
-                "io.quarkiverse.flow.dsl.serialization.jackson.TaskMetadataSerializer")
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArray",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArraysOfBoolean",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArraysOfByte",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArraysOfChar",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArraysOfDouble",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArraysOfFloat",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArraysOfInt",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArraysOfLong",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArraysOfPrimitives",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArraysOfShort",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForCharSequence",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForCollection",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForMap")
                 .queryConstructors(true)
                 .constructors(true)
                 .methods(true)
