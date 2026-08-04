@@ -21,9 +21,7 @@ class TestSerializationUtils {
     }
 
     static Workflow writeAndReadInMemory(Workflow workflow) throws IOException {
-        workflow = writeAndReadInMemory(workflow, WorkflowFormat.JSON);
-        workflow = writeAndReadInMemory(workflow, WorkflowFormat.YAML);
-        return workflow;
+        return writeAndReadInMemory(writeAndReadInMemory(workflow, WorkflowFormat.YAML), WorkflowFormat.JSON);
     }
 
     private static Workflow writeAndReadInMemory(Workflow workflow, WorkflowFormat format) throws IOException {
