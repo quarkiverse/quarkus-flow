@@ -60,8 +60,22 @@ final class FlowNativeProcessor {
     @BuildStep
     ReflectiveClassBuildItem registerForReflection() {
         return ReflectiveClassBuildItem.builder(
+                // Jakarta validation's constraints used by the Open Workflow Specification sdk-java types.
                 "org.hibernate.validator.internal.constraintvalidators.bv.PatternValidator",
                 "org.hibernate.validator.internal.constraintvalidators.bv.NotNullValidator",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArray",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArraysOfBoolean",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArraysOfByte",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArraysOfChar",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArraysOfDouble",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArraysOfFloat",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArraysOfInt",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArraysOfLong",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArraysOfPrimitives",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArraysOfShort",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForCharSequence",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForCollection",
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForMap",
                 // Jackson serializers for WorkflowModel - needed when WorkflowModel is returned directly from REST endpoint
                 "io.serverlessworkflow.impl.model.jackson.JacksonModelSerializer",
                 "io.serverlessworkflow.impl.model.jackson.JacksonModelDeserializer",
