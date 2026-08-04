@@ -51,6 +51,51 @@ In this case, Quarkus Flow uses `src/test/resources/flow/echo.yaml` during tests
 Only exact relative-path matches are overridden. For example, `src/test/resources/flow/echo.yaml` does *not* override `src/main/resources/flow/workflows/echo.yaml`.
 ====
 
+=== 1.1. Share workflows through dependency JARs
+
+Workflow files can also be contributed by JAR dependencies. Any *direct* dependency of the application that contains the configured definitions directory (default `flow/`) has its workflow files discovered at build time, exactly as if they were part of the application:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.acme</groupId>
+    <artifactId>workflow-library</artifactId>
+    <version>1.0.0</version>
+</dependency>
+----
+
+The library is a plain JAR — no Quarkus extension, Jandex index, or `beans.xml` required. It just needs to ship its workflow files under the same directory convention:
+
+[source]
+----
+workflow-library/
+└── src/main/resources/
+    └── flow/
+        └── a-workflow.yaml
+----
+
+Because discovery happens at build time, dependency-provided workflows get the same treatment as application workflows: build-time validation, CDI bean generation, and native image support.
+
+The following rules apply:
+
+* Only *direct* dependencies contribute workflows. Transitive dependencies are never scanned — if a workflow library is pulled in indirectly, declare it explicitly in the application to opt in to its workflows.
+* The scanned directory is determined by the *consuming application's* `quarkus.flow.definitions.dir`. Libraries should ship workflows under the default `flow/` directory unless all consumers agree on a custom one.
+* If the application defines a workflow with the same `namespace`, `name`, and `version` as a dependency-provided one, the *application definition wins* and the dependency's is ignored (a log message is emitted).
+* If two *different dependencies* provide the same `namespace`, `name`, and `version`, the build fails — rename one of them to resolve the ambiguity.
+* Files inside dependency JARs are not live-reloaded in dev mode. To pick up changes, rebuild and reinstall the library (standard multi-module dev mode workspace support applies).
+
+To restrict discovery to the application's own resources, disable dependency scanning:
+
+[source,properties]
+----
+quarkus.flow.definitions.scan-dependencies=false
+----
+
+[NOTE]
+====
+Workflows written with the Java DSL (classes extending `Flow`) inside a dependency JAR are discovered through CDI bean discovery instead. For that, the dependency must be indexed — for example by adding a `META-INF/beans.xml`, the Jandex Maven plugin, or `quarkus.index-dependency.*` entries in the application.
+====
+
 == 2. Inject the `Flow` bean
 
 During the Quarkus build, the engine parses your YAML files and generates `WorkflowDefinition` and `Flow` CDI beans for them.
