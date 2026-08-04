@@ -54,26 +54,18 @@ public class OidcClientWorkflowRegistrar {
     public void registerStaticOidcClientsFor(Workflow workflow) {
         final WorkflowDefinitionId workflowId = WorkflowDefinitionId.of(workflow);
         // guardrail for concurrency
-        if (!processedWorkflows.add(workflowId))
-            // skips if we already processed it
-            return;
-
-        try {
+        if (processedWorkflows.add(workflowId)) {
             final List<TokenAuthPolicy> policies = TokenAuthPolicyExtractor.extractStaticTokenAuthPolicies(workflow);
-
             for (TokenAuthPolicy policy : policies) {
                 try {
                     createAndRegisterStaticClient(workflowId, policy);
                 } catch (Exception e) {
                     throw new IllegalStateException(
-                            "Failed to create OIDC client for policy: " + policy.name(), e);
+                            "Failed to create OIDC client for workflow " + workflowId + " policy: " + policy.name(), e);
                 }
             }
-            processedWorkflows.add(workflowId);
-        } catch (Exception e) {
-            processedWorkflows.remove(workflowId);
-            throw e;
         }
+
     }
 
     private void createAndRegisterStaticClient(WorkflowDefinitionId workflowId, TokenAuthPolicy policy) {

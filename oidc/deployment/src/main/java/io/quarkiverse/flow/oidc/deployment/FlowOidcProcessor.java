@@ -49,7 +49,6 @@ public class FlowOidcProcessor {
                 .addBeanClass("io.quarkiverse.flow.oidc.registry.OidcClientRegistry")
                 .addBeanClass("io.quarkiverse.flow.oidc.registry.OidcClientWorkflowRegistrar")
                 .addBeanClass("io.quarkiverse.flow.oidc.registry.OidcConfigResolver")
-                .addBeanClass("io.quarkiverse.flow.oidc.impl.RuntimeExpressionResolver")
                 .setUnremovable()
                 .build());
     }
