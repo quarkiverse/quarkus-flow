@@ -349,8 +349,10 @@ class FlowProcessor {
 
         // Watch workflow resource files for changes in dev mode
         // Since workflows are now loaded from classpath resources, we watch the resource paths
+        // Files inside dependency JARs cannot be hot-reloaded, so only root archive files are watched
         List<String> resourcePaths = workflows.stream()
                 .filter(DiscoveredWorkflowBuildItem::fromSpec)
+                .filter(DiscoveredWorkflowBuildItem::fromRootArchive)
                 .map(DiscoveredWorkflowBuildItem::definitionResourcePath)
                 .toList();
 

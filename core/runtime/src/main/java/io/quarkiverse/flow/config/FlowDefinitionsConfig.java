@@ -53,6 +53,22 @@ public interface FlowDefinitionsConfig {
     Optional<String> dir();
 
     /**
+     * Whether workflow definition files should also be discovered inside dependency JARs
+     * present on the application classpath.
+     * <p>
+     * When enabled, any dependency containing the configured definitions directory
+     * (see <code>quarkus.flow.definitions.dir</code>) contributes its workflow files at
+     * build time, exactly as if they were part of the application. Workflows provided by
+     * the application always override dependency-provided workflows with the same
+     * <code>namespace:name:version</code> identifier. The same identifier provided by two
+     * different dependencies fails the build.
+     * <p>
+     * Set to <code>false</code> to only discover workflows from the application's own resources.
+     */
+    @WithDefault("true")
+    boolean scanDependencies();
+
+    /**
      * Naming strategy to be used when generating {@link Identifier#value()} for {@link io.quarkiverse.flow.Flow} and
      * {@link io.serverlessworkflow.impl.WorkflowDefinition} beans generated from YAML/JSON DSL.
      * <p>
