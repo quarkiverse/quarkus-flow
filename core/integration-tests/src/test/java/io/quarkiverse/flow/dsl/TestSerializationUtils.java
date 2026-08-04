@@ -21,16 +21,20 @@ class TestSerializationUtils {
     }
 
     static Workflow writeAndReadInMemory(Workflow workflow) throws IOException {
+        return writeAndReadInMemory(writeAndReadInMemory(workflow, WorkflowFormat.YAML), WorkflowFormat.JSON);
+    }
+
+    private static Workflow writeAndReadInMemory(Workflow workflow, WorkflowFormat format) throws IOException {
         byte[] bytes;
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            writeWorkflow(out, workflow, WorkflowFormat.JSON);
+            writeWorkflow(out, workflow, format);
             bytes = out.toByteArray();
         }
-        if (logger.isDebugEnabled()) {
-            logger.debug("Workflow string representation is {}", new String(bytes));
+        if (logger.isTraceEnabled()) {
+            logger.trace("Workflow string representation is {}", new String(bytes));
         }
         try (ByteArrayInputStream in = new ByteArrayInputStream(bytes)) {
-            return validation().read(in, WorkflowFormat.JSON);
+            return validation().read(in, format);
         }
     }
 }

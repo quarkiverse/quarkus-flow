@@ -49,13 +49,13 @@
 
         <io.quarkiverse.jackson-jq.version>2.5.2</io.quarkiverse.jackson-jq.version>
         <com.github.zafarkhaja.version>0.10.2</com.github.zafarkhaja.version>
-        <io.quarkiverse.langchain4j.version>1.12.1</io.quarkiverse.langchain4j.version>
+        <io.quarkiverse.langchain4j.version>1.12.2</io.quarkiverse.langchain4j.version>
 
         <!-- Tests and Docs -->
         <org.assertj.version>3.27.7</org.assertj.version>
         <quarkus-antora.version>3.33.2</quarkus-antora.version>
         <version.org.jacoco>0.8.15</version.org.jacoco>
-        <io.quarkiverse.playwright>2.3.7</io.quarkiverse.playwright>
+        <io.quarkiverse.playwright>2.3.8</io.quarkiverse.playwright>
         <com.h2database.version>2.4.240</com.h2database.version>
         <org.wiremock.version>3.13.2</org.wiremock.version>
 
