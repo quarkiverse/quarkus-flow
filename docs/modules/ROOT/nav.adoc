@@ -21,6 +21,7 @@
 *** xref:langchain4j.adoc[Orchestrate agents with the Java DSL]
 *** xref:schedule-agentic-workflows.adoc[Schedule agentic workflows]
 ** External Integrations
+*** xref:run-tasks.adoc[Run Tasks (Shell, Script, Container)]
 *** xref:http-openapi-tasks.adoc[Call HTTP and OpenAPI services]
 *** xref:http-client.adoc[Configure the HTTP client]
 *** xref:oauth2-oidc-authentication.adoc[Authenticate to OAuth2 and OIDC services]
