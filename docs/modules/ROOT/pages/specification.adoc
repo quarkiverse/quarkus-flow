@@ -83,6 +83,11 @@ The CNCF 1.0.0 Specification organizes workflows around the `document` (metadata
 |Wrap unreliable network calls, steer to fallback paths, and surface clear failures without crashing the instance.
 |link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#trytask[Reference]
 
+|**Task: `run` (Sub-workflows only)**
+|Executes external processes or nested workflows. **Only `run.workflow` (sub-workflow invocation) is supported.** Shell, script, and container execution are not supported. See xref:run-tasks.adoc[Run Tasks] for details.
+|Modularize complex logic into reusable sub-workflows.
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#run[Reference]
+
 |**Timeouts**
 |Declarative time limits applied to individual tasks or the overarching workflow execution.
 |Prevent stalled processes, bound external waits, and enforce business SLAs.
