@@ -151,6 +151,35 @@ Execute workflow with access to task metadata using `withFilter(...)`
 include::{examples-dir}/org/acme/TaskContextWorkflow.java[]
 ----
 
+[#wait]
+== Waiting for a Duration
+Pause workflow execution for a fixed amount of time using `wait(...)`, `waitSeconds(...)`,
+`waitMinutes(...)`, etc.
+
+[source,java]
+----
+include::{examples-dir}/org/acme/WaitWorkflow.java[]
+----
+
+[#error_handling]
+== Error Handling (`try` / `catch`)
+Wrap tasks in a `tryCatch(...)` block to handle errors with compensatory business logic.
+
+[source,java]
+----
+include::{examples-dir}/org/acme/TryCatchWorkflow.java[]
+----
+
+[#raise]
+== Raising Explicit Errors
+Halt execution and surface a structured error using `raise(...)`. Useful when a workflow
+reaches an invalid or unsupported business state.
+
+[source,java]
+----
+include::{examples-dir}/org/acme/RaiseWorkflow.java[]
+----
+
 :sectnums!:
 == See also
 
