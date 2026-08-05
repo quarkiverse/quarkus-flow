@@ -31,6 +31,7 @@ class FlowOTelProcessor {
     @BuildStep
     void produceBeans(OTelBuildConfig oTelBuildConfig, BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<RemovedResourceBuildItem> removedResources) {
+        // depends on both Quarkus OpenTelemetry quarkus.otel.enabled=true and quarkus.otel.traces.enabled=true.
         boolean otelEnabled = oTelBuildConfig.enabled();
         boolean tracingEnabled = oTelBuildConfig.traces().enabled().orElse(true);
         if (otelEnabled && tracingEnabled) {

@@ -81,6 +81,7 @@ public class WorkflowInstrumentationContext implements AutoCloseable {
                         entry.getValue().getStartSpan().end();
                     }
                 });
+        workflowInstanceTaskContext.clear();
     }
 
     @Override

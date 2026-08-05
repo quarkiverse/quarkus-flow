@@ -57,6 +57,10 @@ jaeger  | 2026-08-04T10:12:30.531Z      info    service@v0.112.0/service.go:230 
 
 Open the Jaeger UI by using the following url:  http://localhost:16686
 
+When Jaeger starts and no workflows have been executed yet, only the `jaeger` service will appear in the service list. Once you start executing workflows, refresh the page to see the `opentelemetry` service.
+
+![Jaeger Service Selector](images/service-selector.png)
+
 ### 2. Start the application
 
 In a new terminal window, run:
@@ -77,6 +81,8 @@ Before executing requests, consider reviewing the workflow definition [otel-show
 
 #### 3.1 Execute the `for` case
 
+In a terminal window, run:
+
 ```bash
 curl -X 'POST' \
 'http://localhost:8080/q/flow/exec/otel/otel-showcase/1.0.0?wait=true' \
@@ -88,14 +94,15 @@ curl -X 'POST' \
 
 After executing, return to the Jaeger UI and click **Find Traces**. You will see the new execution trace:
 
-![Quarkus Flow Overview](images/find-traces1.png)
+![Find Traces For Case](images/find-traces1.png)
 
 Click on the trace to inspect the details. You will see an output like this:
 
-![Quarkus Flow Overview](images/for-case-trace.png)
-
+![For Case Trace](images/for-case-trace.png)
 
 #### 3.2 Execute the `fork` case
+
+In a terminal window, run:
 
 ```bash
 curl -X 'POST' \
@@ -108,13 +115,15 @@ curl -X 'POST' \
 
 After executing, return to the Jaeger UI and click **Find Traces**. You will see the new execution trace:
 
-![Quarkus Flow Overview](images/find-traces2.png)
+![Find Traces Fork Case](images/find-traces2.png)
 
 Click on the trace to inspect the details. You will see an output like this:
 
-![Quarkus Flow Overview](images/fork-case-trace.png)
+![Fork Case Trace](images/fork-case-trace.png)
 
 #### 3.3 Execute the `try` case
+
+In a terminal window, run:
 
 ```bash
 curl -X 'POST' \
@@ -127,11 +136,11 @@ curl -X 'POST' \
 
 After executing, return to the Jaeger UI and click **Find Traces**. You will see the new execution trace:
 
-![Quarkus Flow Overview](images/find-traces3.png)
+![Find Traces Try Case](images/find-traces3.png)
 
 Click on the trace to inspect the details. You will see an output like this:
 
-![Quarkus Flow Overview](images/try-case-trace.png)
+![Try Case Trace](images/try-case-trace.png)
 
 #### 3.4 Execute the `unknown` case
 
@@ -146,31 +155,11 @@ curl -X 'POST' \
 
 After executing, return to the Jaeger UI and click **Find Traces**. You will see the new execution trace:
 
-![Quarkus Flow Overview](images/find-traces3.png)
+![Find Traces Unknown Case](images/find-traces4.png)
 
 Click on the trace to inspect the details. You will see an output like this:
 
-![Quarkus Flow Overview](images/try-case-trace.png)
-
-
-#### 3.4 Execute the `unknown` case
-
-```bash
-curl -X 'POST' \
-'http://localhost:8080/q/flow/exec/otel/otel-showcase/1.0.0?wait=true' \
--H 'Authorization: Bearer demo-secret-change-me' \
--H 'accept: application/json' \
--H 'Content-Type: application/json' \
--d '{}'
-```
-
-After executing, return to the Jaeger UI and click **Find Traces**. You will see the new execution trace:
-
-![Quarkus Flow Overview](images/find-traces4.png)
-
-Click on the trace to inspect the details. You will see an output like this:
-
-![Quarkus Flow Overview](images/unknown-case-trace.png)
+![Unknown Case Trace](images/unknown-case-trace.png)
 
 ### 4. Stop Jaeger
 

@@ -10,6 +10,8 @@ import io.smallrye.config.ConfigMapping;
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface FlowOTelConfig {
 
+    String QUARKUS_FLOW_OTEL_ENABLED = "quarkus.flow.otel.enabled";
+
     /**
      * Enable OpenTelemetry for Quarkus Flows.
      */

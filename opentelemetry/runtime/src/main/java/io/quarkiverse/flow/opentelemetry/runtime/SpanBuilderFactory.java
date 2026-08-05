@@ -10,7 +10,7 @@ import io.opentelemetry.context.Context;
 public class SpanBuilderFactory {
 
     static final String FLOW_WF_APPLICATION_ID_ATTR = "flow.application.id";
-    static final String FLOW_WF_ID_ATTR = "flow.workflow.id";
+    static final String FLOW_WF_INSTANCE_ID_ATTR = "flow.workflow.instance.id";
     static final String FLOW_WF_NAME_ATTR = "flow.workflow.name";
     static final String FLOW_WF_NAMESPACE_ATTR = "flow.workflow.namespace";
     static final String FLOW_WF_VERSION_ATTR = "flow.workflow.version";
@@ -46,7 +46,7 @@ public class SpanBuilderFactory {
         spanBuilder.setAttribute(FLOW_WF_APPLICATION_ID_ATTR, workflowApplicationId)
                 .setAttribute(FLOW_WF_NAMESPACE_ATTR, workflowNamespace)
                 .setAttribute(FLOW_WF_NAME_ATTR, workflowName)
-                .setAttribute(FLOW_WF_ID_ATTR, workflowInstanceId)
+                .setAttribute(FLOW_WF_INSTANCE_ID_ATTR, workflowInstanceId)
                 .setAttribute(FLOW_WF_VERSION_ATTR, workflowVersion);
     }
 

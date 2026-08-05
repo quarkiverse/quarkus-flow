@@ -29,7 +29,7 @@ public class SpanInfo {
     }
 
     public String getWorkflowId() {
-        return (String) attributes.get("flow.workflow.id");
+        return (String) attributes.get("flow.workflow.instance.id");
     }
 
     public String getWorkflowName() {

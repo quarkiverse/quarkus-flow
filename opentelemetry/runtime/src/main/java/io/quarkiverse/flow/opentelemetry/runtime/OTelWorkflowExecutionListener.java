@@ -308,7 +308,7 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
                 eventInfo.wfInstanceId(), eventInfo.wfVersion());
     }
 
-    private void warnNoWorkflowContext(TaskEventInfo eventInfo) {
+    private static void warnNoWorkflowContext(TaskEventInfo eventInfo) {
         LOGGER.warn(
                 "No instrumentation context was found for workflowApplicationId: {}, workflowNamespace: {}, workflowName: {}, workflowInstanceId: {}, workflowVersion: {} and, taskType: {}, taskName: {}, taskId: {}, iteration: {}, isRetrying: {}, retryAttempt: {}",
                 eventInfo.wfApplicationId(), eventInfo.wfNamespace(), eventInfo.wfName(),

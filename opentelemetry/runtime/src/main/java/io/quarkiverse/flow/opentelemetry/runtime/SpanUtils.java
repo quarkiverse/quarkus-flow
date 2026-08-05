@@ -280,7 +280,7 @@ public class SpanUtils {
                     span.setAttribute(WAIT_TASK_DURATION_SECONDS_ATTRIBUTE, durationInline.getSeconds());
                 }
                 if (durationInline.getMilliseconds() > 0) {
-                    span.setAttribute(WAIT_TASK_DURATION_MILLISECONDS_ATTRIBUTE, durationInline.getSeconds());
+                    span.setAttribute(WAIT_TASK_DURATION_MILLISECONDS_ATTRIBUTE, durationInline.getMilliseconds());
                 }
             }
         }

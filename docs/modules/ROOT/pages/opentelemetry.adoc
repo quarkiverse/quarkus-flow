@@ -23,13 +23,14 @@ To enable OpenTelemetry, you must add the following dependency to your project:
 
 Once the dependency is added, workflow executions will start producing OpenTelemetry information automatically.
 
-
 [NOTE]
 ====
-The `quarkus-flow-opentelemetry` extension is built on top of `quarkus-opentelemetry`. All standard configurations related to trace exporters and OTLP endpoints are managed via the standard Quarkus OpenTelemetry extensions. For full configuration details, refer to the link:https://quarkus.io/guides/opentelemetry[Quarkus OpenTelemetry Guide].
+* The `quarkus-flow-opentelemetry` extension is built on top of `quarkus-opentelemetry`. All configurations related to trace exporters and OTLP endpoints are managed via the standard Quarkus OpenTelemetry extension. For full configuration details, refer to the link:https://quarkus.io/guides/opentelemetry[Quarkus OpenTelemetry Guide].
+
+* Setting either `quarkus.otel.enabled=false` or `quarkus.otel.traces.enabled=false` automatically disables the Quarkus Flow OpenTelemetry instrumentation.
 ====
 
-To disable the instrumentation, set `quarkus.flow.otel.enabled=false` (in application.properties or as a system/environment property at startup), or simply remove the dependency.
+To disable Quarkus Flow OpenTelemetry specifically, set `quarkus.flow.otel.enabled=false` (in application.properties or as a system/environment property at startup), or simply remove the dependency.
 
 == Produced Spans
 
@@ -60,7 +61,7 @@ Workflow spans represent the overall execution of a workflow instance and includ
 | String
 | Name of the executed workflow.
 
-| `flow.workflow.id`
+| `flow.workflow.instance.id`
 | String
 | Unique execution id generated for this specific workflow run.
 
@@ -92,7 +93,7 @@ Task spans represent the execution of a workflow task and includes the following
 | String
 | Name of the executed parent workflow.
 
-| `flow.workflow.id`
+| `flow.workflow.instance.id`
 | String
 | Unique execution id of the parent workflow execution.
 

@@ -35,9 +35,9 @@ public record TaskEventInfo(
                 taskContext.position().jsonPointer(),
                 taskContext.taskName(),
                 taskContext.iteration(),
-                ((TaskContext) ev.taskContext()).isRetrying(),
-                ev.taskContext().retryAttempt(),
-                ((TaskContext) ev.taskContext()).tryRetryCount().orElse(0));
+                ((TaskContext) taskContext).isRetrying(),
+                taskContext.retryAttempt(),
+                ((TaskContext) taskContext).tryRetryCount().orElse(0));
 
     }
 }
