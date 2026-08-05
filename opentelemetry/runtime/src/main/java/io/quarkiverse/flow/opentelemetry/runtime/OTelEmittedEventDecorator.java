@@ -11,6 +11,7 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.quarkiverse.flow.opentelemetry.runtime.config.FlowOTelConfig;
+import io.quarkus.runtime.LaunchMode;
 import io.serverlessworkflow.impl.TaskContext;
 import io.serverlessworkflow.impl.WorkflowContext;
 import io.serverlessworkflow.impl.events.EmittedEventDecorator;
@@ -71,12 +72,18 @@ public class OTelEmittedEventDecorator implements EmittedEventDecorator {
     }
 
     private static boolean isOtelEnabled() {
+        if (LaunchMode.current().isDev()) {
+            return readIsEnabled();
+        }
         if (ENABLED.get() == null) {
-            boolean enabled = ConfigProvider.getConfig()
-                    .getOptionalValue(FlowOTelConfig.QUARKUS_FLOW_OTEL_ENABLED, Boolean.class)
-                    .orElse(true);
-            ENABLED.set(enabled);
+            ENABLED.set(readIsEnabled());
         }
         return ENABLED.get();
+    }
+
+    private static boolean readIsEnabled() {
+        return ConfigProvider.getConfig()
+                .getOptionalValue(FlowOTelConfig.QUARKUS_FLOW_OTEL_ENABLED, Boolean.class)
+                .orElse(true);
     }
 }

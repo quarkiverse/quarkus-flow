@@ -51,6 +51,9 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OTelWorkflowExecutionListener.class);
 
+    /**
+     * Experimental Quarkus Flow development only property, please don't use.
+     */
     @ConfigProperty(name = "quarkus.flow.otel.task.name-strategy", defaultValue = "action-and-task-name")
     SpanUtils.TaskNameStrategy taskNameStrategy;
 
