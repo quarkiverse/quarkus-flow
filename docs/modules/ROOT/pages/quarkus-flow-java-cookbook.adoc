@@ -95,6 +95,8 @@ Emitting an Event:
 include::{examples-dir}/org/acme/EmitWorkflow.java[]
 ----
 
+If no `source` is set on the emitted event, it defaults to `/{appId}/{namespace}/{name}/{version}`, resolved from the workflow application at runtime. Call `.source(...)` explicitly to override it.
+
 [#conditional_logic]
 == Conditional Logic
 Branch execution based on data state using `switchCase(...)`, `switchWhen(...)` and `switchWhenOrElse(...)`.

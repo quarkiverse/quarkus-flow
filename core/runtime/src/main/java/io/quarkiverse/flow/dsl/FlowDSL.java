@@ -72,6 +72,7 @@ import io.serverlessworkflow.impl.WorkflowContextData;
  * }</pre>
  */
 public final class FlowDSL {
+
     private static final CommonFuncOps OPS = new CommonFuncOps() {
     };
 
@@ -293,7 +294,8 @@ public final class FlowDSL {
     }
 
     /**
-     * Starts building an event emission specification with a predefined type.
+     * Starts building an event emission specification with a predefined type. If no {@code source}
+     * is set, the SDK resolves it at runtime to {@code /{appId}/{namespace}/{name}/{version}}.
      *
      * @param type CloudEvent type to be emitted
      * @return a new {@link FuncEmitSpec} instance pre-configured with the event type
