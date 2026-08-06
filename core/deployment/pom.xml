@@ -147,6 +147,44 @@
                             </annotationProcessorPaths>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>default-testCompile</id>
+                        <configuration>
+                            <testExcludes>
+                                <!-- Requires generated Protobuf/gRPC stubs -->
+                                <exclude>org/acme/grpc/**</exclude>
+                                <!-- Requires quarkus-langchain4j-agentic -->
+                                <exclude>org/acme/agentic/**</exclude>
+                                <!-- Requires LangChain4j dependencies -->
+                                <exclude>org/acme/langchain4j/**</exclude>
+                                <!-- Doc test classes — use their own QuarkusTest setup, not applicable here -->
+                                <exclude>test/**</exclude>
+                            </testExcludes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Adds docs/modules/ROOT/examples as an extra test source directory so that
+                 the canonical org.acme workflow classes from the documentation can be
+                 referenced directly (live reference — no copy) in the Dev UI render tests.
+                 Any breaking change to a doc workflow immediately fails the IT. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-docs-examples-test-sources</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>../../docs/modules/ROOT/examples</source>
+                            </sources>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
