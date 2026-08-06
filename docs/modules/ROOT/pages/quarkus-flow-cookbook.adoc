@@ -335,6 +335,7 @@ do:
                   room: ${ .room.number }
 ----
 
+[#_11_invoking_subflows]
 == 11. Invoking Subflows
 To keep your definitions clean and modular, complex logic can be broken down into smaller, reusable workflows using the `run` directive.
 

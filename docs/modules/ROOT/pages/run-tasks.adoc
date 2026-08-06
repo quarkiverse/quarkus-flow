@@ -17,9 +17,46 @@ The `run.shell`, `run.script` (Python, JavaScript), and `run.container` task typ
 Quarkus Flow does not currently provide the runtime isolation, resource management, or operational controls necessary for shell, script, and container execution in production environments.
 These task types require careful consideration of process lifecycle management, resource limits, and trust boundaries between workflow definitions and the host operating system -- capabilities that are not yet available in the SDK or the Quarkus extension.
 
+=== Default classpath behavior
+
+Quarkus Flow does **not** include the SDK modules required for script and container execution.
+By default, only `run.workflow` (sub-workflows) is functional.
+
+[cols="1,2,1",options="header"]
+|===
+| Task Type | Required SDK Module | Included by Default?
+
+| `run.workflow`
+| `serverlessworkflow-impl-core`
+| Yes -- **supported**
+
+| `run.shell`
+| `serverlessworkflow-impl-core`
+| Yes -- **not supported** (the executor is present in core but is not tested or validated by Quarkus Flow, **disabled by default**)
+
+| `run.script` (JavaScript)
+| `serverlessworkflow-impl-script-js`
+| No
+
+| `run.script` (Python)
+| `serverlessworkflow-impl-script-python`
+| No
+
+| `run.container`
+| `serverlessworkflow-impl-container`
+| No
+|===
+
+[WARNING]
+====
+**Do not** add the `serverlessworkflow-impl-script-js`, `serverlessworkflow-impl-script-python`, or `serverlessworkflow-impl-container` modules to your project dependencies.
+These modules are not validated with Quarkus Flow and their use is not supported.
+====
+
 === What this means for users
 
-* **Workflow definitions** containing `run.shell`, `run.script`, or `run.container` tasks will execute if the corresponding SDK modules are on the classpath, but this configuration is **not tested, not validated, and not supported**.
+* **Shell execution** (`run.shell`): The executor is part of `serverlessworkflow-impl-core` and is technically reachable, but it is **not tested or supported** by Quarkus Flow. Workflows using `run.shell` may work, but no guarantees are provided.
+* **Script and container execution**: These require additional SDK modules that Quarkus Flow does not include. Adding them manually is at your own risk.
 * The Quarkus Flow team does not provide bug fixes, security patches, or guidance for issues arising from the use of these task types.
 * **Sub-workflows** (`run.workflow`) are fully supported and recommended for modularizing complex workflow logic.
 
@@ -68,6 +105,38 @@ If your workflow requires executing external logic, consider these supported alt
 | Execute a script for data transformation
 | Use `set` tasks with jq expressions for data manipulation, or implement the transformation as a Java function.
 |===
+
+== Shell Command Allowlist (Planned)
+
+[NOTE]
+====
+This feature is **not yet enforced**.
+The configuration property is defined but enforcement depends on SDK-level changes that are in progress.
+Track progress on link:https://github.com/open-workflow-specification/sdk-java/issues/1604[sdk-java #1604].
+====
+
+Quarkus Flow defines a build-time configuration property to control which shell commands a workflow will be allowed to execute.
+When enforcement is active, only commands explicitly listed will be permitted.
+By default, the list is **empty**, meaning **no shell commands will be allowed to run**.
+
+[source,properties]
+----
+# application.properties
+
+# Allow only specific commands (exact match on the executable name)
+quarkus.flow.run.shell.allowed-commands=curl,jq,xmllint
+----
+
+[cols="1,3,1",options="header"]
+|===
+| Property | Description | Default
+
+| `quarkus.flow.run.shell.allowed-commands`
+| Comma-separated list of executable names permitted for `run.shell` tasks. An empty list disables all shell execution.
+| _empty_ (no commands allowed)
+|===
+
+This property is **build-and-run-time fixed** -- it is read once at build time and cannot be changed at runtime, preventing workflow definitions from bypassing the allowlist after deployment.
 
 == Roadmap
 

@@ -15,7 +15,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.quarkiverse.flow.config.FlowMetricsConfig;
+import io.quarkiverse.flow.config.FlowRunConfig;
 import io.quarkiverse.flow.config.FlowTracingConfig;
 import io.quarkiverse.flow.dsl.model.JavaModelFactory;
 import io.quarkiverse.flow.internal.NoOpScheduler;
@@ -105,7 +105,7 @@ public class WorkflowApplicationCreator {
     FlowTracingConfig tracingConfig;
 
     @Inject
-    FlowMetricsConfig metricsConfig;
+    FlowRunConfig flowRunConfig;
 
     public WorkflowApplication create() {
         final Builder builder = WorkflowApplication.builder();
