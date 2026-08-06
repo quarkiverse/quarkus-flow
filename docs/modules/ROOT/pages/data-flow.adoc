@@ -8,7 +8,7 @@ However, a task rarely needs the *entire* workflow context to do its job, and it
 
 
 
-To manage this, the Serverless Workflow specification defines a strict Data Flow model. Every task can define:
+To manage this, the Open Workflow specification defines a strict Data Flow model. Every task can define:
 
 * **Input:** What specific data the task extracts from the workflow context before executing.
 * **Output:** How to format the raw result produced by the task.
@@ -156,9 +156,9 @@ application code.
 Complex regular expressions inside trusted workflow definitions, including ones
 backed by Java DSL filters, can still be expensive to evaluate. When you
 process untrusted or high-volume input, keep task timeout budgets explicit
-instead of relying on defaults. The Serverless
+instead of relying on defaults. The Open
 Workflow DSL defines task timeouts in the
-https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#timeout[`timeout`
+https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#timeout[`timeout`
 section of the specification].
 
 For example, this regex-heavy task is limited to 30 seconds:

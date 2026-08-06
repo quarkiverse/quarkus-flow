@@ -27,9 +27,9 @@ public class HelloMessagingFlow extends Flow {
      * <p/>
      * To know more about the infrastructure configuration, please see the application.properties and the tests in this module.
      *
-     * @see <a href="https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#listen">DSL Reference:
+     * @see <a href="https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#listen">DSL Reference:
      *      Listen</a>
-     * @see <a href="https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#emit">DSL Reference:
+     * @see <a href="https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#emit">DSL Reference:
      *      Emit</a>
      */
     @Override
@@ -37,7 +37,7 @@ public class HelloMessagingFlow extends Flow {
         return FlowWorkflowBuilder.workflow("hello-messaging-flow")
                 // We are listening to one and only one event coming to our broker with the type "io.quarkiverse.flow.messaging.hello.request"
                 // Each event produced by the broker with this type will kick a new workflow instance.
-                // To learn more see the base specification: https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#listen
+                // To learn more see the base specification: https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#listen
                 .tasks(listen(toOne("io.quarkiverse.flow.messaging.hello.request").first()),
                         // "name" is expected in the message body payload
                         set("{ message: \"Hello \" + .name + \"!\" }"),

@@ -2,7 +2,7 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
-Quarkus Flow builds on top of the CNCF Serverless Workflow Specification to give you first-class HTTP and OpenAPI tasks.
+Quarkus Flow builds on top of the Open Workflow Specification (CNCF sandbox project) to give you first-class HTTP and OpenAPI tasks.
 
 This guide shows how to:
 
@@ -21,7 +21,7 @@ For HTTP client timeouts, TLS, proxies, and connection pooling, see xref:http-cl
 
 == 1. Call HTTP endpoints
 
-HTTP calls are represented in the CNCF Workflow Spec as `call` tasks. In Quarkus Flow, you define these using the fluent shortcuts from `io.quarkiverse.flow.dsl.FlowDSL`.
+HTTP calls are represented in the Open Workflow Spec as `call` tasks. In Quarkus Flow, you define these using the fluent shortcuts from `io.quarkiverse.flow.dsl.FlowDSL`.
 
 === 1.1 Simple GET / POST
 
@@ -181,12 +181,12 @@ When a call fails, you will see a tracing line for the failing task alongside th
 
 When an HTTP or OpenAPI task fails (e.g., a 4xx/5xx status or a timeout), the workflow engine halts execution and throws a `WorkflowException` containing a `WorkflowError`.
 
-Quarkus Flow maps this error exactly to the CNCF Specification's error model, which aligns with **RFC 7807 Problem Details**:
+Quarkus Flow maps this error exactly to the Open Workflow Specification's error model, which aligns with **RFC 7807 Problem Details**:
 
 [source,json]
 ----
 {
-  "type": "https://serverlessworkflow.io/spec/1.0.0/errors/communication",
+  "type": "https://open-workflow-specification.org/spec/1.0.0/errors/communication",
   "status": 401,
   "instance": "do/0/370b9a91-22c2-4b3e-85c4-10892c2864ff",
   "title": "HTTP 401 Unauthorized",

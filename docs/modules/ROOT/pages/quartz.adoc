@@ -2,9 +2,9 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
-The Serverless Workflow specification allows you to define workflows that execute automatically on a recurring schedule.
+The Open Workflow specification allows you to define workflows that execute automatically on a recurring schedule.
 
-By default, the Serverless Workflow SDK engine uses a lightweight, in-memory implementation (based on `ScheduledExecutorService` and the `cron-utils` library) to trigger these executions. Additionally, Quarkus Flow provides a xref:scheduler.adoc[native Quarkus scheduler] for standalone deployments. However, for a production-grade Quarkus application deployed as a cluster of multiple instances, you must back the Quartz scheduler with a persistent, clustered JDBC job store (store-type=jdbc-cmt, clustered=true) to guarantee correct behavior. The reverse is also true: do not use it for standalone deployments.
+By default, the Open Workflow SDK engine uses a lightweight, in-memory implementation (based on `ScheduledExecutorService` and the `cron-utils` library) to trigger these executions. Additionally, Quarkus Flow provides a xref:scheduler.adoc[native Quarkus scheduler] for standalone deployments. However, for a production-grade Quarkus application deployed as a cluster of multiple instances, you must back the Quartz scheduler with a persistent, clustered JDBC job store (store-type=jdbc-cmt, clustered=true) to guarantee correct behavior. The reverse is also true: do not use it for standalone deployments.
 
 This guide shows how to:
 
@@ -103,11 +103,11 @@ do:
 
 === Quartz cron format
 
-The Serverless Workflow specification mandates that CRON expressions follow the standard **Unix** format.
+The Open Workflow specification mandates that CRON expressions follow the standard **Unix** format.
 
 The Quarkus Quartz Scheduler, however, uses the link:https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html[Quartz] format. This means that, if you are using the Unix format in your workflow definition, you should change the CRON expression to use Quartz format.
 
 == See also
 
 * link:https://quarkus.io/guides/quartz[Quarkus Quartz guide]
-* link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#scheduling[Serverless Workflow Specification: Scheduling] — full details and edge cases for the `every`, `after`, and `cron` syntax.
+* link:https://github.com/open-workflow-specification/specification/blob/main/dsl.md#scheduling[Open Workflow Specification: Scheduling] — full details and edge cases for the `every`, `after`, and `cron` syntax.

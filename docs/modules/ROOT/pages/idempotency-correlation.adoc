@@ -47,7 +47,7 @@ The engine does **not** maintain a deduplication cache. If the same start event 
 
 [NOTE]
 ====
-This is by design. The Serverless Workflow specification treats every incoming event as a unique trigger. Duplicate detection at the workflow-triggering layer is the responsibility of the messaging infrastructure or of an application-level deduplication layer.
+This is by design. The Open Workflow specification treats every incoming event as a unique trigger. Duplicate detection at the workflow-triggering layer is the responsibility of the messaging infrastructure or of an application-level deduplication layer.
 ====
 
 === 2.2 No Exactly-Once Execution
@@ -277,7 +277,7 @@ This approach ensures the outbox entry is written *after* the task completes suc
 
 This is the pattern you want when a workflow pauses on a `listen(...)` task and an external system must later resume that exact workflow instance.
 
-Important distinction: this is **not** the Serverless Workflow spec's event-to-event correlation model. Here, the goal is to route an incoming callback to a specific waiting workflow instance.
+Important distinction: this is **not** the Open Workflow spec's event-to-event correlation model. Here, the goal is to route an incoming callback to a specific waiting workflow instance.
 
 Quarkus Flow supports multiple strategies for correlating callbacks to a waiting instance:
 

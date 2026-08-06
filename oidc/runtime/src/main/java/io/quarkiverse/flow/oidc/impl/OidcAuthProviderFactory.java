@@ -27,7 +27,7 @@ import io.serverlessworkflow.impl.auth.OAuthPolicyData;
  * <p>
  * <b>Lifecycle & Timing:</b>
  * <p>
- * This factory is called by the Serverless Workflow SDK <b>once at application startup</b> per workflow,
+ * This factory is called by the Open Workflow SDK <b>once at application startup</b> per workflow,
  * not per HTTP request. When {@link #getAuth} is called:
  * <ol>
  * <li>Static OIDC clients (policies without runtime expressions) are registered eagerly via

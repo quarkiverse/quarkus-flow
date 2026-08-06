@@ -2,7 +2,7 @@
 :page-role: reference
 include::includes/attributes.adoc[]
 
-Quarkus Flow uses the CNCF Workflow link:https://github.com/serverlessworkflow/sdk-java[**Java Fluent DSL**] to define workflows in code.
+Quarkus Flow uses the Open Workflow link:https://github.com/open-workflow-specification/sdk-java[**Java Fluent DSL**] to define workflows in code.
 This page shows:
 
 - how to define a workflow class,
@@ -400,7 +400,7 @@ You pass the *resulting* steps/specs (e.g. `listen(...)`, `emitJson(...)`, `open
 
 == Data flow and transformations
 
-Quarkus Flow follows the Serverless Workflow Specification data-flow model: every step can shape
+Quarkus Flow follows the Open Workflow Specification data-flow model: every step can shape
 what it **extracts** as input, how it **transforms** its direct result, and what it
 **merges** back into the global context.
 

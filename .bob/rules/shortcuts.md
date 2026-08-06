@@ -29,7 +29,7 @@ When the user asks about project conventions, testing, or build processes, read 
 
 ## External Resources
 
-- [CNCF Serverless Workflow Spec](https://github.com/serverlessworkflow/specification)
+- [Open Workflow Spec](https://github.com/open-workflow-specification/specification)
 - [LangChain4j Agentic Workflows](https://docs.langchain4j.dev/tutorials/agents)
 - [Quarkus Extension Guide](https://quarkus.io/guides/writing-extensions)
 - [Project Documentation](https://docs.quarkiverse.io/quarkus-flow/dev/)

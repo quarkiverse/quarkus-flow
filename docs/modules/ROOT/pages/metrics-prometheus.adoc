@@ -33,8 +33,8 @@ or by setting `quarkus.flow.metrics.enabled=false` in `application.properties`.
 
 [NOTE]
 ====
-Metric names are aligned with the workflow state phases defined in the CNCF Serverless Workflow specification:
-https://github.com/serverlessworkflow/specification/blob/main/dsl.md#status-phases
+Metric names are aligned with the workflow state phases defined in the Open Workflow Specification (CNCF sandbox project):
+https://github.com/open-workflow-specification/specification/blob/main/dsl.md#status-phases
 ====
 
 [NOTE]
@@ -289,14 +289,14 @@ The value is `1` when HALF_OPEN and `0` otherwise.
 
 ==== Name your tasks
 
-If a task does not have an explicit name, Serverless Workflow automatically assigns a UUID as the task name.
+If a task does not have an explicit name, Open Workflow automatically assigns a UUID as the task name.
 That UUID is then used as the `task` label in metrics, making monitoring and aggregation difficult.
 
 Always provide descriptive task names to ensure meaningful metrics.
 
 ==== Make task names unique
 
-The Serverless Workflow specification does not require task names to be unique within a workflow.
+The Open Workflow specification does not require task names to be unique within a workflow.
 When multiple tasks share the same name, their metrics are aggregated under the same label.
 
 Quarkus Flow uses the combination of workflow name (`workflow`) and task name (`task`) as metric labels.

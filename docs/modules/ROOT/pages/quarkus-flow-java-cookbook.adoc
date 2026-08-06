@@ -1,11 +1,11 @@
-= Quarkus Flow & CNCF Serverless Workflow Java Cookbook
+= Quarkus Flow & Open Workflow Java Cookbook
 :sectnums:
 :page-role: reference
 :examples-dir: ../main/java
 include::includes/attributes.adoc[]
 
 
-This cookbook provides a comprehensive collection of practical, copy-and-paste examples for building modern workflows using the Serverless Workflow Java SDK Fluent API.
+This cookbook provides a comprehensive collection of practical, copy-and-paste examples for building modern workflows using the Open Workflow Java SDK Fluent API.
 
 All workflows in Quarkus Flow are defined as CDI beans by extending the `Flow` class and overriding the `descriptor()` method.
 

@@ -6,7 +6,7 @@ In this lab, you will move away from the Java DSL and build a fully event-driven
 
 You will:
 
-* Define a Serverless Workflow in YAML using the 1.0.0 specification.
+* Define an Open Workflow in YAML using the 1.0.0 specification.
 * Wire the workflow to **SmallRye Reactive Messaging**.
 * Start the workflow automatically via an incoming **CloudEvent**.
 * Manually trigger the same workflow from the **Flow Dev UI** to see the dual-start capability.

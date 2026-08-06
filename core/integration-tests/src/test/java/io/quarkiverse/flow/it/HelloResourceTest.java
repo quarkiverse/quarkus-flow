@@ -49,7 +49,7 @@ public class HelloResourceTest {
                 .then()
                 .statusCode(503)
                 .contentType(ContentType.JSON)
-                .body("type", containsString("https://serverlessworkflow.io/spec/1.0.0/errors/communication"));
+                .body("type", containsString("https://open-workflow-specification.org/spec/1.0.0/errors/communication"));
     }
 
     private static void shouldExecuteGetRequestForEchoName(String path) {

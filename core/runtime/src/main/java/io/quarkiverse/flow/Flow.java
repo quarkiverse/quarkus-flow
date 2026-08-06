@@ -13,9 +13,9 @@ import io.smallrye.common.annotation.Identifier;
 import io.smallrye.mutiny.Uni;
 
 /**
- * Base class for defining CNCF Serverless Workflows in Quarkus Flow.
+ * Base class for defining Open Workflow (CNCF sandbox project) definitions in Quarkus Flow.
  * <p>
- * Extend this class to create workflow definitions using the Java DSL from the CNCF Serverless Workflow SDK. Your workflow
+ * Extend this class to create workflow definitions using the Java DSL from the Open Workflow SDK. Your workflow
  * class must be a CDI bean (typically {@code @ApplicationScoped}) and implement the {@link #descriptor()} method to define
  * the workflow structure.
  * <p>
@@ -81,7 +81,7 @@ import io.smallrye.mutiny.Uni;
  * @see Flowable
  * @see WorkflowDefinition
  * @see WorkflowInstance
- * @see <a href="https://serverlessworkflow.io/">CNCF Serverless Workflow Specification</a>
+ * @see <a href="https://open-workflow-specification.org/">Open Workflow Specification (CNCF sandbox project)</a>
  */
 public abstract class Flow implements Flowable {
 
@@ -95,10 +95,10 @@ public abstract class Flow implements Flowable {
     }
 
     /**
-     * Defines the workflow structure using the CNCF Serverless Workflow Java DSL.
+     * Defines the workflow structure using the Open Workflow Java DSL.
      * <p>
      * This is the core method you must implement when extending {@link Flow}. It defines your workflow's tasks, data flow,
-     * error handling, and execution logic using the fluent DSL provided by the CNCF Serverless Workflow SDK.
+     * error handling, and execution logic using the fluent DSL provided by the Open Workflow SDK.
      * <p>
      * The descriptor is evaluated once at build time. Quarkus Flow processes it to create an optimized
      * {@link WorkflowDefinition} that can be used to execute workflow instances at runtime.

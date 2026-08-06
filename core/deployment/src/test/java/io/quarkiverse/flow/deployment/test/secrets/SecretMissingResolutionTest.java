@@ -47,7 +47,7 @@ public class SecretMissingResolutionTest {
         });
 
         var msg = String.valueOf(ex.getMessage()).toLowerCase();
-        assertTrue(msg.contains("https://serverlessworkflow.io/spec/1.0.0/errors/authorization,"),
+        assertTrue(msg.contains("https://open-workflow-specification.org/spec/1.0.0/errors/authorization,"),
                 "Expected error message to mention secret resolution");
     }
 

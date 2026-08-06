@@ -1,7 +1,7 @@
 = Concepts & architecture
 :page-role: explanation
 
-This page explains the core concepts behind Quarkus Flow, its internal architecture, and how it maps to the CNCF Serverless Workflow Specification.
+This page explains the core concepts behind Quarkus Flow, its internal architecture, and how it maps to the Open Workflow Specification (CNCF sandbox project).
 
 == The Build-Time Engine Paradigm
 
@@ -15,7 +15,7 @@ Because the workflow definition is already compiled and injected, the runtime en
 
 == Specification Alignment
 
-Quarkus Flow uses the link:https://serverlessworkflow.io/[CNCF Serverless Workflow] specification as its foundational vocabulary. When you write a flow using the Java DSL, you are programmatically generating a CNCF-compliant model.
+Quarkus Flow uses the link:https://open-workflow-specification.org/[Open Workflow] specification as its foundational vocabulary. When you write a flow using the Java DSL, you are programmatically generating a CNCF-compliant model.
 
 * **Workflow (Flow):** The overarching container representing the process.
 * **Task:** A distinct step in the workflow (e.g., executing a function, waiting for an event, or evaluating a condition).

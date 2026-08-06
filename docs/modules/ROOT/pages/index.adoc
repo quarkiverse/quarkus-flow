@@ -1,10 +1,10 @@
 = Quarkus Flow
 :page-layout: default
-:description: Workflow engine for Quarkus based on the CNCF Serverless Workflow Specification, with Java DSL and Agentic AI support.
+:description: Workflow engine for Quarkus based on the Open Workflow Specification (CNCF sandbox project), with Java DSL and Agentic AI support.
 
 include::./includes/attributes.adoc[]
 
-Quarkus Flow is a lightweight, native-friendly workflow engine for Quarkus, built on the link:https://serverlessworkflow.io/[CNCF Serverless Workflow Specification].
+Quarkus Flow is a lightweight, native-friendly workflow engine for Quarkus, built on the link:https://open-workflow-specification.org/[Open Workflow Specification (CNCF sandbox project)].
 It allows you to model both classic orchestrations and Agentic AI flows using a fluent Java DSL that maps directly to the specification's core concepts (such as states, transitions, and event filters), all with first-class CDI and Quarkus ergonomics.
 
 == Architecture Overview
@@ -13,7 +13,7 @@ image::architecture.svg[Quarkus Flow Architecture Diagram, align="center"]
 
 == Highlights
 
-* **CNCF-Compliant Vocabulary:** Define workflows using a fluent Java DSL that strictly adheres to the CNCF Serverless Workflow specification.
+* **CNCF-Compliant Vocabulary:** Define workflows using a fluent Java DSL that strictly adheres to the Open Workflow specification.
 * **Build-Time Optimization:** Compile-time discovery of workflow descriptors and automatic injection of compiled beans.
 * **Standard Orchestration:** Robust state management, retries, branching, and event routing directly within your Quarkus app.
 * **AI First-Class Citizen:** Seamless Agentic workflows integrating with link:https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html[LangChain4j].
@@ -79,4 +79,4 @@ Nothing stops you from a **hybrid** approach:
 
 * xref:getting-started.adoc[Getting Started (Java DSL)]
 * xref:dsl-cheatsheet.adoc[Java DSL Cheatsheet]
-* xref:specification.adoc[CNCF Specification Mapping]
+* xref:specification.adoc[Open Workflow Specification Mapping]

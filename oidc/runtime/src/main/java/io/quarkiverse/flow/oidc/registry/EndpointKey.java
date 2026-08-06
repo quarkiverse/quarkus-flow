@@ -69,13 +69,13 @@ public record EndpointKey(
         List<String> audiences) {
 
     /**
-     * Default OAuth2 token endpoint path per CNCF Serverless Workflow specification.
+     * Default OAuth2 token endpoint path per Open Workflow Specification.
      * Applied when endpoints.token is not explicitly specified.
      */
     private static final String DEFAULT_TOKEN_PATH = "/oauth2/token";
 
     /**
-     * Default OAuth2 revocation endpoint path per CNCF Serverless Workflow specification.
+     * Default OAuth2 revocation endpoint path per Open Workflow Specification.
      * Applied when endpoints.revocation is not explicitly specified.
      */
     private static final String DEFAULT_REVOCATION_PATH = "/oauth2/revoke";

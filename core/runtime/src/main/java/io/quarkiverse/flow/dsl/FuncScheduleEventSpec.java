@@ -12,7 +12,7 @@ import io.serverlessworkflow.fluent.spec.dsl.DSL;
  * collection is unwrapped before the first task receives it.
  *
  * <p>
- * By design, the Serverless Workflow specification always delivers consumed events as a
+ * By design, the Open Workflow specification always delivers consumed events as a
  * collection — even when only one event is expected (via {@code one()}). Call
  * {@link #first()} to explicitly extract the first element from that collection so
  * downstream tasks receive a single object rather than a single-element array.

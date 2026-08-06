@@ -18,13 +18,13 @@ import io.quarkus.runtime.Quarkus;
  * It will keep listening to the event and once it does, it runs the workflow and exit gracefully.
  * <p/>
  * To keep creating workflow instances per event, we should use the `on`, as
- * <a href="https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#schedule">described in the spec</a>:
+ * <a href="https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#schedule">described in the spec</a>:
  * <p/>
  * "Schedule: Specifies the events that trigger the workflow execution."
  * <p/>
  * The "Schedule" implementation is not yet ready on our core CNCF engine. Once it does, we can rely on it instead of the
  * Application Lifecycle. See: <a href=
- * "https://github.com/serverlessworkflow/sdk-java/issues/847">https://github.com/serverlessworkflow/sdk-java/issues/847</a>
+ * "https://github.com/open-workflow-specification/sdk-java/issues/847">https://github.com/open-workflow-specification/sdk-java/issues/847</a>
  * <p/>
  * The example below, works great for functions/serverless environments where the system process once and terminates.
  */

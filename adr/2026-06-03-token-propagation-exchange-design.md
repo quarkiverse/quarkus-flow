@@ -17,7 +17,7 @@ This feature addresses:
 ### Key Requirements
 
 1. Support both **token propagation** (forward original token) and **token exchange** (swap for service-specific token)
-2. Work with **Serverless Workflow 1.0.0 specification** OAuth2 definitions
+2. Work with **Open Workflow 1.0.0 specification** OAuth2 definitions
 3. Integrate seamlessly with **OpenAPI** task calls
 4. Support **multiple OIDC servers** (named OIDC clients per auth scheme)
 5. Implement **token caching** with proper lifecycle management
@@ -38,7 +38,7 @@ User → [App Security: Is user allowed?] → Workflow Engine → [Task Auth: Ho
 
 ## Decision
 
-Implement a **hybrid approach** using Serverless Workflow 1.0.0 OAuth2 definitions with Quarkus-specific authentication provider layer and smart defaults.
+Implement a **hybrid approach** using Open Workflow 1.0.0 OAuth2 definitions with Quarkus-specific authentication provider layer and smart defaults.
 
 ### Phased Implementation
 
@@ -123,13 +123,13 @@ No architectural blocker was found, the gaps are *additive* not redesigns.
   sufficient for Phase 0/Phase 1 as long as the executor service provides worker threads. **Long-term**,
   both SPIs should offer async/reactive variants (returning `Uni`/`CompletableFuture`) to be
   safe regardless of the calling thread — tracked upstream as
-  [sdk-java#1510](https://github.com/serverlessworkflow/sdk-java/issues/1510).
+  [sdk-java#1510](https://github.com/open-workflow-specification/sdk-java/issues/1510).
 - **Risk 2 — OpenAPI `securityScheme` → credential mapping is manual** (see Q3). "Secure-by-spec"
   ergonomics must be built on top.
 - **Risk 3 — token exchange and password grants validated.** Removes the biggest unknown.
 - **Risk 4 — `use.authentications(...)` DSL is verbose** (five nested lambdas + fully-qualified enums for
   one client). DX gap, not a correctness blocker; Phase 1 should offer a flatter shorthand. Tracked
-  upstream as [sdk-java#1509](https://github.com/serverlessworkflow/sdk-java/issues/1509).
+  upstream as [sdk-java#1509](https://github.com/open-workflow-specification/sdk-java/issues/1509).
 - **Risk 5 — sdk-java thread context propagation is not guaranteed (open upstream issue).** Quarkus
   Flow injects a `QuarkusManagedExecutor` as the SDK's `ExecutorService` so that task execution runs on
   managed threads with CDI request context and thread-locals propagated. In practice **not all SDK
@@ -141,9 +141,9 @@ No architectural blocker was found, the gaps are *additive* not redesigns.
   Quarkus Flow bug. **Mitigation until fixed:** prefer subject-token sources that do not depend on
   thread context (explicit workflow input over `SecurityIdentity`), and resolve/cache tokens off the
   affected threads. Tracked upstream as
-  [sdk-java#1481](https://github.com/serverlessworkflow/sdk-java/issues/1481).
+  [sdk-java#1481](https://github.com/open-workflow-specification/sdk-java/issues/1481).
 - **Risk 6 — no hook to override the SDK's authentication call (RESOLVED upstream by
-  [sdk-java#1486](https://github.com/serverlessworkflow/sdk-java/issues/1486)).** Originally the SDK's
+  [sdk-java#1486](https://github.com/open-workflow-specification/sdk-java/issues/1486)).** Originally the SDK's
   `AuthProviderFactory` was a static utility with no plug-in seam, so an extension could not intercept
   or replace how authentications are resolved/executed. PR #1486 introduced a **pluggable
   `AuthProviderFactory`** (plus
@@ -157,7 +157,7 @@ No architectural blocker was found, the gaps are *additive* not redesigns.
 
 The findings above revise the following sections of this ADR (revisions marked inline):
 - **§1 OpenAPI Integration** — **will not be applied**; the spec discussion in
-  [specification#1158](https://github.com/serverlessworkflow/specification/issues/1158) supersedes
+  [specification#1158](https://github.com/open-workflow-specification/specification/issues/1158) supersedes
   this revision. The OpenAPI `securityScheme` → credential auto-mapping (Risk 3) and the
   `ServiceLoader`/sync-bound decorator concerns (Risk 1, Risk 2) are no longer relevant to
   Quarkus Flow's design.
@@ -168,20 +168,20 @@ The findings above revise the following sections of this ADR (revisions marked i
 ### Upstream SDK change requests raised
 
 Async/reactive variants for both `HttpRequestDecorator.decorate` and `AuthProvider.content` (Risk 1)
-— [sdk-java#1510](https://github.com/serverlessworkflow/sdk-java/issues/1510); flatter shorthand
+— [sdk-java#1510](https://github.com/open-workflow-specification/sdk-java/issues/1510); flatter shorthand
 for named authentications (Risk 4) —
-[sdk-java#1509](https://github.com/serverlessworkflow/sdk-java/issues/1509).
+[sdk-java#1509](https://github.com/open-workflow-specification/sdk-java/issues/1509).
 
 Optional OpenAPI `securityScheme`→`Authentication` mapping (Risk 3) —
-[specification#1158](https://github.com/serverlessworkflow/specification/issues/1158), **rejected**
+[specification#1158](https://github.com/open-workflow-specification/specification/issues/1158), **rejected**
 by spec maintainers.
 
 Pluggable `AuthProviderFactory` so an extension can own authentication — **delivered** by
-[sdk-java#1486](https://github.com/serverlessworkflow/sdk-java/issues/1486) (in 7.24.0.Final);
+[sdk-java#1486](https://github.com/open-workflow-specification/sdk-java/issues/1486) (in 7.24.0.Final);
 see Risk 6.
 
 Reliable thread-context propagation so SDK task stages run on the injected `QuarkusManagedExecutor`
-(Risk 5) — [sdk-java#1481](https://github.com/serverlessworkflow/sdk-java/issues/1481), **open**.
+(Risk 5) — [sdk-java#1481](https://github.com/open-workflow-specification/sdk-java/issues/1481), **open**.
 
 ### Shipped implementation note (2026-06-30)
 
@@ -248,14 +248,14 @@ User → [Quarkus Security] → Workflow Engine
 > (see [Shipped implementation note](#shipped-implementation-note-2026-06-30)), not the
 > `HttpRequestDecorator` design below. Additionally, the OpenAPI `securityScheme` → credential
 > auto-mapping discussion is tracked in
-> [specification#1158](https://github.com/serverlessworkflow/specification/issues/1158) and will
+> [specification#1158](https://github.com/open-workflow-specification/specification/issues/1158) and will
 > not be pursued in Quarkus Flow.
 >
 > The original design is kept below for historical context only.
 
 **Integration Point**: SDK's `HttpRequestDecorator` (ServiceLoader)
 
-The Serverless Workflow SDK's `HttpExecutor` loads `HttpRequestDecorator` implementations via ServiceLoader, allowing us to intercept HTTP requests before execution.
+The Open Workflow SDK's `HttpExecutor` loads `HttpRequestDecorator` implementations via ServiceLoader, allowing us to intercept HTTP requests before execution.
 
 **Authentication Resolution Flow**:
 ```
@@ -1636,7 +1636,7 @@ quarkus.openapi-generator.<service>.auth.<name>.token-propagation
 ## References
 
 - [SonataFlow Token Exchange Documentation](https://sonataflow.org/serverlessworkflow/main/security/token-exchange-for-openapi-services.html)
-- [Serverless Workflow 1.0.0 Specification](https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md)
+- [Open Workflow 1.0.0 Specification](https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md)
 - [OAuth 2.0 Token Exchange (RFC 8693)](https://datatracker.ietf.org/doc/html/rfc8693)
 - [Quarkus OIDC Client Guide](https://quarkus.io/guides/security-openid-connect-client)
 - [Quarkus Flow HttpClientProvider](core/runtime/src/main/java/io/quarkiverse/flow/providers/HttpClientProvider.java)

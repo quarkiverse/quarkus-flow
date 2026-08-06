@@ -82,11 +82,11 @@ This guide helps Claude Code (and contributors using it) work effectively with t
 
 ## Project Overview
 
-**Quarkus Flow** is a lightweight workflow engine for Quarkus based on the CNCF Serverless Workflow specification. It supports classic workflows and Agentic AI orchestrations with LangChain4j integration.
+**Quarkus Flow** is a lightweight workflow engine for Quarkus based on the Open Workflow specification (CNCF sandbox project). It supports classic workflows and Agentic AI orchestrations with LangChain4j integration.
 
 - **Tech Stack**: Java 17+, Maven, Quarkus framework
 - **Architecture**: Multi-module Quarkus extension with runtime/deployment split
-- **Spec**: CNCF Serverless Workflow (https://serverlessworkflow.io/)
+- **Spec**: Open Workflow (https://open-workflow-specification.org/)
 - **Docs**: https://docs.quarkiverse.io/quarkus-flow/dev/
 
 ## Repository Structure
@@ -174,7 +174,7 @@ Each module follows Quarkus extension structure:
 - Runtime beans use standard CDI annotations (`@ApplicationScoped`, etc.)
 - Build items are the contract between build steps
 
-### Serverless Workflow DSL
+### Open Workflow DSL
 - Workflows extend `io.quarkiverse.flow.Flow`
 - Use the fluent DSL from `io.quarkiverse.flow.dsl.FlowDSL`
 - Support both Java DSL and YAML workflow definitions
@@ -268,7 +268,7 @@ When adding dependencies:
 ## Helpful Context for AI Assistance
 
 ### When asked about workflow features
-- Check CNCF Serverless Workflow spec compliance first
+- Check Open Workflow spec compliance first
 - Refer to `io.serverlessworkflow` packages for DSL
 - Examples in `examples/` show real usage patterns
 
@@ -296,7 +296,7 @@ When adding dependencies:
 
 ## External Resources
 
-- CNCF Serverless Workflow Spec: https://github.com/serverlessworkflow/specification
+- Open Workflow Spec: https://github.com/open-workflow-specification/specification
 - LangChain4j Agentic Workflows: https://docs.langchain4j.dev/tutorials/agents
 - Quarkus Extension Guide: https://quarkus.io/guides/writing-extensions
 - Project docs: https://docs.quarkiverse.io/quarkus-flow/dev/

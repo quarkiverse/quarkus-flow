@@ -28,6 +28,6 @@ public record CallForPapers(
                         "Observability & Monitoring"),
                 "San Francisco, CA",
                 LocalDate.now().plusMonths(3),
-                "https://serverlessworkflow.io/submit");
+                "https://open-workflow-specification.org/submit");
     }
 }
