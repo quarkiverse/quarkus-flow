@@ -1,0 +1,24 @@
+document:
+  dsl: '1.0.0'
+  namespace: otel
+  name: otel-fork-task
+  version: '1.0.0'
+do:
+  - forkTask:
+      fork:
+        compete: true
+        branches:
+          - branch1:
+              set:
+                set-on-branch1: "SetOnBranch1 message"
+          - branch2:
+              do:
+                - set1OnBranch2:
+                    set:
+                      set1-on-branch2: "Set1OnBranch2 message"
+                - set2OnBranch2:
+                    set:
+                      set2-on-branch2: "Set2OnBranch2 message"
+  - setEndTask:
+      set:
+        set-end-task: SetEndTask message

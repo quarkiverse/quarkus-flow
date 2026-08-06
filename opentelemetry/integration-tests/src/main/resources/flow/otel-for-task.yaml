@@ -1,0 +1,18 @@
+document:
+  dsl: '1.0.0'
+  namespace: otel
+  name: otel-for-task
+  version: '1.0.0'
+do:
+  - forTask:
+      for:
+        each: item
+        in: .forItems
+        at: index
+      do:
+        - setTask1:
+            set:
+              set-task1: .index
+        - setTask2:
+            set:
+              set-task2: .index

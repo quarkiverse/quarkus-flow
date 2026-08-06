@@ -1,0 +1,126 @@
+document:
+  dsl: '1.0.0'
+  namespace: otel
+  name: otel-showcase
+  version: '1.0.0'
+do:
+  - Select Case:
+      switch:
+        - case-for:
+            when: .selectedCase == "for"
+            then: Process Case For
+        - case-fork:
+            when: .selectedCase == "fork"
+            then: Process Case Fork
+        - case-try:
+            when: .selectedCase == "try"
+            then: Process Case Try
+        - default:
+            then: Handle Unknown Case
+  - Process Case For:
+      do:
+        - Set Iteration Parameters:
+            set:
+              forItems: [1,2,3]
+        - For Task:
+            for:
+              each: item
+              in: .forItems
+              at: index
+            do:
+              - Emit Iteration Event:
+                  emit:
+                    event:
+                      with:
+                        source: http://otel.otel-showcase
+                        type: otel.showcase.iteration-event
+                        data:
+                          workflowName: otel-showcase
+                          message: Iteration event .index
+
+      then: exit
+  - Process Case Fork:
+      do:
+        - Set Events Parameters:
+            set:
+              event1-message: Event produced in branch1!
+              event2-message: Event produced in branch2!
+        - Fork Task:
+            fork:
+              compete: true
+              branches:
+                - Branch1:
+                    do:
+                      - Emit Branch1 Event:
+                          emit:
+                            event:
+                              with:
+                                source: http://otel.otelshowcase
+                                type: otel.showcase.branch-event
+                                data:
+                                  workflowName: otel-showcase
+                                  message: .event1-message
+                - Branch2:
+                    do:
+                      - Emit Branch2 Event:
+                          emit:
+                            event:
+                              with:
+                                source: http://otel.otelshowcase
+                                type: otel.showcase.branch-event
+                                data:
+                                  workflowName: otel-showcase
+                                  message: .event2-message
+      then: exit
+  - Process Case Try:
+      do:
+        - Set After Fail Parameters:
+            set:
+              after-fail-task-message: Try task has failed!
+        - Try Task:
+            try:
+              - Failing Task:
+                  raise:
+                    error:
+                      type: https://example.com/errors/runtime
+                      title: Server Error
+                      detail: This error is intentionally raised for the example purposes
+                      status: 500
+            catch:
+              errors:
+                with:
+                  type: https://example.com/errors/runtime
+                  status: 500
+              do:
+                - Execute After Failing Task:
+                    emit:
+                      event:
+                        with:
+                          source: http://otel.otelshowcase
+                          type: otel.showcase.failing-event
+                          data:
+                            workflowName: otel-showcase
+                            message: .after-fail-task-message
+              retry:
+                delay:
+                  seconds: 1
+                backoff:
+                  exponential: {}
+                limit:
+                  attempt:
+                    count: 2
+      then: exit
+  - Handle Unknown Case:
+      do:
+        - Set Unknown Case Event Parameters:
+            set:
+              event-message:  Event produced in the unknown case!
+        - Emit Unknown Case Event:
+            emit:
+              event:
+                with:
+                  source: http://otel.otelshowcase
+                  type: otel.showcase.unknown-event
+                  data:
+                    workflowName: otel-showcase
+                    message: .event-message

@@ -102,6 +102,12 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-opentelemetry-deployment</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <modules>
@@ -118,6 +124,7 @@
         <module>resilient-task-orchestrator</module>
         <module>greeting-runner</module>
         <module>auth-oauth2-oidc</module>
+        <module>opentelemetry</module>
     </modules>
 
     <build>
