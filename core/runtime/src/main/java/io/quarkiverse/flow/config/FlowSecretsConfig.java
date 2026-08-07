@@ -23,7 +23,8 @@ public interface FlowSecretsConfig {
      * @see <a href="https://quarkus.io/guides/credentials-provider>Using a Credentials Provider</a>
      * @see <a href="https://github.com/open-workflow-specification/specification/blob/main/dsl.md#secret">Open Workflow
      *      Specification - Secrets</a>
-     * @see <a href="https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#authentication">Open
+     * @see <a href=
+     *      "https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#authentication">Open
      *      Workflow Specification - Authentication</a>
      */
     Optional<String> credentialsProviderName();

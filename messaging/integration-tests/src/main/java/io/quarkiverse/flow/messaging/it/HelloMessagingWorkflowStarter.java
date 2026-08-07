@@ -18,7 +18,8 @@ import io.quarkus.runtime.Quarkus;
  * It will keep listening to the event and once it does, it runs the workflow and exit gracefully.
  * <p/>
  * To keep creating workflow instances per event, we should use the `on`, as
- * <a href="https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#schedule">described in the spec</a>:
+ * <a href="https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#schedule">described in the
+ * spec</a>:
  * <p/>
  * "Schedule: Specifies the events that trigger the workflow execution."
  * <p/>

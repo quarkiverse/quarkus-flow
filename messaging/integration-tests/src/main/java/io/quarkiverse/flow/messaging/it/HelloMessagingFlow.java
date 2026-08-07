@@ -27,9 +27,11 @@ public class HelloMessagingFlow extends Flow {
      * <p/>
      * To know more about the infrastructure configuration, please see the application.properties and the tests in this module.
      *
-     * @see <a href="https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#listen">DSL Reference:
+     * @see <a href="https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#listen">DSL
+     *      Reference:
      *      Listen</a>
-     * @see <a href="https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#emit">DSL Reference:
+     * @see <a href="https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#emit">DSL
+     *      Reference:
      *      Emit</a>
      */
     @Override
