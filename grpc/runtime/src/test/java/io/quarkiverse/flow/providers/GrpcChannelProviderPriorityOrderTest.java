@@ -20,79 +20,112 @@ class GrpcChannelProviderPriorityOrderTest {
 
     private static final WorkflowDefinitionId WORKFLOW = new WorkflowDefinitionId("org.acme", "grpcGreeting", "0.0.1");
 
-    private static final String TASK_KEY = "org.acme:grpcGreeting:0.0.1:greet";
-    private static final String WORKFLOW_KEY = "org.acme:grpcGreeting:0.0.1";
-    private static final String VERSIONLESS_KEY = "org.acme:grpcGreeting";
+    private static final String TASK_FULL_KEY = "org.acme:grpcGreeting:0.0.1.task.greet";
+    private static final String TASK_MEDIUM_KEY = "org.acme:grpcGreeting.task.greet";
+    private static final String TASK_SHORT_KEY = "grpcGreeting.task.greet";
+    private static final String WORKFLOW_FULL_KEY = "org.acme:grpcGreeting:0.0.1";
+    private static final String WORKFLOW_MEDIUM_KEY = "org.acme:grpcGreeting";
+    private static final String WORKFLOW_SHORT_KEY = "grpcGreeting";
 
     private static FlowGrpcConfig.ClientOverrideConfig override(String name) {
         return () -> Optional.ofNullable(name);
     }
 
-    /** No Quarkus gRPC clients are registered. */
     private static final Predicate<String> NO_CHANNELS = name -> false;
 
-    /** Treats the given names as registered Quarkus gRPC clients. */
     private static Predicate<String> channels(String... names) {
         return Set.of(names)::contains;
     }
 
     @Nested
-    @DisplayName("config overrides")
+    @DisplayName("config overrides — 6-level cascade")
     class ConfigOverrides {
 
         @Test
-        @DisplayName("A task-level override takes precedence over workflow, versionless and channel-existence rules")
-        void task_override_wins_over_everything() {
+        @DisplayName("task full key wins over all other levels")
+        void task_full_wins() {
             Map<String, FlowGrpcConfig.ClientOverrideConfig> overrides = Map.of(
-                    TASK_KEY, override("taskClient"),
-                    WORKFLOW_KEY, override("workflowClient"),
-                    VERSIONLESS_KEY, override("versionlessClient"));
+                    TASK_FULL_KEY, override("taskFullClient"),
+                    TASK_MEDIUM_KEY, override("taskMediumClient"),
+                    TASK_SHORT_KEY, override("taskShortClient"),
+                    WORKFLOW_FULL_KEY, override("wfFullClient"),
+                    WORKFLOW_MEDIUM_KEY, override("wfMediumClient"),
+                    WORKFLOW_SHORT_KEY, override("wfShortClient"));
 
-            String resolved = resolveClientName(overrides, channels(WORKFLOW_KEY, DEFAULT_CHANNEL_NAME), WORKFLOW, "greet");
+            String resolved = resolveClientName(overrides, channels(WORKFLOW_FULL_KEY, DEFAULT_CHANNEL_NAME), WORKFLOW,
+                    "greet");
 
-            assertThat(resolved).isEqualTo("taskClient");
+            assertThat(resolved).isEqualTo("taskFullClient");
         }
 
         @Test
-        @DisplayName("A version-specific workflow override takes precedence over the versionless override")
-        void workflow_override_wins_over_versionless() {
+        @DisplayName("task medium key wins when full is absent")
+        void task_medium_wins() {
             Map<String, FlowGrpcConfig.ClientOverrideConfig> overrides = Map.of(
-                    WORKFLOW_KEY, override("workflowClient"),
-                    VERSIONLESS_KEY, override("versionlessClient"));
+                    TASK_MEDIUM_KEY, override("taskMediumClient"),
+                    TASK_SHORT_KEY, override("taskShortClient"),
+                    WORKFLOW_FULL_KEY, override("wfFullClient"));
 
-            String resolved = resolveClientName(overrides, channels(WORKFLOW_KEY, DEFAULT_CHANNEL_NAME), WORKFLOW, "greet");
+            String resolved = resolveClientName(overrides, NO_CHANNELS, WORKFLOW, "greet");
 
-            assertThat(resolved).isEqualTo("workflowClient");
+            assertThat(resolved).isEqualTo("taskMediumClient");
         }
 
         @Test
-        @DisplayName("The versionless override is applied when no version-specific override exists")
-        void versionless_override_applies_when_no_version_specific_override() {
+        @DisplayName("task short key wins when full and medium are absent")
+        void task_short_wins() {
             Map<String, FlowGrpcConfig.ClientOverrideConfig> overrides = Map.of(
-                    VERSIONLESS_KEY, override("versionlessClient"));
+                    TASK_SHORT_KEY, override("taskShortClient"),
+                    WORKFLOW_FULL_KEY, override("wfFullClient"));
 
-            String resolved = resolveClientName(overrides, channels(WORKFLOW_KEY, DEFAULT_CHANNEL_NAME), WORKFLOW, "greet");
+            String resolved = resolveClientName(overrides, NO_CHANNELS, WORKFLOW, "greet");
 
-            assertThat(resolved).isEqualTo("versionlessClient");
+            assertThat(resolved).isEqualTo("taskShortClient");
         }
 
         @Test
-        @DisplayName("An explicit versionless override wins over the workflow-id-named client and the default channel")
-        void versionless_override_wins_over_workflow_id_named_client_and_default() {
+        @DisplayName("workflow full key wins when no task overrides")
+        void workflow_full_wins() {
             Map<String, FlowGrpcConfig.ClientOverrideConfig> overrides = Map.of(
-                    VERSIONLESS_KEY, override("versionlessClient"));
+                    WORKFLOW_FULL_KEY, override("wfFullClient"),
+                    WORKFLOW_MEDIUM_KEY, override("wfMediumClient"),
+                    WORKFLOW_SHORT_KEY, override("wfShortClient"));
 
-            // Both the workflow-id-named client and the default channel exist, but the explicit override wins.
-            String resolved = resolveClientName(overrides, channels(WORKFLOW_KEY, DEFAULT_CHANNEL_NAME), WORKFLOW, "greet");
+            String resolved = resolveClientName(overrides, channels(WORKFLOW_FULL_KEY, DEFAULT_CHANNEL_NAME), WORKFLOW,
+                    "greet");
 
-            assertThat(resolved).isEqualTo("versionlessClient");
+            assertThat(resolved).isEqualTo("wfFullClient");
         }
 
         @Test
-        @DisplayName("An override whose client name is absent is ignored and resolution continues")
+        @DisplayName("workflow medium key wins when full is absent")
+        void workflow_medium_wins() {
+            Map<String, FlowGrpcConfig.ClientOverrideConfig> overrides = Map.of(
+                    WORKFLOW_MEDIUM_KEY, override("wfMediumClient"),
+                    WORKFLOW_SHORT_KEY, override("wfShortClient"));
+
+            String resolved = resolveClientName(overrides, channels(WORKFLOW_FULL_KEY, DEFAULT_CHANNEL_NAME), WORKFLOW,
+                    "greet");
+
+            assertThat(resolved).isEqualTo("wfMediumClient");
+        }
+
+        @Test
+        @DisplayName("workflow short key is the last override level")
+        void workflow_short_wins() {
+            Map<String, FlowGrpcConfig.ClientOverrideConfig> overrides = Map.of(
+                    WORKFLOW_SHORT_KEY, override("wfShortClient"));
+
+            String resolved = resolveClientName(overrides, channels(DEFAULT_CHANNEL_NAME), WORKFLOW, "greet");
+
+            assertThat(resolved).isEqualTo("wfShortClient");
+        }
+
+        @Test
+        @DisplayName("an override whose client name is absent is ignored and resolution continues")
         void override_with_empty_name_is_ignored() {
             Map<String, FlowGrpcConfig.ClientOverrideConfig> overrides = Map.of(
-                    VERSIONLESS_KEY, override(null));
+                    WORKFLOW_SHORT_KEY, override(null));
 
             String resolved = resolveClientName(overrides, channels(DEFAULT_CHANNEL_NAME), WORKFLOW, "greet");
 
@@ -105,23 +138,15 @@ class GrpcChannelProviderPriorityOrderTest {
     class ChannelExistenceFallbacks {
 
         @Test
-        @DisplayName("A client named after the workflow id wins over the default channel")
-        void workflow_id_named_client_wins_over_default_channel() {
-            String resolved = resolveClientName(Map.of(), channels(WORKFLOW_KEY, DEFAULT_CHANNEL_NAME), WORKFLOW, "greet");
-
-            assertThat(resolved).isEqualTo(WORKFLOW_KEY);
-        }
-
-        @Test
-        @DisplayName("The default channel is used when no workflow-id-named client exists")
-        void default_channel_used_when_no_workflow_id_named_client() {
+        @DisplayName("the default channel is used when no override matches")
+        void default_channel_used_when_no_overrides() {
             String resolved = resolveClientName(Map.of(), channels(DEFAULT_CHANNEL_NAME), WORKFLOW, "greet");
 
             assertThat(resolved).isEqualTo(DEFAULT_CHANNEL_NAME);
         }
 
         @Test
-        @DisplayName("Resolution returns null (SDK fallback) when no override or channel matches")
+        @DisplayName("resolution returns null (SDK fallback) when no override or channel matches")
         void sdk_fallback_returns_null_when_nothing_matches() {
             String resolved = resolveClientName(Map.of(), NO_CHANNELS, WORKFLOW, "greet");
 
@@ -130,11 +155,11 @@ class GrpcChannelProviderPriorityOrderTest {
     }
 
     @Test
-    @DisplayName("A null task name skips the task-level override lookup and falls through to the workflow override")
+    @DisplayName("a null task name skips the task-level override lookup and falls through to the workflow override")
     void null_task_name_skips_task_level_override() {
         Map<String, FlowGrpcConfig.ClientOverrideConfig> overrides = Map.of(
-                TASK_KEY, override("taskClient"),
-                WORKFLOW_KEY, override("workflowClient"));
+                TASK_FULL_KEY, override("taskClient"),
+                WORKFLOW_FULL_KEY, override("workflowClient"));
 
         String resolved = resolveClientName(overrides, NO_CHANNELS, WORKFLOW, null);
 

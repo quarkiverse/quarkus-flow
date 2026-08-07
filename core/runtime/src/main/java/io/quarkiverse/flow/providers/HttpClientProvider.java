@@ -37,6 +37,7 @@ import io.quarkiverse.flow.config.HttpClientConfig;
 import io.quarkus.arc.Arc;
 import io.quarkus.proxy.ProxyConfiguration;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
 /**
  * Registry of JAX-RS {@link Client} instances used by Quarkus Flow HTTP/OpenAPI tasks.
@@ -107,21 +108,15 @@ public class HttpClientProvider {
     /**
      * Resolve the {@link Client} to use for the given workflow and task.
      * <p>
-     * Resolution order:
-     * <ol>
-     * <li>Task-level override:
-     * {@code quarkus.flow.http.client.workflow.<workflowId>.task.<taskId>.name}</li>
-     * <li>Workflow-level default:
-     * {@code quarkus.flow.http.client.workflow.<workflowId>.name}</li>
-     * <li>Fallback to the global default client ({@link FlowHttpConfig})</li>
-     * </ol>
+     * Uses the 6-level progressive specificity cascade (ADR 2026-07-07).
+     * Falls back to the global default client when no override matches.
      *
-     * @param workflowId workflow id (as defined in the DSL / {@code Workflow#id()})
-     * @param taskId task logical id (e.g. {@code "fetchCustomers"})
+     * @param workflowId the workflow identity (namespace, name, version)
+     * @param taskName task logical name (e.g. {@code "fetchCustomers"})
      * @return a cached {@link Client} instance
      */
-    public Client clientFor(String workflowId, String taskId) {
-        final String clientName = routingNameResolver.resolveName(workflowId, taskId);
+    public Client clientFor(WorkflowDefinitionId workflowId, String taskName) {
+        final String clientName = routingNameResolver.resolveName(workflowId, taskName);
         if (clientName == null) {
             return getOrCreateDefaultClient();
         }

@@ -18,17 +18,28 @@ It connects the Serverless Workflow gRPC executor to Quarkus gRPC channels, so y
 
 == Channel resolution
 
-The module resolves the Quarkus gRPC named channel to use for each workflow task, following this order:
+The module resolves the Quarkus gRPC named channel to use for each workflow task.
+When multiple routing rules match, the most specific one wins:
 
-1. **Task-level override**: `quarkus.flow.grpc.client."<workflowId>:<taskName>".name=<clientName>`
-2. **Workflow-level override**: `quarkus.flow.grpc.client."<workflowId>".name=<clientName>`
-3. **Versionless override**: `quarkus.flow.grpc.client."<namespace>:<name>".name=<clientName>` — applied to **all versions** of the workflow.
-4. **Workflow ID as client name**: If a Quarkus gRPC client matching the workflow ID exists, it is used.
-5. **Default channel**: If a Quarkus gRPC client named `flowGrpc` exists, it is used for all workflows.
-6. **SDK fallback**: If none of the above match, the SDK falls back to the host and port declared in the workflow itself.
+1. **Task-level full** (most specific) — `quarkus.flow.grpc.client."<namespace>\:<name>\:<version>.task.<taskName>".name`
+2. **Task-level medium** — `quarkus.flow.grpc.client."<namespace>\:<name>.task.<taskName>".name`
+3. **Task-level short** — `quarkus.flow.grpc.client."<name>.task.<taskName>".name`
+4. **Workflow-level full** — `quarkus.flow.grpc.client."<namespace>\:<name>\:<version>".name`
+5. **Workflow-level medium** — `quarkus.flow.grpc.client."<namespace>\:<name>".name`
+6. **Workflow-level short** — `quarkus.flow.grpc.client.<name>.name`
+7. **Default channel** — if a Quarkus gRPC client named `flowGrpc` exists, it is used for all workflows
+8. **SDK fallback** — no routing configured; the SDK falls back to the host and port declared in the workflow itself
 
-The workflow ID is `namespace:name:version` (e.g. `org.acme:grpcGreeting:0.0.1`).
-The versionless key is `namespace:name` (e.g. `org.acme:grpcGreeting`).
+[NOTE]
+====
+**Progressive specificity:** The resolver tries keys from most to least specific: first task-level (full, medium, short), then workflow-level (full, medium, short). Within each group, it goes from longest (namespace:name:version) to shortest (name only).
+====
+
+[IMPORTANT]
+====
+Colons in the composite key must be escaped as `\:` in `application.properties` files.
+For example, for a workflow with namespace `org.acme` and name `grpcGreeting`, use `"org.acme\:grpcGreeting"`.
+====
 
 == Configure a default channel
 
@@ -51,22 +62,17 @@ quarkus.grpc.clients.myService.host=my-grpc-server.example.com
 quarkus.grpc.clients.myService.port=443
 quarkus.grpc.clients.myService.plain-text=false
 
-quarkus.flow.grpc.client."org.acme:grpcGreeting:0.0.1".name=myService
+# Short key — route by workflow name only (simplest)
+quarkus.flow.grpc.client.grpcGreeting.name=myService
+
+# Medium key — route by namespace and name (all versions)
+quarkus.flow.grpc.client."org.acme\:grpcGreeting".name=myService
+
+# Full key — route a specific version
+quarkus.flow.grpc.client."org.acme\:grpcGreeting\:0.0.1".name=myService
 ```
 
-== Configure a channel for all versions of a workflow
-
-To route every version of a workflow to the same gRPC server, use the versionless key `namespace:name` (omit the version):
-
-```properties
-quarkus.grpc.clients.myService.host=my-grpc-server.example.com
-quarkus.grpc.clients.myService.port=443
-quarkus.grpc.clients.myService.plain-text=false
-
-quarkus.flow.grpc.client."org.acme:grpcGreeting".name=myService
-```
-
-A version-specific override (`org.acme:grpcGreeting:0.0.1`) always takes precedence over the versionless one (`org.acme:grpcGreeting`).
+A more specific key always takes precedence: full (`org.acme:grpcGreeting:0.0.1`) wins over medium (`org.acme:grpcGreeting`), which wins over short (`grpcGreeting`).
 
 == Configure per-task channels
 
@@ -74,8 +80,14 @@ If a single workflow orchestrates multiple gRPC servers, use task-level override
 Each gRPC task in the workflow must have a unique name.
 
 ```properties
-quarkus.flow.grpc.client."org.acme:orderWorkflow:0.0.1".name=orderService
-quarkus.flow.grpc.client."org.acme:orderWorkflow:0.0.1:checkInventory".name=inventoryService
+# Workflow-level default
+quarkus.flow.grpc.client."org.acme\:orderWorkflow\:0.0.1".name=orderService
+
+# Task-level override (uses .task. separator)
+quarkus.flow.grpc.client."org.acme\:orderWorkflow\:0.0.1.task.checkInventory".name=inventoryService
+
+# Short task key — by workflow name and task only
+quarkus.flow.grpc.client."orderWorkflow.task.checkInventory".name=inventoryService
 ```
 
 [NOTE]

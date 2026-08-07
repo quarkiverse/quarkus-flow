@@ -10,6 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.grpc.Channel;
+import io.quarkiverse.flow.config.ClientConfigCascade;
+import io.quarkiverse.flow.config.ClientNamingConvention;
 import io.quarkiverse.flow.config.FlowGrpcConfig;
 import io.quarkiverse.flow.recorders.WorkflowApplicationBuilderCustomizer;
 import io.quarkus.arc.Arc;
@@ -29,8 +31,6 @@ public class GrpcChannelProvider implements WorkflowApplicationBuilderCustomizer
     static final String GRPC_CHANNEL_PROVIDER_KEY = "grpcChannelProvider";
 
     static final String DEFAULT_CHANNEL_NAME = "flowGrpc";
-
-    private static final String KEY_SEPARATOR = ":";
 
     private static final Logger LOG = LoggerFactory.getLogger(GrpcChannelProvider.class);
 
@@ -56,41 +56,21 @@ public class GrpcChannelProvider implements WorkflowApplicationBuilderCustomizer
 
     static String resolveClientName(Map<String, FlowGrpcConfig.ClientOverrideConfig> overrides,
             Predicate<String> channelExists, WorkflowDefinitionId workflowId, String taskName) {
-        String workflowKey = workflowId.toString(KEY_SEPARATOR);
 
-        // 1. Task-level override: namespace:name:version:taskName
-        if (taskName != null && !taskName.isBlank()) {
-            String taskOverride = overrideName(overrides, workflowKey + KEY_SEPARATOR + taskName);
-            if (taskOverride != null) {
-                return taskOverride;
-            }
+        // 6-level cascade (task full → task medium → task short → workflow full → workflow medium → workflow short)
+        String cascadeResult = ClientConfigCascade.resolve(key -> overrideName(overrides, key), workflowId, taskName);
+        if (cascadeResult != null) {
+            return cascadeResult;
         }
 
-        // 2. Workflow-level override: namespace:name:version
-        String workflowOverride = overrideName(overrides, workflowKey);
-        if (workflowOverride != null) {
-            return workflowOverride;
-        }
-
-        // 3. Versionless workflow override: namespace:name (applies to all versions)
-        String versionlessOverride = overrideName(overrides, workflowId.namespace() + KEY_SEPARATOR + workflowId.name());
-        if (versionlessOverride != null) {
-            return versionlessOverride;
-        }
-
-        // 4. Workflow ID as client name
-        if (channelExists.test(workflowKey)) {
-            return workflowKey;
-        }
-
-        // 5. Default channel
+        // gRPC-specific: default channel
         if (channelExists.test(DEFAULT_CHANNEL_NAME)) {
             return DEFAULT_CHANNEL_NAME;
         }
 
-        // 6. SDK fallback
+        // SDK fallback
         LOG.debug("No Quarkus gRPC client configured for workflow '{}'; SDK will use its default channel",
-                workflowKey);
+                ClientNamingConvention.workflowKeyFull(workflowId));
         return null;
     }
 

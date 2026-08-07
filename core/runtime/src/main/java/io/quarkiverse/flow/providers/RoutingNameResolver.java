@@ -1,8 +1,10 @@
 package io.quarkiverse.flow.providers;
 
-import java.util.Optional;
+import java.util.Map;
 
+import io.quarkiverse.flow.config.ClientConfigCascade;
 import io.quarkiverse.flow.config.FlowHttpConfig;
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
 public class RoutingNameResolver {
 
@@ -12,22 +14,16 @@ public class RoutingNameResolver {
         this.flowHttpConfig = flowHttpConfig;
     }
 
-    public String resolveName(String workflowName, String taskName) {
-        final FlowHttpConfig.WorkflowRoutingConfig wfCfg = flowHttpConfig.workflow().get(workflowName);
-        if (wfCfg == null) {
-            return null;
-        }
+    public String resolveName(WorkflowDefinitionId workflowId, String taskName) {
+        Map<String, FlowHttpConfig.ClientOverrideConfig> overrides = flowHttpConfig.workflow();
+        return ClientConfigCascade.resolve(key -> overrideName(overrides, key), workflowId, taskName);
+    }
 
-        if (taskName != null && !taskName.isBlank()) {
-            final FlowHttpConfig.TaskRoutingConfig taskCfg = wfCfg.task().get(taskName);
-            if (taskCfg != null) {
-                Optional<String> taskClient = taskCfg.name();
-                if (taskClient.isPresent() && !taskClient.get().isBlank()) {
-                    return taskClient.get();
-                }
-            }
+    private static String overrideName(Map<String, FlowHttpConfig.ClientOverrideConfig> overrides, String key) {
+        FlowHttpConfig.ClientOverrideConfig override = overrides.get(key);
+        if (override != null && override.name().isPresent()) {
+            return override.name().get();
         }
-
-        return wfCfg.name().orElse(null);
+        return null;
     }
 }

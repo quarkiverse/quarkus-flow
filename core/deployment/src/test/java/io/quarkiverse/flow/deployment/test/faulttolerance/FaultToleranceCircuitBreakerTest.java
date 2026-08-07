@@ -12,11 +12,16 @@ import io.quarkiverse.flow.config.FlowHttpConfig;
 import io.quarkiverse.flow.config.FlowMetricsConfig;
 import io.quarkiverse.flow.providers.FaultToleranceProvider;
 import io.quarkiverse.flow.providers.WorkflowTaskContext;
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.faulttolerance.api.TypedGuard;
 
 public class FaultToleranceCircuitBreakerTest {
+
+    private static WorkflowDefinitionId wfId(String name) {
+        return new WorkflowDefinitionId("default", name, "0.0.1");
+    }
 
     @Test
     void should_open_circuit_breaker_after_failure_threshold() {
@@ -39,7 +44,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("payment", "process"));
+                .guardFor(new WorkflowTaskContext(wfId("payment"), "process"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -79,7 +84,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("payment", "process"));
+                .guardFor(new WorkflowTaskContext(wfId("payment"), "process"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -123,7 +128,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("payment", "process"));
+                .guardFor(new WorkflowTaskContext(wfId("payment"), "process"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -147,7 +152,7 @@ public class FaultToleranceCircuitBreakerTest {
                 .addDiscoveredConverters()
                 .withMapping(FlowHttpConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "false")
-                .withDefaultValue("quarkus.flow.http.client.workflow.payment.task.validate.name", "paymentValidator")
+                .withDefaultValue("quarkus.flow.http.client.workflow.\"payment.task.validate\".name", "paymentValidator")
                 .withDefaultValue("quarkus.flow.http.client.named.paymentValidator.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue(
                         "quarkus.flow.http.client.named.paymentValidator.resilience.circuit-breaker.request-volume-threshold",
@@ -167,7 +172,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("payment", "validate"));
+                .guardFor(new WorkflowTaskContext(wfId("payment"), "validate"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -206,7 +211,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("order", "create"));
+                .guardFor(new WorkflowTaskContext(wfId("order"), "create"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -244,7 +249,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("inventory", "check"));
+                .guardFor(new WorkflowTaskContext(wfId("inventory"), "check"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -299,7 +304,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("shipping", "calculate"));
+                .guardFor(new WorkflowTaskContext(wfId("shipping"), "calculate"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -348,7 +353,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("notification", "send"));
+                .guardFor(new WorkflowTaskContext(wfId("notification"), "send"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -400,7 +405,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("user", "register"));
+                .guardFor(new WorkflowTaskContext(wfId("user"), "register"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -426,7 +431,7 @@ public class FaultToleranceCircuitBreakerTest {
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold", "10")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio", "0.5")
-                .withDefaultValue("quarkus.flow.http.client.workflow.billing.task.charge.name", "billingCharger")
+                .withDefaultValue("quarkus.flow.http.client.workflow.\"billing.task.charge\".name", "billingCharger")
                 .withDefaultValue("quarkus.flow.http.client.named.billingCharger.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue(
                         "quarkus.flow.http.client.named.billingCharger.resilience.circuit-breaker.request-volume-threshold",
@@ -446,7 +451,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("billing", "charge"));
+                .guardFor(new WorkflowTaskContext(wfId("billing"), "charge"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -484,7 +489,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("analytics", "track"));
+                .guardFor(new WorkflowTaskContext(wfId("analytics"), "track"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 
@@ -535,7 +540,7 @@ public class FaultToleranceCircuitBreakerTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("cache", "invalidate"));
+                .guardFor(new WorkflowTaskContext(wfId("cache"), "invalidate"));
 
         AtomicInteger callCount = new AtomicInteger(0);
 

@@ -231,9 +231,7 @@ public class WorkflowApplicationCreator {
     private void injectHttpClientProvider(final Builder builder) {
         LOG.debug("Flow: Bound HttpClientProvider bean: {}", httpClientProvider.getClass().getName());
         builder.withAdditionalObject(HttpClientResolver.HTTP_CLIENT_PROVIDER, ((workflowContextData, taskContextData) -> {
-            final String workflowName = workflowContextData.definition().workflow().getDocument().getName();
-            final String taskName = taskContextData.taskName();
-            return httpClientProvider.clientFor(workflowName, taskName);
+            return httpClientProvider.clientFor(workflowContextData.definition().id(), taskContextData.taskName());
         }));
     }
 
@@ -253,10 +251,9 @@ public class WorkflowApplicationCreator {
             @Override
             public CallableTask build(CallableTask delegate) {
                 return (workflowContext, taskContext, input) -> {
-                    String workflowName = workflowContext.definition().workflow().getDocument().getName();
-                    String taskName = taskContext.taskName();
                     TypedGuard<CompletionStage<WorkflowModel>> guard = faultToleranceProvider
-                            .guardFor(new WorkflowTaskContext(workflowName, taskName));
+                            .guardFor(new WorkflowTaskContext(workflowContext.definition().id(),
+                                    taskContext.taskName()));
 
                     return guard.get(() -> delegate.apply(workflowContext, taskContext, input)).toCompletableFuture();
                 };

@@ -48,6 +48,7 @@
 ** xref:idempotency-correlation.adoc[Idempotency and Correlation]
 
 * Migration Guides
+** xref:migration-0.15-to-0.16.adoc[0.15.x to 0.16.0]
 ** xref:migration-0.14-to-0.15.adoc[0.14.x to 0.15.0]
 ** xref:migration-0.13-to-0.14.adoc[0.13.x to 0.14.0]
 
