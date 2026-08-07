@@ -62,7 +62,7 @@ public class FaultToleranceProvider {
     }
 
     public TypedGuard<CompletionStage<WorkflowModel>> guardFor(WorkflowTaskContext ctx) {
-        String guardName = this.routingNameResolver.resolveName(ctx.workflowName(), ctx.taskName());
+        String guardName = this.routingNameResolver.resolveName(ctx.workflowId(), ctx.taskName());
         if (guardName == null) {
             return getOrCreateDefaultGuard(ctx);
         }

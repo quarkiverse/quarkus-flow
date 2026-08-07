@@ -15,11 +15,16 @@ import io.quarkiverse.flow.config.FlowHttpConfig;
 import io.quarkiverse.flow.config.FlowMetricsConfig;
 import io.quarkiverse.flow.providers.FaultToleranceProvider;
 import io.quarkiverse.flow.providers.WorkflowTaskContext;
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.faulttolerance.api.TypedGuard;
 
 public class FaultToleranceRetryTest {
+
+    private static WorkflowDefinitionId wfId(String name) {
+        return WorkflowDefinitionId.fromName(name);
+    }
 
     @Test
     void should_create_type_guard_with_retry_enabled_and_five_retries() {
@@ -37,7 +42,7 @@ public class FaultToleranceRetryTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("any", "any"));
+                .guardFor(new WorkflowTaskContext(wfId("any"), "any"));
 
         AtomicInteger atomicInteger = new AtomicInteger(0);
 
@@ -71,7 +76,7 @@ public class FaultToleranceRetryTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("any", "any"));
+                .guardFor(new WorkflowTaskContext(wfId("any"), "any"));
 
         AtomicInteger atomicInteger = new AtomicInteger(0);
 
@@ -106,7 +111,7 @@ public class FaultToleranceRetryTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("any", "any"));
+                .guardFor(new WorkflowTaskContext(wfId("any"), "any"));
 
         AtomicInteger atomicInteger = new AtomicInteger(0);
 
@@ -129,7 +134,7 @@ public class FaultToleranceRetryTest {
         FlowHttpConfig flowHttpConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
                 .withMapping(FlowHttpConfig.class)
-                .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "true") // default is true
+                .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.max-retries", "1")
                 .withDefaultValue("quarkus.flow.http.client.workflow.transfer.name", "transferClient")
                 .withDefaultValue("quarkus.flow.http.client.named.transferClient.resilience.retry.enabled", "false")
@@ -143,7 +148,7 @@ public class FaultToleranceRetryTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("transfer", "any"));
+                .guardFor(new WorkflowTaskContext(wfId("transfer"), "any"));
 
         AtomicInteger atomicInteger = new AtomicInteger(0);
 
@@ -166,14 +171,14 @@ public class FaultToleranceRetryTest {
         FlowHttpConfig flowHttpConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
                 .withMapping(FlowHttpConfig.class)
-                .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "true") // default is true
+                .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.max-retries", "1")
-                .withDefaultValue("quarkus.flow.http.client.workflow.transfer.task.notify.name", "transferNotifier")
-                .withDefaultValue("quarkus.flow.http.client.workflow.transfer.name", "transferNotifierWorkflowLevel") // workflow-level
+                .withDefaultValue("quarkus.flow.http.client.workflow.\"transfer.task.notify\".name", "transferNotifier")
+                .withDefaultValue("quarkus.flow.http.client.workflow.transfer.name", "transferNotifierWorkflowLevel")
                 .withDefaultValue("quarkus.flow.http.client.named.transferNotifierWorkflowLevel.resilience.retry.enabled",
                         "false")
                 .withDefaultValue("quarkus.flow.http.client.named.transferNotifier.resilience.retry.enabled", "true")
-                .withDefaultValue("quarkus.flow.http.client.named.transferNotifier.resilience.retry.max-retries", "2") // overrides the default
+                .withDefaultValue("quarkus.flow.http.client.named.transferNotifier.resilience.retry.max-retries", "2")
                 .build().getConfigMapping(FlowHttpConfig.class);
 
         FlowMetricsConfig flowMetricsConfig = new SmallRyeConfigBuilder()
@@ -184,7 +189,7 @@ public class FaultToleranceRetryTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("transfer", "notify"));
+                .guardFor(new WorkflowTaskContext(wfId("transfer"), "notify"));
 
         AtomicInteger atomicInteger = new AtomicInteger(0);
 
@@ -221,7 +226,7 @@ public class FaultToleranceRetryTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> guard = sut
-                .guardFor(new WorkflowTaskContext("transfer", "notify"));
+                .guardFor(new WorkflowTaskContext(wfId("transfer"), "notify"));
 
         List<Long> executionTimes = new CopyOnWriteArrayList<>();
 
@@ -262,7 +267,7 @@ public class FaultToleranceRetryTest {
         FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
-                .guardFor(new WorkflowTaskContext("any", "any"));
+                .guardFor(new WorkflowTaskContext(wfId("any"), "any"));
 
         AtomicInteger atomicInteger = new AtomicInteger(0);
 

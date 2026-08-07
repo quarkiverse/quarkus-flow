@@ -1,4 +1,10 @@
 package io.quarkiverse.flow.providers;
 
-public record WorkflowTaskContext(String workflowName, String taskName) {
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
+
+public record WorkflowTaskContext(WorkflowDefinitionId workflowId, String taskName) {
+
+    public String workflowName() {
+        return workflowId.name();
+    }
 }

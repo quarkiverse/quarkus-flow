@@ -68,21 +68,58 @@ quarkus.flow.http.client.named.internal.connection-pool-size=100
 
 == 4. Route workflows and tasks to clients
 
-Routing is configured under the `workflow` section:
+Routing is configured under the `workflow` section.
+Keys are composite identifiers that encode namespace, name, version, and optional task name.
+
+=== Workflow-level routing (most common)
 
 [source,properties]
 ----
-# Use "secureA" for all HTTP/OpenAPI tasks in the workflow "order-flow"
+# Short key — route by workflow name only (99% use case)
 quarkus.flow.http.client.workflow.order-flow.name=secureA
 
-# Override only the "fetchCustomers" task within "order-flow" to use "internal"
-quarkus.flow.http.client.workflow.order-flow.task.fetchCustomers.name=internal
+# Medium key — route by namespace and name
+quarkus.flow.http.client.workflow."acme\:order-flow".name=secureA
+
+# Full key — route by namespace, name and version
+quarkus.flow.http.client.workflow."acme\:order-flow\:1.0.0".name=secureA
 ----
 
-Resolution order for a call:
-. Task-level override.
-. Workflow-level default.
-. Fallback to the global default client.
+=== Task-level routing
+
+[source,properties]
+----
+# Short key — route a specific task by workflow name
+quarkus.flow.http.client.workflow."order-flow.task.fetchCustomers".name=internal
+
+# Medium key — with namespace
+quarkus.flow.http.client.workflow."acme\:order-flow.task.fetchCustomers".name=internal
+
+# Full key — with namespace and version
+quarkus.flow.http.client.workflow."acme\:order-flow\:1.0.0.task.fetchCustomers".name=internal
+----
+
+=== Resolution order
+
+When multiple routing rules match, the most specific one wins:
+
+1. **Task-level full** (most specific) — `quarkus.flow.http.client.workflow."<namespace>\:<name>\:<version>.task.<taskName>".name`
+2. **Task-level medium** — `quarkus.flow.http.client.workflow."<namespace>\:<name>.task.<taskName>".name`
+3. **Task-level short** — `quarkus.flow.http.client.workflow."<name>.task.<taskName>".name`
+4. **Workflow-level full** — `quarkus.flow.http.client.workflow."<namespace>\:<name>\:<version>".name`
+5. **Workflow-level medium** — `quarkus.flow.http.client.workflow."<namespace>\:<name>".name`
+6. **Workflow-level short** — `quarkus.flow.http.client.workflow.<name>.name`
+7. **Default fallback** — no routing configured; the global default client is used
+
+[NOTE]
+====
+**Progressive specificity:** The resolver tries keys from most to least specific: first task-level (full, medium, short), then workflow-level (full, medium, short). Within each group, it goes from longest (namespace:name:version) to shortest (name only).
+====
+
+[IMPORTANT]
+====
+Colons in the composite key must be escaped as `\:` in `application.properties` files. For example, for a workflow with namespace `acme` and name `order-flow`, use `"acme\:order-flow"`.
+====
 
 [IMPORTANT]
 It is highly recommended that you keep HTTP-related task names unique within your workflow to avoid routing conflicts.

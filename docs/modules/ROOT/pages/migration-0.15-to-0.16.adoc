@@ -1,0 +1,161 @@
+= Migration Guide: 0.15.x to 0.16.0
+include::includes/attributes.adoc[]
+
+Quarkus Flow 0.16.0 unifies the HTTP and gRPC client resolution with a single progressive specificity cascade.
+All three client protocols (HTTP, gRPC, OIDC) now share the same key format and the same 6-level resolution order.
+
+This is a **configuration breaking change**: task-level routing keys use a new format in `application.properties`.
+
+== Why the change?
+
+In 0.15.1, HTTP, gRPC, and OIDC each had different configuration shapes:
+
+* **HTTP** used nested maps (`workflow.<name>.task.<taskName>.name`), supporting only 2 levels (task, then workflow).
+* **gRPC** used flat composite keys with colons as task separators (`<namespace>:<name>:<version>:<taskName>`), supporting 3 levels.
+* **OIDC** had its own naming convention, separate from both.
+
+This inconsistency made configuration confusing and prevented simple name-only keys for gRPC.
+
+0.16.0 introduces a unified `ClientNamingConvention` and `ClientConfigCascade` shared by all three protocols, with a consistent `.task.` separator and support for namespace-aware, version-aware routing at all levels.
+
+== Resolution cascade
+
+All protocols now resolve client names using the same 6-level progressive specificity cascade.
+The first match wins:
+
+[cols="1,2,3",options="header"]
+|===
+| Priority | Level | Key format
+
+| 1 | Task (full) | `namespace:name:version.task.taskName`
+| 2 | Task (medium) | `namespace:name.task.taskName`
+| 3 | Task (short) | `name.task.taskName`
+| 4 | Workflow (full) | `namespace:name:version`
+| 5 | Workflow (medium) | `namespace:name`
+| 6 | Workflow (short) | `name`
+|===
+
+If no task name is provided, priorities 1-3 are skipped.
+
+== What changed
+
+=== HTTP client routing
+
+[cols="1,1",options="header"]
+|===
+| Before (0.15.1) | After (0.16.0)
+
+| Nested map: `workflow.<name>.task.<taskName>.name`
+| Flat composite key: `workflow."<name>.task.<taskName>".name`
+
+| Workflow-level only by name
+| Workflow-level by name, namespace:name, or namespace:name:version
+
+| 2-level resolution (task, then workflow)
+| 6-level resolution cascade
+|===
+
+=== gRPC client routing
+
+[cols="1,1",options="header"]
+|===
+| Before (0.15.1) | After (0.16.0)
+
+| Task separator was `:` (colon)
+| Task separator is `.task.`
+
+| No short (name-only) key
+| Short key supported (`<name>`)
+
+| 3-level resolution + 2 fallbacks
+| 6-level resolution + 2 fallbacks
+|===
+
+== Step-by-step migration
+
+=== 1. Update HTTP task-level routing properties
+
+Workflow-level HTTP properties using only the workflow name are **unchanged**:
+
+[source,properties]
+----
+# No change needed
+quarkus.flow.http.client.workflow.orders.name=secureA
+----
+
+Task-level HTTP properties must change from nested format to flat composite key format:
+
+[source,properties]
+----
+# Before (0.15.1) — nested task sub-key
+quarkus.flow.http.client.workflow.orders.task.payment.name=secureB
+
+# After (0.16.0) — flat composite key with .task. separator
+quarkus.flow.http.client.workflow."orders.task.payment".name=secureB
+----
+
+=== 2. Update gRPC task-level routing properties
+
+Workflow-level gRPC properties are **unchanged**:
+
+[source,properties]
+----
+# No change needed
+quarkus.flow.grpc.client."org.acme:grpcGreeting:0.0.1".name=my-channel
+quarkus.flow.grpc.client."org.acme:grpcGreeting".name=my-channel
+----
+
+Task-level gRPC properties must replace the trailing colon with `.task.`:
+
+[source,properties]
+----
+# Before (0.15.1) — colon task separator
+quarkus.flow.grpc.client."org.acme:grpcGreeting:0.0.1:greet".name=my-channel
+
+# After (0.16.0) — .task. separator
+quarkus.flow.grpc.client."org.acme:grpcGreeting:0.0.1.task.greet".name=my-channel
+----
+
+=== 3. Verify
+
+Rebuild your project and run your tests:
+
+[source,bash]
+----
+mvn clean verify
+----
+
+If you have unrecognized configuration key warnings at startup, check for any remaining old-format properties.
+
+== New capabilities
+
+=== Name-only keys (short keys)
+
+Both HTTP and gRPC now accept simple name-only keys.
+This covers the common case where there is no namespace or version ambiguity:
+
+[source,properties]
+----
+# Works for both HTTP and gRPC
+quarkus.flow.http.client.workflow.orders.name=secureA
+quarkus.flow.grpc.client.orders.name=my-channel
+----
+
+=== Namespace and version-aware routing
+
+When multiple namespaces define workflows with the same name, use a more specific key:
+
+[source,properties]
+----
+# Medium — namespace:name
+quarkus.flow.http.client.workflow."acme:orders".name=secureA
+
+# Full — namespace:name:version
+quarkus.flow.http.client.workflow."acme:orders:1.0.0".name=secureA
+----
+
+The same applies to gRPC and OIDC.
+
+== No other behavioral changes
+
+Workflow execution semantics, the Java DSL, lifecycle events, persistence, and messaging are unchanged.

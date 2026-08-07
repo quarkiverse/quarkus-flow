@@ -2,150 +2,64 @@ package io.quarkiverse.flow.oidc;
 
 import java.util.Objects;
 
+import io.quarkiverse.flow.config.ClientNamingConvention;
 import io.serverlessworkflow.api.types.TaskItem;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
 /**
- * Centralized naming conventions for OIDC client names and configuration keys.
+ * OIDC-specific naming conventions that delegate to {@link ClientNamingConvention}.
  * <p>
- * Implements the unified client naming pattern from ADR 2026-07-07.
- * <p>
- * <b>Client names</b> (internal storage): {@code namespace:name:version.task.taskName}
- * <br>
- * <b>Config keys</b> (user-facing routing): Progressive specificity from short to full
+ * Retains the DSL-level overload {@link #clientName(Workflow, TaskItem)} for
+ * extracting identity from workflow/task objects.
  */
 public final class OidcNamingConvention {
-
-    private static final String SEPARATOR = ":";
-    private static final String TASK_SEGMENT = ".task.";
 
     private OidcNamingConvention() {
     }
 
-    // ========== Client Names & Full Config Keys ==========
-
     /**
-     * Generates full OIDC client name for inline task authentication.
-     * <p>
-     * This is also the full task-level config key per ADR 2026-07-07.
-     * <p>
-     * Format: {@code namespace:name:version.task.taskName}
-     * <p>
-     * Example: {@code acme:orders:1.0.0.task.payment}
+     * Generates full OIDC client name from DSL workflow and task objects.
      *
      * @param workflow the workflow
      * @param taskItem the task item
-     * @return composite client name (also used as full task config key)
+     * @return composite client name: {@code namespace:name:version.task.taskName}
      */
     public static String clientName(Workflow workflow, TaskItem taskItem) {
         Objects.requireNonNull(workflow, "workflow is null");
         Objects.requireNonNull(taskItem, "taskItem is null");
 
         final WorkflowDefinitionId id = WorkflowDefinitionId.of(workflow);
-        return clientName(id, taskItem.getName());
+        return ClientNamingConvention.taskKeyFull(id, taskItem.getName());
     }
 
-    /**
-     * Generates full OIDC client name for inline task authentication.
-     * <p>
-     * This is also the full task-level config key per ADR 2026-07-07.
-     * <p>
-     * Format: {@code namespace:name:version.task.taskName}
-     * <p>
-     * Example: {@code acme:orders:1.0.0.task.payment}
-     *
-     * @param workflowId the workflow definition ID
-     * @param taskName the task name
-     * @return composite client name (also used as full task config key)
-     */
+    /** @see ClientNamingConvention#taskKeyFull(WorkflowDefinitionId, String) */
     public static String clientName(WorkflowDefinitionId workflowId, String taskName) {
-        Objects.requireNonNull(workflowId, "workflowId is null");
-        Objects.requireNonNull(taskName, "taskName is null");
-
-        return workflowId.toString(SEPARATOR) + TASK_SEGMENT + taskName;
+        return ClientNamingConvention.taskKeyFull(workflowId, taskName);
     }
 
-    // ========== Progressive Config Keys (User-Facing Routing) ==========
-
-    /**
-     * Task-level config key with medium specificity (no version).
-     * <p>
-     * Format: {@code namespace:name.task.taskName}
-     * <p>
-     * Example: {@code acme:orders.task.payment}
-     *
-     * @param workflowId the workflow definition ID
-     * @param taskName the task name
-     * @return medium task config key
-     */
+    /** @see ClientNamingConvention#taskKeyMedium(WorkflowDefinitionId, String) */
     public static String taskConfigKeyMedium(WorkflowDefinitionId workflowId, String taskName) {
-        Objects.requireNonNull(workflowId, "workflowId is null");
-        Objects.requireNonNull(taskName, "taskName is null");
-
-        return workflowId.namespace() + SEPARATOR + workflowId.name() + TASK_SEGMENT + taskName;
+        return ClientNamingConvention.taskKeyMedium(workflowId, taskName);
     }
 
-    /**
-     * Task-level config key with short specificity (name only).
-     * <p>
-     * Format: {@code name.task.taskName}
-     * <p>
-     * Example: {@code orders.task.payment}
-     *
-     * @param workflowId the workflow definition ID
-     * @param taskName the task name
-     * @return short task config key
-     */
+    /** @see ClientNamingConvention#taskKeyShort(WorkflowDefinitionId, String) */
     public static String taskConfigKeyShort(WorkflowDefinitionId workflowId, String taskName) {
-        Objects.requireNonNull(workflowId, "workflowId is null");
-        Objects.requireNonNull(taskName, "taskName is null");
-
-        return workflowId.name() + TASK_SEGMENT + taskName;
+        return ClientNamingConvention.taskKeyShort(workflowId, taskName);
     }
 
-    /**
-     * Workflow-level config key with full specificity.
-     * <p>
-     * Format: {@code namespace:name:version}
-     * <p>
-     * Example: {@code acme:orders:1.0.0}
-     *
-     * @param workflowId the workflow definition ID
-     * @return full workflow config key
-     */
+    /** @see ClientNamingConvention#workflowKeyFull(WorkflowDefinitionId) */
     public static String workflowConfigKeyFull(WorkflowDefinitionId workflowId) {
-        Objects.requireNonNull(workflowId, "workflowId is null");
-        return workflowId.toString(SEPARATOR);
+        return ClientNamingConvention.workflowKeyFull(workflowId);
     }
 
-    /**
-     * Workflow-level config key with medium specificity (no version).
-     * <p>
-     * Format: {@code namespace:name}
-     * <p>
-     * Example: {@code acme:orders}
-     *
-     * @param workflowId the workflow definition ID
-     * @return medium workflow config key
-     */
+    /** @see ClientNamingConvention#workflowKeyMedium(WorkflowDefinitionId) */
     public static String workflowConfigKeyMedium(WorkflowDefinitionId workflowId) {
-        Objects.requireNonNull(workflowId, "workflowId is null");
-        return workflowId.namespace() + SEPARATOR + workflowId.name();
+        return ClientNamingConvention.workflowKeyMedium(workflowId);
     }
 
-    /**
-     * Workflow-level config key with short specificity (name only).
-     * <p>
-     * Format: {@code name}
-     * <p>
-     * Example: {@code orders}
-     *
-     * @param workflowId the workflow definition ID
-     * @return short workflow config key
-     */
+    /** @see ClientNamingConvention#workflowKeyShort(WorkflowDefinitionId) */
     public static String workflowConfigKeyShort(WorkflowDefinitionId workflowId) {
-        Objects.requireNonNull(workflowId, "workflowId is null");
-        return workflowId.name();
+        return ClientNamingConvention.workflowKeyShort(workflowId);
     }
 }

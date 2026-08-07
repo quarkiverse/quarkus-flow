@@ -7,8 +7,8 @@ import java.util.Optional;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import io.quarkiverse.flow.config.ClientConfigCascade;
 import io.quarkiverse.flow.oidc.FlowOidcConfig;
-import io.quarkiverse.flow.oidc.OidcNamingConvention;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.client.runtime.OidcClientConfig;
 import io.quarkus.oidc.client.runtime.OidcClientsConfig;
@@ -81,53 +81,14 @@ public final class OidcConfigResolver {
     public Optional<String> resolveOidcClientName(WorkflowDefinitionId workflowId, String taskName, String authPolicyName) {
         Map<String, FlowOidcConfig.ClientOverrideConfig> clients = config.client();
 
-        // Task-level overrides (progressive specificity)
-        if (taskName != null && !taskName.isBlank()) {
-            // 1. Task-level full: namespace:name:version.task.taskName
-            String taskFull = overrideName(clients, OidcNamingConvention.clientName(workflowId, taskName));
-            if (taskFull != null) {
-                validateClientName(taskFull);
-                return Optional.of(taskFull);
-            }
-
-            // 2. Task-level medium: namespace:name.task.taskName
-            String taskMedium = overrideName(clients, OidcNamingConvention.taskConfigKeyMedium(workflowId, taskName));
-            if (taskMedium != null) {
-                validateClientName(taskMedium);
-                return Optional.of(taskMedium);
-            }
-
-            // 3. Task-level short: name.task.taskName
-            String taskShort = overrideName(clients, OidcNamingConvention.taskConfigKeyShort(workflowId, taskName));
-            if (taskShort != null) {
-                validateClientName(taskShort);
-                return Optional.of(taskShort);
-            }
+        // 6-level cascade (task full → task medium → task short → workflow full → workflow medium → workflow short)
+        String cascadeResult = ClientConfigCascade.resolve(key -> overrideName(clients, key), workflowId, taskName);
+        if (cascadeResult != null) {
+            validateClientName(cascadeResult);
+            return Optional.of(cascadeResult);
         }
 
-        // Workflow-level overrides (progressive specificity)
-        // 4. Workflow-level full: namespace:name:version
-        String workflowFull = overrideName(clients, OidcNamingConvention.workflowConfigKeyFull(workflowId));
-        if (workflowFull != null) {
-            validateClientName(workflowFull);
-            return Optional.of(workflowFull);
-        }
-
-        // 5. Workflow-level medium: namespace:name
-        String workflowMedium = overrideName(clients, OidcNamingConvention.workflowConfigKeyMedium(workflowId));
-        if (workflowMedium != null) {
-            validateClientName(workflowMedium);
-            return Optional.of(workflowMedium);
-        }
-
-        // 6. Workflow-level short: name
-        String workflowShort = overrideName(clients, OidcNamingConvention.workflowConfigKeyShort(workflowId));
-        if (workflowShort != null) {
-            validateClientName(workflowShort);
-            return Optional.of(workflowShort);
-        }
-
-        // 7. Named authentication policy (e.g. use("keycloak"))
+        // Level 7: Named authentication policy (OIDC-specific)
         if (authPolicyName != null && !authPolicyName.isBlank()) {
             String namedName = overrideName(clients, authPolicyName);
             if (namedName != null) {
@@ -136,7 +97,6 @@ public final class OidcConfigResolver {
             }
         }
 
-        // 8. No override — DSL fallback
         return Optional.empty();
     }
 
@@ -152,49 +112,14 @@ public final class OidcConfigResolver {
     public Duration resolveCreationTimeout(WorkflowDefinitionId workflowId, String taskName, String authPolicyName) {
         Map<String, FlowOidcConfig.ClientOverrideConfig> clients = config.client();
 
-        // Task-level overrides (progressive specificity)
-        if (taskName != null && !taskName.isBlank()) {
-            // 1. Task-level full
-            Duration taskFull = overrideCreationTimeout(clients, OidcNamingConvention.clientName(workflowId, taskName));
-            if (taskFull != null) {
-                return taskFull;
-            }
-
-            // 2. Task-level medium
-            Duration taskMedium = overrideCreationTimeout(clients,
-                    OidcNamingConvention.taskConfigKeyMedium(workflowId, taskName));
-            if (taskMedium != null) {
-                return taskMedium;
-            }
-
-            // 3. Task-level short
-            Duration taskShort = overrideCreationTimeout(clients,
-                    OidcNamingConvention.taskConfigKeyShort(workflowId, taskName));
-            if (taskShort != null) {
-                return taskShort;
-            }
+        // 6-level cascade
+        Duration cascadeResult = ClientConfigCascade.resolve(key -> overrideCreationTimeout(clients, key), workflowId,
+                taskName);
+        if (cascadeResult != null) {
+            return cascadeResult;
         }
 
-        // Workflow-level overrides (progressive specificity)
-        // 4. Workflow-level full
-        Duration workflowFull = overrideCreationTimeout(clients, OidcNamingConvention.workflowConfigKeyFull(workflowId));
-        if (workflowFull != null) {
-            return workflowFull;
-        }
-
-        // 5. Workflow-level medium
-        Duration workflowMedium = overrideCreationTimeout(clients, OidcNamingConvention.workflowConfigKeyMedium(workflowId));
-        if (workflowMedium != null) {
-            return workflowMedium;
-        }
-
-        // 6. Workflow-level short
-        Duration workflowShort = overrideCreationTimeout(clients, OidcNamingConvention.workflowConfigKeyShort(workflowId));
-        if (workflowShort != null) {
-            return workflowShort;
-        }
-
-        // 7. Named authentication policy
+        // Level 7: Named authentication policy
         if (authPolicyName != null && !authPolicyName.isBlank()) {
             Duration namedTimeout = overrideCreationTimeout(clients, authPolicyName);
             if (namedTimeout != null) {
@@ -202,7 +127,6 @@ public final class OidcConfigResolver {
             }
         }
 
-        // 8. No override — global default
         return config.creationTimeout();
     }
 
@@ -221,49 +145,14 @@ public final class OidcConfigResolver {
     public Duration resolveConnectionTimeout(WorkflowDefinitionId workflowId, String taskName, String authPolicyName) {
         Map<String, FlowOidcConfig.ClientOverrideConfig> clients = config.client();
 
-        // Task-level overrides (progressive specificity)
-        if (taskName != null && !taskName.isBlank()) {
-            // 1. Task-level full
-            Duration taskFull = overrideConnectionTimeout(clients, OidcNamingConvention.clientName(workflowId, taskName));
-            if (taskFull != null) {
-                return taskFull;
-            }
-
-            // 2. Task-level medium
-            Duration taskMedium = overrideConnectionTimeout(clients,
-                    OidcNamingConvention.taskConfigKeyMedium(workflowId, taskName));
-            if (taskMedium != null) {
-                return taskMedium;
-            }
-
-            // 3. Task-level short
-            Duration taskShort = overrideConnectionTimeout(clients,
-                    OidcNamingConvention.taskConfigKeyShort(workflowId, taskName));
-            if (taskShort != null) {
-                return taskShort;
-            }
+        // 6-level cascade
+        Duration cascadeResult = ClientConfigCascade.resolve(key -> overrideConnectionTimeout(clients, key), workflowId,
+                taskName);
+        if (cascadeResult != null) {
+            return cascadeResult;
         }
 
-        // Workflow-level overrides (progressive specificity)
-        // 4. Workflow-level full
-        Duration workflowFull = overrideConnectionTimeout(clients, OidcNamingConvention.workflowConfigKeyFull(workflowId));
-        if (workflowFull != null) {
-            return workflowFull;
-        }
-
-        // 5. Workflow-level medium
-        Duration workflowMedium = overrideConnectionTimeout(clients, OidcNamingConvention.workflowConfigKeyMedium(workflowId));
-        if (workflowMedium != null) {
-            return workflowMedium;
-        }
-
-        // 6. Workflow-level short
-        Duration workflowShort = overrideConnectionTimeout(clients, OidcNamingConvention.workflowConfigKeyShort(workflowId));
-        if (workflowShort != null) {
-            return workflowShort;
-        }
-
-        // 7. Named authentication policy
+        // Level 7: Named authentication policy
         if (authPolicyName != null && !authPolicyName.isBlank()) {
             Duration namedTimeout = overrideConnectionTimeout(clients, authPolicyName);
             if (namedTimeout != null) {
@@ -271,7 +160,6 @@ public final class OidcConfigResolver {
             }
         }
 
-        // 8. No override — global default
         return config.connectionTimeout();
     }
 
