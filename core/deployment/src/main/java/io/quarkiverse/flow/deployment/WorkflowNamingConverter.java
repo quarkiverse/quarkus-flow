@@ -10,7 +10,8 @@ public interface WorkflowNamingConverter {
      * Converts a <code>document.namespace</code> from Workflow specification to a Java package name.
      * <p>
      * This method assumes that the provided namespace is valid according to the
-     * <a href="https://github.com/serverlessworkflow/specification/blob/main/schema/workflow.yaml">CNCF Specification</a>.
+     * <a href="https://github.com/open-workflow-specification/specification/blob/main/schema/workflow.yaml">CNCF
+     * Specification</a>.
      *
      * @param namespace the CNCF <code>document.namespace</code> to convert
      * @return the corresponding Java package name
@@ -24,7 +25,8 @@ public interface WorkflowNamingConverter {
      * Converts a <code>document.name</code> from a Workflow Specification to a Java class name.
      * <p>
      * This method assumes that the provided name is valid according to the
-     * <a href="https://github.com/serverlessworkflow/specification/blob/main/schema/workflow.yaml">CNCF Specification</a>.
+     * <a href="https://github.com/open-workflow-specification/specification/blob/main/schema/workflow.yaml">CNCF
+     * Specification</a>.
      * <p>
      * Example:
      * <code>

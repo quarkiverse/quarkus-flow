@@ -18,7 +18,7 @@ public interface FlowOidcConfig {
 
     /**
      * Whether OAuth2/OIDC token negotiation should be delegated to {@code quarkus-oidc-client}. When disabled, the
-     * Serverless Workflow SDK falls back to its own token negotiation.
+     * Open Workflow SDK falls back to its own token negotiation.
      */
     @WithDefault("true")
     boolean enabled();

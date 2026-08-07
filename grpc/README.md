@@ -2,7 +2,7 @@
 
 Named gRPC channel support for **Quarkus Flow**.
 
-This module bridges the Serverless Workflow gRPC executor with **Quarkus gRPC clients** so you can route calls through:
+This module bridges the Open Workflow gRPC executor with **Quarkus gRPC clients** so you can route calls through:
 
 ```properties
 quarkus.grpc.clients.<name>.host=...

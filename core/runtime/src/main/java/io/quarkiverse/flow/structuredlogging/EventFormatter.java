@@ -72,7 +72,7 @@ public class EventFormatter {
     private static final String FIELD_LAST_UPDATE_TIME = "lastUpdateTime";
     private static final String FIELD_INPUT = "input";
     private static final String FIELD_OUTPUT = "output";
-    // See https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#properties-53
+    // See https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#properties-53
     private static final String FIELD_ERROR = "error";
     private static final String FIELD_WORKFLOW_NAMESPACE = "workflowNamespace";
     private static final String FIELD_WORKFLOW_NAME = "workflowName";
@@ -250,7 +250,7 @@ public class EventFormatter {
 
     private Map<String, Object> baseWorkflowEvent(String filterKey, WorkflowEvent event) {
         Map<String, Object> json = new HashMap<>();
-        // Use official CloudEvent type from SW specification
+        // Use official CloudEvent type from Open Workflow specification
         json.put(FIELD_EVENT_TYPE, StructuredLoggingEventTypes.toCloudEventType(filterKey));
         json.put(FIELD_TIMESTAMP, formatTimestamp(event.eventDate()));
         json.put(FIELD_INSTANCE_ID, event.workflowContext().instanceData().id());

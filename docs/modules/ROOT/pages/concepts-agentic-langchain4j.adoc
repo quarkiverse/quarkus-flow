@@ -17,7 +17,7 @@ For practical instructions on building these workflows, see xref:langchain4j.ado
 
 When you add the `quarkus-flow-langchain4j` extension to your project, Quarkus Flow acts as an Ahead-of-Time (AoT) compiler for your AI patterns.
 
-It does not run a separate "AI Engine" at runtime. Instead, during the Quarkus build phase, it translates LangChain4j semantics directly into the CNCF Serverless Workflow vocabulary.
+It does not run a separate "AI Engine" at runtime. Instead, during the Quarkus build phase, it translates LangChain4j semantics directly into the Open Workflow vocabulary.
 
 === The Compilation Process
 1. **Scanning:** The extension scans your interfaces for methods annotated with Agentic routing annotations (like `@SequenceAgent` or `@ParallelAgent`).
@@ -58,7 +58,7 @@ Each builder method (`newSequential()`, `newParallel()`, `newLoop()`, `newCondit
 3. **Creates a fresh WorkflowApplication** instance with isolated workflow definition cache
 4. **Returns a proxy UntypedAgent** that delegates to the generated workflow
 
-This approach mirrors LangChain4j's own runtime builder API while generating standard CNCF Serverless Workflow definitions under the hood.
+This approach mirrors LangChain4j's own runtime builder API while generating standard Open Workflow definitions under the hood.
 
 === Isolation and State Management
 

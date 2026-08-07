@@ -3,7 +3,7 @@
 A complete example demonstrating the **Compensation/Saga Pattern** for distributed transactions using:
 
 - **Quarkus** (hot-reload dev mode)
-- **[Quarkus Flow](https://docs.quarkiverse.io/quarkus-flow/dev/)** (function-first fluent DSL for Serverless Workflow)
+- **[Quarkus Flow](https://docs.quarkiverse.io/quarkus-flow/dev/)** (function-first fluent DSL for Open Workflow)
 - **Try-Catch Error Handling** with automatic compensation/rollback
 - **WebSocket** for real-time UI updates
 - A **Single Page Application (SPA)** UI with live workflow visualization
@@ -280,7 +280,7 @@ Ideas for learning and experimentation:
 ## 📖 Documentation
 
 - **Quarkus Flow**: [https://docs.quarkiverse.io/quarkus-flow/dev/](https://docs.quarkiverse.io/quarkus-flow/dev/)
-- **CNCF Serverless Workflow**: [https://serverlessworkflow.io/](https://serverlessworkflow.io/)
+- **Open Workflow Specification**: [https://open-workflow-specification.org/](https://open-workflow-specification.org/)
 - **Saga Pattern**: [https://microservices.io/patterns/data/saga.html](https://microservices.io/patterns/data/saga.html)
 
 Have fun building resilient workflows with Quarkus Flow! 🎉

@@ -124,4 +124,4 @@ This approach is ideal for:
 ## Learn More
 
 - [Quarkus Flow Runner Documentation](https://docs.quarkiverse.io/quarkus-flow/dev/runner.html)
-- [CNCF Serverless Workflow Specification](https://serverlessworkflow.io/)
+- [Open Workflow Specification](https://open-workflow-specification.org/)

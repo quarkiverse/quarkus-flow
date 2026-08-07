@@ -8,7 +8,7 @@
 [![Build with Integration Tests](https://github.com/quarkiverse/quarkus-flow/actions/workflows/build-it.yml/badge.svg?branch=main&event=push)](https://github.com/quarkiverse/quarkus-flow/actions/workflows/build-it.yml)
 [![Build](https://github.com/quarkiverse/quarkus-flow/actions/workflows/build.yml/badge.svg?branch=main&event=push)](https://github.com/quarkiverse/quarkus-flow/actions/workflows/build.yml)
 
-**Quarkus Flow** is a lightweight, low-dependency, production-grade workflow engine for Quarkus, built on the [Serverless Workflow](https://serverlessworkflow.io/) specification CNCF sandbox project.
+**Quarkus Flow** is a lightweight, low-dependency, production-grade workflow engine for Quarkus, built on the [Open Workflow](https://open-workflow-specification.org/) Specification (CNCF sandbox project).
 
 Use it to model **classic workflows** *and* **Agentic AI orchestrations**, with first-class CDI/Quarkus ergonomics.
 
@@ -149,7 +149,7 @@ Run:
 ```
 
 **Next steps:**
-- **Load YAML workflows:** See [Workflow Definitions](https://docs.quarkiverse.io/quarkus-flow/dev/workflow-definitions.html) to load [CNCF Workflow DSL](https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md) files
+- **Load YAML workflows:** See [Workflow Definitions](https://docs.quarkiverse.io/quarkus-flow/dev/workflow-definitions.html) to load [Open Workflow DSL](https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md) files
 - **Add persistence:** See [Persistence](https://docs.quarkiverse.io/quarkus-flow/dev/persistence.html) for MVStore, JPA, or Redis backends
 - **Add messaging:** See [Messaging](https://docs.quarkiverse.io/quarkus-flow/dev/messaging.html) for Kafka/AMQP integration
 - **Explore examples:** Check out [`examples/`](examples/) for complete sample applications

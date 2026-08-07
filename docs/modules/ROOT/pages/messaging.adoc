@@ -223,4 +223,4 @@ When you provide these beans, the default bridge is ignored.
 
 * xref:data-flow.adoc[Data flow and context management] — how to shape event payloads.
 * xref:dsl-cheatsheet.adoc[Java DSL cheatsheet] — syntax for `emit`, `listen`, and event builders.
-* xref:specification.adoc[Serverless Workflow Spec mapping and concepts] — the spec rules for event consumption.
+* xref:specification.adoc[Open Workflow Spec mapping and concepts] — the spec rules for event consumption.

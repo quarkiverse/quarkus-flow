@@ -1,8 +1,8 @@
-= Serverless Workflow Specification mapping and concepts
+= Open Workflow Specification mapping and concepts
 :page-role: explanation
 include::includes/attributes.adoc[]
 
-This page is a fast orientation to the **CNCF Serverless Workflow Specification 1.0.0** that Quarkus Flow aligns with. It highlights the core ideas and gives you a compact cheatsheet of the most used components—each linking back to the spec for deeper reading.
+This page is a fast orientation to the **Open Workflow Specification 1.0.0 (CNCF sandbox project)** that Quarkus Flow aligns with. It highlights the core ideas and gives you a compact cheatsheet of the most used components—each linking back to the spec for deeper reading.
 
 [.lead]
 If you understand these concepts, you can read any Quarkus Flow example and know exactly what it’s doing.
@@ -22,8 +22,8 @@ Check out the xref:quarkus-flow-cookbook.adoc[] to see these concepts applied in
 
 === Quick links:
 
-* DSL overview (concepts): link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md[DSL]
-* DSL reference (definitions): link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md[DSL Reference]
+* DSL overview (concepts): link:https://github.com/open-workflow-specification/specification/blob/main/dsl.md[DSL]
+* DSL reference (definitions): link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md[DSL Reference]
 
 == Core components (cheatsheet)
 
@@ -36,67 +36,67 @@ The CNCF 1.0.0 Specification organizes workflows around the `document` (metadata
 |**Document Metadata**
 |Top-level definition: `dsl` (version 1.0.0), `namespace`, `name`, `version`, optional `description`.
 |Identify the workflow, its domain, and which schema version you’re using.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#document[DSL]
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl.md#document[DSL]
 
 |**Data model**
 |The global workflow data context (JSON). Tasks extract from, transform, and export back to this context.
 |Keep transient state, map call inputs/outputs, and drive branching conditions.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#data-flow[DSL Data Flow]
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl.md#data-flow[DSL Data Flow]
 
 |**Tasks (`do`)**
 |The ordered list of steps to execute.
 |Define your core process: set → call → emit/listen → switch → loop, etc.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#task[DSL Task]
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl.md#task[DSL Task]
 
 |**Task: `set`**
 |Evaluates an expression and updates the workflow data context.
 |Initialize fields, compute constants, or shape intermediate values.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#settask[Reference]
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#settask[Reference]
 
 |**Task: `call`**
 |Invokes external endpoints or internal functions.
 |HTTP/OpenAPI calls, communicating with other microservices, or triggering LangChain4j AI agents.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#calltask[Reference]
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#calltask[Reference]
 
 |**Task: `emit`**
 |Publishes a CloudEvent to an external broker.
 |Notify other services, fan-out architectural patterns, or broadcast integration events.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#emittask[Reference]
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#emittask[Reference]
 
 |**Task: `listen`**
 |Pauses execution and waits for one or more CloudEvents matching specific correlation rules.
 |Human-in-the-loop approvals, asynchronous callbacks, or waiting for external system signals.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#listentask[Reference]
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#listentask[Reference]
 
 |**Task: `switch` (Branching)**
 |Evaluates conditions (`when`) and routes execution to specific paths (`then`).
 |Feature flags, guardrails, compliance checks, or routing "happy vs. error" paths.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#switchtask[Reference]
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#switchtask[Reference]
 
 |**Task: `for` (Loops)**
 |Iterates over a collection in the data context, executing a block of tasks for each item.
 |Batch processing, agentic revise-loops, or polling.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#fortask[Reference]
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#fortask[Reference]
 
 |**Task: `try` (Errors)**
 |Executes a block of tasks and catches specific errors to trigger compensations or retries.
 |Wrap unreliable network calls, steer to fallback paths, and surface clear failures without crashing the instance.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#trytask[Reference]
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#trytask[Reference]
 
 |**Timeouts**
 |Declarative time limits applied to individual tasks or the overarching workflow execution.
 |Prevent stalled processes, bound external waits, and enforce business SLAs.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#timeouts[DSL Timeouts]
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl.md#timeouts[DSL Timeouts]
 
 |**Expressions & Data Filters**
 |The runtime evaluation of `input`, `output`, and `export` fields within a task using `jq`.
 |Extracting payloads from events, filtering API responses, or computing booleans for `switch` blocks. (See xref:data-flow.adoc[Data flow]).
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#runtime-expressions[DSL Expressions]
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl.md#runtime-expressions[DSL Expressions]
 
 |**Auth & Secrets**
 |References to credentials or API keys used during `call` tasks.
 |Securely communicate with external services without hardcoding tokens in the definition.
-|link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#authentication[DSL Auth]
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl.md#authentication[DSL Auth]
 |===
 
 [NOTE]
@@ -112,7 +112,7 @@ Crucially, Quarkus Flow leans into the Quarkus "Ahead-of-Time" philosophy by dis
 
 Now that you understand the underlying specification, here is where you can see these concepts applied in Quarkus Flow:
 
-* xref:quarkus-flow-cookbook.adoc[]: A comprehensive collection of practical, copy-and-paste YAML examples for the Serverless Workflow DSL.
+* xref:quarkus-flow-cookbook.adoc[]: A comprehensive collection of practical, copy-and-paste YAML examples for the Open Workflow DSL.
 * xref:workflow-definitions.adoc[Define workflows from YAML]: review the syntax for discovering and injecting YAML workflows.
 * xref:dsl-cheatsheet.adoc[Java DSL Cheatsheet]: A quick reference of all the Java methods that map directly to these CNCF tasks.
 * xref:data-flow.adoc[Data flow and context management]: A deep dive into how `input`, `output`, and `export` manipulate the workflow data context.

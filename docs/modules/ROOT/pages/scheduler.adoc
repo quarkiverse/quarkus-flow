@@ -2,9 +2,9 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
-The Serverless Workflow specification allows you to define workflows that execute automatically on a recurring schedule.
+The Open Workflow specification allows you to define workflows that execute automatically on a recurring schedule.
 
-By default, the Serverless Workflow SDK engine uses a lightweight, in-memory implementation (based on `ScheduledExecutorService` and the `cron-utils` library) to trigger these executions. However, for a Quarkus Flow application, **we highly recommend replacing this with the native Quarkus Scheduler integration**.
+By default, the Open Workflow SDK engine uses a lightweight, in-memory implementation (based on `ScheduledExecutorService` and the `cron-utils` library) to trigger these executions. However, for a Quarkus Flow application, **we highly recommend replacing this with the native Quarkus Scheduler integration**.
 
 This guide shows how to:
 
@@ -33,7 +33,7 @@ Adding this dependency automatically wires Quarkus Flow to use the underlying Qu
 
 == 2. Configure for specification compliance
 
-The Serverless Workflow specification mandates that CRON expressions follow the standard **Unix** format.
+The Open Workflow specification mandates that CRON expressions follow the standard **Unix** format.
 
 The Quarkus Scheduler, however, defaults to the `quartz` format. To ensure your workflow definitions behave exactly as specified by the standard, you must configure the CRON type in your application properties:
 
@@ -100,4 +100,4 @@ do:
 == See also
 
 * link:https://quarkus.io/guides/scheduler-reference[Quarkus Scheduler Reference Guide] — learn how to configure threads, metrics, and tracing for the underlying scheduler.
-* link:https://github.com/serverlessworkflow/specification/blob/main/dsl.md#scheduling[Serverless Workflow Specification: Scheduling] — full details and edge cases for the `every`, `after`, and `cron` syntax.
+* link:https://github.com/open-workflow-specification/specification/blob/main/dsl.md#scheduling[Open Workflow Specification: Scheduling] — full details and edge cases for the `every`, `after`, and `cron` syntax.

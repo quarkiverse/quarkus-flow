@@ -19,19 +19,19 @@ final class OidcClientConfigFactory {
     private static final Logger LOG = LoggerFactory.getLogger(OidcClientConfigFactory.class);
 
     /**
-     * Default OAuth2 token endpoint path per CNCF Serverless Workflow specification.
+     * Default OAuth2 token endpoint path per Open Workflow Specification.
      * Used when endpoints.token is not explicitly specified in OAuth2 authentication.
      */
     private static final String DEFAULT_TOKEN_PATH = "/oauth2/token";
 
     /**
-     * Default OAuth2 revocation endpoint path per CNCF Serverless Workflow specification.
+     * Default OAuth2 revocation endpoint path per Open Workflow Specification.
      * Used when endpoints.revocation is not explicitly specified in OAuth2 authentication.
      */
     private static final String DEFAULT_REVOCATION_PATH = "/oauth2/revoke";
 
     /**
-     * Default OAuth2 introspection endpoint path per CNCF Serverless Workflow specification.
+     * Default OAuth2 introspection endpoint path per Open Workflow Specification.
      * Not used - Quarkus OIDC Client does not support introspection configuration.
      */
     private static final String DEFAULT_INTROSPECTION_PATH = "/oauth2/introspect";
@@ -60,8 +60,8 @@ final class OidcClientConfigFactory {
     }
 
     /**
-     * Maps the policy's client authentication scheme to the way Quarkus sends the client credentials. The Serverless
-     * Workflow default is {@code client_secret_post} (credentials in the request body), so we default to {@code POST}
+     * Maps the policy's client authentication scheme to the way Quarkus sends the client credentials. The Open Workflow
+     * Specification default is {@code client_secret_post} (credentials in the request body), so we default to {@code POST}
      * rather than Quarkus' own {@code client_secret_basic} default. {@code PRIVATE_KEY_JWT} relies on an asymmetric signing
      * key (not a shared client secret) and cannot be honoured from a policy that only carries a {@code secret}, so it is
      * rejected explicitly instead of being silently downgraded to a {@code client_secret_jwt} (HMAC) assertion.

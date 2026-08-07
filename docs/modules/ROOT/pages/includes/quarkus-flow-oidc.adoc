@@ -15,7 +15,7 @@ endif::add-copy-button-to-config-props[]
 
 [.description]
 --
-Whether OAuth2/OIDC token negotiation should be delegated to `quarkus-oidc-client`. When disabled, the Serverless Workflow SDK falls back to its own token negotiation.
+Whether OAuth2/OIDC token negotiation should be delegated to `quarkus-oidc-client`. When disabled, the Open Workflow SDK falls back to its own token negotiation.
 
 
 ifdef::add-copy-button-to-env-var[]

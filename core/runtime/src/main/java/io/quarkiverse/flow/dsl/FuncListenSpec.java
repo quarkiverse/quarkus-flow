@@ -11,7 +11,7 @@ import io.serverlessworkflow.api.types.ListenTaskConfiguration;
  * {@link #envelope()} to control how the CloudEvent collection is unwrapped.
  *
  * <p>
- * By design, the Serverless Workflow specification always delivers events as a collection,
+ * By design, the Open Workflow specification always delivers events as a collection,
  * even when only one event is expected (via {@code toOne()}). Call {@link #first()} to
  * explicitly extract the first element from that collection so downstream tasks receive
  * a single object rather than a single-element array.

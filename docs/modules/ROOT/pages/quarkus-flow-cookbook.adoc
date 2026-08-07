@@ -1,4 +1,4 @@
-= Quarkus Flow & CNCF Serverless Workflow Cookbook
+= Quarkus Flow & Open Workflow Cookbook
 :page-role: reference
 include::includes/attributes.adoc[]
 
@@ -6,14 +6,14 @@ include::includes/attributes.adoc[]
 ====
 **Java DSL is Recommended**
 
-While this cookbook provides extensive examples for defining workflows using the CNCF Serverless Workflow YAML DSL (Serverless Workflow), Quarkus Flow *strongly recommends the Java DSL* as the primary method for defining workflows. The Java DSL offers superior type safety, refactoring capabilities, and seamless IDE integration.
+While this cookbook provides extensive examples for defining workflows using the Open Workflow YAML DSL (Open Workflow), Quarkus Flow *strongly recommends the Java DSL* as the primary method for defining workflows. The Java DSL offers superior type safety, refactoring capabilities, and seamless IDE integration.
 
 These YAML examples are ideal for teams maintaining specification files, or sharing definitions across different runtime environments.
 ====
 
-This cookbook provides a comprehensive collection of practical, copy-and-paste xref:workflow-definitions.adoc[YAML examples for building modern Serverless Workflows in Quarkus Flow].
+This cookbook provides a comprehensive collection of practical, copy-and-paste xref:workflow-definitions.adoc[YAML examples for building modern Open Workflows in Quarkus Flow].
 
-Every Serverless Workflow definition starts with a `document:` header to declare its identity and version, followed by a `do:` block that orchestrates the execution steps.
+Every Open Workflow definition starts with a `document:` header to declare its identity and version, followed by a `do:` block that orchestrates the execution steps.
 
 == 1. Pausing Execution (Wait State)
 To pause a workflow for a specific amount of time, use the `wait` task. You can define the duration using an ISO 8601 time string.
@@ -137,7 +137,7 @@ do:
 ----
 
 == 6. Event Consumption and Production
-Serverless Workflow integrates heavily with CloudEvents. You can pause a workflow until a specific event is received using the `listen` task, or publish events using the `emit` task.
+Open Workflow integrates heavily with CloudEvents. You can pause a workflow until a specific event is received using the `listen` task, or publish events using the `emit` task.
 
 *Listening for an Event:*
 [source,yaml]
@@ -377,7 +377,7 @@ do:
       catch:
         errors:
            with:
-            type: https://serverlessworkflow.io/spec/1.0.0/errors/communication
+            type: https://open-workflow-specification.org/spec/1.0.0/errors/communication
             status: 404
         as: error
         do:
@@ -416,7 +416,7 @@ do:
   - notImplemented:
       raise:
         error:
-          type: https://serverlessworkflow.io/errors/not-implemented
+          type: https://acme.org/errors/not-implemented
           status: 500
           title: Not Implemented
           detail: ${ "The workflow '\( $workflow.definition.document.name ):\( $workflow.definition.document.version )' is a work in progress and cannot be run yet" }
@@ -503,6 +503,6 @@ See xref:grpc.adoc[the gRPC guide] for the Quarkus client configuration variant.
 
 == See also
 
-* xref:specification.adoc[Serverless Workflow Spec mapping and concepts] — a quick orientation to the 1.0.0 specification components.
+* xref:specification.adoc[Open Workflow Spec mapping and concepts] — a quick orientation to the 1.0.0 specification components.
 * xref:workflow-definitions.adoc[Define workflows from YAML] — review the syntax for discovering and injecting YAML workflows.
 * xref:data-flow.adoc[Data flow and context management]: A deep dive into how `input`, `output`, and `export` manipulate the workflow data context.

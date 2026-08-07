@@ -117,7 +117,7 @@ With dev mode running (`./mvnw quarkus:dev`):
 HTTP/1.1 401 Unauthorized
 Content-Type: application/json
 {
-  "type": "https://serverlessworkflow.io/spec/1.0.0/errors/communication",
+  "type": "https://open-workflow-specification.org/spec/1.0.0/errors/communication",
   "status": 401,
   "title": "HTTP 401 Unauthorized",
   "instance": "do/0/..."

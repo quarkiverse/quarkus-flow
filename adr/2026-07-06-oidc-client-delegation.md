@@ -49,7 +49,7 @@ quarkus.flow.oidc.client."acme\:orders\:1.0.0.task.payment".name=ordersV1Auth
    - Clients created by `quarkus-oidc-client` extension at startup
 
 2. **Startup** (Java DSL workflows):
-   - Serverless Workflow SDK calls `AuthProviderFactory.getAuth()` once per workflow
+   - Open Workflow SDK calls `AuthProviderFactory.getAuth()` once per workflow
    - `OidcAuthProviderFactory` registers static OIDC clients eagerly
    - Clients stored in `OidcClientRegistry` for runtime lookup
 
@@ -77,7 +77,7 @@ quarkus.flow.oidc.client."acme\:orders\:1.0.0.task.payment".name=ordersV1Auth
 **OAuth2 vs OIDC Token Paths:**
 - OIDC (`FuncDSL.oidc()`) → discovery enabled, NO explicit tokenPath
 - OAuth2 (`FuncDSL.oauth2()`) → discovery disabled, explicit tokenPath required
-- Default tokenPath: `/oauth2/token` per CNCF Serverless Workflow spec
+- Default tokenPath: `/oauth2/token` per Open Workflow spec
 
 ## Design Philosophy: Authentication Reuse
 
@@ -124,7 +124,7 @@ workflow("orders")
 **Our responsibility**: Provide predictable client creation tools  
 **User's responsibility**: Choose the right pattern (inline vs named) for their reuse needs
 
-**Key insight**: This is a **1:1 mapping with the Serverless Workflow DSL**. The specification already provides the reuse primitive (`use`). We simply honor it:
+**Key insight**: This is a **1:1 mapping with the Open Workflow DSL**. The specification already provides the reuse primitive (`use`). We simply honor it:
 - Inline auth in DSL → isolated OIDC client in runtime
 - Named policy in DSL → shared OIDC client in runtime
 
@@ -139,10 +139,10 @@ No hidden optimization, no magic deduplication - just pure DSL semantics. Users 
 
 **File:** `oidc/runtime/src/main/java/io/quarkiverse/flow/oidc/impl/OidcAuthProviderFactory.java`
 
-**Lifecycle:** Called by Serverless Workflow SDK **once at application startup** per workflow, not per HTTP request.
+**Lifecycle:** Called by Open Workflow SDK **once at application startup** per workflow, not per HTTP request.
 
 **Responsibilities:**
-- Implements `AuthProviderFactory` interface from Serverless Workflow SDK
+- Implements `AuthProviderFactory` interface from Open Workflow SDK
 - Called when SDK needs an auth provider for OAuth2/OIDC authentication
 - Triggers static OIDC client registration via `OidcClientWorkflowRegistrar`
 - Returns `OidcClientAuthProvider` instance to SDK (SDK caches it)
@@ -622,7 +622,7 @@ HTTP Request Time (workflow executes):
 
 ### Background
 
-The Serverless Workflow spec defines `OAuth2AuthenticationPolicyConfiguration` as a union type:
+The Open Workflow spec defines `OAuth2AuthenticationPolicyConfiguration` as a union type:
 
 ```
 OAuth2AuthenticationPolicyConfiguration:
@@ -678,4 +678,4 @@ To support secret-based OAuth2:
 
 ### Related Spec Reference
 
-[Serverless Workflow DSL Reference - OAuth2 Authentication](https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md)
+[Open Workflow DSL Reference - OAuth2 Authentication](https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md)

@@ -19,7 +19,7 @@ import io.serverlessworkflow.impl.WorkflowContextData;
 import io.serverlessworkflow.impl.jackson.JsonUtils;
 
 /**
- * Fluent DSL specification builder for configuring CloudEvent filters within a Serverless Workflow
+ * Fluent DSL specification builder for configuring CloudEvent filters within an Open Workflow
  * execution.
  */
 public final class FuncEventFilterSpec

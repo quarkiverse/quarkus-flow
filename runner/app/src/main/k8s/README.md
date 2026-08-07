@@ -140,4 +140,4 @@ Multiple ConfigMaps can be mounted to the same directory.
 
 - [Quarkus Flow Documentation](https://docs.quarkiverse.io/quarkus-flow/dev/)
 - [Durable Kubernetes Module](https://docs.quarkiverse.io/quarkus-flow/dev/durable-kubernetes.html)
-- [CNCF Serverless Workflow Spec](https://serverlessworkflow.io/)
+- [Open Workflow Spec](https://open-workflow-specification.org/)

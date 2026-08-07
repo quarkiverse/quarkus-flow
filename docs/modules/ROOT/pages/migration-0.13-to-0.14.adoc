@@ -1,7 +1,7 @@
 = Migration Guide: 0.13.x to 0.14.0
 include::includes/attributes.adoc[]
 
-Quarkus Flow 0.14.0 internalizes the Serverless Workflow Java Fluent DSL.
+Quarkus Flow 0.14.0 internalizes the Open Workflow Java Fluent DSL.
 The DSL classes previously lived in the SDK (`io.serverlessworkflow.impl.expression.func` and related packages) and are now part of Quarkus Flow itself under a new `io.quarkiverse.flow.dsl` namespace.
 
 This is a **source-level breaking change**: your workflow code will need import updates, but the DSL behavior is identical.

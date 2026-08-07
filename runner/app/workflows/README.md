@@ -39,7 +39,7 @@ curl -X POST http://localhost:8080/q/flow/exec/examples/hello-world/1.0.0 \
 
 ## Workflow Format
 
-Workflows must follow the [CNCF Serverless Workflow DSL 1.0.0](https://serverlessworkflow.io/) specification.
+Workflows must follow the [Open Workflow DSL 1.0.0](https://open-workflow-specification.org/) specification.
 
 **Minimal example:**
 ```yaml
@@ -187,4 +187,4 @@ This will:
 - [DOCKER-COMPOSE.md](../DOCKER-COMPOSE.md) - Docker Compose deployment guide
 - [README.md](../README.md) - Runner documentation
 - [Quarkus Flow Documentation](https://docs.quarkiverse.io/quarkus-flow/dev/)
-- [CNCF Serverless Workflow Spec](https://serverlessworkflow.io/)
+- [Open Workflow Spec](https://open-workflow-specification.org/)
