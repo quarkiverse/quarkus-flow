@@ -1,0 +1,82 @@
+= Run Tasks (Shell, Script, Container)
+:page-layout: default
+
+include::./includes/attributes.adoc[]
+
+The Open Workflow Specification defines a link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#run[`run` task] that supports executing shell commands, Python/JavaScript scripts, Docker containers, and sub-workflows from within a workflow definition.
+
+== Support Status
+
+[IMPORTANT]
+====
+The `run.shell`, `run.script` (Python, JavaScript), and `run.container` task types are **not supported** in Quarkus Flow at this time.
+
+`run.workflow` (sub-workflow invocation) **is fully supported**. See xref:quarkus-flow-cookbook.adoc[the cookbook] for sub-workflow examples.
+====
+
+Quarkus Flow does not currently provide the runtime isolation, resource management, or operational controls necessary for shell, script, and container execution in production environments.
+These task types require careful consideration of process lifecycle management, resource limits, and trust boundaries between workflow definitions and the host operating system -- capabilities that are not yet available in the SDK or the Quarkus extension.
+
+=== What this means for users
+
+* **Workflow definitions** containing `run.shell`, `run.script`, or `run.container` tasks will execute if the corresponding SDK modules are on the classpath, but this configuration is **not tested, not validated, and not supported**.
+* The Quarkus Flow team does not provide bug fixes, security patches, or guidance for issues arising from the use of these task types.
+* **Sub-workflows** (`run.workflow`) are fully supported and recommended for modularizing complex workflow logic.
+
+== Sub-Workflow Support
+
+The `run.workflow` task type invokes another registered workflow as a nested execution.
+This is safe, tested, and the recommended way to compose workflows.
+
+[source,yaml]
+----
+document:
+  dsl: '1.0.3'
+  namespace: test
+  name: parent-workflow
+  version: '0.1.0'
+do:
+  - registerCustomer:
+      run:
+        workflow:
+          namespace: test
+          name: register-customer
+          version: '0.1.0'
+          input:
+            customer: .user
+----
+
+See xref:quarkus-flow-cookbook.adoc#_11_invoking_subflows[Invoking Subflows] in the cookbook for more examples.
+
+== Alternatives to Run Tasks
+
+If your workflow requires executing external logic, consider these supported alternatives:
+
+[cols="1,3",options="header"]
+|===
+| Need | Recommended Approach
+
+| Execute custom business logic
+| Use a xref:langchain4j.adoc[`call` task with a custom function] or a CDI bean invoked from the Java DSL.
+
+| Call an external service
+| Use xref:http-openapi-tasks.adoc[`call: http` or `call: openapi`] to invoke REST APIs.
+
+| Run a containerized tool
+| Invoke the tool via its REST API using `call: http`, or wrap it as a microservice.
+
+| Execute a script for data transformation
+| Use `set` tasks with jq expressions for data manipulation, or implement the transformation as a Java function.
+|===
+
+== Roadmap
+
+We are actively working with the Open Workflow Specification community to define the operational requirements for safe `run` task execution.
+Future versions of Quarkus Flow may introduce supported `run` task capabilities with proper runtime controls.
+Track progress on link:https://github.com/quarkiverse/quarkus-flow/issues/807[issue #807].
+
+== See Also
+
+* xref:specification.adoc[Specification Mapping] -- which specification features are supported
+* xref:quarkus-flow-cookbook.adoc[YAML Cookbook] -- workflow examples including sub-workflows
+* xref:quarkus-flow-java-cookbook.adoc[Java DSL Cookbook] -- Java-based workflow examples
