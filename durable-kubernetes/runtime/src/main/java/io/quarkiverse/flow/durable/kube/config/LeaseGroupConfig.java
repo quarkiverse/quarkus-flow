@@ -1,5 +1,7 @@
 package io.quarkiverse.flow.durable.kube.config;
 
+import java.time.Duration;
+
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -31,6 +33,12 @@ public interface LeaseGroupConfig {
          */
         @WithDefault("true")
         Boolean enabled();
+
+        /**
+         * Maximum time to wait for a lease to be acquired during startup.
+         */
+        @WithDefault("30s")
+        Duration acquireTimeout();
     }
 
 }

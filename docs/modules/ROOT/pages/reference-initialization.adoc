@@ -221,7 +221,7 @@ Understanding when each phase occurs:
 
 * Verify RBAC with `kubectl auth can-i create leases --as=system:serviceaccount:NAMESPACE:SERVICE_ACCOUNT`.
 * Check existing leases with `kubectl get lease -l io.quarkiverse.flow.durable.k8s/pool=POOL_NAME`.
-* Increase the timeout with `quarkus.flow.durable.kube.member.lease.acquire-timeout=60s`.
+* Increase the timeout with `quarkus.flow.durable.kube.lease.member.acquire-timeout=60s`.
 
 === Persistence Not Working
 
