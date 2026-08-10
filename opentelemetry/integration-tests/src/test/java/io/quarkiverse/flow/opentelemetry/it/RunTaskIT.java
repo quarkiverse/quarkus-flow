@@ -1,7 +1,7 @@
 package io.quarkiverse.flow.opentelemetry.it;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 import io.quarkiverse.flow.opentelemetry.it.util.IndexedSpanInfo;
@@ -9,7 +9,7 @@ import io.quarkiverse.flow.opentelemetry.it.util.IndexedSpanInfo.TaskSpanKey;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 
 @QuarkusIntegrationTest
-@EnabledOnOs(value = OS.LINUX)
+@DisabledOnOs(OS.WINDOWS)
 class RunTaskIT extends OTelBaseIT {
 
     private static final String RUN_TASK = "do/0/runTask";
