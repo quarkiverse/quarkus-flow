@@ -3,6 +3,7 @@ package io.quarkiverse.flow.dsl;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -14,8 +15,10 @@ import io.quarkiverse.flow.dsl.types.LoopPredicate;
 import io.quarkiverse.flow.dsl.types.LoopPredicateIndex;
 import io.quarkiverse.flow.dsl.types.utils.ForTaskFunction;
 import io.serverlessworkflow.api.types.CallTask;
+import io.serverlessworkflow.api.types.ForIn;
 import io.serverlessworkflow.api.types.ForTask;
 import io.serverlessworkflow.api.types.ForTaskConfiguration;
+import io.serverlessworkflow.api.types.In;
 import io.serverlessworkflow.api.types.Task;
 import io.serverlessworkflow.api.types.TaskItem;
 import io.serverlessworkflow.fluent.spec.TaskBaseBuilder;
@@ -89,8 +92,31 @@ public class FuncForTaskBuilder extends TaskBaseBuilder<FuncForTaskBuilder>
 
     @Override
     public FuncForTaskBuilder in(String in) {
-        this.forTask.getFor().withIn(in);
+        this.forTask.getFor().withIn(new In().withForInExpression(in));
         return this;
+    }
+
+    public FuncForTaskBuilder in(List<Map<String, Object>> in) {
+        if (in == null || in.isEmpty()) {
+            return this;
+        }
+
+        List<ForIn> forInList = in.stream()
+                .map(this::toForIn)
+                .toList();
+
+        this.forTask.getFor().withIn(new In().withForInInlineArray(forInList));
+        return this;
+    }
+
+    public FuncForTaskBuilder in(Map<String, Object> in) {
+        return in == null ? this : in(List.of(in));
+    }
+
+    private ForIn toForIn(Map<String, Object> map) {
+        ForIn forIn = new ForIn();
+        map.forEach(forIn::withAdditionalProperty);
+        return forIn;
     }
 
     @Override
