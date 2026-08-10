@@ -7,5 +7,7 @@ do:
   - runTask:
       run:
         shell:
-          command: 'echo "Executing run shell task"'
+          command: 'echo'
+          arguments:
+            - "Executing run shell task"
         return: all
