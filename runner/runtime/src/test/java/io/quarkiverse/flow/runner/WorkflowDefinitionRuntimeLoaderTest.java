@@ -9,7 +9,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -358,8 +357,8 @@ class WorkflowDefinitionRuntimeLoaderTest {
 
         // When/Then
         assertThatThrownBy(() -> loader.onStart(new WorkflowApplicationReadyEvent("ABC123")))
-                .isInstanceOf(UncheckedIOException.class)
-                .hasMessageContaining("Failed to load workflow");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(": string found, object expected");
     }
 
     @Test
@@ -383,8 +382,8 @@ class WorkflowDefinitionRuntimeLoaderTest {
 
         // When/Then - SDK parser throws IOException for missing required fields
         assertThatThrownBy(() -> loader.onStart(new WorkflowApplicationReadyEvent("ABC123")))
-                .isInstanceOf(UncheckedIOException.class)
-                .hasMessageContaining("Failed to load workflow");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("/document: required property 'version' not found");
     }
 
     @Test

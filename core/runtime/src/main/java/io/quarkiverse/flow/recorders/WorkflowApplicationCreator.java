@@ -1,5 +1,6 @@
 package io.quarkiverse.flow.recorders;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -116,6 +117,7 @@ public class WorkflowApplicationCreator {
 
         builder.withContextFactory(new JavaModelFactory()).withModelFactory(new JacksonModelFactory());
         builder.withScheduler(scheduler);
+        builder.withAllowedCommands(flowRunConfig.shell().allowedCommands().orElse(new ArrayList<>()));
 
         injectAppId(builder);
         injectExecutorServiceFactory(builder);

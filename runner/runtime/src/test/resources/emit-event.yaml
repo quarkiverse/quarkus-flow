@@ -9,7 +9,9 @@ do:
       emit:
         event:
           with:
-            greeting: ${ "Hello, " + .name + "!" }
+            type: org.acme.hello.event
+            data:
+              greeting: ${ "Hello, " + .name + "!" }
 input:
   schema:
     document:

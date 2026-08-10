@@ -11,6 +11,7 @@ import io.quarkiverse.flow.dsl.types.LoopPredicateIndexContext;
 import io.quarkiverse.flow.dsl.types.LoopPredicateIndexFilter;
 import io.serverlessworkflow.api.types.ForTask;
 import io.serverlessworkflow.api.types.ForTaskConfiguration;
+import io.serverlessworkflow.api.types.In;
 import io.serverlessworkflow.api.types.TaskMetadata;
 
 public class ForTaskFunction {
@@ -141,7 +142,8 @@ public class ForTaskFunction {
             forTask.setFor(forConfig);
         }
         if (forConfig.getIn() == null) {
-            forConfig.setIn("Handling item collection with metadata key " + ForTaskFunction.COLLECTION);
+            forConfig.setIn(
+                    new In().withForInExpression("Handling item collection with metadata key " + ForTaskFunction.COLLECTION));
         }
         return forTask;
     }
