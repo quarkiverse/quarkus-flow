@@ -3,7 +3,7 @@
 A minimal-but-complete example that orchestrates a **Dual-Loop AI Workflow** (AI-to-AI iteration + Human-in-the-Loop review) using:
 
 - **Quarkus** (hot-reload dev mode)
-- **[Quarkus Flow](https://docs.quarkiverse.io/quarkus-flow/dev/)** (function-first fluent DSL for Serverless Workflow)
+- **[Quarkus Flow](https://docs.quarkiverse.io/quarkus-flow/dev/)** (function-first fluent DSL for Open Workflow)
 - **LangChain4j** (Declarative `@SequenceAgent` and Structured Outputs via **Ollama**)
 - **CloudEvents** over Kafka (Quarkus Dev Services)
 - A **Single Page Application (SPA)** UI with live updates via **WebSocket**
@@ -128,7 +128,7 @@ public interface AutoDraftCriticAgent {
 
 ## 🔁 The Quarkus Flow Definition
 
-The Serverless Workflow is orchestrated using the fluent `FlowWorkflowBuilder`. Notice how business logic is completely decoupled from AI prompt engineering:
+The workflow is orchestrated using the fluent `FlowWorkflowBuilder`. Notice how business logic is completely decoupled from AI prompt engineering:
 
 ```java
 public Workflow descriptor() {

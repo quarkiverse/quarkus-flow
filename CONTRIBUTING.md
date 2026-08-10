@@ -161,7 +161,7 @@ Why this matters:
 - **deployment/**: Build-time processors, code generation (`@BuildStep`)
 - **integration-tests/**: Integration tests for the extension
 
-### Serverless Workflow DSL
+### Open Workflow DSL
 
 - Workflows extend `io.quarkiverse.flow.Flow`
 - Use the fluent DSL: `io.quarkiverse.flow.dsl.FlowDSL`

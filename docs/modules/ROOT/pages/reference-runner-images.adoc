@@ -19,7 +19,7 @@ If you're a Java/Quarkus developer, we strongly recommend xref:getting-started.a
 
 * You're a Kubernetes administrator deploying workflows as configuration
 * Your team doesn't have Java/Quarkus expertise
-* You want to quickly test the Serverless Workflow specification locally
+* You want to quickly test the Open Workflow specification locally
 * You're deploying workflows managed by external tools or GitOps
 ====
 
@@ -31,7 +31,7 @@ The **Quarkus Flow Runner** images provide a ready-to-run workflow execution eng
 **Common use cases:**
 
 * **GitOps workflow deployment** - Store workflows in Git, deploy via Kubernetes ConfigMaps, execute via REST API
-* **Polyglot teams** - Non-Java teams can deploy workflows using the Serverless Workflow specification
+* **Polyglot teams** - Non-Java teams can deploy workflows using the Open Workflow specification
 * **Quick prototyping** - Test workflow definitions locally with Docker in seconds
 * **Platform-as-a-Service** - Build a workflow execution platform where users deploy only YAML definitions
 * **Multi-tenant hosting** - Single Runner instance serves workflows across multiple namespaces/teams

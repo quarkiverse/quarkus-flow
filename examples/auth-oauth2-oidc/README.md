@@ -387,8 +387,8 @@ curl http://localhost:8080/quarkus-flow/openapi/images | jq
 
 * Quarkus Flow documentation:
   [https://docs.quarkiverse.io/quarkus-flow/dev/](https://docs.quarkiverse.io/quarkus-flow/dev/)
-* CNCF Serverless Workflow — Authentication:
-  [https://github.com/serverlessworkflow/specification](https://github.com/serverlessworkflow/specification)
+* Open Workflow Specification — Authentication:
+  [https://github.com/open-workflow-specification/specification](https://github.com/open-workflow-specification/specification)
 * Quarkus OIDC:
   [https://quarkus.io/guides/security-oidc-bearer-token-authentication](https://quarkus.io/guides/security-oidc-bearer-token-authentication)
 * Quarkus WireMock Dev Services:

@@ -6,7 +6,7 @@ Delegates OAuth2 / OIDC **token negotiation** in Quarkus Flow workflows to
 When a workflow call declares an OAuth2/OIDC authentication — inline on the call
 (`FlowDSL.oauth2(...)` / `FlowDSL.oidc(...)`) or once under
 `use(use -> use.authentications("name", auth -> auth.oauth2(...)))` and referenced by name — this
-extension obtains the access token through a Quarkus `OidcClient` and lets the Serverless Workflow
+extension obtains the access token through a Quarkus `OidcClient` and lets the Open Workflow
 engine attach it as `Authorization: Bearer <token>` to the downstream HTTP/OpenAPI call. Supported
 grants: **client credentials**, **password**, **refresh** and **token exchange** (the per-execution
 subject/actor tokens are resolved from the workflow context and passed as dynamic grant parameters).
@@ -26,7 +26,7 @@ pulled in and activated automatically as soon as `io.quarkus:quarkus-oidc-client
 
 When active, a `WorkflowApplicationBuilderCustomizer` installs an `AuthProviderFactory` backed by
 `OidcClient`. Basic, bearer and digest authentication — and OAuth2/OIDC policies the extension does not
-yet handle — fall back to the Serverless Workflow SDK's default provider.
+yet handle — fall back to the Open Workflow SDK's default provider.
 
 ## Configuration
 

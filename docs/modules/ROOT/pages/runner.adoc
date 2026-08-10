@@ -2,7 +2,7 @@
 :page-role: tutorial
 include::includes/attributes.adoc[]
 
-Deploy and execute Serverless Workflow definitions via REST API.
+Deploy and execute Open Workflow definitions via REST API.
 
 The Quarkus Flow Runner extension transforms your Quarkus application into a lightweight, cloud-native workflow execution engine. Load workflow definitions from YAML/JSON files at startup, and execute them through a secured REST API.
 
@@ -87,7 +87,7 @@ quarkus.flow.runner.source.path=src/main/resources/workflows
 
 == 3. Create workflow definitions
 
-Workflow definitions follow the link:https://serverlessworkflow.io/[CNCF Serverless Workflow specification]. The Runner supports YAML and JSON formats.
+Workflow definitions follow the link:https://open-workflow-specification.org/[Open Workflow Specification (CNCF sandbox project)]. The Runner supports YAML and JSON formats.
 
 Create your first workflow definition as a YAML file.
 
@@ -975,7 +975,7 @@ Now that you have the Runner operational, explore these advanced topics:
 
 * xref:data-flow.adoc[Data flow and context management] - Understand how to manipulate data between workflow tasks
 * xref:dsl-cheatsheet.adoc[Java DSL cheatsheet] - Learn workflow DSL syntax for creating complex definitions
-* xref:specification.adoc[CNCF Specification Mapping] - Understand how Quarkus Flow maps to the Serverless Workflow spec
+* xref:specification.adoc[CNCF Specification Mapping] - Understand how Quarkus Flow maps to the Open Workflow spec
 
 **AI and Integrations:**
 

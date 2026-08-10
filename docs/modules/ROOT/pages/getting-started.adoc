@@ -4,7 +4,7 @@ include::includes/attributes.adoc[]
 
 Welcome to Quarkus Flow!
 
-Quarkus Flow brings the link:https://serverlessworkflow.io/[Serverless Workflow] specification natively to Quarkus. It allows you to build durable, event-driven orchestrations and Agentic AI patterns using a highly ergonomic, type-safe Java DSL.
+Quarkus Flow brings the link:https://open-workflow-specification.org/[Open Workflow] specification natively to Quarkus. It allows you to build durable, event-driven orchestrations and Agentic AI patterns using a highly ergonomic, type-safe Java DSL.
 
 This tutorial shows the shortest path to building, exposing, and visualizing your first Quarkus Flow workflow.
 

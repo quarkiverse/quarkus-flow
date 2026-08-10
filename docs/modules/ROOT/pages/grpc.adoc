@@ -5,7 +5,7 @@
 include::./includes/attributes.adoc[]
 
 Quarkus Flow supports gRPC through the `quarkus-flow-grpc` module.
-It connects the Serverless Workflow gRPC executor to Quarkus gRPC channels, so you can reuse the same client routing and configuration you already use in Quarkus applications.
+It connects the Open Workflow gRPC executor to Quarkus gRPC channels, so you can reuse the same client routing and configuration you already use in Quarkus applications.
 
 == Add the dependency
 

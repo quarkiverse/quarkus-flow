@@ -273,7 +273,7 @@ workflow("orders")
 
 **Trade-off:** Inline auth = isolated (one-off), Named policies = shared (common auth)
 
-**1:1 DSL mapping:** This follows the Serverless Workflow specification exactly - the spec provides the reuse primitive (`use`), we honor it. No framework magic.
+**1:1 DSL mapping:** This follows the Open Workflow specification exactly - the spec provides the reuse primitive (`use`), we honor it. No framework magic.
 
 ## Documentation Updates
 

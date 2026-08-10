@@ -130,7 +130,7 @@ class CustomerProfileResourceTest {
             .get("/customer/profile")
         .then()
             .statusCode(401)
-            .body("type", equalTo("https://serverlessworkflow.io/spec/1.0.0/errors/communication"))
+            .body("type", equalTo("https://open-workflow-specification.org/spec/1.0.0/errors/communication"))
             .body("title", equalTo("HTTP 401 Unauthorized"))
             .body("status", equalTo(401));
     }

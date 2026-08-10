@@ -21,7 +21,7 @@ This specification defines the design for the Quarkus Flow Runner REST API, a ne
 
 - Custom persistence layer (reuse existing Quarkus Flow persistence infrastructure)
 - WebSocket streaming (deferred to future release)
-- Custom workflow DSL (use existing CNCF Serverless Workflow spec)
+- Custom workflow DSL (use existing Open Workflow spec)
 - Kubernetes-specific features in the extension (operator handles those)
 
 ## Scope Limitations
@@ -1112,6 +1112,6 @@ runner/
 ## References
 
 - Issue: https://github.com/quarkiverse/quarkus-flow/issues/52
-- CNCF Serverless Workflow Spec: https://serverlessworkflow.io/
+- Open Workflow Specification (CNCF sandbox project): https://open-workflow-specification.org/
 - Quarkus Extension Guide: https://quarkus.io/guides/writing-extensions
 - Quarkus OIDC: https://quarkus.io/guides/security-oidc-bearer-token-authentication

@@ -61,7 +61,7 @@ abstract class Step<SELF extends Step<SELF, B>, B> implements FuncTaskConfigurer
      * @param taskName the name of the next task to execute
      * @return this step for further chaining
      * @see <a
-     *      href="https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#task">DSL
+     *      href="https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#task">DSL
      *      Reference - Task</a>
      */
     public SELF then(String taskName) {
@@ -76,7 +76,7 @@ abstract class Step<SELF extends Step<SELF, B>, B> implements FuncTaskConfigurer
      * @param directive the flow directive (e.g., {@link FlowDirectiveEnum#END})
      * @return this step for further chaining
      * @see <a
-     *      href="https://github.com/serverlessworkflow/specification/blob/main/dsl-reference.md#task">DSL
+     *      href="https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#task">DSL
      *      Reference - Task</a>
      */
     public SELF then(FlowDirectiveEnum directive) {

@@ -39,7 +39,7 @@ public class NativeWorkflowEventListener {
      */
     @SuppressWarnings("unchecked")
     void onStart(@Observes StartupEvent ev) {
-        LOGGER.info("Registering InMemory Serverless Workflow event listener...");
+        LOGGER.info("Registering InMemory Open Workflow event listener...");
 
         EventConsumer<TypeEventRegistration, TypeEventRegistrationBuilder> eventConsumer = (EventConsumer<TypeEventRegistration, TypeEventRegistrationBuilder>) workflowApplication
                 .eventConsumer();

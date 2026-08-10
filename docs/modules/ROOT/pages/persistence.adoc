@@ -253,7 +253,7 @@ quarkus.flow.persistence.mvstore.db-path=${user.home}/testFlowMVStore.db
 * xref:concepts-durable-workflow-k8s.adoc[Durable Workflows in Kubernetes] — architecture and concepts for distributed execution.
 * link:https://quarkus.io/guides/redis[Using the Quarkus Redis Client] — advanced Redis configuration.
 * link:https://www.h2database.com/html/mvstore.html[MVStore homepage] — deeper dive into the MVStore engine.
-* link:https://github.com/serverlessworkflow/sdk-java/tree/main/impl/persistence[Serverless Workflow Java SDK Persistence] — upstream SDK reference.
+* link:https://github.com/open-workflow-specification/sdk-java/tree/main/impl/persistence[Open Workflow Java SDK Persistence] — upstream SDK reference.
 * https://infinispan.org/docs/stable/titles/resp/resp-endpoint.html[Using the Infinispan RESP endpoint]
 * https://infinispan.org/docs/stable/titles/container_image/container_image.html[Infinispan Server container image]
 * https://infinispan.org/docs/infinispan-operator/main/operator.html[Infinispan Operator guide]

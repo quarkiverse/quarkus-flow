@@ -8,7 +8,7 @@
 
 ## Context
 
-The Serverless Workflow SDK Java contains an `experimental/` module that provides a Java-native functional DSL for defining workflows using lambdas, functions, and predicates. This code is tightly coupled to Quarkus Flow (it's the primary user-facing API) and has no consumers within the SDK itself. Moving it to Quarkus Flow under a `dsl` namespace gives it a proper home, clearer ownership, and allows independent evolution.
+The Open Workflow SDK Java contains an `experimental/` module that provides a Java-native functional DSL for defining workflows using lambdas, functions, and predicates. This code is tightly coupled to Quarkus Flow (it's the primary user-facing API) and has no consumers within the SDK itself. Moving it to Quarkus Flow under a `dsl` namespace gives it a proper home, clearer ownership, and allows independent evolution.
 
 This is a **pure move** — no functional changes, fixes, or additions in this phase.
 

@@ -99,11 +99,11 @@ public class StructuredLoggingWithQuarkusLoggingJsonTest {
                             line)
                     .isTrue();
 
-            // Should be a Serverless Workflow CloudEvent type
+            // Should be an Open Workflow CloudEvent type
             String eventType = event.get("eventType").asText();
             assertThat(eventType)
                     .withFailMessage(
-                            "Event type should be a Serverless Workflow CloudEvent type (io.serverlessworkflow.*). Found: %s",
+                            "Event type should be an Open Workflow CloudEvent type (io.serverlessworkflow.*). Found: %s",
                             eventType)
                     .startsWith("io.serverlessworkflow.");
 

@@ -11,15 +11,15 @@ import io.serverlessworkflow.impl.LifecycleEvents;
  * <ul>
  * <li><b>Configuration filtering keys</b>: Simplified, user-friendly event type names for
  * configuring which events to log (e.g., {@code workflow.instance.started})
- * <li><b>CloudEvent type mapping</b>: Maps filter keys to official Serverless Workflow
+ * <li><b>CloudEvent type mapping</b>: Maps filter keys to official Open Workflow
  * specification CloudEvent types (e.g., {@code io.serverlessworkflow.workflow.started.v1})
  * </ul>
  * <p>
- * The official CloudEvent types are defined in the Serverless Workflow SDK:
+ * The official CloudEvent types are defined in the Open Workflow SDK:
  * {@code io.serverlessworkflow.impl.lifecycle.ce.AbstractLifeCyclePublisher}
  * <p>
  * <b>Note:</b> The CloudEvent type constants are temporarily copied here because they are
- * private in the SDK. See: https://github.com/serverlessworkflow/sdk-java/issues/1314
+ * private in the SDK. See: https://github.com/open-workflow-specification/sdk-java/issues/1314
  * Once made public in the SDK, we should reference them directly instead.
  */
 final class StructuredLoggingEventTypes {
@@ -52,11 +52,11 @@ final class StructuredLoggingEventTypes {
     static final String WORKFLOW_TASK_RETRIED = "workflow.task.retried";
 
     // ========================================
-    // Official Serverless Workflow CloudEvent Types
+    // Official Open Workflow CloudEvent Types
     // ========================================
-    // These are the official CloudEvent types from the SW specification
+    // These are the official CloudEvent types from the OWS specification
     // Source: io.serverlessworkflow.impl.lifecycle.ce.AbstractLifeCyclePublisher
-    // TODO: Replace with direct references once https://github.com/serverlessworkflow/sdk-java/issues/1314 is resolved
+    // TODO: Replace with direct references once https://github.com/open-workflow-specification/sdk-java/issues/1314 is resolved
 
     // ========================================
     // Filter Key → CloudEvent Type Mapping
@@ -82,7 +82,7 @@ final class StructuredLoggingEventTypes {
             Map.entry(WORKFLOW_TASK_RETRIED, LifecycleEvents.TASK_RETRIED));
 
     /**
-     * Maps a filter key (simplified event type) to the official Serverless Workflow CloudEvent type.
+     * Maps a filter key (simplified event type) to the official Open Workflow CloudEvent type.
      *
      * @param filterKey the simplified event type used for filtering (e.g., "workflow.instance.started")
      * @return the official CloudEvent type (e.g., "io.serverlessworkflow.workflow.started.v1")

@@ -542,7 +542,7 @@ Quarkus deployment processors cannot field-inject build-time config. It must be 
 
 ## References
 
-- CNCF Serverless Workflow Specification: https://serverlessworkflow.io/
+- Open Workflow Specification (CNCF sandbox project): https://open-workflow-specification.org/
 - LangChain4j Agentic API: https://docs.langchain4j.dev/tutorials/agents
 - Quarkus Extension Development: https://quarkus.io/guides/writing-extensions
 - Quarkus Gizmo: https://github.com/quarkusio/gizmo
