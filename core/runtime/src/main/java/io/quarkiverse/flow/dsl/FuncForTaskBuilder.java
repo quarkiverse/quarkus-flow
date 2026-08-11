@@ -12,10 +12,12 @@ import io.quarkiverse.flow.dsl.types.CallJava;
 import io.quarkiverse.flow.dsl.types.LoopFunction;
 import io.quarkiverse.flow.dsl.types.LoopPredicate;
 import io.quarkiverse.flow.dsl.types.LoopPredicateIndex;
+import io.quarkiverse.flow.dsl.types.SerializableFunction;
 import io.quarkiverse.flow.dsl.types.utils.ForTaskFunction;
 import io.serverlessworkflow.api.types.CallTask;
 import io.serverlessworkflow.api.types.ForTask;
 import io.serverlessworkflow.api.types.ForTaskConfiguration;
+import io.serverlessworkflow.api.types.In;
 import io.serverlessworkflow.api.types.Task;
 import io.serverlessworkflow.api.types.TaskItem;
 import io.serverlessworkflow.fluent.spec.TaskBaseBuilder;
@@ -51,7 +53,7 @@ public class FuncForTaskBuilder extends TaskBaseBuilder<FuncForTaskBuilder>
         return this;
     }
 
-    public <T, V> FuncForTaskBuilder collection(Function<T, Collection<V>> collectionF) {
+    public <T, V> FuncForTaskBuilder collection(SerializableFunction<T, Collection<V>> collectionF) {
         ForTaskFunction.withCollection(forTask, collectionF);
         return this;
     }
@@ -89,7 +91,7 @@ public class FuncForTaskBuilder extends TaskBaseBuilder<FuncForTaskBuilder>
 
     @Override
     public FuncForTaskBuilder in(String in) {
-        this.forTask.getFor().withIn(in);
+        this.forTask.getFor().withIn(new In().withForInExpression(in));
         return this;
     }
 

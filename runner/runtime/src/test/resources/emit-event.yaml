@@ -9,7 +9,9 @@ do:
       emit:
         event:
           with:
-            greeting: ${ "Hello, " + .name + "!" }
+            data:
+              greeting: ${ "Hello, " + .name + "!" }
+            type: dummy-type
 input:
   schema:
     document:
