@@ -24,7 +24,9 @@ import io.quarkiverse.flow.dsl.types.SerializableConsumer;
 import io.quarkiverse.flow.dsl.types.SerializableFunction;
 import io.quarkiverse.flow.dsl.types.SerializablePredicate;
 import io.serverlessworkflow.api.types.ExportAs;
+import io.serverlessworkflow.api.types.ForIn;
 import io.serverlessworkflow.api.types.FunctionArguments;
+import io.serverlessworkflow.api.types.In;
 import io.serverlessworkflow.api.types.InputFrom;
 import io.serverlessworkflow.api.types.OutputAs;
 import io.serverlessworkflow.api.types.TaskMetadata;
@@ -50,6 +52,8 @@ public class FuncJacksonModule extends SimpleModule {
 
         super.addSerializer(TaskMetadata.class, new TaskMetadataSerializer());
         super.addDeserializer(TaskMetadata.class, new TaskMetadataDeserializer());
+        super.addSerializer(ForIn.class, new ForInSerializer());
+        super.addDeserializer(ForIn.class, new ForInDeserializer());
         super.addSerializer(FunctionArguments.class, new FunctionArgumentsSerializer());
         super.addDeserializer(FunctionArguments.class, new FunctionArgumentsDeserializer());
         super.addDeserializer(Function.class, new FunctionDeserializer(Function.class));
@@ -86,6 +90,7 @@ public class FuncJacksonModule extends SimpleModule {
         super.setMixInAnnotation(OutputAs.class, FuncOutputAsMixIn.class);
         super.setMixInAnnotation(ExportAs.class, FuncExportAsMixIn.class);
         super.setMixInAnnotation(InputFrom.class, FuncInputFromMixIn.class);
+        super.setMixInAnnotation(In.class, InMixInHack.class);
 
         super.setupModule(context);
     }

@@ -2,6 +2,7 @@ package io.quarkiverse.flow.dsl.types.utils;
 
 import java.lang.invoke.MethodType;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -9,10 +10,11 @@ import io.quarkiverse.flow.dsl.types.LoopPredicate;
 import io.quarkiverse.flow.dsl.types.LoopPredicateIndex;
 import io.quarkiverse.flow.dsl.types.LoopPredicateIndexContext;
 import io.quarkiverse.flow.dsl.types.LoopPredicateIndexFilter;
+import io.quarkiverse.flow.dsl.types.SerializableFunction;
+import io.serverlessworkflow.api.types.ForIn;
 import io.serverlessworkflow.api.types.ForTask;
 import io.serverlessworkflow.api.types.ForTaskConfiguration;
 import io.serverlessworkflow.api.types.In;
-import io.serverlessworkflow.api.types.TaskMetadata;
 
 public class ForTaskFunction {
 
@@ -127,15 +129,12 @@ public class ForTaskFunction {
     }
 
     public static <T, V> ForTask withCollection(
-            ForTask forTask, Function<T, Collection<V>> collection) {
+            ForTask forTask, SerializableFunction<T, Collection<V>> collection) {
         return withCollection(forTask, collection, null);
     }
 
     public static <T, V> ForTask withCollection(
             ForTask forTask, Function<T, Collection<V>> collection, Class<T> colArgClass) {
-        TaskMetadata metadata = TypesUtils.initMetadata(forTask);
-        metadata.withAdditionalProperty(COLLECTION, collection);
-        metadata.withAdditionalProperty(FOR_CLASS, Optional.ofNullable(colArgClass));
         ForTaskConfiguration forConfig = forTask.getFor();
         if (forConfig == null) {
             forConfig = new ForTaskConfiguration();
@@ -143,7 +142,8 @@ public class ForTaskFunction {
         }
         if (forConfig.getIn() == null) {
             forConfig.setIn(
-                    new In().withForInExpression("Handling item collection with metadata key " + ForTaskFunction.COLLECTION));
+                    new In().withForInInlineArray(List.of(new ForIn().withAdditionalProperty(COLLECTION, collection)
+                            .withAdditionalProperty(FOR_CLASS, colArgClass))));
         }
         return forTask;
     }
@@ -165,9 +165,7 @@ public class ForTaskFunction {
 
     @SuppressWarnings("unchecked")
     public static Optional<Class<?>> getForClass(ForTask task) {
-        return task.getMetadata() == null
-                ? Optional.empty()
-                : (Optional<Class<?>>) task.getMetadata().getAdditionalProperties().getOrDefault(FOR_CLASS, Optional.empty());
+        return Optional.ofNullable((Class<?>) getFromInList(task, FOR_CLASS));
     }
 
     @SuppressWarnings("unchecked")
@@ -179,8 +177,15 @@ public class ForTaskFunction {
 
     @SuppressWarnings("unchecked")
     public static Function<?, Collection<?>> getInCollection(ForTask task) {
-        return task.getMetadata() == null
-                ? null
-                : (Function<?, Collection<?>>) task.getMetadata().getAdditionalProperties().get(COLLECTION);
+        return (Function<?, Collection<?>>) getFromInList(task, COLLECTION);
     }
+
+    private static Object getFromInList(ForTask task, String key) {
+        List<ForIn> list = task.getFor().getIn().getForInInlineArray();
+        if (list != null && !list.isEmpty()) {
+            return list.get(0).getAdditionalProperties().get(key);
+        }
+        return null;
+    }
+
 }

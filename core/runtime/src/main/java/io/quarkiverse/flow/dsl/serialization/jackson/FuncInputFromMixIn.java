@@ -7,5 +7,5 @@ import io.serverlessworkflow.api.types.jackson.OutputAsMixIn;
 
 @JsonSerialize(using = FuncInputFromSerializer.class)
 @JsonDeserialize(using = FuncInputFromDeserializer.class)
-public class FuncInputFromMixIn extends OutputAsMixIn {
+public abstract class FuncInputFromMixIn extends OutputAsMixIn {
 }
