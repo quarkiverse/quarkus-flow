@@ -65,6 +65,31 @@ endif::add-copy-button-to-env-var[]
 |string
 |
 
+a| [[quarkus-flow-runner_quarkus-flow-runner-source-follow-symlinks]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-source-follow-symlinks[`+++quarkus.flow.runner.source.follow-symlinks+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.source.follow-symlinks+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether to follow symbolic links when scanning for workflow definition files.
+
+When `false` (default), symbolic links are excluded from the scan. This prevents duplicate workflow detection failures on Kubernetes, where ConfigMap and Secret volume mounts use an internal symlink structure (a timestamped directory with symlinks pointing to the real files).
+
+Set to `true` only if your workflow files are intentionally provided via symbolic links outside of a Kubernetes volume mount.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SOURCE_FOLLOW_SYMLINKS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SOURCE_FOLLOW_SYMLINKS+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++false+++`
+
 a| [[quarkus-flow-runner_quarkus-flow-runner-security-type]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-type[`+++quarkus.flow.runner.security.type+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.runner.security.type+++[]

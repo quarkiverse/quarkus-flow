@@ -2,6 +2,7 @@ package io.quarkiverse.flow.runner;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -56,7 +57,7 @@ public class WorkflowDefinitionRuntimeLoader {
     }
 
     private List<WorkflowDefinitionId> loadWorkflowDefinitions() {
-        Path basePath = Path.of(config.source().path().get());
+        Path basePath = Path.of(config.source().path().orElse(""));
         LOGGER.info("Flow Runner: Loading workflows from filesystem: {}", basePath);
 
         if (!Files.exists(basePath))
@@ -65,11 +66,20 @@ public class WorkflowDefinitionRuntimeLoader {
         if (!Files.isDirectory(basePath))
             throw new IllegalStateException("Workflow path is not a directory: " + basePath);
 
+        if (Files.isSymbolicLink(basePath) && !config.source().followSymlinks()) {
+            LOGGER.debug(
+                    "Flow Runner: path is a symbolic link: {}, skipping it. To enable processing symlinks set quarkus.flow.runner.source.follow-symlinks=true.",
+                    basePath);
+            return new ArrayList<>();
+        }
+
         final List<WorkflowDefinitionId> workflowDefinitionIds = new ArrayList<>();
-        try (Stream<Path> paths = Files.walk(basePath).sorted()) {
+        try (Stream<Path> paths = config.source().followSymlinks() ? Files.walk(basePath, FileVisitOption.FOLLOW_LINKS).sorted()
+                : Files.walk(basePath).sorted()) {
             var workflows = paths
                     .filter(Files::isRegularFile)
                     .filter(this::isSupportedWorkflowFile)
+                    .filter(f -> !Files.isSymbolicLink(f) || config.source().followSymlinks())
                     .toList();
 
             for (Path path : workflows) {

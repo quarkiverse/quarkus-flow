@@ -102,6 +102,23 @@ public interface FlowRunnerConfig {
          * @return the filesystem path, or empty if not configured
          */
         Optional<String> path();
+
+        /**
+         * Whether to follow symbolic links when scanning for workflow definition files.
+         * <p>
+         * When {@code false} (default), symbolic links are excluded from the scan.
+         * This prevents duplicate workflow detection failures on Kubernetes, where
+         * ConfigMap and Secret volume mounts use an internal symlink structure
+         * (a timestamped directory with symlinks pointing to the real files).
+         * <p>
+         * Set to {@code true} only if your workflow files are intentionally
+         * provided via symbolic links outside of a Kubernetes volume mount.
+         *
+         * @return {@code true} to follow symlinks, {@code false} (default) to skip them
+         * @see <a href="https://github.com/quarkiverse/quarkus-flow/issues/835">Issue #835</a>
+         */
+        @WithDefault("false")
+        Boolean followSymlinks();
     }
 
     /**
