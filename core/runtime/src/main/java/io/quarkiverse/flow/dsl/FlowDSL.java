@@ -1644,7 +1644,7 @@ public final class FlowDSL {
      */
     public static <T, V> FuncTaskConfigurer forEach(
             String taskName, Collection<V> collection, Consumer<FuncTaskItemListBuilder> body) {
-        Function<T, Collection<V>> f = ctx -> collection;
+        SerializableFunction<T, Collection<V>> f = ctx -> collection;
         return list -> list.forEach(taskName, j -> j.collection(f).tasks(body));
     }
 
