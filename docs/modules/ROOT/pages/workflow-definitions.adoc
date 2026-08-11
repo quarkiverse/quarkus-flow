@@ -37,6 +37,20 @@ You can customize the discovery directory by setting the xref:configuration.adoc
 The property accepts a classpath resource path (e.g., `flow`, `workflows`, or `custom/workflows`). Workflow files must be placed in `src/main/resources/<path>` to be available at runtime. All `*.yaml`, `*.yml`, and `*.json` files in the resource path are discovered automatically.
 ====
 
+[NOTE]
+.Symbolic links in the workflow directory
+====
+By default, Quarkus Flow **skips symbolic links** during the classpath scan so that each workflow file is discovered only once.
+This avoids duplicate-detection failures that can occur when the classpath contains symlinked entries — for example, on Kubernetes where ConfigMap or Secret volume mounts use an internal symlink structure.
+
+If your workflow files are intentionally provided via symbolic links and should be resolved, enable symlink resolution:
+
+[source,properties]
+----
+quarkus.flow.definitions.follow-symlinks=true
+----
+====
+
 [IMPORTANT]
 ====
 In test mode, Maven automatically merges `src/main/resources` and `src/test/resources`, with test resources taking precedence. If the same workflow file exists in both locations with the same relative path, the test version overrides the main version.

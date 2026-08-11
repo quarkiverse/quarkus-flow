@@ -2,6 +2,7 @@ package io.quarkiverse.flow.deployment;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -52,7 +53,9 @@ public class FlowResourceCollectorProcessor {
             // Only process files in the configured flow directory
             if (relativePath.startsWith(flowResourcePath + "/") &&
                     WorkflowNameUtils.SUPPORTED_WORKFLOW_FILE_EXTENSIONS.stream()
-                            .anyMatch(relativePath::endsWith)) {
+                            .anyMatch(relativePath::endsWith)
+                    &&
+                    (!Files.isSymbolicLink(visit.getPath()) || flowDefinitionsConfig.followSymlinks())) {
 
                 Path filePath = visit.getPath();
                 try {

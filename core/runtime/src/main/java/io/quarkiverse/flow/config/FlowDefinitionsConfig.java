@@ -35,6 +35,23 @@ public interface FlowDefinitionsConfig {
     String ROOT_KEY = "quarkus.flow.definitions";
 
     /**
+     * Whether to follow symbolic links when scanning for workflow definition files
+     * on the classpath.
+     * <p>
+     * When {@code false} (default), symbolic links are excluded from the scan.
+     * This prevents the same workflow file from being discovered more than once
+     * when the classpath contains symlinked entries (e.g., on Kubernetes where
+     * ConfigMap volume mounts use an internal symlink structure).
+     * <p>
+     * Set to {@code true} if your workflow definition files are intentionally
+     * provided via symbolic links and should be resolved during the scan.
+     *
+     * @see <a href="https://github.com/quarkiverse/quarkus-flow/issues/835">Issue #835</a>
+     */
+    @WithDefault("false")
+    Boolean followSymlinks();
+
+    /**
      * Classpath resource path where workflow definition files are located.
      * <p>
      * Workflow files must be placed in <code>src/main/resources/{path}</code> to be

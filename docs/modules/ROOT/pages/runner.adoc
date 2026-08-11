@@ -68,6 +68,10 @@ quarkus.flow.runner.enabled=true
 quarkus.flow.runner.source.path=/deployments/workflows
 ----
 
+NOTE: On Kubernetes, ConfigMap and Secret volume mounts use an internal symlink structure.
+By default, the Runner **skips symbolic links** during directory scanning to prevent duplicate workflow detection failures.
+If your workflow files are intentionally provided via symbolic links outside of a Kubernetes volume mount, set `quarkus.flow.runner.source.follow-symlinks=true`.
+
 **Local development setup:**
 
 Create a `workflows/` directory in your project:

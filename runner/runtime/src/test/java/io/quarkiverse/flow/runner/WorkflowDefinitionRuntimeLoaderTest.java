@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.runner;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -422,5 +423,175 @@ class WorkflowDefinitionRuntimeLoaderTest {
                 .hasMessageContaining("duplicate-workflow")
                 .hasMessageContaining("1.0.0")
                 .hasMessageContaining("workflow-2.yaml");
+    }
+
+    // -- Symlink tests (Issue #835) --
+
+    private static final String SYMLINK_WORKFLOW_YAML = """
+            document:
+              dsl: '1.0.0'
+              namespace: test-namespace
+              name: symlinked-workflow
+              version: '1.0.0'
+            do:
+              - setMessage:
+                  set:
+                    message: "Symlinked"
+            """;
+
+    private boolean supportsSymlinks() {
+        try {
+            Path probe = tempDir.resolve(".symlink-probe");
+            Path target = tempDir.resolve(".symlink-target");
+            Files.writeString(target, "probe");
+            Files.createSymbolicLink(probe, target);
+            Files.delete(probe);
+            Files.delete(target);
+            return true;
+        } catch (IOException | UnsupportedOperationException e) {
+            return false;
+        }
+    }
+
+    @Test
+    @DisplayName("test_loader_skips_symlinked_files_by_default")
+    void test_loader_skips_symlinked_files_by_default() throws IOException {
+        assumeThat(supportsSymlinks()).as("Symbolic links not supported on this platform").isTrue();
+
+        // Given - a real file in a subdirectory and a symlink to it at the top level (mimics ConfigMap structure)
+        Path realDir = tempDir.resolve("..real");
+        Files.createDirectories(realDir);
+        Path realFile = realDir.resolve("workflow.yaml");
+        Files.writeString(realFile, SYMLINK_WORKFLOW_YAML);
+
+        Path symlinkFile = tempDir.resolve("workflow.yaml");
+        Files.createSymbolicLink(symlinkFile, realFile);
+
+        WorkflowDefinition mockDefinition = mock(WorkflowDefinition.class);
+        when(mockRegistrar.register(any(Workflow.class))).thenReturn(mockDefinition);
+
+        when(mockConfig.enabled()).thenReturn(true);
+        when(mockSource.path()).thenReturn(Optional.of(tempDir.toString()));
+        when(mockSource.followSymlinks()).thenReturn(false);
+
+        // When
+        loader.onStart(new WorkflowApplicationReadyEvent("ABC123"));
+
+        // Then - only the real file should be loaded, symlink is skipped
+        verify(mockRegistrar, times(1)).register(any(Workflow.class));
+    }
+
+    @Test
+    @DisplayName("test_loader_follows_symlinked_files_when_enabled")
+    void test_loader_follows_symlinked_files_when_enabled() throws IOException {
+        assumeThat(supportsSymlinks()).as("Symbolic links not supported on this platform").isTrue();
+
+        // Given - a real file in a subdirectory and a symlink at the top level
+        // Both resolve to the same workflow identity, so followSymlinks=true causes a duplicate
+        Path realDir = tempDir.resolve("..real");
+        Files.createDirectories(realDir);
+        Path realFile = realDir.resolve("workflow.yaml");
+        Files.writeString(realFile, SYMLINK_WORKFLOW_YAML);
+
+        Path symlinkFile = tempDir.resolve("workflow.yaml");
+        Files.createSymbolicLink(symlinkFile, realFile);
+
+        WorkflowDefinition mockDefinition = mock(WorkflowDefinition.class);
+        when(mockRegistrar.register(any(Workflow.class))).thenReturn(mockDefinition);
+
+        when(mockConfig.enabled()).thenReturn(true);
+        when(mockSource.path()).thenReturn(Optional.of(tempDir.toString()));
+        when(mockSource.followSymlinks()).thenReturn(true);
+
+        // When/Then - both the real file and the symlink are followed, causing duplicate detection
+        assertThatThrownBy(() -> loader.onStart(new WorkflowApplicationReadyEvent("ABC123")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Duplicated workflow definition");
+    }
+
+    @Test
+    @DisplayName("test_loader_skips_symlinked_base_directory")
+    void test_loader_skips_symlinked_base_directory() throws IOException {
+        assumeThat(supportsSymlinks()).as("Symbolic links not supported on this platform").isTrue();
+
+        // Given - base path is itself a symlink to a real directory
+        Path realDir = tempDir.resolve("real-workflows");
+        Files.createDirectories(realDir);
+        Files.writeString(realDir.resolve("workflow.yaml"), SYMLINK_WORKFLOW_YAML);
+
+        Path symlinkDir = tempDir.resolve("workflows-link");
+        Files.createSymbolicLink(symlinkDir, realDir);
+
+        when(mockConfig.enabled()).thenReturn(true);
+        when(mockSource.path()).thenReturn(Optional.of(symlinkDir.toString()));
+        when(mockSource.followSymlinks()).thenReturn(false);
+
+        // When
+        loader.onStart(new WorkflowApplicationReadyEvent("ABC123"));
+
+        // Then - the symlinked base directory is skipped entirely
+        verify(mockRegistrar, never()).register(any(Workflow.class));
+    }
+
+    @Test
+    @DisplayName("test_loader_follows_symlinked_base_directory_when_enabled")
+    void test_loader_follows_symlinked_base_directory_when_enabled() throws IOException {
+        assumeThat(supportsSymlinks()).as("Symbolic links not supported on this platform").isTrue();
+
+        // Given - base path is itself a symlink to a real directory
+        Path realDir = tempDir.resolve("real-workflows");
+        Files.createDirectories(realDir);
+        Files.writeString(realDir.resolve("workflow.yaml"), SYMLINK_WORKFLOW_YAML);
+
+        Path symlinkDir = tempDir.resolve("workflows-link");
+        Files.createSymbolicLink(symlinkDir, realDir);
+
+        WorkflowDefinition mockDefinition = mock(WorkflowDefinition.class);
+        when(mockRegistrar.register(any(Workflow.class))).thenReturn(mockDefinition);
+
+        when(mockConfig.enabled()).thenReturn(true);
+        when(mockSource.path()).thenReturn(Optional.of(symlinkDir.toString()));
+        when(mockSource.followSymlinks()).thenReturn(true);
+
+        // When
+        loader.onStart(new WorkflowApplicationReadyEvent("ABC123"));
+
+        // Then - Files.walk with FOLLOW_LINKS descends into the symlinked base directory
+        verify(mockRegistrar, times(1)).register(any(Workflow.class));
+    }
+
+    @Test
+    @DisplayName("test_loader_handles_configmap_like_symlink_structure")
+    void test_loader_handles_configmap_like_symlink_structure() throws IOException {
+        assumeThat(supportsSymlinks()).as("Symbolic links not supported on this platform").isTrue();
+
+        // Given - Kubernetes ConfigMap-like structure:
+        //   tempDir/
+        //   ├── ..2026_08_10/         (real timestamped directory)
+        //   │   └── my-workflow.yaml  (real file)
+        //   ├── ..data -> ..2026_08_10/  (symlink)
+        //   └── my-workflow.yaml -> ..data/my-workflow.yaml (symlink)
+        Path timestampedDir = tempDir.resolve("..2026_08_10");
+        Files.createDirectories(timestampedDir);
+        Files.writeString(timestampedDir.resolve("my-workflow.yaml"), SYMLINK_WORKFLOW_YAML);
+
+        Path dataLink = tempDir.resolve("..data");
+        Files.createSymbolicLink(dataLink, timestampedDir);
+
+        Path topLevelLink = tempDir.resolve("my-workflow.yaml");
+        Files.createSymbolicLink(topLevelLink, dataLink.resolve("my-workflow.yaml"));
+
+        WorkflowDefinition mockDefinition = mock(WorkflowDefinition.class);
+        when(mockRegistrar.register(any(Workflow.class))).thenReturn(mockDefinition);
+
+        when(mockConfig.enabled()).thenReturn(true);
+        when(mockSource.path()).thenReturn(Optional.of(tempDir.toString()));
+        when(mockSource.followSymlinks()).thenReturn(false);
+
+        // When
+        loader.onStart(new WorkflowApplicationReadyEvent("ABC123"));
+
+        // Then - only the real file is loaded, both symlinks are skipped
+        verify(mockRegistrar, times(1)).register(any(Workflow.class));
     }
 }
