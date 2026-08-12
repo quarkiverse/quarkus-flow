@@ -20,6 +20,7 @@ permissions:
 
 jobs:
   deploy-snapshot:
+    if: github.repository_owner == 'quarkiverse'
     name: Deploy Snapshots
     uses: quarkiverse/.github/.github/workflows/perform-release.yml@main
     secrets: inherit
