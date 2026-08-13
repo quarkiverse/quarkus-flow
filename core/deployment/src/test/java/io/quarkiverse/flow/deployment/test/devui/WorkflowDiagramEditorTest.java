@@ -100,12 +100,12 @@ public class WorkflowDiagramEditorTest {
 
         page.waitForSelector("[data-testid='diagram-container']");
 
-        String nodeSelector = "[data-testid='set-node-/do/0/setEcho']";
+        String nodeSelector = "[data-testid='set-node-/do/setEcho']";
         page.waitForSelector(nodeSelector);
         Locator setEchoNode = page.locator(nodeSelector);
 
         assertThat(setEchoNode.count())
-                .as("DiagramEditor must render the setEcho node with data-testid='set-node-/do/0/setEcho'")
+                .as("DiagramEditor must render the setEcho node with data-testid='set-node-/do/setEcho'")
                 .isGreaterThan(0);
 
         assertThat(setEchoNode.first().textContent())
