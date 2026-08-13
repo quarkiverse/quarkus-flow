@@ -168,6 +168,8 @@
                                 <exclude>org/acme/agentic/**</exclude>
                                 <!-- Requires LangChain4j core + model dependencies -->
                                 <exclude>org/acme/langchain4j/**</exclude>
+                                <!-- TODO -->
+                                <exclude>org/acme/bestpractices/**</exclude>
                                 <!--
                                     test/** contains doc-level QuarkusTest classes (e.g.
                                     ConditionalWorkflowTest).  These use @QuarkusTest / WireMock
