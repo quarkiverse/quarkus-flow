@@ -151,13 +151,29 @@
                         <id>default-testCompile</id>
                         <configuration>
                             <testExcludes>
-                                <!-- Requires generated Protobuf/gRPC stubs -->
+                                <!--
+                                    The docs/modules/ROOT/examples directory is added as an extra
+                                    test source root (see build-helper-maven-plugin below) so that
+                                    WorkflowDiagramEditorRoundTripTest can reference the canonical
+                                    org.acme workflow classes directly — no copies needed.
+
+                                    However, not every class in that directory can compile in the
+                                    core/deployment module, which has no dependency on extension
+                                    modules beyond what is already on its classpath.  The packages
+                                    below are excluded from compilation for the following reasons:
+                                -->
+                                <!-- Requires generated Protobuf/gRPC stubs (quarkus-grpc) -->
                                 <exclude>org/acme/grpc/**</exclude>
-                                <!-- Requires quarkus-langchain4j-agentic -->
+                                <!-- Requires quarkus-langchain4j-agentic and related AI dependencies -->
                                 <exclude>org/acme/agentic/**</exclude>
-                                <!-- Requires LangChain4j dependencies -->
+                                <!-- Requires LangChain4j core + model dependencies -->
                                 <exclude>org/acme/langchain4j/**</exclude>
-                                <!-- Doc test classes — use their own QuarkusTest setup, not applicable here -->
+                                <!--
+                                    test/** contains doc-level QuarkusTest classes (e.g.
+                                    ConditionalWorkflowTest).  These use @QuarkusTest / WireMock
+                                    fixtures that are only valid in their own module and must not
+                                    be compiled or run here.
+                                -->
                                 <exclude>test/**</exclude>
                             </testExcludes>
                         </configuration>
