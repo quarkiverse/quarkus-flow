@@ -3,6 +3,7 @@ package io.quarkiverse.flow.deployment.test.devui;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -15,11 +16,15 @@ import org.acme.HelloWorkflow;
 import org.acme.HttpWorkflow;
 import org.acme.ListenWorkflow;
 import org.acme.Message;
+import org.acme.OpenApiWorkflow;
 import org.acme.Order;
 import org.acme.OrdersPayload;
 import org.acme.ParallelWorkflow;
 import org.acme.ParentWorkflow;
+import org.acme.RaiseWorkflow;
 import org.acme.ScorePayload;
+import org.acme.TryCatchWorkflow;
+import org.acme.WaitWorkflow;
 import org.acme.dataflow.Call4PapersFlow;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.FileAsset;
@@ -35,6 +40,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Locator;
@@ -71,7 +77,11 @@ public class WorkflowDiagramEditorRoundTripTest {
                             HttpWorkflow.class,
                             CronWorkflow.class,
                             ContextWorkflow.class,
-                            Call4PapersFlow.class)
+                            Call4PapersFlow.class,
+                            RaiseWorkflow.class,
+                            TryCatchWorkflow.class,
+                            WaitWorkflow.class,
+                            OpenApiWorkflow.class)
                     .addAsResource(new StringAsset(
                             "wiremock.url=http://localhost:9999\n" +
                                     "notification.service.base-url=http://localhost:9999\n" +
@@ -82,6 +92,14 @@ public class WorkflowDiagramEditorRoundTripTest {
 
     static final String DEV_UI_URL = "http://localhost:8080/q/dev-ui/quarkus-flow/workflows";
 
+    // Set -DFLOW_TEST_RECORD_VIDEO=true (or any non-blank value) on the Maven
+    // command line to capture a .webm video for every page opened during the run.
+    // Videos land in core/deployment/target/test-videos/ and are named by the
+    // Playwright default scheme (random UUID + .webm).
+    // Example: mvn test -Dtest=WorkflowDiagramEditorRoundTripTest -DFLOW_TEST_RECORD_VIDEO=true
+    static final boolean RECORD_VIDEO = System.getProperty("FLOW_TEST_RECORD_VIDEO") != null
+            && !System.getProperty("FLOW_TEST_RECORD_VIDEO").isBlank();
+
     static Playwright playwright;
     static BrowserContext browserContext;
     Page page;
@@ -89,18 +107,27 @@ public class WorkflowDiagramEditorRoundTripTest {
     @BeforeAll
     static void startPlaywright() {
         playwright = Playwright.create();
+        // Use a tall viewport so vaadin-grid renders all workflow rows without
+        // virtual-scroll truncation. Each row is ~50px; 21 workflows needs ~1100px
+        // plus chrome overhead, so 1600px is a safe margin.
+        Browser.NewContextOptions ctxOptions = new Browser.NewContextOptions()
+                .setViewportSize(1280, 1600);
+        if (RECORD_VIDEO) {
+            ctxOptions.setRecordVideoDir(Paths.get("target/test-videos"))
+                    .setRecordVideoSize(1280, 1600);
+        }
         browserContext = playwright.chromium()
                 .launch(new BrowserType.LaunchOptions()
                         .setHeadless(true)
                         .setChromiumSandbox(false)
                         .setArgs(List.of("--disable-gpu")))
-                .newContext();
+                .newContext(ctxOptions);
     }
 
     @AfterAll
     static void stopPlaywright() {
         if (browserContext != null) {
-            browserContext.close(); // flushes video files
+            browserContext.close(); // flushes .webm files when RECORD_VIDEO is on
         }
         if (playwright != null) {
             playwright.close();
@@ -198,6 +225,30 @@ public class WorkflowDiagramEditorRoundTripTest {
                         "diagramEditor-org-acme-call4papers-0-0-1",
                         "call-node-/do/0/validateProposal",
                         "validateProposal"),
+                // raise task — covers the raise-node diagram element.
+                Arguments.of(
+                        "raise-java",
+                        "diagramEditor-org-acme-raise-workflow-0-0-1",
+                        "raise-node-/do/0/notImplemented",
+                        "notImplemented"),
+                // try/catch task — outer try-catch-node container.
+                Arguments.of(
+                        "try-catch-java",
+                        "diagramEditor-org-acme-try-catch-workflow-0-0-1",
+                        "try-catch-node-/do/0/safeFetch",
+                        "safeFetch"),
+                // wait task — covers the wait-node diagram element.
+                Arguments.of(
+                        "wait-java",
+                        "diagramEditor-org-acme-wait-workflow-0-0-1",
+                        "wait-node-/do/0/pause",
+                        "pause"),
+                // openapi call — covers the call-node with openapi badge (auto-named openapi-0).
+                Arguments.of(
+                        "openapi-java",
+                        "diagramEditor-org-acme-openapi-call-workflow-0-0-1",
+                        "call-node-/do/0/openapi-0",
+                        "openapi-0"),
                 // YAML cases — live references to docs/modules/ROOT/examples/flow/*.yaml.
                 // namespace=company, name=echo-name, version=0.1.0 → dots/dots become dashes.
                 Arguments.of(
@@ -224,9 +275,34 @@ public class WorkflowDiagramEditorRoundTripTest {
 
         page.navigate(DEV_UI_URL);
 
-        // Step 1 — eye button for this workflow is visible
+        // Step 1 — wait for the grid data to arrive (any eye button in the DOM).
+        // The vaadin-grid virtual-scroll only renders rows currently in the viewport;
+        // rows outside the visible area are not attached to the DOM at all.
+        // We use locator.evaluate() — Playwright resolves the vaadin-grid element
+        // through shadow DOM and then calls scrollToIndex on it directly, which is
+        // the only reliable way to reach into a shadow root from page.evaluate().
         String buttonSelector = "#see-" + diagramEditorId;
-        page.waitForSelector(buttonSelector);
+        page.waitForSelector("[id^='see-diagramEditor-']");
+        // Find the row index whose generated button id matches our target, then
+        // scroll the grid to that index so Vaadin renders the row into the DOM.
+        page.locator("vaadin-grid[column-reordering-allowed]").evaluate(
+                "(grid, id) => {" +
+                        "  if (!grid.items || !grid.items.length) return;" +
+                        "  const idx = Array.from(grid.items).findIndex(w => {" +
+                        "    if (!w || !w.id) return false;" +
+                        "    const ns   = (w.id.namespace || '').replaceAll('.', '-');" +
+                        "    const name = (w.id.name      || '').replaceAll('.', '-');" +
+                        "    const ver  = (w.id.version   || '').replaceAll('.', '-');" +
+                        "    return 'diagramEditor-' + ns + '-' + name + '-' + ver === id;" +
+                        "  });" +
+                        "  grid.scrollToIndex(idx >= 0 ? idx : grid.items.length - 1);" +
+                        "}",
+                diagramEditorId);
+        // After scrollToIndex the target row is rendered; wait for its button.
+        page.waitForSelector(buttonSelector,
+                new Page.WaitForSelectorOptions()
+                        .setState(com.microsoft.playwright.options.WaitForSelectorState.ATTACHED)
+                        .setTimeout(10_000));
 
         // Step 2 — click eye button; wait for dialog to attach (it is inside a Vaadin
         // overlay and never becomes "visible" in Playwright's sense while animating)
@@ -251,6 +327,9 @@ public class WorkflowDiagramEditorRoundTripTest {
                 .waitFor(new Locator.WaitForOptions()
                         .setState(com.microsoft.playwright.options.WaitForSelectorState.HIDDEN));
         page.locator(buttonSelector).click();
+        page.locator("vaadin-dialog[opened]")
+                .waitFor(new Locator.WaitForOptions()
+                        .setState(com.microsoft.playwright.options.WaitForSelectorState.ATTACHED));
         page.locator("[data-testid='diagram-container']").waitFor();
 
         Locator taskNodeAfterReopen = page.locator("[data-testid='" + taskTestId + "']");
