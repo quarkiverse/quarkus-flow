@@ -153,9 +153,9 @@ public class WorkflowDiagramEditorRoundTripTest {
     //   version   = io.serverlessworkflow.types.Defaults.DEFAULT_VERSION   = "0.0.1"
     //
     // Task data-testid auto-naming:
-    //   set(Map.of(...)) without a name → auto-name "set-0"  → "set-node-/do/0/set-0"
-    //   switchWhenOrElse(pred, ...) without a name → auto-name "switch-0" → "switch-node-/do/0/switch-0"
-    //   fork("checkInventoryAndCredit", ...) named → "fork-node-/do/0/checkInventoryAndCredit"
+    //   set(Map.of(...)) without a name → auto-name "set-0"  → "set-node-/do/set-0"
+    //   switchWhenOrElse(pred, ...) without a name → auto-name "switch-0" → "switch-node-/do/switch-0"
+    //   fork("checkInventoryAndCredit", ...) named → "fork-node-/do/checkInventoryAndCredit"
     // -------------------------------------------------------------------------
     static Stream<Arguments> workflowCases() {
         return Stream.of(
@@ -163,104 +163,104 @@ public class WorkflowDiagramEditorRoundTripTest {
                 Arguments.of(
                         "hello-java",
                         "diagramEditor-org-acme-hello-0-0-1",
-                        "set-node-/do/0/set-0",
+                        "set-node-/do/set-0",
                         "set-0"),
                 Arguments.of(
                         "parallel-java",
                         "diagramEditor-org-acme-parallel-workflow-using-branches-0-0-1",
-                        "fork-node-/do/0/checkInventoryAndCredit",
+                        "fork-node-/do/checkInventoryAndCredit",
                         "checkInventoryAndCredit"),
                 Arguments.of(
                         "conditional-java",
                         "diagramEditor-org-acme-conditional-routing-0-0-1",
-                        "switch-node-/do/0/switch-0",
+                        "switch-node-/do/switch-0",
                         "switch-0"),
                 // forEach task — auto-named for-0; covers the for-node diagram element.
                 Arguments.of(
                         "foreach-java",
                         "diagramEditor-org-acme-foreach-workflow-0-0-1",
-                        "for-node-/do/0/for-0",
+                        "for-node-/do/for-0",
                         "for-0"),
                 // emit task — covers the emit-node diagram element.
                 Arguments.of(
                         "emit-java",
                         "diagramEditor-org-acme-emit-event-workflow-1-0",
-                        "emit-node-/do/0/orderPlaced",
+                        "emit-node-/do/orderPlaced",
                         "orderPlaced"),
                 // listen task — covers the listen-node diagram element.
                 Arguments.of(
                         "listen-java",
                         "diagramEditor-org-acme-listen-to-one-workflow-0-0-1",
-                        "listen-node-/do/0/waitForStartup",
+                        "listen-node-/do/waitForStartup",
                         "waitForStartup"),
                 // subflow task — mapped to run-node in the diagram editor.
                 Arguments.of(
                         "parent-java",
                         "diagramEditor-org-acme-parent-workflow-with-children-1-0",
-                        "run-node-/do/0/executeHttpWorkflow",
+                        "run-node-/do/executeHttpWorkflow",
                         "executeHttpWorkflow"),
                 // standalone named HTTP call — dedicated call-node root-level case.
                 // org.acme namespace (dotted) → org-acme in diagramEditorId; version 1.0 → 1-0.
                 Arguments.of(
                         "http-call-java",
                         "diagramEditor-org-acme-http-with-query-headers-1-0",
-                        "call-node-/do/0/searchStarWarsCharacters",
+                        "call-node-/do/searchStarWarsCharacters",
                         "searchStarWarsCharacters"),
                 // cron-scheduled workflow — only case with a schedule block in the serialised JSON.
                 Arguments.of(
                         "cron-java",
                         "diagramEditor-org-acme-cron-workflow-0-0-1",
-                        "set-node-/do/0/set-0",
+                        "set-node-/do/set-0",
                         "set-0"),
                 // withContext lambda task — call-node with Java badge (auto-named function-0).
                 Arguments.of(
                         "context-java",
                         "diagramEditor-org-acme-context-aware-0-0-1",
-                        "call-node-/do/0/function-0",
+                        "call-node-/do/function-0",
                         "function-0"),
                 // 4-task dataflow workflow: function + inputFrom/outputAs/exportAs + HTTP.
                 // Most complex serialisation surface in the docs examples.
                 Arguments.of(
                         "call4papers-java",
                         "diagramEditor-org-acme-call4papers-0-0-1",
-                        "call-node-/do/0/validateProposal",
+                        "call-node-/do/validateProposal",
                         "validateProposal"),
                 // raise task — covers the raise-node diagram element.
                 Arguments.of(
                         "raise-java",
                         "diagramEditor-org-acme-raise-workflow-0-0-1",
-                        "raise-node-/do/0/notImplemented",
+                        "raise-node-/do/notImplemented",
                         "notImplemented"),
                 // try/catch task — outer try-catch-node container.
                 Arguments.of(
                         "try-catch-java",
                         "diagramEditor-org-acme-try-catch-workflow-0-0-1",
-                        "try-catch-node-/do/0/safeFetch",
+                        "try-catch-node-/do/safeFetch",
                         "safeFetch"),
                 // wait task — covers the wait-node diagram element.
                 Arguments.of(
                         "wait-java",
                         "diagramEditor-org-acme-wait-workflow-0-0-1",
-                        "wait-node-/do/0/pause",
+                        "wait-node-/do/pause",
                         "pause"),
                 // openapi call — covers the call-node with openapi badge (auto-named openapi-0).
                 Arguments.of(
                         "openapi-java",
                         "diagramEditor-org-acme-openapi-call-workflow-0-0-1",
-                        "call-node-/do/0/openapi-0",
+                        "call-node-/do/openapi-0",
                         "openapi-0"),
                 // YAML cases — live references to docs/modules/ROOT/examples/flow/*.yaml.
                 // namespace=company, name=echo-name, version=0.1.0 → dots/dots become dashes.
                 Arguments.of(
                         "echo-yaml",
                         "diagramEditor-company-echo-name-0-1-0",
-                        "set-node-/do/0/setEcho",
+                        "set-node-/do/setEcho",
                         "setEcho"),
                 // namespace=flow, name=echo-name, version=0.2.0
                 Arguments.of(
                         "echo-yaml-v2",
                         "diagramEditor-flow-echo-name-0-2-0",
-                        "set-node-/do/0/setEcho",
+                        "set-node-/do/setEcho",
                         "setEcho"));
     }
 
