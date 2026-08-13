@@ -147,6 +147,62 @@
                             </annotationProcessorPaths>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>default-testCompile</id>
+                        <configuration>
+                            <testExcludes>
+                                <!--
+                                    The docs/modules/ROOT/examples directory is added as an extra
+                                    test source root (see build-helper-maven-plugin below) so that
+                                    WorkflowDiagramEditorRoundTripTest can reference the canonical
+                                    org.acme workflow classes directly — no copies needed.
+
+                                    However, not every class in that directory can compile in the
+                                    core/deployment module, which has no dependency on extension
+                                    modules beyond what is already on its classpath.  The packages
+                                    below are excluded from compilation for the following reasons:
+                                -->
+                                <!-- Requires generated Protobuf/gRPC stubs (quarkus-grpc) -->
+                                <exclude>org/acme/grpc/**</exclude>
+                                <!-- Requires quarkus-langchain4j-agentic and related AI dependencies -->
+                                <exclude>org/acme/agentic/**</exclude>
+                                <!-- Requires LangChain4j core + model dependencies -->
+                                <exclude>org/acme/langchain4j/**</exclude>
+                                <!-- TODO -->
+                                <exclude>org/acme/bestpractices/**</exclude>
+                                <!--
+                                    test/** contains doc-level QuarkusTest classes (e.g.
+                                    ConditionalWorkflowTest).  These use @QuarkusTest / WireMock
+                                    fixtures that are only valid in their own module and must not
+                                    be compiled or run here.
+                                -->
+                                <exclude>test/**</exclude>
+                            </testExcludes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Adds docs/modules/ROOT/examples as an extra test source directory so that
+                 the canonical org.acme workflow classes from the documentation can be
+                 referenced directly (live reference — no copy) in the Dev UI render tests.
+                 Any breaking change to a doc workflow immediately fails the IT. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-docs-examples-test-sources</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>../../docs/modules/ROOT/examples</source>
+                            </sources>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
