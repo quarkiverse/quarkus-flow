@@ -90,7 +90,7 @@ public class ApiKeyAuthenticationMechanism implements HttpAuthenticationMechanis
             FlowRunnerConfig.Security.ApiKey apiKeyConfig = matchingKey.get().getValue();
 
             Set<String> roles = apiKeyConfig.roles();
-            Set<String> namespaces = normalizeNamespaces(apiKeyConfig.namespaces());
+            Set<String> namespaces = normalizeNamespaces(apiKeyConfig.namespaces().orElse(Set.of("*")));
 
             // Build security identity with principal name and roles.
             QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder()

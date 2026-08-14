@@ -262,7 +262,7 @@ public interface FlowRunnerConfig {
              * @return the configured authorized namespaces
              */
             @WithDefault("*")
-            Set<String> namespaces();
+            Optional<Set<String>> namespaces();
         }
 
         /**
