@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -20,10 +21,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import io.quarkiverse.flow.internal.WorkflowApplicationReadyEvent;
 import io.quarkiverse.flow.internal.WorkflowRegistrarService;
+import io.quarkus.scheduler.Scheduler;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
 @DisplayName("WorkflowFileWatcher Tests")
 class WorkflowFileWatcherTest {
@@ -235,6 +239,38 @@ class WorkflowFileWatcherTest {
         watcher.poll();
 
         verify(mockRegistrar, never()).register(any(Workflow.class));
+    }
+
+    @Test
+    @DisplayName("test_watcher_skips_already_registered_workflow_id")
+    void test_watcher_skips_already_registered_workflow_id() throws IOException {
+        Files.writeString(tempDir.resolve("duplicate.yaml"),
+                WORKFLOW_YAML_TEMPLATE.formatted("test-ns", "already-registered", "1.0.0"));
+
+        WorkflowDefinitionId existingId = new WorkflowDefinitionId("test-ns", "already-registered", "1.0.0");
+        when(mockApplication.workflowDefinitions()).thenReturn(Map.of(existingId, mock(WorkflowDefinition.class)));
+
+        watcher.poll();
+
+        verify(mockRegistrar, never()).register(any(Workflow.class));
+        assertThat(watcher.registeredFiles).containsKey(tempDir.resolve("duplicate.yaml"));
+    }
+
+    @Test
+    @DisplayName("test_watcher_does_not_start_when_runner_disabled")
+    void test_watcher_does_not_start_when_runner_disabled() throws IOException {
+        when(mockConfig.enabled()).thenReturn(false);
+
+        Scheduler mockScheduler = mock(Scheduler.class);
+        watcher.scheduler = mockScheduler;
+
+        Files.writeString(tempDir.resolve("new-workflow.yaml"),
+                WORKFLOW_YAML_TEMPLATE.formatted("test-ns", "new-workflow", "1.0.0"));
+
+        watcher.onStart(new WorkflowApplicationReadyEvent("test"));
+
+        verify(mockScheduler, never()).newJob(any());
+        assertThat(watcher.registeredFiles).isEmpty();
     }
 
     @Test

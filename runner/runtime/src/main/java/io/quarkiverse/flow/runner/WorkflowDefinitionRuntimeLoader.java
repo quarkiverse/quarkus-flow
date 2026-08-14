@@ -108,8 +108,7 @@ public class WorkflowDefinitionRuntimeLoader {
                     .filter(f -> !Files.isSymbolicLink(f) || config.source().followSymlinks())
                     .toList();
         } catch (IOException e) {
-            LOGGER.warn("Flow Runner: Failed to scan workflow directory {}: {}", basePath, e.getMessage());
-            return List.of();
+            throw new UncheckedIOException("Flow Runner: Failed to scan workflow directory: " + basePath, e);
         }
     }
 

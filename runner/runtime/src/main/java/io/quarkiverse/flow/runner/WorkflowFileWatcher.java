@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.runner;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -50,6 +51,10 @@ public class WorkflowFileWatcher {
     private volatile boolean active = false;
 
     void onStart(@Observes WorkflowApplicationReadyEvent ev) {
+        if (!config.enabled()) {
+            LOGGER.debug("Flow Runner: File watcher skipped — runner is disabled");
+            return;
+        }
         if (config.source().path().isEmpty()) {
             LOGGER.debug("Flow Runner: File watcher skipped — source path not configured");
             return;
@@ -83,7 +88,13 @@ public class WorkflowFileWatcher {
     }
 
     void poll() {
-        List<Path> currentFiles = loader.scanWorkflowFiles();
+        List<Path> currentFiles;
+        try {
+            currentFiles = loader.scanWorkflowFiles();
+        } catch (UncheckedIOException e) {
+            LOGGER.warn("Flow Runner: File watcher — failed to scan directory: {}", e.getMessage());
+            return;
+        }
 
         for (Path path : currentFiles) {
             if (!registeredFiles.containsKey(path)) {
