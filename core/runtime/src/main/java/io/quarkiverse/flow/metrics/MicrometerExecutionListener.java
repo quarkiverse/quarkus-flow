@@ -16,7 +16,7 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.quarkiverse.flow.config.FlowMetricsConfig;
-import io.quarkus.arc.lookup.LookupIfProperty;
+import io.quarkus.arc.lookup.LookupUnlessProperty;
 import io.serverlessworkflow.api.types.Document;
 import io.serverlessworkflow.impl.WorkflowStatus;
 import io.serverlessworkflow.impl.lifecycle.TaskCompletedEvent;
@@ -32,7 +32,7 @@ import io.serverlessworkflow.impl.lifecycle.WorkflowFailedEvent;
 import io.serverlessworkflow.impl.lifecycle.WorkflowStartedEvent;
 import io.serverlessworkflow.impl.lifecycle.WorkflowStatusEvent;
 
-@LookupIfProperty(name = "quarkus.flow.metrics.enabled", stringValue = "true")
+@LookupUnlessProperty(name = "quarkus.flow.metrics.enabled", stringValue = "false", lookupIfMissing = true)
 public class MicrometerExecutionListener implements WorkflowExecutionListener {
 
     private final MeterRegistry meterRegistry;
