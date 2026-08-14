@@ -97,7 +97,7 @@ public class LeaseService {
                         e.getMessage());
                 // conflict - race condition while trying to update the same resource
                 // we get the latest version and return
-                if (e.getStatus().getCode() == 409) {
+                if (e.getStatus() != null && e.getStatus().getCode() == 409) {
                     return Optional.ofNullable(client.leases().inNamespace(ns).withName(name).get());
                 }
                 throw e;
@@ -152,7 +152,7 @@ public class LeaseService {
                     renewedLease.getSpec().getRenewTime(), renewedLease.getSpec().getHolderIdentity());
             return Optional.of(renewedLease);
         } catch (KubernetesClientException ex) {
-            if (ex.getStatus().getCode() == 409) {
+            if (ex.getStatus() != null && ex.getStatus().getCode() == 409) {
                 LOG.debug("Pod {} Failed to renew lease {} on namespace {}", kubeInfo.podName(), lease.getMetadata().getName(),
                         ns, ex);
                 return Optional.empty();
