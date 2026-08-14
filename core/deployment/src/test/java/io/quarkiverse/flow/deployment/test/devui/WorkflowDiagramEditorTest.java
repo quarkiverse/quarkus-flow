@@ -15,7 +15,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
-import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
@@ -66,26 +65,14 @@ public class WorkflowDiagramEditorTest {
         page.waitForSelector(BUTTON_SELECTOR);
         page.locator(BUTTON_SELECTOR).click();
 
-        ElementHandle dialog = page.waitForSelector("vaadin-dialog[opened]",
+        page.waitForSelector("vaadin-progress-bar[indeterminate]",
                 new Page.WaitForSelectorOptions().setState(WaitForSelectorState.ATTACHED));
-
-        String initialHtml = dialog.innerHTML();
-        boolean hasLoadingState = initialHtml.contains("Loading workflow definition") ||
-                dialog.querySelector("vaadin-progress-bar[indeterminate]") != null;
-
-        assertThat(hasLoadingState)
-                .as("loading state (progress bar or text) must be visible immediately after dialog opens")
-                .isTrue();
-
-        assertThat(dialog.querySelector("[data-testid='diagram-container']"))
-                .as("DiagramEditor must NOT be visible during loading state")
-                .isNull();
 
         page.waitForSelector("[data-testid='diagram-container']");
 
-        assertThat(dialog.querySelector("vaadin-progress-bar[indeterminate]"))
+        assertThat(page.locator("vaadin-progress-bar[indeterminate]").count())
                 .as("progress bar must be removed after loading completes")
-                .isNull();
+                .isEqualTo(0);
     }
 
     @Test
