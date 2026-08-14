@@ -72,6 +72,35 @@ NOTE: On Kubernetes, ConfigMap and Secret volume mounts use an internal symlink 
 By default, the Runner **skips symbolic links** during directory scanning to prevent duplicate workflow detection failures.
 If your workflow files are intentionally provided via symbolic links outside of a Kubernetes volume mount, set `quarkus.flow.runner.source.follow-symlinks=true`.
 
+=== File watcher for live workflow loading
+
+By default, the Runner loads workflow definitions once at startup. You can enable a **file watcher** that periodically polls the source path for new workflow files and registers them automatically — without requiring a pod restart.
+
+.application.properties
+[source,properties]
+----
+# Enable the file watcher (build-time property, default: false)
+quarkus.flow.runner.source.watch.enabled=true
+
+# Polling interval (runtime property, default: 5s)
+quarkus.flow.runner.source.watch.interval=5s
+----
+
+When enabled, the watcher:
+
+* Polls the configured `source.path` directory at the specified interval
+* Detects new `.yaml`, `.yml`, and `.json` files (including in subdirectories)
+* Parses and registers new workflow definitions via the same mechanism as startup loading
+* Caches already-processed files to avoid re-parsing on every poll cycle
+* Skips malformed files with a warning and retries them on the next cycle (handles partially-written files during ConfigMap rotation)
+* Respects the `follow-symlinks` setting
+
+NOTE: The `watch.enabled` property is a **build-time** property — changing it requires a rebuild. The `watch.interval` property is a **runtime** property and can be changed without rebuilding.
+
+IMPORTANT: The file watcher currently supports detecting **new** workflow files only. Updating or removing existing workflow definitions at runtime requires an application restart. See link:https://github.com/quarkiverse/quarkus-flow/issues/842[issue #842] for future support.
+
+TIP: The pre-built Runner container images (`quay.io/quarkiverse/quarkus-flow-runner`) have the file watcher **enabled by default**, since they target Kubernetes deployments where ConfigMap updates are common.
+
 **Local development setup:**
 
 Create a `workflows/` directory in your project:
@@ -719,7 +748,7 @@ document:
 ----
 
 2. Update the ConfigMap or volume with the new file
-3. Restart the Runner application (or implement hot-reload in future versions)
+3. If the file watcher is enabled, the new version is picked up automatically; otherwise restart the Runner
 4. New executions automatically use version `2.1.0`
 5. Old executions on version `2.0.0` continue running normally
 
@@ -809,13 +838,19 @@ quarkus.flow.runner.source.path=/deployments/workflows
 quarkus.flow.runner.security.type=API_KEY
 quarkus.flow.runner.security.api-keys.default.secret=${FLOW_API_KEY}
 quarkus.flow.runner.security.api-keys.default.roles=flow-admin
+
+# Enable file watcher to pick up new workflows without pod restart
+quarkus.flow.runner.source.watch.enabled=true
+quarkus.flow.runner.source.watch.interval=5s
 ----
+
+TIP: With the file watcher enabled, adding a new workflow definition to the ConfigMap does **not** require a pod restart — the Runner detects and registers the new file automatically within the configured polling interval.
 
 **GitOps workflow:**
 
 1. Store workflow definitions in a Git repository
 2. Use a GitOps operator (Flux, ArgoCD) to sync workflows to ConfigMaps
-3. ConfigMap changes trigger Rolling Update of the Runner deployment
+3. With the file watcher enabled, new workflow definitions are picked up automatically — no Rolling Update needed for additions
 4. New versions become available automatically
 
 == Troubleshooting

@@ -74,26 +74,43 @@ public class WorkflowDefinitionRuntimeLoader {
         }
 
         final List<WorkflowDefinitionId> workflowDefinitionIds = new ArrayList<>();
-        try (Stream<Path> paths = config.source().followSymlinks() ? Files.walk(basePath, FileVisitOption.FOLLOW_LINKS).sorted()
+        for (Path path : scanWorkflowFiles()) {
+            final WorkflowDefinitionId defId = loadWorkflow(path);
+            workflowDefinitionIds.stream().filter(addedId -> addedId.equals(defId)).findFirst().ifPresent(duplicatedId -> {
+                throw new IllegalStateException(
+                        String.format("Duplicated workflow definition (%s) found in path %s", defId.toString(":"), path));
+            });
+            workflowDefinitionIds.add(defId);
+        }
+        return workflowDefinitionIds;
+    }
+
+    /**
+     * Scans the configured source path and returns all supported workflow file paths.
+     * Respects the {@code followSymlinks} configuration.
+     *
+     * @return list of workflow file paths, or empty list if the path is not configured or invalid
+     */
+    List<Path> scanWorkflowFiles() {
+        if (config.source().path().isEmpty()) {
+            return List.of();
+        }
+        Path basePath = Path.of(config.source().path().get());
+        if (!Files.exists(basePath) || !Files.isDirectory(basePath)) {
+            return List.of();
+        }
+        try (Stream<Path> paths = config.source().followSymlinks()
+                ? Files.walk(basePath, FileVisitOption.FOLLOW_LINKS).sorted()
                 : Files.walk(basePath).sorted()) {
-            var workflows = paths
+            return paths
                     .filter(Files::isRegularFile)
                     .filter(this::isSupportedWorkflowFile)
                     .filter(f -> !Files.isSymbolicLink(f) || config.source().followSymlinks())
                     .toList();
-
-            for (Path path : workflows) {
-                final WorkflowDefinitionId defId = loadWorkflow(path);
-                workflowDefinitionIds.stream().filter(addedId -> addedId.equals(defId)).findFirst().ifPresent(duplicatedId -> {
-                    throw new IllegalStateException(
-                            String.format("Duplicated workflow definition (%s) found in path %s", defId.toString(":"), path));
-                });
-                workflowDefinitionIds.add(defId);
-            }
         } catch (IOException e) {
-            throw new UncheckedIOException("Flow Runner: Failed to scan workflow directory: " + basePath, e);
+            LOGGER.warn("Flow Runner: Failed to scan workflow directory {}: {}", basePath, e.getMessage());
+            return List.of();
         }
-        return workflowDefinitionIds;
     }
 
     private boolean isSupportedWorkflowFile(Path path) {
@@ -104,10 +121,8 @@ public class WorkflowDefinitionRuntimeLoader {
 
     private WorkflowDefinitionId loadWorkflow(Path path) {
         try {
-            // WorkflowReader auto-detects format from file extension
             Workflow workflow = WorkflowReader.readWorkflow(path);
 
-            // Validate required fields
             if (workflow.getDocument().getNamespace() == null || workflow.getDocument().getName() == null
                     || workflow.getDocument().getVersion() == null) {
                 throw new IllegalStateException(
@@ -115,7 +130,6 @@ public class WorkflowDefinitionRuntimeLoader {
                                 path));
             }
 
-            // Register with WorkflowApplication - creates WorkflowDefinition
             registrarService.register(workflow);
 
             LOGGER.debug("Flow Runner: Registered workflow {}:{}:{} from {}",
