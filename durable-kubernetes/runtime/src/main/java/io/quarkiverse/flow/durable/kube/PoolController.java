@@ -37,9 +37,10 @@ public abstract class PoolController implements Runnable {
     protected String computeSchedulerDelay() {
         String schedulerInitialDelay = schedulerConfig().initialDelay();
         if (SchedulerGroupConfig.SCHEDULER_INITIAL_DELAY_DEFAULT.equals(schedulerInitialDelay)) {
-            schedulerInitialDelay = String.format("%ds", ThreadLocalRandom.current().nextInt(5, 11));
-        } else {
-            schedulerInitialDelay = String.format("%ss", schedulerInitialDelay);
+            return String.format("%ds", ThreadLocalRandom.current().nextInt(5, 11));
+        }
+        if (schedulerInitialDelay.matches("\\d+")) {
+            return schedulerInitialDelay + "s";
         }
         return schedulerInitialDelay;
     }
