@@ -1,7 +1,5 @@
 package org.acme.orchestrator.service;
 
-import io.quarkus.test.junit.QuarkusTest;
-import jakarta.inject.Inject;
 import org.acme.orchestrator.model.BuildTask;
 import org.acme.orchestrator.model.TaskResult;
 import org.acme.orchestrator.model.TaskState;
@@ -23,19 +21,21 @@ import static org.assertj.core.api.Assertions.assertThat;
  * - Retry behavior
  * - Phase-level resumption
  */
-@QuarkusTest
 class TaskExecutorTest {
     private static final Logger LOG = LoggerFactory.getLogger(TaskExecutorTest.class);
 
-    @Inject
-    TaskExecutor taskExecutor;
+    private TaskExecutor taskExecutor;
 
-    @Inject
-    TaskStateStore stateStore;
+    private TaskStateStore stateStore;
 
     @BeforeEach
     void setUp() {
-        stateStore.clear();
+        stateStore = new TaskStateStore();
+        taskExecutor = new TaskExecutor();
+        taskExecutor.stateStore = stateStore;
+        // Disable simulated failures and remove artificial delay for fast, deterministic unit tests
+        taskExecutor.failureRate = 0;
+        taskExecutor.delayMs = 0;
     }
 
     @Test
