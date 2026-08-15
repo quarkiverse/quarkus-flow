@@ -29,7 +29,6 @@ class PoolMemberControllerTest {
     private static final String POD = "pod-1";
     private static final String POOL = "mypool";
     private static final String LEASE = "flow-pool-member-mypool-00";
-    private static final String LEASE_OTHER = "flow-pool-member-mypool-01";
 
     @Inject
     PoolMemberController controller;
