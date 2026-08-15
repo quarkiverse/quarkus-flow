@@ -221,6 +221,30 @@ public class LeaseService {
     }
 
     /**
+     * Try to re-acquire a specific lease by name.
+     * Unlike {@link #tryAcquireMemberLease}, this method only attempts the given lease,
+     * refusing any other. Used after a LOST event to prevent split-brain when the
+     * applicationId is bound to a specific lease name.
+     *
+     * @param holderIdentity usually the podId {@link KubeInfoStrategy#podName()}
+     * @param targetLeaseName the exact lease name to re-acquire
+     * @return an {@link Optional} of the re-acquired {@link Lease}, empty if unavailable or deleted
+     */
+    public Optional<Lease> tryReacquireSpecificLease(String holderIdentity, String targetLeaseName) {
+        LOG.debug("Attempt to re-acquire specific lease {} for {}", targetLeaseName, holderIdentity);
+        Lease lease = client.leases().inNamespace(kubeInfo.namespace()).withName(targetLeaseName).get();
+        if (lease == null) {
+            LOG.debug("Bound lease '{}' not found in namespace {}", targetLeaseName, kubeInfo.namespace());
+            return Optional.empty();
+        }
+        if (!isAvailableLease(lease, holderIdentity)) {
+            LOG.debug("Bound lease '{}' is held by another pod and not expired", targetLeaseName);
+            return Optional.empty();
+        }
+        return renewLease(lease, holderIdentity);
+    }
+
+    /**
      * Attempt to release the Lease.
      *
      * @param holderIdentity usually the podId {@link KubeInfoStrategy#podName()}
