@@ -3,6 +3,7 @@ package io.quarkiverse.flow.durable.kube;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -16,6 +17,7 @@ import io.fabric8.kubernetes.api.model.coordination.v1.Lease;
 import io.quarkiverse.flow.durable.kube.config.LeaseGroupConfig;
 import io.quarkiverse.flow.durable.kube.config.PoolConfig;
 import io.quarkiverse.flow.durable.kube.config.SchedulerGroupConfig;
+import io.quarkus.runtime.Quarkus;
 
 @ApplicationScoped
 public class PoolMemberController extends PoolController {
@@ -26,6 +28,8 @@ public class PoolMemberController extends PoolController {
 
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicReference<String> leaseName = new AtomicReference<>();
+    private volatile String boundLeaseName;
+    private final AtomicInteger reacquireAttempts = new AtomicInteger(0);
 
     @Inject
     PoolConfig poolConfig;
@@ -69,21 +73,25 @@ public class PoolMemberController extends PoolController {
     boolean acquireLease() {
         String current = leaseName.get();
         if (current == null) {
+            if (boundLeaseName != null) {
+                return reacquireBoundLease();
+            }
             Optional<Lease> lease = leaseService.tryAcquireMemberLease(kubeInfo.podName(), poolConfig.name());
             if (lease.isPresent()) {
-                leaseName.set(lease.get().getMetadata().getName());
+                String name = lease.get().getMetadata().getName();
+                boundLeaseName = name;
+                leaseName.set(name);
                 leaseEvents.fire(new MemberLeaseEvent(
                         MemberLeaseEvent.Type.ACQUIRED,
                         poolConfig.name(),
                         kubeInfo.podName(),
-                        lease.get().getMetadata().getName()));
+                        name));
                 return true;
             }
             return false;
         }
 
         Optional<Lease> lease = leaseService.renewLease(current, kubeInfo.podName());
-        // if we return false, on next scheduler run it will try getting a new lease
         if (lease.isEmpty()) {
             leaseName.set(null);
             leaseEvents.fire(new MemberLeaseEvent(
@@ -94,6 +102,34 @@ public class PoolMemberController extends PoolController {
             return false;
         }
         return true;
+    }
+
+    private boolean reacquireBoundLease() {
+        Optional<Lease> lease = leaseService.tryReacquireSpecificLease(kubeInfo.podName(), boundLeaseName);
+        if (lease.isPresent()) {
+            leaseName.set(boundLeaseName);
+            reacquireAttempts.set(0);
+            leaseEvents.fire(new MemberLeaseEvent(
+                    MemberLeaseEvent.Type.ACQUIRED,
+                    poolConfig.name(),
+                    kubeInfo.podName(),
+                    boundLeaseName));
+            return true;
+        }
+
+        int attempts = reacquireAttempts.incrementAndGet();
+        int max = leaseConfig.member().maxReacquireAttempts();
+        LOG.warn("Flow: Failed to re-acquire bound lease '{}' (attempt {}/{})",
+                boundLeaseName, attempts, max);
+
+        if (attempts >= max) {
+            LOG.error("Flow: Bound lease '{}' is permanently lost after {} attempts. "
+                    + "The applicationId cannot be recovered — initiating graceful shutdown to avoid split-brain.",
+                    boundLeaseName, attempts);
+            Quarkus.asyncExit(1);
+        }
+
+        return false;
     }
 
     @Override

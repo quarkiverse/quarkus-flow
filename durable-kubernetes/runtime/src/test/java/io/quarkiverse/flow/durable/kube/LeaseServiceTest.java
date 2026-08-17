@@ -184,6 +184,63 @@ public class LeaseServiceTest {
     }
 
     @Test
+    void tryReacquireSpecificLease_succeeds_whenAvailable() {
+        Lease available = new LeaseBuilder()
+                .withNewMetadata()
+                .withName("m-reacquire")
+                .withNamespace("default")
+                .withLabels(Map.of(
+                        "app.kubernetes.io/managed-by", "quarkus-flow",
+                        "app.kubernetes.io/component", "durable",
+                        "io.quarkiverse.flow.durable.k8s/pool", poolConfig.name(),
+                        "io.quarkiverse.flow.durable.k8s/is-leader", "false"))
+                .endMetadata()
+                .withNewSpec()
+                .withHolderIdentity("")
+                .withLeaseDurationSeconds(30)
+                .endSpec()
+                .build();
+        client.leases().inNamespace("default").resource(available).create();
+
+        Optional<Lease> result = leaseService.tryReacquireSpecificLease("pod-1", "m-reacquire");
+
+        assertTrue(result.isPresent());
+        assertEquals("pod-1", result.get().getSpec().getHolderIdentity());
+    }
+
+    @Test
+    void tryReacquireSpecificLease_fails_whenDeleted() {
+        Optional<Lease> result = leaseService.tryReacquireSpecificLease("pod-1", "nonexistent-lease");
+
+        assertFalse(result.isPresent());
+    }
+
+    @Test
+    void tryReacquireSpecificLease_fails_whenHeldByOtherAndNotExpired() {
+        Lease held = new LeaseBuilder()
+                .withNewMetadata()
+                .withName("m-held")
+                .withNamespace("default")
+                .withLabels(Map.of(
+                        "app.kubernetes.io/managed-by", "quarkus-flow",
+                        "app.kubernetes.io/component", "durable",
+                        "io.quarkiverse.flow.durable.k8s/pool", poolConfig.name(),
+                        "io.quarkiverse.flow.durable.k8s/is-leader", "false"))
+                .endMetadata()
+                .withNewSpec()
+                .withHolderIdentity("pod-2")
+                .withLeaseDurationSeconds(300)
+                .withRenewTime(ZonedDateTime.now(ZoneOffset.UTC))
+                .endSpec()
+                .build();
+        client.leases().inNamespace("default").resource(held).create();
+
+        Optional<Lease> result = leaseService.tryReacquireSpecificLease("pod-1", "m-held");
+
+        assertFalse(result.isPresent());
+    }
+
+    @Test
     void existingLease_isUpdated_whenManagedFieldsDiffer() {
         String pool = poolConfig.name();
         String leaseName = "flow-pool-member-" + pool + "-00";

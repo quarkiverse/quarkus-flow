@@ -14,7 +14,7 @@ public interface LeaseGroupConfig {
     /**
      * Specific pool member configuration.
      */
-    LeaseConfig member();
+    MemberLeaseConfig member();
 
     /**
      * Specific pool leader configuration.
@@ -39,6 +39,16 @@ public interface LeaseGroupConfig {
          */
         @WithDefault("30s")
         Duration acquireTimeout();
+    }
+
+    interface MemberLeaseConfig extends LeaseConfig {
+        /**
+         * Maximum number of attempts to re-acquire the bound lease after it is lost.
+         * Once exhausted, the pod initiates a graceful shutdown to avoid split-brain
+         * (the applicationId is immutable and cannot match a different lease).
+         */
+        @WithDefault("5")
+        Integer maxReacquireAttempts();
     }
 
 }
