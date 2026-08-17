@@ -487,6 +487,8 @@ volumes:
     name: my-workflows
 ----
 
+TIP: The pre-built Runner images have the **file watcher enabled by default** (`quarkus.flow.runner.source.watch.enabled=true`). When you add new workflow files to a mounted ConfigMap, the Runner detects and registers them automatically within the polling interval (default: 5s) — no pod restart required. See xref:runner.adoc#_file_watcher_for_live_workflow_loading[File watcher for live workflow loading] for details.
+
 **Multiple ConfigMaps** can be mounted to the same directory - create separate workflow ConfigMaps per team/namespace and mount them all:
 
 [source,yaml]

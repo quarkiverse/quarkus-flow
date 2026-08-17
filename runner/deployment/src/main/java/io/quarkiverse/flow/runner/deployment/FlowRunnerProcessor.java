@@ -1,5 +1,7 @@
 package io.quarkiverse.flow.runner.deployment;
 
+import io.quarkiverse.flow.runner.FlowRunnerSourceWatchConfig;
+import io.quarkiverse.flow.runner.WorkflowFileWatcher;
 import io.quarkiverse.flow.runner.model.ExecutionResponse;
 import io.quarkiverse.flow.runner.model.Link;
 import io.quarkiverse.flow.runner.model.Links;
@@ -9,9 +11,11 @@ import io.quarkiverse.flow.runner.security.NamespaceAuthorizationFilter;
 import io.quarkiverse.flow.runner.security.NamespaceAuthorizationService;
 import io.quarkiverse.flow.runner.security.PermitAllAuthenticationMechanism;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.scheduler.deployment.ForceStartSchedulerBuildItem;
 
 class FlowRunnerProcessor {
 
@@ -35,12 +39,24 @@ class FlowRunnerProcessor {
 
     @BuildStep
     ReflectiveClassBuildItem registerForReflection() {
-        // Register model classes for reflection (JSON serialization)
         return ReflectiveClassBuildItem.builder(
                 ExecutionResponse.class,
                 WorkflowDefinitionHeader.class,
                 Link.class,
                 Links.class).methods().fields().build();
+    }
+
+    @BuildStep
+    void registerFileWatcher(FlowRunnerSourceWatchConfig watchConfig,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<ForceStartSchedulerBuildItem> forceScheduler) {
+        if (watchConfig.enabled()) {
+            additionalBeans.produce(AdditionalBeanBuildItem.builder()
+                    .setUnremovable()
+                    .addBeanClass(WorkflowFileWatcher.class)
+                    .build());
+            forceScheduler.produce(new ForceStartSchedulerBuildItem());
+        }
     }
 
 }

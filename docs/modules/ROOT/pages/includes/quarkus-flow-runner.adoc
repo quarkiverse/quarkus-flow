@@ -7,6 +7,31 @@ h|[.header-title]##Configuration property##
 h|Type
 h|Default
 
+a|icon:lock[title=Fixed at build time] [[quarkus-flow-runner_quarkus-flow-runner-source-watch-enabled]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-source-watch-enabled[`+++quarkus.flow.runner.source.watch.enabled+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.source.watch.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enable or disable the file watcher on the source path directory.
+
+When enabled, the runner periodically polls the configured `quarkus.flow.runner.source.path` directory for new workflow definition files and registers them automatically without requiring a pod restart.
+
+This is a build-time property. Changing it requires a rebuild.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SOURCE_WATCH_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SOURCE_WATCH_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++false+++`
+
 a| [[quarkus-flow-runner_quarkus-flow-runner-enabled]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-enabled[`+++quarkus.flow.runner.enabled+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.runner.enabled+++[]
@@ -90,6 +115,31 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |`+++false+++`
 
+a| [[quarkus-flow-runner_quarkus-flow-runner-source-watch-interval]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-source-watch-interval[`+++quarkus.flow.runner.source.watch.interval+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.source.watch.interval+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Polling interval for detecting new workflow files.
+
+Uses Quarkus scheduler interval format (e.g., `"5s"`, `"10s"`, `"1m"`).
+
+This is a runtime property and can be changed without rebuilding the application.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SOURCE_WATCH_INTERVAL+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SOURCE_WATCH_INTERVAL+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|`+++5s+++`
+
 a| [[quarkus-flow-runner_quarkus-flow-runner-security-type]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-type[`+++quarkus.flow.runner.security.type+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.runner.security.type+++[]
@@ -116,91 +166,6 @@ endif::add-copy-button-to-env-var[]
 --
 a|`oidc`, `api-key`, `none`
 |`+++none+++`
-
-a| [[quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-secret]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-secret[`+++quarkus.flow.runner.security.api-keys."api-keys".secret+++`]##
-ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.runner.security.api-keys."api-keys".secret+++[]
-endif::add-copy-button-to-config-props[]
-
-
-[.description]
---
-The API key secret value.
-
-Should be loaded from environment variables or Kubernetes Secrets:
-
-```
-quarkus.flow.runner.security.api-keys."my-key".secret=${FLOW_API_KEY}
-```
-
-
-ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__SECRET+++[]
-endif::add-copy-button-to-env-var[]
-ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__SECRET+++`
-endif::add-copy-button-to-env-var[]
---
-|string
-|required icon:exclamation-circle[title=Configuration property is required]
-
-a| [[quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-roles]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-roles[`+++quarkus.flow.runner.security.api-keys."api-keys".roles+++`]##
-ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.runner.security.api-keys."api-keys".roles+++[]
-endif::add-copy-button-to-config-props[]
-
-
-[.description]
---
-Roles assigned to this API key.
-
-Predefined roles:
-
- - `flow-admin` - Full access (definition management {plus} execution)
- - `flow-invoker` - Execution only (POST/GET /runner/exec/++*++)
-
-
-
-Example:
-
-```
-quarkus.flow.runner.security.api-keys."admin-key".roles=flow-admin
-quarkus.flow.runner.security.api-keys."webhook-key".roles=flow-invoker
-```
-
-
-ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__ROLES+++[]
-endif::add-copy-button-to-env-var[]
-ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__ROLES+++`
-endif::add-copy-button-to-env-var[]
---
-|list of string
-|required icon:exclamation-circle[title=Configuration property is required]
-
-a| [[quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-namespaces]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-namespaces[`+++quarkus.flow.runner.security.api-keys."api-keys".namespaces+++`]##
-ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.runner.security.api-keys."api-keys".namespaces+++[]
-endif::add-copy-button-to-config-props[]
-
-
-[.description]
---
-Namespaces authorized for this API key.
-
-The value `"++*++"` grants access to all namespaces. When omitted, this property defaults to `"++*++"` for backward compatibility.
-
-
-ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__NAMESPACES+++[]
-endif::add-copy-button-to-env-var[]
-ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__NAMESPACES+++`
-endif::add-copy-button-to-env-var[]
---
-|list of string
-|`+++*+++`
 
 a| [[quarkus-flow-runner_quarkus-flow-runner-security-namespace-claim]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-namespace-claim[`+++quarkus.flow.runner.security.namespace.claim+++`]##
 ifdef::add-copy-button-to-config-props[]
@@ -317,6 +282,91 @@ endif::add-copy-button-to-env-var[]
 --
 |boolean
 |`+++true+++`
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-secret]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-secret[`+++quarkus.flow.runner.security.api-keys."api-keys".secret+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.security.api-keys."api-keys".secret+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The API key secret value.
+
+Should be loaded from environment variables or Kubernetes Secrets:
+
+```
+quarkus.flow.runner.security.api-keys."my-key".secret=${FLOW_API_KEY}
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__SECRET+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__SECRET+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|required icon:exclamation-circle[title=Configuration property is required]
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-roles]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-roles[`+++quarkus.flow.runner.security.api-keys."api-keys".roles+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.security.api-keys."api-keys".roles+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Roles assigned to this API key.
+
+Predefined roles:
+
+ - `flow-admin` - Full access (definition management {plus} execution)
+ - `flow-invoker` - Execution only (POST/GET /runner/exec/++*++)
+
+
+
+Example:
+
+```
+quarkus.flow.runner.security.api-keys."admin-key".roles=flow-admin
+quarkus.flow.runner.security.api-keys."webhook-key".roles=flow-invoker
+```
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__ROLES+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__ROLES+++`
+endif::add-copy-button-to-env-var[]
+--
+|list of string
+|required icon:exclamation-circle[title=Configuration property is required]
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-namespaces]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-api-keys-api-keys-namespaces[`+++quarkus.flow.runner.security.api-keys."api-keys".namespaces+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.security.api-keys."api-keys".namespaces+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Namespaces authorized for this API key.
+
+The value `"++*++"` grants access to all namespaces. When omitted, this property defaults to `"++*++"` for backward compatibility.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__NAMESPACES+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_API_KEYS__API_KEYS__NAMESPACES+++`
+endif::add-copy-button-to-env-var[]
+--
+|list of string
+|`+++*+++`
 
 |===
 

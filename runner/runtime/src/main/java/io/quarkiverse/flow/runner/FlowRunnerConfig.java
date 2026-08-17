@@ -119,6 +119,37 @@ public interface FlowRunnerConfig {
          */
         @WithDefault("false")
         Boolean followSymlinks();
+
+        /**
+         * File watcher runtime configuration.
+         *
+         * @return the watch configuration
+         */
+        Watch watch();
+
+        /**
+         * Runtime configuration for the file watcher polling interval.
+         * <p>
+         * The watcher itself is enabled/disabled at build time via
+         * {@code quarkus.flow.runner.source.watch.enabled} (see
+         * {@link FlowRunnerSourceWatchConfig}).
+         */
+        interface Watch {
+
+            /**
+             * Polling interval for detecting new workflow files.
+             * <p>
+             * Uses Quarkus scheduler interval format (e.g., {@code "5s"},
+             * {@code "10s"}, {@code "1m"}).
+             * <p>
+             * This is a runtime property and can be changed without rebuilding
+             * the application.
+             *
+             * @return the polling interval (default: 5s)
+             */
+            @WithDefault("5s")
+            String interval();
+        }
     }
 
     /**
