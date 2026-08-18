@@ -29,6 +29,20 @@ class SerializationUtils {
     private static final String VALUE = "value";
     private static final String NULL = "null";
 
+    private static final List<String> ALLOWED_PACKAGE_PREFIXES = List.of(
+            "io.quarkiverse.flow.",
+            "io.serverlessworkflow.",
+            "io.quarkus.");
+
+    static boolean isAllowedType(String className) {
+        for (String prefix : ALLOWED_PACKAGE_PREFIXES) {
+            if (className.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static void serializeObjectWithType(JsonGenerator gen, Object value) throws IOException {
         gen.writeStartObject();
         if (value == null) {
@@ -55,24 +69,34 @@ class SerializationUtils {
 
     public static Object deserializeObjectWithType(DeserializationContext ctxt, JsonNode objectNode)
             throws IOException, ReflectiveOperationException {
-        String className = objectNode.get(TYPE).asText();
+        if (!(objectNode instanceof ObjectNode) || !objectNode.has(TYPE)) {
+            return ctxt.readTreeAsValue(objectNode, Object.class);
+        }
+        final String className = objectNode.get(TYPE).asText();
         if (NULL.equals(className)) {
             return null;
         }
-        Class<?> clazz = ReflectionUtils.loadClass(className);
-        if (clazz.equals(Optional.class)) {
-            return readOptionalWithType(ctxt, objectNode.get(VALUE));
-        } else {
-            Object value = ctxt.readTreeAsValue(objectNode.get(VALUE), clazz);
-            return value instanceof SerializedLambda sl
-                    ? ReflectionUtils.functionFromSerialized(sl)
-                    : value;
+        if (Optional.class.getName().equals(className)) {
+            return readOptionalWithType(ctxt, objectNode.has(VALUE) ? objectNode.get(VALUE) : null);
         }
+        if (!objectNode.has(VALUE)) {
+            return ctxt.readTreeAsValue(objectNode, Object.class);
+        }
+        if (SerializedLambda.class.getName().equals(className)) {
+            return ReflectionUtils.functionFromSerialized(ctxt.readTreeAsValue(objectNode.get(VALUE), SerializedLambda.class));
+        }
+        if (Class.class.getName().equals(className)) {
+            return ReflectionUtils.loadClass(objectNode.get(VALUE).asText());
+        }
+        if (isAllowedType(className)) {
+            return ctxt.readTreeAsValue(objectNode.get(VALUE), ReflectionUtils.loadClass(className));
+        }
+        return ctxt.readTreeAsValue(objectNode.get(VALUE), Object.class);
     }
 
     public static void writeOptionalWithType(JsonGenerator gen, Optional<?> optional)
             throws IOException {
-        if (!optional.isEmpty()) {
+        if (optional.isPresent()) {
             gen.writeFieldName(VALUE);
             serializeObjectWithType(gen, optional.orElseThrow());
         }
@@ -82,7 +106,7 @@ class SerializationUtils {
             throws IOException, ReflectiveOperationException {
         return objectNode == null
                 ? Optional.empty()
-                : Optional.of(deserializeObjectWithType(ctxt, objectNode));
+                : Optional.ofNullable(deserializeObjectWithType(ctxt, objectNode));
     }
 
     public static void serializeMap(JsonGenerator gen, Map<String, Object> map) throws IOException {

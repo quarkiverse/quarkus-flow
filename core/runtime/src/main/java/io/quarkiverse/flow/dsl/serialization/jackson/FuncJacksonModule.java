@@ -36,7 +36,7 @@ public class FuncJacksonModule extends SimpleModule {
 
     private static final long serialVersionUID = 1L;
 
-    public void setupModule(com.fasterxml.jackson.databind.Module.SetupContext context) {
+    public void setupModule(SetupContext context) {
         SerializableFunctionSerializer serializer = new SerializableFunctionSerializer();
         super.addSerializer(SerializableFunction.class, serializer);
         super.addSerializer(SerializablePredicate.class, serializer);
