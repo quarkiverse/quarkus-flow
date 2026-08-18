@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -313,20 +314,38 @@ class WorkflowFileWatcherTest {
     @DisplayName("Build-time registration guard")
     class BuildTimeRegistrationGuard {
 
+        private static final Set<String> CDI_META_ANNOTATIONS = Set.of(
+                "jakarta.inject.Scope",
+                "jakarta.enterprise.context.NormalScope",
+                "jakarta.enterprise.inject.Stereotype");
+
+        private static final String UNREMOVABLE = "io.quarkus.arc.Unremovable";
+
         @Test
         @DisplayName("test_watcher_has_no_bean_defining_annotations")
         void test_watcher_has_no_bean_defining_annotations() {
             for (Annotation annotation : WorkflowFileWatcher.class.getAnnotations()) {
-                String name = annotation.annotationType().getName();
-                assertThat(name)
-                        .as("WorkflowFileWatcher must not have bean-defining annotations — "
-                                + "registration is controlled by the deployment processor "
-                                + "so the bean only exists when watch is enabled")
-                        .doesNotContain("ApplicationScoped")
-                        .doesNotContain("Singleton")
-                        .doesNotContain("RequestScoped")
-                        .doesNotContain("Dependent")
-                        .doesNotContain("Unremovable");
+                Class<? extends Annotation> annotationType = annotation.annotationType();
+
+                for (String metaAnnotation : CDI_META_ANNOTATIONS) {
+                    boolean isBeanDefining = false;
+                    for (Annotation meta : annotationType.getAnnotations()) {
+                        if (meta.annotationType().getName().equals(metaAnnotation)) {
+                            isBeanDefining = true;
+                            break;
+                        }
+                    }
+                    assertThat(isBeanDefining)
+                            .as("WorkflowFileWatcher must not carry @%s (annotated with %s) — "
+                                    + "registration is controlled by the deployment processor",
+                                    annotationType.getSimpleName(), metaAnnotation)
+                            .isFalse();
+                }
+
+                assertThat(annotationType.getName())
+                        .as("WorkflowFileWatcher must not be @Unremovable — "
+                                + "the deployment processor sets unremovable when registering")
+                        .isNotEqualTo(UNREMOVABLE);
             }
         }
     }
