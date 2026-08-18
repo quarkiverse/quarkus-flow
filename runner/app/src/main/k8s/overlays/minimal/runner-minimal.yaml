@@ -81,8 +81,10 @@ spec:
             - containerPort: 8080
               name: http
               protocol: TCP
-          # No env vars needed - defaults from classpath are safe
-          # Users can override via ConfigMap mounted to /deployments/config
+          env:
+            # Security (required — choose: none, api-key, oidc)
+            - name: QUARKUS_FLOW_RUNNER_SECURITY_TYPE
+              value: "none"
           volumeMounts:
             - name: data
               mountPath: /deployments/data
