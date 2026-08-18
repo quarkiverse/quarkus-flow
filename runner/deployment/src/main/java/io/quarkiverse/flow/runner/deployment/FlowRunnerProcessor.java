@@ -1,5 +1,9 @@
 package io.quarkiverse.flow.runner.deployment;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.jboss.jandex.DotName;
+
 import io.quarkiverse.flow.runner.FlowRunnerSourceWatchConfig;
 import io.quarkiverse.flow.runner.WorkflowFileWatcher;
 import io.quarkiverse.flow.runner.model.ExecutionResponse;
@@ -53,6 +57,7 @@ class FlowRunnerProcessor {
         if (watchConfig.enabled()) {
             additionalBeans.produce(AdditionalBeanBuildItem.builder()
                     .setUnremovable()
+                    .setDefaultScope(DotName.createSimple(ApplicationScoped.class))
                     .addBeanClass(WorkflowFileWatcher.class)
                     .build());
             forceScheduler.produce(new ForceStartSchedulerBuildItem());

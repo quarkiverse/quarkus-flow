@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -18,6 +19,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -305,5 +307,27 @@ class WorkflowFileWatcherTest {
         List<Path> files = loader.scanWorkflowFiles();
 
         assertThat(files).isEmpty();
+    }
+
+    @Nested
+    @DisplayName("Build-time registration guard")
+    class BuildTimeRegistrationGuard {
+
+        @Test
+        @DisplayName("test_watcher_has_no_bean_defining_annotations")
+        void test_watcher_has_no_bean_defining_annotations() {
+            for (Annotation annotation : WorkflowFileWatcher.class.getAnnotations()) {
+                String name = annotation.annotationType().getName();
+                assertThat(name)
+                        .as("WorkflowFileWatcher must not have bean-defining annotations — "
+                                + "registration is controlled by the deployment processor "
+                                + "so the bean only exists when watch is enabled")
+                        .doesNotContain("ApplicationScoped")
+                        .doesNotContain("Singleton")
+                        .doesNotContain("RequestScoped")
+                        .doesNotContain("Dependent")
+                        .doesNotContain("Unremovable");
+            }
+        }
     }
 }
