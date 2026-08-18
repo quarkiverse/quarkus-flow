@@ -347,8 +347,8 @@ class WorkflowDefinitionRuntimeLoaderTest {
     }
 
     @Test
-    @DisplayName("test_loader_throws_exception_for_invalid_workflow_format")
-    void test_loader_throws_exception_for_invalid_workflow_format() throws IOException {
+    @DisplayName("test_loader_skips_invalid_workflow_format_and_continues")
+    void test_loader_skips_invalid_workflow_format_and_continues() throws IOException {
         // Given
         String invalidYaml = "this is not a valid workflow yaml";
         Files.writeString(tempDir.resolve("invalid.yaml"), invalidYaml);
@@ -356,15 +356,16 @@ class WorkflowDefinitionRuntimeLoaderTest {
         when(mockConfig.enabled()).thenReturn(true);
         when(mockSource.path()).thenReturn(Optional.of(tempDir.toString()));
 
-        // When/Then
-        assertThatThrownBy(() -> loader.onStart(new WorkflowApplicationReadyEvent("ABC123")))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining(": string found, object expected");
+        // When - the malformed file must not abort loading
+        loader.onStart(new WorkflowApplicationReadyEvent("ABC123"));
+
+        // Then - the invalid file is skipped, nothing is registered
+        verify(mockRegistrar, never()).register(any(Workflow.class));
     }
 
     @Test
-    @DisplayName("test_loader_throws_exception_for_workflow_missing_required_fields")
-    void test_loader_throws_exception_for_workflow_missing_required_fields() throws IOException {
+    @DisplayName("test_loader_skips_workflow_missing_required_fields_and_continues")
+    void test_loader_skips_workflow_missing_required_fields_and_continues() throws IOException {
         // Given - workflow missing version (SDK parser will throw IOException)
         String invalidWorkflow = """
                 document:
@@ -381,15 +382,16 @@ class WorkflowDefinitionRuntimeLoaderTest {
         when(mockConfig.enabled()).thenReturn(true);
         when(mockSource.path()).thenReturn(Optional.of(tempDir.toString()));
 
-        // When/Then - SDK parser throws IOException for missing required fields
-        assertThatThrownBy(() -> loader.onStart(new WorkflowApplicationReadyEvent("ABC123")))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("/document: required property 'version' not found");
+        // When - SDK parser fails for missing required fields, must not abort loading
+        loader.onStart(new WorkflowApplicationReadyEvent("ABC123"));
+
+        // Then - the invalid file is skipped, nothing is registered
+        verify(mockRegistrar, never()).register(any(Workflow.class));
     }
 
     @Test
-    @DisplayName("test_loader_rejects_duplicate_workflow_ids")
-    void test_loader_rejects_duplicate_workflow_ids() throws IOException {
+    @DisplayName("test_loader_skips_duplicate_workflow_ids_and_continues")
+    void test_loader_skips_duplicate_workflow_ids_and_continues() throws IOException {
         String workflow1 = """
                 document:
                   dsl: '1.0.0'
@@ -414,15 +416,18 @@ class WorkflowDefinitionRuntimeLoaderTest {
                 """;
         Files.writeString(tempDir.resolve("workflow-1.yaml"), workflow1);
         Files.writeString(tempDir.resolve("workflow-2.yaml"), workflow2);
+
+        WorkflowDefinition mockDefinition = mock(WorkflowDefinition.class);
+        when(mockRegistrar.register(any(Workflow.class))).thenReturn(mockDefinition);
+
         when(mockConfig.enabled()).thenReturn(true);
         when(mockSource.path()).thenReturn(Optional.of(tempDir.toString()));
-        assertThatThrownBy(() -> loader.onStart(new WorkflowApplicationReadyEvent("ABC123")))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Duplicated workflow definition")
-                .hasMessageContaining("test-namespace")
-                .hasMessageContaining("duplicate-workflow")
-                .hasMessageContaining("1.0.0")
-                .hasMessageContaining("workflow-2.yaml");
+
+        // When - the duplicate must be skipped, not abort the whole load
+        loader.onStart(new WorkflowApplicationReadyEvent("ABC123"));
+
+        // Then - only the first occurrence is registered
+        verify(mockRegistrar, times(1)).register(any(Workflow.class));
     }
 
     // -- Symlink tests (Issue #835) --
@@ -503,10 +508,11 @@ class WorkflowDefinitionRuntimeLoaderTest {
         when(mockSource.path()).thenReturn(Optional.of(tempDir.toString()));
         when(mockSource.followSymlinks()).thenReturn(true);
 
-        // When/Then - both the real file and the symlink are followed, causing duplicate detection
-        assertThatThrownBy(() -> loader.onStart(new WorkflowApplicationReadyEvent("ABC123")))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Duplicated workflow definition");
+        // When - both the real file and the symlink are followed, causing a duplicate that must be skipped, not fatal
+        loader.onStart(new WorkflowApplicationReadyEvent("ABC123"));
+
+        // Then - only the first occurrence (the real file) is registered
+        verify(mockRegistrar, times(1)).register(any(Workflow.class));
     }
 
     @Test

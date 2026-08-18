@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -74,13 +75,19 @@ public class WorkflowDefinitionRuntimeLoader {
         }
 
         final List<WorkflowDefinitionId> workflowDefinitionIds = new ArrayList<>();
+        final List<Path> failedFiles = new ArrayList<>();
         for (Path path : scanWorkflowFiles()) {
-            final WorkflowDefinitionId defId = loadWorkflow(path);
-            workflowDefinitionIds.stream().filter(addedId -> addedId.equals(defId)).findFirst().ifPresent(duplicatedId -> {
-                throw new IllegalStateException(
-                        String.format("Duplicated workflow definition (%s) found in path %s", defId.toString(":"), path));
-            });
-            workflowDefinitionIds.add(defId);
+            try {
+                loadWorkflow(path, workflowDefinitionIds).ifPresent(workflowDefinitionIds::add);
+            } catch (Exception e) {
+                failedFiles.add(path);
+                LOGGER.error("Flow Runner: Failed to load workflow definition from {}, skipping it and continuing with "
+                        + "the remaining files", path, e);
+            }
+        }
+        if (!failedFiles.isEmpty()) {
+            LOGGER.warn("Flow Runner: {} workflow definition(s) failed to load and were skipped: {}. "
+                    + "See errors above for details.", failedFiles.size(), failedFiles);
         }
         return workflowDefinitionIds;
     }
@@ -118,7 +125,7 @@ public class WorkflowDefinitionRuntimeLoader {
                 .anyMatch(fileName::endsWith);
     }
 
-    private WorkflowDefinitionId loadWorkflow(Path path) {
+    private Optional<WorkflowDefinitionId> loadWorkflow(Path path, List<WorkflowDefinitionId> alreadyLoaded) {
         try {
             Workflow workflow = WorkflowReader.readWorkflow(path);
 
@@ -129,6 +136,13 @@ public class WorkflowDefinitionRuntimeLoader {
                                 path));
             }
 
+            WorkflowDefinitionId defId = WorkflowDefinitionId.of(workflow);
+            if (alreadyLoaded.contains(defId)) {
+                LOGGER.warn("Flow Runner: Skipping duplicated workflow definition ({}) found in path {}",
+                        defId.toString(":"), path);
+                return Optional.empty();
+            }
+
             registrarService.register(workflow);
 
             LOGGER.debug("Flow Runner: Registered workflow {}:{}:{} from {}",
@@ -137,7 +151,7 @@ public class WorkflowDefinitionRuntimeLoader {
                     workflow.getDocument().getVersion(),
                     path);
 
-            return WorkflowDefinitionId.of(workflow);
+            return Optional.of(defId);
         } catch (IOException e) {
             throw new UncheckedIOException("Flow Runner: Failed to load workflow from " + path, e);
         }
