@@ -183,9 +183,8 @@ public interface FlowRunnerConfig {
          * <li>{@code NONE} - Endpoints are unprotected. Use only in development.</li>
          * </ul>
          *
-         * @return the authentication type (default: {@code NONE})
+         * @return the authentication type (required)
          */
-        @WithDefault("none")
         Type type();
 
         /**

@@ -165,7 +165,7 @@ Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_TYPE+++`
 endif::add-copy-button-to-env-var[]
 --
 a|`oidc`, `api-key`, `none`
-|`+++none+++`
+|required icon:exclamation-circle[title=Configuration property is required]
 
 a| [[quarkus-flow-runner_quarkus-flow-runner-security-namespace-claim]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-namespace-claim[`+++quarkus.flow.runner.security.namespace.claim+++`]##
 ifdef::add-copy-button-to-config-props[]

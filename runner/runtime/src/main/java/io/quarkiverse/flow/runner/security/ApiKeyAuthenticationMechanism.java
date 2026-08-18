@@ -2,6 +2,8 @@ package io.quarkiverse.flow.runner.security;
 
 import static io.quarkiverse.flow.runner.security.AuthzConsts.CLAIM_NAMESPACES;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -81,7 +83,8 @@ public class ApiKeyAuthenticationMechanism implements HttpAuthenticationMechanis
         // Find matching API key configuration
         Optional<Map.Entry<String, FlowRunnerConfig.Security.ApiKey>> matchingKey = config.security().apiKeys()
                 .entrySet().stream()
-                .filter(entry -> entry.getValue().secret().equals(apiKey))
+                .filter(entry -> MessageDigest.isEqual(entry.getValue().secret().getBytes(StandardCharsets.UTF_8),
+                        apiKey.getBytes(StandardCharsets.UTF_8)))
                 .findFirst();
 
         if (matchingKey.isPresent()) {

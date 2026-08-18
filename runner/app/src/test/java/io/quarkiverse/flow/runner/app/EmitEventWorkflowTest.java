@@ -93,7 +93,8 @@ class EmitEventWorkflowTest {
             String uniqueDbPath = "target/test-db-" + System.currentTimeMillis() + "-" +
                     System.nanoTime() + ".mv";
             return Map.of(
-                    "quarkus.flow.persistence.mvstore.db-path", uniqueDbPath);
+                    "quarkus.flow.persistence.mvstore.db-path", uniqueDbPath,
+                    "quarkus.flow.runner.security.type", "none");
         }
     }
 }
