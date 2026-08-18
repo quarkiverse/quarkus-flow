@@ -65,6 +65,9 @@ spec:
               name: http
               protocol: TCP
           env:
+            # Security (required — choose: none, api-key, oidc)
+            - name: QUARKUS_FLOW_RUNNER_SECURITY_TYPE
+              value: "none"
             # Database connection (required for JPA)
             - name: QUARKUS_DATASOURCE_JDBC_URL
               value: "jdbc:postgresql://postgresql:5432/flowdb"
