@@ -81,10 +81,11 @@ public class ApiKeyAuthenticationMechanism implements HttpAuthenticationMechanis
         }
 
         // Find matching API key configuration
+        final byte[] submittedKeyBytes = apiKey.getBytes(StandardCharsets.UTF_8);
         Optional<Map.Entry<String, FlowRunnerConfig.Security.ApiKey>> matchingKey = config.security().apiKeys()
                 .entrySet().stream()
                 .filter(entry -> MessageDigest.isEqual(entry.getValue().secret().getBytes(StandardCharsets.UTF_8),
-                        apiKey.getBytes(StandardCharsets.UTF_8)))
+                        submittedKeyBytes))
                 .findFirst();
 
         if (matchingKey.isPresent()) {

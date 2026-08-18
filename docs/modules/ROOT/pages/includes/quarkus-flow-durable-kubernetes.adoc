@@ -114,6 +114,27 @@ endif::add-copy-button-to-env-var[]
 |link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow-durable-kubernetes_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
 |`+++30S+++`
 
+a| [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-lease-member-max-reacquire-attempts]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-lease-member-max-reacquire-attempts[`+++quarkus.flow.durable.kube.lease.member.max-reacquire-attempts+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.durable.kube.lease.member.max-reacquire-attempts+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Maximum number of attempts to re-acquire the bound lease after it is lost. Once exhausted, the pod initiates a graceful shutdown to avoid split-brain (the applicationId is immutable and cannot match a different lease).
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DURABLE_KUBE_LEASE_MEMBER_MAX_REACQUIRE_ATTEMPTS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_DURABLE_KUBE_LEASE_MEMBER_MAX_REACQUIRE_ATTEMPTS+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++5+++`
+
 a| [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-lease-leader-duration]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-lease-leader-duration[`+++quarkus.flow.durable.kube.lease.leader.duration+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.durable.kube.lease.leader.duration+++[]

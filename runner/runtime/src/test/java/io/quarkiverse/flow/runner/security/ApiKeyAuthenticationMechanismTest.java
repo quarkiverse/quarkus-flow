@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.runner.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -74,25 +75,17 @@ class ApiKeyAuthenticationMechanismTest {
             String wrongKey = "x".repeat(VALID_KEY.length());
             when(request.getHeader("Authorization")).thenReturn("Bearer " + wrongKey);
 
-            try {
-                mechanism.authenticate(routingContext, null).await().indefinitely();
-                assertThat(false).as("Should have thrown AuthenticationFailedException").isTrue();
-            } catch (Exception e) {
-                assertThat(e).hasMessageContaining("Invalid API key");
-            }
+            assertThatThrownBy(() -> mechanism.authenticate(routingContext, null).await().indefinitely())
+                    .hasMessageContaining("Invalid API key");
         }
 
         @Test
         @DisplayName("wrong_key_with_different_length_must_be_rejected")
         void wrong_key_with_different_length_must_be_rejected() {
-            when(request.getHeader("Authorization")).thenReturn("Bearer short");
+            when(request.getHeader("Authorization")).thenReturn("Bearer short-key-wrong");
 
-            try {
-                mechanism.authenticate(routingContext, null).await().indefinitely();
-                assertThat(false).as("Should have thrown AuthenticationFailedException").isTrue();
-            } catch (Exception e) {
-                assertThat(e).hasMessageContaining("Invalid API key");
-            }
+            assertThatThrownBy(() -> mechanism.authenticate(routingContext, null).await().indefinitely())
+                    .hasMessageContaining("Invalid API key");
         }
 
         @Test
@@ -101,12 +94,8 @@ class ApiKeyAuthenticationMechanismTest {
             String almostRight = VALID_KEY.substring(0, VALID_KEY.length() - 1) + "X";
             when(request.getHeader("Authorization")).thenReturn("Bearer " + almostRight);
 
-            try {
-                mechanism.authenticate(routingContext, null).await().indefinitely();
-                assertThat(false).as("Should have thrown AuthenticationFailedException").isTrue();
-            } catch (Exception e) {
-                assertThat(e).hasMessageContaining("Invalid API key");
-            }
+            assertThatThrownBy(() -> mechanism.authenticate(routingContext, null).await().indefinitely())
+                    .hasMessageContaining("Invalid API key");
         }
     }
 }
