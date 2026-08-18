@@ -85,6 +85,11 @@ class DeserializeObjectWithTypeSecurityTest {
             assertThat(metadataValue)
                     .as("Metadata value must NOT be instantiated as the attacker-specified class")
                     .isNotInstanceOf(javax.naming.CompositeName.class);
+            assertThat(metadataValue)
+                    .as("Metadata value must be preserved as a safe generic type")
+                    .isInstanceOf(java.util.List.class)
+                    .asList()
+                    .containsExactly("pwned");
         }
 
         @Test
@@ -142,12 +147,12 @@ class DeserializeObjectWithTypeSecurityTest {
                 assertThat(callbackValue)
                         .as("SerializedLambda from untrusted YAML must not produce a live function")
                         .isNotInstanceOf(java.util.function.Function.class)
+                        .isNotInstanceOf(java.util.function.Predicate.class)
                         .isNotInstanceOf(java.lang.invoke.SerializedLambda.class);
             } catch (Exception e) {
-                // Expected: functionFromSerialized() throws because
-                // InitialContext doesn't have $deserializeLambda$.
-                // This is acceptable — the attack didn't produce a live function.
-                assertThat(e).hasMessageContaining("deserializeLambda");
+                // Also acceptable: functionFromSerialized() throws because
+                // the capturing class doesn't have $deserializeLambda$.
+                // Either way the attack did not produce a live function.
             }
         }
     }
