@@ -11,6 +11,7 @@ import io.quarkiverse.flow.runner.security.NamespaceAuthorizationFilter;
 import io.quarkiverse.flow.runner.security.NamespaceAuthorizationService;
 import io.quarkiverse.flow.runner.security.PermitAllAuthenticationMechanism;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.ExcludedTypeBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -49,13 +50,16 @@ class FlowRunnerProcessor {
     @BuildStep
     void registerFileWatcher(FlowRunnerSourceWatchConfig watchConfig,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<ForceStartSchedulerBuildItem> forceScheduler) {
+            BuildProducer<ForceStartSchedulerBuildItem> forceScheduler,
+            BuildProducer<ExcludedTypeBuildItem> excludedTypes) {
         if (watchConfig.enabled()) {
             additionalBeans.produce(AdditionalBeanBuildItem.builder()
                     .setUnremovable()
                     .addBeanClass(WorkflowFileWatcher.class)
                     .build());
             forceScheduler.produce(new ForceStartSchedulerBuildItem());
+        } else {
+            excludedTypes.produce(new ExcludedTypeBuildItem(WorkflowFileWatcher.class.getName()));
         }
     }
 
