@@ -18,6 +18,8 @@ import io.serverlessworkflow.impl.events.CloudEventPredicateFactory;
 import io.serverlessworkflow.impl.events.EventConsumer;
 import io.serverlessworkflow.impl.events.EventPublisher;
 import io.serverlessworkflow.impl.executors.CallableTaskBuilder;
+import io.serverlessworkflow.impl.executors.ProcessResult;
+import io.serverlessworkflow.impl.executors.RunnableTaskBuilder;
 import io.serverlessworkflow.impl.executors.TaskExecutorFactory;
 import io.serverlessworkflow.impl.executors.http.HttpRequestDecorator;
 import io.serverlessworkflow.impl.expressions.ExpressionFactory;
@@ -42,6 +44,7 @@ final class FlowNativeProcessor {
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(CallableTaskBuilder.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(NamedWorkflowAdditionalObject.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(CloudEventPredicateFactory.class.getName()));
+        sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(RunnableTaskBuilder.class.getName()));
     }
 
     @BuildStep
@@ -55,6 +58,13 @@ final class FlowNativeProcessor {
             BuildProducer<LambdaCapturingTypeBuildItem> producer) {
         indexedClasses.getIndex().getAllKnownImplementations(Flowable.class).stream().map(ClassInfo::toString)
                 .map(LambdaCapturingTypeBuildItem::new).forEach(producer::produce);
+    }
+
+    // It should be removed after: https://github.com/open-workflow-specification/sdk-java/issues/1627
+    @BuildStep
+    ReflectiveClassBuildItem registerRecordForReflection() {
+        return ReflectiveClassBuildItem.builder(
+                ProcessResult.class).methods().fields().build();
     }
 
     @BuildStep
