@@ -2,6 +2,8 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
+include::includes/status-stable.adoc[]
+
 By default, Quarkus Flow executes workflows entirely in memory. While this is incredibly fast, it means that if your application crashes, restarts, or is scaled down, any currently running workflow instances are lost.
 
 **State Persistence** solves this by writing the workflow's state to a durable datastore every time a task completes or pauses.

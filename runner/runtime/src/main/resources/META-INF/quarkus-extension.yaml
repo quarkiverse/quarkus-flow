@@ -14,6 +14,5 @@ metadata:
   guide: https://docs.quarkiverse.io/quarkus-flow/dev/
   categories:
     - "integration"
-    - "http"
-    - "api"
+    - "web"
   status: "preview"

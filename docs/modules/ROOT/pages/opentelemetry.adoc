@@ -2,6 +2,8 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
+include::includes/status-preview.adoc[]
+
 Quarkus Flow provides built-in OpenTelemetry instrumentation, enabling observational insight into your workflow executions.
 
 [IMPORTANT]

@@ -152,9 +152,9 @@ Authentication type.
 
 Selects which authentication mechanism to use:
 
- - `OIDC` - Requires `quarkus-oidc` extension in classpath. Uses standard Quarkus OIDC configuration (`quarkus.oidc.++*++`). Roles extracted from JWT claims.
- - `API_KEY` - Custom filter validates `Authorization: Bearer <key>` header against configured secrets. Maps keys to roles.
- - `NONE` - Endpoints are unprotected. Use only in development.
+ * `OIDC` - Requires `quarkus-oidc` extension in classpath. Uses standard Quarkus OIDC configuration (`quarkus.oidc.++*++`). Roles extracted from JWT claims.
+ * `API_KEY` - Custom filter validates `Authorization: Bearer <key>` header against configured secrets. Maps keys to roles.
+ * `NONE` - Endpoints are unprotected. Use only in development.
 
 
 ifdef::add-copy-button-to-env-var[]
@@ -179,10 +179,10 @@ JWT claim containing the namespaces authorized for the current identity.
 
 Used when `type=OIDC`. The claim can contain:
 
- - A single namespace, for example `"team-a"`
- - An array of namespaces, for example `++[++"team-a", "team-b"++]++`
- - A comma-separated string, for example `"team-a,team-b"`
- - The exact value `"++*++"` to authorize all current and future namespaces
+ * A single namespace, for example `"team-a"`
+ * An array of namespaces, for example `++[++"team-a", "team-b"++]++`
+ * A comma-separated string, for example `"team-a,team-b"`
+ * The exact value `"++*++"` to authorize all current and future namespaces
 
 
 
@@ -219,10 +219,10 @@ Enables or disables namespace authorization.
 
 When enabled:
 
- - Identities with the `flow-admin` role can access all namespaces.
- - The exact namespace value `"++*++"` authorizes all namespaces.
- - Explicit namespace values authorize only those namespaces.
- - A missing, null, empty, or blank namespace set grants no access to a non-admin identity.
+ * Identities with the `flow-admin` role can access all namespaces.
+ * The exact namespace value `"++*++"` authorizes all namespaces.
+ * Explicit namespace values authorize only those namespaces.
+ * A missing, null, empty, or blank namespace set grants no access to a non-admin identity.
 
 
 
@@ -263,14 +263,14 @@ When `false`, only the generic parameterized endpoint is documented.
 
 *Exposed Information:*
 
- - Workflow namespace, name, and version
- - Workflow summary/description (if configured)
+ * Workflow namespace, name, and version
+ * Workflow summary/description (if configured)
 
 *NOT Exposed:*
 
- - Workflow DSL or task definitions
- - Internal business logic or function implementations
- - Secrets, credentials, or sensitive data
+ * Workflow DSL or task definitions
+ * Internal business logic or function implementations
+ * Secrets, credentials, or sensitive data
 
 
 ifdef::add-copy-button-to-env-var[]
@@ -322,8 +322,8 @@ Roles assigned to this API key.
 
 Predefined roles:
 
- - `flow-admin` - Full access (definition management {plus} execution)
- - `flow-invoker` - Execution only (POST/GET /runner/exec/++*++)
+ * `flow-admin` - Full access (definition management {plus} execution)
+ * `flow-invoker` - Execution only (POST/GET /runner/exec/++*++)
 
 
 

@@ -16,4 +16,4 @@ metadata:
   categories:
     - "integration"
     - "security"
-  status: "preview"
+  status: "stable"

@@ -3,6 +3,8 @@
 :page-topic-type: concept
 include::includes/attributes.adoc[]
 
+include::includes/status-preview.adoc[]
+
 Quarkus Flow provides deep, native integration with the LangChain4j *Agentic Workflow API* through two complementary approaches:
 
 * **Build-time compilation** of `@SequenceAgent`, `@ParallelAgent`, `@LoopAgent`, and `@ConditionalAgent` annotations

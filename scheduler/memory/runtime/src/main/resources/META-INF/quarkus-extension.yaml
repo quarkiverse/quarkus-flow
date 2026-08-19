@@ -13,5 +13,4 @@ metadata:
   guide: https://docs.quarkiverse.io/quarkus-flow/dev/
   categories:
     - "integration"
-    - "scheduler"
-  status: "preview"
+  status: "stable"

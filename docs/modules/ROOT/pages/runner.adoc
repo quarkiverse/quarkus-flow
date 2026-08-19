@@ -2,6 +2,8 @@
 :page-role: tutorial
 include::includes/attributes.adoc[]
 
+include::includes/status-preview.adoc[]
+
 Deploy and execute Open Workflow definitions via REST API.
 
 The Quarkus Flow Runner extension transforms your Quarkus application into a lightweight, cloud-native workflow execution engine. Load workflow definitions from YAML/JSON files at startup, and execute them through a secured REST API.

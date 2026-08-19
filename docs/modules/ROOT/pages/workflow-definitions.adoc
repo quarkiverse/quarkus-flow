@@ -2,6 +2,8 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
+include::includes/status-stable.adoc[]
+
 Quarkus Flow *recommends the Java DSL* as the primary way to define workflows because it provides type safety, refactoring support, and excellent IDE integration.
 
 However, Quarkus Flow fully supports loading xref:quarkus-flow-cookbook.adoc[Open Workflow 1.0.0] definitions written in YAML or JSON. This is ideal for teams that already maintain specification files or need to share definitions across different runtime environments.

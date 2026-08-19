@@ -1,5 +1,7 @@
 = How to transform data between workflow tasks
 include::includes/attributes.adoc[]
+
+include::includes/status-stable.adoc[]
 :page-role: howto
 :sectnums:
 

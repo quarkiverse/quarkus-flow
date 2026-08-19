@@ -2,6 +2,8 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
+include::includes/status-stable.adoc[]
+
 Networks are inherently unreliable. When your workflow interacts with external services via HTTP or OpenAPI tasks, those calls can fail due to timeouts, rate limits, or temporary outages.
 
 Quarkus Flow integrates directly with **SmallRye Fault Tolerance** to ensure your workflows can survive these disruptions.

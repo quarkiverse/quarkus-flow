@@ -124,8 +124,8 @@ The number of seconds after which the current OIDC connection request times out.
 
 This timeout is used for:
 
- - The internal HTTP client timeout when creating the OIDC client
- - The await timeout when negotiating access tokens
+ * The internal HTTP client timeout when creating the OIDC client
+ * The await timeout when negotiating access tokens
 
 
 

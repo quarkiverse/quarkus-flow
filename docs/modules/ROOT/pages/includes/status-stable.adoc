@@ -1,0 +1,4 @@
+[NOTE]
+====
+*Stable* -- Production-ready with stable APIs and full test coverage.
+====

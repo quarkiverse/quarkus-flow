@@ -2,6 +2,8 @@
 :page-role: concept
 include::includes/attributes.adoc[]
 
+include::includes/status-stable.adoc[]
+
 Distributed systems are full of duplicate messages, retries, and network hiccups. When a workflow calls an external service, emits an event, or listens for a callback, you must decide how to handle the case where the same message arrives more than once.
 
 This page explains what Quarkus Flow guarantees for idempotency and correlation, what it leaves to the application layer, and provides practical patterns to build resilient retry-safe workflows.

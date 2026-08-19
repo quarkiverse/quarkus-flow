@@ -16,4 +16,4 @@ metadata:
   categories:
     - "integration"
     - "messaging"
-  status: "preview"
+  status: "stable"
