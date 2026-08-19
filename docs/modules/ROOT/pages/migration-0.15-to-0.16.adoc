@@ -6,9 +6,9 @@ Quarkus Flow 0.16.0 includes several breaking changes:
 * **Client routing**: HTTP and gRPC task-level routing keys use a new unified format.
 * **Runner security**: `quarkus.flow.runner.security.type` is now a required property.
 * **Shell execution**: `run.shell` tasks require an explicit command allowlist.
+* **Symlinks**: Workflow file scanning now skips symbolic links by default.
 * **Micrometer metrics**: Metrics are now auto-enabled when Micrometer is on the classpath.
 * **DSL**: `FuncForTaskBuilder.collection()` now requires `SerializableFunction`.
-
 == Why the change?
 
 In 0.15.1, HTTP, gRPC, and OIDC each had different configuration shapes:
