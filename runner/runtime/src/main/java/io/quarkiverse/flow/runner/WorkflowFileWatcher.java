@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 
 import jakarta.annotation.PreDestroy;
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
@@ -17,7 +16,6 @@ import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.internal.WorkflowApplicationReadyEvent;
 import io.quarkiverse.flow.internal.WorkflowRegistrarService;
-import io.quarkus.arc.Unremovable;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.Scheduler;
 import io.serverlessworkflow.api.WorkflowReader;
@@ -25,8 +23,6 @@ import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
-@ApplicationScoped
-@Unremovable
 public class WorkflowFileWatcher {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowFileWatcher.class.getName());
