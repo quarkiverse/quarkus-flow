@@ -353,20 +353,36 @@ class WorkflowDefinitionRuntimeLoaderTest {
         String invalidYaml = "this is not a valid workflow yaml";
         Files.writeString(tempDir.resolve("invalid.yaml"), invalidYaml);
 
+        String validWorkflow = """
+                document:
+                  dsl: '1.0.0'
+                  namespace: test-namespace
+                  name: valid-after-invalid
+                  version: '1.0.0'
+                do:
+                  - setMessage:
+                      set:
+                        message: "Still loaded"
+                """;
+        Files.writeString(tempDir.resolve("valid.yaml"), validWorkflow);
+
+        WorkflowDefinition mockDefinition = mock(WorkflowDefinition.class);
+        when(mockRegistrar.register(any(Workflow.class))).thenReturn(mockDefinition);
+
         when(mockConfig.enabled()).thenReturn(true);
         when(mockSource.path()).thenReturn(Optional.of(tempDir.toString()));
 
         // When - the malformed file must not abort loading
         loader.onStart(new WorkflowApplicationReadyEvent("ABC123"));
 
-        // Then - the invalid file is skipped, nothing is registered
-        verify(mockRegistrar, never()).register(any(Workflow.class));
+        // Then - the invalid file is skipped, but the valid workflow alongside it is still registered
+        verify(mockRegistrar, times(1)).register(any(Workflow.class));
     }
 
     @Test
     @DisplayName("test_loader_skips_workflow_missing_required_fields_and_continues")
     void test_loader_skips_workflow_missing_required_fields_and_continues() throws IOException {
-        // Given - workflow missing version (SDK parser will throw IOException)
+        // Given - workflow missing version (SDK parser rejects it)
         String invalidWorkflow = """
                 document:
                   dsl: '1.0.0'
@@ -379,14 +395,30 @@ class WorkflowDefinitionRuntimeLoaderTest {
                 """;
         Files.writeString(tempDir.resolve("incomplete.yaml"), invalidWorkflow);
 
+        String validWorkflow = """
+                document:
+                  dsl: '1.0.0'
+                  namespace: test-namespace
+                  name: valid-after-incomplete
+                  version: '1.0.0'
+                do:
+                  - setMessage:
+                      set:
+                        message: "Still loaded"
+                """;
+        Files.writeString(tempDir.resolve("valid.yaml"), validWorkflow);
+
+        WorkflowDefinition mockDefinition = mock(WorkflowDefinition.class);
+        when(mockRegistrar.register(any(Workflow.class))).thenReturn(mockDefinition);
+
         when(mockConfig.enabled()).thenReturn(true);
         when(mockSource.path()).thenReturn(Optional.of(tempDir.toString()));
 
         // When - SDK parser fails for missing required fields, must not abort loading
         loader.onStart(new WorkflowApplicationReadyEvent("ABC123"));
 
-        // Then - the invalid file is skipped, nothing is registered
-        verify(mockRegistrar, never()).register(any(Workflow.class));
+        // Then - the invalid file is skipped, but the valid workflow alongside it is still registered
+        verify(mockRegistrar, times(1)).register(any(Workflow.class));
     }
 
     @Test
