@@ -125,8 +125,8 @@ See [`runner/app/`](runner/app/) for complete documentation.
 
 | Feature | Reason |
 |---------|--------|
-| `run.shell` tasks | Requires an explicit command allowlist. Security hardening has not been thoroughly tested in this version. |
-| `run.container` / `run.script` tasks | Require additional OWS SDK Java dependencies that Quarkus Flow does not ship automatically. Must be manually added. Not recommended due to security concerns not thoroughly tested in this version. |
+| `run.shell` tasks | Not supported. The executor is present in core but disabled by default — it has not been tested or validated by Quarkus Flow. |
+| `run.container` / `run.script` tasks | Not supported. Require additional OWS SDK Java dependencies that Quarkus Flow does not ship. See the [run tasks documentation](https://docs.quarkiverse.io/quarkus-flow/dev/run-tasks.html) for details. |
 | Redis persistence (`quarkus-flow-persistence-redis`) | Tested upstream but not officially validated |
 | Runner OCI Archive packaging | Image build supportability not planned |
 
