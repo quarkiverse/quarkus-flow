@@ -1,11 +1,14 @@
 = Migration Guide: 0.15.x to 0.16.0
 include::includes/attributes.adoc[]
 
-Quarkus Flow 0.16.0 unifies the HTTP and gRPC client resolution with a single progressive specificity cascade.
-All three client protocols (HTTP, gRPC, OIDC) now share the same key format and the same 6-level resolution order.
+Quarkus Flow 0.16.0 includes several breaking changes:
 
-This is a **configuration breaking change**: task-level routing keys use a new format in `application.properties`.
-
+* **Client routing**: HTTP and gRPC task-level routing keys use a new unified format.
+* **Runner security**: `quarkus.flow.runner.security.type` is now a required property.
+* **Shell execution**: `run.shell` tasks require an explicit command allowlist.
+* **Symlinks**: Workflow file scanning now skips symbolic links by default.
+* **Micrometer metrics**: Metrics are now auto-enabled when Micrometer is on the classpath.
+* **DSL**: `FuncForTaskBuilder.collection()` now requires `SerializableFunction`.
 == Why the change?
 
 In 0.15.1, HTTP, gRPC, and OIDC each had different configuration shapes:
@@ -156,6 +159,118 @@ quarkus.flow.http.client.workflow."acme:orders:1.0.0".name=secureA
 
 The same applies to gRPC and OIDC.
 
-== No other behavioral changes
+== Runner security type is now required
 
-Workflow execution semantics, the Java DSL, lifecycle events, persistence, and messaging are unchanged.
+In 0.15.x, `quarkus.flow.runner.security.type` defaulted to `none`.
+In 0.16.0, this property has no default — you must set it explicitly.
+
+This ensures that security is a deliberate configuration choice, not an implicit default that could be accidentally deployed to production.
+
+[source,properties]
+----
+# Choose one:
+quarkus.flow.runner.security.type=none
+quarkus.flow.runner.security.type=api-key
+quarkus.flow.runner.security.type=oidc
+----
+
+Without this property, the application fails at startup with:
+
+----
+SRCFG00014: The config property quarkus.flow.runner.security.type is required
+----
+
+NOTE: This only affects applications using the `quarkus-flow-runner` extension.
+
+== Shell execution requires an allowlist
+
+`run.shell` tasks now require an explicit command allowlist.
+An empty list (the default) disables all shell execution.
+
+If your workflows invoke shell commands, add the allowed executables:
+
+[source,properties]
+----
+quarkus.flow.run.shell.allowed-commands=curl,jq,grep
+----
+
+Without this, `run.shell` tasks fail at runtime.
+
+== Micrometer metrics auto-enabled
+
+In 0.15.x, Micrometer metrics required `quarkus.flow.metrics.enabled=true` to activate.
+In 0.16.0, metrics are enabled automatically when Micrometer is on the classpath.
+
+To disable:
+
+[source,properties]
+----
+quarkus.flow.metrics.enabled=false
+----
+
+== DSL: `collection()` requires `SerializableFunction`
+
+`FuncForTaskBuilder.collection()` now accepts `SerializableFunction<T, Collection<V>>` instead of `Function<T, Collection<V>>`.
+
+Lambda expressions passed to `.collection()` work without changes — Java lambdas implement `Serializable` when the target interface extends it.
+If you pass a method reference or an explicit `Function<>` variable, update the type:
+
+[source,java]
+----
+// Before (0.15.x)
+Function<MyInput, Collection<Item>> fn = MyInput::getItems;
+builder.collection(fn); // compile error in 0.16.0
+
+// After (0.16.0)
+SerializableFunction<MyInput, Collection<Item>> fn = MyInput::getItems;
+builder.collection(fn);
+----
+
+== Symlinks skipped by default when scanning workflow files
+
+Workflow file scanning now skips symbolic links by default.
+This prevents duplicate workflow detection failures on Kubernetes, where ConfigMap volume mounts use internal symlinks.
+
+If your workflows are intentionally provided via symbolic links outside of Kubernetes:
+
+[source,properties]
+----
+# Runner (runtime)
+quarkus.flow.runner.source.follow-symlinks=true
+
+# Core (build-time)
+quarkus.flow.definitions.follow-symlinks=true
+----
+
+== New features
+
+=== OpenTelemetry tracing
+
+New `quarkus-flow-opentelemetry` extension provides distributed tracing for workflow execution.
+See xref:opentelemetry.adoc[OpenTelemetry] for setup instructions.
+
+=== File watcher for runtime workflow loading
+
+The runner can now poll for new workflow files at runtime without requiring a pod restart:
+
+[source,properties]
+----
+# Build-time (requires rebuild)
+quarkus.flow.runner.source.watch.enabled=true
+
+# Runtime
+quarkus.flow.runner.source.watch.interval=5s
+----
+
+=== Automatic Kafka configuration in dev mode
+
+When the Kafka connector is present, Quarkus Flow now auto-configures `flow-in` and `flow-out` channel defaults in dev mode.
+
+=== Configurable lease acquire timeout
+
+Durable Kubernetes now supports a configurable timeout for lease acquisition:
+
+[source,properties]
+----
+quarkus.flow.durable.kube.lease.acquire-timeout=30s
+----
