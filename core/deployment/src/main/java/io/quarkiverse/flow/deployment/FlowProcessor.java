@@ -25,6 +25,9 @@ import com.github.zafarkhaja.semver.ParseException;
 import com.github.zafarkhaja.semver.Version;
 
 import io.quarkiverse.flow.config.FlowDefinitionsConfig;
+import io.quarkiverse.flow.customizer.ObjectMapperCloudEventCustomizer;
+import io.quarkiverse.flow.health.WorkflowEngineHealthCheck;
+import io.quarkiverse.flow.internal.NoOpScheduler;
 import io.quarkiverse.flow.internal.WorkflowApplicationInitializer;
 import io.quarkiverse.flow.internal.WorkflowNameUtils;
 import io.quarkiverse.flow.internal.WorkflowRegistrarService;
@@ -34,6 +37,7 @@ import io.quarkiverse.flow.providers.FaultToleranceProvider;
 import io.quarkiverse.flow.providers.HttpClientProvider;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
 import io.quarkiverse.flow.providers.MicroprofileConfigManager;
+import io.quarkiverse.flow.providers.QuarkusManagedExecutorServiceFactory;
 import io.quarkiverse.flow.providers.WorkflowExceptionMapper;
 import io.quarkiverse.flow.recorders.SDKRecorder;
 import io.quarkiverse.flow.recorders.WorkflowApplicationCreator;
@@ -178,8 +182,13 @@ class FlowProcessor {
                 .addBeanClass(MicroprofileConfigManager.class)
                 .addBeanClass(HttpClientProvider.class)
                 .addBeanClass(FaultToleranceProvider.class)
+                .addBeanClass(QuarkusManagedExecutorServiceFactory.class)
                 .addBeanClass(WorkflowApplicationCreator.class)
                 .addBeanClass(WorkflowApplicationInitializer.class)
+                .addBeanClass(WorkflowRegistrarService.class)
+                .addBeanClass(NoOpScheduler.class)
+                .addBeanClass(ObjectMapperCloudEventCustomizer.class)
+                .addBeanClass(WorkflowEngineHealthCheck.class)
                 .addBeanClass(StructuredLoggingListener.class)
                 .setUnremovable()
                 .build();

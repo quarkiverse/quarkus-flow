@@ -3,6 +3,8 @@
 :page-aliases: tracing/index.adoc
 include::includes/attributes.adoc[]
 
+include::includes/status-stable.adoc[]
+
 To effectively monitor and debug workflows in production, you need to track a workflow instance from the moment it starts, through every internal task, and across the network to external services.
 
 Quarkus Flow provides a lightweight tracing facility that achieves this through two mechanisms:

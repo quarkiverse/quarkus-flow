@@ -92,6 +92,44 @@ See [`runner/app/`](runner/app/) for complete documentation.
 
 </details>
 
+## Compatibility
+
+| Component | Version |
+|-----------|---------|
+| Quarkus | 3.39.0+ |
+| JDK | 17, 21, 25 |
+| Open Workflow Specification DSL | 1.0.0 |
+| Open Workflow SDK | 7.29.0.Final |
+
+### Module Maturity
+
+| Module | Maturity | Description |
+|--------|----------|-------------|
+| `quarkus-flow` | **Stable** | Core engine, Java DSL, YAML/JSON definitions, CDI integration, native compilation |
+| `quarkus-flow-messaging` | **Stable** | SmallRye Reactive Messaging (Kafka, AMQP), CloudEvents, idempotency & correlation |
+| `quarkus-flow-persistence-jpa` | **Stable** | JPA persistence (PostgreSQL, MySQL, Oracle, MSSQL, H2) |
+| `quarkus-flow-persistence-mvstore` | **Stable** | File-based persistence for single-node/edge deployments |
+| `quarkus-flow-persistence-infinispan` | **Stable** | Infinispan RESP persistence (Kubernetes-native) |
+| `quarkus-flow-scheduler` | **Stable** | Scheduled workflow execution (CRON, ISO-8601 duration) |
+| `quarkus-flow-durable-kubernetes` | **Stable** | Durable workflows with Kubernetes lease coordination |
+| `quarkus-flow-langchain4j` | **Preview** | LangChain4j integration for agentic AI workflows |
+| `quarkus-flow-runner` | **Preview** | Runtime YAML workflow deployment via REST API |
+| `quarkus-flow-grpc` | **Preview** | gRPC channel routing with per-workflow/per-task configuration |
+| `quarkus-flow-scheduler-quartz` | **Preview** | Quartz clustered scheduler (multi-node, JDBC-backed) |
+| `quarkus-flow-opentelemetry` | **Preview** | OpenTelemetry tracing for workflow execution |
+
+> **Stable** modules are production-ready with full test coverage and stable APIs.
+> **Preview** modules are functional and tested but backward compatibility is not guaranteed across releases.
+
+### Not Recommended for Production
+
+| Feature | Reason |
+|---------|--------|
+| `run.shell` tasks | Not supported. The executor is present in core but disabled by default — it has not been tested or validated by Quarkus Flow. |
+| `run.container` / `run.script` tasks | Not supported. Require additional OWS SDK Java dependencies that Quarkus Flow does not ship. See the [run tasks documentation](https://docs.quarkiverse.io/quarkus-flow/dev/run-tasks.html) for details. |
+| Redis persistence (`quarkus-flow-persistence-redis`) | Tested upstream but not officially validated |
+| Runner OCI Archive packaging | Image build supportability not planned |
+
 ## Quick Start
 
 Add Quarkus Flow to your Quarkus application:

@@ -1,7 +1,9 @@
 = How to transform data between workflow tasks
-include::includes/attributes.adoc[]
 :page-role: howto
 :sectnums:
+include::includes/attributes.adoc[]
+
+include::includes/status-stable.adoc[]
 
 This guide shows you how to control data flow between tasks in a workflow using `inputFrom`, `exportAs`, and `outputAs` transformations.
 

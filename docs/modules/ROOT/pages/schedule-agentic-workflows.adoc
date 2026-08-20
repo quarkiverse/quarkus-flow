@@ -2,6 +2,8 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
+include::includes/status-preview.adoc[]
+
 Agentic LangChain4j workflows usually run on demand, but many real-world AI processes need to be triggered automatically.
 Combined with tools, this lets an agent wake up on a schedule or event and then act on its own, calling tools to fetch data,
 take decisions, and produce results without any manual interaction.

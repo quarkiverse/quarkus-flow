@@ -2,6 +2,8 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
+include::includes/status-stable.adoc[]
+
 When a workflow calls a protected HTTP or OpenAPI service, it usually needs an `Authorization: Bearer <token>` header.
 Instead of fetching those tokens yourself, Quarkus Flow can negotiate them for you:
 you declare an OAuth2/OIDC authentication on the call, and the engine performs the token request against the authorization server and attaches it to the downstream request automatically.

@@ -2,6 +2,8 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
+include::includes/status-stable.adoc[]
+
 Quarkus Flow instruments workflow executions using https://micrometer.io[Micrometer], the metrics facade integrated into Quarkus.
 It records meters for execution counts, durations, and runtime states.
 

@@ -2,6 +2,8 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
+include::includes/status-stable.adoc[]
+
 *Quarkus Flow Messaging* bridges the workflow engine with *MicroProfile Reactive Messaging* (SmallRye). This allows your workflows to act as fully event-driven orchestrations: they can be triggered by events, emit events to external systems, and pause execution while listening for asynchronous callbacks.
 
 The bridge activates automatically when a supported Quarkus Messaging connector (like Kafka or AMQP) is on the classpath.

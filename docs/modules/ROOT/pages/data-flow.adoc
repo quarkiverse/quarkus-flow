@@ -2,6 +2,8 @@
 :page-role: concept
 include::includes/attributes.adoc[]
 
+include::includes/status-stable.adoc[]
+
 Workflows in Quarkus Flow operate on a single logical **Workflow Context**—usually a JSON document or a strongly typed Java record. As the workflow executes, this context is passed from task to task.
 
 However, a task rarely needs the *entire* workflow context to do its job, and its result rarely needs to overwrite the *entire* document.

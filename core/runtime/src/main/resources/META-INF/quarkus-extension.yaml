@@ -12,7 +12,7 @@ metadata:
   guide: https://docs.quarkiverse.io/quarkus-flow/dev/
   categories:
     - "integration"
-    - "messaging"
+  status: "stable"
   codestart:
     name: Flow
     languages:

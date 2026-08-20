@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.scheduler.deployment;
 
 import io.quarkiverse.flow.scheduler.FlowScheduler;
+import io.quarkiverse.flow.scheduler.FlowSchedulerApplicationBuilderCustomizer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -24,6 +25,7 @@ class FlowSchedulerProcessor {
     AdditionalBeanBuildItem registerRuntimeServices() {
         return AdditionalBeanBuildItem.builder()
                 .addBeanClass(FlowScheduler.class)
+                .addBeanClass(FlowSchedulerApplicationBuilderCustomizer.class)
                 .setUnremovable()
                 .build();
     }

@@ -1,0 +1,4 @@
+[WARNING]
+====
+*Not recommended for production* -- This feature has not been thoroughly tested for security in this version. Use at your own risk.
+====

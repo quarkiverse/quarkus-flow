@@ -3,6 +3,8 @@
 :page-aliases: http/index.adoc
 include::includes/attributes.adoc[]
 
+include::includes/status-stable.adoc[]
+
 Quarkus Flow supports calling external services over HTTP and OpenAPI. All HTTP and OpenAPI tasks share a common, tunable HTTP client layer powered by RESTEasy Reactive and Vert.x.
 
 This guide shows how to:

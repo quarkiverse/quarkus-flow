@@ -2,6 +2,8 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
+include::includes/status-preview.adoc[]
+
 LangChain4j provides powerful abstractions for interacting with LLMs and defining AI agents. However, AI processes rarely exist in isolation—they need to interact with external services, pause for human approval, and survive system restarts.
 
 Quarkus Flow acts as the durable, observable orchestration layer for your AI. By wrapping your LangChain4j components into standard Flow Tasks, you gain:

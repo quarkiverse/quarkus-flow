@@ -2,6 +2,8 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
+include::includes/status-stable.adoc[]
+
 Quarkus Flow builds on top of the Open Workflow Specification (CNCF sandbox project) to give you first-class HTTP and OpenAPI tasks.
 
 This guide shows how to:

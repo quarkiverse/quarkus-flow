@@ -3,6 +3,8 @@
 
 include::./includes/attributes.adoc[]
 
+include::includes/status-not-recommended.adoc[]
+
 The Open Workflow Specification defines a link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#run[`run` task] that supports executing shell commands, Python/JavaScript scripts, Docker containers, and sub-workflows from within a workflow definition.
 
 == Support Status

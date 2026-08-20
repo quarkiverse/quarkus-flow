@@ -2,6 +2,8 @@
 :page-role: howto
 include::includes/attributes.adoc[]
 
+include::includes/status-stable.adoc[]
+
 The Open Workflow specification allows you to define workflows that execute automatically on a recurring schedule.
 
 By default, the Open Workflow SDK engine uses a lightweight, in-memory implementation (based on `ScheduledExecutorService` and the `cron-utils` library) to trigger these executions. However, for a Quarkus Flow application, **we highly recommend replacing this with the native Quarkus Scheduler integration**.

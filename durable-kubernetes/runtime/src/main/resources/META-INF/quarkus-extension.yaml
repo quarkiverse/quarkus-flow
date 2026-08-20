@@ -13,5 +13,5 @@ metadata:
   guide: https://docs.quarkiverse.io/quarkus-flow/dev/
   categories:
     - "integration"
-    - "kubernetes"
-  status: "preview"
+    - "cloud"
+  status: "stable"
