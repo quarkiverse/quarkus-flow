@@ -9,7 +9,7 @@ metadata:
     - cncf
     - serverless
     - cloudevents
-    - open workflow
+    - open-workflow
     - grpc
   guide: https://docs.quarkiverse.io/quarkus-flow/dev/grpc.html
   categories:
