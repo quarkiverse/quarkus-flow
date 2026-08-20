@@ -10,7 +10,7 @@ metadata:
     - cloudevents
     - durable
     - kubernetes
-  guide: https://docs.quarkiverse.io/quarkus-flow/dev/
+  guide: https://docs.quarkiverse.io/quarkus-flow/dev/concepts-durable-workflow-k8s.html
   categories:
     - "integration"
     - "cloud"
