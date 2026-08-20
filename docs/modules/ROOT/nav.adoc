@@ -61,3 +61,5 @@
 ** xref:quarkus-flow-java-cookbook.adoc[]
 ** xref:configuration.adoc[Extension Configuration Reference]
 ** xref:performance-benchmarks.adoc[Performance Benchmark]
+
+* xref:references.adoc[References]
