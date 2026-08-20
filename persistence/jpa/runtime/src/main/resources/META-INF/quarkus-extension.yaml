@@ -12,7 +12,7 @@ metadata:
     - jpa
     - postgresql
     - persistence
-  guide: https://docs.quarkiverse.io/quarkus-flow/dev/
+  guide: https://docs.quarkiverse.io/quarkus-flow/dev/persistence.html
   categories:
     - "integration"
     - "data"

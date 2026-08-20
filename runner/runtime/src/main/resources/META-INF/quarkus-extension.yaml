@@ -11,7 +11,7 @@ metadata:
     - cloudevents
     - http
     - runner
-  guide: https://docs.quarkiverse.io/quarkus-flow/dev/
+  guide: https://docs.quarkiverse.io/quarkus-flow/dev/runner.html
   categories:
     - "integration"
     - "web"
