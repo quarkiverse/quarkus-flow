@@ -145,6 +145,71 @@ Why this matters:
 
 **Parallel Execution**: Tests run in parallel. **Never use fixed ports** in your tests. If you need a port, use an unusual/random port or let the framework assign one (e.g., `@QuarkusTest` auto-assigns ports).
 
+### CI Test Pipeline
+
+Every pull request triggers four independent GitHub Actions workflows in parallel. Within each workflow, jobs with no arrow between them also run in parallel; an arrow (`→`) is a real `needs:` dependency.
+
+```mermaid
+flowchart TD
+    PR(["Pull Request<br/>opened / synchronize"]) --> BUILD
+    PR --> BIT
+    PR --> PLC
+    PR --> K8S
+
+    subgraph BUILD["Build — build.yml"]
+        direction LR
+        V["validate<br/>formatting + doc-gen<br/>ubuntu · JDK 17"]
+        M1["ubuntu-latest / JDK 17"]
+        M2["ubuntu-latest / JDK 21"]
+        M3["ubuntu-latest / JDK 25"]
+        M4["windows-latest / JDK 17<br/>devui/* tests skipped"]
+        EX["examples<br/>examples ITs · ubuntu · JDK 17"]
+        V --> EX
+    end
+
+    subgraph BIT["Build with Integration Tests — build-it.yml"]
+        direction LR
+        C["core<br/>core/* + langchain4j via Ollama<br/>ubuntu · JDK 25"]
+        CD["core-devui<br/>core/deployment devui/* tests<br/>ubuntu · JDK 25"]
+        E1["messaging"]
+        E2["persistence"]
+        E3["scheduling"]
+        E4["runner"]
+        E5["opentelemetry"]
+        BR1["build-report"]
+        C --> BR1
+        CD --> BR1
+        E1 --> BR1
+        E2 --> BR1
+        E3 --> BR1
+        E4 --> BR1
+        E5 --> BR1
+    end
+
+    subgraph PLC["Persistent Workflows with LangChain4J — persistence-langchain4j.yml"]
+        direction LR
+        P1["h2"]
+        P2["postgresql"]
+        P3["mysql"]
+        P4["oracle"]
+        BR2["build-report"]
+        P1 --> BR2
+        P2 --> BR2
+        P3 --> BR2
+        P4 --> BR2
+    end
+
+    subgraph K8S["Durable Workflows (Kubernetes Lease) - Kind Verification — durable-k8s-kind.yml"]
+        direction TB
+        KS1["Build runner image +<br/>process k8s manifests"] --> KS2["Load image into Kind<br/>+ deploy"] --> KS3["Verify lease renew"] --> KS4["Verify failover"] --> KS5["Verify two-pod disruption"]
+    end
+```
+
+- **`build.yml`**: `validate` and the 5-way `build` matrix start immediately and run in parallel with each other; `examples` only waits on `validate` (it reuses the JDK 17 artifact `validate` already built, not the full matrix). `windows-latest` only runs JDK 17, with `devui/*` tests excluded — they're already covered by the `ubuntu-latest` legs and `core-devui` below.
+- **`build-it.yml`**: `core`, `core-devui`, and the 5-way `extensions` matrix all start immediately and run in parallel; `build-report` is a fan-in gate that waits on all seven.
+- **`persistence-langchain4j.yml`**: the 4 database legs (`h2`, `postgresql`, `mysql`, `oracle`) run in parallel with `fail-fast: false`, then fan into `build-report`.
+- **`durable-k8s-kind.yml`**: the only fully sequential pipeline — a single job whose steps must run in order (build image → load into Kind → deploy → verify lease → verify failover → verify disruption), since each step depends on cluster state the previous one created.
+
 ## Code Conventions
 
 ### General Guidelines

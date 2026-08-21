@@ -13,7 +13,6 @@ permissions:
   pull-requests: write
 
 env:
-  QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID: llama3.2
   # RestAssured socket timeout for slow GHA runners (in milliseconds)
   RESTASSURED_TIMEOUT_MS: 60000
 
@@ -26,21 +25,19 @@ defaults:
     shell: bash
 
 jobs:
-  build:
-    name: Build & test (${{ matrix.os }} / JDK ${{ matrix.java-version }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ ubuntu-latest ]
-        java-version: [ 25 ]
+  core:
+    name: Build & test (core / JDK 25)
+    runs-on: ubuntu-latest
+    env:
+      QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID: llama3.2
 
     steps:
       - uses: actions/checkout@v7
-      - name: Set up JDK ${{ matrix.java-version }}
+      - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: ${{ matrix.java-version }}
+          java-version: 25
           cache: maven
 
       - name: Setup Ollama
@@ -54,19 +51,31 @@ jobs:
       - name: Run ${{ env.QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID }} model
         run: ollama run ${{ env.QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID }}
 
-      # Skip langchain4j/integration-tests as they run in persistence-langchain4j.yml workflow
-      # Skip docs and examples - examples ITs run in build.yml examples-it job
-      - name: Build with Maven (Linux, full tests including ITs, core only)
+      # Skip langchain4j/integration-tests (runs in persistence-langchain4j.yml) and every
+      # extension family's own modules (each builds+tests itself in the "extensions" job
+      # below) - -am pulls in messaging/runtime+deployment automatically, since
+      # core/integration-tests exercises event emission through it. devui/* tests are
+      # excluded here and run for real in core-devui instead; failIfNoSpecifiedTests=false
+      # because the exclude pattern matches nothing in the other modules built by this command.
+      # The -Dtest pattern must restate Surefire's own default includes (*Test/*Tests)
+      # alongside the devui exclude - a bare "!**/devui/*" replaces those defaults
+      # with a full-disk scan, which also picks up core/integration-tests' *IT classes that are
+      # meant only for Failsafe, crashing them with a JUnit ExtensionContext store conflict
+      # before Failsafe's own integration-test phase ever runs.
+      - name: Build with Maven (core, full tests including ITs)
         run: |
           mvn clean install \
+            -pl core/runtime,core/deployment,core/runtime-dev,core/integration-tests,bom,quarkus-platform-checks,docs-rag \
+            -am \
             -Dquarkus.log.level=OFF \
             -DskipITs=false \
+            -Dtest='**/*Test,!**/devui/*' \
+            -Dsurefire.failIfNoSpecifiedTests=false \
             -P!docs,code-coverage \
             -Dquarkus.langchain4j.ollama.chat-model.model-id=${{ env.QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID }} \
             -Dquarkus.langchain4j.timeout=60000 \
             -Drestassured.config.http.client.params.SO_TIMEOUT=${{ env.RESTASSURED_TIMEOUT_MS }} \
-            -ntp \
-            -pl '!langchain4j/integration-tests'
+            -ntp
 
       - name: Prepare build reports archive
         if: always()
@@ -80,7 +89,7 @@ jobs:
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: "build-reports-${{ github.run_attempt }}-${{ matrix.os }}-jdk-${{ matrix.java-version }}"
+          name: "build-reports-${{ github.run_attempt }}-core"
           path: build-reports.zip
           retention-days: 1
 
@@ -96,10 +105,137 @@ jobs:
           title: "📊 Quarkus Flow Coverage Report"
           update-comment: true
 
+  # core/deployment's devui/* package on its own: mostly QuarkusDevModeTest/DevUI JSON-RPC
+  # tests, several of which hardcode http://localhost:8080. That's fine here because this runs
+  # on its own isolated runner - no other job shares its network namespace - unlike Surefire
+  # parallel forks in the same JVM, which would collide on that port.
+  core-devui:
+    name: Build & test (core-devui / JDK 25)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: maven
+
+      - name: Build dependency modules (no tests)
+        run: |
+          mvn install \
+            -pl core/deployment \
+            -am \
+            -DskipTests -DskipITs \
+            -Dquarkus.log.level=OFF \
+            -P!docs,code-coverage \
+            -ntp
+
+      - name: Run core/deployment devui tests
+        run: |
+          mvn test \
+            -pl core/deployment \
+            -Dtest='**/devui/*' \
+            -Dsurefire.failIfNoSpecifiedTests=false \
+            -Dquarkus.log.level=OFF \
+            -P!docs,code-coverage \
+            -ntp
+
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              '**/target/*-reports/TEST-*.xml' \
+              'target/build-report.json' \
+              'LICENSE'
+
+      - name: Upload build reports
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: "build-reports-${{ github.run_attempt }}-core-devui"
+          path: build-reports.zip
+          retention-days: 1
+
+  # None of these extension families depend on each other or on Ollama/langchain4j, so
+  # they run as independent parallel jobs instead of one long sequential reactor build.
+  # Each leg first installs its own dependencies (core, and for "runner" also messaging +
+  # persistence/mvstore) with tests skipped - those modules get their own real test run in
+  # their own job, so re-running their tests here would just be wasted, duplicate work -
+  # then builds+tests only its own modules for real. Same two-step shape already used by
+  # persistence-langchain4j.yml for langchain4j/integration-tests.
+  extensions:
+    name: Build & test (${{ matrix.name }} / JDK 25)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: messaging
+            modules: messaging/runtime,messaging/deployment,messaging/integration-tests,messaging/integration-tests-amqp,grpc/runtime,grpc/deployment,grpc/integration-tests,oidc/runtime,oidc/deployment,oidc/integration-tests
+          - name: persistence
+            modules: persistence/common/runtime,persistence/common/deployment,persistence/test-common,persistence/redis/runtime,persistence/redis/deployment,persistence/redis/integration-tests,persistence/jpa/runtime,persistence/jpa/deployment,persistence/jpa/integration-tests,persistence/mvstore/runtime,persistence/mvstore/deployment,persistence/mvstore/integration-tests,persistence/infinispan/integration-tests
+          - name: scheduling
+            modules: scheduler/memory/runtime,scheduler/memory/deployment,scheduler/memory/integration-tests,scheduler/quartz/runtime,scheduler/quartz/deployment,scheduler/quartz/integration-tests,durable-kubernetes/runtime,durable-kubernetes/deployment,durable-kubernetes/integration-tests
+          - name: runner
+            # runner/app (image-minimal profile, active by default) needs persistence/mvstore
+            # at build time; -am only follows plain <dependency> edges, not Quarkus's dynamic
+            # runtime->deployment artifact resolution, so the *-deployment modules must be
+            # listed explicitly or the augmentation step fails looking for them.
+            modules: runner/runtime,runner/deployment,runner/integration-tests,runner/app,persistence/common/runtime,persistence/common/deployment,persistence/test-common,persistence/mvstore/runtime,persistence/mvstore/deployment
+          - name: opentelemetry
+            modules: opentelemetry/runtime,opentelemetry/deployment,opentelemetry/integration-tests
+
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: maven
+
+      - name: Build dependency modules (no tests)
+        run: |
+          mvn install \
+            -pl "${{ matrix.modules }}" \
+            -am \
+            -DskipTests -DskipITs \
+            -Dquarkus.log.level=OFF \
+            -P!docs,code-coverage \
+            -ntp
+
+      - name: Run ${{ matrix.name }} integration tests
+        run: |
+          mvn verify \
+            -pl "${{ matrix.modules }}" \
+            -Dquarkus.log.level=OFF \
+            -DskipITs=false \
+            -P!docs,code-coverage \
+            -Drestassured.config.http.client.params.SO_TIMEOUT=${{ env.RESTASSURED_TIMEOUT_MS }} \
+            -ntp
+
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              '**/target/*-reports/TEST-*.xml' \
+              'target/build-report.json' \
+              'LICENSE'
+
+      - name: Upload build reports
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: "build-reports-${{ github.run_attempt }}-${{ matrix.name }}"
+          path: build-reports.zip
+          retention-days: 1
+
   build-report:
     runs-on: ubuntu-latest
     name: Build report
-    needs: [build]
+    needs: [core, core-devui, extensions]
     if: always()
     steps:
       - uses: actions/download-artifact@v8
