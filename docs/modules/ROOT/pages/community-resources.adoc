@@ -1,4 +1,4 @@
-= References
+= Community Resources
 include::includes/attributes.adoc[]
 
 This page collects blog posts and talks from the community about Quarkus Flow.
