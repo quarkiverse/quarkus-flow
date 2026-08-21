@@ -1,0 +1,75 @@
+= References
+include::includes/attributes.adoc[]
+
+This page collects blog posts and talks from the community about Quarkus Flow.
+
+[TIP]
+====
+Wrote a blog post or gave a talk about Quarkus Flow? We'd love to feature it here! Please open a pull request adding your entry to the table below.
+====
+
+[cols="1,2,5,2,2", options="header"]
+|===
+|Type |Author |Title |Date |Notes
+
+|Blog Post
+|https://www.linkedin.com/in/ricardozanini/[Ricardo Zanini]
+|https://zanini.biz/2026/08/17/when-workflow-validation-fails-lessons-from-brazils-tse-affiliation-incident/[When Workflow Validation Fails: Lessons from Brazil's TSE Affiliation Incident]
+|August 17, 2026
+|10 min read
+
+|Blog Post
+|https://www.linkedin.com/in/ricardozanini/[Ricardo Zanini]
+|https://zanini.biz/2026/07/31/how-quarkus-flow-talks-to-the-world-the-messaging-architecture/[How Quarkus Flow Talks to the World: The Messaging Architecture]
+|July 31, 2026
+|7 min read
+
+|Blog Post
+|https://www.linkedin.com/in/markuseisele/[Markus Eisele]
+|https://www.the-main-thread.com/p/quarkus-flow-0-11-workflows-not-rules[Build a Refund Workflow with Quarkus Flow 0.11]
+|July 02, 2026
+|
+
+|Blog Post
+|https://www.linkedin.com/in/mcruzdev1/[Matheus Cruz]
+|https://quarkusguru.github.io/posts/durable-workflows-with-quarkus-flow/[Durable Workflows with Quarkus Flow]
+|June 18, 2026
+|
+
+|Talk
+|https://www.linkedin.com/in/mcruzdev1/[Matheus Cruz]
+|link:https://www.youtube.com/watch?v=KwQU4PcMAL4[Quarkus Flow: Orquestrando complexidade e Agentes de IA]
+|June 03, 2026
+|Portuguese
+
+|Blog Post
+|https://www.linkedin.com/in/ricardozanini/[Ricardo Zanini]
+|https://zanini.biz/2026/05/27/the-mathematical-root-petri-nets-and-parallel-executions/[The Mathematical Root: Petri Nets and Parallel Executions]
+|May 27, 2026
+|6 min read
+
+|Blog Post
+|https://www.linkedin.com/in/ricardozanini/[Ricardo Zanini]
+|https://zanini.biz/2026/05/15/what-are-workflows-and-why-do-i-need-them/[What are workflows and why do I need them?]
+|May 15, 2026
+|5 min read
+
+|Blog Post
+|https://www.linkedin.com/in/mcruzdev1/[Matheus Cruz]
+|https://quarkusguru.github.io/posts/a-brief-introduction-to-quarkus-flow/[A brief introduction to Quarkus Flow]
+|April 28, 2026
+|
+
+|Talk
+|https://www.linkedin.com/in/ricardozanini/[Ricardo Zanini] and link:++https://www.linkedin.com/in/mcruzdev1/[Matheus Cruz]++[Matheus Cruz]
+|link:https://www.youtube.com/watch?v=0zwY4lSv3yU[Quarkus Insights #242: What is Quarkus Flow?]
+|April 06, 2026
+|
+
+|Blog Post
+|https://www.linkedin.com/in/markuseisele/[Markus Eisele]
+|https://www.the-main-thread.com/p/quarkus-flow-ollama-kafka-cloudevents-java-workflow[Stop Gluing Scripts Together: Build a Real Java Workflow with Quarkus Flow, Kafka, and Ollama]
+|March 02, 2026
+|
+
+|===
