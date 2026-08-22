@@ -3,6 +3,7 @@ package io.quarkiverse.flow.dsl.executors;
 import static io.quarkiverse.flow.dsl.executors.JavaFuncUtils.safeObject;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Optional;
 
 import io.quarkiverse.flow.dsl.types.LoopPredicate;
@@ -74,6 +75,7 @@ public class JavaForExecutorBuilder extends ForExecutorBuilder {
 
     protected WorkflowValueResolver<Collection<?>> buildCollectionFilter() {
         Object inCollection = collectionFilterObject();
+        Objects.requireNonNull(task.getFor().getIn(), "'in' is a required property for ForTask");
         return inCollection != null
                 ? application
                         .expressionFactory()

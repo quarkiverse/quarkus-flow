@@ -3,6 +3,7 @@ package io.quarkiverse.flow.dsl.types.utils;
 import java.lang.invoke.MethodType;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -181,7 +182,8 @@ public class ForTaskFunction {
     }
 
     private static Object getFromInList(ForTask task, String key) {
-        List<ForIn> list = task.getFor().getIn().getForInInlineArray();
+        List<ForIn> list = Objects.requireNonNull(task.getFor().getIn(), "'in' is a required property for ForTask")
+                .getForInInlineArray();
         if (list != null && !list.isEmpty()) {
             return list.get(0).getAdditionalProperties().get(key);
         }
