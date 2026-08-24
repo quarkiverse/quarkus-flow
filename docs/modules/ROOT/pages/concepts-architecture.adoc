@@ -1,5 +1,6 @@
 = Concepts & architecture
 :page-role: explanation
+:description: Understand the core concepts behind Quarkus Flow, its build-time engine paradigm, and how it maps to the Open Workflow Specification.
 
 This page explains the core concepts behind Quarkus Flow, its internal architecture, and how it maps to the Open Workflow Specification (CNCF sandbox project).
 
