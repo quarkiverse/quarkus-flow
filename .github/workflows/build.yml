@@ -125,7 +125,7 @@ jobs:
       # devui exclude - a bare "!**/devui/*" replaces those defaults with a full-disk scan, which
       # also picks up core/integration-tests' *IT classes that are meant only for Failsafe
       # (verified: that bare pattern crashes them with a JUnit ExtensionContext store conflict).
-      - name: Build with Maven (Windows, skip docs and examples)
+      - name: Build with Maven (Windows, skip docs, examples, and devui)
         if: matrix.os == 'windows-latest'
         run: mvn -B clean install -Dno-format -P!docs -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -Dtest='**/Test*,**/*Test,**/*Tests,**/*TestCase,!**/devui/*' -Dsurefire.failIfNoSpecifiedTests=false -ntp
 
