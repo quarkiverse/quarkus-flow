@@ -1,5 +1,6 @@
 = Orchestrate LangChain4j Agents and Patterns
 :page-role: howto
+:description: Learn how to orchestrate LangChain4j AI agents as workflow tasks in Quarkus Flow, with support for branching, retries, and human-in-the-loop patterns.
 include::includes/attributes.adoc[]
 
 include::includes/status-preview.adoc[]

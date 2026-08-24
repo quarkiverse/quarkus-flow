@@ -1,5 +1,6 @@
 = Getting started with Quarkus Flow
 :page-role: tutorial
+:description: Add Quarkus Flow to your Quarkus application and define your first workflow in minutes using the Java DSL, then explore it in the Dev UI.
 include::includes/attributes.adoc[]
 
 include::includes/status-stable.adoc[]
