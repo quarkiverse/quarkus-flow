@@ -65,11 +65,12 @@ jobs:
       - name: Build with Maven (core, full tests including ITs)
         run: |
           mvn clean install \
+            -T 1C \
             -pl core/runtime,core/deployment,core/runtime-dev,core/integration-tests,bom,quarkus-platform-checks,docs-rag \
             -am \
             -Dquarkus.log.level=OFF \
             -DskipITs=false \
-            -Dtest='**/*Test,!**/devui/*' \
+            -Dtest='**/Test*,**/*Test,**/*Tests,**/*TestCase,!**/devui/*' \
             -Dsurefire.failIfNoSpecifiedTests=false \
             -P!docs,code-coverage \
             -Dquarkus.langchain4j.ollama.chat-model.model-id=${{ env.QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID }} \
@@ -209,6 +210,7 @@ jobs:
       - name: Run ${{ matrix.name }} integration tests
         run: |
           mvn verify \
+            -T 1C \
             -pl "${{ matrix.modules }}" \
             -Dquarkus.log.level=OFF \
             -DskipITs=false \

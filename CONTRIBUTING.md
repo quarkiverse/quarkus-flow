@@ -205,7 +205,7 @@ flowchart TD
     end
 ```
 
-- **`build.yml`**: `validate` and the 5-way `build` matrix start immediately and run in parallel with each other; `examples` only waits on `validate` (it reuses the JDK 17 artifact `validate` already built, not the full matrix). `windows-latest` only runs JDK 17, with `devui/*` tests excluded — they're already covered by the `ubuntu-latest` legs and `core-devui` below.
+- **`build.yml`**: `validate` and the 4-way `build` matrix start immediately and run in parallel with each other; `examples` only waits on `validate` (it reuses the JDK 17 artifact `validate` already built, not the full matrix). `windows-latest` only runs JDK 17, with `devui/*` tests excluded — they're already covered by the `ubuntu-latest` legs and `core-devui` below.
 - **`build-it.yml`**: `core`, `core-devui`, and the 5-way `extensions` matrix all start immediately and run in parallel; `build-report` is a fan-in gate that waits on all seven.
 - **`persistence-langchain4j.yml`**: the 4 database legs (`h2`, `postgresql`, `mysql`, `oracle`) run in parallel with `fail-fast: false`, then fan into `build-report`.
 - **`durable-k8s-kind.yml`**: the only fully sequential pipeline — a single job whose steps must run in order (build image → load into Kind → deploy → verify lease → verify failover → verify disruption), since each step depends on cluster state the previous one created.
