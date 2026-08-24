@@ -26,7 +26,6 @@ public class SimpleWorkflowTest {
 
         // then
         assertThat(instance)
-                .hasEventType(EventType.WORKFLOW_COMPLETED)
-                .filteredOn(recordedEvent -> recordedEvent.getType() == EventType.WORKFLOW_COMPLETED);
+                .hasEventType(EventType.WORKFLOW_COMPLETED);
     }
 }

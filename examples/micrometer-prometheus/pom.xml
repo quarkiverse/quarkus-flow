@@ -17,7 +17,6 @@
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.6</surefire-plugin.version>
         <quarkus.flow.version>2.0.0-SNAPSHOT</quarkus.flow.version>
-        <version.assertj>3.27.7</version.assertj>
     </properties>
 
     <dependencyManagement>
@@ -77,12 +76,6 @@
             <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow-testing</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <version>${version.assertj}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -12,7 +12,7 @@ import io.quarkiverse.flow.testing.events.RecordedEvent;
 /**
  * AssertJ assertions for a filtered list of {@link RecordedEvent}s, as returned by
  * {@link WorkflowEventStoreAssert}'s {@code filteredByX} methods,
- * {@link FlowAssertions#assertThat(io.serverlessworkflow.impl.WorkflowInstance)}, or directly via
+ * {@link WorkflowInstanceAssert#events()}, or directly via
  * {@link FlowAssertions#assertThat(java.util.List)}.
  */
 public class RecordedEventListAssert

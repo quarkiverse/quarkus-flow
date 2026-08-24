@@ -72,9 +72,8 @@ Annotate the test class (or method) with `@QuarkusFlowTest` to capture every eve
 include::{examples-dir}test/HelloWorkflowEventRecordingTest.java[tag=should_record_and_assert_workflow_events]
 ----
 <1> `@QuarkusFlowTest` clears the store immediately before this test runs. The default scope is `QuarkusFlowTest.Scope.PER_METHOD`, so each test method starts with its own empty session.
-<2> `WorkflowEventStore` is a regular CDI bean — inject it like any other if you want to query it directly.
-<3> `FlowAssertions.assertThat()` looks up the CDI-managed store and filters it down to just this workflow instance's events...
-<4> ...then asserts on the exact lifecycle sequence: workflow started, the `set` task started and completed, workflow completed.
+<2> `FlowAssertions.assertThat(instance)` looks up the CDI-managed store, snapshots the events recorded for just this workflow instance, and wraps both the instance and that snapshot in a `WorkflowInstanceAssert`...
+<3> ...then asserts on the exact lifecycle sequence: workflow started, the `set` task started and completed, workflow completed.
 
 [NOTE]
 Use `@QuarkusFlowTest(scope = QuarkusFlowTest.Scope.PER_CLASS)` when several `@Test` methods in the same class should share one continuous recording session: the store is cleared once before the first method runs, and again after the whole class finishes, but *not* between individual methods. This is useful for multi-step scenarios split across several test methods — just remember to filter with `filteredByInstanceId(...)` if more than one method in the class starts its own workflow instance, since events accumulate across all of them in the same buffer.
@@ -88,21 +87,36 @@ Use `@QuarkusFlowTest(scope = QuarkusFlowTest.Scope.PER_CLASS)` when several `@T
 
 [source,java]
 ----
-FlowAssertions.assertThat(instance)                     // shorthand for assertThat().filteredByInstanceId(instance.id())
-        .hasEventType(EventType.WORKFLOW_COMPLETED)      // at least one matching event
+FlowAssertions.assertThat(instance)                      // a WorkflowInstanceAssert snapshotting instance's events
+        .hasStatus(WorkflowStatus.COMPLETED)              // assert on the instance's own state...
+        .hasEventType(EventType.WORKFLOW_COMPLETED)       // ...and on its recorded events, in the same chain
         .doesNotHaveEventType(EventType.WORKFLOW_FAILED)
         .hasTaskEvent("sendEmail", EventType.TASK_COMPLETED); // a specific task's outcome
 
-// equivalent, filtering the whole store manually:
+// equivalent event assertions, filtering the whole store manually:
 FlowAssertions.assertThat()
         .filteredByInstanceId(instance.id())
         .hasEventType(EventType.WORKFLOW_COMPLETED);
 ----
 
+`WorkflowInstanceAssert` combines two things: assertions on the `WorkflowInstance` itself (like `hasStatus(...)`) and assertions on the events recorded for it, delegated to the same vocabulary as `RecordedEventListAssert` (`hasEventType`, `doesNotHaveEventType`, `hasEventTypes`, `hasEventTypesExactly`, `hasTaskEvent`). Call `.events()` to drop down to the full `RecordedEventListAssert` API (e.g. `extracting(...)`, `first()`) for anything not covered directly.
+
 `filteredByType(...)` and `filteredByTaskName(...)` are also available directly on `WorkflowEventStoreAssert`, alongside `all()` if you want every recorded event regardless of instance. Every `filteredByX` method returns a (possibly empty) result rather than asserting anything by itself — chain `.isNotEmpty()` or one of the `hasEventType*`/`hasTaskEvent` assertions to actually assert something.
 
 [TIP]
 `@QuarkusFlowTest` handles clearing the recording session automatically for both scopes, so you never need to call `eventStore.clear()` yourself inside a `@QuarkusFlowTest`-annotated test.
+
+=== 2.3 Alternative: inject `WorkflowEventStore` directly
+
+`FlowAssertions` is the recommended way to query recorded events — it saves you the manual filtering and gives you fluent, AssertJ-quality failure messages. If you'd rather work with the raw `WorkflowEventStore` CDI bean and a plain `List<RecordedEvent>`, that's also supported:
+
+[source,java]
+----
+include::{examples-dir}test/HelloWorkflowEventStoreInjectionTest.java[tag=should_assert_using_injected_event_store]
+----
+<1> Inject `WorkflowEventStore` like any other CDI bean; `@QuarkusFlowTest` still clears it automatically at the start of the session.
+<2> Use `getByInstanceId`, `getByType`, or `getByTaskName` to filter down to the events you care about.
+<3> Assert on the resulting `List<RecordedEvent>` with standard AssertJ, or any assertion library you prefer.
 
 == 3. Test REST resources that invoke workflows
 
@@ -221,7 +235,6 @@ When you run `mvn test`, the console will output a clear, linear history of ever
 * **Mock External Dependencies:** Avoid calling real external APIs in unit tests. Use tools like `WireMock` or `Testcontainers` to stub the endpoints your HTTP tasks call.
 * **Mock AI Agents:** If you are testing xref:langchain4j.adoc[LangChain4j workflows], mock the AI provider to avoid flaky tests caused by network latency or non-deterministic LLM generations.
 * **Keep workflows focused:** It is much easier to write exhaustive tests for a workflow that has a single responsibility than it is to test a massive, sprawling business process. Break complex logic into smaller subflows.
-* **Filter by instance ID under `@QuarkusFlowTest`:** `WorkflowEventStore` is a single, shared buffer. If tests run in parallel or a `PER_CLASS`-scoped class starts more than one workflow instance, always filter with `filteredByInstanceId(...)` before asserting rather than reading the whole store.
 
 == See also
 

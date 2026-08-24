@@ -53,9 +53,22 @@ public final class FlowAssertions {
      * Starts an assertion on an already-filtered list of events, e.g. one obtained from
      * {@link WorkflowEventStore#getByInstanceId(String)} or one of {@link WorkflowEventStoreAssert}'s
      * {@code filteredByX} methods.
+     *
+     * @param recordedEvents the events to assert on
+     * @return a {@link RecordedEventListAssert} wrapping {@code recordedEvents}
      */
     public static RecordedEventListAssert assertThat(List<RecordedEvent> recordedEvents) {
         return new RecordedEventListAssert(recordedEvents);
+    }
+
+    /**
+     * Starts an assertion on the given events, e.g. {@code assertThat(event1, event2)}.
+     *
+     * @param recordedEvents the events to assert on
+     * @return a {@link RecordedEventListAssert} wrapping {@code recordedEvents}
+     */
+    public static RecordedEventListAssert assertThat(RecordedEvent... recordedEvents) {
+        return new RecordedEventListAssert(List.of(recordedEvents));
     }
 
     /**
@@ -66,15 +79,18 @@ public final class FlowAssertions {
     }
 
     /**
-     * Starts an assertion on the events recorded for the given workflow instance, shorthand for
-     * {@code assertThat().filteredByInstanceId(workflowInstance.id())}.
+     * Starts an assertion on the given workflow instance, combining assertions on the instance's
+     * own state (e.g. its {@code WorkflowStatus}) with assertions on the events recorded for it.
+     * The events are snapshotted from the CDI-managed store at call time, equivalent to
+     * {@code getWorkflowEventStore().getByInstanceId(workflowInstance.id())}.
      *
-     * @return a {@link RecordedEventListAssert} scoped to {@code workflowInstance}'s events
+     * @return a {@link WorkflowInstanceAssert} wrapping {@code workflowInstance} and a snapshot of
+     *         its recorded events
      * @throws IllegalStateException if called outside a running CDI container, or if no
      *         {@link WorkflowEventStore} bean is available
      */
-    public static RecordedEventListAssert assertThat(WorkflowInstance workflowInstance) {
-        return new RecordedEventListAssert(getWorkflowEventStore().getByInstanceId(workflowInstance.id()));
+    public static WorkflowInstanceAssert assertThat(WorkflowInstance workflowInstance) {
+        return new WorkflowInstanceAssert(workflowInstance, getWorkflowEventStore().getByInstanceId(workflowInstance.id()));
     }
 
     private static WorkflowEventStore getWorkflowEventStore() {
