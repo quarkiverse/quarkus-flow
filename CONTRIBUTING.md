@@ -254,6 +254,29 @@ When changing features:
 2. Update code examples in `docs/modules/ROOT/examples/`
 3. Test locally: `./mvnw -pl docs -am quarkus:dev` (press 'w' to open browser)
 
+## Sharing Community Resources
+
+Wrote a blog post or gave a talk about Quarkus Flow? We'd love to feature it on the [Community Resources](docs/modules/ROOT/pages/community-resources.adoc) page!
+
+### How to add your entry
+
+1. Open [`docs/modules/ROOT/pages/community-resources.adoc`](docs/modules/ROOT/pages/community-resources.adoc)
+2. Add a new row at the **top** of the table (below the header row), keeping entries ordered from **most recent to oldest**, following the existing format:
+
+```asciidoc
+|Blog Post
+|https://your-linkedin-profile-url[Your Name]
+|https://your-post-or-talk-url[Your Post Title]
+|Month DD, YYYY (date the post was published or the talk/podcast occurred)
+|Optional notes (e.g. "5 min read", language)
+```
+
+Accepted types: `Blog Post`, `Talk`, `Video`, `Podcast`.
+
+3. Open a pull request with the title `docs: add community resource - <Your Post Title>`
+
+No code changes, no tests required — just a documentation-only PR.
+
 ## Pull Request Process
 
 1. **Fork and create a feature branch**
