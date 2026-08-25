@@ -67,6 +67,12 @@ Wrote a blog post or gave a talk about Quarkus Flow? We'd love to feature it her
 |
 
 |Blog Post
+|https://sk.linkedin.com/in/tibor-zim%C3%A1nyi-a0bbb430[Tibor Zimányi]
+|https://baldimir.github.io/en/tech/quarkus-flow-is-in-quarkus-platform.html[Quarkus Flow is now part of the Quarkus Platform]
+|March 30, 2026
+|2 min read
+
+|Blog Post
 |https://www.linkedin.com/in/markuseisele/[Markus Eisele]
 |https://www.the-main-thread.com/p/quarkus-flow-ollama-kafka-cloudevents-java-workflow[Stop Gluing Scripts Together: Build a Real Java Workflow with Quarkus Flow, Kafka, and Ollama]
 |March 02, 2026
