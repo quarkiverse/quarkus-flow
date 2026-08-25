@@ -5,7 +5,8 @@ This page collects blog posts and talks from the community about Quarkus Flow.
 
 [TIP]
 ====
-Wrote a blog post or gave a talk about Quarkus Flow? We'd love to feature it here! Please open a pull request adding your entry to the table below.
+Wrote a blog post or gave a talk about Quarkus Flow? We'd love to feature it here!
+See the link:https://github.com/quarkiverse/quarkus-flow/blob/main/CONTRIBUTING.md#sharing-community-resources[Contributing Guide] for step-by-step instructions on how to add your entry, then open a pull request.
 ====
 
 [cols="1,2,5,2,2", options="header"]
