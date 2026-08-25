@@ -117,9 +117,17 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: mvn -B clean install -Dno-format -P!docs -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -Drestassured.config.http.client.params.SO_TIMEOUT=${{ env.RESTASSURED_TIMEOUT_MS }} -ntp
 
-      - name: Build with Maven (Windows, skip docs and examples)
+      # core/deployment's devui/* tests (mostly a Playwright-driven editor round-trip test) run
+      # ~2x slower on Windows than Linux and are already covered by the ubuntu-latest legs of
+      # this same job (all 3 JDKs) plus core-devui in build-it.yml - skip them here instead of
+      # paying the Windows Playwright tax for no additional OS coverage. The -Dtest pattern must
+      # restate Surefire's own default includes (Test*/*Test/*Tests/*TestCase) alongside the
+      # devui exclude - a bare "!**/devui/*" replaces those defaults with a full-disk scan, which
+      # also picks up core/integration-tests' *IT classes that are meant only for Failsafe
+      # (verified: that bare pattern crashes them with a JUnit ExtensionContext store conflict).
+      - name: Build with Maven (Windows, skip docs, examples, and devui)
         if: matrix.os == 'windows-latest'
-        run: mvn -B clean install -Dno-format -P!docs -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp
+        run: mvn -B clean install -Dno-format -P!docs -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -Dtest='**/Test*,**/*Test,**/*Tests,**/*TestCase,!**/devui/*' -Dsurefire.failIfNoSpecifiedTests=false -ntp
 
   examples:
     name: Examples
