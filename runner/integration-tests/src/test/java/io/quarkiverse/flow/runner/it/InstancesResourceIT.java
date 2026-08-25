@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
@@ -31,7 +32,7 @@ class InstancesResourceIT {
         assertThat(response).containsKey("applicationId");
         assertThat(response.get("applicationId")).isNotNull().asString().isNotBlank();
         assertThat(response).containsKey("instances");
-        assertThat(response.get("instances")).isInstanceOf(java.util.List.class);
+        assertThat(response.get("instances")).isInstanceOf(List.class);
     }
 
     @Test
@@ -60,7 +61,7 @@ class InstancesResourceIT {
                             .extract()
                             .as(Map.class);
 
-                    java.util.List<?> instances = (java.util.List<?>) response.get("instances");
+                    List<?> instances = (List<?>) response.get("instances");
                     assertThat(instances).isNotEmpty();
                 });
     }
@@ -91,7 +92,7 @@ class InstancesResourceIT {
                             .extract()
                             .as(Map.class);
 
-                    java.util.List<Map<String, Object>> instances = (java.util.List<Map<String, Object>>) response
+                    List<Map<String, Object>> instances = (List<Map<String, Object>>) response
                             .get("instances");
                     assertThat(instances).isNotEmpty();
 
@@ -138,7 +139,7 @@ class InstancesResourceIT {
                             .extract()
                             .as(Map.class);
 
-                    java.util.List<?> instances = (java.util.List<?>) response.get("instances");
+                    List<?> instances = (List<?>) response.get("instances");
                     assertThat(instances).isNotEmpty();
                 });
 
@@ -152,7 +153,7 @@ class InstancesResourceIT {
                 .extract()
                 .as(Map.class);
 
-        java.util.List<?> instances = (java.util.List<?>) response.get("instances");
+        List<?> instances = (List<?>) response.get("instances");
         assertThat(instances).isEmpty();
     }
 
@@ -215,7 +216,7 @@ class InstancesResourceIT {
                 .extract()
                 .as(Map.class);
 
-        java.util.List<?> instances = (java.util.List<?>) response.get("instances");
+        List<?> instances = (List<?>) response.get("instances");
         assertThat(instances).isEmpty();
     }
 }
