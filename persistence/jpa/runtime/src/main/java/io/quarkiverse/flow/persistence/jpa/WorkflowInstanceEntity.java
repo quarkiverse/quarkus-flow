@@ -11,6 +11,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Version;
 
 import org.hibernate.annotations.DynamicUpdate;
 
@@ -22,6 +23,9 @@ import io.serverlessworkflow.impl.WorkflowStatus;
 @DynamicUpdate
 @IdClass(WorkflowInstanceKey.class)
 public class WorkflowInstanceEntity {
+
+    @Version
+    private Long version;
 
     @Id
     private String instanceId;
@@ -102,5 +106,13 @@ public class WorkflowInstanceEntity {
 
     public void setTasks(Collection<TaskInfoEntity> tasks) {
         this.tasks = tasks;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }

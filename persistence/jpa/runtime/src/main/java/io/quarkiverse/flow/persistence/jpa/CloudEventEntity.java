@@ -6,6 +6,7 @@ import java.time.OffsetDateTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Version;
 
 import io.cloudevents.CloudEvent;
 import io.cloudevents.CloudEventData;
@@ -16,6 +17,10 @@ public class CloudEventEntity {
 
     @Id
     private String id;
+
+    @Version
+    @Column(name = "opt_lock_version")
+    private Long optLockVersion;
 
     @Column(nullable = false)
     private String regId;
@@ -161,6 +166,14 @@ public class CloudEventEntity {
 
     public void setExtensions(byte[] extensions) {
         this.extensions = extensions;
+    }
+
+    public Long getOptLockVersion() {
+        return optLockVersion;
+    }
+
+    public void setOptLockVersion(Long optLockVersion) {
+        this.optLockVersion = optLockVersion;
     }
 
 }
