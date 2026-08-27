@@ -12,6 +12,7 @@ CREATE TABLE cloud_event_entity
     extensions        VARBINARY(MAX),
     processed_flag    BIT DEFAULT 0,
     version           TINYINT      NOT NULL CHECK (version BETWEEN 0 AND 1),
+    opt_lock_version  BIGINT       NOT NULL,
     PRIMARY KEY (id)
     );
 
@@ -25,6 +26,7 @@ CREATE TABLE workflow_instance_entity
     started_at         DATETIMEOFFSET(6) NOT NULL,
     status             TINYINT CHECK (status BETWEEN 0 AND 6),
     input              VARBINARY(MAX),
+    version             BIGINT           NOT NULL,
     PRIMARY KEY (application_id, instance_id)
 );
 

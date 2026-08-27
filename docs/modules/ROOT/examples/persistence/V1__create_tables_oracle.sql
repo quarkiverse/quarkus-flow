@@ -12,6 +12,7 @@ CREATE TABLE cloud_event_entity
     extensions        BLOB,
     processed_flag    NUMBER(1, 0) DEFAULT 0,
     version           NUMBER(3, 0)  NOT NULL CHECK (version BETWEEN 0 AND 1),
+    opt_lock_version  NUMBER(19, 0) NOT NULL,
     PRIMARY KEY (id)
 );
 
@@ -25,6 +26,7 @@ CREATE TABLE workflow_instance_entity
     started_at         TIMESTAMP(6) WITH TIME ZONE NOT NULL,
     status             NUMBER(3, 0) CHECK (status BETWEEN 0 AND 6),
     input              BLOB,
+    version             NUMBER(19, 0)               NOT NULL,
     PRIMARY KEY (application_id, instance_id)
 );
 

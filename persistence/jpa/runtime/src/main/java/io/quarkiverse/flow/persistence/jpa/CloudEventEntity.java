@@ -19,7 +19,6 @@ public class CloudEventEntity {
     private String id;
 
     @Version
-    @Column(name = "opt_lock_version")
     private Long optLockVersion;
 
     @Column(nullable = false)

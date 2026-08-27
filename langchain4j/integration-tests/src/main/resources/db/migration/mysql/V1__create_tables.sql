@@ -12,6 +12,7 @@ CREATE TABLE cloud_event_entity
     extensions        LONGBLOB,
     processed_flag    BOOLEAN DEFAULT FALSE,
     version           TINYINT      NOT NULL CHECK (version BETWEEN 0 AND 1),
+    opt_lock_version  BIGINT       NOT NULL,
     PRIMARY KEY (id)
 );
 
@@ -25,6 +26,7 @@ CREATE TABLE workflow_instance_entity
     started_at         DATETIME(6)  NOT NULL,
     status             TINYINT CHECK (status BETWEEN 0 AND 6),
     input              LONGBLOB,
+    version             BIGINT      NOT NULL,
     PRIMARY KEY (application_id, instance_id)
 );
 
