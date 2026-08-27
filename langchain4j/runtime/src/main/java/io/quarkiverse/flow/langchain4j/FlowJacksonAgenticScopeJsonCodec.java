@@ -20,6 +20,7 @@ import dev.langchain4j.agentic.scope.DefaultAgenticScope.AgentMessage;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope.Kind;
 import dev.langchain4j.agentic.scope.UnserializableAgenticScopeException;
 import dev.langchain4j.data.message.ChatMessage;
+import io.quarkiverse.langchain4j.QuarkusJsonCodecFactory;
 
 /**
  * Quarkus Flow implementation of {@link AgenticScopeJsonCodec} that merges ObjectMapper
@@ -103,7 +104,7 @@ public class FlowJacksonAgenticScopeJsonCodec implements AgenticScopeJsonCodec {
      */
     private static ObjectMapper createAgenticScopeMapper() {
         // BASE: Start with quarkus-langchain4j's ObjectMapper (has Quarkus integration + chat message mixins)
-        ObjectMapper mapper = io.quarkiverse.langchain4j.QuarkusJsonCodecFactory.ObjectMapperHolder.MAPPER
+        ObjectMapper mapper = QuarkusJsonCodecFactory.ObjectMapperHolder.MAPPER
                 .copy(); // Copy to avoid mutating the shared instance
 
         // ADD: AgenticScope-specific mixins (copied from JacksonAgenticScopeJsonCodec)
