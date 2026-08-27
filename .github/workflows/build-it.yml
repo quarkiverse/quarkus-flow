@@ -65,7 +65,6 @@ jobs:
       - name: Build with Maven (core, full tests including ITs)
         run: |
           mvn clean install \
-            -T 1C \
             -pl core/runtime,core/deployment,core/runtime-dev,core/integration-tests,bom,quarkus-platform-checks,docs-rag \
             -am \
             -Dquarkus.log.level=OFF \
@@ -210,7 +209,6 @@ jobs:
       - name: Run ${{ matrix.name }} integration tests
         run: |
           mvn verify \
-            -T 1C \
             -pl "${{ matrix.modules }}" \
             -Dquarkus.log.level=OFF \
             -DskipITs=false \
