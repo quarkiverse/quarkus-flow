@@ -3,6 +3,7 @@ package io.quarkiverse.flow.dsl;
 import static io.quarkiverse.flow.dsl.FlowDSL.*;
 import static io.quarkiverse.flow.dsl.TestSerializationUtils.writeAndReadInMemory;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
@@ -98,6 +99,18 @@ public class ForEachFuncTest {
                                     Map.of("id", "item-2", "name", "second"),
                                     Map.of("id", "item-3", "name", "third")));
         }
+    }
+
+    @Test
+    void testForEachWithoutCollectionFailsAtBuildTime() {
+        assertThatNullPointerException()
+                .isThrownBy(
+                        () -> FlowWorkflowBuilder.workflow("foreach-missing-in")
+                                .tasks(
+                                        list -> list.forEach(
+                                                "loop", f -> f.each("item").tasks(t -> t.set("noop", "true"))))
+                                .build())
+                .withMessage("'in' is a required property for ForTask");
     }
 
     private static EnhancedOrder enhace(Order order) {

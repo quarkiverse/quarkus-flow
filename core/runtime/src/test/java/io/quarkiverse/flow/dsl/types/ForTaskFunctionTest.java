@@ -14,22 +14,22 @@ import io.serverlessworkflow.api.types.ForTaskConfiguration;
 
 class ForTaskFunctionTest {
 
+    // 'for.in' being required is validated at fluent DSL build time (FuncForTaskBuilder.build()).
+    // These low-level accessors assume that invariant already holds, so a null 'for.in' still
+    // surfaces as an NPE, just without a dedicated message.
+
     @Test
-    void get_for_class_throws_with_message_when_for_in_is_null() {
+    void get_for_class_throws_when_for_in_is_null() {
         ForTask task = taskWithNullIn();
 
-        assertThatNullPointerException()
-                .isThrownBy(() -> ForTaskFunction.getForClass(task))
-                .withMessage("'in' is a required property for ForTask");
+        assertThatNullPointerException().isThrownBy(() -> ForTaskFunction.getForClass(task));
     }
 
     @Test
-    void get_in_collection_throws_with_message_when_for_in_is_null() {
+    void get_in_collection_throws_when_for_in_is_null() {
         ForTask task = taskWithNullIn();
 
-        assertThatNullPointerException()
-                .isThrownBy(() -> ForTaskFunction.getInCollection(task))
-                .withMessage("'in' is a required property for ForTask");
+        assertThatNullPointerException().isThrownBy(() -> ForTaskFunction.getInCollection(task));
     }
 
     @Test

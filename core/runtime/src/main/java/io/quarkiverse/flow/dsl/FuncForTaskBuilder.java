@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -140,6 +141,7 @@ public class FuncForTaskBuilder extends TaskBaseBuilder<FuncForTaskBuilder>
     }
 
     public ForTask build() {
+        Objects.requireNonNull(this.forTask.getFor().getIn(), "'in' is a required property for ForTask");
         this.forTask.setDo(this.items);
         return this.forTask;
     }
