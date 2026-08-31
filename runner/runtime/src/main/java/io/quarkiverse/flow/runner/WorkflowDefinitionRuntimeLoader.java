@@ -6,8 +6,10 @@ import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -47,7 +49,7 @@ public class WorkflowDefinitionRuntimeLoader {
                     "Flow Runner: quarkus.flow.runner.source.path is not defined, skipping loading Workflow Definitions from file system.");
             return;
         }
-        final List<WorkflowDefinitionId> workflowDefinitionIds = loadWorkflowDefinitions();
+        final Collection<WorkflowDefinitionId> workflowDefinitionIds = loadWorkflowDefinitions();
         if (workflowDefinitionIds.isEmpty())
             LOGGER.warn(
                     "Flow Runner: No Workflow Definitions found in path {}, make sure you have valid workflow definition files with extensions: {}",
@@ -57,7 +59,7 @@ public class WorkflowDefinitionRuntimeLoader {
             LOGGER.info("Flow Runner: Workflow Definitions loaded for {}:\n{}", config.source().path(), workflowDefinitionIds);
     }
 
-    private List<WorkflowDefinitionId> loadWorkflowDefinitions() {
+    private Collection<WorkflowDefinitionId> loadWorkflowDefinitions() {
         Path basePath = Path.of(config.source().path().orElse(""));
         LOGGER.info("Flow Runner: Loading workflows from filesystem: {}", basePath);
 
@@ -71,14 +73,14 @@ public class WorkflowDefinitionRuntimeLoader {
             LOGGER.debug(
                     "Flow Runner: path is a symbolic link: {}, skipping it. To enable processing symlinks set quarkus.flow.runner.source.follow-symlinks=true.",
                     basePath);
-            return new ArrayList<>();
+            return List.of();
         }
 
-        final List<WorkflowDefinitionId> workflowDefinitionIds = new ArrayList<>();
+        final Set<WorkflowDefinitionId> workflowDefinitionIds = new HashSet<>();
         final List<Path> failedFiles = new ArrayList<>();
         for (Path path : scanWorkflowFiles()) {
             try {
-                loadWorkflow(path, workflowDefinitionIds).ifPresent(workflowDefinitionIds::add);
+                loadWorkflow(path, workflowDefinitionIds);
             } catch (Exception e) {
                 failedFiles.add(path);
                 LOGGER.error("Flow Runner: Failed to load workflow definition from {}, skipping it and continuing with "
@@ -125,35 +127,17 @@ public class WorkflowDefinitionRuntimeLoader {
                 .anyMatch(fileName::endsWith);
     }
 
-    private Optional<WorkflowDefinitionId> loadWorkflow(Path path, List<WorkflowDefinitionId> alreadyLoaded) {
-        try {
-            Workflow workflow = WorkflowReader.readWorkflow(path);
-
-            if (workflow.getDocument().getNamespace() == null || workflow.getDocument().getName() == null
-                    || workflow.getDocument().getVersion() == null) {
-                throw new IllegalStateException(
-                        String.format("Flow Runner: Workflow at %s is missing required fields (namespace, name, or version)",
-                                path));
-            }
-
-            WorkflowDefinitionId defId = WorkflowDefinitionId.of(workflow);
-            if (alreadyLoaded.contains(defId)) {
-                LOGGER.warn("Flow Runner: Skipping duplicated workflow definition ({}) found in path {}",
-                        defId.toString(":"), path);
-                return Optional.empty();
-            }
-
+    private void loadWorkflow(Path path, Set<WorkflowDefinitionId> alreadyLoaded) throws IOException {
+        Workflow workflow = WorkflowReader.readWorkflow(path);
+        WorkflowDefinitionId defId = WorkflowDefinitionId.of(workflow);
+        if (!alreadyLoaded.contains(defId)) {
             registrarService.register(workflow);
-
-            LOGGER.debug("Flow Runner: Registered workflow {}:{}:{} from {}",
-                    workflow.getDocument().getNamespace(),
-                    workflow.getDocument().getName(),
-                    workflow.getDocument().getVersion(),
+            alreadyLoaded.add(defId);
+            LOGGER.debug("Flow Runner: Registered workflow {} from {}", defId,
                     path);
-
-            return Optional.of(defId);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Flow Runner: Failed to load workflow from " + path, e);
+        } else {
+            LOGGER.warn("Flow Runner: Skipping duplicated workflow definition ({}) found in path {}",
+                    defId.toString(":"), path);
         }
     }
 
