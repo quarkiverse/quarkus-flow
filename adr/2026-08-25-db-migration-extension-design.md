@@ -91,21 +91,6 @@ Moving the Quartz script off the default `db/migration` location matters: Quarku
 
 The existing `V2.0.0__QuarkusQuartzTasks.sql` moves from `scheduler/quartz/runtime` into `quarkus-flow-db-migration-quartz` unchanged in content; only its classpath location and owning module change. `scheduler/quartz/runtime` drops its `quarkus-flyway` dependency, since migration ownership moves to the new extension.
 
-### The dedicated migration image
-
-Orchestrated deployments run migrations through a dedicated image, `quarkus-flow-db-migration`, published alongside each Quarkus Flow release:
-
-- It is a **bare, minimal Quarkus application** whose only dependencies are `quarkus-flyway`, the supported JDBC drivers, and both migration extensions. It contains no workflow engine, no REST layer, no scheduler runtime.
-- It is **compiled to native** and shipped **`FROM ubi9-minimal`**, keeping the image small and start-up near-instant so it works well as a Kubernetes Job, an init step, or a pipeline stage.
-- **Both streams live on the one image** and are toggled independently, each by a standard Quarkus config property that Quarkus auto-maps to an environment variable:
-  - `quarkus.flow.db-migration.runtime.enabled` → `QUARKUS_FLOW_DB_MIGRATION_RUNTIME_ENABLED`
-  - `quarkus.flow.db-migration.quartz.enabled` → `QUARKUS_FLOW_DB_MIGRATION_QUARTZ_ENABLED`
-
-  Setting one variable migrates only the JPA runtime schema; setting the other migrates only the Quartz schema; setting both migrates both, in either order (the streams are independent).
-- On start, the image runs `migrate()` for each enabled stream, then exits — `0` on success, non-zero on the first migration failure. It never opens a socket.
-- The datasource is supplied through standard Quarkus datasource configuration (`QUARKUS_DATASOURCE_JDBC_URL`, `QUARKUS_DATASOURCE_USERNAME`, `QUARKUS_DATASOURCE_PASSWORD`, …), so the migration step can run under a database credential the application runtime never uses.
-- Runs are **idempotent**: re-running against an already-migrated database reports zero pending migrations and exits `0`, so a caller that retries the step is safe.
-
 ### migrate-at-start, for standalone deployments
 
 Where rollout is *not* a distinct step from application startup — a single instance, a developer environment — a consuming application adds the relevant extension directly and sets `quarkus.flyway.<stream>.migrate-at-start=true`. This is the non-orchestrated option. Whenever more than one instance runs against the same database, or rollout is externally managed, the dedicated image is the correct choice for the reasons in Industry Practice above.
