@@ -142,6 +142,161 @@ Common lifecycle event types published to this topic include:
 * `io.serverlessworkflow.task.suspended.v1`
 * `io.serverlessworkflow.task.faulted.v1`
 
+=== Consuming lifecycle events from other applications
+
+External applications (monitoring dashboards, audit logs, data warehouses) can consume lifecycle events from the `flow-lifecycle-out` topic. SmallRye Reactive Messaging provides automatic CloudEvent handling via `CloudEventMetadata`.
+
+==== Per-message consumption
+
+For moderate throughput scenarios (hundreds of events per second), use per-message consumption:
+
+[source,java]
+----
+import java.util.concurrent.CompletionStage;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Message;
+
+import io.quarkus.logging.Log;
+import io.smallrye.reactive.messaging.ce.CloudEventMetadata;
+
+@ApplicationScoped
+public class LifecycleEventConsumer {
+
+    @Incoming("lifecycle-consumer")
+    public CompletionStage<Void> consume(Message<String> msg) {
+        CloudEventMetadata<?> ce = msg.getMetadata(CloudEventMetadata.class)
+                .orElseThrow(() -> new IllegalArgumentException("Missing CE metadata"));
+
+        String type = ce.getType();  // e.g., "io.serverlessworkflow.workflow.started.v1"
+        String instanceId = ce.<String>getExtension("flowinstanceid").orElse(null);
+        String taskId = ce.<String>getExtension("flowtaskid").orElse(null);
+        String data = msg.getPayload();  // JSON event data
+
+        // Process event (e.g., write to database, update dashboard)
+        Log.infof("Lifecycle event: type=%s, instance=%s, task=%s", type, instanceId, taskId);
+
+        return msg.ack();
+    }
+}
+----
+
+Channel configuration:
+
+[source,properties]
+----
+mp.messaging.incoming.lifecycle-consumer.connector=smallrye-kafka
+mp.messaging.incoming.lifecycle-consumer.topic=flow-lifecycle-out
+mp.messaging.incoming.lifecycle-consumer.group.id=my-consumer-group
+----
+
+==== Batch consumption for high-throughput scenarios
+
+For high-throughput environments (thousands of events per second from many concurrent workflows), use batch consumption to reduce database transaction overhead:
+
+[source,java]
+----
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Message;
+
+import io.cloudevents.CloudEvent;
+import io.cloudevents.core.builder.CloudEventBuilder;
+import io.cloudevents.core.provider.EventFormatProvider;
+import io.cloudevents.jackson.JsonFormat;
+@ApplicationScoped
+public class LifecycleEventBatchConsumer {
+
+    @Incoming("lifecycle-batch-consumer")
+    public CompletionStage<Void> consumeBatch(Message<ConsumerRecords<String, String>> records) {
+        List<CloudEvent> events = new ArrayList<>();
+
+        for (ConsumerRecord<String, String> record : records.getPayload()) {
+            CloudEvent ce = reconstructCloudEvent(record);  // <1>
+            events.add(ce);
+        }
+
+        // Process batch in single database transaction
+        processBatch(events);
+
+        return records.ack();
+    }
+
+    private CloudEvent reconstructCloudEvent(ConsumerRecord<String, String> record) {
+        // Binary mode: CE attributes in Kafka headers (ce_type, ce_time, etc.)
+        if (record.headers().lastHeader("ce_type") != null) {
+            return buildFromBinaryMode(record);
+        } else {
+            // Structured mode: full CloudEvent JSON in message body
+            return deserializeStructuredMode(record.value());
+        }
+    }
+
+    private CloudEvent buildFromBinaryMode(ConsumerRecord<String, String> record) {
+        String type = getHeader(record, "ce_type");
+        String source = getHeader(record, "ce_source");
+        String id = getHeader(record, "ce_id");
+
+        CloudEventBuilder builder = CloudEventBuilder.v1()
+                .withType(type)
+                .withSource(URI.create(source))
+                .withId(id)
+                .withData("application/json", record.value().getBytes(StandardCharsets.UTF_8));
+
+        var timeHeader = record.headers().lastHeader("ce_time");
+        if (timeHeader != null) {
+            builder.withTime(OffsetDateTime.parse(new String(timeHeader.value(), StandardCharsets.UTF_8)));
+        }
+
+        return builder.build();
+    }
+
+    private String getHeader(ConsumerRecord<String, String> record, String name) {
+        return new String(record.headers().lastHeader(name).value(), StandardCharsets.UTF_8);
+    }
+
+    private CloudEvent deserializeStructuredMode(String json) {
+        JsonFormat format = (JsonFormat) EventFormatProvider.getInstance().resolveFormat(JsonFormat.CONTENT_TYPE);
+        return format.deserialize(json.getBytes(StandardCharsets.UTF_8));
+    }
+}
+----
+<1> SmallRye's automatic CloudEventMetadata extraction only works in per-message mode. Batch mode requires manual CloudEvent reconstruction from headers or JSON.
+
+Channel configuration for batch mode:
+
+[source,properties]
+----
+mp.messaging.incoming.lifecycle-batch-consumer.connector=smallrye-kafka
+mp.messaging.incoming.lifecycle-batch-consumer.topic=flow-lifecycle-out
+mp.messaging.incoming.lifecycle-batch-consumer.group.id=my-batch-consumer-group
+mp.messaging.incoming.lifecycle-batch-consumer.batch=true  # <1>
+----
+<1> Enables batch consumption. SmallRye will invoke your method with `ConsumerRecords` containing multiple Kafka records per poll.
+
+[IMPORTANT]
+====
+**Per-message vs Batch mode trade-offs:**
+
+* **Per-message mode**: Automatic CloudEventMetadata extraction via SmallRye, simpler code, adequate for moderate throughput.
+* **Batch mode**: Manual CloudEvent reconstruction required, higher throughput (~1000x fewer database transactions), essential for environments with many concurrent workflows generating thousands of events per second.
+
+The overhead of manual CloudEvent reconstruction is negligible compared to database operations, making batch mode the correct choice for high-volume scenarios.
+====
+
 == 5. CloudEvent Correlation Headers
 
 For idempotency and end-to-end distributed traceability, Quarkus Flow automatically attaches correlation metadata to all emitted events via link:https://github.com/cloudevents/spec/blob/v1.0/spec.md#extension-context-attributes[CloudEvent Extension Context Attributes].
