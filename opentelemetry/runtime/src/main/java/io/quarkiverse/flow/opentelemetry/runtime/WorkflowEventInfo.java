@@ -1,5 +1,6 @@
 package io.quarkiverse.flow.opentelemetry.runtime;
 
+import io.serverlessworkflow.impl.lifecycle.EventType;
 import io.serverlessworkflow.impl.lifecycle.WorkflowEvent;
 
 record WorkflowEventInfo(
@@ -8,7 +9,7 @@ record WorkflowEventInfo(
         String wfName,
         String wfVersion,
         String wfInstanceId,
-        WorkflowEventType eventType) {
+        EventType eventType) {
     public static WorkflowEventInfo from(WorkflowEvent ev) {
         var context = ev.workflowContext();
         var definition = context.definition();
@@ -19,6 +20,6 @@ record WorkflowEventInfo(
                 definition.id().name(),
                 definition.id().version(),
                 context.instanceData().id(),
-                WorkflowEventType.fromEvent(ev));
+                ev.type());
     }
 }

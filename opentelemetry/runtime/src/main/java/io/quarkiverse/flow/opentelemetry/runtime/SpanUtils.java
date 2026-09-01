@@ -38,6 +38,7 @@ import io.serverlessworkflow.api.types.TimeoutAfter;
 import io.serverlessworkflow.api.types.UriTemplate;
 import io.serverlessworkflow.api.types.WaitTask;
 import io.serverlessworkflow.api.types.WithGRPCService;
+import io.serverlessworkflow.impl.lifecycle.EventType;
 
 public class SpanUtils {
     public static final String CALL_A2A_AGENT_CARD_ENDPOINT_ATTRIBUTE = "flow.task.call.a2a.agent_card.url.full";
@@ -94,12 +95,12 @@ public class SpanUtils {
         DEBUG
     }
 
-    public static void appendWorkflowEvent(Span span, WorkflowEventType eventType) {
-        span.addEvent(eventType.id());
+    public static void appendWorkflowEvent(Span span, EventType eventType) {
+        span.addEvent(eventType.toString());
     }
 
-    public static void appendTaskEvent(Span span, TaskEventType eventType) {
-        span.addEvent(eventType.id());
+    public static void appendTaskEvent(Span span, EventType eventType) {
+        span.addEvent(eventType.toString());
     }
 
     public static String generateTaskSpanName(

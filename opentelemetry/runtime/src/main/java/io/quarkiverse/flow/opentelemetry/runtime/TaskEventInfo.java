@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.opentelemetry.runtime;
 
 import io.serverlessworkflow.impl.TaskContext;
+import io.serverlessworkflow.impl.lifecycle.EventType;
 import io.serverlessworkflow.impl.lifecycle.TaskEvent;
 
 public record TaskEventInfo(
@@ -9,7 +10,7 @@ public record TaskEventInfo(
         String wfName,
         String wfVersion,
         String wfInstanceId,
-        TaskEventType eventType,
+        EventType eventType,
         TaskType taskType,
         String taskId,
         String taskName,
@@ -30,7 +31,7 @@ public record TaskEventInfo(
                 definition.id().name(),
                 definition.id().version(),
                 context.instanceData().id(),
-                TaskEventType.fromEvent(ev),
+                ev.type(),
                 TaskType.fromTask(ev.taskContext().task()),
                 taskContext.position().jsonPointer(),
                 taskContext.taskName(),

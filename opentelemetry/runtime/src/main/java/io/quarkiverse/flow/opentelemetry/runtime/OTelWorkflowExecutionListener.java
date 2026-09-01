@@ -4,16 +4,16 @@ import static io.quarkiverse.flow.opentelemetry.runtime.SpanUtils.appendTaskEven
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanUtils.appendWorkflowEvent;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanUtils.generateTaskSpanName;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanUtils.generateWorkflowSpanName;
-import static io.quarkiverse.flow.opentelemetry.runtime.TaskEventType.TASK_CANCELLED;
-import static io.quarkiverse.flow.opentelemetry.runtime.TaskEventType.TASK_COMPLETED;
-import static io.quarkiverse.flow.opentelemetry.runtime.TaskEventType.TASK_RESUMED;
-import static io.quarkiverse.flow.opentelemetry.runtime.TaskEventType.TASK_SUSPENDED;
-import static io.quarkiverse.flow.opentelemetry.runtime.WorkflowEventType.WORKFLOW_CANCELLED;
-import static io.quarkiverse.flow.opentelemetry.runtime.WorkflowEventType.WORKFLOW_COMPLETED;
-import static io.quarkiverse.flow.opentelemetry.runtime.WorkflowEventType.WORKFLOW_RESUMED;
-import static io.quarkiverse.flow.opentelemetry.runtime.WorkflowEventType.WORKFLOW_SUSPENDED;
 import static io.quarkiverse.flow.opentelemetry.runtime.WorkflowInstrumentationContext.getWorkflowInstrumentationContext;
 import static io.quarkiverse.flow.opentelemetry.runtime.WorkflowInstrumentationContext.setWorkflowInstrumentationContext;
+import static io.serverlessworkflow.impl.lifecycle.EventType.TASK_CANCELLED;
+import static io.serverlessworkflow.impl.lifecycle.EventType.TASK_COMPLETED;
+import static io.serverlessworkflow.impl.lifecycle.EventType.TASK_RESUMED;
+import static io.serverlessworkflow.impl.lifecycle.EventType.TASK_SUSPENDED;
+import static io.serverlessworkflow.impl.lifecycle.EventType.WORKFLOW_CANCELLED;
+import static io.serverlessworkflow.impl.lifecycle.EventType.WORKFLOW_COMPLETED;
+import static io.serverlessworkflow.impl.lifecycle.EventType.WORKFLOW_RESUMED;
+import static io.serverlessworkflow.impl.lifecycle.EventType.WORKFLOW_SUSPENDED;
 
 import java.time.Instant;
 
@@ -175,7 +175,7 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
         enrichSpan(builder, ev.taskContext().task());
         Span startSpan = builder.startSpan();
 
-        appendTaskEvent(startSpan, eventInfo.eventType());
+        appendTaskEvent(startSpan, ev.type());
 
         InstrumentationContext taskInstanceContext = InstrumentationContext.newBuilder()
                 .withJsonPosition(eventInfo.taskId())
