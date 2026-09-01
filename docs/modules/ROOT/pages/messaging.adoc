@@ -198,6 +198,11 @@ For high-throughput environments (thousands of events per second from many concu
 
 [source,java]
 ----
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -210,10 +215,8 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.builder.CloudEventBuilder;
+import io.cloudevents.core.provider.EventFormatProvider;
 import io.cloudevents.jackson.JsonFormat;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 @ApplicationScoped
 public class LifecycleEventBatchConsumer {
 
@@ -246,15 +249,19 @@ public class LifecycleEventBatchConsumer {
         String type = getHeader(record, "ce_type");
         String source = getHeader(record, "ce_source");
         String id = getHeader(record, "ce_id");
-        String time = getHeader(record, "ce_time");
 
-        return CloudEventBuilder.v1()
+        CloudEventBuilder builder = CloudEventBuilder.v1()
                 .withType(type)
                 .withSource(URI.create(source))
                 .withId(id)
-                .withTime(OffsetDateTime.parse(time))
-                .withData("application/json", record.value().getBytes(StandardCharsets.UTF_8))
-                .build();
+                .withData("application/json", record.value().getBytes(StandardCharsets.UTF_8));
+
+        var timeHeader = record.headers().lastHeader("ce_time");
+        if (timeHeader != null) {
+            builder.withTime(OffsetDateTime.parse(new String(timeHeader.value(), StandardCharsets.UTF_8)));
+        }
+
+        return builder.build();
     }
 
     private String getHeader(ConsumerRecord<String, String> record, String name) {
@@ -262,8 +269,8 @@ public class LifecycleEventBatchConsumer {
     }
 
     private CloudEvent deserializeStructuredMode(String json) {
-        // Use CloudEvents Jackson deserializer
-        return new JsonFormat().deserialize(json.getBytes(StandardCharsets.UTF_8));
+        JsonFormat format = (JsonFormat) EventFormatProvider.getInstance().resolveFormat(JsonFormat.CONTENT_TYPE);
+        return format.deserialize(json.getBytes(StandardCharsets.UTF_8));
     }
 }
 ----
