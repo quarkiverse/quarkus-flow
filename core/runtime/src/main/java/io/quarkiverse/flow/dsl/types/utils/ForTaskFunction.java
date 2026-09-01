@@ -14,7 +14,6 @@ import io.quarkiverse.flow.dsl.types.SerializableFunction;
 import io.serverlessworkflow.api.types.ForIn;
 import io.serverlessworkflow.api.types.ForTask;
 import io.serverlessworkflow.api.types.ForTaskConfiguration;
-import io.serverlessworkflow.api.types.In;
 
 public class ForTaskFunction {
 
@@ -25,7 +24,6 @@ public class ForTaskFunction {
     public static final String WHILE_CLASS = "whileClass";
     public static final String ITEM_CLASS = "itemClass";
     public static final String FOR_CLASS = "forClass";
-    public static final String COLLECTION = "inCollection";
 
     public static <T, V> ForTask withWhile(ForTask task, LoopPredicate<T, V> whilePredicate) {
         return withWhile(task, whilePredicate, Optional.empty(), Optional.empty());
@@ -140,11 +138,11 @@ public class ForTaskFunction {
             forConfig = new ForTaskConfiguration();
             forTask.setFor(forConfig);
         }
-        if (forConfig.getIn() == null) {
-            forConfig.setIn(
-                    new In().withForInInlineArray(List.of(new ForIn().withAdditionalProperty(COLLECTION, collection)
-                            .withAdditionalProperty(FOR_CLASS, colArgClass))));
+        if (colArgClass != null) {
+            TypesUtils.initMetadata(forTask).withAdditionalProperty(FOR_CLASS, colArgClass);
         }
+        forConfig.setIn(
+                new ForIn().withForInInlineArray(List.of(collection)));
         return forTask;
     }
 
@@ -163,9 +161,12 @@ public class ForTaskFunction {
                         .getOrDefault(WHILE_CLASS, Optional.empty());
     }
 
-    @SuppressWarnings("unchecked")
     public static Optional<Class<?>> getForClass(ForTask task) {
-        return Optional.ofNullable((Class<?>) getFromInList(task, FOR_CLASS));
+        return task.getMetadata() == null
+                ? Optional.empty()
+                : Optional.ofNullable((Class<?>) task.getMetadata()
+                        .getAdditionalProperties()
+                        .get(FOR_CLASS));
     }
 
     @SuppressWarnings("unchecked")
@@ -177,15 +178,18 @@ public class ForTaskFunction {
 
     @SuppressWarnings("unchecked")
     public static Function<?, Collection<?>> getInCollection(ForTask task) {
-        return (Function<?, Collection<?>>) getFromInList(task, COLLECTION);
+        return (Function<?, Collection<?>>) collectionFunction(task.getFor().getIn());
     }
 
-    private static Object getFromInList(ForTask task, String key) {
-        List<ForIn> list = task.getFor().getIn().getForInInlineArray();
-        if (list != null && !list.isEmpty()) {
-            return list.get(0).getAdditionalProperties().get(key);
+    private static Function collectionFunction(ForIn forIn) {
+        List<Object> list = forIn.getForInInlineArray();
+        if (list != null && list.size() == 1 && list.get(0) instanceof Function function) {
+            return function;
         }
         return null;
     }
 
+    public static boolean hasCollectionFunction(ForIn forIn) {
+        return collectionFunction(forIn) != null;
+    }
 }

@@ -20,7 +20,6 @@ import io.serverlessworkflow.api.types.CallTask;
 import io.serverlessworkflow.api.types.ForIn;
 import io.serverlessworkflow.api.types.ForTask;
 import io.serverlessworkflow.api.types.ForTaskConfiguration;
-import io.serverlessworkflow.api.types.In;
 import io.serverlessworkflow.api.types.Task;
 import io.serverlessworkflow.api.types.TaskItem;
 import io.serverlessworkflow.fluent.spec.TaskBaseBuilder;
@@ -94,31 +93,20 @@ public class FuncForTaskBuilder extends TaskBaseBuilder<FuncForTaskBuilder>
 
     @Override
     public FuncForTaskBuilder in(String in) {
-        this.forTask.getFor().withIn(new In().withForInExpression(in));
+        this.forTask.getFor().withIn(new ForIn().withForInExpression(in));
         return this;
     }
 
-    public FuncForTaskBuilder in(List<Map<String, Object>> in) {
+    public FuncForTaskBuilder in(List in) {
         if (in == null || in.isEmpty()) {
             return this;
         }
-
-        List<ForIn> forInList = in.stream()
-                .map(this::toForIn)
-                .toList();
-
-        this.forTask.getFor().withIn(new In().withForInInlineArray(forInList));
+        this.forTask.getFor().withIn(new ForIn().withForInInlineArray(in));
         return this;
     }
 
     public FuncForTaskBuilder in(Map<String, Object> in) {
         return in == null ? this : in(List.of(in));
-    }
-
-    private ForIn toForIn(Map<String, Object> map) {
-        ForIn forIn = new ForIn();
-        map.forEach(forIn::withAdditionalProperty);
-        return forIn;
     }
 
     @Override
