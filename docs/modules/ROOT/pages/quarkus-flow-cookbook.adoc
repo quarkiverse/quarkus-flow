@@ -425,7 +425,7 @@ do:
 
 // TODO: add it later in the "OpenAPI" section
 
-== 6. gRPC
+== 14. gRPC
 
 Quarkus Flow supports gRPC via the `quarkus-flow-grpc` module.
 By default, it uses the `flowGrpc` Quarkus gRPC client if configured.
