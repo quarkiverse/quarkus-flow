@@ -51,37 +51,37 @@ The CNCF 1.0.0 Specification organizes workflows around the `document` (metadata
 |**Task: `set`**
 |Evaluates an expression and updates the workflow data context.
 |Initialize fields, compute constants, or shape intermediate values.
-|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#settask[Reference]
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#set[Reference]
 
 |**Task: `call`**
 |Invokes external endpoints or internal functions.
 |HTTP/OpenAPI calls, communicating with other microservices, or triggering LangChain4j AI agents.
-|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#calltask[Reference]
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#call[Reference]
 
 |**Task: `emit`**
 |Publishes a CloudEvent to an external broker.
 |Notify other services, fan-out architectural patterns, or broadcast integration events.
-|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#emittask[Reference]
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#emit[Reference]
 
 |**Task: `listen`**
 |Pauses execution and waits for one or more CloudEvents matching specific correlation rules.
 |Human-in-the-loop approvals, asynchronous callbacks, or waiting for external system signals.
-|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#listentask[Reference]
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#listen[Reference]
 
 |**Task: `switch` (Branching)**
 |Evaluates conditions (`when`) and routes execution to specific paths (`then`).
 |Feature flags, guardrails, compliance checks, or routing "happy vs. error" paths.
-|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#switchtask[Reference]
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#switch[Reference]
 
 |**Task: `for` (Loops)**
 |Iterates over a collection in the data context, executing a block of tasks for each item.
 |Batch processing, agentic revise-loops, or polling.
-|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#fortask[Reference]
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#for[Reference]
 
 |**Task: `try` (Errors)**
 |Executes a block of tasks and catches specific errors to trigger compensations or retries.
 |Wrap unreliable network calls, steer to fallback paths, and surface clear failures without crashing the instance.
-|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#trytask[Reference]
+|link:https://github.com/open-workflow-specification/specification/blob/main/dsl-reference.md#try[Reference]
 
 |**Task: `run` (Sub-workflows only)**
 |Executes external processes or nested workflows. **Only `run.workflow` (sub-workflow invocation) is supported.** Shell, script, and container execution are not supported. See xref:run-tasks.adoc[Run Tasks] for details.
