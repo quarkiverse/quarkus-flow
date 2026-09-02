@@ -117,7 +117,7 @@ Crucially, Quarkus Flow leans into the Quarkus "Ahead-of-Time" philosophy by dis
 
 Now that you understand the underlying specification, here is where you can see these concepts applied in Quarkus Flow:
 
-* xref:quarkus-flow-cookbook.adoc[]: A comprehensive collection of practical, copy-and-paste YAML examples for the Open Workflow DSL.
+* xref:quarkus-flow-cookbook.adoc[Quarkus Flow & Open Workflow cookbook]: A comprehensive collection of practical, copy-and-paste YAML examples for the Open Workflow DSL.
 * xref:workflow-definitions.adoc[Define workflows from YAML]: review the syntax for discovering and injecting YAML workflows.
 * xref:dsl-cheatsheet.adoc[Java DSL Cheatsheet]: A quick reference of all the Java methods that map directly to these CNCF tasks.
 * xref:data-flow.adoc[Data flow and context management]: A deep dive into how `input`, `output`, and `export` manipulate the workflow data context.
