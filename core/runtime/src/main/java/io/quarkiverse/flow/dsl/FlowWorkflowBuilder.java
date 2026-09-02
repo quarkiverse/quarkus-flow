@@ -3,17 +3,27 @@ package io.quarkiverse.flow.dsl;
 import static io.serverlessworkflow.types.Defaults.DEFAULT_NAMESPACE;
 import static io.serverlessworkflow.types.Defaults.DEFAULT_VERSION;
 
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 
 import io.cloudevents.CloudEvent;
 import io.quarkiverse.flow.dsl.spi.FuncTransformations;
+import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.spec.BaseWorkflowBuilder;
 import io.serverlessworkflow.fluent.spec.ScheduleBuilder;
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
 
 public class FlowWorkflowBuilder
         extends BaseWorkflowBuilder<FlowWorkflowBuilder, FuncDoTaskBuilder, FuncTaskItemListBuilder>
         implements FuncTransformations<FlowWorkflowBuilder> {
+
+    private static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
 
     protected FlowWorkflowBuilder(final String name, final String namespace, final String version) {
         super(name, namespace, version);
@@ -86,5 +96,19 @@ public class FlowWorkflowBuilder
     @Override
     protected FlowWorkflowBuilder self() {
         return this;
+    }
+
+    @Override
+    public Workflow build() {
+        Set<ConstraintViolation<Workflow>> violations = VALIDATOR.validate(this.workflow);
+        if (!violations.isEmpty()) {
+            String allErrors = violations.stream()
+                    .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                    .collect(Collectors.joining(", "));
+            throw new IllegalArgumentException(
+                    "Invalid workflow definition [" + WorkflowDefinitionId.of(this.workflow) + "]. " +
+                            "See all errors: " + allErrors);
+        }
+        return this.workflow;
     }
 }

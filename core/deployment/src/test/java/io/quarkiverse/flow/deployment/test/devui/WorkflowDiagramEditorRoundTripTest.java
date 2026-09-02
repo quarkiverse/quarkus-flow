@@ -46,6 +46,7 @@ import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.options.WaitForSelectorState;
 
 import io.quarkus.test.QuarkusDevModeTest;
 
@@ -184,7 +185,7 @@ public class WorkflowDiagramEditorRoundTripTest {
                 // emit task — covers the emit-node diagram element.
                 Arguments.of(
                         "emit-java",
-                        "diagramEditor-org-acme-emit-event-workflow-1-0",
+                        "diagramEditor-org-acme-emit-event-workflow-1-0-0",
                         "emit-node-/do/orderPlaced",
                         "orderPlaced"),
                 // listen task — covers the listen-node diagram element.
@@ -196,14 +197,14 @@ public class WorkflowDiagramEditorRoundTripTest {
                 // subflow task — mapped to run-node in the diagram editor.
                 Arguments.of(
                         "parent-java",
-                        "diagramEditor-org-acme-parent-workflow-with-children-1-0",
+                        "diagramEditor-org-acme-parent-workflow-with-children-1-0-0",
                         "run-node-/do/executeHttpWorkflow",
                         "executeHttpWorkflow"),
                 // standalone named HTTP call — dedicated call-node root-level case.
-                // org.acme namespace (dotted) → org-acme in diagramEditorId; version 1.0 → 1-0.
+                // org.acme namespace (dotted) → org-acme in diagramEditorId; version 1.0.0 → 1-0-0.
                 Arguments.of(
                         "http-call-java",
-                        "diagramEditor-org-acme-http-with-query-headers-1-0",
+                        "diagramEditor-org-acme-http-with-query-headers-1-0-0",
                         "call-node-/do/searchStarWarsCharacters",
                         "searchStarWarsCharacters"),
                 // cron-scheduled workflow — only case with a schedule block in the serialised JSON.
@@ -301,7 +302,7 @@ public class WorkflowDiagramEditorRoundTripTest {
         // After scrollToIndex the target row is rendered; wait for its button.
         page.waitForSelector(buttonSelector,
                 new Page.WaitForSelectorOptions()
-                        .setState(com.microsoft.playwright.options.WaitForSelectorState.ATTACHED)
+                        .setState(WaitForSelectorState.ATTACHED)
                         .setTimeout(10_000));
 
         // Step 2 — click eye button; wait for dialog to attach (it is inside a Vaadin
@@ -309,7 +310,7 @@ public class WorkflowDiagramEditorRoundTripTest {
         page.locator(buttonSelector).click();
         page.locator("vaadin-dialog[opened]")
                 .waitFor(new Locator.WaitForOptions()
-                        .setState(com.microsoft.playwright.options.WaitForSelectorState.ATTACHED));
+                        .setState(WaitForSelectorState.ATTACHED));
 
         // Step 3 — diagram container appears (loading completes)
         page.locator("[data-testid='diagram-container']").waitFor();
@@ -325,11 +326,11 @@ public class WorkflowDiagramEditorRoundTripTest {
         page.keyboard().press("Escape");
         page.locator("vaadin-dialog[opened]")
                 .waitFor(new Locator.WaitForOptions()
-                        .setState(com.microsoft.playwright.options.WaitForSelectorState.HIDDEN));
+                        .setState(WaitForSelectorState.HIDDEN));
         page.locator(buttonSelector).click();
         page.locator("vaadin-dialog[opened]")
                 .waitFor(new Locator.WaitForOptions()
-                        .setState(com.microsoft.playwright.options.WaitForSelectorState.ATTACHED));
+                        .setState(WaitForSelectorState.ATTACHED));
         page.locator("[data-testid='diagram-container']").waitFor();
 
         Locator taskNodeAfterReopen = page.locator("[data-testid='" + taskTestId + "']");
