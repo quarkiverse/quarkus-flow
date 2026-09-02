@@ -20,7 +20,7 @@ public class HttpWorkflow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FlowWorkflowBuilder.workflow("http-with-query-headers", "org.acme", "1.0")
+        return FlowWorkflowBuilder.workflow("http-with-query-headers", "org-acme", "1.0.0")
                 .tasks(
                         call("searchStarWarsCharacters",
                                 http()

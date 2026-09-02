@@ -15,7 +15,7 @@ public class GreetingsFlow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FlowWorkflowBuilder.workflow("greetings", "io.quarkiverse.flow.durable.kube")
+        return FlowWorkflowBuilder.workflow("greetings", "io-quarkiverse-flow-durable-kube")
                 .tasks(set(Map.of("message", "Hello Human!")))
                 .build();
     }

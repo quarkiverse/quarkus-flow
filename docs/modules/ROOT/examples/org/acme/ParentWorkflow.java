@@ -13,7 +13,7 @@ import io.serverlessworkflow.api.types.Workflow;
 public class ParentWorkflow extends Flow {
     @Override
     public Workflow descriptor() {
-        return FlowWorkflowBuilder.workflow("parent-workflow-with-children", "org.acme", "1.0")
+        return FlowWorkflowBuilder.workflow("parent-workflow-with-children", "org-acme", "1.0.0")
                 .tasks(
                         // Using workflow(...) shortcut to reference existing workflow
                         subflow("executeHttpWorkflow",
@@ -22,8 +22,8 @@ public class ParentWorkflow extends Flow {
                         subflow("emitEventSubflow",
                                 configurer -> configurer.workflow()
                                         .withName("emit-event-workflow")
-                                        .withNamespace("org.acme")
-                                        .withVersion("1.0")))
+                                        .withNamespace("org-acme")
+                                        .withVersion("1.0.0")))
                 .build();
     }
 }
