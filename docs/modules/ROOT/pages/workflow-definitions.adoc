@@ -177,7 +177,7 @@ curl "http://localhost:8080/echo?name=John"
 
 == See also
 
-* xref:quarkus-flow-cookbook.adoc[] — A comprehensive collection of practical, copy-and-paste YAML examples for the Open Workflow DSL.
+* xref:quarkus-flow-cookbook.adoc[Worflow Cookbook (YAML)] — A comprehensive collection of practical, copy-and-paste YAML examples for the Open Workflow DSL.
 * xref:specification.adoc[Open Workflow Spec mapping and concepts] — a quick orientation to the 1.x.x specification components.
 * xref:data-flow.adoc[Data flow and context management] — understand how data mutates across YAML tasks.
 * xref:test-debug.adoc[Test and debug workflows] — learn how to write unit tests for your injected `Flow` beans.

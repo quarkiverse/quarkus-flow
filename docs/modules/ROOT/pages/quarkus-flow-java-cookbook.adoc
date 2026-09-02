@@ -183,4 +183,4 @@ include::{examples-dir}/org/acme/RaiseWorkflow.java[]
 :sectnums!:
 == See also
 
-* xref:dsl-cheatsheet.adoc[] — a quick cheatsheet to Java DSL.
+* xref:dsl-cheatsheet.adoc[Java DSL cheat sheet] — a quick cheatsheet to Java DSL.

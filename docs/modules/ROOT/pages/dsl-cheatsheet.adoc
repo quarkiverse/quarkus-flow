@@ -521,7 +521,7 @@ Workflow w = workflow("intelligent-newsletter")
 
 == See also
 
-- xref:specification.adoc[]
-- xref:getting-started.adoc[]
-- xref:langchain4j.adoc[]
-- xref:messaging.adoc[]
+- xref:specification.adoc[Open Workflow Specification mapping and concepts]
+- xref:getting-started.adoc[Getting started with Quarkus Flow]
+- xref:langchain4j.adoc[Orchestrate LangChain4j Agents and Patterns]
+- xref:messaging.adoc[Use messaging and events]

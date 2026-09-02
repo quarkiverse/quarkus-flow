@@ -37,7 +37,7 @@ Add `quarkus-flow-oidc` to your project to enable OAuth2/OIDC authentication in 
 
 This extension brings `quarkus-oidc-client` as a transitive dependency and delegates token negotiation to it.
 
-To opt out, set `quarkus.flow.oidc.enabled=false` (see the <<configuration-reference>>).
+To opt out, set `quarkus.flow.oidc.enabled=false` (see the xref:configuration.adoc[configuration reference]).
 
 [NOTE]
 ====
