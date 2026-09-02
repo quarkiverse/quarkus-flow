@@ -9,7 +9,7 @@ If you understand these concepts, you can read any Quarkus Flow example and know
 
 [TIP]
 ====
-Check out the xref:quarkus-flow-cookbook.adoc[] to see these concepts applied in real-world, contextualized YAML examples.
+Check out the xref:quarkus-flow-cookbook.adoc[Quarkus Flow & Open Workflow cookbook] to see these concepts applied in real-world, contextualized YAML examples.
 ====
 
 == What the spec gives you (in 30 seconds)
