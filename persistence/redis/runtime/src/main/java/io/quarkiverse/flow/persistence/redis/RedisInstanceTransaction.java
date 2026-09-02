@@ -15,8 +15,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.cloudevents.CloudEvent;
 import io.cloudevents.CloudEventData;
@@ -29,7 +33,10 @@ import io.quarkus.redis.datasource.keys.KeyCommands;
 import io.quarkus.redis.datasource.keys.KeyScanArgs;
 import io.quarkus.redis.datasource.keys.KeyScanCursor;
 import io.quarkus.redis.datasource.keys.TransactionalKeyCommands;
+import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
+import io.quarkus.redis.datasource.value.SetArgs;
+import io.quarkus.redis.datasource.value.ValueCommands;
 import io.serverlessworkflow.impl.TaskContext;
 import io.serverlessworkflow.impl.TaskContextData;
 import io.serverlessworkflow.impl.WorkflowContextData;
@@ -74,16 +81,22 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     private static final String CE_TIME = "time";
     private static final String PROCESSED_FLAG = "processed";
     private static final byte[] PROCESSED_VALUE = new byte[] { 1 };
+    private final static String CORRELATION_LOCK_KEY = "lock:correlations";
+    private final static int CORRELATION_LOCK_TIMEOUT = 10;
+    private final static Logger logger = LoggerFactory.getLogger(RedisInstanceTransaction.class);
 
     private final RedisDataSource ds;
     private final WorkflowBufferFactory factory;
     private final KeyCommands<String> keyCommands;
     private final HashCommands<String, String, byte[]> hashCommands;
+    private final ValueCommands<String, String> lockCommands;
 
     private final List<Consumer<TransactionalRedisDataSource>> operations;
 
     private TransactionalHashCommands<String, String, byte[]> txHashCommands;
     private TransactionalKeyCommands<String> txKeyCommands;
+
+    private String correlationLockUUID;
 
     public RedisInstanceTransaction(RedisDataSource ds, KeyCommands<String> keyCommands,
             HashCommands<String, String, byte[]> hashCommands,
@@ -91,6 +104,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
         this.ds = ds;
         this.keyCommands = keyCommands;
         this.hashCommands = hashCommands;
+        this.lockCommands = ds.value(String.class);
         this.operations = new ArrayList<>();
         this.factory = factory;
     }
@@ -102,10 +116,12 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
                 operations.forEach(x -> x.accept(tx));
             });
         }
+        releaseLock();
     }
 
     @Override
     public void rollback(WorkflowDefinitionData definition) {
+        releaseLock();
     }
 
     @Override
@@ -215,20 +231,74 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
         }
     }
 
-    @Override
-    public void retrieveEvents(Map<String, Collection<CloudEvent>> result) {
-        result.entrySet().forEach(e -> {
-            String targetRegId = e.getKey();
-            KeyScanCursor<String> cursor = keyCommands.scan(new KeyScanArgs().match(CE_PREFIX + targetRegId + SEPARATOR + "*"));
-            while (cursor.hasNext()) {
-                for (String key : cursor.next()) {
-                    Map<String, byte[]> storedInfo = hashCommands.hgetall(key);
-                    if (!storedInfo.containsKey(PROCESSED_FLAG)) {
-                        e.getValue().add(readCloudEvent(lastChunk(key), storedInfo));
-                    }
+    private boolean acquireLock() {
+        if (correlationLockUUID != null) {
+            return true;
+        }
+
+        String uuid = UUID.randomUUID().toString();
+        logger.debug("Trying to acquire lock with uuid {}", uuid);
+        short attempCounter = 20;
+        String result;
+        do {
+            result = lockCommands.setGet(CORRELATION_LOCK_KEY, uuid, new SetArgs().nx().ex(CORRELATION_LOCK_TIMEOUT));
+            if (result != null) {
+                logger.trace("Failed to acquire lock with uuid {}, lock already acquired with uuid {}", uuid, result);
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException in) {
+                    Thread.currentThread().interrupt();
+                    break;
                 }
             }
-        });
+        } while (result != null && attempCounter-- > 0);
+        if (result == null) {
+            correlationLockUUID = uuid;
+            logger.debug("Correlation lock acquired with uuid {}", uuid);
+            return true;
+        } else {
+            logger.warn(
+                    "it was not possible to acquire the lock with uuid {} because it is hold by uuid {}, skipping correlation calculation",
+                    uuid, result);
+            return false;
+        }
+    }
+
+    private void releaseLock() {
+        if (correlationLockUUID != null) {
+            logger.debug("try to release lock {}", correlationLockUUID);
+            String currentUUID = lockCommands.get(CORRELATION_LOCK_KEY);
+            if (correlationLockUUID.equals(currentUUID)) {
+                logger.debug("releasing lock {}", correlationLockUUID);
+                TransactionResult txResult = ds.withTransaction(tx -> {
+                    tx.key(String.class).del(CORRELATION_LOCK_KEY);
+                }, CORRELATION_LOCK_KEY);
+                if (txResult.discarded()) {
+                    logger.warn("Error releasing lock associated to UUID {}", correlationLockUUID);
+                }
+            } else {
+                logger.info("current uuid {} does not match to be released uuid {}", currentUUID, correlationLockUUID);
+            }
+        }
+    }
+
+    @Override
+    public void retrieveEvents(Map<String, Collection<CloudEvent>> result) {
+        if (acquireLock()) {
+            result.entrySet().forEach(e -> {
+                String targetRegId = e.getKey();
+                KeyScanCursor<String> cursor = keyCommands
+                        .scan(new KeyScanArgs().match(CE_PREFIX + targetRegId + SEPARATOR + "*"));
+                while (cursor.hasNext()) {
+                    for (String key : cursor.next()) {
+                        Map<String, byte[]> storedInfo = hashCommands.hgetall(key);
+                        if (!storedInfo.containsKey(PROCESSED_FLAG)) {
+                            e.getValue().add(readCloudEvent(lastChunk(key), storedInfo));
+                        }
+                    }
+                }
+            });
+        }
     }
 
     private static String ceKey(String regId, String ceId) {
@@ -276,9 +346,11 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
 
     @Override
     public void clearProcessed() {
-        KeyScanCursor<String> cursor = keyCommands.scan(new KeyScanArgs().match(CE_PREFIX));
-        while (cursor.hasNext()) {
-            cursor.next().forEach(k -> operations.add(tx -> hashCommands(tx).hdel(k, PROCESSED_FLAG)));
+        if (acquireLock()) {
+            KeyScanCursor<String> cursor = keyCommands.scan(new KeyScanArgs().match(CE_PREFIX + "*"));
+            while (cursor.hasNext()) {
+                cursor.next().forEach(k -> operations.add(tx -> hashCommands(tx).hdel(k, PROCESSED_FLAG)));
+            }
         }
     }
 
