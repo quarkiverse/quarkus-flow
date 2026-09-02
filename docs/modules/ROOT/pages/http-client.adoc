@@ -27,6 +27,7 @@ For retry and circuit breaker configurations, see xref:fault-tolerance.adoc[Faul
 All Flow HTTP and OpenAPI tasks use a `jakarta.ws.rs.client.Client` managed by Quarkus Flow.
 
 At runtime, Quarkus Flow:
+
 * Builds a *default client* from `quarkus.flow.http.client.*`.
 * Optionally builds *named clients* from `quarkus.flow.http.client.named.<name>.*`.
 * Resolves *which client to use* for a given workflow or task using `quarkus.flow.http.client.workflow.*` routing.
