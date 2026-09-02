@@ -3,6 +3,7 @@ package io.quarkiverse.flow.persistence.jpa;
 import java.util.Collection;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.persistence.LockModeType;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 
@@ -10,7 +11,7 @@ import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 public class CloudEventRepository implements PanacheRepositoryBase<CloudEventEntity, String> {
 
     public Collection<CloudEventEntity> findByRegId(Collection<String> regIds) {
-        return list("regId in ?1 and processedFlag != true", regIds);
+        return find("regId in ?1 and processedFlag != true", regIds).withLock(LockModeType.PESSIMISTIC_WRITE).list();
     }
 
     public void setProcessed(Collection<String> ids) {
