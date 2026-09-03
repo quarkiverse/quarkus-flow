@@ -1,0 +1,12 @@
+document:
+  dsl: '1.0.0'
+  namespace: payments
+  name: authorize
+  version: '1.0.0'
+
+do:
+  - authorizePayment:
+      set:
+        orderId: '${ .orderId }'
+        status: AUTHORIZED
+        fee: '${ .amount * 0.02 }'
