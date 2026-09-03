@@ -28,6 +28,7 @@ import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.context.Context;
 import io.quarkiverse.flow.opentelemetry.runtime.config.FlowOTelConfig;
+import io.quarkiverse.flow.tracing.TraceLoggerExecutionListener;
 import io.serverlessworkflow.api.types.TaskBase;
 import io.serverlessworkflow.impl.WorkflowPosition;
 import io.serverlessworkflow.impl.lifecycle.TaskCancelledEvent;
@@ -321,5 +322,10 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
 
     private void enrichSpan(SpanBuilder span, TaskBase task) {
         SpanUtils.getTaskSpanEnricher(task).enrich(span, task);
+    }
+
+    @Override
+    public int priority() {
+        return TraceLoggerExecutionListener.LOG_PRIORITY - 100;
     }
 }
