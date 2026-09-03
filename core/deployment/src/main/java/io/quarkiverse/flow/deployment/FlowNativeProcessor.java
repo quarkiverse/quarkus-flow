@@ -77,7 +77,9 @@ final class FlowNativeProcessor {
                 "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForArraysOfShort",
                 "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForCharSequence",
                 "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForCollection",
-                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForMap")
+                "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForMap",
+                "org.hibernate.validator.internal.constraintvalidators.bv.number.bound.decimal.DecimalMaxValidatorForInteger",
+                "org.hibernate.validator.internal.constraintvalidators.bv.number.bound.decimal.DecimalMinValidatorForInteger")
                 .queryConstructors(true)
                 .constructors(true)
                 .methods(true)
