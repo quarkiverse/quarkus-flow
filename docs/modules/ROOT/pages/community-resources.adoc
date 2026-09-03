@@ -62,7 +62,7 @@ See the link:https://github.com/quarkiverse/quarkus-flow/blob/main/CONTRIBUTING.
 |
 
 |Talk
-|https://www.linkedin.com/in/ricardozanini/[Ricardo Zanini] and link:++https://www.linkedin.com/in/mcruzdev1/[Matheus Cruz]++[Matheus Cruz]
+|https://www.linkedin.com/in/ricardozanini/[Ricardo Zanini] and https://www.linkedin.com/in/mcruzdev1/[Matheus Cruz]
 |link:https://www.youtube.com/watch?v=0zwY4lSv3yU[Quarkus Insights #242: What is Quarkus Flow?]
 |April 06, 2026
 |
