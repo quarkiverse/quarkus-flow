@@ -17,7 +17,9 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.runtime.LaunchMode;
+import io.serverlessworkflow.impl.events.EmittedEventDecorator;
 
 public class FlowMessagingProcessor {
     private static final String FEATURE = "flow-messaging";
@@ -117,6 +119,12 @@ public class FlowMessagingProcessor {
     private static boolean isDevOrTest(LaunchModeBuildItem launchMode) {
         return launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT
                 || launchMode.getLaunchMode() == LaunchMode.TEST;
+    }
+
+    @BuildStep
+    ServiceProviderBuildItem registerEmittedEventDecorators() {
+        return ServiceProviderBuildItem.allProvidersFromClassPath(
+                EmittedEventDecorator.class.getName());
     }
 
     @BuildStep
