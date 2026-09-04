@@ -196,7 +196,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
             }
         }
         String[] keys = toDelete.toArray(new String[0]);
-        operations.add(tx -> keyCommands(tx).unlink(keys));
+        operations.add(tx -> keyCommands(tx).del(keys));
     }
 
     @Override
