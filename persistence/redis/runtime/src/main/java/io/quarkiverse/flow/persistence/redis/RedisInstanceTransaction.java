@@ -33,6 +33,8 @@ import io.quarkus.redis.datasource.keys.KeyCommands;
 import io.quarkus.redis.datasource.keys.KeyScanArgs;
 import io.quarkus.redis.datasource.keys.KeyScanCursor;
 import io.quarkus.redis.datasource.keys.TransactionalKeyCommands;
+import io.quarkus.redis.datasource.set.SetCommands;
+import io.quarkus.redis.datasource.set.TransactionalSetCommands;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 import io.quarkus.redis.datasource.value.SetArgs;
@@ -68,6 +70,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     private final static String NEXT = "next";
     private final static String ITERATION = "iteration";
     private final static String SEPARATOR = ":";
+    private final static String INDEX_PREFIX = "idx" + SEPARATOR;
 
     private static final String CE_SOURCE = "source";
     private static final String CE_TYPE = "type";
@@ -89,21 +92,25 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     private final WorkflowBufferFactory factory;
     private final KeyCommands<String> keyCommands;
     private final HashCommands<String, String, byte[]> hashCommands;
+    private final SetCommands<String, String> setCommands;
     private final ValueCommands<String, String> lockCommands;
 
     private final List<Consumer<TransactionalRedisDataSource>> operations;
 
     private TransactionalHashCommands<String, String, byte[]> txHashCommands;
     private TransactionalKeyCommands<String> txKeyCommands;
+    private TransactionalSetCommands<String, String> txSetCommands;
 
     private String correlationLockUUID;
 
     public RedisInstanceTransaction(RedisDataSource ds, KeyCommands<String> keyCommands,
             HashCommands<String, String, byte[]> hashCommands,
+            SetCommands<String, String> setCommands,
             WorkflowBufferFactory factory) {
         this.ds = ds;
         this.keyCommands = keyCommands;
         this.hashCommands = hashCommands;
+        this.setCommands = setCommands;
         this.lockCommands = ds.value(String.class);
         this.operations = new ArrayList<>();
         this.factory = factory;
@@ -126,11 +133,12 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
 
     @Override
     public void writeInstanceData(WorkflowContextData workflowContext) {
-        String instanceId = key(workflowContext);
-        operations.add(tx -> hashCommands(tx).hset(instanceId, DATE,
+        String instanceKey = key(workflowContext);
+        operations.add(tx -> hashCommands(tx).hset(instanceKey, DATE,
                 MarshallingUtils.writeInstant(factory, workflowContext.instanceData().startedAt())));
-        operations.add(tx -> hashCommands(tx).hset(instanceId, INPUT,
+        operations.add(tx -> hashCommands(tx).hset(instanceKey, INPUT,
                 MarshallingUtils.writeModel(factory, workflowContext.instanceData().input())));
+        indexMember(workflowContext, instanceKey);
     }
 
     @Override
@@ -139,6 +147,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
         operations.add(tx -> hashCommands(tx).hset(key, STATUS, MarshallingUtils.writeEnum(factory, TaskStatus.RETRIED)));
         operations.add(tx -> hashCommands(tx).hset(key, RETRY_ATTEMPT,
                 MarshallingUtils.writeInt(factory, ((TaskContext) taskContext).retryAttempt())));
+        indexMember(workflowContext, key);
     }
 
     @Override
@@ -162,6 +171,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
                     MarshallingUtils.writeString(factory, next.position().jsonPointer())));
         }
         operations.add(tx -> hashCommands(tx).hset(key, ITERATION, writeInt(factory, taskContext.iteration())));
+        indexMember(workflowContext, key);
     }
 
     @Override
@@ -171,14 +181,22 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
 
     @Override
     public void removeProcessInstance(WorkflowContextData workflowContext) {
-        KeyScanCursor<String> keysCursor = keyCommands
-                .scan(new KeyScanArgs().match(taskPrefix(workflowContext.instanceData().id()) + "*"));
-        Collection<String> toDelete = new ArrayList<>();
+        String instanceId = workflowContext.instanceData().id();
+        String indexKey = indexKey(instanceId);
+        Set<String> members = setCommands.smembers(indexKey);
+        Set<String> toDelete = new HashSet<>(members);
         toDelete.add(key(workflowContext));
-        while (keysCursor.hasNext()) {
-            keysCursor.next().forEach(toDelete::add);
+        toDelete.add(indexKey);
+        if (members.isEmpty()) {
+            // fall back to a one-time keyspace SCAN
+            KeyScanCursor<String> keysCursor = keyCommands
+                    .scan(new KeyScanArgs().match(taskPrefix(instanceId) + "*"));
+            while (keysCursor.hasNext()) {
+                keysCursor.next().forEach(toDelete::add);
+            }
         }
-        operations.add(tx -> keyCommands(tx).del(toDelete.toArray(new String[toDelete.size()])));
+        String[] keys = toDelete.toArray(new String[0]);
+        operations.add(tx -> keyCommands(tx).del(keys));
     }
 
     @Override
@@ -401,11 +419,21 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     }
 
     private Map<String, PersistenceTaskInfo> readTasksInfo(String instanceId) {
-        // scan key:* for task keys and then hgetall for each one of them
-        KeyScanCursor<String> cursor = keyCommands.scan(new KeyScanArgs().match(taskPrefix(instanceId) + "*"));
         Map<String, PersistenceTaskInfo> result = new HashMap<>();
-        while (cursor.hasNext()) {
-            cursor.next().forEach(s -> result.put(lastChunk(s), readTaskInfo(s)));
+        Set<String> members = setCommands.smembers(indexKey(instanceId));
+        if (members.isEmpty()) {
+            // fall back to a keyspace SCAN for task keys and then hgetall for each one of them
+            KeyScanCursor<String> cursor = keyCommands.scan(new KeyScanArgs().match(taskPrefix(instanceId) + "*"));
+            while (cursor.hasNext()) {
+                cursor.next().forEach(s -> result.put(lastChunk(s), readTaskInfo(s)));
+            }
+            return result;
+        }
+        String taskPrefix = taskPrefix(instanceId);
+        for (String key : members) {
+            if (key.startsWith(taskPrefix)) {
+                result.put(lastChunk(key), readTaskInfo(key));
+            }
         }
         return result;
     }
@@ -446,6 +474,22 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
             txKeyCommands = tx.key(String.class);
         }
         return txKeyCommands;
+    }
+
+    private TransactionalSetCommands<String, String> setCommands(TransactionalRedisDataSource tx) {
+        if (txSetCommands == null) {
+            txSetCommands = tx.set(String.class, String.class);
+        }
+        return txSetCommands;
+    }
+
+    private void indexMember(WorkflowContextData workflowContext, String memberKey) {
+        String indexKey = indexKey(workflowContext.instanceData().id());
+        operations.add(tx -> setCommands(tx).sadd(indexKey, memberKey));
+    }
+
+    private String indexKey(String instanceId) {
+        return INDEX_PREFIX + instanceId;
     }
 
     private String key(WorkflowContextData workflowContext) {
