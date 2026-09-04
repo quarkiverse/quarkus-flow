@@ -6,6 +6,7 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.hash.HashCommands;
 import io.quarkus.redis.datasource.keys.KeyCommands;
+import io.quarkus.redis.datasource.set.SetCommands;
 import io.serverlessworkflow.impl.marshaller.WorkflowBufferFactory;
 import io.serverlessworkflow.impl.persistence.PersistenceInstanceStore;
 import io.serverlessworkflow.impl.persistence.PersistenceInstanceTransaction;
@@ -18,16 +19,18 @@ public class RedisInstanceStore implements PersistenceInstanceStore {
     private final WorkflowBufferFactory factory;
     private final KeyCommands<String> keyCommands;
     private final HashCommands<String, String, byte[]> hashCommands;
+    private final SetCommands<String, String> setCommands;
 
     public RedisInstanceStore(RedisDataSource ds, WorkflowBufferFactory factory) {
         this.ds = ds;
         this.factory = factory;
         this.keyCommands = ds.key(String.class);
         this.hashCommands = ds.hash(String.class, String.class, byte[].class);
+        this.setCommands = ds.set(String.class, String.class);
     }
 
     @Override
     public PersistenceInstanceTransaction begin() {
-        return new RedisInstanceTransaction(ds, keyCommands, hashCommands, factory);
+        return new RedisInstanceTransaction(ds, keyCommands, hashCommands, setCommands, factory);
     }
 }
