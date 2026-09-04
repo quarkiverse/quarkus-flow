@@ -175,17 +175,17 @@ jobs:
           - name: messaging
             modules: messaging/runtime,messaging/deployment,messaging/integration-tests,messaging/integration-tests-amqp,grpc/runtime,grpc/deployment,grpc/integration-tests,oidc/runtime,oidc/deployment,oidc/integration-tests
           - name: persistence
-            modules: persistence/common/runtime,persistence/common/deployment,persistence/test-common,persistence/redis/runtime,persistence/redis/deployment,persistence/redis/integration-tests,persistence/jpa/runtime,persistence/jpa/deployment,persistence/jpa/integration-tests,persistence/mvstore/runtime,persistence/mvstore/deployment,persistence/mvstore/integration-tests,persistence/infinispan/integration-tests
+            modules: messaging/deployment,persistence/common/runtime,persistence/common/deployment,persistence/test-common,persistence/redis/runtime,persistence/redis/deployment,persistence/redis/integration-tests,persistence/jpa/runtime,persistence/jpa/deployment,persistence/jpa/integration-tests,persistence/mvstore/runtime,persistence/mvstore/deployment,persistence/mvstore/integration-tests,persistence/infinispan/integration-tests
           - name: scheduling
-            modules: scheduler/memory/runtime,scheduler/memory/deployment,scheduler/memory/integration-tests,scheduler/quartz/runtime,scheduler/quartz/deployment,scheduler/quartz/integration-tests,durable-kubernetes/runtime,durable-kubernetes/deployment,durable-kubernetes/integration-tests
+            modules: messaging/deployment,scheduler/memory/runtime,scheduler/memory/deployment,scheduler/memory/integration-tests,scheduler/quartz/runtime,scheduler/quartz/deployment,scheduler/quartz/integration-tests,durable-kubernetes/runtime,durable-kubernetes/deployment,durable-kubernetes/integration-tests
           - name: runner
             # runner/app (image-minimal profile, active by default) needs persistence/mvstore
             # at build time; -am only follows plain <dependency> edges, not Quarkus's dynamic
             # runtime->deployment artifact resolution, so the *-deployment modules must be
             # listed explicitly or the augmentation step fails looking for them.
-            modules: runner/runtime,runner/deployment,runner/integration-tests,runner/app,persistence/common/runtime,persistence/common/deployment,persistence/test-common,persistence/mvstore/runtime,persistence/mvstore/deployment
+            modules: runner/runtime,runner/deployment,runner/integration-tests,runner/app,messaging/deployment,persistence/common/runtime,persistence/common/deployment,persistence/test-common,persistence/mvstore/runtime,persistence/mvstore/deployment
           - name: opentelemetry
-            modules: opentelemetry/runtime,opentelemetry/deployment,opentelemetry/integration-tests
+            modules: messaging/deployment,opentelemetry/runtime,opentelemetry/deployment,opentelemetry/integration-tests
 
     steps:
       - uses: actions/checkout@v7
