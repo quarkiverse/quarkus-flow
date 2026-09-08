@@ -108,6 +108,26 @@ quarkus-flow/
 └── bom/                   # Bill of Materials for dependency management
 ```
 
+## 🧠 Knowledge Graph (Query First, Read Files Second)
+
+**CRITICAL**: This codebase has a **knowledge graph** (see `.graphify/GRAPH_REPORT.md` for current statistics). **Query it BEFORE reading files** for 16x token savings.
+
+```bash
+# Architecture/relationships (try FIRST)
+/graphify query "How does OAuth2 work?"
+/graphify query "What depends on persistence?"
+/graphify path "Flow" "RedisPersistence"
+
+# After changes
+/graphify --update
+```
+
+**Use for**: Understanding features, finding examples, tracing paths, module dependencies  
+**Then read files for**: Implementation details, specific code review
+
+📊 See `.graphify/GRAPH_REPORT.md` for god nodes, surprising connections, refactoring opportunities  
+📖 See **[GRAPHIFY.md](GRAPHIFY.md)** for complete documentation
+
 ## Build & Test Commands
 
 ### Standard build (includes unit tests)
@@ -216,24 +236,16 @@ This project uses ADRs to document significant architectural and design decision
 ## Common Development Tasks
 
 ### Adding a new workflow task type
-1. Define task in `core/runtime` (e.g., new function handler)
-2. Add build-time registration in `core/deployment`
-3. Add tests in `core/integration-tests`
-4. Document in `docs/modules/ROOT/pages/`
-5. Optionally add example in `examples/`
+Query graph first: `/graphify query "How are task types implemented?"`  
+Then: (1) Define in `core/runtime`, (2) Register in `core/deployment`, (3) Test in `core/integration-tests`, (4) Document, (5) Update graph: `/graphify --update`
 
 ### Adding LangChain4j integration features
-- Work in `langchain4j/` module
-- Understand the difference between:
-  - Standard LangChain4j AI services (basic usage)
-  - Agentic Workflow API (requires `quarkus-langchain4j-agentic`)
-- Integration tests often use mocked LLM responses
+Query graph first: `/graphify query "LangChain4j integration architecture"`  
+Work in `langchain4j/` module. Understand: Standard AI services vs Agentic API (`quarkus-langchain4j-agentic`). Tests mock LLM responses.
 
 ### Working with messaging
-- Module: `messaging/`
-- Auto-activates when Kafka/AMQP connector present
-- Uses SmallRye Reactive Messaging
-- Key config: `mp.messaging.incoming.flow-in`, `mp.messaging.outgoing.flow-out`
+Query graph first: `/graphify query "How does messaging integrate?"`  
+Module: `messaging/` (auto-activates with Kafka/AMQP). Uses SmallRye Reactive Messaging. Config: `mp.messaging.incoming.flow-in`, `mp.messaging.outgoing.flow-out`
 
 ## Git & PR Guidelines
 
@@ -267,22 +279,24 @@ When adding dependencies:
 
 ## Helpful Context for AI Assistance
 
+### ⚡ Always Query Knowledge Graph First
+Before reading files: `/graphify query "[your question]"` (16x more efficient)
+
 ### When asked about workflow features
-- Check Open Workflow spec compliance first
-- Refer to `io.serverlessworkflow` packages for DSL
-- Examples in `examples/` show real usage patterns
+- Query graph first for architecture/relationships
+- Check Open Workflow spec compliance
+- `io.serverlessworkflow` packages for DSL, `examples/` for patterns
 
 ### When debugging build issues
-- Quarkus extensions have strict runtime/deployment separation
-- Build item issues often mean wrong module boundary crossed
-- Dev Services (Testcontainers) can cause test failures on Windows
+- Query graph for module relationships
+- Runtime/deployment separation is strict
+- Build item issues = wrong module boundary
+- Dev Services (Testcontainers) can fail on Windows
 
 ### When working with agentic workflows
-- Understand three usage patterns (see README):
-  1. Java DSL calling LangChain4j beans
-  2. Annotations generating workflows
-  3. Hybrid approach
-- `@SequenceAgent`, `@ParallelAgent`, etc. are LangChain4j Agentic API
+- Query graph: `/graphify query "LangChain4j integration"`
+- Three patterns: (1) Java DSL calls LangChain4j beans, (2) Annotations generate workflows, (3) Hybrid
+- `@SequenceAgent`, `@ParallelAgent` = LangChain4j Agentic API
 
 ## Common Pitfalls
 
@@ -306,26 +320,5 @@ When adding dependencies:
 - Issues: https://github.com/quarkiverse/quarkus-flow/issues
 - Discussions: GitHub Discussions
 - Quarkiverse: https://github.com/quarkiverse
-
-## Claude Code Hooks Configuration
-
-This project uses **hooks** to enforce quality gates automatically. Hooks are configured in `.claude/settings.json`.
-
-### Managing Hooks
-
-View active hooks in a Claude session:
-```bash
-claude
-> /hooks
-```
-
-Temporarily disable (emergency only):
-```bash
-CLAUDE_DISABLE_HOOKS=true claude
-```
-
-See `.claude/README.md` for complete hook documentation.
-
----
 
 **For Claude Code users**: This file provides context for AI-assisted development. Feel free to ask Claude to "check CLAUDE.md" when working on this project for guidance on conventions and structure.

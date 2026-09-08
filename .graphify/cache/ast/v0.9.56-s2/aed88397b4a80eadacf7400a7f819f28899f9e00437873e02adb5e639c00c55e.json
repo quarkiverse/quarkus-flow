@@ -1,0 +1,1 @@
+{"nodes": [{"id": "pkg_quarkus_flow_grpc_parent", "label": "quarkus-flow-grpc-parent", "file_type": "code", "type": "package", "ecosystem": "maven", "source_file": "grpc/pom.xml", "source_location": "L1"}], "edges": []}

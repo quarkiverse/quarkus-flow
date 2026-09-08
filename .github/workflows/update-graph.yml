@@ -1,0 +1,101 @@
+name: Update Knowledge Graph
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # Trigger on code changes
+      - '**/*.java'
+      - '**/*.yaml'
+      - '**/*.yml'
+      - '**/*.adoc'
+      - '**/*.md'
+      - '**/*.png'
+      - '**/*.jpg'
+      - '**/*.svg'
+      # Also trigger on graph config changes
+      - '.graphify/**'
+      - 'GRAPHIFY.md'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update-graph:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to push changes
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history for proper git operations
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install graphify
+        run: |
+          pip install graphifyy
+          graphify --version || echo "Graphify installed"
+
+      - name: Update knowledge graph
+        run: |
+          # Run incremental update (uses cache, only re-extracts changed files)
+          python3 -c "
+          from graphify.detect import detect
+          from pathlib import Path
+          import json
+
+          # Quick detection to check if there's work to do
+          result = detect(Path('.'))
+          print(f'Detected {result[\"total_files\"]} files to process')
+          " || true
+
+          # Run the actual update
+          graphify --update
+        env:
+          # No API keys needed - AST extraction is free, semantic uses host agent
+          PYTHONUNBUFFERED: '1'
+
+      - name: Check for graph changes
+        id: check_changes
+        run: |
+          git diff --quiet .graphify/ .graphify_manifest.json || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Commit updated graph
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Add only the graph artifacts (not temp files)
+          git add .graphify/graph.json
+          git add .graphify/GRAPH_REPORT.md
+          git add .graphify/cache/
+          git add .graphify_manifest.json
+
+          # Create commit
+          git commit -m "chore: update knowledge graph [skip ci]
+
+          Auto-update triggered by ${{ github.event.head_commit.message }}
+
+          Graph statistics:
+          - See .graphify/GRAPH_REPORT.md for details
+          - Updated by GitHub Actions workflow"
+
+          # Push changes
+          git push
+
+      - name: Summary
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          echo "✅ Knowledge graph updated and committed"
+          echo "📊 See .graphify/GRAPH_REPORT.md for updated statistics"
+
+      - name: No changes
+        if: steps.check_changes.outputs.changed != 'true'
+        run: |
+          echo "ℹ️ Knowledge graph is already up to date"

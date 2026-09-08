@@ -1,0 +1,1 @@
+{"nodes": [{"id": "pkg_quarkus_flow_docs_rag", "label": "quarkus-flow-docs-rag", "file_type": "code", "type": "package", "ecosystem": "maven", "source_file": "docs-rag/pom.xml", "source_location": "L1"}], "edges": []}

@@ -1,0 +1,1 @@
+{"nodes": [{"id": "pkg_quarkus_flow_infinispan_parent", "label": "quarkus-flow-infinispan-parent", "file_type": "code", "type": "package", "ecosystem": "maven", "source_file": "persistence/infinispan/pom.xml", "source_location": "L1"}], "edges": []}
