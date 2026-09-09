@@ -56,7 +56,7 @@ jobs:
           " || true
 
           # Run the actual update
-          graphify --update
+          graphify update .
         env:
           # No API keys needed - AST extraction is free, semantic uses host agent
           PYTHONUNBUFFERED: '1'
