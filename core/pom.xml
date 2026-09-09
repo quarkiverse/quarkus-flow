@@ -12,6 +12,7 @@
     <name>Quarkus Flow :: Core :: Parent</name>
 
     <modules>
+        <module>spi</module>
         <module>runtime</module>
         <module>deployment</module>
         <module>runtime-dev</module>

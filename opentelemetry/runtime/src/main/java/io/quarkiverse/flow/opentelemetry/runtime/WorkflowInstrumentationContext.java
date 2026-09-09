@@ -1,16 +1,44 @@
 package io.quarkiverse.flow.opentelemetry.runtime;
 
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.quarkiverse.flow.spi.observability.TraceCorrelationProvider.TraceContext;
 import io.serverlessworkflow.impl.WorkflowInstanceData;
 import io.serverlessworkflow.impl.WorkflowMutableInstance;
 
 public class WorkflowInstrumentationContext implements AutoCloseable {
     private static final String OTEL_CONTEXT = "OTEL_CONTEXT";
+
+    /**
+     * Upper bound on the correlation-only {@link #taskTraceContext} map. It keeps entries for
+     * tasks whose span has already ended (so a lifecycle log line for a terminal task event can
+     * still carry the task's own span id regardless of listener order), so a long {@code for}
+     * loop or a wide {@code fork} would otherwise grow it without limit. On eviction the trace
+     * correlation for that task falls back to the workflow-instance identifiers.
+     */
+    private static final int TRACE_CONTEXT_MAX = 256;
+
     private final InstrumentationContext workflowInstanceContext;
     private final Map<String, InstrumentationContext> workflowInstanceTaskContext = new ConcurrentHashMap<>();
+
+    /**
+     * Trace/span identifiers captured when each span is created, kept only so lifecycle logging
+     * can correlate a log line with the right span. This is deliberately independent of
+     * {@link #workflowInstanceTaskContext} (the span-parenting map): entries are never removed
+     * on a terminal task event, so it must not be used for parenting new spans.
+     */
+    private volatile TraceContext workflowTraceContext;
+    private final Map<String, TraceContext> taskTraceContext = Collections.synchronizedMap(
+            new LinkedHashMap<>(16, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, TraceContext> eldest) {
+                    return size() > TRACE_CONTEXT_MAX;
+                }
+            });
 
     public WorkflowInstrumentationContext(InstrumentationContext workflowInstanceContext) {
         this.workflowInstanceContext = workflowInstanceContext;
@@ -36,6 +64,32 @@ public class WorkflowInstrumentationContext implements AutoCloseable {
     public InstrumentationContext getTaskInstanceContext(String taskInstanceId, int iteration,
             int retryAttempt) {
         return workflowInstanceTaskContext.get(taskContextId(taskInstanceId, iteration, retryAttempt));
+    }
+
+    public TraceContext getWorkflowTraceContext() {
+        return workflowTraceContext;
+    }
+
+    public void setWorkflowTraceContext(TraceContext workflowTraceContext) {
+        this.workflowTraceContext = workflowTraceContext;
+    }
+
+    /**
+     * Records the trace identifiers of a task span for later log correlation. Safe to call with
+     * a {@code null} context (nothing is stored) so callers need not null-check the extraction.
+     */
+    public void putTaskTraceContext(String taskInstanceId, int iteration, int retryAttempt, TraceContext context) {
+        if (context != null) {
+            taskTraceContext.put(taskContextId(taskInstanceId, iteration, retryAttempt), context);
+        }
+    }
+
+    /**
+     * The trace identifiers captured for a task span, or {@code null} if none were captured or
+     * the entry has been evicted. Used only for log correlation, never for span parenting.
+     */
+    public TraceContext getTaskTraceContext(String taskInstanceId, int iteration, int retryAttempt) {
+        return taskTraceContext.get(taskContextId(taskInstanceId, iteration, retryAttempt));
     }
 
     private String findParentContextId(String jsonPosition) {
@@ -82,6 +136,7 @@ public class WorkflowInstrumentationContext implements AutoCloseable {
                     }
                 });
         workflowInstanceTaskContext.clear();
+        taskTraceContext.clear();
     }
 
     @Override
