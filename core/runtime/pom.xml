@@ -11,15 +11,14 @@
     <name>Quarkus Flow :: Core :: Runtime</name>
 
     <dependencies>
-
-        <!-- CNCF Java SDK -->
         <dependency>
-            <groupId>io.serverlessworkflow</groupId>
-            <artifactId>serverlessworkflow-api</artifactId>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-spi</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.serverlessworkflow</groupId>
-            <artifactId>serverlessworkflow-impl-core</artifactId>
+            <artifactId>serverlessworkflow-api</artifactId>
         </dependency>
         <dependency>
             <groupId>io.serverlessworkflow</groupId>
