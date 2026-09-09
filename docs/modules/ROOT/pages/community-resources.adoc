@@ -14,6 +14,12 @@ See the link:https://github.com/quarkiverse/quarkus-flow/blob/main/CONTRIBUTING.
 |Type |Author |Title |Date |Notes
 
 |Blog Post
+|https://www.linkedin.com/in/alexander-argyriou/[Alex Argyriou]
+|https://pixel-pistons.com/posts/quarkus-flow/[Experimenting with Quarkus Flow]
+|September 09, 2026
+|9 min read
+
+|Blog Post
 |https://www.linkedin.com/in/ricardozanini/[Ricardo Zanini]
 |https://zanini.biz/2026/08/17/when-workflow-validation-fails-lessons-from-brazils-tse-affiliation-incident/[When Workflow Validation Fails: Lessons from Brazil's TSE Affiliation Incident]
 |August 17, 2026
