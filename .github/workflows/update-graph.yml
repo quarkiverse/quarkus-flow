@@ -35,10 +35,11 @@ jobs:
         with:
           python-version: '3.14'
           cache: 'pip'
+          cache-dependency-path: '.github/workflows/graphify/requirements.txt'
 
       - name: Install graphify
         run: |
-          pip install graphifyy
+          pip install -r .github/workflows/graphify/requirements.txt
           graphify --version || echo "Graphify installed"
 
       - name: Update knowledge graph
