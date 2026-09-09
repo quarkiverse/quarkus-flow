@@ -31,9 +31,10 @@ public interface RedisPersistenceConfig {
      * <p>
      * The choice trades write throughput against removal/restore cost:
      * <ul>
-     * <li>{@code indexed} (default) keeps a per-instance Redis Set so removal and
-     * restore avoid scanning the keyspace, at the cost of one extra {@code SADD}
-     * on every write. Best for many short-lived instances or frequent removal.</li>
+     * <li>{@code indexed} (default) keeps a per-instance Redis Set of the instance's
+     * task keys so removal and restore avoid scanning the keyspace, at the cost of
+     * one extra {@code SADD} per task write. Best for many short-lived instances or
+     * frequent removal.</li>
      * <li>{@code scan} keeps no index and falls back to a keyspace {@code SCAN} for
      * removal and restore. Best for few, long-lived instances with many tasks,
      * where removal is rare.</li>

@@ -2,6 +2,8 @@ package io.quarkiverse.flow.persistence.redis;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import io.quarkiverse.flow.persistence.redis.keytracker.RedisKeyTracker;
+import io.quarkiverse.flow.persistence.redis.keytracker.RedisKeyTrackerFactory;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.hash.HashCommands;
@@ -25,7 +27,7 @@ public class RedisInstanceStore implements PersistenceInstanceStore {
         this.factory = factory;
         this.keyCommands = ds.key(String.class);
         this.hashCommands = ds.hash(String.class, String.class, byte[].class);
-        this.keyTracker = RedisKeyTracker.forMode(config.keyTracking(), keyCommands, ds.set(String.class, String.class));
+        this.keyTracker = RedisKeyTrackerFactory.forMode(config.keyTracking(), ds, keyCommands);
     }
 
     @Override
