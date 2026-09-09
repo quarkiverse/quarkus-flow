@@ -1,0 +1,1 @@
+{"nodes": [{"id": "pkg_quarkus_flow_langchain4j_parent", "label": "quarkus-flow-langchain4j-parent", "file_type": "code", "type": "package", "ecosystem": "maven", "source_file": "langchain4j/pom.xml", "source_location": "L1"}], "edges": []}

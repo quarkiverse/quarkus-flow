@@ -73,3 +73,21 @@ build.js
 
 # Bob-Shell
 .bob/notes/
+
+# graphify (keep graph + cache + manifest, skip temp files)
+.graphify/.graphify_detect.json
+.graphify/.graphify_extract.json
+.graphify/.graphify_ast.json
+.graphify/.graphify_semantic.json
+.graphify/.graphify_analysis.json
+.graphify/.graphify_chunk_*.json
+.graphify/.chunk_*
+.graphify/.graphify_labels.json
+.graphify/.graphify_python
+.graphify/.graphify_root
+.graphify/.graphify_uncached.txt
+.graphify/.dispatch_manifest.json
+.graphify/*.html
+.graphify/*.svg
+.graphify/obsidian/
+.graphify/cost.json

@@ -1,0 +1,1 @@
+{"nodes": [{"id": "pkg_quarkus_flow_platform_checks", "label": "quarkus-flow-platform-checks", "file_type": "code", "type": "package", "ecosystem": "maven", "source_file": "quarkus-platform-checks/pom.xml", "source_location": "L1"}], "edges": []}

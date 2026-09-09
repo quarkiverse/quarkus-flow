@@ -1,0 +1,1 @@
+{"nodes": [{"id": "pkg_quarkus_flow_messaging_parent", "label": "quarkus-flow-messaging-parent", "file_type": "code", "type": "package", "ecosystem": "maven", "source_file": "messaging/pom.xml", "source_location": "L1"}], "edges": []}

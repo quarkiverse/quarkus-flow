@@ -1,0 +1,1 @@
+{"nodes": [{"id": "pkg_quarkus_flow_opentelemetry_parent", "label": "quarkus-flow-opentelemetry-parent", "file_type": "code", "type": "package", "ecosystem": "maven", "source_file": "opentelemetry/pom.xml", "source_location": "L1"}], "edges": []}
