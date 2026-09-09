@@ -20,6 +20,14 @@ public final class RedisKeyUtils {
         return INDEX_PREFIX + instanceId;
     }
 
+    /**
+     * Marker key present only for instances whose index has been maintained since creation. Its absence
+     * means the index may be partial (the instance predates {@code indexed} mode), so callers must scan.
+     */
+    public static String indexMarkerKey(String instanceId) {
+        return INDEX_PREFIX + instanceId + SEPARATOR + "sync";
+    }
+
     /** Common prefix of every task hash key of {@code instanceId}. */
     public static String taskPrefix(String instanceId) {
         return instanceId + SEPARATOR;

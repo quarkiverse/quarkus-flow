@@ -10,7 +10,7 @@ import io.quarkus.redis.datasource.keys.KeyCommands;
  */
 class ScanRedisKeyTracker implements RedisKeyTracker {
 
-    private final KeyCommands<String> keyCommands;
+    protected final KeyCommands<String> keyCommands;
 
     ScanRedisKeyTracker(KeyCommands<String> keyCommands) {
         this.keyCommands = keyCommands;

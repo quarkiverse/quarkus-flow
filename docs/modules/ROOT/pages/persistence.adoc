@@ -87,9 +87,10 @@ key that belongs to that instance (its instance hash plus one hash per task). Th
 [cols="1,3"]
 |===
 | `indexed` (default)
-| Every task write also records the task key in a per-instance Redis Set (`idx:<instanceId>`). Removal and
-restore read that Set, so their cost scales with the instance instead of the whole keyspace. Each task
-write pays one extra `SADD`. Best for many short-lived instances or frequent instance removal.
+| Every task write also records the task key in a per-instance Redis Set (`idx:<instanceId>`), and each
+instance is created with a completeness marker (`idx:<instanceId>:sync`). Removal and restore read that
+Set instead of scanning the keyspace, so their cost scales with the instance. Each task write pays one
+extra `SADD`. Best for many short-lived instances or frequent instance removal.
 
 | `scan`
 | No index is kept. Removal and restore issue a keyspace `SCAN`; writes carry no extra cost. Best for a
@@ -102,9 +103,11 @@ pure overhead.
 quarkus.flow.persistence.redis.key-tracking=scan
 ----
 
-The two modes are interoperable, so you can switch without a migration step: an instance written under
-`scan` is still found by a one-time `SCAN` after switching to `indexed`, and an `idx:` Set left behind by
-`indexed` is removed on the next deletion after switching to `scan`.
+The two modes are interoperable, so you can switch without a migration step. An instance created under
+`scan` has no completeness marker, so after a switch to `indexed` it keeps being resolved by `SCAN` for
+the rest of its life (its index is never back-filled); only instances created under `indexed` are read
+from the Set. Any `idx:` keys left behind by `indexed` are removed on the instance's deletion after
+switching to `scan`.
 
 ==== Using Infinispan Server RESP
 

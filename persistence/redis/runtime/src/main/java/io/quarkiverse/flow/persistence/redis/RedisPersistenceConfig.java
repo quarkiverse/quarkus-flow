@@ -39,8 +39,9 @@ public interface RedisPersistenceConfig {
      * removal and restore. Best for few, long-lived instances with many tasks,
      * where removal is rare.</li>
      * </ul>
-     * Both modes remain interoperable: switching to {@code indexed} lets existing
-     * unindexed instances fall back to a one-time {@code SCAN}, and instances
+     * Both modes remain interoperable: an instance created before {@code indexed}
+     * was enabled carries no completeness marker, so it keeps being resolved by
+     * {@code SCAN} even after the switch (its index is never back-filled); instances
      * written while {@code indexed} are still removable under {@code scan}.
      */
     @WithDefault("indexed")

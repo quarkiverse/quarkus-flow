@@ -13,10 +13,20 @@ import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
  * completion and reload them on restart.
  * <p>
  * Selected from {@link KeyTracking}: {@link IndexedRedisKeyTracker} keeps a Redis Set per instance (one extra
- * {@code SADD} per task write); {@link ScanRedisKeyTracker} scans the keyspace instead (free writes). The
- * modes are interoperable, so switching needs no migration.
+ * {@code SADD} per task write); {@link ScanRedisKeyTracker} scans the keyspace instead (free writes).
+ * <p>
+ * The modes interoperate without a migration: an instance created under {@code scan} carries no complete
+ * index, so it keeps being scanned even after a switch to {@code indexed}; only instances created under
+ * {@code indexed} are resolved from the Set.
  */
 public interface RedisKeyTracker {
+
+    /**
+     * Enqueues the marker that makes this instance's index authoritative; called once, when the instance is
+     * created. A no-op unless indexing is enabled.
+     */
+    default void markComplete(List<Consumer<TransactionalRedisDataSource>> operations, String instanceId) {
+    }
 
     /**
      * Enqueues any index maintenance for {@code taskKey}, just written for {@code instanceId}; a no-op when

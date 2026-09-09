@@ -136,6 +136,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
                 MarshallingUtils.writeInstant(factory, workflowContext.instanceData().startedAt())));
         operations.add(tx -> hashCommands(tx).hset(key, INPUT,
                 MarshallingUtils.writeModel(factory, workflowContext.instanceData().input())));
+        keyTracker.markComplete(operations, workflowContext.instanceData().id());
     }
 
     @Override
@@ -181,8 +182,9 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
         String instanceId = workflowContext.instanceData().id();
         Set<String> toDelete = new HashSet<>(keyTracker.taskKeys(instanceId));
         toDelete.add(key(workflowContext));
-        // drop a possibly stale index too, in case this instance previously ran under the 'indexed' mode
+        // drop any index left behind, in case this instance ran (now or before) under the 'indexed' mode
         toDelete.add(RedisKeyUtils.indexKey(instanceId));
+        toDelete.add(RedisKeyUtils.indexMarkerKey(instanceId));
         operations.add(tx -> keyCommands(tx).del(toDelete.toArray(new String[0])));
     }
 
