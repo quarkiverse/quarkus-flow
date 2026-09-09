@@ -1,0 +1,39 @@
+[.configuration-legend]
+icon:lock[title=Fixed at build time] Configuration property fixed at build time - All other configuration properties are overridable at runtime
+[.configuration-reference.searchable, cols="80,.^10,.^10"]
+|===
+
+h|[.header-title]##Configuration property##
+h|Type
+h|Default
+
+a| [[quarkus-flow-redis_quarkus-flow-persistence-redis-key-tracking]] [.property-path]##link:#quarkus-flow-redis_quarkus-flow-persistence-redis-key-tracking[`+++quarkus.flow.persistence.redis.key-tracking+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.persistence.redis.key-tracking+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+How the Redis persistence store tracks which keys belong to a workflow instance, so it can remove them on instance completion and reload them when restoring pending instances after a restart.
+
+The choice trades write throughput against removal/restore cost:
+
+ * `indexed` (default) keeps a per-instance Redis Set so removal and restore avoid scanning the keyspace, at the cost of one extra `SADD` on every write. Best for many short-lived instances or frequent removal.
+ * `scan` keeps no index and falls back to a keyspace `SCAN` for removal and restore. Best for few, long-lived instances with many tasks, where removal is rare.
+
+Both modes remain interoperable: switching to `indexed` lets existing unindexed instances fall back to a one-time `SCAN`, and instances written while `indexed` are still removable under `scan`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_PERSISTENCE_REDIS_KEY_TRACKING+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_PERSISTENCE_REDIS_KEY_TRACKING+++`
+endif::add-copy-button-to-env-var[]
+--
+a|`indexed`, `scan`
+|`+++indexed+++`
+
+|===
+

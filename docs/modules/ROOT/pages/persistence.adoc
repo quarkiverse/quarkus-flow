@@ -78,6 +78,34 @@ quarkus.redis.hosts=redis://localhost:6379
 
 NOTE: Our integration tests use Valkey image instead.
 
+==== Key tracking
+
+To delete a workflow instance, or to reload pending instances on startup, the Redis store must find every
+key that belongs to that instance (its instance hash plus one hash per task). The
+`quarkus.flow.persistence.redis.key-tracking` property selects how:
+
+[cols="1,3"]
+|===
+| `indexed` (default)
+| Every write also records the key in a per-instance Redis Set (`idx:<instanceId>`). Removal and restore
+read that Set, so their cost scales with the instance instead of the whole keyspace. Each write pays one
+extra `SADD`. Best for many short-lived instances or frequent instance removal.
+
+| `scan`
+| No index is kept. Removal and restore issue a keyspace `SCAN`; writes carry no extra cost. Best for a
+few long-lived instances with many tasks, where removal is rare and the per-write `SADD` would be pure
+overhead.
+|===
+
+[source,properties]
+----
+quarkus.flow.persistence.redis.key-tracking=scan
+----
+
+The two modes are interoperable, so you can switch without a migration step: an instance written under
+`scan` is still found by a one-time `SCAN` after switching to `indexed`, and an `idx:` Set left behind by
+`indexed` is removed on the next deletion after switching to `scan`.
+
 ==== Using Infinispan Server RESP
 
 Quarkus Flow can use Infinispan Server as a Redis-compatible persistence backend through the Infinispan RESP endpoint.

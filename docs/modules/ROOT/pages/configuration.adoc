@@ -17,6 +17,9 @@ include::includes/quarkus-flow-persistence.adoc[leveloffset=+1, opts=optional]
 == Persistence MVStore
 include::includes/quarkus-flow-mvstore.adoc[leveloffset=+1, opts=optional]
 
+== Persistence Redis
+include::includes/quarkus-flow-redis.adoc[leveloffset=+1, opts=optional]
+
 == Runner
 include::includes/quarkus-flow-runner.adoc[leveloffset=+1, opts=optional]
 

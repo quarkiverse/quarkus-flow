@@ -18,16 +18,18 @@ public class RedisInstanceStore implements PersistenceInstanceStore {
     private final WorkflowBufferFactory factory;
     private final KeyCommands<String> keyCommands;
     private final HashCommands<String, String, byte[]> hashCommands;
+    private final RedisKeyTracker keyTracker;
 
-    public RedisInstanceStore(RedisDataSource ds, WorkflowBufferFactory factory) {
+    public RedisInstanceStore(RedisDataSource ds, WorkflowBufferFactory factory, RedisPersistenceConfig config) {
         this.ds = ds;
         this.factory = factory;
         this.keyCommands = ds.key(String.class);
         this.hashCommands = ds.hash(String.class, String.class, byte[].class);
+        this.keyTracker = RedisKeyTracker.forMode(config.keyTracking(), keyCommands, ds.set(String.class, String.class));
     }
 
     @Override
     public PersistenceInstanceTransaction begin() {
-        return new RedisInstanceTransaction(ds, keyCommands, hashCommands, factory);
+        return new RedisInstanceTransaction(ds, keyCommands, hashCommands, keyTracker, factory);
     }
 }
