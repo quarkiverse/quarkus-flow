@@ -1,0 +1,12 @@
+document:
+  dsl: '1.0.0'
+  namespace: payments
+  name: discount
+  version: '1.0.0'
+
+do:
+  - applyStandardDiscount:
+      set:
+        policy: standard
+        amount: '${ .amount }'
+        total: '${ .amount - (.amount * 0.05) }'
