@@ -1,0 +1,1 @@
+{"nodes": [{"id": "pkg_quarkus_flow_scheduler_memory_parent", "label": "quarkus-flow-scheduler-memory-parent", "file_type": "code", "type": "package", "ecosystem": "maven", "source_file": "scheduler/memory/pom.xml", "source_location": "L1"}], "edges": []}

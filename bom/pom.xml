@@ -66,6 +66,17 @@
 
       <dependency>
         <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-grpc</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-grpc-deployment</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
         <artifactId>quarkus-flow-langchain4j</artifactId>
         <version>${project.version}</version>
       </dependency>

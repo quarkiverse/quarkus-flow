@@ -1,0 +1,1 @@
+{"nodes": [{"id": "pkg_quarkus_flow_core_parent", "label": "quarkus-flow-core-parent", "file_type": "code", "type": "package", "ecosystem": "maven", "source_file": "core/pom.xml", "source_location": "L1"}], "edges": []}

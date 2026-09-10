@@ -8,7 +8,7 @@
     <name>Quarkus Flow :: Examples :: Newsletter Drafter</name>
 
     <properties>
-        <compiler-plugin.version>3.15.0</compiler-plugin.version>
+        <compiler-plugin.version>3.16.0</compiler-plugin.version>
         <maven.compiler.release>17</maven.compiler.release>
         <maven.deploy.skip>true</maven.deploy.skip>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -17,11 +17,11 @@
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.version>3.39.0.CR1</quarkus.platform.version>
         <skipITs>true</skipITs>
-        <surefire-plugin.version>3.5.6</surefire-plugin.version>
+        <surefire-plugin.version>3.6.0</surefire-plugin.version>
         <failsafe-plugin.version>3.5.4</failsafe-plugin.version>
 
         <quarkus.flow.version>2.0.0-SNAPSHOT</quarkus.flow.version>
-        <io.quarkiverse.langchain4j.version>1.13.0</io.quarkiverse.langchain4j.version>
+        <io.quarkiverse.langchain4j.version>1.13.1</io.quarkiverse.langchain4j.version>
         <org.assertj.version>3.27.7</org.assertj.version>
     </properties>
 

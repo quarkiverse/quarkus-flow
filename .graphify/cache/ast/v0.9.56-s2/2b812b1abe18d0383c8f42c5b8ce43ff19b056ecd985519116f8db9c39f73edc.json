@@ -1,0 +1,1 @@
+{"nodes": [{"id": "pkg_quarkus_flow_jpa_parent", "label": "quarkus-flow-jpa-parent", "file_type": "code", "type": "package", "ecosystem": "maven", "source_file": "persistence/jpa/pom.xml", "source_location": "L1"}], "edges": []}

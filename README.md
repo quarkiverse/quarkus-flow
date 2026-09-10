@@ -395,4 +395,20 @@ Issues & PRs welcome! Please:
 # press 'w' when Quarkus starts to open the docs site
 ```
 
+### 🧠 Knowledge Graph
+
+New to the codebase? We maintain a **knowledge graph** to help you navigate:
+
+```bash
+# Query the codebase structure
+/graphify query "How does OAuth2 authentication work?"
+/graphify query "What modules depend on persistence?"
+```
+
+See [GRAPHIFY.md](GRAPHIFY.md) for complete documentation. The graph auto-updates on merge to `main`.
+
+### More Information
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contributing guidelines.
+
 License: Apache-2.0

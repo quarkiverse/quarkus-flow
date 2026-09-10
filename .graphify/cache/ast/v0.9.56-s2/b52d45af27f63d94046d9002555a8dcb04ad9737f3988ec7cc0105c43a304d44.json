@@ -1,0 +1,1 @@
+{"nodes": [{"id": "pkg_quarkus_flow_scheduler_quartz_parent", "label": "quarkus-flow-scheduler-quartz-parent", "file_type": "code", "type": "package", "ecosystem": "maven", "source_file": "scheduler/quartz/pom.xml", "source_location": "L1"}], "edges": []}

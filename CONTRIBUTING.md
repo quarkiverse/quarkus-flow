@@ -17,6 +17,8 @@ We welcome all contributions — bug reports, fixes, documentation, examples, an
 
 💡 **Tip**: See [CONTRIBUTING-MAKEFILE.md](CONTRIBUTING-MAKEFILE.md) for all available Make targets and tips.
 
+💡 **New to the codebase?** Query the [knowledge graph](GRAPHIFY.md) to understand architecture and find examples.
+
 ## Reporting Issues
 
 Open an issue on [GitHub Issues](https://github.com/quarkiverse/quarkus-flow/issues).
@@ -115,6 +117,32 @@ quarkus-flow/
 ```
 
 **Key principle**: Never reference deployment code from runtime code.
+
+## Knowledge Graph
+
+This project maintains a **knowledge graph** of the entire codebase to help you understand architecture and find your way around:
+
+📊 **See [GRAPHIFY.md](GRAPHIFY.md) for complete documentation**
+
+Quick queries to get started:
+```bash
+# Find how a feature is implemented
+/graphify query "How does OAuth2 authentication work?"
+
+# Understand dependencies
+/graphify query "What modules depend on persistence?"
+
+# After making changes, update the graph
+/graphify --update
+```
+
+The knowledge graph analyzes the entire codebase structure (see `.graphify/GRAPH_REPORT.md` for current statistics). Use it to:
+- Answer architectural questions without reading dozens of files
+- Find examples demonstrating specific features
+- Trace execution paths across modules
+- Identify refactoring opportunities
+
+**Note**: The graph auto-updates on merge to `main` via GitHub Actions, so including it in your PR is optional but helpful for reviewers.
 
 ## Testing Requirements
 
@@ -300,6 +328,10 @@ Your PR must include:
 - [ ] Documentation updates (if applicable)
 - [ ] Full build passed locally (`./mvnw clean install -DskipITs=false`)
 
+Optional but helpful for reviewers:
+- [ ] Knowledge graph updated to show architectural impact: `/graphify --update` (see [GRAPHIFY.md](GRAPHIFY.md))
+  - *Note: Graph auto-updates on merge to main, so this is optional*
+
 ## LLM Usage Policy
 
 We welcome AI tools (ChatGPT, GitHub Copilot, Claude Code, etc.) that help developers be more productive.
@@ -333,6 +365,7 @@ However, to maintain a healthy community and high-quality contributions, the fol
 
 ## Getting Help
 
+- **Knowledge Graph**: Query the codebase structure - see [GRAPHIFY.md](GRAPHIFY.md)
 - **Issues**: [GitHub Issues](https://github.com/quarkiverse/quarkus-flow/issues)
 - **Documentation**: https://docs.quarkiverse.io/quarkus-flow/dev/
 - **Quarkus Zulip Chat**: Join the [#dev channel](https://quarkusio.zulipchat.com/#narrow/stream/187038-dev) and mention "Quarkus Flow" in your message
