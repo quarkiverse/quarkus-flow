@@ -1,397 +1,453 @@
-# Graph Report - quarkus-flow  (2026-09-08)
+# Graph Report - quarkus-flow  (2026-09-10)
 
 ## Corpus Check
-- Large corpus: 1150 files · ~377,531 words. Semantic extraction will be expensive (many Claude tokens). Consider running on a subfolder.
+- 1015 files · ~391,344 words
+- Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 7330 nodes · 21006 edges · 385 communities (217 shown, 166 thin omitted)
-- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 1763 edges (avg confidence: 0.82)
+- 8015 nodes · 21686 edges · 435 communities (289 shown, 144 thin omitted)
+- Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 2239 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
+## Graph Freshness
+- Built from commit: `c0d6a874`
+- Run `git rev-parse HEAD` and compare to check if the graph is stale.
+- Run `graphify update .` after code changes (no API cost).
+
 ## Community Hubs (Navigation)
-- Dev UI and Agentic Workflows
-- REST Resources and JSON
-- Flow Definition Injection
-- HTTP Testing Infrastructure
-- Integration Testing Suite
-- Function Listen Specifications
-- Dev UI Object Mapping
-- Flow DSL Core Operations
-- gRPC and HTTP Configurers
-- Native Build Processors
-- Proposal Integration Tests
-- Metrics and Logging
-- Java Call Executors
-- Execution Listeners
-- Configuration Management
-- Workflow Discovery
-- Dev UI JSON RPC
-- Dashboard and Monitoring
-- LangChain4j Agent Tools
-- Task Configurers
-- Test Module 20
-- Test Module 21
-- Runtime Module 22
-- Example 23
-- Module 24
-- Deployment Module 25
-- Module 26
-- Runtime Module 27
-- Runtime Module 28
-- Module 29
-- Deployment Module 30
-- Runtime Module 31
-- Test Module 32
-- Runtime Module 33
-- Deployment Module 34
-- Test Module 35
-- Test Module 36
-- Runtime Module 37
-- Module 38
-- Test Module 39
-- Deployment Module 40
-- Test Module 41
-- Runtime Module 42
-- Runtime Module 43
-- Runtime Module 44
-- Test Module 45
-- Module 46
-- Module 47
-- Test Module 48
-- Test Module 49
-- Module 50
-- Module 51
-- Test Module 52
-- Runtime Module 53
-- Module 54
-- Runtime Module 55
-- Module 56
-- Test Module 57
-- Test Module 58
-- Module 59
-- Example 60
-- Test Module 61
-- Runtime Module 62
-- Module 63
-- Module 64
-- Test Module 65
-- Deployment Module 66
-- Runtime Module 67
-- Example 68
-- Runtime Module 69
-- Runtime Module 70
-- Runtime Module 71
-- Test Module 72
-- Runtime Module 73
-- Test Module 74
-- Module 75
-- Example 76
-- Module 77
-- Test Module 78
-- Runtime Module 79
-- Runtime Module 80
-- Runtime Module 81
-- Example 82
-- Runtime Module 83
-- Test Module 84
-- Runtime Module 85
-- Runtime Module 86
-- Runtime Module 87
-- Runtime Module 88
-- Runtime Module 89
-- Runtime Module 90
-- Runtime Module 91
-- Runtime Module 92
-- Module 93
-- Configuration 94
-- Runtime Module 95
-- Test Module 96
-- Runtime Module 97
-- Runtime Module 98
-- Example 99
-- Example 100
-- Module 101
-- Deployment Module 102
-- Test Module 103
-- Runtime Module 104
-- Test Module 105
-- Test Module 106
-- Example 107
-- Test Module 108
-- Deployment Module 109
-- Runtime Module 110
-- Test Module 111
-- Runtime Module 112
-- Test Module 113
-- Runtime Module 114
-- Test Module 115
-- Deployment Module 116
-- Runtime Module 117
-- Deployment Module 118
-- Runtime Module 119
-- Test Module 120
-- Test Module 121
-- Test Module 122
-- Deployment Module 123
-- Runtime Module 124
-- Runtime Module 125
-- Runtime Module 126
-- Runtime Module 127
-- Example 128
-- Test Module 129
-- Runtime Module 130
-- Runtime Module 131
-- Runtime Module 132
-- Runtime Module 133
-- Runtime Module 134
-- Runtime Module 135
-- Test Module 136
-- Test Module 137
-- Runtime Module 138
-- Runtime Module 139
-- Runtime Module 140
-- Runtime Module 141
-- Test Module 142
-- Test Module 143
-- Runtime Module 144
-- Module 145
-- Test Module 146
-- Test Module 147
-- Test Module 148
-- Test Module 149
-- Module 150
-- Test Module 151
-- Module 152
-- Module 153
-- Test Module 154
-- Example 155
-- Module 156
-- Test Module 157
-- Test Module 158
-- Runtime Module 159
-- Runtime Module 160
-- Documentation 161
-- Example 162
-- Runtime Module 163
-- Runtime Module 164
-- Module 165
-- Module 166
-- Test Module 167
-- Test Module 168
-- Test Module 169
-- Test Module 170
-- Runtime Module 171
-- Test Module 172
-- Test Module 173
-- Test Module 174
-- Runtime Module 175
-- Module 176
-- Test Module 177
-- Runtime Module 178
-- Test Module 179
-- Runtime Module 180
-- Module 181
-- Test Module 182
-- Runtime Module 183
-- Runtime Module 184
-- Module 185
-- Test Module 186
-- Test Module 187
-- Test Module 188
-- Example 189
-- Runtime Module 190
-- Runtime Module 191
-- Test Module 192
-- Test Module 193
-- Test Module 194
-- Runtime Module 195
-- Runtime Module 196
-- Runtime Module 197
-- Test Module 198
-- Test Module 199
-- Runtime Module 200
-- Example 201
-- Example 202
-- Example 203
-- Example 204
-- Example 205
-- Example 206
-- Example 207
-- Example 208
-- Module 209
-- Module 210
-- Module 211
-- Test Module 212
-- Test Module 213
-- Module 214
-- Test Module 215
-- Test Module 216
-- Runtime Module 217
-- Runtime Module 218
-- Example 219
-- Module 220
-- DSL Component 221
-- Module 222
-- Test Module 223
-- Runtime Module 224
-- Test Module 225
-- Test Module 226
-- Example 227
-- Test Module 228
-- Test Module 229
-- Runtime Module 230
-- Test Module 231
-- Module 232
-- Test Module 233
-- Test Module 234
-- Test Module 235
-- Runtime Module 236
-- Runtime Module 237
-- Test Module 238
-- Configuration 239
-- Test Module 240
-- Test Module 241
-- Test Module 242
-- Test Module 243
-- Test Module 244
-- Runtime Module 245
-- Module 246
-- Test Module 247
-- Runtime Module 248
-- Test Module 249
-- Test Module 250
-- Test Module 251
-- Test Module 252
-- Test Module 253
-- Test Module 254
-- Test Module 255
-- Test Module 256
-- Configuration 257
-- Configuration 258
-- Runtime Module 259
-- Test Module 260
-- Runtime Module 261
-- Module 262
-- Module 263
-- Module 264
-- Test Module 265
-- Example 266
-- Example 267
-- Example 268
-- Example 269
-- Documentation 270
-- Test Module 271
-- Deployment Module 272
-- Test Module 273
-- Test Module 274
-- Configuration 275
-- Module 276
-- Module 277
-- Runtime Module 278
-- Documentation 279
-- Documentation 280
-- Documentation 281
-- Example 282
-- Example 283
-- Example 284
-- Example 285
-- Module 286
-- Test Module 287
-- Test Module 288
-- Module 289
-- Module 290
-- Example 291
-- Module 292
-- Documentation 293
-- Configuration 294
-- Module 295
-- Module 296
-- Module 299
-- Module 300
-- Module 301
-- Module 302
-- Module 303
-- Module 304
-- Module 305
-- Module 306
-- Module 307
-- Module 308
-- Module 309
-- Module 310
-- Module 311
-- Module 312
-- Module 313
-- Module 314
-- Module 315
-- Module 316
-- Deployment Module 317
-- Module 318
-- Documentation 319
-- Documentation 320
-- Module 321
-- Deployment Module 322
-- Test Module 323
-- Module 324
-- Example 325
-- Module 326
-- Deployment Module 327
-- Test Module 328
-- Module 329
-- Test Module 330
-- Module 331
-- Test Module 332
-- Module 333
-- Deployment Module 334
-- Test Module 335
-- Module 336
-- Module 337
-- Deployment Module 338
-- Test Module 339
-- Module 340
-- Module 341
-- Deployment Module 342
-- Test Module 343
-- Test Module 344
-- Module 345
-- Module 346
-- Deployment Module 347
-- Test Module 348
-- Module 349
-- Module 350
-- Deployment Module 351
-- Test Module 352
-- Module 353
-- Module 354
-- Deployment Module 355
-- Test Module 356
-- Module 357
-- Module 358
-- Module 359
-- Deployment Module 360
-- Module 361
-- Test Module 362
-- Module 363
-- Module 364
-- Deployment Module 365
-- Module 366
-- Deployment Module 367
-- Test Module 368
-- Module 369
-- Module 370
-- Module 371
-- Deployment Module 372
-- Test Module 373
-- Module 374
-- Module 375
-- Deployment Module 376
-- Test Module 377
-- Module 378
-- Module 379
-- Test Module 380
-- Module 381
-- Module 382
-- Module 383
-- Module 384
+- jakarta.enterprise.context.ApplicationScoped
+- jakarta.ws.rs.Path
+- org.junit.jupiter.api.Test
+- com.github.tomakehurst.wiremock.WireMockServer
+- org.junit.jupiter.api.DisplayName
+- ContextPredicate
+- jakarta.websocket.Session
+- ContextFunction
+- FuncTaskItemListBuilder
+- io.quarkus.deployment.annotations.BuildStep
+- io.quarkus.test.junit.QuarkusTest
+- io.quarkus.test.junit.TestProfile
+- io.serverlessworkflow.impl.TaskContext
+- OTelWorkflowExecutionListener.java
+- io.smallrye.config.WithDefault
+- FlowProcessor.java
+- io.quarkus.test.QuarkusDevModeTest
+- Quarkus Flow Dashboard
+- Agents
+- io.smallrye.mutiny.Uni
+- InstrumentationContext
+- dev.langchain4j.service.UserMessage
+- .workflow
+- dev.langchain4j.agentic.declarative.SequenceAgent
+- Agents
+- FlowLangChain4jProcessor.java
+- JPA Persistence Mode
+- CloudEventEntity
+- FuncScheduleEventSpec
+- org.junit.jupiter.api.BeforeAll
+- org.jboss.jandex.MethodInfo
+- JpaInstanceOperations
+- LeaseService
+- FlowRunnerConfig
+- FlowNativeProcessor.java
+- io.opentelemetry.api.trace.SpanBuilder
+- .http
+- FuncJacksonModule.java
+- RedisInstanceTransaction
+- io.quarkus.test.QuarkusUnitTest
+- QwcFlowExecution
+- FaultToleranceProvider
+- dev.langchain4j.agentic.scope.ResultWithAgenticScope
+- FuncCallStep
+- FuncSwitchTaskBuilder
+- ScheduleOn
+- ParallelAgenticFlow
+- OidcConfigResolver
+- LifecycleManagementDevUIJsonRPCTest
+- HelloMessagingFlowAmqpTest
+- com.fasterxml.jackson.databind.DeserializationContext
+- TaskInfoKey
+- org.junit.jupiter.api.BeforeEach
+- FlowStructuredLoggingConfig
+- OTelWorkflowExecutionListener
+- OidcConfigResolverTest
+- com.fasterxml.jackson.core.JsonGenerator
+- io.cloudevents.CloudEvent
+- FlowWorkflowBuilder
+- .getAuthorizedNamespaces
+- BuildSpec
+- org.junit.jupiter.api.condition.DisabledOnOs
+- LeaseGroupConfig
+- WorkflowOpenApiFilter.java
+- jakarta.enterprise.inject.Produces
+- io.quarkus.test.security.TestSecurity
+- WorkflowDefinitionRecorder.java
+- io.serverlessworkflow.api.types.TaskBase
+- Agents
+- FlowInstance
+- StructuredLoggingListener
+- .switchWhenOrElse
+- PoolController
+- DefinitionResource.java
+- .resolveClientName
+- dev.langchain4j.agentic.scope.AgenticScope
+- dev.langchain4j.agentic.UntypedAgent
+- Quarkus Flow
+- JavaModelCollection
+- HttpClientConfig
+- JavaModel
+- RuntimeWorkflowApplicationProvider
+- OpenTelemetry Integration
+- PoolMemberController
+- WorkflowApplicationCreator.java
+- MVStoreWorkflowInstanceStore
+- DataTypeConverter
+- WorkflowApplicationReadyEvent
+- EventFormatter
+- EndpointKey
+- .saveOrUpdate
+- FlowHttpConfig
+- FlowDurableKubernetesProcessor.java
+- FlowPlanner
+- TokenAuthPolicy
+- Workflow Runner REST API - Design Specification
+- FlowMetrics
+- FlowDSL
+- AgenticFlow
+- TaskWorkflow.java
+- BuildTask
+- Quarkus Flow Runner
+- FuncCloudEventPredicate.java
+- SaveProposalWorkflow.java
+- io.serverlessworkflow.impl.WorkflowDefinitionId
+- .toOne
+- Kubernetes Quick Start Guide
+- dev.langchain4j.agentic.Agent
+- FlowMessagingDevServicesKafkaTest
+- FlowDevUIProcessor.java
+- FuncListenTaskBuilder
+- io.quarkus.arc.Unremovable
+- io.serverlessworkflow.impl.events.EventPublisher
+- TestAgentMethods
+- RuntimeParallelAgenticFlowTest
+- .executeAndGetSpans
+- jakarta.ws.rs.Produces
+- AgenticAwareWorkflowModel
+- Messaging Runner Variant
+- OidcAuthProviderFactoryTest
+- Runtime File Watcher for New Workflow Definitions - Design Specification
+- org.testcontainers.containers.GenericContainer
+- .from
+- org.slf4j.Logger
+- WorkflowRPCService
+- Durable Workflows on Kubernetes Example
+- MicrometerExecutionListener
+- io.serverlessworkflow.impl.WorkflowContextData
+- common.sh
+- FuncOAuth2HttpTest
+- ManagementLifecycleListener
+- io.serverlessworkflow.impl.WorkflowStatus
+- Build-Time Generation of LangChain4j Agentic Workflows
+- io.serverlessworkflow.impl.WorkflowDefinition
+- WorkflowNameUtils
+- Resilient Task Orchestrator (Quarkus Flow + Event-Driven Choreography)
+- WorkflowApplicationCreator
+- io.quarkus.test.junit.QuarkusIntegrationTest
+- io.serverlessworkflow.impl.marshaller.CustomObjectMarshaller
+- ReflectionUtils
+- SchedulerConfig
+- RuntimeConditionalAgenticFlow
+- StructuredLoggingListenerTest.java
+- GizmoAgentFlowsHelperTest.java
+- TraceLoggerExecutionListener
+- opentelemetry
+- FilteredPersistenceWriterTest
+- Releasing Runner Docker Images
+- GizmoAgentFlowsHelperTest
+- .generateSchemaNode
+- FlowQuartz.java
+- Assessment: Move SDK Experimental DSL to Quarkus Flow
+- opentelemetry
+- Trace 27c54f3
+- Call4PapersFlow
+- Quarkus Flow Dashboard
+- NewsletterRequest.java
+- FlowMetricsConfig
+- Order Fulfillment with Compensation (Quarkus Flow + Saga Pattern)
+- WorkflowExceptionMapper.java
+- ConditionalAgenticFlow
+- package.json
+- .sayHello
+- RuntimeSequentialAgenticFlowTest
+- .createAndRegisterStaticClient
+- Build-time
+- Testing Requirements
+- SpanInfo
+- Build & Test Core Job
+- FuncHttpTest
+- FlowCircuitBreakerMetricsTest
+- io.quarkus.runtime.annotations.ConfigGroup
+- RoutingNameResolverTest
+- Call4PapersAgentic
+- IndexedSpanInfo
+- io.cloudevents.CloudEventData
+- Search
+- .resolve
+- com.fasterxml.jackson.databind.annotation.JsonDeserialize
+- QuarkusDevUIPage
+- QuarkusManagedExecutorServiceFactory
+- task.execute Select Case Trace
+- JpaInstanceReader
+- Fabric8KubeInfoStrategy
+- FlowAPIResource
+- task.execute Try Task
+- MicroprofileConfigManager
+- io.serverlessworkflow.impl.WorkflowModel
+- FuncCallAsyncTest
+- TaskState
+- MVStoreProducer.java
+- AbstractSchedulableFlow
+- java.lang.reflect.Method
+- FlowMetricsWithCustomTypeGuardTest
+- StructuredLoggingHttpAsyncTest
+- DeploymentPoolTopologyResolver
+- TaskType
+- OpenTelemetry showcase
+- FlowDSLSerializationTest
+- ForEachFuncTest
+- FlowAgentsBuilderService.java
+- agentic-http/mvnw
+- durable-workflows-k8s/mvnw
+- langchain4j-agentic-workflow/mvnw
+- micrometer-prometheus/mvnw
+- newsletter-drafter/mvnw
+- opentelemetry/mvnw
+- petstore-openapi/mvnw
+- resilient-task-orchestrator/mvnw
+- RedisInstanceTransaction.java
+- Jaeger UI
+- otel-showcase
+- OpenTelemetryTest
+- .testSerializableJavaModel
+- Micrometer Prometheus Example
+- .assertThatHasParent
+- ForTaskIT
+- FlowRunnerProcessor.java
+- Quarkus Flow Runner - Docker Images
+- Developer Makefile Guide
+- Search Panel
+- Quarkus Flow Engine
+- OAuth2/OIDC Authentication
+- NamedHttpMetadataPropagationTest
+- Builder
+- Unified Client Naming Pattern for gRPC, HTTP, and OIDC
+- ForkFuncTest
+- org.junit.jupiter.api.AfterEach
+- SpanUtils.java
+- FixedKubeInfoStrategy
+- GrpcChannelProvider
+- Workflow Metrics with Micrometer + Grafana Demo (Quarkus Flow)
+- task.execute Fork Task
+- Docker Compose Deployment Guide
+- FlowDSLScheduleTest
+- Greeting Runner Example
+- .forSort
+- jakarta.inject.Inject
+- Quarkus Flow Knowledge Graph
+- Grafana Kubernetes Deployment
+- EmitTaskIT
+- RaiseTaskIT
+- RunTaskIT
+- SetTaskIT
+- TryTaskIT
+- NamespaceAuthorizationService
+- task.execute Handle Unknown Case
+- HttpPortUtils
+- Token Propagation and Exchange for Quarkus Flow
+- OrderFulfillmentWorkflow
+- Detailed Design
+- HelloMessagingFlowInMemoryTest
+- HTTP Basic Auth + Secrets Demo (Quarkus Flow)
+- Intelligent Newsletter Drafter (Quarkus Flow + LangChain4j + Human-in-the-Loop)
+- Petstore Workflow (Quarkus + Quarkus Flow + OpenAPI)
+- Align HTTP and gRPC Client Resolution with OIDC
+- .producedSpans
+- renovate.json
+- Contributing Guide
+- jakarta.inject.Singleton
+- SubmissionResource.java
+- Quarkus Flow :: gRPC
+- OIDC Client Delegation Implementation
+- Quarkus Flow gRPC Extension
+- Durable Workflows Kubernetes Lease Verification Workflow
+- Test: Dev UI Workflow Editor Rendering Round-Trip (quarkus-playwright)
+- BuildPipelineResource
+- .onWorkflowStarted
+- Architecture Components
+- CronWorkflow.java
+- Surge.sh Preview Workflow
+- Quarkus Flow Examples Directory
+- AgentIdConstants
+- io.opentelemetry.context.Context
+- test-k8s-locally.sh
+- Dependabot Dependency Groups
+- Persistence Database Test Matrix
+- Runner Image Variants
+- TaskMetadataKeys.java
+- Quarkus Flow Antora Component
+- antora-serve.sh
+- Kroki Diagram Generation Instructions
+- OrderRequest.java
+- DOCKER-COMPOSE.md
+- java/org/acme/agentic/MarketDataSnapshot.java
+- Workflow Files Directory
+- Bug Report Template
+- quarkus-ecosystem-test
+- test/Message.java
+- quickstart.sh
+- build-image.sh
+- run-example.sh
+- Quarkus Flow LangChain4j Extension
+- Docs Improvement Template
+- Project Release Configuration
+- Quarkiverse Pre Release Workflow
+- Quarkus Ecosystem CI Workflow
+- io.quarkiverse.flow:quarkus-flow-parent
+- org.acme:agentic-http
+- org.acme:auth-oauth2-oidc
+- org.acme:durable-workflows-k8s
+- org.acme:greeting-runner
+- org.acme:grpc-client-routing
+- org.acme:http-basic-auth
+- org.acme:langchain4j-agentic-workflow
+- org.acme:micrometer-prometheus
+- org.acme:newsletter-drafter
+- org.acme:opentelemetry
+- org.acme:order-fulfillment-compensation
+- org.acme:petstore-openapi
+- org.acme:resilient-task-orchestrator
+- org.acme:suspend-resume-abort
+- quarkus-flow
+- quarkus-flow-bom
+- quarkus-flow-core-parent
+- quarkus-flow-deployment
+- quarkus-flow-dev
+- quarkus-flow-docs
+- quarkus-flow-docs-rag
+- quarkus-flow-durable-kubernetes
+- quarkus-flow-durable-kubernetes-deployment
+- quarkus-flow-durable-kubernetes-integration-tests
+- quarkus-flow-durable-kubernetes-parent
+- quarkus-flow-examples
+- quarkus-flow-grpc
+- quarkus-flow-grpc-deployment
+- quarkus-flow-grpc-integration-tests
+- quarkus-flow-grpc-parent
+- quarkus-flow-infinispan-integration-tests
+- quarkus-flow-infinispan-parent
+- quarkus-flow-integration-tests
+- quarkus-flow-jpa
+- quarkus-flow-jpa-deployment
+- quarkus-flow-jpa-integration-tests
+- quarkus-flow-jpa-parent
+- quarkus-flow-langchain4j
+- quarkus-flow-langchain4j-deployment
+- quarkus-flow-langchain4j-integration-tests
+- quarkus-flow-langchain4j-parent
+- quarkus-flow-messaging
+- quarkus-flow-messaging-deployment
+- quarkus-flow-messaging-integration-tests
+- quarkus-flow-messaging-integration-tests-amqp
+- quarkus-flow-messaging-parent
+- quarkus-flow-mvstore
+- quarkus-flow-mvstore-deployment
+- quarkus-flow-mvstore-integration-tests
+- quarkus-flow-mvstore-parent
+- quarkus-flow-oidc
+- quarkus-flow-oidc-deployment
+- quarkus-flow-oidc-integration-tests
+- quarkus-flow-oidc-parent
+- quarkus-flow-opentelemetry
+- quarkus-flow-opentelemetry-deployment
+- quarkus-flow-opentelemetry-integration-tests
+- quarkus-flow-opentelemetry-parent
+- quarkus-flow-persistence
+- quarkus-flow-persistence-common
+- quarkus-flow-persistence-common-deployment
+- quarkus-flow-persistence-common-parent
+- quarkus-flow-persistence-test-common
+- quarkus-flow-platform-checks
+- quarkus-flow-quartz-scheduler
+- quarkus-flow-quartz-scheduler-deployment
+- quarkus-flow-redis
+- quarkus-flow-redis-deployment
+- quarkus-flow-redis-integration-tests
+- quarkus-flow-redis-parent
+- quarkus-flow-runner
+- quarkus-flow-runner-app
+- quarkus-flow-runner-deployment
+- quarkus-flow-runner-integration-tests
+- quarkus-flow-runner-parent
+- quarkus-flow-scheduler
+- quarkus-flow-scheduler-deployment
+- quarkus-flow-scheduler-integration-tests
+- quarkus-flow-scheduler-memory-parent
+- quarkus-flow-scheduler-parent
+- quarkus-flow-scheduler-quartz-integration-tests
+- quarkus-flow-scheduler-quartz-parent
+- Flow OpenTelemetry
+- Quarkus Application
+- FuncCallHttpStep
+- HTTP OAuth2 + OIDC Example
+- FlowLangChain4jProcessorTest
+- MapSetTaskConfiguration
+- Quick Start
+- Phase 0 Findings (2026-06-18)
+- Decision
+- ApprovalService
+- io.quarkus.runtime.StartupEvent
+- Quarkus Flow :: Messaging
+- FlowSchedulerTest
+- Troubleshooting
+- Building Locally
+- 10. Error Handling
+- 11. Security Considerations
+- 5. Token Caching
+- Module Structure
+- Future Work: Secret-Based OAuth2 Configuration
+- Examples
+- CI Pipeline
+- Common Workflows
+- 🚀 Quick Start
+- Troubleshooting
+- Practical Examples for Contributors
+- Quarkus Flow :: OIDC
+- TaskNameStrategy
+- Loading Workflows
+- .setUp
+- FlowQuartzIT
+- 7. Configuration
+- Alternatives Considered
+- Consequences
+- Implementation Phases Breakdown
+- Testing Strategy
+- Examples
+- Changes by Module
+- Troubleshooting
+- Canary
+- 📚 Key Concepts Explained
+- Understanding the Report
+- Advanced: Cross-Repository Analysis (Optional)
+- Advanced: Graph Structure
+- Quick Start: Querying the Graph
+- ClientOverrideConfig
+- Available Variants
+- Quick Start Examples
+- High Availability & Failover Architecture
+- Type
+- Context
+- Phase 0: Validation & Proof of Concept
+- From
 
 ## God Nodes (most connected - your core abstractions)
 1. `Flow` - 216 edges
@@ -408,918 +464,1206 @@
 ## Surprising Connections (you probably didn't know these)
 - `HelloResource` --references--> `HelloWorkflow`  [EXTRACTED]
   docs/modules/ROOT/examples/org/acme/HelloResource.java → core/runtime/src/main/codestarts/quarkus/quarkus-flow-codestart/java/src/main/java/org/acme/HelloWorkflow.java
+- `HelloAgenticWorkflow` --inherits--> `Flow`  [EXTRACTED]
+  docs/modules/ROOT/examples/org/acme/agentic/HelloAgenticWorkflow.java → core/runtime/src/main/java/io/quarkiverse/flow/Flow.java
 - `InvestmentMemoFlow` --inherits--> `Flow`  [EXTRACTED]
   docs/modules/ROOT/examples/org/acme/agentic/InvestmentMemoFlow.java → core/runtime/src/main/java/io/quarkiverse/flow/Flow.java
-- `OrderWorkflowGood` --inherits--> `Flow`  [EXTRACTED]
-  docs/modules/ROOT/examples/org/acme/bestpractices/OrderWorkflowGood.java → core/runtime/src/main/java/io/quarkiverse/flow/Flow.java
-- `Call4PapersFlow` --inherits--> `Flow`  [EXTRACTED]
-  docs/modules/ROOT/examples/org/acme/dataflow/Call4PapersFlow.java → core/runtime/src/main/java/io/quarkiverse/flow/Flow.java
-- `EchoResource` --references--> `Flow`  [EXTRACTED]
-  docs/modules/ROOT/examples/org/acme/EchoResource.java → core/runtime/src/main/java/io/quarkiverse/flow/Flow.java
+- `OrderWorkflowBad` --inherits--> `Flow`  [EXTRACTED]
+  docs/modules/ROOT/examples/org/acme/bestpractices/OrderWorkflowBad.java → core/runtime/src/main/java/io/quarkiverse/flow/Flow.java
+- `ConditionalWorkflow` --inherits--> `Flow`  [EXTRACTED]
+  docs/modules/ROOT/examples/org/acme/ConditionalWorkflow.java → core/runtime/src/main/java/io/quarkiverse/flow/Flow.java
 
 ## Import Cycles
 - None detected.
 
 ## Hyperedges (group relationships)
-- **GitHub Issue Templates** — github_issue_template_bug_report, github_issue_template_docs_improvement, github_issue_template_feature_request, github_issue_template_config [EXTRACTED 1.00]
 - **CI Build Job Matrix** — github_workflows_build_it_core_job, github_workflows_build_it_core_devui_job, github_workflows_build_it_extensions_job [EXTRACTED 1.00]
-- **Nightly CI Workflows** — github_workflows_native_nightly_ci_workflow, github_workflows_quarkus_platform_nightly_workflow, github_workflows_issue_tracker_workflow [EXTRACTED 1.00]
-- **LangChain4j Integration Patterns** — java_dsl_tasks, annotations_generated_workflows, hybrid_pattern [EXTRACTED 1.00]
-- **Testing Tools** — testcontainers, assertj, wiremock, quarkus_mockito [EXTRACTED 1.00]
 - **CI Workflows** — build_workflow, build_it_workflow, persistence_langchain4j_workflow, durable_k8s_kind_workflow [EXTRACTED 1.00]
-- **OAuth2 Grant Types** — oauth2_client_credentials_grant, oauth2_password_grant, oauth2_token_exchange_grant [EXTRACTED 1.00]
-- **Monitoring Stack Components** — examples_durable_workflows_k8s_manifests_grafana_grafana_deployment, examples_durable_workflows_k8s_manifests_prometheus_prometheus_deployment, examples_durable_workflows_k8s_manifests_grafana_dashboard_configmap_quarkus_flow_dashboard [EXTRACTED 1.00]
 - **Durable Workflows Infrastructure** — examples_durable_workflows_k8s_manifests_valkey_redis_deployment, kubernetes_lease_coordination, durable_kubernetes_runtime_src_main_resources_meta_inf_quarkus_extension_durable_k8s_extension [EXTRACTED 1.00]
+- **GitHub Issue Templates** — github_issue_template_bug_report, github_issue_template_docs_improvement, github_issue_template_feature_request, github_issue_template_config [EXTRACTED 1.00]
+- **LangChain4j Integration Patterns** — java_dsl_tasks, annotations_generated_workflows, hybrid_pattern [EXTRACTED 1.00]
+- **Monitoring Stack Components** — examples_durable_workflows_k8s_manifests_grafana_grafana_deployment, examples_durable_workflows_k8s_manifests_prometheus_prometheus_deployment, examples_durable_workflows_k8s_manifests_grafana_dashboard_configmap_quarkus_flow_dashboard [EXTRACTED 1.00]
+- **Nightly CI Workflows** — github_workflows_native_nightly_ci_workflow, github_workflows_quarkus_platform_nightly_workflow, github_workflows_issue_tracker_workflow [EXTRACTED 1.00]
+- **OAuth2 Grant Types** — oauth2_client_credentials_grant, oauth2_password_grant, oauth2_token_exchange_grant [EXTRACTED 1.00]
+- **Testing Tools** — testcontainers, assertj, wiremock, quarkus_mockito [EXTRACTED 1.00]
 
-## Communities (385 total, 166 thin omitted)
+## Communities (435 total, 144 thin omitted)
 
-### Community 0 - "Dev UI and Agentic Workflows"
-Cohesion: 0.03
-Nodes (100): DevUIWorkflow, Override, EchoNameWorkflow, GreetingsWorkflow, Override, HelloWorldWorkflow, HttpRestFlow, Override (+92 more)
-
-### Community 1 - "REST Resources and JSON"
-Cohesion: 0.04
-Nodes (61): com.fasterxml.jackson.databind.node.ObjectNode, GreetingResource, Message, IdentifierResource, SimpleResource, EchoResource, GenericAgenticResource, HelloAgenticResource (+53 more)
-
-### Community 2 - "Flow Definition Injection"
+### Community 0 - "jakarta.enterprise.context.ApplicationScoped"
 Cohesion: 0.02
-Nodes (24): FlowDefinitionInjectionTest, FlowWorkflowFromFileProdTest, SendMetricWhenAutoEnabledTest, EchoResourceTest, FlowCodestartTest, FlowDSLListenFirstTest, FlowDSLTest, FlowWorkflowBuilderValidationTest (+16 more)
+Nodes (100): AgenticDevUIWorkflow, Override, DevUIWorkflow, Override, EchoNameWorkflow, GreetingsWorkflow, Override, HelloWorldWorkflow (+92 more)
 
-### Community 3 - "HTTP Testing Infrastructure"
-Cohesion: 0.03
-Nodes (64): Call4PapersTest.WireMockTestResource, com.github.tomakehurst.wiremock.verification.LoggedRequest, com.github.tomakehurst.wiremock.WireMockServer, Override, WireMockServer, WireMockTestResource, Override, WireMockServer (+56 more)
-
-### Community 4 - "Integration Testing Suite"
-Cohesion: 0.03
-Nodes (13): CollectionCallbackDuplicationRegressionTest, org.junit.jupiter.api.DisplayName, AsyncExecutionIT, OpenApiIT, OpenApiSecurityNoneIT, SuppressWarnings, RunnerExecResourceIT, SecurityAbacNamespaceIT (+5 more)
-
-### Community 5 - "Function Listen Specifications"
-Cohesion: 0.05
-Nodes (36): BaseFuncListenSpec, SuppressWarnings, JavaListenExecutorBuilder, FuncEventFilterBuilder, Override, FuncEventFilterPropertiesBuilder, Override, FuncEventFilterSpec (+28 more)
-
-### Community 6 - "Dev UI Object Mapping"
-Cohesion: 0.05
-Nodes (34): com.fasterxml.jackson.databind.module.SimpleModule, Override, LifecycleManagementBackendObjectMapperCustomizer, FuncJacksonModule, SuppressWarnings, Override, JQScopeSupplier, SuppressWarnings (+26 more)
-
-### Community 7 - "Flow DSL Core Operations"
+### Community 1 - "jakarta.ws.rs.Path"
 Cohesion: 0.07
-Nodes (28): FuncCallStep, FuncEmitEventPropertiesBuilder, Override, SuppressWarnings, FuncTransformations, SuppressWarnings, SuppressWarnings, Step (+20 more)
+Nodes (23): SimpleResource, EchoResource, HelloResource, Message, OAuth2ClientCredentialsResource, InvestmentMemoResource, EchoResource, InvestmentMemoResource (+15 more)
 
-### Community 8 - "gRPC and HTTP Configurers"
+### Community 2 - "org.junit.jupiter.api.Test"
+Cohesion: 0.02
+Nodes (22): FlowDefinitionInjectionTest, FlowWorkflowFromFileProdTest, SendMetricWhenAutoEnabledTest, WorkflowNamingConverterTest, EchoResourceTest, FlowCodestartTest, FlowWorkflowBuilderValidationTest, FuncDoTaskTest (+14 more)
+
+### Community 3 - "com.github.tomakehurst.wiremock.WireMockServer"
 Cohesion: 0.04
-Nodes (46): FuncCallGrpcConfigurer, FunctionalInterface, FuncCallHttpConfigurer, FunctionalInterface, FuncCallOpenAPIConfigurer, FunctionalInterface, FuncCallGrpcTaskBuilder, Override (+38 more)
+Nodes (43): com.github.tomakehurst.wiremock.WireMockServer, Override, WireMockServer, WireMockTestResource, Override, WireMockServer, WireMockTestResource, Override (+35 more)
 
-### Community 9 - "Native Build Processors"
-Cohesion: 0.05
-Nodes (37): FeatureBuildItem, FlowDurableKubernetesProcessor, FeatureBuildItem, ExcludedTypeBuildItem, FlowGrpcProcessor, FeatureBuildItem, io.quarkus.arc.deployment.AdditionalBeanBuildItem, io.quarkus.arc.deployment.ExcludedTypeBuildItem (+29 more)
-
-### Community 10 - "Proposal Integration Tests"
-Cohesion: 0.05
-Nodes (35): ProposalResourceTest, StructuredLoggingContainerModeTest, StructuredLoggingErrorTest, StructuredLoggingFileModeTest, StructuredLoggingNoneModeTest, StructuredLoggingTest, StructuredLoggingTruncationTest, HelloResourceTest (+27 more)
-
-### Community 11 - "Metrics and Logging"
+### Community 4 - "org.junit.jupiter.api.DisplayName"
 Cohesion: 0.03
-Nodes (39): ContainerModeProfile, Override, EnableErrorLogging, Override, FileModeProfile, Override, Override, NoneModeProfile (+31 more)
+Nodes (16): ArbitraryClassInstantiation, DeserializeObjectWithTypeSecurityTest, StandardMetadataHandling, org.junit.jupiter.api.DisplayName, AsyncExecutionIT, OpenApiIT, OpenApiSecurityNoneIT, SuppressWarnings (+8 more)
 
-### Community 12 - "Java Call Executors"
-Cohesion: 0.05
-Nodes (30): AbstractJavaCallExecutor, Override, SuppressWarnings, Override, JavaConsumerCallExecutor, Override, JavaContextFunctionCallExecutor, Override (+22 more)
-
-### Community 13 - "Execution Listeners"
-Cohesion: 0.10
-Nodes (29): Override, MicrometerExecutionListener, WorkflowInstanceCounters, WorkflowMetadata, FlowCustomListener, Override, io.serverlessworkflow.impl.lifecycle.TaskCancelledEvent, io.serverlessworkflow.impl.lifecycle.TaskCompletedEvent (+21 more)
-
-### Community 14 - "Configuration Management"
+### Community 5 - "ContextPredicate"
 Cohesion: 0.06
-Nodes (20): Override, toString(), FlowRunConfig, Shell, CircuitBreakerConfig, RetryConfig, ClientOverrideConfig, FlowGrpcConfig (+12 more)
+Nodes (32): BaseFuncListenSpec, SuppressWarnings, FuncEventFilterBuilder, Override, FuncEventFilterPropertiesBuilder, Override, FuncEventFilterSpec, Override (+24 more)
 
-### Community 15 - "Workflow Discovery"
+### Community 6 - "jakarta.websocket.Session"
+Cohesion: 0.20
+Nodes (9): WorkflowEventSocket, WorkflowWebSocket, NewsletterUpdatesSocket, WorkflowWebSocket, jakarta.websocket.OnClose, jakarta.websocket.OnError, jakarta.websocket.OnOpen, jakarta.websocket.server.ServerEndpoint (+1 more)
+
+### Community 7 - "ContextFunction"
+Cohesion: 0.06
+Nodes (30): FuncEmitConfigurer, FunctionalInterface, EmitStep, FuncEmitEventPropertiesBuilder, Override, FuncEmitSpec, Override, FuncEmitTaskBuilder (+22 more)
+
+### Community 8 - "FuncTaskItemListBuilder"
+Cohesion: 0.03
+Nodes (67): CallTask, CatchErrorsBuilder, FuncCallGrpcConfigurer, FunctionalInterface, FuncCallHttpConfigurer, FunctionalInterface, FuncCallOpenAPIConfigurer, FunctionalInterface (+59 more)
+
+### Community 9 - "io.quarkus.deployment.annotations.BuildStep"
+Cohesion: 0.04
+Nodes (50): FeatureBuildItem, FlowDurableKubernetesProcessor, FeatureBuildItem, ForceStartSchedulerBuildItem, ExceptionMapperBuildItem, ExcludedTypeBuildItem, Issue Template Configuration, FlowGrpcProcessor (+42 more)
+
+### Community 10 - "io.quarkus.test.junit.QuarkusTest"
+Cohesion: 0.04
+Nodes (39): com.github.tomakehurst.wiremock.verification.LoggedRequest, FuncOpenAPITest, JwtWithinWorkflowTest, OAuth2ClientCredentialsNonBlockingTest, ProposalResourceTest, HelloResourceTest, ExampleEvent, ExampleWorkflowsWireMockResource (+31 more)
+
+### Community 11 - "io.quarkus.test.junit.TestProfile"
+Cohesion: 0.03
+Nodes (55): HelloWorkflow, ContainerModeProfile, Override, StructuredLoggingContainerModeTest, EnableErrorLogging, Override, StructuredLoggingErrorTest, FileModeProfile (+47 more)
+
+### Community 12 - "io.serverlessworkflow.impl.TaskContext"
+Cohesion: 0.04
+Nodes (35): AbstractJavaCallExecutor, Override, SuppressWarnings, Override, JavaConsumerCallExecutor, Override, JavaContextFunctionCallExecutor, Override (+27 more)
+
+### Community 13 - "OTelWorkflowExecutionListener.java"
+Cohesion: 0.17
+Nodes (22): FlowCustomListener, Override, io.serverlessworkflow.impl.lifecycle.TaskCancelledEvent, io.serverlessworkflow.impl.lifecycle.TaskCompletedEvent, io.serverlessworkflow.impl.lifecycle.TaskEvent, io.serverlessworkflow.impl.lifecycle.TaskFailedEvent, io.serverlessworkflow.impl.lifecycle.TaskResumedEvent, io.serverlessworkflow.impl.lifecycle.TaskRetriedEvent (+14 more)
+
+### Community 14 - "io.smallrye.config.WithDefault"
 Cohesion: 0.07
-Nodes (22): DiscoveredWorkflowBuildItem, From, SOURCE, SPEC, FlowIdentifierBuildItem, FlowProcessor, FlowResourceCollectorProcessor, GizmoFlowHelper (+14 more)
+Nodes (18): Override, toString(), FlowRunConfig, Shell, FlowSecretsConfig, FlowTracingConfig, CircuitBreakerConfig, RetryConfig (+10 more)
 
-### Community 16 - "Dev UI JSON RPC"
+### Community 15 - "FlowProcessor.java"
+Cohesion: 0.07
+Nodes (28): com.github.zafarkhaja.semver.Version, DiscoveredWorkflowBuildItem, FlowLoggingUtils, FlowProcessor, GizmoFlowHelper, WorkflowNamingConverter, FlowDefinitionsConfig, NamespaceConfig (+20 more)
+
+### Community 16 - "io.quarkus.test.QuarkusDevModeTest"
 Cohesion: 0.05
-Nodes (28): FlowInvokerWorkflowDevUIJsonRPCTest, io.quarkus.test.QuarkusDevModeTest, Override, SimpleWorkflow, Override, JPADurableCrashRecoveryIT, Override, JPADurableListenWorkflowIT (+20 more)
+Nodes (26): FlowInvokerWorkflowDevUIJsonRPCTest, FlowWorkflowFromFileDevModeTest, io.quarkus.test.QuarkusDevModeTest, Override, JPADurableCrashRecoveryIT, Override, JPADurableListenWorkflowIT, Override (+18 more)
 
-### Community 17 - "Dashboard and Monitoring"
+### Community 17 - "Quarkus Flow Dashboard"
 Cohesion: 0.06
 Nodes (62): Active Workflow Instances, Task Retry Mechanism, Task Lifecycle, Quarkus Flow Dashboard, Retryable Workflow Metrics Dashboard, Failed Workflow Instances, Micrometer Integration, Prometheus Integration (+54 more)
 
-### Community 18 - "LangChain4j Agent Tools"
-Cohesion: 0.05
-Nodes (31): dev.langchain4j.agent.tool.Tool, dev.langchain4j.agentic.declarative.ActivationCondition, dev.langchain4j.agentic.declarative.ConditionalAgent, dev.langchain4j.agentic.declarative.ExitCondition, dev.langchain4j.agentic.declarative.LoopAgent, Lc4jAnnotations, Agents, AudienceEditor (+23 more)
-
-### Community 19 - "Task Configurers"
+### Community 18 - "Agents"
 Cohesion: 0.06
-Nodes (18): CallTask, CatchErrorsBuilder, FuncTaskConfigurer, Override, Override, Override, TaskItem, FuncTaskItemListBuilder (+10 more)
+Nodes (27): dev.langchain4j.agent.tool.Tool, dev.langchain4j.agentic.declarative.ActivationCondition, Agents, AudienceEditor, CategoryRouter, CreativeWriter, EveningPlan, EveningPlannerAgent (+19 more)
 
-### Community 20 - "Test Module 20"
-Cohesion: 0.05
-Nodes (25): io.opentelemetry.context.Context, io.serverlessworkflow.impl.WorkflowInstanceData, Override, Builder, InstrumentationContext, TaskType, CALL_A2A, CALL_ASYNCAPI (+17 more)
+### Community 19 - "io.smallrye.mutiny.Uni"
+Cohesion: 0.10
+Nodes (17): com.fasterxml.jackson.databind.node.ObjectNode, GreetingResource, Message, GenericAgenticResource, HelloAgenticResource, HelloResource, Message, HelloResource (+9 more)
 
-### Community 21 - "Test Module 21"
-Cohesion: 0.06
-Nodes (29): EchoAgent, GenericAgentic, dev.langchain4j.service.SystemMessage, dev.langchain4j.service.UserMessage, CriticAgent, DrafterAgent, InvestmentAnalystAgent, InvestmentMemo (+21 more)
+### Community 20 - "InstrumentationContext"
+Cohesion: 0.12
+Nodes (4): io.serverlessworkflow.impl.WorkflowInstanceData, InstrumentationContext, Override, WorkflowInstrumentationContext
 
-### Community 22 - "Runtime Module 22"
-Cohesion: 0.06
-Nodes (9): FlowDSLReflectionsTest, Proposal, ProposalScore, WorkflowNumberConversionTest, WorkflowThenTest, FlowDSLOAuth2Test, FlowDSLWaitTest, Override (+1 more)
+### Community 21 - "dev.langchain4j.service.UserMessage"
+Cohesion: 0.07
+Nodes (27): EchoAgent, GenericAgentic, dev.langchain4j.service.SystemMessage, dev.langchain4j.service.UserMessage, CriticAgent, DrafterAgent, InvestmentAnalystAgent, InvestmentMemo (+19 more)
 
-### Community 23 - "Example 23"
-Cohesion: 0.06
-Nodes (38): com.fasterxml.jackson.annotation.JsonCreator, AutoDraftCriticAgent, DrafterAgent, HumanEditorAgent, from(), HumanReview, ReviewStatus, DONE (+30 more)
+### Community 22 - ".workflow"
+Cohesion: 0.04
+Nodes (10): FlowDSLReflectionsTest, Proposal, ProposalScore, WorkflowNumberConversionTest, WorkflowThenTest, FlowDSLTest, FuncTryCatchTest, Override (+2 more)
 
-### Community 24 - "Module 24"
-Cohesion: 0.05
-Nodes (30): dev.langchain4j.agentic.declarative.A2AClientAgent, dev.langchain4j.agentic.declarative.McpClientAgent, dev.langchain4j.agentic.declarative.ParallelAgent, dev.langchain4j.agentic.declarative.ParallelMapperAgent, dev.langchain4j.agentic.declarative.PlannerAgent, dev.langchain4j.agentic.declarative.SupervisorAgent, TestA2AClientAgent, TestAgent1 (+22 more)
-
-### Community 25 - "Deployment Module 25"
+### Community 23 - "dev.langchain4j.agentic.declarative.SequenceAgent"
 Cohesion: 0.08
-Nodes (18): GeneratedBeanGizmoAdaptor, io.quarkiverse.langchain4j.agentic.deployment.DetectedAiAgentBuildItem, io.quarkus.arc.deployment.GeneratedBeanBuildItem, io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor, io.quarkus.deployment.IsProduction, io.quarkus.gizmo.ClassCreator, io.quarkus.gizmo.FieldDescriptor, io.quarkus.gizmo.MethodCreator (+10 more)
+Nodes (22): dev.langchain4j.agentic.declarative.SequenceAgent, AutoDraftCriticAgent, CriticAgent, CriticEditorAgent, DrafterAgent, HumanEditorAgent, CriticReview, Scores (+14 more)
 
-### Community 26 - "Module 26"
+### Community 24 - "Agents"
+Cohesion: 0.09
+Nodes (16): Agents, AudienceEditor, CreativeWriter, ItemProcessor, ItemsGenerator, ItemsMapper, LocalProcessor, RemoteDataFetcher (+8 more)
+
+### Community 25 - "FlowLangChain4jProcessor.java"
+Cohesion: 0.09
+Nodes (16): GeneratedBeanGizmoAdaptor, io.quarkiverse.langchain4j.agentic.deployment.DetectedAiAgentBuildItem, io.quarkus.deployment.IsProduction, io.quarkus.gizmo.ClassCreator, io.quarkus.gizmo.FieldDescriptor, io.quarkus.gizmo.MethodCreator, io.quarkus.gizmo.ResultHandle, FlowAgenticWorkflowBuildItem (+8 more)
+
+### Community 26 - "JPA Persistence Mode"
 Cohesion: 0.11
 Nodes (53): 200ms Delay Workload, 50ms Delay Workload, 100 iterations, 10 iterations, 300 iterations, External Call Long Delay Comparison, External Call Short Delay Benchmark, File (+45 more)
 
-### Community 27 - "Runtime Module 27"
+### Community 27 - "CloudEventEntity"
 Cohesion: 0.07
-Nodes (13): io.cloudevents.CloudEventData, io.cloudevents.SpecVersion, jakarta.persistence.AttributeConverter, jakarta.persistence.Converter, java.net.URI, CloudEventDataConverter, Override, CloudEventEntity (+5 more)
+Nodes (7): io.cloudevents.SpecVersion, jakarta.persistence.IdClass, java.net.URI, org.hibernate.annotations.DynamicUpdate, CloudEventEntity, PersistenceWorkflowInfo, WorkflowInstanceEntity
 
-### Community 28 - "Runtime Module 28"
-Cohesion: 0.06
-Nodes (12): FuncScheduleEventSpec, Override, SuppressWarnings, FuncScheduleSpec, Override, FlowDSLScheduleTest, Override, io.serverlessworkflow.fluent.spec.AbstractEventConsumptionStrategyBuilder (+4 more)
+### Community 28 - "FuncScheduleEventSpec"
+Cohesion: 0.13
+Nodes (9): FuncScheduleEventSpec, Override, SuppressWarnings, FuncScheduleSpec, Override, io.serverlessworkflow.fluent.spec.AbstractEventConsumptionStrategyBuilder, io.serverlessworkflow.fluent.spec.EventFilterBuilder, io.serverlessworkflow.fluent.spec.ScheduleBuilder (+1 more)
 
-### Community 29 - "Module 29"
+### Community 29 - "org.junit.jupiter.api.BeforeAll"
+Cohesion: 0.08
+Nodes (13): Call4PapersTest.WireMockTestResource, com.microsoft.playwright.BrowserContext, com.microsoft.playwright.Page, com.microsoft.playwright.Playwright, WorkflowDiagramEditorRoundTripTest, WorkflowDiagramEditorTest, HttpFlowClientConfigTest, WireMockServer (+5 more)
+
+### Community 30 - "org.jboss.jandex.MethodInfo"
 Cohesion: 0.07
-Nodes (12): com.microsoft.playwright.BrowserContext, com.microsoft.playwright.Page, com.microsoft.playwright.Playwright, WorkflowDiagramEditorRoundTripTest, WorkflowDiagramEditorTest, HttpFlowClientConfigTest, WireMockServer, AgenticWorkflowInDevUIT (+4 more)
+Nodes (22): DotNames, dev.langchain4j.agentic.declarative.ConditionalAgent, dev.langchain4j.agentic.declarative.ExitCondition, dev.langchain4j.agentic.declarative.LoopAgent, dev.langchain4j.agentic.declarative.McpClientAgent, dev.langchain4j.agentic.planner.AgenticSystemTopology, AgenticTopologyMapper, AgenticWorkflowBlueprint (+14 more)
 
-### Community 30 - "Deployment Module 30"
-Cohesion: 0.09
-Nodes (16): DotNames, dev.langchain4j.agentic.planner.AgenticSystemTopology, AgenticTopologyMapper, AgenticWorkflowBlueprint, ConditionalMetadata, JandexMethodInputJsonSchema, Lc4jAnnotationScannerUtil, LoopMetadata (+8 more)
+### Community 31 - "JpaInstanceOperations"
+Cohesion: 0.13
+Nodes (7): io.quarkus.hibernate.orm.panache.PanacheRepositoryBase, CloudEventRepository, Override, JpaInstanceOperations, Override, WorkflowInstanceKey, WorkflowInstanceRepository
 
-### Community 31 - "Runtime Module 31"
+### Community 32 - "LeaseService"
+Cohesion: 0.12
+Nodes (9): KubeFixtures, PoolControllerIT, KubeInfoStrategy, LeaseService, PoolLeaderControllerTest, PoolMemberControllerTest, io.fabric8.kubernetes.api.model.coordination.v1.Lease, io.fabric8.kubernetes.client.KubernetesClient (+1 more)
+
+### Community 33 - "FlowRunnerConfig"
+Cohesion: 0.14
+Nodes (16): io.quarkus.security.identity.IdentityProviderManager, io.quarkus.vertx.http.runtime.security.ChallengeData, io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism, io.vertx.core.http.HttpServerRequest, io.vertx.ext.web.RoutingContext, jakarta.annotation.Priority, ApiKey, FlowRunnerConfig (+8 more)
+
+### Community 34 - "FlowNativeProcessor.java"
+Cohesion: 0.18
+Nodes (7): FlowCollectorProcessor, FlowNativeProcessor, io.quarkus.deployment.builditem.CombinedIndexBuildItem, io.quarkus.deployment.builditem.nativeimage.LambdaCapturingTypeBuildItem, io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem, io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem, RuntimeInitializedClassBuildItem
+
+### Community 35 - "io.opentelemetry.api.trace.SpanBuilder"
+Cohesion: 0.32
+Nodes (4): io.opentelemetry.api.trace.SpanBuilder, SpanUtils, FunctionalInterface, TaskSpanEnricher
+
+### Community 36 - ".http"
 Cohesion: 0.08
-Nodes (12): CtxBiFunction, FunctionalInterface, IdempotencyExample, io.quarkus.hibernate.orm.panache.PanacheRepositoryBase, io.serverlessworkflow.impl.TaskContextData, io.serverlessworkflow.impl.WorkflowContextData, CloudEventRepository, Override (+4 more)
+Nodes (13): Override, Override, Override, Override, Override, Override, DistinctEndpointImagesFlow, Override (+5 more)
 
-### Community 32 - "Test Module 32"
+### Community 37 - "FuncJacksonModule.java"
+Cohesion: 0.05
+Nodes (28): com.fasterxml.jackson.databind.module.SimpleModule, Override, SuppressWarnings, JavaForExecutorBuilder, FuncForTaskBuilder, ForTask, Override, TaskItem (+20 more)
+
+### Community 38 - "RedisInstanceTransaction"
+Cohesion: 0.12
+Nodes (11): io.quarkus.redis.datasource.hash.TransactionalHashCommands, io.quarkus.redis.datasource.keys.KeyScanCursor, io.quarkus.redis.datasource.keys.TransactionalKeyCommands, io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource, io.serverlessworkflow.impl.persistence.PersistenceTaskInfo, io.serverlessworkflow.impl.persistence.PersistenceWorkflowInfo, io.serverlessworkflow.impl.WorkflowDefinitionData, Override (+3 more)
+
+### Community 39 - "io.quarkus.test.QuarkusUnitTest"
 Cohesion: 0.09
-Nodes (14): KubeFixtures, PoolControllerIT, DeploymentPoolTopologyResolver, Override, KubeInfoStrategy, KubeUtils, LeaseService, PoolTopologyResolver (+6 more)
+Nodes (15): CustomListenerTest, SendMetricWhenDisabledTest, SendMetricWhenEnabledTest, SendMetricWithCustomizedPrefixTest, ShouldNotSendHistogramWithDurationsDisabledTest, ShouldNotSendMetricsUsingPercentilesTest, ShouldSendMetricsUsingPercentilesTest, WorkflowApplicationIdTest (+7 more)
 
-### Community 33 - "Runtime Module 33"
-Cohesion: 0.09
-Nodes (25): io.quarkus.runtime.StartupEvent, io.quarkus.security.identity.IdentityProviderManager, io.quarkus.security.identity.SecurityIdentity, io.quarkus.vertx.http.runtime.security.ChallengeData, io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism, io.vertx.core.http.HttpServerRequest, io.vertx.ext.web.RoutingContext, jakarta.annotation.Priority (+17 more)
-
-### Community 34 - "Deployment Module 34"
-Cohesion: 0.10
-Nodes (18): FlowCollectorProcessor, FlowNativeProcessor, ForceStartSchedulerBuildItem, Issue Template Configuration, io.quarkus.deployment.annotations.BuildProducer, io.quarkus.deployment.builditem.CombinedIndexBuildItem, io.quarkus.deployment.builditem.LaunchModeBuildItem, io.quarkus.deployment.builditem.nativeimage.LambdaCapturingTypeBuildItem (+10 more)
-
-### Community 35 - "Test Module 35"
-Cohesion: 0.10
-Nodes (24): io.opentelemetry.api.trace.SpanBuilder, io.opentelemetry.api.trace.Tracer, io.serverlessworkflow.api.types.CallA2A, io.serverlessworkflow.api.types.CallGRPC, io.serverlessworkflow.api.types.CallHTTP, io.serverlessworkflow.api.types.CallOpenAPI, io.serverlessworkflow.api.types.EmitTask, io.serverlessworkflow.api.types.Endpoint (+16 more)
-
-### Community 36 - "Test Module 36"
-Cohesion: 0.10
-Nodes (11): Override, OAuth2AuthenticationDataGrant, Override, Override, Override, Override, io.serverlessworkflow.fluent.spec.OAuth2AuthenticationPolicyBuilder, io.serverlessworkflow.fluent.spec.OAuth2AuthenticationPolicyBuilder.OAuth2AuthenticationPropertiesEndpointsBuilder (+3 more)
-
-### Community 37 - "Runtime Module 37"
-Cohesion: 0.08
-Nodes (20): Override, SuppressWarnings, JavaForExecutorBuilder, FuncForTaskBuilder, ForTask, Override, FunctionalInterface, LoopPredicate (+12 more)
-
-### Community 38 - "Module 38"
-Cohesion: 0.11
-Nodes (13): io.quarkus.redis.datasource.hash.TransactionalHashCommands, io.quarkus.redis.datasource.keys.KeyScanCursor, io.quarkus.redis.datasource.keys.TransactionalKeyCommands, io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource, io.quarkus.redis.datasource.value.ValueCommands, io.serverlessworkflow.impl.persistence.PersistenceInstanceTransaction, io.serverlessworkflow.impl.persistence.PersistenceTaskInfo, io.serverlessworkflow.impl.persistence.PersistenceWorkflowInfo (+5 more)
-
-### Community 39 - "Test Module 39"
-Cohesion: 0.08
-Nodes (15): SendMetricWhenDisabledTest, SendMetricWhenEnabledTest, SendMetricWithCustomizedPrefixTest, ShouldNotSendHistogramWithDurationsDisabledTest, ShouldNotSendMetricsUsingPercentilesTest, ShouldSendMetricsUsingPercentilesTest, SecretResolutionTest, WorkflowFromSpecWithDuplicationTest (+7 more)
-
-### Community 40 - "Deployment Module 40"
+### Community 40 - "QwcFlowExecution"
 Cohesion: 0.07
 Nodes (6): renderOpenWorkflowSpecDiagramEditor(), roots, unmountOpenWorkflowSpecDiagramEditor(), OpenWorkflowSpecDiagramEditorElement, QwcFlowExecution, QwcFlow
 
-### Community 41 - "Test Module 41"
-Cohesion: 0.15
-Nodes (10): FaultToleranceCircuitBreakerTest, WorkflowDefinitionId, FaultToleranceRetryTest, MyCustomException, CircuitBreakerCounters, CircuitBreakerKey, FaultToleranceProvider, SuppressWarnings (+2 more)
+### Community 41 - "FaultToleranceProvider"
+Cohesion: 0.21
+Nodes (7): FaultToleranceCircuitBreakerTest, WorkflowDefinitionId, FaultToleranceRetryTest, MyCustomException, FaultToleranceProvider, WorkflowTaskContext, io.smallrye.faulttolerance.api.TypedGuard
 
-### Community 42 - "Runtime Module 42"
+### Community 42 - "dev.langchain4j.agentic.scope.ResultWithAgenticScope"
 Cohesion: 0.06
-Nodes (18): dev.langchain4j.agentic.scope.ResultWithAgenticScope, Override, NonExistentConditionalAgent, NonExistentLoopAgent, NonExistentParallelAgent, NonExistentSequentialAgent, TestLoopAgent, TestParallelAgent (+10 more)
+Nodes (22): dev.langchain4j.agentic.scope.ResultWithAgenticScope, dev.langchain4j.agentic.workflow.impl.SequentialAgentServiceImpl, SequentialAgenticFlow, RuntimeSequentialAgenticFlow, FlowSequentialAgentService, Override, NonExistentConditionalAgent, NonExistentLoopAgent (+14 more)
 
-### Community 43 - "Runtime Module 43"
+### Community 43 - "FuncCallStep"
+Cohesion: 0.11
+Nodes (9): FuncCallStep, FlowDSLUniqueIdTest, SuppressWarnings, HelloAgenticWorkflow, Override, InvestmentMemoFlow, Override, InvestmentMemoFlow (+1 more)
+
+### Community 44 - "FuncSwitchTaskBuilder"
 Cohesion: 0.08
-Nodes (18): ConsumeStep, Override, Override, FuncCallTaskBuilder, Override, FuncForkTaskBuilder, Override, CallJava (+10 more)
+Nodes (17): CommonFuncOps, FunctionalInterface, SwitchCaseConfigurer, FuncSwitchTaskBuilder, Override, SwitchItem, SwitchTask, SwitchCasePredicateBuilder (+9 more)
 
-### Community 44 - "Runtime Module 44"
-Cohesion: 0.08
-Nodes (19): CommonFuncOps, FunctionalInterface, SwitchCaseConfigurer, FuncSwitchTaskBuilder, Override, SwitchItem, SwitchTask, SwitchCasePredicateBuilder (+11 more)
-
-### Community 45 - "Test Module 45"
-Cohesion: 0.07
-Nodes (21): dev.langchain4j.agentic.declarative.Output, dev.langchain4j.agentic.declarative.SequenceAgent, Agentic, FlowLangChain4JSchedulableCronWithArgsProcessorTest, StoryCreator, StoryPlanner, Agentic, FlowLangChain4JSchedulableIntervalWithArgsProcessorTest (+13 more)
-
-### Community 46 - "Module 46"
+### Community 45 - "ScheduleOn"
 Cohesion: 0.09
-Nodes (18): dev.langchain4j.agentic.workflow.impl.ParallelAgentServiceImpl, dev.langchain4j.agentic.workflow.impl.SequentialAgentServiceImpl, dev.langchain4j.agentic.workflow.ParallelAgentService, dev.langchain4j.agentic.workflow.SequentialAgentService, jakarta.enterprise.inject.Vetoed, java.lang.reflect.Method, ParallelAgenticFlow, SequentialAgenticFlow (+10 more)
+Nodes (17): dev.langchain4j.agentic.declarative.Output, Agentic, StoryCreator, StoryPlanner, Agentic, StoryCreator, StoryPlanner, Agentic (+9 more)
 
-### Community 47 - "Module 47"
-Cohesion: 0.13
-Nodes (18): io.quarkus.oidc.client.OidcClient, io.quarkus.oidc.client.OidcClients, io.serverlessworkflow.api.types.OAuth2TokenDefinition, io.serverlessworkflow.impl.auth.AuthProvider, io.serverlessworkflow.impl.auth.DefaultAuthProviderFactory, io.serverlessworkflow.impl.auth.OAuthPolicyData, io.serverlessworkflow.impl.WorkflowValueResolver, FlowOidcAuthCustomizer (+10 more)
+### Community 46 - "ParallelAgenticFlow"
+Cohesion: 0.19
+Nodes (6): dev.langchain4j.agentic.workflow.impl.ParallelAgentServiceImpl, ParallelAgenticFlow, Override, RuntimeFlowParallelAgentService, FlowParallelAgentService, Override
 
-### Community 48 - "Test Module 48"
+### Community 47 - "OidcConfigResolver"
+Cohesion: 0.12
+Nodes (19): io.quarkus.oidc.client.OidcClients, io.quarkus.oidc.client.runtime.OidcClientsConfig, io.serverlessworkflow.api.types.OAuth2AuthenticationData, io.serverlessworkflow.api.types.OAuth2TokenDefinition, io.serverlessworkflow.impl.auth.AuthProvider, io.serverlessworkflow.impl.auth.DefaultAuthProviderFactory, io.serverlessworkflow.impl.auth.OAuthPolicyData, io.serverlessworkflow.impl.WorkflowValueResolver (+11 more)
+
+### Community 48 - "LifecycleManagementDevUIJsonRPCTest"
 Cohesion: 0.06
-Nodes (9): FlowDevUITestBase, FlowWorkflowDefinitionDevUIJsonRPCTest, LifecycleManagementDevUIJsonRPCTest, MVStoreWorkflowInstanceStoreDevModeTest, WorkflowDefinitionRoundTripJsonRPCTest, WorkflowDefinitionYamlRoundTripJsonRPCTest, io.quarkus.devui.tests.DevUIJsonRPCTest, io.vertx.core.json.JsonArray (+1 more)
+Nodes (8): FlowDevUITestBase, FlowWorkflowDefinitionDevUIJsonRPCTest, LifecycleManagementDevUIJsonRPCTest, MVStoreWorkflowInstanceStoreDevModeTest, WorkflowDefinitionRoundTripJsonRPCTest, WorkflowDefinitionYamlRoundTripJsonRPCTest, io.quarkus.devui.tests.DevUIJsonRPCTest, JsonArray
 
-### Community 49 - "Test Module 49"
-Cohesion: 0.09
+### Community 49 - "HelloMessagingFlowAmqpTest"
+Cohesion: 0.08
 Nodes (20): HelloMessagingFlowAmqpTest.AmqpConfigProfile, HelloMessagingFlowStructuredIT.StructuredCEProfile, HelloMessagingFlowTest.ConfigureMetadata, io.cloudevents.jackson.JsonFormat, io.smallrye.reactive.messaging.kafka.companion.ConsumerTask, io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion, io.vertx.amqp.AmqpClient, io.vertx.amqp.AmqpMessage (+12 more)
 
-### Community 50 - "Module 50"
-Cohesion: 0.11
-Nodes (20): com.fasterxml.jackson.core.JsonParser, com.fasterxml.jackson.databind.DeserializationContext, com.fasterxml.jackson.databind.JsonDeserializer, com.fasterxml.jackson.databind.JsonNode, com.fasterxml.jackson.databind.node.ArrayNode, FuncForInDeserializer, ForIn, Override (+12 more)
+### Community 50 - "com.fasterxml.jackson.databind.DeserializationContext"
+Cohesion: 0.06
+Nodes (40): com.fasterxml.jackson.core.JsonParser, com.fasterxml.jackson.databind.deser.std.StdDeserializer, com.fasterxml.jackson.databind.DeserializationContext, com.fasterxml.jackson.databind.JsonDeserializer, com.fasterxml.jackson.databind.JsonNode, com.fasterxml.jackson.databind.node.ArrayNode, FuncExportAsDeserializer, ExportAs (+32 more)
 
-### Community 51 - "Module 51"
-Cohesion: 0.07
-Nodes (11): jakarta.persistence.DiscriminatorColumn, jakarta.persistence.DiscriminatorValue, jakarta.persistence.Embeddable, jakarta.persistence.Entity, jakarta.persistence.Inheritance, Alert, CompletedTaskEntity, RetriedTaskEntity (+3 more)
+### Community 51 - "TaskInfoKey"
+Cohesion: 0.09
+Nodes (10): jakarta.persistence.DiscriminatorColumn, jakarta.persistence.DiscriminatorValue, jakarta.persistence.Embeddable, jakarta.persistence.Entity, jakarta.persistence.Inheritance, Alert, RetriedTaskEntity, TaskInfoEntity (+2 more)
 
-### Community 52 - "Test Module 52"
-Cohesion: 0.08
-Nodes (14): com.fasterxml.jackson.databind.ObjectMapper, CoordinatorWorkflowIT.BroadcastProfile, EmitWorkflowTest, EventTriggeredFlowIT.OllamaMockResource, CoordinatorWorkflowIT, jakarta.persistence.EntityManager, EventTriggeredFlowIT, SchedulerTriggeredFlowsIT (+6 more)
+### Community 52 - "org.junit.jupiter.api.BeforeEach"
+Cohesion: 0.06
+Nodes (20): BuildPipelineIT.BroadcastProfile, com.fasterxml.jackson.databind.ObjectMapper, CoordinatorWorkflowIT.BroadcastProfile, HttpAsyncCompletionTest, Override, NoneModeProfile, StructuredLoggingNoneModeTest, NativeWorkflowEventListener (+12 more)
 
-### Community 53 - "Runtime Module 53"
+### Community 53 - "FlowStructuredLoggingConfig"
 Cohesion: 0.13
 Nodes (10): FlowStructuredLoggingConfig, TimestampFormat, CUSTOM, EPOCH_MILLIS, EPOCH_NANOS, EPOCH_SECONDS, ISO8601, EventFormatterValidationTest (+2 more)
 
-### Community 54 - "Module 54"
-Cohesion: 0.12
-Nodes (8): io.opentelemetry.api.trace.Span, io.serverlessworkflow.impl.lifecycle.EventType, io.serverlessworkflow.impl.WorkflowPosition, FlowOTelConfig, Override, OTelWorkflowExecutionListener, TaskEventInfo, WorkflowEventInfo
+### Community 54 - "OTelWorkflowExecutionListener"
+Cohesion: 0.17
+Nodes (4): FlowOTelConfig, Override, Override, OTelWorkflowExecutionListener
 
-### Community 55 - "Runtime Module 55"
+### Community 55 - "OidcConfigResolverTest"
+Cohesion: 0.15
+Nodes (3): Override, ClientOverrideConfig, OidcConfigResolverTest
+
+### Community 56 - "com.fasterxml.jackson.core.JsonGenerator"
+Cohesion: 0.08
+Nodes (27): com.fasterxml.jackson.core.JsonGenerator, com.fasterxml.jackson.databind.JsonSerializer, com.fasterxml.jackson.databind.ser.BeanPropertyWriter, com.fasterxml.jackson.databind.ser.std.StdSerializer, com.fasterxml.jackson.databind.SerializerProvider, FuncExportAsSerializer, FuncForInSerializer, Override (+19 more)
+
+### Community 57 - "io.cloudevents.CloudEvent"
+Cohesion: 0.11
+Nodes (11): CustomEventConsumer, CustomEventPublisher, EventAdaptersUnremovableTest, Override, NewsletterOutBridge, io.cloudevents.CloudEvent, io.serverlessworkflow.impl.events.AbstractTypeConsumer, FlowMessagingConsumer (+3 more)
+
+### Community 58 - "FlowWorkflowBuilder"
+Cohesion: 0.03
+Nodes (49): OAuth2ClientCredentialsWorkflow, HelloWorkflow, Override, FlowWorkflowBuilder, Override, dev.langchain4j.agentic.scope.DefaultAgenticScope, ConditionalWorkflow, Override (+41 more)
+
+### Community 59 - ".getAuthorizedNamespaces"
+Cohesion: 0.08
+Nodes (6): org.jboss.resteasy.reactive.server.ServerRequestFilter, org.junit.jupiter.params.provider.ValueSource, Namespace, DefinitionResourceTest, NamespaceAuthorizationFilterTest, NamespaceAuthorizationServiceTest
+
+### Community 61 - "org.junit.jupiter.api.condition.DisabledOnOs"
+Cohesion: 0.09
+Nodes (25): EchoAgenticResourceIT, GenericAgenticIT, io.serverlessworkflow.impl.persistence.PersistenceInstanceHandlers, io.serverlessworkflow.impl.persistence.test.AbstractCorrelationPersistenceTest, io.serverlessworkflow.impl.persistence.test.AbstractHandlerPersistenceTest, io.serverlessworkflow.impl.scheduler.AllStrategyCorrelationInfoFactory, MVStoreRuntimeConfigTest.RuntimeOverrideProfile, org.junit.jupiter.api.condition.DisabledOnOs (+17 more)
+
+### Community 62 - "LeaseGroupConfig"
+Cohesion: 0.11
+Nodes (10): LeaseConfig, LeaseGroupConfig, MemberLeaseConfig, SchedulerGroupConfig, InjectLeaseWorkflowApplicationBuilderCustomizer, Override, LeaseStartupEvent, Override (+2 more)
+
+### Community 63 - "WorkflowOpenApiFilter.java"
 Cohesion: 0.13
-Nodes (5): io.quarkus.oidc.client.runtime.OidcClientsConfig, Override, FlowOidcConfig, ClientOverrideConfig, OidcConfigResolverTest
+Nodes (13): Input, io.quarkus.smallrye.openapi.OpenApiFilter, io.serverlessworkflow.api.types.Document, io.serverlessworkflow.api.types.Input, org.eclipse.microprofile.openapi.models.media.MediaType, org.eclipse.microprofile.openapi.models.media.Schema, org.eclipse.microprofile.openapi.models.OpenAPI, org.eclipse.microprofile.openapi.models.Operation (+5 more)
 
-### Community 56 - "Module 56"
-Cohesion: 0.11
-Nodes (17): com.fasterxml.jackson.core.JsonGenerator, com.fasterxml.jackson.databind.JsonSerializer, com.fasterxml.jackson.databind.ser.std.StdSerializer, com.fasterxml.jackson.databind.SerializerProvider, FuncForInSerializer, Override, FunctionArgumentsSerializer, Override (+9 more)
-
-### Community 57 - "Test Module 57"
-Cohesion: 0.09
-Nodes (15): CustomEventConsumer, CustomEventPublisher, EventAdaptersUnremovableTest, Override, Override, LaggedInMemoryEvents, NewsletterOutBridge, io.cloudevents.CloudEvent (+7 more)
-
-### Community 58 - "Test Module 58"
-Cohesion: 0.06
-Nodes (15): Override, Override, Override, Override, Override, Override, Override, DemoWorkflow (+7 more)
-
-### Community 59 - "Module 59"
-Cohesion: 0.19
-Nodes (5): jakarta.ws.rs.core.UriInfo, org.jboss.resteasy.reactive.server.ServerRequestFilter, org.junit.jupiter.params.provider.ValueSource, NamespaceAuthorizationFilter, NamespaceAuthorizationFilterTest
-
-### Community 60 - "Example 60"
-Cohesion: 0.09
-Nodes (15): BuildPipelineIT.BroadcastProfile, BuildSpec, BuildPipelineResource, Consumes, GET, Path, POST, Produces (+7 more)
-
-### Community 61 - "Test Module 61"
-Cohesion: 0.11
-Nodes (20): EchoAgenticResourceIT, GenericAgenticIT, io.serverlessworkflow.impl.persistence.PersistenceInstanceHandlers, io.serverlessworkflow.impl.persistence.test.AbstractCorrelationPersistenceTest, io.serverlessworkflow.impl.persistence.test.AbstractHandlerPersistenceTest, io.serverlessworkflow.impl.scheduler.AllStrategyCorrelationInfoFactory, org.junit.jupiter.api.condition.DisabledOnOs, Override (+12 more)
-
-### Community 62 - "Runtime Module 62"
-Cohesion: 0.11
-Nodes (9): LeaseConfig, LeaseGroupConfig, MemberLeaseConfig, PoolConfig, SchedulerGroupConfig, Override, PoolLeaderController, LeaseServiceTest (+1 more)
-
-### Community 63 - "Module 63"
-Cohesion: 0.11
-Nodes (15): Input, io.quarkus.smallrye.openapi.OpenApiFilter, io.serverlessworkflow.api.types.Document, io.serverlessworkflow.api.types.Input, org.eclipse.microprofile.openapi.models.media.MediaType, org.eclipse.microprofile.openapi.models.media.Schema, org.eclipse.microprofile.openapi.models.OpenAPI, org.eclipse.microprofile.openapi.models.Operation (+7 more)
-
-### Community 64 - "Module 64"
-Cohesion: 0.11
+### Community 64 - "jakarta.enterprise.inject.Produces"
+Cohesion: 0.12
 Nodes (19): io.quarkus.arc.DefaultBean, io.serverlessworkflow.impl.events.EventRegistrationBuilder, io.serverlessworkflow.impl.persistence.CorrelationOperations, io.serverlessworkflow.impl.persistence.OperationAllStrategyCorrelationInfo, io.serverlessworkflow.impl.persistence.PersistenceExecutor, io.serverlessworkflow.impl.persistence.PersistenceInstanceOperations, io.serverlessworkflow.impl.persistence.PersistenceInstanceStore, io.serverlessworkflow.impl.persistence.TransactedPersistenceInstanceWriter (+11 more)
 
-### Community 65 - "Test Module 65"
+### Community 65 - "io.quarkus.test.security.TestSecurity"
 Cohesion: 0.13
 Nodes (4): io.quarkus.test.security.oidc.OidcSecurity, io.quarkus.test.security.TestSecurity, SecurityOidcAbacIT, SecurityOidcIT
 
-### Community 66 - "Deployment Module 66"
-Cohesion: 0.09
-Nodes (16): Flowable, FlowMetadata, SDKRecorder, WorkflowApplicationRecorder, ExceptionMapperBuildItem, io.quarkus.arc.deployment.BeanContainerBuildItem, io.quarkus.arc.runtime.BeanContainer, io.quarkus.arc.SyntheticCreationalContext (+8 more)
+### Community 66 - "WorkflowDefinitionRecorder.java"
+Cohesion: 0.23
+Nodes (3): Flowable, FlowMetadata, io.serverlessworkflow.api.types.WorkflowMetadata
 
-### Community 67 - "Runtime Module 67"
-Cohesion: 0.10
-Nodes (15): Override, Override, JavaSwitchExecutorBuilder, JavaTaskExecutorFactory, Override, SuppressWarnings, JavaExpressionFactory, io.serverlessworkflow.impl.executors.DefaultTaskExecutorFactory (+7 more)
+### Community 67 - "io.serverlessworkflow.api.types.TaskBase"
+Cohesion: 0.07
+Nodes (23): Override, JavaListenExecutorBuilder, Override, JavaSwitchExecutorBuilder, JavaTaskExecutorFactory, Override, SuppressWarnings, JavaExpressionFactory (+15 more)
 
-### Community 68 - "Example 68"
-Cohesion: 0.09
-Nodes (22): ActivityAgent, Agents, DinnerAgent, DrinksAgent, EveningPlan, EveningPlannerAgent, Mood, CHILL (+14 more)
+### Community 68 - "Agents"
+Cohesion: 0.11
+Nodes (17): ActivityAgent, Agents, AudienceEditor, CreativeWriter, DinnerAgent, DrinksAgent, EveningPlan, EveningPlannerAgent (+9 more)
 
-### Community 69 - "Runtime Module 69"
-Cohesion: 0.13
-Nodes (6): FlowInstance, Override, LifecycleEventSummary, Override, FlowInstanceSerializer, Override
+### Community 69 - "FlowInstance"
+Cohesion: 0.12
+Nodes (7): FlowInstance, Override, LifecycleEventSummary, FlowInstanceDeserializer, Override, FlowInstanceSerializer, Override
 
-### Community 70 - "Runtime Module 70"
+### Community 70 - "StructuredLoggingListener"
 Cohesion: 0.17
 Nodes (7): Override, StructuredLoggingListener, StructuredLoggingListenerTest, Formatter, io.quarkus.arc.lookup.LookupIfProperty, java.util.logging.Handler, org.jboss.logging.Logger
 
-### Community 71 - "Runtime Module 71"
-Cohesion: 0.11
-Nodes (6): FlowDSLConsumeTest, FlowDSLTaskNameTest, ForEachTest, IntegrationTest, SwitchWhenOrElseTest, SwitchWhenTest
-
-### Community 72 - "Test Module 72"
-Cohesion: 0.11
-Nodes (11): WorkflowApplicationIdIT, LocalConfig, InjectLeaseWorkflowApplicationBuilderCustomizer, Override, LeaseStartupEvent, LocalStrategy, MemberLeaseCoordinator, PoolController (+3 more)
-
-### Community 73 - "Runtime Module 73"
+### Community 71 - ".switchWhenOrElse"
 Cohesion: 0.14
-Nodes (19): com.github.zafarkhaja.semver.Version, Override, WorkflowVersionComparator, Entry, io.serverlessworkflow.api.WorkflowFormat, jakarta.annotation.security.RolesAllowed, jakarta.ws.rs.core.HttpHeaders, jakarta.ws.rs.NameBinding (+11 more)
+Nodes (7): FlowDSLTaskNameTest, ForEachTest, IntegrationTest, SwitchWhenOrElseTest, SwitchWhenTest, org.junit.jupiter.api.Nested, BuildTimeRegistrationGuard
 
-### Community 74 - "Test Module 74"
+### Community 73 - "DefinitionResource.java"
 Cohesion: 0.11
-Nodes (10): ArbitraryClassInstantiation, Canary, DeserializeObjectWithTypeSecurityTest, StandardMetadataHandling, ClientOverrideConfig, ChannelExistenceFallbacks, ConfigOverrides, GrpcChannelProviderPriorityOrderTest (+2 more)
+Nodes (23): Override, WorkflowVersionComparator, SecureCustomerProfileResource, Entry, SecureCustomerProfileResource, io.serverlessworkflow.api.WorkflowFormat, jakarta.annotation.security.RolesAllowed, jakarta.ws.rs.core.HttpHeaders (+15 more)
 
-### Community 75 - "Module 75"
+### Community 74 - ".resolveClientName"
+Cohesion: 0.13
+Nodes (6): ClientNamingConventionTest, ClientOverrideConfig, ChannelExistenceFallbacks, ConfigOverrides, GrpcChannelProviderPriorityOrderTest, ClientOverrideConfig
+
+### Community 75 - "dev.langchain4j.agentic.scope.AgenticScope"
 Cohesion: 0.12
-Nodes (11): dev.langchain4j.agentic.scope.AgenticScope, dev.langchain4j.agentic.workflow.impl.LoopAgentServiceImpl, dev.langchain4j.agentic.workflow.LoopAgentService, TestConditionalAgent, TestLoopAgent, Override, LoopAgenticFlow, Override (+3 more)
+Nodes (10): dev.langchain4j.agentic.scope.AgenticScope, dev.langchain4j.agentic.workflow.impl.LoopAgentServiceImpl, TestConditionalAgent, TestLoopAgent, Override, LoopAgenticFlow, Override, RuntimeFlowLoopAgentService (+2 more)
 
-### Community 76 - "Example 76"
+### Community 76 - "dev.langchain4j.agentic.UntypedAgent"
 Cohesion: 0.15
 Nodes (4): dev.langchain4j.agentic.UntypedAgent, DynamicWorkflowExample, FlowAgentsBuilderService, FlowAgentsBuilderServiceTest
 
-### Community 77 - "Module 77"
+### Community 77 - "Quarkus Flow"
 Cohesion: 0.06
 Nodes (31): Architecture Decision Records (ADR), Agentic AI Workflows, AMQP Integration, Annotations to Generated Workflows Pattern, Apache License 2.0, BOM Module, @BuildStep Annotation, CDI (Contexts and Dependency Injection) (+23 more)
 
-### Community 78 - "Test Module 78"
-Cohesion: 0.14
-Nodes (6): Override, SuppressWarnings, JavaModelCollection, ModelIterator, io.serverlessworkflow.impl.WorkflowModel, io.serverlessworkflow.impl.WorkflowModelCollection
+### Community 78 - "JavaModelCollection"
+Cohesion: 0.15
+Nodes (4): Override, SuppressWarnings, JavaModelCollection, ModelIterator
 
-### Community 79 - "Runtime Module 79"
+### Community 79 - "HttpClientConfig"
 Cohesion: 0.13
 Nodes (3): HttpClientConfig, io.smallrye.config.WithName, org.jboss.resteasy.reactive.client.api.LoggingScope
 
-### Community 80 - "Runtime Module 80"
-Cohesion: 0.13
-Nodes (7): Override, SuppressWarnings, JavaModel, Override, JavaModelFactory, Override, JavaModelMarshaller
+### Community 80 - "JavaModel"
+Cohesion: 0.17
+Nodes (5): Override, SuppressWarnings, JavaModel, Override, JavaModelMarshaller
 
-### Community 81 - "Runtime Module 81"
-Cohesion: 0.14
-Nodes (3): Override, RuntimeLoopAgenticFlow, RuntimeLoopAgenticFlowTest
+### Community 81 - "RuntimeWorkflowApplicationProvider"
+Cohesion: 0.09
+Nodes (6): Override, RuntimeLoopAgenticFlow, RuntimeWorkflowApplicationProvider, CollectionCallbackDuplicationRegressionTest, RuntimeLoopAgenticFlowTest, RuntimeWorkflowApplicationProviderTest
 
-### Community 82 - "Example 82"
+### Community 82 - "OpenTelemetry Integration"
 Cohesion: 0.10
 Nodes (29): CloudEvents, Workflow Persistence, Suspend/Resume/Abort Example, Quarkus Flow Messaging Extension, OpenTelemetry Integration, Do Task, Emit Task, For Task (+21 more)
 
-### Community 83 - "Runtime Module 83"
-Cohesion: 0.16
-Nodes (8): MemberLeaseEvent, Type, ACQUIRED, LOST, RELEASED, Override, PoolMemberController, PoolMemberControllerTest
+### Community 83 - "PoolMemberController"
+Cohesion: 0.12
+Nodes (10): PoolConfig, MemberLeaseEvent, Type, ACQUIRED, LOST, RELEASED, Override, PoolMemberController (+2 more)
 
-### Community 84 - "Test Module 84"
-Cohesion: 0.13
-Nodes (12): DumbCredentialsProvider, Override, FlowSecretsConfig, CredentialsProviderSecretManager, Override, io.quarkus.credentials.CredentialsProvider, io.serverlessworkflow.impl.config.SecretManager, jakarta.annotation.PostConstruct (+4 more)
+### Community 84 - "WorkflowApplicationCreator.java"
+Cohesion: 0.14
+Nodes (10): DumbCredentialsProvider, Override, CredentialsProviderSecretManager, Override, io.quarkus.credentials.CredentialsProvider, io.serverlessworkflow.impl.config.SecretManager, io.serverlessworkflow.impl.events.EventConsumer, jakarta.annotation.PostConstruct (+2 more)
 
-### Community 85 - "Runtime Module 85"
+### Community 85 - "MVStoreWorkflowInstanceStore"
 Cohesion: 0.17
 Nodes (5): Override, MVStoreWorkflowInstanceStore, MVStoreWorkflowInstanceStoreTest, org.h2.mvstore.MVMap, org.h2.mvstore.MVStore
 
-### Community 86 - "Runtime Module 86"
-Cohesion: 0.11
-Nodes (11): Override, SuppressWarnings, Multi2CompletableFuture, Override, SuppressWarnings, Uni2CompletableFuture, DataTypeConverter, DataTypeConverterRegistry (+3 more)
+### Community 86 - "DataTypeConverter"
+Cohesion: 0.10
+Nodes (12): Override, SuppressWarnings, Multi2CompletableFuture, Override, SuppressWarnings, Uni2CompletableFuture, DataTypeConverter, DataTypeConverterRegistry (+4 more)
 
-### Community 88 - "Runtime Module 88"
+### Community 87 - "WorkflowApplicationReadyEvent"
+Cohesion: 0.10
+Nodes (8): WorkflowApplicationReadyEvent, WorkflowRegistrarService, Source, Watch, WorkflowDefinitionRuntimeLoader, WorkflowFileWatcher, WorkflowDefinitionRuntimeLoaderTest, WorkflowFileWatcherTest
+
+### Community 88 - "EventFormatter"
 Cohesion: 0.20
 Nodes (3): EventFormatter, StructuredLoggingEventTypes, WorkflowError
 
-### Community 89 - "Runtime Module 89"
-Cohesion: 0.16
-Nodes (3): Override, EndpointKeyTest, OAuth2AuthenticationDataGrant
+### Community 89 - "EndpointKey"
+Cohesion: 0.09
+Nodes (12): com.fasterxml.jackson.annotation.JsonIgnoreType, FlowDSLOAuth2Test, io.serverlessworkflow.api.types.OAuth2AuthenticationData.OAuth2AuthenticationDataGrant, io.serverlessworkflow.api.types.OAuth2AuthenticationDataClient, io.serverlessworkflow.api.types.OAuth2ConnectAuthenticationProperties, io.serverlessworkflow.api.types.UriTemplate, io.serverlessworkflow.api.types.Use, EndpointKey (+4 more)
 
-### Community 90 - "Runtime Module 90"
+### Community 90 - ".saveOrUpdate"
 Cohesion: 0.23
 Nodes (3): InMemoryWorkflowInstanceStore, Override, InMemoryFlowInstanceStoreTest
 
-### Community 91 - "Runtime Module 91"
-Cohesion: 0.13
+### Community 91 - "FlowHttpConfig"
+Cohesion: 0.14
 Nodes (7): ClientOverrideConfig, FlowHttpConfig, HttpClientProvider, ClientOverrideConfig, RoutingNameResolver, jakarta.annotation.PreDestroy, jakarta.ws.rs.client.Client
 
-### Community 92 - "Runtime Module 92"
-Cohesion: 0.13
-Nodes (12): Override, WorkflowEngineHealthCheck, WorkflowApplicationInfo, WorkflowApplicationInitializer, FlowDurableKubeConfig, Health, Readiness, Override (+4 more)
+### Community 92 - "FlowDurableKubernetesProcessor.java"
+Cohesion: 0.10
+Nodes (17): Override, WorkflowEngineHealthCheck, WorkflowApplicationInfo, WorkflowApplicationInitializer, FlowDurableKubeConfig, Health, Readiness, LocalConfig (+9 more)
 
-### Community 93 - "Module 93"
+### Community 93 - "FlowPlanner"
 Cohesion: 0.19
 Nodes (9): dev.langchain4j.agentic.planner.Action, dev.langchain4j.agentic.planner.AgentInstance, dev.langchain4j.agentic.planner.InitPlanningContext, dev.langchain4j.agentic.planner.Planner, dev.langchain4j.agentic.planner.PlanningContext, AgentExchange, FlowPlanner, Override (+1 more)
 
-### Community 94 - "Configuration 94"
-Cohesion: 0.22
-Nodes (6): io.serverlessworkflow.api.types.AuthenticationPolicyUnion, io.serverlessworkflow.api.types.EndpointConfiguration, io.serverlessworkflow.api.types.OAuth2AuthenticationData, io.serverlessworkflow.api.types.TaskItem, TokenAuthPolicy, TokenAuthPolicyExtractor
+### Community 94 - "TokenAuthPolicy"
+Cohesion: 0.19
+Nodes (6): io.serverlessworkflow.api.types.AuthenticationPolicyUnion, io.serverlessworkflow.api.types.EndpointConfiguration, io.serverlessworkflow.api.types.TaskItem, TokenAuthPolicy, TokenAuthPolicyExtractor, TokenAuthPolicyTest
 
-### Community 95 - "Runtime Module 95"
-Cohesion: 0.15
-Nodes (3): io.serverlessworkflow.api.types.SchemaUnion, WorkflowDefinitionHeader, DefinitionResourceTest
+### Community 95 - "Workflow Runner REST API - Design Specification"
+Cohesion: 0.04
+Nodes (47): 1. Workflow Definition Loader, 2. Definition Management Resource, 3. Execution Resource, 4.1 Authentication Modes, 4.2 Authorization (RBAC + ABAC), 4.3 Attack Surface Mitigation, 4. Security Layer, 5. Callback Service (+39 more)
 
-### Community 96 - "Test Module 96"
-Cohesion: 0.08
-Nodes (22): FlowMetrics, FAULT_TOLERANCE_CIRCUIT_BREAKER_CLOSED, FAULT_TOLERANCE_CIRCUIT_BREAKER_FAILURE_TOTAL, FAULT_TOLERANCE_CIRCUIT_BREAKER_HALF_OPEN, FAULT_TOLERANCE_CIRCUIT_BREAKER_OPEN, FAULT_TOLERANCE_CIRCUIT_BREAKER_PREVENTED_TOTAL, FAULT_TOLERANCE_TASK_RETRY_FAILURE_TOTAL, FAULT_TOLERANCE_TASK_RETRY_TOTAL (+14 more)
+### Community 96 - "FlowMetrics"
+Cohesion: 0.10
+Nodes (21): FlowMetrics, FAULT_TOLERANCE_CIRCUIT_BREAKER_CLOSED, FAULT_TOLERANCE_CIRCUIT_BREAKER_FAILURE_TOTAL, FAULT_TOLERANCE_CIRCUIT_BREAKER_HALF_OPEN, FAULT_TOLERANCE_CIRCUIT_BREAKER_OPEN, FAULT_TOLERANCE_CIRCUIT_BREAKER_PREVENTED_TOTAL, FAULT_TOLERANCE_TASK_RETRY_FAILURE_TOTAL, FAULT_TOLERANCE_TASK_RETRY_TOTAL (+13 more)
 
-### Community 97 - "Runtime Module 97"
-Cohesion: 0.09
-Nodes (4): FuncCallGrpcStep, FuncCallOpenAPIStep, io.serverlessworkflow.fluent.spec.configurers.AuthenticationConfigurer, WithOpenAPIOutput
+### Community 97 - "FlowDSL"
+Cohesion: 0.03
+Nodes (22): FuncTaskConfigurer, FlowDSL, OAuth2AuthenticationDataGrant, FuncCallGrpcStep, FuncCallOpenAPIStep, FlowDSLConsumeTest, FlowDSLWaitTest, Deprecated (+14 more)
 
-### Community 98 - "Runtime Module 98"
-Cohesion: 0.13
-Nodes (8): ClassLoader, WorkflowMetadataBuilder, io.serverlessworkflow.fluent.spec.InputBuilder, AgenticFlow, WorkflowMetadataBuilder, Override, Override, Override
+### Community 98 - "AgenticFlow"
+Cohesion: 0.17
+Nodes (6): io.serverlessworkflow.fluent.spec.InputBuilder, AgenticFlow, WorkflowMetadataBuilder, Override, Override, Override
 
-### Community 99 - "Example 99"
-Cohesion: 0.13
-Nodes (14): TaskExecutionContext, TaskResult, TaskStatus, COMPLETED, FAILED, PENDING, RETRYING, RUNNING (+6 more)
+### Community 99 - "TaskWorkflow.java"
+Cohesion: 0.18
+Nodes (9): TaskExecutionContext, TaskResult, TaskStatus, COMPLETED, FAILED, PENDING, RETRYING, RUNNING (+1 more)
 
-### Community 100 - "Example 100"
-Cohesion: 0.26
-Nodes (3): BuildTask, TaskExecutorTest, TaskWorkflowIT
-
-### Community 101 - "Module 101"
+### Community 101 - "Quarkus Flow Runner"
 Cohesion: 0.11
 Nodes (25): CloudEvents, Durable Kubernetes, Workflow File Watcher, Human-in-the-Loop (HITL), Kubernetes Resources, LangChain4j Integration, Lifecycle Events, Messaging Integration (+17 more)
 
-### Community 102 - "Deployment Module 102"
-Cohesion: 0.13
-Nodes (13): EventPropertiesPredicate, FuncCloudEventPredicate, FuncCloudEventPredicateFactory, Override, MetadataPropagationRequestDecorator, io.serverlessworkflow.api.types.EventProperties, io.serverlessworkflow.impl.events.CloudEventAttrPredicate, io.serverlessworkflow.impl.events.CloudEventPredicate (+5 more)
-
-### Community 103 - "Test Module 103"
-Cohesion: 0.10
-Nodes (12): Override, Proposal, SaveProposalWorkflow, Order, OrderService, Override, OrderWorkflowGood, io.quarkus.hibernate.orm.panache.PanacheEntity (+4 more)
-
-### Community 104 - "Runtime Module 104"
+### Community 102 - "FuncCloudEventPredicate.java"
 Cohesion: 0.18
+Nodes (10): EventPropertiesPredicate, FuncCloudEventPredicate, FuncCloudEventPredicateFactory, Override, io.serverlessworkflow.api.types.EventProperties, io.serverlessworkflow.impl.events.CloudEventAttrPredicate, io.serverlessworkflow.impl.events.CloudEventPredicate, io.serverlessworkflow.impl.events.CloudEventPredicateFactory (+2 more)
+
+### Community 103 - "SaveProposalWorkflow.java"
+Cohesion: 0.19
+Nodes (5): Override, Proposal, SaveProposalWorkflow, Order, io.quarkus.hibernate.orm.panache.PanacheEntity
+
+### Community 104 - "io.serverlessworkflow.impl.WorkflowDefinitionId"
+Cohesion: 0.17
 Nodes (4): ClientConfigCascade, ClientNamingConvention, io.serverlessworkflow.impl.WorkflowDefinitionId, OidcNamingConvention
 
-### Community 105 - "Test Module 105"
-Cohesion: 0.14
-Nodes (6): FuncEventFilterTest, HumanReview, NewsletterDraft, NewsletterRequest, Review, Override
+### Community 105 - ".toOne"
+Cohesion: 0.05
+Nodes (19): ListenUntilCurrentTest, Order, ListenUntilValidationTest, FlowDSLListenFirstTest, FuncEventFilterSpecTest, TestOrder, FuncEventFilterTest, HumanReview (+11 more)
 
-### Community 107 - "Example 107"
+### Community 106 - "Kubernetes Quick Start Guide"
+Cohesion: 0.04
+Nodes (43): 📝 Adding Your Workflows, Check HA leases (Standard/Messaging), Check health, 🧹 Cleanup, ⚙️ Custom Configuration, Database connection failed, HA failover not working, Kubernetes Quick Start Guide (+35 more)
+
+### Community 107 - "dev.langchain4j.agentic.Agent"
 Cohesion: 0.13
 Nodes (5): dev.langchain4j.agentic.Agent, DumbAgent, DumbAgent, DumbAgent, DumbAgent
 
-### Community 108 - "Test Module 108"
+### Community 108 - "FlowMessagingDevServicesKafkaTest"
 Cohesion: 0.10
 Nodes (15): FlowMessagingDefaultConfigOverrideTest.CustomTopicProfile, FlowMessagingDevServicesAmqpTest.DevServicesMessagingProfile, FlowMessagingDevServicesKafkaTest.DevServicesKafkaProfile, io.quarkus.test.kafka.KafkaCompanionResource, DevServicesMessagingProfile, FlowMessagingDevServicesAmqpTest, Override, CustomTopicProfile (+7 more)
 
-### Community 109 - "Deployment Module 109"
-Cohesion: 0.13
-Nodes (13): CardPageBuildItem, FlowDevUIProcessor, Override, RuntimeDevApplicationBuilderCustomizer, FlowDevUIConfig, WorkflowApplicationBuilderCustomizer, io.quarkus.deployment.IsDevelopment, io.quarkus.deployment.IsLocalDevelopment (+5 more)
+### Community 109 - "FlowDevUIProcessor.java"
+Cohesion: 0.14
+Nodes (13): CardPageBuildItem, FlowDevUIProcessor, Override, LifecycleManagementBackendObjectMapperCustomizer, FlowDevUIConfig, Override, ObjectMapperCloudEventCustomizer, io.quarkus.deployment.IsDevelopment (+5 more)
 
-### Community 110 - "Runtime Module 110"
+### Community 110 - "FuncListenTaskBuilder"
 Cohesion: 0.12
 Nodes (8): FuncListenConfigurer, FunctionalInterface, FuncListenSpec, Override, FuncListenTaskBuilder, Override, ListenStep, io.serverlessworkflow.fluent.spec.AbstractListenTaskBuilder
 
-### Community 111 - "Test Module 111"
-Cohesion: 0.11
-Nodes (12): DevUIAgenticServiceBean, Override, ObjectMapperCloudEventCustomizer, GrpcClientHolder, MutinyGreeterStub, GreeterClientHolder, MutinyGreeterStub, io.quarkus.arc.Unremovable (+4 more)
+### Community 111 - "io.quarkus.arc.Unremovable"
+Cohesion: 0.09
+Nodes (16): DevUIAgenticServiceBean, Override, RuntimeDevApplicationBuilderCustomizer, WorkflowApplicationBuilderCustomizer, GrpcClientHolder, MutinyGreeterStub, GreeterClientHolder, MutinyGreeterStub (+8 more)
 
-### Community 112 - "Runtime Module 112"
+### Community 112 - "io.serverlessworkflow.impl.events.EventPublisher"
 Cohesion: 0.16
 Nodes (8): io.serverlessworkflow.impl.events.EventPublisher, io.smallrye.reactive.messaging.MutinyEmitter, ContentBasedRouterEventsPublisher, Override, FlowDomainEventsPublisher, Override, FlowLifecycleEventsPublisher, Override
 
-### Community 113 - "Test Module 113"
+### Community 113 - "TestAgentMethods"
 Cohesion: 0.09
 Nodes (7): TestAgentMethods, TestEnum, BLUE, GREEN, RED, TestPojo, TestRecord
 
-### Community 114 - "Runtime Module 114"
-Cohesion: 0.15
-Nodes (3): Override, RuntimeParallelAgenticFlowTest, RuntimeWorkflowApplicationProviderTest
+### Community 114 - "RuntimeParallelAgenticFlowTest"
+Cohesion: 0.24
+Nodes (3): Override, RuntimeParallelAgenticFlow, RuntimeParallelAgenticFlowTest
 
-### Community 115 - "Test Module 115"
+### Community 115 - ".executeAndGetSpans"
 Cohesion: 0.15
 Nodes (4): OTelBaseIT, Override, SwitchTaskIT, Utils
 
-### Community 117 - "Runtime Module 117"
-Cohesion: 0.16
-Nodes (7): io.serverlessworkflow.impl.AbstractWorkflowModel, io.serverlessworkflow.impl.model.jackson.JacksonModel, java.util.Map.Entry, AgenticAwareWorkflowModel, Override, AgenticAwareWorkflowModelMarshaller, Override
+### Community 116 - "jakarta.ws.rs.Produces"
+Cohesion: 0.07
+Nodes (16): IdentifierResource, ProposalResource, MarketDataSnapshot, MarketDataResource, MarketDataSnapshot, CustomerProfileResource, MarketDataSnapshot, MarketDataResource (+8 more)
 
-### Community 118 - "Deployment Module 118"
+### Community 117 - "AgenticAwareWorkflowModel"
+Cohesion: 0.14
+Nodes (8): io.serverlessworkflow.impl.AbstractWorkflowModel, io.serverlessworkflow.impl.model.jackson.JacksonModel, io.serverlessworkflow.impl.model.jackson.JacksonModelFactory, java.util.Map.Entry, AgenticAwareWorkflowModel, Override, AgenticAwareWorkflowModelMarshaller, Override
+
+### Community 118 - "Messaging Runner Variant"
 Cohesion: 0.16
 Nodes (22): Docker Compose Deployment, Durable Kubernetes, Hello World Example Workflow, HA Failover Architecture, JPA, Kubernetes Base Durable Resources, Kubernetes Base Resources, Lease Manager Role (+14 more)
 
-### Community 119 - "Runtime Module 119"
-Cohesion: 0.19
-Nodes (3): io.serverlessworkflow.api.types.ReferenceableAuthenticationPolicy, io.serverlessworkflow.api.types.Use, OidcAuthProviderFactoryTest
+### Community 120 - "Runtime File Watcher for New Workflow Definitions - Design Specification"
+Cohesion: 0.07
+Nodes (28): Alternatives Considered, Architecture, Build-Time Property, Components, Configuration, Context, Current Behavior, Error Resilience (+20 more)
 
-### Community 120 - "Test Module 120"
-Cohesion: 0.13
-Nodes (7): Override, OllamaMockResource, Override, WireMockServer, Override, WireMockServer, WiremockOllamaUtils
+### Community 121 - "org.testcontainers.containers.GenericContainer"
+Cohesion: 0.20
+Nodes (8): org.testcontainers.containers.GenericContainer, org.testcontainers.containers.Network, InfinispanRespClusteredResource, GenericContainer, Override, InfinispanRespStandaloneResource, GenericContainer, Override
 
-### Community 121 - "Test Module 121"
+### Community 122 - ".from"
+Cohesion: 0.23
+Nodes (6): io.quarkus.oidc.client.runtime.OidcClientConfig, ClientAuthentication, Method, OAuth2AuthenticationDataGrant, Type, OidcClientConfigFactory
+
+### Community 123 - "org.slf4j.Logger"
+Cohesion: 0.12
+Nodes (12): TestSerializationUtils, TestSerializationUtils, DemoWorkflowIT, Override, MailServiceLoggingImpl, ReconciliationResult, StateReconciliationService, TaskExecutor (+4 more)
+
+### Community 124 - "WorkflowRPCService"
 Cohesion: 0.16
-Nodes (10): org.testcontainers.containers.GenericContainer, org.testcontainers.containers.Network, InfinispanRespClusteredResource, GenericContainer, Override, InfinispanRespStandaloneResource, GenericContainer, Override (+2 more)
+Nodes (5): MermaidDefinition, WorkflowInfo, WorkflowOutput, WorkflowRPCService, WorkflowInvoker
 
-### Community 122 - "Test Module 122"
-Cohesion: 0.14
-Nodes (11): com.fasterxml.jackson.annotation.JsonIgnoreType, io.quarkus.oidc.client.runtime.OidcClientConfig, io.serverlessworkflow.api.types.OAuth2AuthenticationData.OAuth2AuthenticationDataGrant, io.serverlessworkflow.api.types.OAuth2AuthenticationDataClient, io.serverlessworkflow.api.types.OAuth2ConnectAuthenticationProperties, io.serverlessworkflow.api.types.UriTemplate, ClientAuthentication, Method (+3 more)
+### Community 125 - "Durable Workflows on Kubernetes Example"
+Cohesion: 0.20
+Nodes (11): Quarkus Flow Codestart Configuration, Quarkus Flow Core Extension Metadata, Echo Name Workflow v0.2.0, Echo Name Workflow v0.1.0, Quarkus Flow Durable Kubernetes Module, Flow Durable Kubernetes Extension Metadata, Redis/Valkey State Persistence Deployment, Durable Workflows on Kubernetes Example (+3 more)
 
-### Community 123 - "Deployment Module 123"
-Cohesion: 0.14
-Nodes (7): FlowLoggingUtils, TestSerializationUtils, TestSerializationUtils, DemoWorkflowIT, Override, MailServiceLoggingImpl, org.slf4j.Logger
+### Community 126 - "MicrometerExecutionListener"
+Cohesion: 0.21
+Nodes (6): Override, MicrometerExecutionListener, WorkflowInstanceCounters, WorkflowMetadata, io.serverlessworkflow.impl.lifecycle.WorkflowEvent, java.util.function.DoublePredicate
 
-### Community 124 - "Runtime Module 124"
-Cohesion: 0.17
-Nodes (6): MermaidDefinition, WorkflowInfo, WorkflowOutput, WorkflowRPCService, WorkflowInvoker, io.quarkus.runtime.annotations.JsonRpcDescription
-
-### Community 125 - "Runtime Module 125"
-Cohesion: 0.10
-Nodes (21): Quarkus Flow Codestart Configuration, Quarkus Flow Core Extension Metadata, Echo Name Workflow v0.2.0, Echo Name Workflow v0.1.0, Quarkus Flow Durable Kubernetes Module, Flow Durable Kubernetes Extension Metadata, Agentic HTTP Example, HTTP OAuth2 + OIDC Example (+13 more)
-
-### Community 126 - "Runtime Module 126"
-Cohesion: 0.13
-Nodes (9): FuncEmitConfigurer, FunctionalInterface, EmitStep, FuncEmitSpec, Override, FuncEmitTaskBuilder, Override, io.serverlessworkflow.fluent.spec.AbstractEmitTaskBuilder (+1 more)
-
-### Community 127 - "Runtime Module 127"
+### Community 127 - "io.serverlessworkflow.impl.WorkflowContextData"
 Cohesion: 0.15
-Nodes (11): Override, SuppressWarnings, JavaCallFunctionBuilder, FunctionalInterface, LoopFunction, FunctionalInterface, LoopFunctionIndex, FunctionalInterface (+3 more)
+Nodes (5): CtxBiFunction, FunctionalInterface, IdempotencyExample, io.serverlessworkflow.impl.TaskContextData, io.serverlessworkflow.impl.WorkflowContextData
 
-### Community 128 - "Example 128"
+### Community 128 - "common.sh"
 Cohesion: 0.28
 Nodes (16): count_ready_pods(), ensure_replicas(), find_leader_lease(), holder_to_pod_guess(), k(), lease_holder(), lease_jsonpath(), lease_renew() (+8 more)
 
-### Community 129 - "Test Module 129"
-Cohesion: 0.15
-Nodes (6): FuncOAuth2HttpTest, OAuth2Client, Override, FuncOAuth2HttpTest.WireMockTestResource, io.serverlessworkflow.fluent.spec.dsl.UseSpec, Override
+### Community 129 - "FuncOAuth2HttpTest"
+Cohesion: 0.23
+Nodes (6): FuncOAuth2HttpTest, Override, WireMockServer, OAuth2Client, WireMockTestResource, FuncOAuth2HttpTest.WireMockTestResource
 
-### Community 131 - "Runtime Module 131"
-Cohesion: 0.16
-Nodes (9): ManagementLifecycleRPCService, Sort, LAST_UPDATE_ASC, LAST_UPDATE_DESC, START_TIME_ASC, START_TIME_DESC, STATUS_ASC, STATUS_DESC (+1 more)
+### Community 131 - "io.serverlessworkflow.impl.WorkflowStatus"
+Cohesion: 0.12
+Nodes (13): ManagementLifecycleRPCService, Sort, LAST_UPDATE_ASC, LAST_UPDATE_DESC, START_TIME_ASC, START_TIME_DESC, STATUS_ASC, STATUS_DESC (+5 more)
 
-### Community 132 - "Runtime Module 132"
+### Community 132 - "Build-Time Generation of LangChain4j Agentic Workflows"
+Cohesion: 0.08
+Nodes (24): 1. AgenticFlow Base Class, 2. Metadata Classes (Build-Time Only), 3. Index-Based Agent Execution, 4. Generated Flow Classes, 5. Input Schema Generation (Build-Time), Architecture, Build-Time Config Fix, Build-Time Generation of LangChain4j Agentic Workflows (+16 more)
+
+### Community 133 - "io.serverlessworkflow.impl.WorkflowDefinition"
 Cohesion: 0.18
-Nodes (3): FuncDoTaskBuilder, Override, io.serverlessworkflow.fluent.spec.BaseDoTaskBuilder
+Nodes (9): Override, NoOpScheduler, EchoYamlWorkflowTest, io.quarkus.scheduler.Scheduler.JobDefinition, io.serverlessworkflow.impl.scheduler.Cancellable, io.serverlessworkflow.impl.WorkflowDefinition, Override, SuppressWarnings (+1 more)
 
-### Community 133 - "Runtime Module 133"
-Cohesion: 0.21
-Nodes (10): Override, NoOpScheduler, io.quarkus.arc.lookup.LookupUnlessProperty, io.quarkus.scheduler.Scheduler, io.quarkus.scheduler.Scheduler.JobDefinition, io.serverlessworkflow.impl.scheduler.Cancellable, io.serverlessworkflow.impl.scheduler.EventWorkflowScheduler, FlowScheduler (+2 more)
+### Community 134 - "WorkflowNameUtils"
+Cohesion: 0.10
+Nodes (8): FlowIdentifierBuildItem, FlowResourceCollectorProcessor, WorkflowDefinitionId, WorkflowNameUtils, io.quarkus.builder.item.MultiBuildItem, io.quarkus.deployment.builditem.ApplicationArchivesBuildItem, io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem, NativeImageResourceBuildItem
 
-### Community 134 - "Runtime Module 134"
-Cohesion: 0.15
-Nodes (3): Namespace, ObjectMapper, NamespaceAuthorizationServiceTest
+### Community 135 - "Resilient Task Orchestrator (Quarkus Flow + Event-Driven Choreography)"
+Cohesion: 0.08
+Nodes (24): 1. **Event-Driven Choreography**, 1. Fix Critical Issues (High Priority), 2. Add Persistence (Medium Priority), 2. **Idempotent Task Execution**, 3. Add Real State Reconciliation (Medium Priority), 3. **State Reconciliation (Simulated)**, 4. **Automatic Retry**, 4. Nice-to-Have Improvements (+16 more)
 
-### Community 135 - "Runtime Module 135"
-Cohesion: 0.15
-Nodes (9): com.fasterxml.jackson.databind.deser.std.StdDeserializer, FlowInstanceDeserializer, io.serverlessworkflow.impl.model.jackson.JacksonModelFactory, FlowLangChain4jApplicationBuilderCustomizer, Override, AgenticAwareModelFactory, Override, AgenticAwareWorkflowModelDeserializer (+1 more)
+### Community 136 - "WorkflowApplicationCreator"
+Cohesion: 0.25
+Nodes (4): CustomExecutionListener, WorkflowApplicationCreator, io.serverlessworkflow.impl.lifecycle.WorkflowExecutionCompletableListener, io.serverlessworkflow.impl.WorkflowApplication.Builder
 
-### Community 136 - "Test Module 136"
-Cohesion: 0.24
-Nodes (5): CustomExecutionListener, FlowTracingConfig, WorkflowApplicationCreator, io.serverlessworkflow.impl.lifecycle.WorkflowExecutionCompletableListener, io.serverlessworkflow.impl.WorkflowApplication.Builder
-
-### Community 137 - "Test Module 137"
+### Community 137 - "io.quarkus.test.junit.QuarkusIntegrationTest"
 Cohesion: 0.14
 Nodes (8): EchoResourceIT, HelloResourceIT, ProposalResourceIT, AuthFlowResourceIT, GrpcGreetingFlowIT, io.quarkus.test.junit.QuarkusIntegrationTest, ForkTaskIT, Override
 
-### Community 138 - "Runtime Module 138"
+### Community 138 - "io.serverlessworkflow.impl.marshaller.CustomObjectMarshaller"
 Cohesion: 0.21
 Nodes (7): Override, JavaModelCollectionMarshaller, Override, SerializableObjectMarshaller, io.serverlessworkflow.impl.marshaller.CustomObjectMarshaller, io.serverlessworkflow.impl.marshaller.WorkflowInputBuffer, io.serverlessworkflow.impl.marshaller.WorkflowOutputBuffer
 
-### Community 139 - "Runtime Module 139"
-Cohesion: 0.18
-Nodes (6): FunctionDeserializer, Override, ClassLoader, ReflectionUtils, java.lang.invoke.MethodType, java.lang.invoke.SerializedLambda
+### Community 139 - "ReflectionUtils"
+Cohesion: 0.07
+Nodes (20): Override, SuppressWarnings, JavaCallFunctionBuilder, CallJava, CallFunction, InstanceIdFunction, FunctionalInterface, FunctionalInterface (+12 more)
 
-### Community 140 - "Runtime Module 140"
+### Community 140 - "SchedulerConfig"
 Cohesion: 0.18
 Nodes (4): SchedulerConfig, Override, PoolControllerDelayTest, TestablePoolController
 
-### Community 141 - "Runtime Module 141"
+### Community 141 - "RuntimeConditionalAgenticFlow"
 Cohesion: 0.24
 Nodes (3): Override, RuntimeConditionalAgenticFlow, RuntimeConditionalAgenticFlowTest
 
-### Community 142 - "Test Module 142"
-Cohesion: 0.22
+### Community 142 - "StructuredLoggingListenerTest.java"
+Cohesion: 0.18
 Nodes (4): WorkflowNameUtilsTest, org.junit.jupiter.params.ParameterizedTest, org.junit.jupiter.params.provider.Arguments, org.junit.jupiter.params.provider.MethodSource
 
-### Community 143 - "Test Module 143"
-Cohesion: 0.17
-Nodes (5): CustomListenerTest, WorkflowApplicationIdTest, WorkflowRegistrarService, io.serverlessworkflow.impl.WorkflowApplication, WorkflowFileWatcher
+### Community 143 - "GizmoAgentFlowsHelperTest.java"
+Cohesion: 0.12
+Nodes (13): dev.langchain4j.agentic.declarative.A2AClientAgent, dev.langchain4j.agentic.declarative.ParallelAgent, dev.langchain4j.agentic.declarative.ParallelMapperAgent, dev.langchain4j.agentic.declarative.PlannerAgent, dev.langchain4j.agentic.declarative.SupervisorAgent, TestA2AClientAgent, TestAgent1, TestAgent2 (+5 more)
 
-### Community 145 - "Module 145"
+### Community 145 - "opentelemetry"
 Cohesion: 0.22
 Nodes (18): POST /q/flow/exec/{namespace}/{name}/{version}, For Loop Pattern, opentelemetry, task.execute Emit Iteration Event (1), task.execute Emit Iteration Event (2), task.execute Emit Iteration Event (3), task.execute For Task, POST /q/flow/exec/{namespace}/{name}/{version} (+10 more)
 
-### Community 146 - "Test Module 146"
-Cohesion: 0.25
-Nodes (3): io.serverlessworkflow.impl.persistence.PersistenceInstanceWriter, FilteredPersistenceWriter, Override
+### Community 146 - "FilteredPersistenceWriterTest"
+Cohesion: 0.10
+Nodes (10): io.serverlessworkflow.impl.persistence.PersistenceInstanceWriter, org.junit.jupiter.api.extension.ExtendWith, org.mockito.junit.jupiter.MockitoExtension, org.mockito.junit.jupiter.MockitoSettings, FilteredPersistenceWriterTest, FilteredPersistenceWriter, Override, Override (+2 more)
 
-### Community 147 - "Test Module 147"
-Cohesion: 0.15
-Nodes (4): io.serverlessworkflow.impl.WorkflowStatus, jakarta.persistence.IdClass, org.hibernate.annotations.DynamicUpdate, WorkflowInstanceEntity
+### Community 147 - "Releasing Runner Docker Images"
+Cohesion: 0.09
+Nodes (22): 1. Version Verification, 2. Build from Maven Central, 3. Docker Build (Matrix Strategy), 4. Image Publishing, "Cannot release SNAPSHOT version", "Dependency not found in Maven Central", "Login to quay.io failed", Official Release (+14 more)
 
-### Community 150 - "Module 150"
-Cohesion: 0.21
-Nodes (10): org.quartz.Job, org.quartz.JobDataMap, org.quartz.JobExecutionContext, org.quartz.Scheduler, org.quartz.Trigger, org.quartz.TriggerBuilder, FlowQuartz, Override (+2 more)
+### Community 150 - "FlowQuartz.java"
+Cohesion: 0.20
+Nodes (13): io.quarkus.arc.lookup.LookupUnlessProperty, io.quarkus.scheduler.Scheduler, io.serverlessworkflow.impl.scheduler.EventWorkflowScheduler, org.quartz.Job, org.quartz.JobDataMap, org.quartz.JobExecutionContext, org.quartz.Scheduler, org.quartz.Trigger (+5 more)
 
-### Community 152 - "Module 152"
+### Community 151 - "Assessment: Move SDK Experimental DSL to Quarkus Flow"
+Cohesion: 0.09
+Nodes (21): Assessment: Move SDK Experimental DSL to Quarkus Flow, Class renames, Context, Current dependency chain, Decision: Inline into `core/` — no new module, Execution plan (high level), Files that import from experimental packages, Follow-up (separate PRs) (+13 more)
+
+### Community 152 - "opentelemetry"
 Cohesion: 0.17
 Nodes (16): Action Buttons, Compare Traces Feature, POST /q/flow/exec/{namespace}/{name}/{version}, jaeger, Navigation Menu, opentelemetry, Search Filters, Service Search Input (+8 more)
 
-### Community 153 - "Module 153"
+### Community 153 - "Trace 27c54f3"
 Cohesion: 0.16
 Nodes (16): Distributed Tracing, Workflow Tracing, 7 Errors, Operation Filter, Service Filter, Tags Filter, Jaeger UI, POST /q/flow/exec/{namespace}/{name}/{version} (+8 more)
 
-### Community 154 - "Test Module 154"
-Cohesion: 0.18
-Nodes (7): Call4PapersFlow, Override, NotificationPayload, Proposal, ProposalScore, ProposalSubmission, FlowDSLDataFlowTransformationHelpersTest
+### Community 154 - "Call4PapersFlow"
+Cohesion: 0.12
+Nodes (12): Call4PapersFlow, Override, NotificationPayload, Proposal, ProposalScore, FlowDSLDataFlowTransformationHelpersTest, Call4PapersFlow, Override (+4 more)
 
-### Community 155 - "Example 155"
+### Community 155 - "Quarkus Flow Dashboard"
 Cohesion: 0.18
 Nodes (16): Dashboard Controls, faulted-workflow, Grafana Navigation Sidebar, Quarkus Flow Dashboard, retryable-example, simple-workflow, Task Completed Total, Task Faulted Total (+8 more)
 
-### Community 156 - "Module 156"
-Cohesion: 0.22
-Nodes (4): org.junit.jupiter.api.extension.ExtendWith, org.mockito.junit.jupiter.MockitoExtension, org.mockito.junit.jupiter.MockitoSettings, FilteredPersistenceWriterTest
+### Community 156 - "NewsletterRequest.java"
+Cohesion: 0.10
+Nodes (20): com.fasterxml.jackson.annotation.JsonCreator, from(), ReviewStatus, DONE, NEEDS_REVISION, from(), Override, Length (+12 more)
 
-### Community 157 - "Test Module 157"
-Cohesion: 0.20
-Nodes (3): Durations, FlowMetricsConfig, ResilienceConfig
+### Community 157 - "FlowMetricsConfig"
+Cohesion: 0.13
+Nodes (7): Durations, FlowMetricsConfig, ResilienceConfig, CircuitBreakerCounters, CircuitBreakerKey, SuppressWarnings, io.smallrye.faulttolerance.api.CircuitBreakerState
 
-### Community 158 - "Test Module 158"
-Cohesion: 0.17
-Nodes (3): ListenUntilValidationTest, FuncEventFilterSpecTest, TestOrder
+### Community 158 - "Order Fulfillment with Compensation (Quarkus Flow + Saga Pattern)"
+Cohesion: 0.10
+Nodes (20): 1) Run the app, 🧩 Architecture: The Saga Pattern, 🎯 Business Logic, Compensation Chain, 📖 Documentation, Error Handling Strategies, 🎓 Extend This Example, Key Concepts (+12 more)
 
-### Community 159 - "Runtime Module 159"
-Cohesion: 0.20
-Nodes (8): Override, WorkflowExceptionMapper, ApprovalService, VacationRequest, io.serverlessworkflow.impl.WorkflowError, io.serverlessworkflow.impl.WorkflowException, jakarta.ws.rs.ext.ExceptionMapper, jakarta.ws.rs.ext.Provider
+### Community 159 - "WorkflowExceptionMapper.java"
+Cohesion: 0.33
+Nodes (6): Override, WorkflowExceptionMapper, io.serverlessworkflow.impl.WorkflowError, io.serverlessworkflow.impl.WorkflowException, jakarta.ws.rs.ext.ExceptionMapper, jakarta.ws.rs.ext.Provider
 
-### Community 160 - "Runtime Module 160"
-Cohesion: 0.25
-Nodes (6): dev.langchain4j.agentic.workflow.impl.ConditionalAgentServiceImpl, ConditionalAgenticFlow, Override, RuntimeFlowConditionalAgentService, FlowConditionalAgentService, Override
+### Community 160 - "ConditionalAgenticFlow"
+Cohesion: 0.19
+Nodes (7): dev.langchain4j.agentic.workflow.impl.ConditionalAgentServiceImpl, jakarta.enterprise.inject.Vetoed, ConditionalAgenticFlow, Override, RuntimeFlowConditionalAgentService, FlowConditionalAgentService, Override
 
-### Community 161 - "Documentation 161"
+### Community 161 - "package.json"
 Cohesion: 0.13
 Nodes (14): dependencies, asciidoctor, asciidoctor-kroki, @mermaid-js/mermaid-cli, phantomjs, devDependencies, @antora/cli, @antora/site-generator (+6 more)
 
-### Community 162 - "Example 162"
+### Community 162 - ".sayHello"
 Cohesion: 0.19
 Nodes (11): GreeterServiceImpl, HelloReply, HelloRequest, Override, GreeterImplBase, GreeterServiceImpl, HelloReply, HelloRequest (+3 more)
 
-### Community 165 - "Module 165"
+### Community 164 - ".createAndRegisterStaticClient"
+Cohesion: 0.21
+Nodes (3): io.quarkus.oidc.client.OidcClient, FlowOidcProcessor, RunTimeConfigurationDefaultBuildItem
+
+### Community 165 - "Build-time"
 Cohesion: 0.16
 Nodes (14): Agentic workflows, Application bootstrap, Build-time, Customizers and providers, Discovery and registration, Durable Kubernetes coordination, Optional extensions, Persistence (+6 more)
 
-### Community 166 - "Module 166"
-Cohesion: 0.15
-Nodes (14): AssertJ, Build with Integration Tests Workflow (build-it.yml), Build Workflow (build.yml), CI Pipeline, Contributing Guide, Durable Workflows Kubernetes Kind Workflow (durable-k8s-kind.yml), LLM Usage Policy, Mocked LLM Calls Testing Principle (+6 more)
+### Community 166 - "Testing Requirements"
+Cohesion: 0.33
+Nodes (7): AssertJ, Mocked LLM Calls Testing Principle, Parallel Test Execution Principle, Quarkus Dev Services, Quarkus Mockito, Testcontainers, Testing Requirements
 
-### Community 168 - "Test Module 168"
+### Community 168 - "Build & Test Core Job"
 Cohesion: 0.16
 Nodes (14): Code Coverage Reporting, Ollama LLM Setup, Test Matrix Strategy, Build & Test Job, Build Examples Job, Build & Test Core DevUI Job, Build & Test Core Job, Build & Test Extensions Job (+6 more)
 
-### Community 170 - "Test Module 170"
-Cohesion: 0.18
-Nodes (8): FastCircuitBreakerTestProfiler, FlowCircuitBreakerMetricsTest, Override, UniWorkflowTest, FlowCircuitBreakerMetricsTest.FastCircuitBreakerTestProfiler, FlowCircuitBreakerMetricsTest.MeterRegistryProducer, io.quarkus.test.component.QuarkusComponentTest, io.smallrye.common.annotation.Identifier
+### Community 170 - "FlowCircuitBreakerMetricsTest"
+Cohesion: 0.22
+Nodes (6): FastCircuitBreakerTestProfiler, FlowCircuitBreakerMetricsTest, Override, MeterRegistryProducer, FlowCircuitBreakerMetricsTest.FastCircuitBreakerTestProfiler, FlowCircuitBreakerMetricsTest.MeterRegistryProducer
 
-### Community 171 - "Runtime Module 171"
+### Community 171 - "io.quarkus.runtime.annotations.ConfigGroup"
 Cohesion: 0.20
 Nodes (9): FlowDevUIBackendConfig, StorageConfig, Override, MVStoreConfig, StorageType, IN_MEMORY, MVSTORE, toString() (+1 more)
 
-### Community 173 - "Test Module 173"
+### Community 173 - "Call4PapersAgentic"
 Cohesion: 0.26
 Nodes (7): Agents, Call4PapersAgentic, ConferenceReviewerPlanner, Proposal, ProposalImproverAgent, ProposalReview, ScoreJavaProposal
 
-### Community 174 - "Test Module 174"
+### Community 174 - "IndexedSpanInfo"
 Cohesion: 0.23
 Nodes (4): IndexedSpanInfo, Override, TaskSpanKey, WorkflowSpanKey
 
-### Community 175 - "Runtime Module 175"
-Cohesion: 0.20
-Nodes (3): Source, Watch, WorkflowDefinitionRuntimeLoader
+### Community 175 - "io.cloudevents.CloudEventData"
+Cohesion: 0.17
+Nodes (9): io.cloudevents.CloudEventData, jakarta.persistence.AttributeConverter, jakarta.persistence.Converter, CloudEventDataConverter, Override, Override, URIDataConverter, Override (+1 more)
 
-### Community 176 - "Module 176"
+### Community 176 - "Search"
 Cohesion: 0.24
 Nodes (13): Compare Traces, Deep Dependency Graph, POST /q/flow/exec/{namespace}/{name}/{version}, Jaeger UI, Lookback, opentelemetry, Operation Filter, Quarkus Flow (+5 more)
 
-### Community 178 - "Runtime Module 178"
+### Community 178 - "com.fasterxml.jackson.databind.annotation.JsonDeserialize"
 Cohesion: 0.42
 Nodes (8): com.fasterxml.jackson.databind.annotation.JsonDeserialize, com.fasterxml.jackson.databind.annotation.JsonSerialize, FuncExportAsMixIn, FuncForInMixIn, FuncInputFromMixIn, FuncOutputAsMixIn, io.serverlessworkflow.api.types.jackson.ForInMixIn, io.serverlessworkflow.api.types.jackson.OutputAsMixIn
 
-### Community 179 - "Test Module 179"
-Cohesion: 0.21
-Nodes (5): HelloResource, HelloWorkflow, Message, Override, ProblematicWorkflow
-
-### Community 180 - "Runtime Module 180"
+### Community 180 - "QuarkusManagedExecutorServiceFactory"
 Cohesion: 0.24
 Nodes (7): Override, QuarkusManagedExecutorServiceFactory, io.serverlessworkflow.impl.ExecutorServiceFactory, io.serverlessworkflow.impl.persistence.AbstractAsyncPersistenceExecutor, org.eclipse.microprofile.context.ManagedExecutor, Override, JpaPersistenceExecutor
 
-### Community 181 - "Module 181"
+### Community 181 - "task.execute Select Case Trace"
 Cohesion: 0.20
 Nodes (12): Deep Dependency Graph, Download Results, POST /q/flow/exec/{namespace}/{name}/{version}, task.execute Select Case, Sort Control, Timeline Visualization, task.execute Select Case Trace, Trace 1 Errors (+4 more)
 
-### Community 182 - "Test Module 182"
-Cohesion: 0.26
-Nodes (6): CronWorkflowTest, EchoYamlWorkflowTest, io.serverlessworkflow.impl.persistence.AbstractPersistenceInstanceReader, io.serverlessworkflow.impl.WorkflowDefinition, Override, JpaInstanceReader
+### Community 182 - "JpaInstanceReader"
+Cohesion: 0.47
+Nodes (3): io.serverlessworkflow.impl.persistence.AbstractPersistenceInstanceReader, Override, JpaInstanceReader
 
-### Community 183 - "Runtime Module 183"
+### Community 183 - "Fabric8KubeInfoStrategy"
 Cohesion: 0.23
 Nodes (3): Fabric8KubeInfoStrategy, Override, KubernetesAwareness
 
-### Community 185 - "Module 185"
+### Community 184 - "FlowAPIResource"
+Cohesion: 0.22
+Nodes (3): FlowAPIResource, FlowRequest, io.serverlessworkflow.impl.WorkflowInstance
+
+### Community 185 - "task.execute Try Task"
 Cohesion: 0.22
 Nodes (11): Error Recovery, Try-Catch Error Handling, task.execute Execute After Failing Task (attempt 1), task.execute Execute After Failing Task (attempt 2), task.execute Execute After Failing Task (attempt 3), task.execute Failing Task (attempt 1), task.execute Failing Task (attempt 2), task.execute Failing Task (attempt 3) (+3 more)
 
-### Community 186 - "Test Module 186"
+### Community 186 - "MicroprofileConfigManager"
 Cohesion: 0.25
 Nodes (4): SecretResolutionFromConfigFileTest, Override, MicroprofileConfigManager, io.serverlessworkflow.impl.config.ConfigManager
 
-### Community 188 - "Test Module 188"
+### Community 187 - "io.serverlessworkflow.impl.WorkflowModel"
+Cohesion: 0.19
+Nodes (5): Override, JavaModelFactory, io.serverlessworkflow.impl.WorkflowModel, io.serverlessworkflow.impl.WorkflowModelCollection, CompletedTaskEntity
+
+### Community 188 - "FuncCallAsyncTest"
 Cohesion: 0.29
 Nodes (3): FuncCallAsyncTest, Override, TimeListener
 
-### Community 190 - "Runtime Module 190"
+### Community 190 - "MVStoreProducer.java"
 Cohesion: 0.31
 Nodes (4): io.serverlessworkflow.impl.persistence.mvstore.MVStorePersistenceStore, MVStorePersistenceStore, MVStoreProducer, MVStoreProducerTest
 
-### Community 192 - "Test Module 192"
-Cohesion: 0.27
-Nodes (4): AgenticDevUIWorkflow, Override, WorkflowInvocationMetadata, io.serverlessworkflow.fluent.spec.DocumentBuilder
+### Community 192 - "java.lang.reflect.Method"
+Cohesion: 0.16
+Nodes (7): ClassLoader, WorkflowMetadataBuilder, WorkflowInvocationMetadata, io.serverlessworkflow.fluent.spec.DocumentBuilder, java.lang.reflect.Method, Override, RuntimeFlowSequentialAgentService
 
-### Community 193 - "Test Module 193"
-Cohesion: 0.20
-Nodes (6): FaultToleranceProfile, FlowMetricsWithCustomTypeGuardTest, Override, MeterRegistryProducer, FlowMetricsWithCustomTypeGuardTest.FaultToleranceProfile, FlowMetricsWithCustomTypeGuardTest.MeterRegistryProducer
+### Community 193 - "FlowMetricsWithCustomTypeGuardTest"
+Cohesion: 0.15
+Nodes (8): FaultToleranceProfile, FlowMetricsWithCustomTypeGuardTest, Override, MeterRegistryProducer, UniWorkflowTest, FlowMetricsWithCustomTypeGuardTest.FaultToleranceProfile, FlowMetricsWithCustomTypeGuardTest.MeterRegistryProducer, io.smallrye.common.annotation.Identifier
 
-### Community 194 - "Test Module 194"
-Cohesion: 0.20
-Nodes (6): EnableStructuredLoggingWithPayloads, Override, WireMockServer, StructuredLoggingHttpAsyncTest, StructuredLoggingHttpAsyncTest.EnableStructuredLoggingWithPayloads, StructuredLoggingHttpAsyncTest.WireMockTestResource
+### Community 194 - "StructuredLoggingHttpAsyncTest"
+Cohesion: 0.15
+Nodes (7): EnableStructuredLoggingWithPayloads, Override, WireMockServer, StructuredLoggingHttpAsyncTest, WireMockTestResource, StructuredLoggingHttpAsyncTest.EnableStructuredLoggingWithPayloads, StructuredLoggingHttpAsyncTest.WireMockTestResource
 
-### Community 195 - "Runtime Module 195"
-Cohesion: 0.27
-Nodes (7): FuncExportAsDeserializer, ExportAs, Override, FuncExportAsSerializer, io.serverlessworkflow.api.types.ExportAs, io.serverlessworkflow.api.types.jackson.ExportAsDeserializer, io.serverlessworkflow.api.types.jackson.ExportAsSerializer
+### Community 195 - "DeploymentPoolTopologyResolver"
+Cohesion: 0.16
+Nodes (7): DeploymentPoolTopologyResolver, Override, KubeUtils, PoolTopologyResolver, io.fabric8.kubernetes.api.model.apps.Deployment, io.fabric8.kubernetes.api.model.HasMetadata, io.fabric8.kubernetes.api.model.OwnerReference
 
-### Community 196 - "Runtime Module 196"
-Cohesion: 0.27
-Nodes (7): FuncInputFromDeserializer, InputFrom, Override, FuncInputFromSerializer, io.serverlessworkflow.api.types.InputFrom, io.serverlessworkflow.api.types.jackson.InputFromDeserializer, io.serverlessworkflow.api.types.jackson.InputFromSerializer
+### Community 196 - "TaskType"
+Cohesion: 0.11
+Nodes (19): fromTask(), TaskType, CALL_A2A, CALL_ASYNCAPI, CALL_FUNCTION, CALL_GRPC, CALL_HTTP, CALL_OPENAPI (+11 more)
 
-### Community 197 - "Runtime Module 197"
-Cohesion: 0.27
-Nodes (7): FuncOutputAsDeserializer, OutputAs, Override, FuncOutputAsSerializer, io.serverlessworkflow.api.types.jackson.OutputAsDeserializer, io.serverlessworkflow.api.types.jackson.OutputAsSerializer, io.serverlessworkflow.api.types.OutputAs
+### Community 197 - "OpenTelemetry showcase"
+Cohesion: 0.11
+Nodes (17): 1. Start Jaeger, 2. Start the application, 3.1 Execute the `for` case, 3.2 Execute the `fork` case, 3.3 Execute the `try` case, 3.4 Execute the `unknown` case, 3. Execute the workflow, 4. Stop Jaeger (+9 more)
 
-### Community 198 - "Test Module 198"
+### Community 198 - "FlowDSLSerializationTest"
 Cohesion: 0.24
 Nodes (3): CheckResult, FlowDSLSerializationTest, Override
 
-### Community 199 - "Test Module 199"
-Cohesion: 0.33
-Nodes (5): EnhancedOrder, ForEachFuncTest, Order, OrderName, OrdersPayload
+### Community 199 - "ForEachFuncTest"
+Cohesion: 0.20
+Nodes (8): EnhancedOrder, ForEachFuncTest, Order, OrderName, OrdersPayload, Override, LaggedInMemoryEvents, io.serverlessworkflow.impl.events.InMemoryEvents
 
-### Community 200 - "Runtime Module 200"
-Cohesion: 0.40
-Nodes (4): dev.langchain4j.agentic.workflow.ConditionalAgentService, dev.langchain4j.agentic.workflow.WorkflowAgentsBuilder, FlowAgentsBuilder, Override
+### Community 200 - "FlowAgentsBuilderService.java"
+Cohesion: 0.31
+Nodes (7): dev.langchain4j.agentic.workflow.ConditionalAgentService, dev.langchain4j.agentic.workflow.LoopAgentService, dev.langchain4j.agentic.workflow.ParallelAgentService, dev.langchain4j.agentic.workflow.SequentialAgentService, dev.langchain4j.agentic.workflow.WorkflowAgentsBuilder, FlowAgentsBuilder, Override
 
-### Community 201 - "Example 201"
+### Community 201 - "agentic-http/mvnw"
 Cohesion: 0.38
 Nodes (8): mvnw script, clean(), die(), exec_maven(), hash_string(), set_java_home(), trim(), verbose()
 
-### Community 202 - "Example 202"
+### Community 202 - "durable-workflows-k8s/mvnw"
 Cohesion: 0.38
 Nodes (8): mvnw script, clean(), die(), exec_maven(), hash_string(), set_java_home(), trim(), verbose()
 
-### Community 203 - "Example 203"
+### Community 203 - "langchain4j-agentic-workflow/mvnw"
 Cohesion: 0.38
 Nodes (8): mvnw script, clean(), die(), exec_maven(), hash_string(), set_java_home(), trim(), verbose()
 
-### Community 204 - "Example 204"
+### Community 204 - "micrometer-prometheus/mvnw"
 Cohesion: 0.38
 Nodes (8): mvnw script, clean(), die(), exec_maven(), hash_string(), set_java_home(), trim(), verbose()
 
-### Community 205 - "Example 205"
+### Community 205 - "newsletter-drafter/mvnw"
 Cohesion: 0.38
 Nodes (8): mvnw script, clean(), die(), exec_maven(), hash_string(), set_java_home(), trim(), verbose()
 
-### Community 206 - "Example 206"
+### Community 206 - "opentelemetry/mvnw"
 Cohesion: 0.38
 Nodes (8): mvnw script, clean(), die(), exec_maven(), hash_string(), set_java_home(), trim(), verbose()
 
-### Community 207 - "Example 207"
+### Community 207 - "petstore-openapi/mvnw"
 Cohesion: 0.38
 Nodes (8): mvnw script, clean(), die(), exec_maven(), hash_string(), set_java_home(), trim(), verbose()
 
-### Community 208 - "Example 208"
+### Community 208 - "resilient-task-orchestrator/mvnw"
 Cohesion: 0.38
 Nodes (8): mvnw script, clean(), die(), exec_maven(), hash_string(), set_java_home(), trim(), verbose()
 
-### Community 209 - "Module 209"
-Cohesion: 0.40
-Nodes (6): io.quarkus.redis.datasource.hash.HashCommands, io.quarkus.redis.datasource.keys.KeyCommands, io.quarkus.redis.datasource.RedisDataSource, io.serverlessworkflow.impl.marshaller.WorkflowBufferFactory, Override, RedisInstanceStore
+### Community 209 - "RedisInstanceTransaction.java"
+Cohesion: 0.30
+Nodes (8): io.quarkus.redis.datasource.hash.HashCommands, io.quarkus.redis.datasource.keys.KeyCommands, io.quarkus.redis.datasource.RedisDataSource, io.quarkus.redis.datasource.value.ValueCommands, io.serverlessworkflow.impl.marshaller.WorkflowBufferFactory, io.serverlessworkflow.impl.persistence.PersistenceInstanceTransaction, Override, RedisInstanceStore
 
-### Community 210 - "Module 210"
+### Community 210 - "Jaeger UI"
 Cohesion: 0.31
 Nodes (9): /q/flow/exec/{namespace}/{name}/{version}, Distributed Tracing, OpenTelemetry, Distributed Tracing, Jaeger UI, OpenTelemetry Example, Quarkus Flow, Trace 27c54f3 (+1 more)
 
-### Community 211 - "Module 211"
+### Community 211 - "otel-showcase"
 Cohesion: 0.22
 Nodes (9): Unknown Case Handling, Select Case Pattern, Workflow Execution, Workflow Observability, POST /q/flow/exec/{namespace}/{name}/{version}, Quarkus Flow, Select Case, workflow.execute otel-showcase (+1 more)
 
-### Community 212 - "Test Module 212"
-Cohesion: 0.25
-Nodes (5): Override, StructuredLoggingWithQuarkusLoggingJsonTest, WithQuarkusLoggingJson, org.junit.jupiter.api.condition.EnabledIf, StructuredLoggingWithQuarkusLoggingJsonTest.WithQuarkusLoggingJson
+### Community 212 - "OpenTelemetryTest"
+Cohesion: 0.27
+Nodes (5): OpenTelemetryTest, io.opentelemetry.api.common.AttributeKey, io.opentelemetry.sdk.trace.data.SpanData, io.restassured.config.HttpClientConfig, io.restassured.path.json.JsonPath
 
-### Community 213 - "Test Module 213"
+### Community 213 - ".testSerializableJavaModel"
 Cohesion: 0.36
 Nodes (3): Address, JavaModelSerializationTest, Person
 
-### Community 214 - "Module 214"
+### Community 214 - "Micrometer Prometheus Example"
 Cohesion: 0.36
 Nodes (9): Grafana Logo, Grafana, Micrometer, Micrometer Prometheus Example, prometheus.svg, Prometheus, Quarkus Flow Metrics, Web Resource (+1 more)
 
-### Community 218 - "Runtime Module 218"
-Cohesion: 0.36
-Nodes (3): Deprecated, io.serverlessworkflow.fluent.spec.configurers.WorkflowConfigurer, io.serverlessworkflow.fluent.spec.dsl.WorkflowSpec
+### Community 217 - "FlowRunnerProcessor.java"
+Cohesion: 0.22
+Nodes (4): io.serverlessworkflow.api.types.SchemaUnion, Link, Links, WorkflowDefinitionHeader
 
-### Community 219 - "Example 219"
-Cohesion: 0.39
-Nodes (6): Call4PapersFlow, Override, NotificationPayload, Proposal, ProposalScore, ProposalSubmission
+### Community 218 - "Quarkus Flow Runner - Docker Images"
+Cohesion: 0.11
+Nodes (18): Architecture, CI/CD, Configuration, Custom Build with Different Extensions, Customization Options, Deployment Examples, Docker Compose with PostgreSQL, Kubernetes Deployment (+10 more)
 
-### Community 220 - "Module 220"
+### Community 219 - "Developer Makefile Guide"
+Cohesion: 0.12
+Nodes (17): Adjust Parallelism, Available Targets, Before Creating PR, Clean Build, Configuration, Developer Makefile Guide, Faster Iteration, IDE Users (+9 more)
+
+### Community 220 - "Search Panel"
 Cohesion: 0.25
 Nodes (8): Duration Filters, Find Traces, Limit Results, Lookback Filter, Operation Filter, Search Panel, Service Filter, Tags Filter
 
-### Community 221 - "DSL Component 221"
+### Community 221 - "Quarkus Flow Engine"
 Cohesion: 0.38
 Nodes (7): CDI Beans / Services, External Systems, Java DSL or YAML Definition, LangChain4j Agents, Messaging (Kafka/AMQP), Quarkus Flow Engine, REST APIs
 
-### Community 222 - "Module 222"
+### Community 222 - "OAuth2/OIDC Authentication"
 Cohesion: 0.38
 Nodes (7): OAuth2/OIDC Authentication, Quarkus Flow OIDC Extension, Call Task, Quarkus OIDC Client, Named Auth Workflow, OAuth2 Test Workflow, OIDC Test Workflow
 
-### Community 224 - "Runtime Module 224"
-Cohesion: 0.29
-Nodes (4): CustomerProfileFlow, Override, CustomerProfileFlow, Override
+### Community 223 - "NamedHttpMetadataPropagationTest"
+Cohesion: 0.21
+Nodes (5): Override, WireMockServer, NamedHttpMetadataPropagationTest, WireMockTestResource, NamedHttpMetadataPropagationTest.WireMockTestResource
 
-### Community 227 - "Example 227"
-Cohesion: 0.38
-Nodes (3): Order, OrdersPayload, ForEachWorkflowTest
+### Community 224 - "Builder"
+Cohesion: 0.13
+Nodes (4): Override, io.opentelemetry.api.trace.Span, Builder, Override
 
-### Community 229 - "Test Module 229"
+### Community 225 - "Unified Client Naming Pattern for gRPC, HTTP, and OIDC"
+Cohesion: 0.12
+Nodes (16): Authentication Reuse (OIDC-specific), Benefits, Best Practices, Config Structure, Consequences, Context, Documentation Updates, Drawbacks (+8 more)
+
+### Community 227 - "org.junit.jupiter.api.AfterEach"
+Cohesion: 0.19
+Nodes (8): jakarta.persistence.EntityManager, jakarta.transaction.Transactional, SchedulerTriggeredFlowsIT, org.junit.jupiter.api.AfterEach, org.junit.jupiter.api.MethodOrderer.OrderAnnotation, org.junit.jupiter.api.Order, org.junit.jupiter.api.TestMethodOrder, SchedulerTriggeredFlowsIT.OllamaMockResource
+
+### Community 228 - "SpanUtils.java"
+Cohesion: 0.23
+Nodes (12): io.serverlessworkflow.api.types.CallA2A, io.serverlessworkflow.api.types.CallGRPC, io.serverlessworkflow.api.types.CallHTTP, io.serverlessworkflow.api.types.CallOpenAPI, io.serverlessworkflow.api.types.EmitTask, io.serverlessworkflow.api.types.Endpoint, io.serverlessworkflow.api.types.RaiseTask, io.serverlessworkflow.api.types.RunTask (+4 more)
+
+### Community 229 - "FixedKubeInfoStrategy"
 Cohesion: 0.38
 Nodes (3): FixedKubeInfoStrategy, Override, jakarta.enterprise.inject.Alternative
 
-### Community 230 - "Runtime Module 230"
-Cohesion: 0.38
-Nodes (3): GrpcChannelProvider, Override, io.grpc.Channel
+### Community 231 - "Workflow Metrics with Micrometer + Grafana Demo (Quarkus Flow)"
+Cohesion: 0.12
+Nodes (16): Executing Workflows, Execution Metrics Summary, faulted-workflow, Generating More Metrics, Inspecting Prometheus Metrics, Learn More, Prerequisites, Project Extensions (+8 more)
 
-### Community 232 - "Module 232"
+### Community 232 - "task.execute Fork Task"
 Cohesion: 0.29
 Nodes (7): task.execute Branch1, task.execute Branch2, task.execute Emit Branch1 Event, task.execute Emit Branch2 Event, task.execute Fork Task, task.execute Process Case Fork, task.execute Set Events Parameters
 
-### Community 234 - "Test Module 234"
-Cohesion: 0.40
-Nodes (4): EmptyCredentialsProvider, Override, MissingSecretFlow, SecretMissingResolutionTest
+### Community 233 - "Docker Compose Deployment Guide"
+Cohesion: 0.12
+Nodes (16): Additional Endpoints (Messaging Only), Additional Endpoints (Standard & Messaging), Custom Workflow Directory, Default Directory (./workflows), Docker Compose Deployment Guide, Environment Variables, Health Checks, Minimal Variant (+8 more)
 
-### Community 239 - "Configuration 239"
+### Community 235 - "Greeting Runner Example"
+Cohesion: 0.13
+Nodes (14): 1. Start the application, 2. View the workflow catalog, 3. Execute the workflow, 4. Execute without version (uses latest), API Key, Configuration, Greeting Runner Example, Key Takeaways (+6 more)
+
+### Community 238 - "Quarkus Flow Knowledge Graph"
+Cohesion: 0.13
+Nodes (15): Automated Updates (Active), Full Rebuild (Slow - Rarely Needed), Graph Outputs, Incremental Update (Fast - Recommended), Integration with CI/CD, Manual Updates (Fallback), Optional: Cross-Repository Graph (Local Use), Quarkus Flow Knowledge Graph (+7 more)
+
+### Community 239 - "Grafana Kubernetes Deployment"
 Cohesion: 0.33
 Nodes (6): Grafana Dashboard for Quarkus Flow Metrics, Grafana Dashboard Provider Configuration, Grafana Prometheus Datasource Configuration, Grafana Kubernetes Deployment, Prometheus Scrape Configuration, Prometheus Kubernetes Deployment
 
-### Community 246 - "Module 246"
+### Community 245 - "NamespaceAuthorizationService"
+Cohesion: 0.16
+Nodes (8): io.quarkus.security.identity.SecurityIdentity, jakarta.json.JsonArray, jakarta.ws.rs.core.UriInfo, org.eclipse.microprofile.jwt.JsonWebToken, NamespaceAuthorizationFilter, SuppressWarnings, NamespaceAuthorizationService, ObjectMapper
+
+### Community 246 - "task.execute Handle Unknown Case"
 Cohesion: 0.53
 Nodes (6): task.execute Emit Unknown Case Event, task.execute Handle Unknown Case, task.execute Set Unknown Case Event Par..., Emit Event Task, Handle Unknown Case Task, Set Event Parameters Task
 
-### Community 248 - "Runtime Module 248"
-Cohesion: 0.50
-Nodes (3): HelloWorkflow, Override, HelloWorkflowTest
+### Community 248 - "Token Propagation and Exchange for Quarkus Flow"
+Cohesion: 0.14
+Nodes (13): Approval, Architecture Overview, Core Components, Decision, Documentation, High-Level Flow, Migration from SonataFlow, New Documentation Page (+5 more)
 
-### Community 257 - "Configuration 257"
+### Community 249 - "OrderFulfillmentWorkflow"
+Cohesion: 0.36
+Nodes (5): Override, OrderFulfillmentWorkflow, OrderStep, WorkflowOutput, io.quarkus.runtime.annotations.RegisterForReflection
+
+### Community 250 - "Detailed Design"
+Cohesion: 0.15
+Nodes (13): 1. ~~OpenAPI Integration~~ (SUPERSEDED), 2. AuthenticationProvider Interface, 3. AuthenticationRegistry, 4. Subject Token Extraction, 6.1 Named OIDC Clients, 6.2 OIDC Client Resolution, 6.3 Token Exchange Client, 6. OIDC Client Configuration (+5 more)
+
+### Community 251 - "HelloMessagingFlowInMemoryTest"
+Cohesion: 0.19
+Nodes (7): EmitWorkflowTest, ListenWorkflowTest, HelloMessagingFlowInMemoryTest.InMemoryProfile, io.smallrye.reactive.messaging.memory.InMemoryConnector, HelloMessagingFlowInMemoryTest, InMemoryProfile, Override
+
+### Community 252 - "HTTP Basic Auth + Secrets Demo (Quarkus Flow)"
+Cohesion: 0.15
+Nodes (12): Configuration (`application.properties`), HTTP Basic Auth + Secrets Demo (Quarkus Flow), Learn more, Project layout, Public API: `/api/profile`, Running the example, Secured resource, Testing with RestAssured (+4 more)
+
+### Community 253 - "Intelligent Newsletter Drafter (Quarkus Flow + LangChain4j + Human-in-the-Loop)"
+Cohesion: 0.15
+Nodes (12): 1) Start Ollama & pull a model, 2) Run the app, 🧩 Architecture: The Two Loops, 📚 Build your own, Declarative AI Sequences, Intelligent Newsletter Drafter (Quarkus Flow + LangChain4j + Human-in-the-Loop), Prerequisites, 🚀 Quick Start (+4 more)
+
+### Community 254 - "Petstore Workflow (Quarkus + Quarkus Flow + OpenAPI)"
+Cohesion: 0.15
+Nodes (13): 1) Run the app, Architecture (high level), Debugging HTTP / OpenAPI Calls, HTTP & UI, Learn More, Petstore Workflow (Quarkus + Quarkus Flow + OpenAPI), Prerequisites, Quick Start (+5 more)
+
+### Community 255 - "Align HTTP and gRPC Client Resolution with OIDC"
+Cohesion: 0.17
+Nodes (12): Align HTTP and gRPC Client Resolution with OIDC, Benefits, Consequences, Context, Current State, Drawbacks, gRPC, HTTP (+4 more)
+
+### Community 257 - "renovate.json"
 Cohesion: 0.40
 Nodes (4): local>quarkiverse/renovate-config, extends, packageRules, $schema
 
-### Community 258 - "Configuration 258"
-Cohesion: 0.50
-Nodes (4): Quarkus Flow Bob-Shell Shortcuts, Claude Code Configuration, Claude Code Hooks, Pull Request Template
+### Community 258 - "Contributing Guide"
+Cohesion: 0.23
+Nodes (10): Quarkus Flow Bob-Shell Shortcuts, Claude Code Development Guide, Claude Code Configuration, Claude Code Hooks, Code Modification Rules, Contributing Guide, Git Safety Rules, Pull Request Template (+2 more)
 
-### Community 262 - "Module 262"
-Cohesion: 1.00
-Nodes (3): Claude Code Development Guide, Code Modification Rules, Git Safety Rules
+### Community 259 - "jakarta.inject.Singleton"
+Cohesion: 0.26
+Nodes (7): Override, JQScopeSupplier, InMemorySpanExporterProducer, io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter, jakarta.inject.Singleton, net.thisptr.jackson.jq.Scope, InMemorySpanExporterProducer
 
-### Community 263 - "Module 263"
+### Community 260 - "SubmissionResource.java"
+Cohesion: 0.38
+Nodes (3): SubmissionResource, io.quarkus.security.Authenticated, jakarta.annotation.security.PermitAll
+
+### Community 261 - "Quarkus Flow :: gRPC"
+Cohesion: 0.17
+Nodes (10): gRPC Client Routing Example, Key configuration, Run it, What it demonstrates, Dependency, Development Prerequisites, Example, Protocol Buffers Compiler (protoc) (+2 more)
+
+### Community 262 - "OIDC Client Delegation Implementation"
+Cohesion: 0.20
+Nodes (8): Architecture Components, Client Registration Flowchart, Configuration Reference, Design Philosophy: Authentication Reuse, Implementation Decisions, OIDC Client Delegation Implementation, Summary, Test Coverage
+
+### Community 263 - "Quarkus Flow gRPC Extension"
 Cohesion: 0.67
 Nodes (3): gRPC Channel Routing, Quarkus Flow gRPC Extension, Protocol Buffers
 
-### Community 264 - "Module 264"
+### Community 264 - "Durable Workflows Kubernetes Lease Verification Workflow"
 Cohesion: 0.67
 Nodes (3): Kind Kubernetes Cluster, Lease-based High Availability, Durable Workflows Kubernetes Lease Verification Workflow
 
-### Community 270 - "Documentation 270"
+### Community 265 - "Test: Dev UI Workflow Editor Rendering Round-Trip (quarkus-playwright)"
+Cohesion: 0.18
+Nodes (10): 1. Extend `WorkflowDiagramEditorTest` with `@QuarkusPlaywright`, 2. Parametrise over workflow representations, 3. Round-trip assertions, 4. New test class structure, Acceptance Criteria, Out of Scope, Problem Statement, Proposed Solution (+2 more)
+
+### Community 266 - "BuildPipelineResource"
+Cohesion: 0.36
+Nodes (6): BuildPipelineResource, Consumes, GET, Path, POST, Produces
+
+### Community 267 - ".onWorkflowStarted"
+Cohesion: 0.25
+Nodes (3): io.serverlessworkflow.impl.lifecycle.EventType, TaskEventInfo, WorkflowEventInfo
+
+### Community 268 - "Architecture Components"
+Cohesion: 0.20
+Nodes (10): 1. SDK Integration: OidcAuthProviderFactory, 2. Policy Extraction: TokenAuthPolicyExtractor, 3. Static Registration: OidcClientWorkflowRegistrar, 4. Client Storage: OidcClientRegistry, 5. Cache Key: EndpointKey, 6. Expression Resolution: RuntimeExpressionResolver, 7. Runtime Auth Provider: OidcClientAuthProvider, 8. Config & Routing: OidcConfigResolver (+2 more)
+
+### Community 269 - "CronWorkflow.java"
+Cohesion: 0.28
+Nodes (3): CronWorkflow, Override, CronWorkflowTest
+
+### Community 270 - "Surge.sh Preview Workflow"
 Cohesion: 0.67
 Nodes (3): Build Website Workflow, Surge.sh Preview Teardown Workflow, Surge.sh Preview Workflow
 
+### Community 271 - "Quarkus Flow Examples Directory"
+Cohesion: 0.22
+Nodes (6): Agentic HTTP Example, Documentation, LangChain4j Agentic Workflow Example, Prerequisites, Running the example, Quarkus Flow Examples Directory
+
+### Community 273 - "io.opentelemetry.context.Context"
+Cohesion: 0.36
+Nodes (3): io.opentelemetry.api.trace.Tracer, io.opentelemetry.context.Context, SpanBuilderFactory
+
+### Community 283 - "DOCKER-COMPOSE.md"
+Cohesion: 0.25
+Nodes (5): `build-image.sh`, Makefile, `run-example.sh`, Runner Scripts, Scripts
+
+### Community 285 - "Workflow Files Directory"
+Cohesion: 0.22
+Nodes (9): Example Workflow, File Naming, Hot Reload, Input Schema Validation, Quick Start, See Also, Workflow Files Directory, Workflow Format (+1 more)
+
+### Community 384 - "FuncCallHttpStep"
+Cohesion: 0.39
+Nodes (4): FuncCallHttpStep, Override, io.serverlessworkflow.fluent.spec.dsl.BaseCallHttpSpec, io.serverlessworkflow.fluent.spec.spi.CallHttpTaskFluent
+
+### Community 385 - "HTTP OAuth2 + OIDC Example"
+Cohesion: 0.29
+Nodes (8): HTTP OAuth2 + OIDC Example, Image Service OpenAPI Specification with OAuth2, OAuth2 + OIDC Interactive Playground UI, OAuth2 Client Credentials Grant, OAuth2 Password Grant, OAuth2 Token Exchange Grant (RFC 8693), Quarkus OIDC Client, WireMock Dev Services
+
+### Community 387 - "MapSetTaskConfiguration"
+Cohesion: 0.33
+Nodes (3): MapSetTaskConfiguration, io.serverlessworkflow.api.types.SetTaskConfiguration, SetTaskConfiguration
+
+### Community 388 - "Quick Start"
+Cohesion: 0.29
+Nodes (6): 1) Run the app, 2) Use the provided APIs, Learn More, Prerequisites, Quick Start, Suspend/Resume/Cancel Workflow Example with Persistence enabled (Quarkus + Quarkus Flow + Quarkus Flow MVStore)
+
+### Community 389 - "Phase 0 Findings (2026-06-18)"
+Cohesion: 0.33
+Nodes (6): Design revisions triggered by Phase 0, Gating questions answered, Phase 0 Findings (2026-06-18), Risks / limitations found (drive Phase 1 design), Shipped implementation note (2026-06-30), Upstream SDK change requests raised
+
+### Community 390 - "Decision"
+Cohesion: 0.33
+Nodes (6): API Surface, Config Shape, Decision, Key Format, Resolution Cascade, Shared Naming Convention
+
+### Community 392 - "io.quarkus.runtime.StartupEvent"
+Cohesion: 0.40
+Nodes (3): SuppressWarnings, io.quarkus.runtime.StartupEvent, SecurityConfigValidator
+
+### Community 393 - "Quarkus Flow :: Messaging"
+Cohesion: 0.33
+Nodes (5): Activation, Default channels, Mini example, Notes, Quarkus Flow :: Messaging
+
+### Community 395 - "Troubleshooting"
+Cohesion: 0.33
+Nodes (6): Database connection issues, Kafka takes long to start (Messaging), Port conflicts, Reset everything, Runner fails to start (Standard/Messaging), Troubleshooting
+
+### Community 396 - "Building Locally"
+Cohesion: 0.33
+Nodes (6): Build Other Variants, Building Locally, Manual Build, Quick Start with Makefile, Test the Image, Using Build Scripts
+
+### Community 397 - "10. Error Handling"
+Cohesion: 0.40
+Nodes (5): 10.1 Token Extraction Failures, 10.2 Token Exchange Failures, 10.3 Cache Failures (Phase 2), 10.4 Proactive Refresh Failures, 10. Error Handling
+
+### Community 398 - "11. Security Considerations"
+Cohesion: 0.40
+Nodes (5): 11.1 Token Storage, 11.2 Token Sharing, 11.3 Configuration Security, 11.4 Thread Safety, 11. Security Considerations
+
+### Community 399 - "5. Token Caching"
+Cohesion: 0.40
+Nodes (5): 5.1 TokenCacheRepository Interface, 5.2 Token Cache Key, 5.3 Cached Token, 5.4 In-Memory Implementation (Phase 1), 5. Token Caching
+
+### Community 400 - "Module Structure"
+Cohesion: 0.40
+Nodes (5): Basic OIDC Support in Core (Phase 0 Contingency), Module Structure, Phase 0 Modules (Examples), Phase 1 Modules (Advanced OIDC Features), Phase 2 - Persistent Token Cache Modules
+
+### Community 401 - "Future Work: Secret-Based OAuth2 Configuration"
+Cohesion: 0.40
+Nodes (5): Background, Design Considerations, Future Work: Secret-Based OAuth2 Configuration, Implementation Requirements, Related Spec Reference
+
+### Community 402 - "Examples"
+Cohesion: 0.40
+Nodes (5): Decision, Examples, gRPC Client, HTTP Client, OIDC Client
+
+### Community 403 - "CI Pipeline"
+Cohesion: 0.40
+Nodes (5): Build with Integration Tests Workflow (build-it.yml), Build Workflow (build.yml), CI Pipeline, Durable Workflows Kubernetes Kind Workflow (durable-k8s-kind.yml), Persistence with LangChain4j Workflow (persistence-langchain4j.yml)
+
+### Community 404 - "Common Workflows"
+Cohesion: 0.40
+Nodes (5): 📝 Before Committing, 🔨 Build Without Tests, Common Workflows, 🚀 Quick Development Cycle, 🧪 Run All Tests
+
+### Community 405 - "🚀 Quick Start"
+Cohesion: 0.40
+Nodes (5): Check Task Status, Prerequisites, 🚀 Quick Start, Run the Example, Trigger a Build
+
+### Community 406 - "Troubleshooting"
+Cohesion: 0.40
+Nodes (5): Cache issues, "Graph is empty" after update, Graph takes too long to build, "Too many dangling edges" warning, Troubleshooting
+
+### Community 407 - "Practical Examples for Contributors"
+Cohesion: 0.40
+Nodes (5): Example 1: Before Starting a Feature, Example 2: Code Review, Example 3: Documentation, Example 4: Debugging Cross-Module Issues, Practical Examples for Contributors
+
+### Community 408 - "Quarkus Flow :: OIDC"
+Cohesion: 0.40
+Nodes (4): Activation, Configuration, Notes, Quarkus Flow :: OIDC
+
+### Community 409 - "TaskNameStrategy"
+Cohesion: 0.40
+Nodes (4): TaskNameStrategy, ACTION_AND_TASK_ID, ACTION_AND_TASK_NAME, DEBUG
+
+### Community 410 - "Loading Workflows"
+Cohesion: 0.40
+Nodes (5): Loading Workflows, Option 1: Docker Compose (Recommended), Option 2: Manual Docker Run, Option 3: Development Mode, Option 4: Run Example Script
+
+### Community 413 - "7. Configuration"
+Cohesion: 0.50
+Nodes (4): 7.1 Configuration Structure, 7.2 Config Classes, 7.3 Configuration Resolution, 7. Configuration
+
+### Community 414 - "Alternatives Considered"
+Cohesion: 0.50
+Nodes (4): Alternative 1: Minimal Extension (Config-Only), Alternative 2: Full SonataFlow Parity (Day 1), Alternative 3: Pure DSL-Driven, Alternatives Considered
+
+### Community 415 - "Consequences"
+Cohesion: 0.50
+Nodes (4): Consequences, Mitigations, Negative, Positive
+
+### Community 416 - "Implementation Phases Breakdown"
+Cohesion: 0.50
+Nodes (4): Implementation Phases Breakdown, Phase 0: Validation & Proof of Concept, Phase 1: Advanced OIDC Features, Phase 2: Persistence
+
+### Community 417 - "Testing Strategy"
+Cohesion: 0.50
+Nodes (4): Integration Tests, Performance Tests, Testing Strategy, Unit Tests
+
+### Community 418 - "Examples"
+Cohesion: 0.50
+Nodes (4): Examples, Multi-Namespace Workflow, Simple Workflow (99% case), Version-Specific Routing
+
+### Community 419 - "Changes by Module"
+Cohesion: 0.50
+Nodes (4): Changes by Module, `core/runtime` (HTTP), `grpc/runtime`, `oidc/runtime`
+
+### Community 420 - "Troubleshooting"
+Cohesion: 0.50
+Nodes (4): Build Fails on Windows, Out of Memory, Port Conflicts, Troubleshooting
+
+### Community 422 - "📚 Key Concepts Explained"
+Cohesion: 0.50
+Nodes (4): ForEach + Emit Pattern, How Idempotent Execution Works, 📚 Key Concepts Explained, Why Event-Driven Choreography?
+
+### Community 423 - "Understanding the Report"
+Cohesion: 0.50
+Nodes (4): 1. God Nodes (Most Connected Components), 2. Surprising Connections, 3. Suggested Questions, Understanding the Report
+
+### Community 424 - "Advanced: Cross-Repository Analysis (Optional)"
+Cohesion: 0.50
+Nodes (4): Advanced: Cross-Repository Analysis (Optional), Before Committing, Merging with the SDK, Working with Multiple Repos
+
+### Community 425 - "Advanced: Graph Structure"
+Cohesion: 0.50
+Nodes (4): Advanced: Graph Structure, Communities (Modules), Edge Types, Node Types
+
+### Community 426 - "Quick Start: Querying the Graph"
+Cohesion: 0.50
+Nodes (4): Common Queries, Prerequisites, Query from Claude Code, Quick Start: Querying the Graph
+
+### Community 428 - "Available Variants"
+Cohesion: 0.50
+Nodes (4): 1. Minimal (docker-compose.yml), 2. Standard (docker-compose-standard.yml), 3. Messaging (docker-compose-messaging.yml), Available Variants
+
+### Community 429 - "Quick Start Examples"
+Cohesion: 0.50
+Nodes (4): Messaging Variant (Event-driven with Kafka), Minimal Variant (Local Development), Quick Start Examples, Standard Variant (Production-like with PostgreSQL)
+
+### Community 430 - "High Availability & Failover Architecture"
+Cohesion: 0.50
+Nodes (4): Deployment Patterns, High Availability & Failover Architecture, How Durable Kubernetes Enables HA, Why MVStore Doesn't Support HA
+
+### Community 431 - "Type"
+Cohesion: 0.50
+Nodes (4): Type, API_KEY, NONE, OIDC
+
+### Community 432 - "Context"
+Cohesion: 0.67
+Nodes (3): Context, Key Requirements, Security Boundaries
+
+### Community 433 - "Phase 0: Validation & Proof of Concept"
+Cohesion: 0.67
+Nodes (3): Goals, Phase 0: Validation & Proof of Concept, Scope
+
+### Community 434 - "From"
+Cohesion: 0.67
+Nodes (3): From, SOURCE, SPEC
+
 ## Knowledge Gaps
-- **291 isolated node(s):** `quarkus-flow-bom`, `quarkus-flow-deployment`, `SOURCE`, `SPEC`, `roots` (+286 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1045 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **166 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **783 isolated node(s):** `quarkus-flow-bom`, `quarkus-flow-deployment`, `SOURCE`, `SPEC`, `roots` (+778 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1548 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **144 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Flow` connect `Dev UI and Agentic Workflows` to `REST Resources and JSON`, `HTTP Testing Infrastructure`, `Test Module 260`, `Dev UI Object Mapping`, `Test Module 265`, `Example 266`, `Example 267`, `Example 268`, `Example 269`, `Execution Listeners`, `Test Module 271`, `Dev UI JSON RPC`, `Example 23`, `Module 24`, `Test Module 154`, `Deployment Module 30`, `Module 46`, `Test Module 179`, `Test Module 182`, `Test Module 58`, `Example 60`, `Runtime Module 191`, `Test Module 192`, `Test Module 194`, `Deployment Module 66`, `Example 219`, `Module 93`, `Test Module 223`, `Runtime Module 224`, `Runtime Module 98`, `Example 99`, `Test Module 103`, `Test Module 234`, `Runtime Module 248`, `Test Module 250`, `Test Module 253`?**
-  _High betweenness centrality (0.028) - this node is a cross-community bridge._
-- **Why does `FlowDSL` connect `Dev UI and Agentic Workflows` to `Test Module 129`, `Flow Definition Injection`, `HTTP Testing Infrastructure`, `Flow DSL Core Operations`, `Execution Listeners`, `Test Module 142`, `Task Configurers`, `Runtime Module 22`, `Example 23`, `Test Module 154`, `Runtime Module 27`, `Runtime Module 28`, `Test Module 158`, `Runtime Module 31`, `Test Module 35`, `Test Module 36`, `Runtime Module 43`, `Runtime Module 44`, `Module 47`, `Test Module 58`, `Runtime Module 71`, `Runtime Module 218`, `Runtime Module 224`, `Runtime Module 97`, `Test Module 225`, `Test Module 105`, `Runtime Module 110`, `Test Module 122`, `Deployment Module 123`, `Runtime Module 126`, `Runtime Module 127`?**
-  _High betweenness centrality (0.025) - this node is a cross-community bridge._
-- **Why does `ReflectionUtils` connect `Runtime Module 139` to `Dev UI and Agentic Workflows`, `Flow DSL Core Operations`, `Runtime Module 43`, `Runtime Module 44`, `Module 50`, `Module 56`, `Deployment Module 123`?**
-  _High betweenness centrality (0.015) - this node is a cross-community bridge._
+- **Why does `WireMock` connect `com.github.tomakehurst.wiremock.WireMockServer` to `io.quarkus.test.junit.QuarkusTest`, `Testing Requirements`?**
+  _High betweenness centrality (0.051) - this node is a cross-community bridge._
+- **Why does `Testing Requirements` connect `Testing Requirements` to `Contributing Guide`, `com.github.tomakehurst.wiremock.WireMockServer`?**
+  _High betweenness centrality (0.051) - this node is a cross-community bridge._
+- **Why does `Contributing Guide` connect `Contributing Guide` to `CI Pipeline`, `Testing Requirements`?**
+  _High betweenness centrality (0.050) - this node is a cross-community bridge._
 - **What connects `quarkus-flow-bom`, `quarkus-flow-deployment`, `SOURCE` to the rest of the system?**
-  _291 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Dev UI and Agentic Workflows` be split into smaller, more focused modules?**
-  _Cohesion score 0.028405911589480266 - nodes in this community are weakly interconnected._
-- **Should `REST Resources and JSON` be split into smaller, more focused modules?**
-  _Cohesion score 0.035075613823241904 - nodes in this community are weakly interconnected._
-- **Should `Flow Definition Injection` be split into smaller, more focused modules?**
-  _Cohesion score 0.020007770007770008 - nodes in this community are weakly interconnected._
+  _783 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `jakarta.enterprise.context.ApplicationScoped` be split into smaller, more focused modules?**
+  _Cohesion score 0.020943353644775446 - nodes in this community are weakly interconnected._
+- **Should `jakarta.ws.rs.Path` be split into smaller, more focused modules?**
+  _Cohesion score 0.06801093643198906 - nodes in this community are weakly interconnected._
+- **Should `org.junit.jupiter.api.Test` be split into smaller, more focused modules?**
+  _Cohesion score 0.021269940569283705 - nodes in this community are weakly interconnected._
