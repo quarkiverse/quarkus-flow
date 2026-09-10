@@ -88,7 +88,7 @@ One of the most powerful features of Quarkus Flow is its visualizer. Because you
 
 1. Press `d` in the terminal where Quarkus is running to open the **Quarkus Dev UI** in your browser.
 2. Find the **Quarkus Flow** card and click the **Workflows** link.
-3. Click on your `hello-workflow` to see the auto-generated Mermaid.js diagram showing exactly how your tasks execute!
+3. Click on your `hello-workflow` to visualize your workflow in the interactive Diagram Editor, showing all tasks and their execution flow!
 
 == What’s next?
 
