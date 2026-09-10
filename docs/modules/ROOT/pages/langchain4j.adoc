@@ -309,7 +309,7 @@ When you start your application in dev mode (`./mvnw quarkus:dev`):
 Open the **Quarkus Flow Dev UI** (`http://localhost:8080/q/dev`), and you will see your annotated agents listed as fully-fledged workflows. You can:
 
 * Execute them via auto-generated HTML forms
-* View their internal topology using Mermaid diagrams
+* View their internal topology using the Diagram Editor
 * Inspect execution traces and state transitions
 * Monitor performance and error rates
 

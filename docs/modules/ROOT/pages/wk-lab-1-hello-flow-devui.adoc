@@ -9,7 +9,7 @@ You will:
 * Create a Quarkus app and add the Quarkus Flow extension.
 * Write a workflow using the Java DSL.
 * Invoke it via a reactive REST endpoint.
-* Inspect the auto-generated Mermaid diagram in the Quarkus Dev UI.
+* Inspect the auto-generated diagram in the Diagram Editor within the Quarkus Dev UI.
 
 == 1. Create the Quarkus project
 
@@ -107,7 +107,7 @@ With dev mode still running:
 
 Here you can:
 
-* See the auto-generated **Mermaid.js diagram** showing your exact execution sequence.
+* See the auto-generated diagram in the **Diagram Editor** showing your exact execution sequence.
 * Trigger new workflow instances directly from the UI using auto-generated input forms.
 * View execution traces and logs.
 

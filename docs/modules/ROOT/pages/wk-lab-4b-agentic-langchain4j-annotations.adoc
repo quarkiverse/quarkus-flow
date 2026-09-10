@@ -64,7 +64,7 @@ Start (or restart) your application in dev mode:
 1. Open the **Quarkus Dev UI** (`http://localhost:8080/q/dev`).
 2. Navigate to **Quarkus Flow → Workflows**.
 3. You should see two brand-new workflows that you didn't manually define: `story-creator-with-configurable-style-editor` and `evening-planner-agent`.
-4. Click on **`evening-planner-agent`** to execute the workflow and then view the auto-generated **Mermaid diagram**.
+4. Click on **`evening-planner-agent`** to execute the workflow and then view the auto-generated diagram in the **Diagram Editor**.
 
 Notice how the topology compares to the manual DSL version. The engine has automatically mapped the sequential annotation to a series of CNCF "Function Tasks" and handled the data mapping between the internal AI services.
 

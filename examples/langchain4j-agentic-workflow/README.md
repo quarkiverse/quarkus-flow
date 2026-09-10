@@ -10,7 +10,7 @@ It demonstrates:
 - How `quarkus-flow-langchain4j` automatically turns these into **Quarkus Flow workflows**.
 - How to **run and inspect** these workflows in the **Quarkus Flow Dev UI**:
   - Auto-generated input forms (from the agent method signatures).
-  - Mermaid diagrams of the workflow topology.
+  - Workflow topology diagrams in the Diagram Editor.
   - Execution traces and output.
 
 ## Prerequisites
@@ -43,7 +43,7 @@ Click the **play** icon to:
 
 - Fill in the generated form (for example `topic`, `style`, `audience`, `city`, `mood`).
 - Execute the workflow and see the output.
-- Explore the generated Mermaid diagram and task-level traces.
+- Explore the generated diagram in the Diagram Editor and task-level traces.
 
 ## Documentation
 
