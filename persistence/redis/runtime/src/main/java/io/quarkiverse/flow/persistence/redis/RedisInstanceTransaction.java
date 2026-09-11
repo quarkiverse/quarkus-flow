@@ -12,11 +12,13 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -67,6 +69,8 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     private final static String END_NODE = "endNode";
     private final static String NEXT = "next";
     private final static String ITERATION = "iteration";
+    private final static String SCHEMA_VERSION = "schemaVersion";
+    private final static byte[] SCHEMA_VERSION_1 = { 1 };
     private final static String SEPARATOR = ":";
 
     private static final String CE_SOURCE = "source";
@@ -81,9 +85,10 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     private static final String CE_TIME = "time";
     private static final String PROCESSED_FLAG = "processed";
     private static final byte[] PROCESSED_VALUE = new byte[] { 1 };
-    private final static String CORRELATION_LOCK_KEY = "lock:correlations";
-    private final static int CORRELATION_LOCK_TIMEOUT = 10;
-    private final static Logger logger = LoggerFactory.getLogger(RedisInstanceTransaction.class);
+    private static final String CORRELATION_LOCK_KEY = "lock:correlations";
+    private static final int CORRELATION_LOCK_TIMEOUT = 10;
+    private static final Logger logger = LoggerFactory.getLogger(RedisInstanceTransaction.class);
+    private static final String TASK_PREFIX = "task" + SEPARATOR;
 
     private final RedisDataSource ds;
     private final WorkflowBufferFactory factory;
@@ -131,37 +136,46 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
                 MarshallingUtils.writeInstant(factory, workflowContext.instanceData().startedAt())));
         operations.add(tx -> hashCommands(tx).hset(instanceId, INPUT,
                 MarshallingUtils.writeModel(factory, workflowContext.instanceData().input())));
+        operations.add(tx -> hashCommands(tx).hset(instanceId, SCHEMA_VERSION, SCHEMA_VERSION_1));
+
     }
 
     @Override
     public void writeRetryTask(WorkflowContextData workflowContext, TaskContextData taskContext) {
-        String key = taskId(workflowContext, taskContext);
-        operations.add(tx -> hashCommands(tx).hset(key, STATUS, MarshallingUtils.writeEnum(factory, TaskStatus.RETRIED)));
-        operations.add(tx -> hashCommands(tx).hset(key, RETRY_ATTEMPT,
+        String key = key(workflowContext);
+        operations.add(tx -> hashCommands(tx).hset(key, taskId(taskContext, STATUS),
+                MarshallingUtils.writeEnum(factory, TaskStatus.RETRIED)));
+        operations.add(tx -> hashCommands(tx).hset(key, taskId(taskContext, RETRY_ATTEMPT),
                 MarshallingUtils.writeInt(factory, ((TaskContext) taskContext).retryAttempt())));
     }
 
     @Override
     public void writeCompletedTask(WorkflowContextData workflowContext,
             TaskContextData taskContext) {
-        String key = taskId(workflowContext, taskContext);
-        operations.add(tx -> hashCommands(tx).hset(key, STATUS, MarshallingUtils.writeEnum(factory, TaskStatus.COMPLETED)));
+        String key = key(workflowContext);
+        operations.add(tx -> hashCommands(tx).hset(key, taskId(taskContext, STATUS),
+                MarshallingUtils.writeEnum(factory, TaskStatus.COMPLETED)));
         operations.add(
-                tx -> hashCommands(tx).hset(key, DATE, MarshallingUtils.writeInstant(factory, taskContext.completedAt())));
-        operations.add(tx -> hashCommands(tx).hset(key, OUTPUT, MarshallingUtils.writeModel(factory, taskContext.output())));
+                tx -> hashCommands(tx).hset(key, taskId(taskContext, DATE),
+                        MarshallingUtils.writeInstant(factory, taskContext.completedAt())));
+        operations.add(tx -> hashCommands(tx).hset(key, taskId(taskContext, OUTPUT),
+                MarshallingUtils.writeModel(factory, taskContext.output())));
         if (workflowContext.context() != null) {
             operations.add(
-                    tx -> hashCommands(tx).hset(key, CONTEXT, MarshallingUtils.writeModel(factory, workflowContext.context())));
+                    tx -> hashCommands(tx).hset(key, taskId(taskContext, CONTEXT),
+                            MarshallingUtils.writeModel(factory, workflowContext.context())));
         }
         TransitionInfo transition = ((TaskContext) taskContext).transition();
         operations.add(
-                tx -> hashCommands(tx).hset(key, END_NODE, MarshallingUtils.writeBoolean(factory, transition.isEndNode())));
+                tx -> hashCommands(tx).hset(key, taskId(taskContext, END_NODE),
+                        MarshallingUtils.writeBoolean(factory, transition.isEndNode())));
         AbstractTaskExecutor<?> next = (AbstractTaskExecutor<?>) transition.next();
         if (next != null) {
-            operations.add(tx -> hashCommands(tx).hset(key, NEXT,
+            operations.add(tx -> hashCommands(tx).hset(key, taskId(taskContext, NEXT),
                     MarshallingUtils.writeString(factory, next.position().jsonPointer())));
         }
-        operations.add(tx -> hashCommands(tx).hset(key, ITERATION, writeInt(factory, taskContext.iteration())));
+        operations.add(
+                tx -> hashCommands(tx).hset(key, taskId(taskContext, ITERATION), writeInt(factory, taskContext.iteration())));
     }
 
     @Override
@@ -171,8 +185,17 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
 
     @Override
     public void removeProcessInstance(WorkflowContextData workflowContext) {
+        String key = key(workflowContext);
+        if (hashCommands.hexists(key, SCHEMA_VERSION)) {
+            operations.add(tx -> keyCommands(tx).del(key(workflowContext)));
+        } else {
+            legacyRemoveProcessInstance(workflowContext);
+        }
+    }
+
+    private void legacyRemoveProcessInstance(WorkflowContextData workflowContext) {
         KeyScanCursor<String> keysCursor = keyCommands
-                .scan(new KeyScanArgs().match(taskPrefix(workflowContext.instanceData().id()) + "*"));
+                .scan(new KeyScanArgs().match(legacyTaskPrefix(workflowContext.instanceData().id()) + "*"));
         Collection<String> toDelete = new ArrayList<>();
         toDelete.add(key(workflowContext));
         while (keysCursor.hasNext()) {
@@ -393,25 +416,39 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
 
     private PersistenceWorkflowInfo readPersistenceInfo(String key, String instanceId) {
         Map<String, byte[]> instanceData = hashCommands.hgetall(key);
+        Map<String, PersistenceTaskInfo> tasksInfo = readTasksInfo(instanceData);
+        if (!instanceData.containsKey(SCHEMA_VERSION)) {
+            tasksInfo = legacyReadTasksInfo(instanceId, tasksInfo);
+        }
         return instanceData.isEmpty() ? null
                 : new PersistenceWorkflowInfo(instanceId, MarshallingUtils.readInstant(factory,
                         instanceData.get(DATE)), MarshallingUtils.readModel(factory, instanceData.get(INPUT)),
-                        MarshallingUtils.readEnum(factory, instanceData.get(STATUS), WorkflowStatus.class),
-                        readTasksInfo(instanceId));
+                        MarshallingUtils.readEnum(factory, instanceData.get(STATUS), WorkflowStatus.class), tasksInfo);
     }
 
-    private Map<String, PersistenceTaskInfo> readTasksInfo(String instanceId) {
+    private Map<String, PersistenceTaskInfo> readTasksInfo(Map<String, byte[]> instanceData) {
+        Map<String, Map<String, byte[]>> taskMap = new HashMap<>();
+        for (Entry<String, byte[]> item : instanceData.entrySet()) {
+            if (item.getKey().startsWith(TASK_PREFIX)) {
+                String[] tokens = item.getKey().split(SEPARATOR);
+                taskMap.computeIfAbsent(tokens[1], k -> new HashMap<>()).put(tokens[2], item.getValue());
+            }
+        }
+        return taskMap.entrySet().stream().collect(Collectors.toMap(Entry::getKey, e -> readTaskInfo(e.getValue())));
+    }
+
+    private Map<String, PersistenceTaskInfo> legacyReadTasksInfo(String instanceId,
+            Map<String, PersistenceTaskInfo> tasksInfo) {
         // scan key:* for task keys and then hgetall for each one of them
-        KeyScanCursor<String> cursor = keyCommands.scan(new KeyScanArgs().match(taskPrefix(instanceId) + "*"));
-        Map<String, PersistenceTaskInfo> result = new HashMap<>();
+        KeyScanCursor<String> cursor = keyCommands.scan(new KeyScanArgs().match(legacyTaskPrefix(instanceId) + "*"));
+        Map<String, PersistenceTaskInfo> result = new HashMap<>(tasksInfo);
         while (cursor.hasNext()) {
-            cursor.next().forEach(s -> result.put(lastChunk(s), readTaskInfo(s)));
+            cursor.next().forEach(s -> result.put(lastChunk(s), readTaskInfo(hashCommands.hgetall(s))));
         }
         return result;
     }
 
-    private PersistenceTaskInfo readTaskInfo(String key) {
-        Map<String, byte[]> data = hashCommands.hgetall(key);
+    private PersistenceTaskInfo readTaskInfo(Map<String, byte[]> data) {
         TaskStatus status = MarshallingUtils.readEnum(factory, data.get(STATUS), TaskStatus.class);
         if (status == TaskStatus.COMPLETED) {
             return new CompletedTaskInfo(MarshallingUtils.readInstant(factory, data.get(DATE)),
@@ -461,11 +498,15 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
         return applicationId + SEPARATOR + definition.id().toString(SEPARATOR) + SEPARATOR;
     }
 
-    private String taskId(WorkflowContextData workflowContext, TaskContextData taskContext) {
-        return taskPrefix(workflowContext.instanceData().id()) + taskContext.position().jsonPointer();
+    private String taskId(TaskContextData taskContext, String name) {
+        return taskId(taskContext.position().jsonPointer(), name);
     }
 
-    private String taskPrefix(String instanceId) {
+    private String taskId(String position, String name) {
+        return TASK_PREFIX + position + SEPARATOR + name;
+    }
+
+    private String legacyTaskPrefix(String instanceId) {
         return instanceId + SEPARATOR;
     }
 
