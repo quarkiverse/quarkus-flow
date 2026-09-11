@@ -1,7 +1,7 @@
 # Graph Report - quarkus-flow  (2026-09-11)
 
 ## Corpus Check
-- 1015 files · ~391,477 words
+- 1015 files · ~391,501 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `b9cb14a5`
+- Built from commit: `7662d09a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 

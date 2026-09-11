@@ -5584,7 +5584,7 @@
       "file_type": "code",
       "norm_label": "flowapiresource",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L17"
+      "source_location": "L19"
     },
     {
       "id": "examples_suspend_resume_abort_src_main_java_org_acme_flow_flowrequest_flowrequest",
@@ -36356,7 +36356,7 @@
       "file_type": "code",
       "norm_label": ".cancel()",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L73"
+      "source_location": "L77"
     },
     {
       "id": "examples_suspend_resume_abort_src_main_java_org_acme_flow_flowapiresource_flowapiresource_instanceoperation",
@@ -36372,25 +36372,31 @@
             "callee": "activeInstance",
             "receiver_type": "WorkflowDefinition",
             "lang": "java",
-            "line": "L80"
+            "line": "L84"
           },
           {
             "callee": "ok",
             "receiver_type": "Response",
             "lang": "java",
-            "line": "L81"
+            "line": "L85"
           },
           {
             "callee": "notModified",
             "receiver_type": "Response",
             "lang": "java",
-            "line": "L81"
+            "line": "L85"
+          },
+          {
+            "callee": "completedFuture",
+            "receiver_type": "CompletableFuture",
+            "lang": "java",
+            "line": "L86"
           }
         ]
       },
       "norm_label": ".instanceoperation()",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L79"
+      "source_location": "L83"
     },
     {
       "id": "examples_suspend_resume_abort_src_main_java_org_acme_flow_flowapiresource_flowapiresource_notfoundresponse",
@@ -36406,13 +36412,13 @@
             "callee": "status",
             "receiver_type": "Response",
             "lang": "java",
-            "line": "L86"
+            "line": "L90"
           }
         ]
       },
       "norm_label": ".notfoundresponse()",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L85"
+      "source_location": "L89"
     },
     {
       "id": "examples_suspend_resume_abort_src_main_java_org_acme_flow_flowapiresource_flowapiresource_resume",
@@ -36424,7 +36430,7 @@
       "file_type": "code",
       "norm_label": ".resume()",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L47"
+      "source_location": "L51"
     },
     {
       "id": "examples_suspend_resume_abort_src_main_java_org_acme_flow_flowapiresource_flowapiresource_start",
@@ -36440,37 +36446,37 @@
             "callee": "instance",
             "receiver_type": "WorkflowDefinition",
             "lang": "java",
-            "line": "L35"
+            "line": "L39"
           },
           {
             "callee": "start",
             "receiver_type": "WorkflowInstance",
             "lang": "java",
-            "line": "L36"
+            "line": "L40"
           },
           {
             "callee": "accepted",
             "receiver_type": "Response",
             "lang": "java",
-            "line": "L37"
+            "line": "L41"
           },
           {
             "callee": "of",
             "receiver_type": "Map",
             "lang": "java",
-            "line": "L37"
+            "line": "L41"
           },
           {
             "callee": "id",
             "receiver_type": "WorkflowInstance",
             "lang": "java",
-            "line": "L37"
+            "line": "L41"
           }
         ]
       },
       "norm_label": ".start()",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L32"
+      "source_location": "L36"
     },
     {
       "id": "examples_suspend_resume_abort_src_main_java_org_acme_flow_flowapiresource_flowapiresource_suspend",
@@ -36482,7 +36488,7 @@
       "file_type": "code",
       "norm_label": ".suspend()",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L60"
+      "source_location": "L64"
     },
     {
       "id": "oidc_integration_tests_src_main_java_io_quarkiverse_flow_oidc_it_flowresource_flowresource_listconfigoverrideimages",
@@ -154815,7 +154821,7 @@
       "confidence_score": 1.0,
       "context": "attribute",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L17",
+      "source_location": "L19",
       "weight": 1.0
     },
     {
@@ -154827,7 +154833,7 @@
       "confidence_score": 1.0,
       "context": "attribute",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L17",
+      "source_location": "L19",
       "weight": 1.0
     },
     {
@@ -154839,7 +154845,7 @@
       "confidence_score": 1.0,
       "context": "attribute",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L73",
+      "source_location": "L77",
       "weight": 1.0
     },
     {
@@ -154851,7 +154857,7 @@
       "confidence_score": 1.0,
       "context": "attribute",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L73",
+      "source_location": "L77",
       "weight": 1.0
     },
     {
@@ -154863,7 +154869,7 @@
       "confidence_score": 1.0,
       "context": "attribute",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L47",
+      "source_location": "L51",
       "weight": 1.0
     },
     {
@@ -154875,7 +154881,7 @@
       "confidence_score": 1.0,
       "context": "attribute",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L47",
+      "source_location": "L51",
       "weight": 1.0
     },
     {
@@ -154887,7 +154893,7 @@
       "confidence_score": 1.0,
       "context": "attribute",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L32",
+      "source_location": "L36",
       "weight": 1.0
     },
     {
@@ -154899,7 +154905,7 @@
       "confidence_score": 1.0,
       "context": "attribute",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L32",
+      "source_location": "L36",
       "weight": 1.0
     },
     {
@@ -154911,7 +154917,7 @@
       "confidence_score": 1.0,
       "context": "attribute",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L60",
+      "source_location": "L64",
       "weight": 1.0
     },
     {
@@ -154923,7 +154929,7 @@
       "confidence_score": 1.0,
       "context": "attribute",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L60",
+      "source_location": "L64",
       "weight": 1.0
     },
     {
@@ -195603,7 +195609,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L76",
+      "source_location": "L80",
       "weight": 1.0
     },
     {
@@ -195615,7 +195621,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L82",
+      "source_location": "L86",
       "weight": 1.0
     },
     {
@@ -195627,7 +195633,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L50",
+      "source_location": "L54",
       "weight": 1.0
     },
     {
@@ -195639,7 +195645,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L63",
+      "source_location": "L67",
       "weight": 1.0
     },
     {
@@ -210831,7 +210837,7 @@
       "confidence_score": 1.0,
       "context": "field",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L21",
+      "source_location": "L23",
       "weight": 1.0
     },
     {
@@ -218491,6 +218497,18 @@
       "weight": 1.0
     },
     {
+      "source": "examples_suspend_resume_abort_src_main_java_org_acme_flow_flowapiresource_flowapiresource_cancel",
+      "target": "jakarta_ws_rs_core_response",
+      "relation": "references",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "generic_arg",
+      "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
+      "source_location": "L77",
+      "weight": 1.0
+    },
+    {
       "source": "examples_suspend_resume_abort_src_main_java_org_acme_flow_flowapiresource_flowapiresource_instanceoperation",
       "target": "io_serverlessworkflow_impl_workflowinstance",
       "relation": "references",
@@ -218499,7 +218517,43 @@
       "confidence_score": 1.0,
       "context": "generic_arg",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L79",
+      "source_location": "L83",
+      "weight": 1.0
+    },
+    {
+      "source": "examples_suspend_resume_abort_src_main_java_org_acme_flow_flowapiresource_flowapiresource_instanceoperation",
+      "target": "jakarta_ws_rs_core_response",
+      "relation": "references",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "generic_arg",
+      "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
+      "source_location": "L83",
+      "weight": 1.0
+    },
+    {
+      "source": "examples_suspend_resume_abort_src_main_java_org_acme_flow_flowapiresource_flowapiresource_resume",
+      "target": "jakarta_ws_rs_core_response",
+      "relation": "references",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "generic_arg",
+      "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
+      "source_location": "L51",
+      "weight": 1.0
+    },
+    {
+      "source": "examples_suspend_resume_abort_src_main_java_org_acme_flow_flowapiresource_flowapiresource_suspend",
+      "target": "jakarta_ws_rs_core_response",
+      "relation": "references",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "generic_arg",
+      "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
+      "source_location": "L64",
       "weight": 1.0
     },
     {
@@ -275079,7 +275133,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L32",
+      "source_location": "L36",
       "weight": 1.0
     },
     {
@@ -285271,30 +285325,6 @@
       "weight": 1.0
     },
     {
-      "source": "examples_suspend_resume_abort_src_main_java_org_acme_flow_flowapiresource_flowapiresource_cancel",
-      "target": "jakarta_ws_rs_core_response",
-      "relation": "references",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "return_type",
-      "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L73",
-      "weight": 1.0
-    },
-    {
-      "source": "examples_suspend_resume_abort_src_main_java_org_acme_flow_flowapiresource_flowapiresource_instanceoperation",
-      "target": "jakarta_ws_rs_core_response",
-      "relation": "references",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "return_type",
-      "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L79",
-      "weight": 1.0
-    },
-    {
       "source": "examples_suspend_resume_abort_src_main_java_org_acme_flow_flowapiresource_flowapiresource_notfoundresponse",
       "target": "jakarta_ws_rs_core_response",
       "relation": "references",
@@ -285303,19 +285333,7 @@
       "confidence_score": 1.0,
       "context": "return_type",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L85",
-      "weight": 1.0
-    },
-    {
-      "source": "examples_suspend_resume_abort_src_main_java_org_acme_flow_flowapiresource_flowapiresource_resume",
-      "target": "jakarta_ws_rs_core_response",
-      "relation": "references",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "return_type",
-      "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L47",
+      "source_location": "L89",
       "weight": 1.0
     },
     {
@@ -285327,19 +285345,7 @@
       "confidence_score": 1.0,
       "context": "return_type",
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L32",
-      "weight": 1.0
-    },
-    {
-      "source": "examples_suspend_resume_abort_src_main_java_org_acme_flow_flowapiresource_flowapiresource_suspend",
-      "target": "jakarta_ws_rs_core_response",
-      "relation": "references",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "return_type",
-      "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L60",
+      "source_location": "L36",
       "weight": 1.0
     },
     {
@@ -302307,7 +302313,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L17",
+      "source_location": "L19",
       "weight": 1.0
     },
     {
@@ -340796,7 +340802,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L32",
+      "source_location": "L36",
       "weight": 1.0
     },
     {
@@ -340807,7 +340813,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L47",
+      "source_location": "L51",
       "weight": 1.0
     },
     {
@@ -340818,7 +340824,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L60",
+      "source_location": "L64",
       "weight": 1.0
     },
     {
@@ -340829,7 +340835,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L73",
+      "source_location": "L77",
       "weight": 1.0
     },
     {
@@ -340840,7 +340846,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L79",
+      "source_location": "L83",
       "weight": 1.0
     },
     {
@@ -340851,7 +340857,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "examples/suspend-resume-abort/src/main/java/org/acme/flow/FlowAPIResource.java",
-      "source_location": "L85",
+      "source_location": "L89",
       "weight": 1.0
     },
     {
@@ -386380,5 +386386,5 @@
       "source_file": "CLAUDE.md"
     }
   ],
-  "built_at_commit": "b9cb14a5acef4dd69d71b0d652c0ba2a31db9495"
+  "built_at_commit": "7662d09a90511defde84173fdcef965dc25a7e45"
 }
