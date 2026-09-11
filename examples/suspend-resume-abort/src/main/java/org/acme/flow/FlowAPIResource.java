@@ -12,6 +12,8 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 @Path("/api/flow")
@@ -21,6 +23,8 @@ public class FlowAPIResource {
     @Inject
     @Identifier("example:SwitchLoopWait:0.1.0")
     WorkflowDefinition flow;
+    
+    private Map<String,CompletableFuture<Boolean>> completableMap = new ConcurrentHashMap<>();
 
     /**
      * Start a new workflow instance. The instance id is returned in the response.
@@ -46,8 +50,8 @@ public class FlowAPIResource {
      */
     @POST
     @Path("/resume/{instanceId}")
-    public Response resume(@PathParam("instanceId") String instanceId) {
-        return instanceOperation(instanceId, WorkflowInstance::resume);
+    public CompletableFuture<Response> resume(@PathParam("instanceId") String instanceId) {
+        return instanceOperation(instanceId, WorkflowInstance::resumeFuture);
     }
 
     /**
@@ -59,8 +63,8 @@ public class FlowAPIResource {
      */
     @POST
     @Path("/suspend/{instanceId}")
-    public Response suspend(@PathParam("instanceId") String instanceId) {
-        return instanceOperation(instanceId, WorkflowInstance::suspend);
+    public CompletableFuture<Response> suspend(@PathParam("instanceId") String instanceId) {
+        return instanceOperation(instanceId, WorkflowInstance::suspendFuture);
     }
 
     /**
@@ -72,14 +76,14 @@ public class FlowAPIResource {
      */
     @POST
     @Path("/cancel/{instanceId}")
-    public Response cancel(@PathParam("instanceId") String instanceId) {
-        return instanceOperation(instanceId, WorkflowInstance::cancel);
+    public CompletableFuture<Response> cancel(@PathParam("instanceId") String instanceId) {
+        return instanceOperation(instanceId, WorkflowInstance::cancelFuture);
     }
 
-    private Response instanceOperation(String instanceId, Function<WorkflowInstance, Boolean> function) {
+    private CompletableFuture<Response> instanceOperation(String instanceId, Function<WorkflowInstance, CompletableFuture<Boolean>> function) {
         return flow.activeInstance(instanceId)
-                .map(instance -> function.apply(instance) ? Response.ok().build() : Response.notModified().build())
-                .orElseGet(() -> notFoundResponse(instanceId));
+                .map(instance ->  completableMap.compute(instanceId, (k,v) -> v == null ? function.apply(instance) : v.thenCompose(__ -> function.apply(instance))).thenApply( v -> v ?  Response.ok().build() : Response.notModified().build()))
+                .orElseGet(() -> CompletableFuture.completedFuture(notFoundResponse(instanceId)));
     }
 
     private Response notFoundResponse(String instanceId) {
