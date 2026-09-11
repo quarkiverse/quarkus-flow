@@ -416,12 +416,14 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
 
     private PersistenceWorkflowInfo readPersistenceInfo(String key, String instanceId) {
         Map<String, byte[]> instanceData = hashCommands.hgetall(key);
+        Map<String, PersistenceTaskInfo> tasksInfo = readTasksInfo(instanceData);
+        if (!instanceData.containsKey(SCHEMA_VERSION)) {
+            tasksInfo = legacyReadTasksInfo(instanceId, tasksInfo);
+        }
         return instanceData.isEmpty() ? null
                 : new PersistenceWorkflowInfo(instanceId, MarshallingUtils.readInstant(factory,
                         instanceData.get(DATE)), MarshallingUtils.readModel(factory, instanceData.get(INPUT)),
-                        MarshallingUtils.readEnum(factory, instanceData.get(STATUS), WorkflowStatus.class),
-                        instanceData.containsKey(SCHEMA_VERSION) ? readTasksInfo(instanceData)
-                                : legacyReadTasksInfo(instanceId));
+                        MarshallingUtils.readEnum(factory, instanceData.get(STATUS), WorkflowStatus.class), tasksInfo);
     }
 
     private Map<String, PersistenceTaskInfo> readTasksInfo(Map<String, byte[]> instanceData) {
@@ -435,10 +437,11 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
         return taskMap.entrySet().stream().collect(Collectors.toMap(Entry::getKey, e -> readTaskInfo(e.getValue())));
     }
 
-    private Map<String, PersistenceTaskInfo> legacyReadTasksInfo(String instanceId) {
+    private Map<String, PersistenceTaskInfo> legacyReadTasksInfo(String instanceId,
+            Map<String, PersistenceTaskInfo> tasksInfo) {
         // scan key:* for task keys and then hgetall for each one of them
         KeyScanCursor<String> cursor = keyCommands.scan(new KeyScanArgs().match(legacyTaskPrefix(instanceId) + "*"));
-        Map<String, PersistenceTaskInfo> result = new HashMap<>();
+        Map<String, PersistenceTaskInfo> result = new HashMap<>(tasksInfo);
         while (cursor.hasNext()) {
             cursor.next().forEach(s -> result.put(lastChunk(s), readTaskInfo(hashCommands.hgetall(s))));
         }
