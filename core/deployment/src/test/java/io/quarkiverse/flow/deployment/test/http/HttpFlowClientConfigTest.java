@@ -23,7 +23,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.WorkflowModel;
@@ -31,6 +31,15 @@ import io.smallrye.common.annotation.Identifier;
 
 public class HttpFlowClientConfigTest {
 
+    @RegisterExtension
+    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(HttpRestFlow.class))
+            // Wire the endpoint used by HttpRestFlow
+            .overrideConfigKey("org.acme.endpoint", "http://localhost:1080/echo")
+            // Configure the Flow HTTP client: send a static header with this value
+            .overrideConfigKey("quarkus.flow.http.client.static-headers", "X-Flow-Client=flow-default")
+            .overrideConfigKey("quarkus.flow.http.client.user-agent", "HttpFlowClientConfigTest");
     private static WireMockServer wireMockServer;
 
     @BeforeAll
@@ -51,16 +60,6 @@ public class HttpFlowClientConfigTest {
             wireMockServer.stop();
         }
     }
-
-    @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(HttpRestFlow.class))
-            // Wire the endpoint used by HttpRestFlow
-            .overrideConfigKey("org.acme.endpoint", "http://localhost:1080/echo")
-            // Configure the Flow HTTP client: send a static header with this value
-            .overrideConfigKey("quarkus.flow.http.client.static-headers", "X-Flow-Client=flow-default")
-            .overrideConfigKey("quarkus.flow.http.client.user-agent", "HttpFlowClientConfigTest");
 
     @Test
     void http_client_uses_flow_http_config() {

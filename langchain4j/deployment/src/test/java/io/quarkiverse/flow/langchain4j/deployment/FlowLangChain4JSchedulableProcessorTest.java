@@ -13,12 +13,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.agentic.declarative.SequenceAgent;
 import io.quarkiverse.flow.langchain4j.annotations.ScheduleOn;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class FlowLangChain4JSchedulableProcessorTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(Agentic.class)
                     .addAsResource(new StringAsset("quarkus.http.test-port=0"), "application.properties"))
