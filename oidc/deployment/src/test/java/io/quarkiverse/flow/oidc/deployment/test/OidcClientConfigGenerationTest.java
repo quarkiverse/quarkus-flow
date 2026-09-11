@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClients;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Deployment test that verifies OIDC client configuration is automatically generated
@@ -21,7 +21,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OidcClientConfigGenerationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
             .withApplicationRoot((jar) -> jar
                     .addAsResource("flow/oauth2-test-workflow.yaml")

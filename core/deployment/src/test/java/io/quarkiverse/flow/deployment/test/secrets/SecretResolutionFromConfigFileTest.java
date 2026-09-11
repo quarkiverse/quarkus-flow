@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.serverlessworkflow.impl.config.ConfigManager;
@@ -22,11 +22,8 @@ import io.smallrye.common.annotation.Identifier;
 
 public class SecretResolutionFromConfigFileTest {
 
-    @Inject
-    ConfigManager cm;
-
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(SecretEchoWorkflow.class)
                     .addAsResource(new StringAsset("""
@@ -34,6 +31,8 @@ public class SecretResolutionFromConfigFileTest {
                             mySecret.password=s3cr3t!
                             quarkus.http.test-port=0"""),
                             "application.properties"));
+    @Inject
+    ConfigManager cm;
 
     @Test
     public void secret_is_resolved_from_config_file() {

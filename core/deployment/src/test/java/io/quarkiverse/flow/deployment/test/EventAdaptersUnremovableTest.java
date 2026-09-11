@@ -16,7 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.cloudevents.CloudEvent;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.serverlessworkflow.impl.events.AbstractTypeConsumer;
 import io.serverlessworkflow.impl.events.EventConsumer;
 import io.serverlessworkflow.impl.events.EventPublisher;
@@ -24,7 +24,7 @@ import io.serverlessworkflow.impl.events.EventPublisher;
 public class EventAdaptersUnremovableTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(CustomEventPublisher.class, CustomEventConsumer.class))
             .withConfigurationResource("application-test-random.properties");

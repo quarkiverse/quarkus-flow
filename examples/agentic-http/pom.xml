@@ -18,7 +18,7 @@
         <surefire-plugin.version>3.6.0</surefire-plugin.version>
 
         <quarkus.flow.version>2.0.0-SNAPSHOT</quarkus.flow.version>
-        <io.quarkiverse.langchain4j.version>1.13.1</io.quarkiverse.langchain4j.version>
+        <io.quarkiverse.langchain4j.version>1.14.0.CR3</io.quarkiverse.langchain4j.version>
     </properties>
 
     <dependencyManagement>
