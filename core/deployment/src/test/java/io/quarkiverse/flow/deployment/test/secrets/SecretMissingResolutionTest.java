@@ -15,7 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkiverse.flow.Flow;
 import io.quarkus.arc.Arc;
 import io.quarkus.credentials.CredentialsProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.spec.WorkflowBuilder;
 import io.serverlessworkflow.impl.WorkflowDefinition;
@@ -29,7 +29,7 @@ import io.smallrye.common.annotation.Identifier;
 public class SecretMissingResolutionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(MissingSecretFlow.class)
                     .addClass(EmptyCredentialsProvider.class))

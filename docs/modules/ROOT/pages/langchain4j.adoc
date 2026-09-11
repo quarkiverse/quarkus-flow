@@ -317,6 +317,68 @@ All of this happens without writing a single line of orchestration code.
 
 NOTE: See xref:concepts-agentic-langchain4j.adoc[Agentic AI Topology and Internals] for details on how the build-time compiler works.
 
+== 7. Persisting AgenticScope with Custom Domain Objects
+
+When using xref:persistence.adoc[Quarkus Flow persistence] (JPA, Redis, etc.) with agentic workflows, the `AgenticScope` state is serialized and later deserialized from the database. If your agents store **custom application domain objects** in the scope (not just JDK types like `String`, `Integer`, or `List`), you must explicitly register these classes for deserialization.
+
+=== The Problem
+
+LangChain4j 1.20.0+ uses a `PolymorphicTypeValidator` that denies deserialization of non-allowlisted types for security. When you persist and restore an `AgenticScope` containing custom domain classes, you will see:
+
+[source]
+----
+UnserializableAgenticScopeException: Failed to deserialize AgenticScope from JSON.
+The type 'com.example.Order' is not allowed for deserialization.
+----
+
+=== Required Configuration
+
+You must manually register your domain classes **before** deserialization occurs. Create a startup bean to register all custom classes used in `AgenticScope`:
+
+[source,java]
+----
+import dev.langchain4j.agentic.scope.AgenticScopeSerializer;
+import io.quarkus.runtime.Startup;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@Startup
+@ApplicationScoped
+public class AgenticScopeConfiguration {
+
+    void init() {
+        // Register all domain classes used in AgenticScope
+        AgenticScopeSerializer.registerForDeserializationPackageOf(Order.class);
+        AgenticScopeSerializer.registerForDeserializationPackageOf(Customer.class);
+
+        // Or register entire packages at once:
+        // AgenticScopeSerializer.allowDeserializationPackagePrefix("com.example.domain.");
+    }
+}
+----
+
+IMPORTANT: Call `registerForDeserializationPackageOf()` for **any** custom class you store in `AgenticScope.writeState()` that will be persisted. This includes nested objects and classes in the same package.
+
+=== Example: Custom Domain Objects
+
+[source,java]
+----
+public class TripPlannerAgent {
+
+    public ResultWithAgenticScope<String> planTrip(String destination) {
+        // Custom domain objects stored in scope
+        var itinerary = new TripItinerary(destination, 5);
+        itinerary.addActivity(new Activity("Museum visit", "10:00 AM"));
+
+        scope.writeState("itinerary", itinerary);  // ← Requires registration!
+        scope.writeState("estimate", new CostEstimate(1500.00, "USD"));
+
+        return ResultWithAgenticScope.of(response, scope);
+    }
+}
+----
+
+Without registering `TripItinerary`, `Activity`, and `CostEstimate`, JPA persistence will fail when Quarkus Flow attempts to deserialize the workflow model from the database.
+
 == See also
 * xref:data-flow.adoc[Data flow and context management] — deeper dive into `inputFrom` and `exportAs`.
 * xref:dsl-cheatsheet.adoc[Java DSL cheatsheet] — a quick reference for all available workflow tasks.

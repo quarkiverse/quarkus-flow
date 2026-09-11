@@ -13,7 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkiverse.flow.internal.WorkflowNameUtils;
 import io.quarkiverse.flow.langchain4j.Agents;
 import io.quarkus.arc.Arc;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
@@ -29,7 +29,7 @@ import io.serverlessworkflow.impl.WorkflowDefinitionId;
  */
 public class FlowLangChain4jProcessorTest {
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(Agents.class)
                     .addAsResource(new StringAsset("quarkus.http.test-port=0"), "application.properties"));
