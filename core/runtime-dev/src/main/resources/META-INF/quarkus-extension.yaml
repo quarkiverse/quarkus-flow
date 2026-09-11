@@ -3,6 +3,7 @@ description: |
   DevUI components for Quarkus Flow.
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
+  unlisted: true
   keywords:
     - workflow
     - workflows
