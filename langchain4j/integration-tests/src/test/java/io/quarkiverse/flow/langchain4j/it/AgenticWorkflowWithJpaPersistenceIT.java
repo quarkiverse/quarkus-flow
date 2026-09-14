@@ -63,12 +63,13 @@ public class AgenticWorkflowWithJpaPersistenceIT {
                 .as("restored agentic state should preserve the original scope state")
                 .containsKeys(scope.state().keySet().toArray(new String[0]));
 
-        // Check category value - may be enum or string representation depending on serialization
-        Object category = restoredState.get("category");
-        assertThat(category)
+        // Check category value - compare enum by name to handle potential classloader differences
+        final Object categoryValue = restoredState.get("category");
+        assertThat(categoryValue)
                 .as("category should be preserved")
-                .satisfiesAnyOf(
-                        c -> assertThat(c).isEqualTo(Agents.RequestCategory.MEDICAL),
-                        c -> assertThat(c.toString()).isEqualTo("MEDICAL"));
+                .isNotNull();
+        assertThat(((Enum<?>) categoryValue).name())
+                .as("category enum name should match")
+                .isEqualTo(Agents.RequestCategory.MEDICAL.name());
     }
 }

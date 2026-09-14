@@ -65,117 +65,6 @@ public class AgenticWorkflowJpaCustomDomainObjectsIT {
         // TripItinerary, Activity, and CostEstimate are all covered by this single call
     }
 
-    /**
-     * Custom domain object representing a trip itinerary.
-     * This simulates real-world application domain objects that users would store in AgenticScope.
-     */
-    public static class TripItinerary {
-        private String destination;
-        private int durationDays;
-        private List<Activity> activities;
-        private CostEstimate cost;
-
-        public TripItinerary() {
-        }
-
-        public TripItinerary(String destination, int durationDays, List<Activity> activities, CostEstimate cost) {
-            this.destination = destination;
-            this.durationDays = durationDays;
-            this.activities = activities;
-            this.cost = cost;
-        }
-
-        public String getDestination() {
-            return destination;
-        }
-
-        public void setDestination(String destination) {
-            this.destination = destination;
-        }
-
-        public int getDurationDays() {
-            return durationDays;
-        }
-
-        public void setDurationDays(int durationDays) {
-            this.durationDays = durationDays;
-        }
-
-        public List<Activity> getActivities() {
-            return activities;
-        }
-
-        public void setActivities(List<Activity> activities) {
-            this.activities = activities;
-        }
-
-        public CostEstimate getCost() {
-            return cost;
-        }
-
-        public void setCost(CostEstimate cost) {
-            this.cost = cost;
-        }
-    }
-
-    public static class Activity {
-        private String name;
-        private String time;
-
-        public Activity() {
-        }
-
-        public Activity(String name, String time) {
-            this.name = name;
-            this.time = time;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public String getTime() {
-            return time;
-        }
-
-        public void setTime(String time) {
-            this.time = time;
-        }
-    }
-
-    public static class CostEstimate {
-        private double totalCost;
-        private String currency;
-
-        public CostEstimate() {
-        }
-
-        public CostEstimate(double totalCost, String currency) {
-            this.totalCost = totalCost;
-            this.currency = currency;
-        }
-
-        public double getTotalCost() {
-            return totalCost;
-        }
-
-        public void setTotalCost(double totalCost) {
-            this.totalCost = totalCost;
-        }
-
-        public String getCurrency() {
-            return currency;
-        }
-
-        public void setCurrency(String currency) {
-            this.currency = currency;
-        }
-    }
-
     @Test
     @DisplayName("agentic_workflow_with_custom_domain_objects_succeeds_jpa_persistence_issue_901_fixed")
     void agentic_workflow_with_custom_domain_objects_succeeds_jpa_persistence_issue_901_fixed() {
@@ -209,7 +98,14 @@ public class AgenticWorkflowJpaCustomDomainObjectsIT {
         Map<String, Object> restoredState = restored.asMap().orElseThrow();
 
         // Verify custom domain objects are preserved
-        assertThat(restoredState).containsKey("itinerary");
+        assertThat(restoredState.get("itinerary")).isInstanceOf(TripItinerary.class);
+
+        TripItinerary restoredItinerary = (TripItinerary) restoredState.get("itinerary");
+        assertThat(restoredItinerary.destination()).isEqualTo("Paris");
+        assertThat(restoredItinerary.durationDays()).isEqualTo(5);
+        assertThat(restoredItinerary.activities()).hasSize(2);
+        assertThat(restoredItinerary.cost().currency()).isEqualTo("USD");
+
         assertThat(restoredState).containsKey("userPreference");
         assertThat(restoredState.get("userPreference")).isEqualTo("luxury");
     }
@@ -264,5 +160,26 @@ public class AgenticWorkflowJpaCustomDomainObjectsIT {
                 .containsEntry("category", Agents.RequestCategory.MEDICAL)
                 .containsEntry("count", 42)
                 .containsEntry("message", "test");
+    }
+
+    /**
+     * Custom domain object representing a trip itinerary.
+     * This simulates real-world application domain objects that users would store in AgenticScope.
+     */
+    public record TripItinerary(
+            String destination,
+            int durationDays,
+            List<Activity> activities,
+            CostEstimate cost) {
+    }
+
+    public record Activity(
+            String name,
+            String time) {
+    }
+
+    public record CostEstimate(
+            double totalCost,
+            String currency) {
     }
 }
