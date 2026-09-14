@@ -3,10 +3,14 @@ package io.quarkiverse.flow.runner.resources;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -14,6 +18,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
@@ -26,6 +31,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import io.quarkiverse.flow.internal.WorkflowVersionComparator;
 import io.quarkiverse.flow.runner.model.ExecutionResponse;
+import io.quarkiverse.flow.runner.model.StatusResponse;
 import io.quarkiverse.flow.runner.security.AuthzConsts;
 import io.quarkiverse.flow.runner.security.FlowRunnerEndpoint;
 import io.serverlessworkflow.impl.WorkflowApplication;
@@ -44,6 +50,13 @@ public class RunnerExecResource {
 
     @Inject
     WorkflowApplication application;
+
+    private Map<String, CompletableFuture<Boolean>> completableMap;
+
+    @PostConstruct
+    void init() {
+        completableMap = new ConcurrentHashMap<>();
+    }
 
     @POST
     @Path("/{namespace}/{name}")
@@ -99,6 +112,61 @@ public class RunnerExecResource {
             @RequestBody(description = "Workflow input data (can be object, array, string, number, or boolean)", required = false) Object request) {
         final WorkflowDefinitionId id = new WorkflowDefinitionId(namespace, name, version);
         return executeWorkflow(wait, request, id, application.workflowDefinitions().get(id));
+    }
+
+    @POST
+    @Path("/suspend/{instanceId}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Suspend workflow execution", description = "Suspend workflow execution upon user request. "
+            + "This means that once the current task is completed, the next task wont start till the user explicitly resumes the wokflow")
+    @APIResponse(responseCode = "200", description = "Workflow suspended successfully")
+    @APIResponse(responseCode = "304", description = "Workflow not in a state that can be suspended", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = StatusResponse.class)))
+    @APIResponse(responseCode = "404", description = "Workflow instance not found")
+    public Uni<Response> suspendWorkflow(
+            @Parameter(description = "Workflow instance id", required = true) @PathParam("instanceId") String instanceId) {
+        return instanceOperation(instanceId, WorkflowInstance::suspendFuture);
+    }
+
+    @POST
+    @Path("/resume/{instanceId}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Resume workflow execution", description = "Resume workflow execution upon user request. "
+            + "The workflow will continue with the next task.")
+    @APIResponse(responseCode = "200", description = "Workflow resumed successfully")
+    @APIResponse(responseCode = "304", description = "Workflow not in a state that can be resumed", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = StatusResponse.class)))
+    @APIResponse(responseCode = "404", description = "Workflow instance not found")
+    public Uni<Response> resumeWorkflow(
+            @Parameter(description = "Workflow instance id", required = true) @PathParam("instanceId") String instanceId) {
+        return instanceOperation(instanceId, WorkflowInstance::resumeFuture);
+    }
+
+    @DELETE
+    @Path("{instanceId}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Cancel workflow execution", description = "Cancel workflow execution upon user request. "
+            + "It might try to cancel current task. Once that task is done, the workflow will not continue with the next task and will remain cancelled forever.")
+    @APIResponse(responseCode = "200", description = "Workflow cancelled successfully")
+    @APIResponse(responseCode = "304", description = "Workflow not in a state that can be cancelled", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = StatusResponse.class)))
+    @APIResponse(responseCode = "404", description = "Workflow instance not found")
+    public Uni<Response> cancelWorkflow(
+            @Parameter(description = "Workflow instance id", required = true) @PathParam("instanceId") String instanceId) {
+        return instanceOperation(instanceId, WorkflowInstance::cancelFuture);
+    }
+
+    private Uni<Response> instanceOperation(String instanceId,
+            Function<WorkflowInstance, CompletableFuture<Boolean>> function) {
+        return application.workflowDefinitions().values().stream().flatMap(s -> s.activeInstance(instanceId).stream())
+                .map(instance -> completableMap
+                        .compute(instanceId,
+                                (k, v) -> v == null ? function.apply(instance) : v.thenCompose(__ -> function.apply(instance)))
+                        .thenApply(v -> v ? Response.ok().build()
+                                : Response.notModified().entity(StatusResponse.from(instance)).build()))
+                .findFirst().map(Uni.createFrom()::completionStage)
+                .orElseGet(() -> Uni.createFrom().item(notFoundResponse(instanceId)));
+    }
+
+    private Response notFoundResponse(String instanceId) {
+        return Response.status(Status.NOT_FOUND).entity("Workflow instance id '" + instanceId + "' not found").build();
     }
 
     private Uni<Response> executeWorkflow(boolean wait, Object request, WorkflowDefinitionId id,
