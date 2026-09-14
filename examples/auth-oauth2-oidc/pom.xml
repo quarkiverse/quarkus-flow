@@ -18,7 +18,7 @@
         <quarkus.flow.version>2.0.0-SNAPSHOT</quarkus.flow.version>
         <quarkus.wiremock.version>1.7.0</quarkus.wiremock.version>
         <surefire-plugin.version>3.6.0</surefire-plugin.version>
-        <failsafe-plugin.version>3.5.4</failsafe-plugin.version>
+        <failsafe-plugin.version>3.6.0</failsafe-plugin.version>
         <version.assertj>3.27.7</version.assertj>
     </properties>
 

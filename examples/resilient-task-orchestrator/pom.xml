@@ -18,7 +18,7 @@
         <quarkus.platform.version>3.39.0.CR1</quarkus.platform.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.6.0</surefire-plugin.version>
-        <failsafe-plugin.version>3.5.4</failsafe-plugin.version>
+        <failsafe-plugin.version>3.6.0</failsafe-plugin.version>
 
         <quarkus.flow.version>2.0.0-SNAPSHOT</quarkus.flow.version>
         <org.assertj.version>3.27.7</org.assertj.version>
