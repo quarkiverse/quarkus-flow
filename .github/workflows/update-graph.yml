@@ -1,22 +1,9 @@
 name: Update Knowledge Graph
 
 on:
-  push:
-    branches: [main]
-    paths:
-      # Trigger on code changes
-      - '**/*.java'
-      - '**/*.yaml'
-      - '**/*.yml'
-      - '**/*.adoc'
-      - '**/*.md'
-      - '**/*.png'
-      - '**/*.jpg'
-      - '**/*.svg'
-      # Also trigger on graph config changes
-      - '.graphify/**'
-      - 'GRAPHIFY.md'
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch: # Manual trigger
+  release:
+    types: [published] # Auto-update on releases
 
 jobs:
   update-graph:
@@ -61,6 +48,14 @@ jobs:
           pip install -r .github/workflows/graphify/requirements.txt
           graphify --version || echo "Graphify installed"
 
+      - name: Cache graphify AST extractions
+        uses: actions/cache@v4
+        with:
+          path: .graphify/cache
+          key: graphify-cache-${{ runner.os }}-${{ hashFiles('**/*.java', '**/*.yaml', '**/*.yml', '**/*.adoc', '**/*.md') }}
+          restore-keys: |
+            graphify-cache-${{ runner.os }}-
+
       - name: Update knowledge graph
         run: |
           # Run incremental update (uses cache, only re-extracts changed files)
@@ -88,11 +83,11 @@ jobs:
       - name: Commit updated graph
         if: steps.check_changes.outputs.changed == 'true'
         run: |
-          # Add only the graph artifacts (not temp files)
+          # Add only the graph artifacts (not cache or temp files)
           git add .graphify/graph.json
           git add .graphify/GRAPH_REPORT.md
-          git add .graphify/cache/
           git add .graphify_manifest.json
+          # NOTE: .graphify/cache/ is now ignored and cached via GitHub Actions
 
           # Create commit
           git commit -m "chore: update knowledge graph [skip ci]
@@ -102,6 +97,9 @@ jobs:
           Graph statistics:
           - See .graphify/GRAPH_REPORT.md for details
           - Updated by GitHub Actions workflow"
+
+          # Pull and rebase to handle concurrent pushes
+          git pull --rebase origin main
 
           # Push changes
           git push

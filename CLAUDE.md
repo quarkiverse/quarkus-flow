@@ -113,17 +113,19 @@ quarkus-flow/
 **CRITICAL**: This codebase has a **knowledge graph** (see `.graphify/GRAPH_REPORT.md` for current statistics). **Query it BEFORE reading files** for 16x token savings.
 
 ```bash
+# Keep your local graph fresh (recommended after pulling)
+/graphify update .  # ~30 seconds, free, no API cost
+
 # Architecture/relationships (try FIRST)
 /graphify query "How does OAuth2 work?"
 /graphify query "What depends on persistence?"
 /graphify path "Flow" "RedisPersistence"
-
-# After changes
-/graphify --update
 ```
 
 **Use for**: Understanding features, finding examples, tracing paths, module dependencies  
 **Then read files for**: Implementation details, specific code review
+
+**Note**: The committed graph is a baseline. Run `/graphify update .` after pulling to get the freshest graph data (local only, not committed).
 
 📊 See `.graphify/GRAPH_REPORT.md` for god nodes, surprising connections, refactoring opportunities  
 📖 See **[GRAPHIFY.md](GRAPHIFY.md)** for complete documentation

@@ -74,7 +74,8 @@ build.js
 # Bob-Shell
 .bob/notes/
 
-# graphify (keep graph + cache + manifest, skip temp files)
+# graphify (keep graph + manifest, skip cache + temp files)
+.graphify/cache/
 .graphify/.graphify_detect.json
 .graphify/.graphify_extract.json
 .graphify/.graphify_ast.json
