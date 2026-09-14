@@ -1,0 +1,19 @@
+name: Flow Dev
+description: |
+  DevUI components for Quarkus Flow.
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  unlisted: true
+  keywords:
+    - workflow
+    - workflows
+    - cncf
+    - serverless
+    - cloudevents
+    - open-workflow
+  guide: https://docs.quarkiverse.io/quarkus-flow/dev/getting-started.html
+  categories:
+    - "integration"
+  status: "stable"
+  config:
+    - "quarkus.flow.devui."
