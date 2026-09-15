@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
 import io.quarkiverse.flow.config.TimestampFormat;
+import io.quarkiverse.flow.spi.observability.TraceCorrelationProvider;
 import io.serverlessworkflow.impl.WorkflowDefinitionData;
 import io.serverlessworkflow.impl.WorkflowError;
 import io.serverlessworkflow.impl.WorkflowStatus;
@@ -80,15 +81,28 @@ public class EventFormatter {
     private static final String FIELD_TRUNCATED = "__truncated__";
     private static final String FIELD_ORIGINAL_SIZE = "__originalSize__";
     private static final String FIELD_PREVIEW = "__preview__";
+    // Trace-correlation fields, named to match the SLF4J MDC keys Quarkus' own OpenTelemetry
+    // logging instrumentation uses, so dashboards can rely on a single set of names.
+    private static final String FIELD_TRACE_ID = "traceId";
+    private static final String FIELD_SPAN_ID = "spanId";
+    private static final String FIELD_SAMPLED = "sampled";
+    private static final String FIELD_PARENT_ID = "parentId";
 
     private final FlowStructuredLoggingConfig config;
     private final ObjectMapper objectMapper;
+    private final TraceCorrelationProvider traceCorrelation;
 
     private final DateTimeFormatter customDateFormat;
 
     public EventFormatter(FlowStructuredLoggingConfig config, ObjectMapper objectMapper) {
+        this(config, objectMapper, TraceCorrelationProvider.NOOP);
+    }
+
+    public EventFormatter(FlowStructuredLoggingConfig config, ObjectMapper objectMapper,
+            TraceCorrelationProvider traceCorrelation) {
         this.config = config;
         this.objectMapper = objectMapper;
+        this.traceCorrelation = traceCorrelation == null ? TraceCorrelationProvider.NOOP : traceCorrelation;
 
         // Validate custom pattern if CUSTOM format is selected
         customDateFormat = config.timestampFormat() == TimestampFormat.CUSTOM
@@ -254,6 +268,12 @@ public class EventFormatter {
         json.put(FIELD_EVENT_TYPE, StructuredLoggingEventTypes.toCloudEventType(filterKey));
         json.put(FIELD_TIMESTAMP, formatTimestamp(event.eventDate()));
         json.put(FIELD_INSTANCE_ID, event.workflowContext().instanceData().id());
+        traceCorrelation.traceContextFor(event).ifPresent(tc -> {
+            json.put(FIELD_TRACE_ID, tc.traceId());
+            json.put(FIELD_SPAN_ID, tc.spanId());
+            json.put(FIELD_SAMPLED, tc.sampled());
+            json.put(FIELD_PARENT_ID, tc.parentId());
+        });
         return json;
     }
 
