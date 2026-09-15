@@ -102,7 +102,8 @@ jobs:
           - See .graphify/GRAPH_REPORT.md for details
           - Updated by GitHub Actions workflow"
 
-          # Push changes (concurrency group ensures no conflicts)
+          # Push changes (rebase latest main to handle concurrent pushes)
+          git pull --rebase origin main
           git push
 
       - name: Summary
