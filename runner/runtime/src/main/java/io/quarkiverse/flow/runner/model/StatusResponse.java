@@ -8,5 +8,4 @@ public record StatusResponse(String instanceId, WorkflowStatus status) {
     public static StatusResponse from(WorkflowInstance instance) {
         return new StatusResponse(instance.id(), instance.status());
     }
-
 }
