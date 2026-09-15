@@ -55,7 +55,7 @@ jobs:
           graphify --version || echo "Graphify installed"
 
       - name: Cache graphify AST extractions
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .graphify/cache
           key: graphify-cache-${{ runner.os }}-${{ hashFiles('**/*.java', '**/*.yaml', '**/*.yml', '**/*.adoc', '**/*.md', '**/*.png', '**/*.jpg', '**/*.svg') }}
