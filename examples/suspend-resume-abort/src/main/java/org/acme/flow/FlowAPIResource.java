@@ -23,8 +23,8 @@ public class FlowAPIResource {
     @Inject
     @Identifier("example:SwitchLoopWait:0.1.0")
     WorkflowDefinition flow;
-    
-    private Map<String,CompletableFuture<Boolean>> completableMap = new ConcurrentHashMap<>();
+
+    private Map<String, CompletableFuture<Boolean>> completableMap = new ConcurrentHashMap<>();
 
     /**
      * Start a new workflow instance. The instance id is returned in the response.
@@ -80,9 +80,13 @@ public class FlowAPIResource {
         return instanceOperation(instanceId, WorkflowInstance::cancelFuture);
     }
 
-    private CompletableFuture<Response> instanceOperation(String instanceId, Function<WorkflowInstance, CompletableFuture<Boolean>> function) {
+    private CompletableFuture<Response> instanceOperation(String instanceId,
+            Function<WorkflowInstance, CompletableFuture<Boolean>> function) {
         return flow.activeInstance(instanceId)
-                .map(instance ->  completableMap.compute(instanceId, (k,v) -> v == null ? function.apply(instance) : v.thenCompose(__ -> function.apply(instance))).thenApply( v -> v ?  Response.ok().build() : Response.notModified().build()))
+                .map(instance -> completableMap
+                        .compute(instanceId,
+                                (k, v) -> v == null ? function.apply(instance) : v.thenCompose(__ -> function.apply(instance)))
+                        .thenApply(v -> v ? Response.ok().build() : Response.notModified().build()))
                 .orElseGet(() -> CompletableFuture.completedFuture(notFoundResponse(instanceId)));
     }
 

@@ -113,18 +113,18 @@ public class Agents {
 
     public interface MoodPlannerAgent {
         @SequenceAgent(outputKey = "plans", subAgents = { MoodExtractor.class, EveningPlannerAgent.class })
-        List<EveningPlan> plan(@V("request") String request);
+        List<EveningPlan> plan(@V("request") RouterRequest request);
     }
 
     public interface MoodExtractor {
         @UserMessage("""
                 You are a psychological expert.
                 Analyze the following user request and extract the mood.
-                The user request is {{request}}.
+                The user request is {{request.request}}.
                 Provide the mood as a single word or phrase.
                 """)
         @Agent(outputKey = "mood")
-        String extractMood(@V("request") String request);
+        String extractMood(@V("request") RouterRequest request);
     }
 
     public interface CategoryRouter {
@@ -142,49 +142,49 @@ public class Agents {
                 - Otherwise classify as UNKNOWN
 
                 Reply with ONLY the category name (MEDICAL, LEGAL, TECHNICAL, or UNKNOWN) and absolutely nothing else.
-                The user request is: '{{request}}'.
+                The user request is: '{{request.request}}'.
                 """)
         @Agent(description = "Categorize a user request", outputKey = "category")
-        RequestCategory classify(@V("request") String request);
+        RequestCategory classify(@V("request") RouterRequest request);
     }
 
     public interface MedicalExpert {
         @UserMessage("""
                 You are a medical expert.
                 Analyze the following user request under a medical point of view and provide the best possible answer.
-                The user request is {{request}}.
+                The user request is {{request.request}}.
                 """)
         @Tool("A medical expert")
         @Agent(description = "A medical expert", outputKey = "response")
-        String medical(@V("request") String request);
+        String medical(@V("request") RouterRequest request);
     }
 
     public interface LegalExpert {
         @UserMessage("""
                 You are a legal expert.
                 Analyze the following user request under a legal point of view and provide the best possible answer.
-                The user request is {{request}}.
+                The user request is {{request.request}}.
                 """)
         @Tool("A legal expert")
         @Agent(description = "A legal expert", outputKey = "response")
-        String legal(@V("request") String request);
+        String legal(@V("request") RouterRequest request);
     }
 
     public interface TechnicalExpert {
         @UserMessage("""
                 You are a technical expert.
                 Analyze the following user request under a technical point of view and provide the best possible answer.
-                The user request is {{request}}.
+                The user request is {{request.request}}.
                 """)
         @Tool("A technical expert")
         @Agent(description = "A technical expert", outputKey = "response")
-        String technical(@V("request") String request);
+        String technical(@V("request") RouterRequest request);
     }
 
     public interface UnknownExpert {
         @Tool("Fallback expert")
         @Agent(outputKey = "response")
-        default String unknown(@V("request") String request) {
+        default String unknown(@V("request") RouterRequest request) {
             return "I’m not sure which category this is, but it sounds urgent. Please seek appropriate professional help.";
         }
     }
@@ -213,20 +213,30 @@ public class Agents {
 
         @ConditionalAgent(outputKey = "response", subAgents = { MedicalExpert.class, LegalExpert.class, TechnicalExpert.class,
                 UnknownExpert.class })
-        String askExpert(@V("request") String request);
+        String askExpert(@V("request") RouterRequest request);
     }
 
     public interface ExpertRouterAgent {
         @SequenceAgent(outputKey = "response", subAgents = { CategoryRouter.class, ExpertsAgent.class })
-        ResultWithAgenticScope<String> ask(@V("request") String request);
+        ResultWithAgenticScope<String> ask(@V("request") RouterRequest request);
+    }
+
+    /**
+     * A custom java type so we can make sure it's correctly serialized by jackson when it becomes part of the internal
+     * AgenticScope object in the workflow context.
+     *
+     * @param request
+     */
+    public record RouterRequest(String request) {
+
     }
 
     public interface DumbAgent {
         @Agent(description = "A dumb agent to workaround a dumb check", outputKey = "loopCounter")
-        int dumb(@V("request") String request);
+        int dumb(@V("request") RouterRequest request);
 
         @Agent(description = "A dumb agent to workaround a dumb check", outputKey = "request")
-        String dumb();
+        RouterRequest dumb();
 
         @Agent(description = "A dumb agent to workaround a dumb check", outputKey = "topic")
         String dumb1();

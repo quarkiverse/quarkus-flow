@@ -2,6 +2,8 @@ package io.quarkiverse.flow.langchain4j.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Map;
+
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.DisplayName;
@@ -36,7 +38,8 @@ public class AgenticWorkflowWithJpaPersistenceIT {
     @DisplayName("agentic_workflow_model_survives_jpa_persistence_round_trip")
     void agentic_workflow_model_survives_jpa_persistence_round_trip() {
         ResultWithAgenticScope<String> result = expertRouterAgent
-                .ask("I have severe chest pain and difficulty breathing, what medical treatment should I seek?");
+                .ask(new Agents.RouterRequest(
+                        "I have severe chest pain and difficulty breathing, what medical treatment should I seek?"));
         AgenticScope scope = result.agenticScope();
         assertThat(scope.readState("category"))
                 .as("sanity: the agentic scope carries the routed category before persistence")
@@ -54,9 +57,20 @@ public class AgenticWorkflowWithJpaPersistenceIT {
         assertThat(restored.asMap())
                 .as("restored agentic model should expose its state")
                 .isPresent();
-        assertThat(restored.asMap().orElseThrow())
+
+        // Verify state is preserved (note: enums may be serialized/deserialized differently due to polymorphic typing)
+        Map<String, Object> restoredState = restored.asMap().orElseThrow();
+        assertThat(restoredState)
                 .as("restored agentic state should preserve the original scope state")
-                .containsKeys(scope.state().keySet().toArray(new String[0]))
-                .containsEntry("category", Agents.RequestCategory.MEDICAL);
+                .containsKeys(scope.state().keySet().toArray(new String[0]));
+
+        // Check category value - compare enum by name to handle potential classloader differences
+        final Object categoryValue = restoredState.get("category");
+        assertThat(categoryValue)
+                .as("category should be preserved")
+                .isNotNull();
+        assertThat(((Enum<?>) categoryValue).name())
+                .as("category enum name should match")
+                .isEqualTo(Agents.RequestCategory.MEDICAL.name());
     }
 }

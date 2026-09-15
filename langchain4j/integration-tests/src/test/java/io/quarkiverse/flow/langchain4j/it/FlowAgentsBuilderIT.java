@@ -51,7 +51,7 @@ public class FlowAgentsBuilderIT {
     @Test
     void checkParallelWorkflowInSequence() {
         assertThat(moodPlannerAgent).isNotNull();
-        final List<Agents.EveningPlan> result = moodPlannerAgent.plan("I'm alone with my girlfriend");
+        final List<Agents.EveningPlan> result = moodPlannerAgent.plan(new Agents.RouterRequest("I'm alone with my girlfriend"));
         assertThat(result).hasSize(3);
     }
 
@@ -59,7 +59,8 @@ public class FlowAgentsBuilderIT {
     void checkConditionalRouterWorkflow() {
         assertThat(expertRouterAgent).isNotNull();
         ResultWithAgenticScope<String> result = expertRouterAgent
-                .ask("I have severe chest pain and difficulty breathing, what medical treatment should I seek?");
+                .ask(new Agents.RouterRequest(
+                        "I have severe chest pain and difficulty breathing, what medical treatment should I seek?"));
         String response = result.result();
         assertThat(response).isNotBlank();
         AgenticScope agenticScope = result.agenticScope();
