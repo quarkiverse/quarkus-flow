@@ -38,7 +38,8 @@ public class AgenticWorkflowWithJpaPersistenceIT {
     @DisplayName("agentic_workflow_model_survives_jpa_persistence_round_trip")
     void agentic_workflow_model_survives_jpa_persistence_round_trip() {
         ResultWithAgenticScope<String> result = expertRouterAgent
-                .ask("I have severe chest pain and difficulty breathing, what medical treatment should I seek?");
+                .ask(new Agents.RouterRequest(
+                        "I have severe chest pain and difficulty breathing, what medical treatment should I seek?"));
         AgenticScope scope = result.agenticScope();
         assertThat(scope.readState("category"))
                 .as("sanity: the agentic scope carries the routed category before persistence")

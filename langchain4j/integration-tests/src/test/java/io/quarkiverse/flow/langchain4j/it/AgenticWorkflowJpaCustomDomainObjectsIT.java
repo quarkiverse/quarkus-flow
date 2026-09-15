@@ -48,7 +48,8 @@ public class AgenticWorkflowJpaCustomDomainObjectsIT {
         // Note: TripPlannerAgent's method signature causes quarkus-langchain4j to auto-register
         // TripItinerary, Activity, and CostEstimate for deserialization
         ResultWithAgenticScope<String> result = expertRouterAgent
-                .ask("I have severe chest pain and difficulty breathing, what medical treatment should I seek?");
+                .ask(new Agents.RouterRequest(
+                        "I have severe chest pain and difficulty breathing, what medical treatment should I seek?"));
         AgenticScope scope = result.agenticScope();
 
         // Add custom application domain objects to the scope
@@ -93,7 +94,8 @@ public class AgenticWorkflowJpaCustomDomainObjectsIT {
     void agentic_workflow_with_nested_custom_objects_succeeds_jpa_persistence_issue_901_fixed() {
         // Arrange: Get a real scope and add nested custom objects (similar to TripPlan$CostEstimate in bug report)
         ResultWithAgenticScope<String> result = expertRouterAgent
-                .ask("I have severe chest pain and difficulty breathing, what medical treatment should I seek?");
+                .ask(new Agents.RouterRequest(
+                        "I have severe chest pain and difficulty breathing, what medical treatment should I seek?"));
         AgenticScope scope = result.agenticScope();
 
         TripPlannerAgent.CostEstimate nestedCost = new TripPlannerAgent.CostEstimate(2500.00, "EUR");
@@ -117,7 +119,8 @@ public class AgenticWorkflowJpaCustomDomainObjectsIT {
     void agentic_workflow_with_jdk_types_succeeds_jpa_persistence() {
         // Arrange: JDK types don't require registration
         ResultWithAgenticScope<String> result = expertRouterAgent
-                .ask("I have severe chest pain and difficulty breathing, what medical treatment should I seek?");
+                .ask(new Agents.RouterRequest(
+                        "I have severe chest pain and difficulty breathing, what medical treatment should I seek?"));
         AgenticScope scope = result.agenticScope();
 
         // Add additional JDK types
