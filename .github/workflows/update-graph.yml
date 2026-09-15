@@ -5,6 +5,11 @@ on:
   release:
     types: [published] # Auto-update on releases
 
+# Prevent concurrent graph updates - queue them instead of canceling
+concurrency:
+  group: update-knowledge-graph
+  cancel-in-progress: false
+
 jobs:
   update-graph:
     runs-on: ubuntu-latest
@@ -22,6 +27,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
+          ref: main # Explicitly checkout main (not tag for release events)
           fetch-depth: 0 # Full history for proper git operations
           token: ${{ steps.app-token.outputs.token }}
 
@@ -52,7 +58,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .graphify/cache
-          key: graphify-cache-${{ runner.os }}-${{ hashFiles('**/*.java', '**/*.yaml', '**/*.yml', '**/*.adoc', '**/*.md') }}
+          key: graphify-cache-${{ runner.os }}-${{ hashFiles('**/*.java', '**/*.yaml', '**/*.yml', '**/*.adoc', '**/*.md', '**/*.png', '**/*.jpg', '**/*.svg') }}
           restore-keys: |
             graphify-cache-${{ runner.os }}-
 
@@ -92,16 +98,11 @@ jobs:
           # Create commit
           git commit -m "chore: update knowledge graph [skip ci]
 
-          Auto-update triggered by ${{ github.event.head_commit.message }}
-
           Graph statistics:
           - See .graphify/GRAPH_REPORT.md for details
           - Updated by GitHub Actions workflow"
 
-          # Pull and rebase to handle concurrent pushes
-          git pull --rebase origin main
-
-          # Push changes
+          # Push changes (concurrency group ensures no conflicts)
           git push
 
       - name: Summary
