@@ -17,6 +17,26 @@ See `.graphify/GRAPH_REPORT.md` for current statistics (nodes, edges, communitie
 
 ---
 
+## Quick Reference for Contributors
+
+**Keep your local graph fresh:**
+```bash
+git pull origin main          # Get latest code
+/graphify update .            # Update graph (~30 seconds, free)
+/graphify query "..."         # Query with fresh data
+```
+
+**Common queries:**
+```bash
+/graphify query "How does X work?"
+/graphify path "ComponentA" "ComponentB"
+/graphify explain "ConceptOrClass"
+```
+
+**The committed graph is a baseline** - update it locally for the freshest results. See [Integration with CI/CD](#integration-with-cicd) for details.
+
+---
+
 ## Repository Scope
 
 **The committed knowledge graph covers quarkus-flow only** (this repository).
@@ -166,7 +186,7 @@ After building/updating, you'll find:
 .graphify/
 ├── graph.json              # Complete knowledge graph (commit this)
 ├── GRAPH_REPORT.md         # Analysis report (commit this)
-├── cache/                  # Extraction cache (commit this)
+├── cache/                  # Extraction cache (local only, not committed)
 │   ├── ast/               # AST extraction cache
 │   └── semantic/          # Semantic extraction cache
 ├── cost.json              # Token usage tracking (ignored)
@@ -174,21 +194,16 @@ After building/updating, you'll find:
 .graphify_manifest.json     # File manifest for incremental updates (commit this)
 ```
 
-**What to commit**:
-
-**Note**: The graph is auto-updated on merge to `main` via GitHub Actions. You can optionally include graph updates in your PR:
+**What to commit** (only when updating the baseline graph):
 
 ```bash
-# Optional - graph will auto-update on merge anyway
 git add .graphify/graph.json
 git add .graphify/GRAPH_REPORT.md
-
-# Recommended - helps team reuse your extraction work
-git add .graphify/cache/           # Team shares extraction cache
-git add .graphify_manifest.json   # Enables incremental updates
+git add .graphify_manifest.json
 ```
 
-**What to ignore** (already in .gitignore):
+**What NOT to commit** (already in .gitignore):
+- `.graphify/cache/` (local cache, maintained per developer)
 - `.graphify/*.html` (generated on-demand)
 - `.graphify/.graphify_*` (temp files)
 - `.graphify/cost.json` (local tracking)
@@ -451,51 +466,59 @@ rm -f .graphify_manifest.json
 
 ## Integration with CI/CD
 
-### Automated Updates (Active)
+### Baseline Graph Updates
 
-This repository has **automated graph updates** enabled via GitHub Actions.
+The committed knowledge graph serves as a **baseline** for all contributors.
 
-**How it works:**
-- Every push to `main` triggers `.github/workflows/update-graph.yml`
-- The workflow runs `/graphify --update` (incremental, uses cache)
-- If the graph changes, it's automatically committed and pushed
-- The commit includes `[skip ci]` to avoid triggering other workflows
+**Automated updates happen:**
+- ✅ On releases (when a new version is published)
+- ✅ Manually via GitHub Actions UI (workflow_dispatch)
 
-**What this means for contributors:**
+**For contributors:**
 
-✅ **You don't need to update the graph in your PR** - it will update automatically when merged
-  
-✅ **Optional: Include graph updates in your PR** if you want reviewers to see architectural impact
+🔄 **Keep your local graph fresh** (recommended workflow):
 
 ```bash
-# Optional: Update graph before pushing PR
-/graphify --update
-git add .graphify/graph.json .graphify/GRAPH_REPORT.md
-git commit -m "feat: add MongoDB persistence + update graph"
-```
+# After pulling latest changes
+git pull origin main
 
-**Workflow triggers:**
-- Pushes to `main` that change `.java`, `.yaml`, `.yml`, `.adoc`, `.md`, `.png`, `.jpg`, `.svg` files
-- Manual trigger via GitHub Actions UI (workflow_dispatch)
+# Update your local graph (free, no API cost, ~30 seconds)
+/graphify update .
+
+# Now query with the freshest data
+/graphify query "your question here"
+```
 
 **Performance:**
-- First run after setup: ~2-3 minutes (full build)
-- Typical incremental update: ~15-30 seconds (only changed files)
-- Cache is preserved between runs for efficiency
+- First build: ~2-3 minutes (all files)
+- Incremental update: ~30 seconds (changed files only)
+- **Zero API cost** (AST extraction is local, free)
 
-### Manual Updates (Fallback)
+**Why local updates?**
+- ✅ Your graph stays perfectly fresh
+- ✅ No commit pollution in `main` branch
+- ✅ Faster than waiting for CI
+- ✅ Works offline after first build
 
-If the automated workflow is disabled or you want to update locally:
+### Updating the Baseline (Maintainers)
+
+To update the committed baseline graph:
 
 ```bash
-# Update the graph
-/graphify --update
+# Option 1: Trigger workflow manually
+# Go to: Actions → Update Knowledge Graph → Run workflow
 
-# Commit the changes
-git add .graphify/graph.json .graphify/GRAPH_REPORT.md
-git add .graphify/cache/ .graphify_manifest.json
-git commit -m "chore: update knowledge graph"
+# Option 2: Update locally and commit
+/graphify update .
+git add .graphify/graph.json .graphify/GRAPH_REPORT.md .graphify_manifest.json
+git commit -m "chore: update knowledge graph baseline"
+git push
 ```
+
+**When to update the baseline:**
+- Major architectural changes (new modules, refactorings)
+- Before/after releases
+- When the graph is significantly stale (months old)
 
 ---
 
