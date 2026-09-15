@@ -32,6 +32,7 @@ class RunnerExecResourceTest {
     @BeforeEach
     void setUp() {
         resource = new RunnerExecResource();
+        resource.init();
         mockApplication = mock(WorkflowApplication.class);
         resource.application = mockApplication;
     }
@@ -209,5 +210,140 @@ class RunnerExecResourceTest {
 
         // Then - should return 404 (no matching workflow)
         assertThat(response.getStatus()).isEqualTo(404);
+    }
+
+    @Test
+    @DisplayName("test_suspend_workflow_returns_404_when_instance_not_found")
+    void test_suspend_workflow_returns_404_when_instance_not_found() {
+        when(mockApplication.workflowDefinitions()).thenReturn(Map.of());
+
+        Response response = resource.suspendWorkflow("non-existent-instance").await().indefinitely();
+
+        assertThat(response.getStatus()).isEqualTo(404);
+        assertThat(response.getEntity()).asString().contains("not found");
+    }
+
+    @Test
+    @DisplayName("test_suspend_workflow_returns_200_when_successfully_suspended")
+    void test_suspend_workflow_returns_200_when_successfully_suspended() {
+        WorkflowDefinition mockDefinition = mock(WorkflowDefinition.class);
+        WorkflowInstance mockInstance = mock(WorkflowInstance.class);
+
+        when(mockInstance.suspendFuture()).thenReturn(CompletableFuture.completedFuture(true));
+        when(mockDefinition.activeInstance("instance-123")).thenReturn(java.util.Optional.of(mockInstance));
+        when(mockApplication.workflowDefinitions()).thenReturn(Map.of(
+                new WorkflowDefinitionId("test-ns", "test-wf", "1.0.0"), mockDefinition));
+
+        Response response = resource.suspendWorkflow("instance-123").await().indefinitely();
+
+        assertThat(response.getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    @DisplayName("test_suspend_workflow_returns_304_when_cannot_be_suspended")
+    void test_suspend_workflow_returns_304_when_cannot_be_suspended() {
+        WorkflowDefinition mockDefinition = mock(WorkflowDefinition.class);
+        WorkflowInstance mockInstance = mock(WorkflowInstance.class);
+
+        when(mockInstance.suspendFuture()).thenReturn(CompletableFuture.completedFuture(false));
+        when(mockInstance.id()).thenReturn("instance-123");
+        when(mockInstance.status()).thenReturn(WorkflowStatus.COMPLETED);
+        when(mockDefinition.activeInstance("instance-123")).thenReturn(java.util.Optional.of(mockInstance));
+        when(mockApplication.workflowDefinitions()).thenReturn(Map.of(
+                new WorkflowDefinitionId("test-ns", "test-wf", "1.0.0"), mockDefinition));
+
+        Response response = resource.suspendWorkflow("instance-123").await().indefinitely();
+
+        assertThat(response.getStatus()).isEqualTo(304);
+    }
+
+    @Test
+    @DisplayName("test_resume_workflow_returns_404_when_instance_not_found")
+    void test_resume_workflow_returns_404_when_instance_not_found() {
+        when(mockApplication.workflowDefinitions()).thenReturn(Map.of());
+
+        Response response = resource.resumeWorkflow("non-existent-instance").await().indefinitely();
+
+        assertThat(response.getStatus()).isEqualTo(404);
+        assertThat(response.getEntity()).asString().contains("not found");
+    }
+
+    @Test
+    @DisplayName("test_resume_workflow_returns_200_when_successfully_resumed")
+    void test_resume_workflow_returns_200_when_successfully_resumed() {
+        WorkflowDefinition mockDefinition = mock(WorkflowDefinition.class);
+        WorkflowInstance mockInstance = mock(WorkflowInstance.class);
+
+        when(mockInstance.resumeFuture()).thenReturn(CompletableFuture.completedFuture(true));
+        when(mockDefinition.activeInstance("instance-456")).thenReturn(java.util.Optional.of(mockInstance));
+        when(mockApplication.workflowDefinitions()).thenReturn(Map.of(
+                new WorkflowDefinitionId("test-ns", "test-wf", "1.0.0"), mockDefinition));
+
+        Response response = resource.resumeWorkflow("instance-456").await().indefinitely();
+
+        assertThat(response.getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    @DisplayName("test_resume_workflow_returns_304_when_cannot_be_resumed")
+    void test_resume_workflow_returns_304_when_cannot_be_resumed() {
+        WorkflowDefinition mockDefinition = mock(WorkflowDefinition.class);
+        WorkflowInstance mockInstance = mock(WorkflowInstance.class);
+
+        when(mockInstance.resumeFuture()).thenReturn(CompletableFuture.completedFuture(false));
+        when(mockInstance.id()).thenReturn("instance-456");
+        when(mockInstance.status()).thenReturn(WorkflowStatus.RUNNING);
+        when(mockDefinition.activeInstance("instance-456")).thenReturn(java.util.Optional.of(mockInstance));
+        when(mockApplication.workflowDefinitions()).thenReturn(Map.of(
+                new WorkflowDefinitionId("test-ns", "test-wf", "1.0.0"), mockDefinition));
+
+        Response response = resource.resumeWorkflow("instance-456").await().indefinitely();
+
+        assertThat(response.getStatus()).isEqualTo(304);
+    }
+
+    @Test
+    @DisplayName("test_cancel_workflow_returns_404_when_instance_not_found")
+    void test_cancel_workflow_returns_404_when_instance_not_found() {
+        when(mockApplication.workflowDefinitions()).thenReturn(Map.of());
+
+        Response response = resource.cancelWorkflow("non-existent-instance").await().indefinitely();
+
+        assertThat(response.getStatus()).isEqualTo(404);
+        assertThat(response.getEntity()).asString().contains("not found");
+    }
+
+    @Test
+    @DisplayName("test_cancel_workflow_returns_200_when_successfully_cancelled")
+    void test_cancel_workflow_returns_200_when_successfully_cancelled() {
+        WorkflowDefinition mockDefinition = mock(WorkflowDefinition.class);
+        WorkflowInstance mockInstance = mock(WorkflowInstance.class);
+
+        when(mockInstance.cancelFuture()).thenReturn(CompletableFuture.completedFuture(true));
+        when(mockDefinition.activeInstance("instance-789")).thenReturn(java.util.Optional.of(mockInstance));
+        when(mockApplication.workflowDefinitions()).thenReturn(Map.of(
+                new WorkflowDefinitionId("test-ns", "test-wf", "1.0.0"), mockDefinition));
+
+        Response response = resource.cancelWorkflow("instance-789").await().indefinitely();
+
+        assertThat(response.getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    @DisplayName("test_cancel_workflow_returns_304_when_cannot_be_cancelled")
+    void test_cancel_workflow_returns_304_when_cannot_be_cancelled() {
+        WorkflowDefinition mockDefinition = mock(WorkflowDefinition.class);
+        WorkflowInstance mockInstance = mock(WorkflowInstance.class);
+
+        when(mockInstance.cancelFuture()).thenReturn(CompletableFuture.completedFuture(false));
+        when(mockInstance.id()).thenReturn("instance-789");
+        when(mockInstance.status()).thenReturn(WorkflowStatus.COMPLETED);
+        when(mockDefinition.activeInstance("instance-789")).thenReturn(java.util.Optional.of(mockInstance));
+        when(mockApplication.workflowDefinitions()).thenReturn(Map.of(
+                new WorkflowDefinitionId("test-ns", "test-wf", "1.0.0"), mockDefinition));
+
+        Response response = resource.cancelWorkflow("instance-789").await().indefinitely();
+
+        assertThat(response.getStatus()).isEqualTo(304);
     }
 }
