@@ -222,7 +222,8 @@ class RunnerExecResourceTest {
     void test_suspend_workflow_returns_404_when_instance_not_found() {
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of());
 
-        Response response = resource.suspendWorkflow("non-existent-instance").await().indefinitely();
+        Response response = resource.suspendWorkflow("test-ns", "test-wf", "1.0.0", "non-existent-instance").await()
+                .indefinitely();
 
         assertThat(response.getStatus()).isEqualTo(404);
         assertThat(response.getEntity()).asString().contains("not found");
@@ -239,7 +240,7 @@ class RunnerExecResourceTest {
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of(
                 new WorkflowDefinitionId("test-ns", "test-wf", "1.0.0"), mockDefinition));
 
-        Response response = resource.suspendWorkflow("instance-123").await().indefinitely();
+        Response response = resource.suspendWorkflow("test-ns", "test-wf", "1.0.0", "instance-123").await().indefinitely();
 
         assertThat(response.getStatus()).isEqualTo(200);
     }
@@ -257,7 +258,7 @@ class RunnerExecResourceTest {
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of(
                 new WorkflowDefinitionId("test-ns", "test-wf", "1.0.0"), mockDefinition));
 
-        Response response = resource.suspendWorkflow("instance-123").await().indefinitely();
+        Response response = resource.suspendWorkflow("test-ns", "test-wf", "1.0.0", "instance-123").await().indefinitely();
 
         assertThat(response.getStatus()).isEqualTo(304);
     }
@@ -267,7 +268,8 @@ class RunnerExecResourceTest {
     void test_resume_workflow_returns_404_when_instance_not_found() {
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of());
 
-        Response response = resource.resumeWorkflow("non-existent-instance").await().indefinitely();
+        Response response = resource.resumeWorkflow("test-ns", "test-wf", "1.0.0", "non-existent-instance").await()
+                .indefinitely();
 
         assertThat(response.getStatus()).isEqualTo(404);
         assertThat(response.getEntity()).asString().contains("not found");
@@ -284,7 +286,7 @@ class RunnerExecResourceTest {
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of(
                 new WorkflowDefinitionId("test-ns", "test-wf", "1.0.0"), mockDefinition));
 
-        Response response = resource.resumeWorkflow("instance-456").await().indefinitely();
+        Response response = resource.resumeWorkflow("test-ns", "test-wf", "1.0.0", "instance-456").await().indefinitely();
 
         assertThat(response.getStatus()).isEqualTo(200);
     }
@@ -302,7 +304,7 @@ class RunnerExecResourceTest {
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of(
                 new WorkflowDefinitionId("test-ns", "test-wf", "1.0.0"), mockDefinition));
 
-        Response response = resource.resumeWorkflow("instance-456").await().indefinitely();
+        Response response = resource.resumeWorkflow("test-ns", "test-wf", "1.0.0", "instance-456").await().indefinitely();
 
         assertThat(response.getStatus()).isEqualTo(304);
     }
@@ -312,7 +314,8 @@ class RunnerExecResourceTest {
     void test_cancel_workflow_returns_404_when_instance_not_found() {
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of());
 
-        Response response = resource.cancelWorkflow("non-existent-instance").await().indefinitely();
+        Response response = resource.cancelWorkflow("test-ns", "test-wf", "1.0.0", "non-existent-instance").await()
+                .indefinitely();
 
         assertThat(response.getStatus()).isEqualTo(404);
         assertThat(response.getEntity()).asString().contains("not found");
@@ -329,7 +332,7 @@ class RunnerExecResourceTest {
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of(
                 new WorkflowDefinitionId("test-ns", "test-wf", "1.0.0"), mockDefinition));
 
-        Response response = resource.cancelWorkflow("instance-789").await().indefinitely();
+        Response response = resource.cancelWorkflow("test-ns", "test-wf", "1.0.0", "instance-789").await().indefinitely();
 
         assertThat(response.getStatus()).isEqualTo(200);
     }
@@ -347,7 +350,7 @@ class RunnerExecResourceTest {
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of(
                 new WorkflowDefinitionId("test-ns", "test-wf", "1.0.0"), mockDefinition));
 
-        Response response = resource.cancelWorkflow("instance-789").await().indefinitely();
+        Response response = resource.cancelWorkflow("test-ns", "test-wf", "1.0.0", "instance-789").await().indefinitely();
 
         assertThat(response.getStatus()).isEqualTo(304);
     }
