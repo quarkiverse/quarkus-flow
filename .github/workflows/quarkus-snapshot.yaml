@@ -31,5 +31,5 @@ jobs:
       java_version: 17
     strategy:
       matrix:
-        version: ['3.33']
+        version: []
       
