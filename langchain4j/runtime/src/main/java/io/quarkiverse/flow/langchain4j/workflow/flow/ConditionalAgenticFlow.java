@@ -1,5 +1,6 @@
 package io.quarkiverse.flow.langchain4j.workflow.flow;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -7,11 +8,14 @@ import java.util.function.Predicate;
 import dev.langchain4j.agentic.declarative.DeclarativeUtil;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
+import dev.langchain4j.agentic.workflow.ConditionalAgent;
 import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowContextData;
 
 public abstract class ConditionalAgenticFlow extends AgenticFlow {
+
+    private List<ConditionalAgent> conditionalAgentsList = Collections.emptyList();
 
     /**
      * Build activation predicate using LangChain4j's DeclarativeUtil API. Called by the generated
@@ -40,6 +44,27 @@ public abstract class ConditionalAgenticFlow extends AgenticFlow {
      */
     protected Map<Integer, Predicate<AgenticScope>> activationPredicates() {
         return Map.of();
+    }
+
+    /**
+     * Sets the list of conditional agents created during builder API usage.
+     * This is called by {@link io.quarkiverse.flow.langchain4j.workflow.service.FlowConditionalAgentService}
+     * to populate the list from the parent ConditionalAgentServiceImpl.
+     *
+     * @param agents list of conditional agents to store
+     */
+    public void setConditionalAgents(List<ConditionalAgent> agents) {
+        this.conditionalAgentsList = Collections.unmodifiableList(agents);
+    }
+
+    /**
+     * Holds the list analog to {@link #activationPredicates()} map. The map is required to guarantee the agent execution order.
+     * This list holds the same reference with additional information for user interfaces.
+     *
+     * @return list of {@link ConditionalAgent}s created during builder API usage or annotation declaration.
+     */
+    public List<ConditionalAgent> conditionalAgents() {
+        return conditionalAgentsList;
     }
 
     @Override

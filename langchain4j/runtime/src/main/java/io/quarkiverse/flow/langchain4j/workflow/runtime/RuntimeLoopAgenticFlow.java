@@ -23,6 +23,7 @@ public class RuntimeLoopAgenticFlow extends LoopAgenticFlow {
     protected int maxIterations = Integer.MAX_VALUE;
     protected BiPredicate<AgenticScope, Integer> exitCondition = (scope, loopCounter) -> false;
     protected boolean testExitAtLoopEnd = false;
+    protected String exitConditionDescription;
 
     public RuntimeLoopAgenticFlow(String agentClassName, RuntimeWorkflowApplicationProvider runtimeAppProvider) {
         this.agentClassName = agentClassName;
@@ -40,18 +41,23 @@ public class RuntimeLoopAgenticFlow extends LoopAgenticFlow {
     }
 
     @Override
-    protected int maxIterations() {
+    public int maxIterations() {
         return maxIterations;
     }
 
     @Override
-    protected BiPredicate<AgenticScope, Integer> exitCondition() {
+    public BiPredicate<AgenticScope, Integer> exitCondition() {
         return exitCondition;
     }
 
     @Override
-    protected boolean testExitAtLoopEnd() {
+    public boolean testExitAtLoopEnd() {
         return testExitAtLoopEnd;
+    }
+
+    @Override
+    public String exitConditionDescription() {
+        return exitConditionDescription;
     }
 
     public void setMaxIterations(int maxIterations) {
@@ -64,6 +70,10 @@ public class RuntimeLoopAgenticFlow extends LoopAgenticFlow {
 
     public void setTestExitAtLoopEnd(boolean testExitAtLoopEnd) {
         this.testExitAtLoopEnd = testExitAtLoopEnd;
+    }
+
+    public void setExitConditionDescription(String exitConditionDescription) {
+        this.exitConditionDescription = exitConditionDescription;
     }
 
     public void addSubAgentTaskName(String taskName) {
