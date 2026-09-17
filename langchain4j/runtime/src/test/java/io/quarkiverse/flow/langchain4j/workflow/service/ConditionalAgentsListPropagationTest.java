@@ -1,9 +1,9 @@
 package io.quarkiverse.flow.langchain4j.workflow.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
-import java.util.Collection;
 import java.util.List;
 
 import jakarta.enterprise.inject.Vetoed;
@@ -65,7 +65,9 @@ class ConditionalAgentsListPropagationTest {
         try {
             service.build();
         } catch (Exception e) {
-            // Expected - init() will throw, but addConditionalAgents() was already called
+            // Expected - init() will throw NullPointerException due to missing workflow context,
+            // but addConditionalAgents() was already called before init(), so the list is populated
+            assertThat(e).isNotNull();
         }
 
         // After build attempt, the list should be populated
@@ -92,8 +94,10 @@ class ConditionalAgentsListPropagationTest {
         List<ConditionalAgent> agents = flow.conditionalAgents();
         assertThat(agents).hasSize(1);
 
-        // Verify the list is immutable
-        assertThat(agents).isInstanceOf(Collection.class);
+        // Verify the list is immutable by attempting to modify it
+        ConditionalAgent anotherMock = mock(ConditionalAgent.class);
+        assertThatThrownBy(() -> agents.add(anotherMock))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
