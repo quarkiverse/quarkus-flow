@@ -180,4 +180,25 @@ public class RuntimeLoopAgenticFlowTest {
         // Verify the setter accepts complex predicates without throwing
         flow.setExitCondition(condition);
     }
+
+    @Test
+    @DisplayName("exitConditionDescription_should_be_set_and_retrieved")
+    void exitConditionDescription_should_be_set_and_retrieved() {
+        // Initially null
+        assertThat(flow.exitConditionDescription()).isNull();
+
+        // Set description
+        flow.setExitConditionDescription("Exit when counter reaches 10");
+
+        // Verify it's accessible (important for dev-ui topology rendering)
+        assertThat(flow.exitConditionDescription()).isEqualTo("Exit when counter reaches 10");
+    }
+
+    @Test
+    @DisplayName("exitConditionDescription_default_is_null")
+    void exitConditionDescription_default_is_null() {
+        RuntimeLoopAgenticFlow newFlow = new RuntimeLoopAgenticFlow("TestAgent", runtimeAppProvider);
+
+        assertThat(newFlow.exitConditionDescription()).isNull();
+    }
 }
