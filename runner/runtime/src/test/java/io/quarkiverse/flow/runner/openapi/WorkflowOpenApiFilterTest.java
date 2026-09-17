@@ -198,6 +198,15 @@ class WorkflowOpenApiFilterTest {
         Schema nameSchema = requestSchema.getProperties().get("name");
         assertThat(nameSchema.getType()).contains(Schema.SchemaType.STRING);
         assertThat(nameSchema.getDescription()).isEqualTo("Your name");
+
+        // Verify responses reference the shared ExecutionResponse schema (documents workflowApplicationId)
+        for (String code : new String[] { "200", "202" }) {
+            MediaType responseMediaType = operation.getResponses().getAPIResponse(code).getContent()
+                    .getMediaType("application/json");
+            assertThat(responseMediaType).as("response %s content", code).isNotNull();
+            assertThat(responseMediaType.getSchema().getRef())
+                    .isEqualTo(WorkflowOpenApiFilter.EXECUTION_RESPONSE_SCHEMA_REF);
+        }
     }
 
 }

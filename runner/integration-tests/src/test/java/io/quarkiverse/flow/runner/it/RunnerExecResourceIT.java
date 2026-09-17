@@ -5,12 +5,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
 
+import jakarta.inject.Inject;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.quarkiverse.flow.runner.model.ExecutionResponse;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowStatus;
 
 @SuppressWarnings("unchecked")
@@ -18,6 +21,9 @@ import io.serverlessworkflow.impl.WorkflowStatus;
 @TestProfile(DefaultTestProfile.class)
 @DisplayName("Runner Execution Resource Integration Tests")
 class RunnerExecResourceIT {
+
+    @Inject
+    WorkflowApplication application;
 
     @Test
     @DisplayName("test_execute_workflow_sync_with_specific_version")
@@ -39,6 +45,7 @@ class RunnerExecResourceIT {
 
         // Then
         assertThat(response).isNotNull();
+        assertThat(response.workflowApplicationId()).isNotBlank().isEqualTo(application.id());
         assertThat(response.instanceId()).isNotBlank();
         assertThat(response.status()).isEqualTo(WorkflowStatus.COMPLETED);
         assertThat(response.workflowOutput()).isNotNull();
@@ -68,6 +75,30 @@ class RunnerExecResourceIT {
         assertThat(response).containsKey("instanceId");
         assertThat(response).containsKey("status");
         assertThat(response.get("instanceId")).isNotNull();
+        assertThat(response).containsEntry("workflowApplicationId", application.id());
+    }
+
+    @Test
+    @DisplayName("test_execute_workflow_response_includes_workflow_application_id")
+    void test_execute_workflow_response_includes_workflow_application_id() {
+        // Given - application id configured via quarkus.application.name
+        Map<String, Object> input = Map.of("name", "App Id");
+
+        // When
+        Map<String, Object> response = given()
+                .contentType("application/json")
+                .body(input)
+                .queryParam("wait", "true")
+                .when()
+                .post("/q/flow/exec/test-namespace/simple-greeting")
+                .then()
+                .statusCode(200)
+                .extract()
+                .as(Map.class);
+
+        // Then
+        assertThat(response).containsEntry("workflowApplicationId", "quarkus-flow-runner-it");
+        assertThat(response.get("workflowApplicationId")).isEqualTo(application.id());
     }
 
     @Test

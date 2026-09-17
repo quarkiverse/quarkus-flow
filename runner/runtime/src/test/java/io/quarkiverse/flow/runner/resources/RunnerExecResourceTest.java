@@ -26,6 +26,8 @@ import io.serverlessworkflow.impl.WorkflowStatus;
 @DisplayName("RunnerExecResource Tests")
 class RunnerExecResourceTest {
 
+    private static final String APP_ID = "test-app";
+
     private RunnerExecResource resource;
     private WorkflowApplication mockApplication;
 
@@ -33,6 +35,7 @@ class RunnerExecResourceTest {
     void setUp() {
         resource = new RunnerExecResource();
         mockApplication = mock(WorkflowApplication.class);
+        when(mockApplication.id()).thenReturn(APP_ID);
         resource.application = mockApplication;
     }
 
@@ -92,6 +95,7 @@ class RunnerExecResourceTest {
         assertThat(response.getEntity()).isInstanceOf(ExecutionResponse.class);
 
         ExecutionResponse executionResponse = (ExecutionResponse) response.getEntity();
+        assertThat(executionResponse.workflowApplicationId()).isEqualTo(APP_ID);
         assertThat(executionResponse.instanceId()).isEqualTo("instance-123");
         assertThat(executionResponse.status()).isEqualTo(WorkflowStatus.RUNNING);
         assertThat(executionResponse.startedAt()).isNotNull();
@@ -126,6 +130,7 @@ class RunnerExecResourceTest {
         assertThat(response.getEntity()).isInstanceOf(ExecutionResponse.class);
 
         ExecutionResponse executionResponse = (ExecutionResponse) response.getEntity();
+        assertThat(executionResponse.workflowApplicationId()).isEqualTo(APP_ID);
         assertThat(executionResponse.instanceId()).isEqualTo("instance-456");
         assertThat(executionResponse.status()).isEqualTo(WorkflowStatus.COMPLETED);
         assertThat(executionResponse.workflowOutput()).isNotNull();
