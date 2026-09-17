@@ -71,7 +71,7 @@ public abstract class LoopAgenticFlow extends AgenticFlow {
      *
      * @return maximum number of iterations, or 0 for unlimited
      */
-    protected int maxIterations() {
+    public int maxIterations() {
         return 0;
     }
 
@@ -87,7 +87,7 @@ public abstract class LoopAgenticFlow extends AgenticFlow {
      *
      * @return exit condition predicate, or null if no exit condition
      */
-    protected BiPredicate<AgenticScope, Integer> exitCondition() {
+    public BiPredicate<AgenticScope, Integer> exitCondition() {
         return null;
     }
 
@@ -104,8 +104,14 @@ public abstract class LoopAgenticFlow extends AgenticFlow {
      *
      * @return true for do-while semantics, false for while semantics
      */
-    protected boolean testExitAtLoopEnd() {
+    public boolean testExitAtLoopEnd() {
         return false;
+    }
+
+    // TODO: add as a "description" in the task metadata field once SDK supports it.
+    // See: https://github.com/open-workflow-specification/sdk-java/issues/1689
+    public String exitConditionDescription() {
+        return null;
     }
 
     protected Consumer<FuncTaskItemListBuilder> checkExitAtEnd(boolean testExitAtLoopEnd,

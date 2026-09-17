@@ -49,6 +49,8 @@ public final class RuntimeFlowConditionalAgentService<T> extends FlowConditional
 
     @Override
     public T build() {
+        // Copy conditionalAgents BEFORE init() so it's available even if init() throws
+        ((RuntimeConditionalAgenticFlow) flow).addConditionalAgents(this.conditionalAgents);
         ((RuntimeConditionalAgenticFlow) flow).init();
         return super.build();
     }

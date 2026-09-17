@@ -265,6 +265,21 @@ final class GizmoAgentFlowsHelper {
             }
         }
 
+        // Generate: String exitConditionDescription() { return "description"; }
+        try (MethodCreator mc = classCreator.getMethodCreator("exitConditionDescription", String.class)) {
+            if (loopMetadata.exitCondition().isPresent()) {
+                PredicateMetadata exitCond = loopMetadata.exitCondition().get();
+                String description = exitCond.description();
+                if (description != null && !description.isBlank()) {
+                    mc.returnValue(mc.load(description));
+                } else {
+                    mc.returnValue(mc.loadNull());
+                }
+            } else {
+                mc.returnValue(mc.loadNull());
+            }
+        }
+
     }
 
     /**

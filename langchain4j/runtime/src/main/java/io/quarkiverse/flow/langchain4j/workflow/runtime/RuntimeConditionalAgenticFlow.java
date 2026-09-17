@@ -13,8 +13,8 @@ import jakarta.enterprise.inject.Vetoed;
 import com.networknt.schema.utils.Strings;
 
 import dev.langchain4j.agentic.scope.AgenticScope;
+import dev.langchain4j.agentic.workflow.ConditionalAgent;
 import io.quarkiverse.flow.langchain4j.workflow.flow.ConditionalAgenticFlow;
-import io.quarkiverse.flow.langchain4j.workflow.service.*;
 
 @Vetoed
 public class RuntimeConditionalAgenticFlow extends ConditionalAgenticFlow {
@@ -43,6 +43,10 @@ public class RuntimeConditionalAgenticFlow extends ConditionalAgenticFlow {
     @Override
     protected Map<Integer, Predicate<AgenticScope>> activationPredicates() {
         return predicates;
+    }
+
+    public void addConditionalAgents(List<ConditionalAgent> conditionalAgents) {
+        setConditionalAgents(conditionalAgents);
     }
 
     public void addSubAgentTaskName(String taskName) {
