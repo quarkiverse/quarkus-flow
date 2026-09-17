@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.runner.resources;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -128,41 +129,37 @@ class InstancesResourceTest {
     }
 
     @Test
-    @DisplayName("test_unknown_status_returns_400")
-    void test_unknown_status_returns_400() {
+    @DisplayName("test_unknown_status_throws_invalid_status_filter_exception")
+    void test_unknown_status_throws_invalid_status_filter_exception() {
         seedRegistry(snap("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING));
 
-        Response response = resource.listActiveInstances(null, "NOT_A_STATUS");
-
-        assertThat(response.getStatus()).isEqualTo(400);
-        assertThat(response.getEntity()).asString().contains("NOT_A_STATUS");
+        assertThatThrownBy(() -> resource.listActiveInstances(null, "NOT_A_STATUS"))
+                .isInstanceOf(InvalidStatusFilterException.class)
+                .hasMessageContaining("NOT_A_STATUS");
     }
 
     @Test
-    @DisplayName("test_terminal_status_completed_returns_400")
-    void test_terminal_status_completed_returns_400() {
-        Response response = resource.listActiveInstances(null, "COMPLETED");
-
-        assertThat(response.getStatus()).isEqualTo(400);
-        assertThat(response.getEntity()).asString().contains("COMPLETED");
+    @DisplayName("test_terminal_status_completed_throws_invalid_status_filter_exception")
+    void test_terminal_status_completed_throws_invalid_status_filter_exception() {
+        assertThatThrownBy(() -> resource.listActiveInstances(null, "COMPLETED"))
+                .isInstanceOf(InvalidStatusFilterException.class)
+                .hasMessageContaining("COMPLETED");
     }
 
     @Test
-    @DisplayName("test_terminal_status_faulted_returns_400")
-    void test_terminal_status_faulted_returns_400() {
-        Response response = resource.listActiveInstances(null, "FAULTED");
-
-        assertThat(response.getStatus()).isEqualTo(400);
-        assertThat(response.getEntity()).asString().contains("FAULTED");
+    @DisplayName("test_terminal_status_faulted_throws_invalid_status_filter_exception")
+    void test_terminal_status_faulted_throws_invalid_status_filter_exception() {
+        assertThatThrownBy(() -> resource.listActiveInstances(null, "FAULTED"))
+                .isInstanceOf(InvalidStatusFilterException.class)
+                .hasMessageContaining("FAULTED");
     }
 
     @Test
-    @DisplayName("test_terminal_status_cancelled_returns_400")
-    void test_terminal_status_cancelled_returns_400() {
-        Response response = resource.listActiveInstances(null, "CANCELLED");
-
-        assertThat(response.getStatus()).isEqualTo(400);
-        assertThat(response.getEntity()).asString().contains("CANCELLED");
+    @DisplayName("test_terminal_status_cancelled_throws_invalid_status_filter_exception")
+    void test_terminal_status_cancelled_throws_invalid_status_filter_exception() {
+        assertThatThrownBy(() -> resource.listActiveInstances(null, "CANCELLED"))
+                .isInstanceOf(InvalidStatusFilterException.class)
+                .hasMessageContaining("CANCELLED");
     }
 
     @Test
