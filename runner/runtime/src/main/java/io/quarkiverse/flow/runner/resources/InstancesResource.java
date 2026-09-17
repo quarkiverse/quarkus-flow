@@ -75,12 +75,7 @@ public class InstancesResource {
             @Parameter(description = "Filter by workflow name (optional)") @QueryParam("workflowName") String workflowName,
             @Parameter(description = "Filter by workflow status (optional). Only non-terminal values accepted: PENDING, RUNNING, WAITING, SUSPENDED") @QueryParam("status") String status) {
 
-        WorkflowStatus statusFilter;
-        try {
-            statusFilter = parseActiveStatus(status);
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
-        }
+        WorkflowStatus statusFilter = parseActiveStatus(status);
 
         List<InstanceSnapshot> instances = registry.activeInstances().stream()
                 .filter(s -> workflowName == null || workflowName.equals(s.workflowName()))
@@ -94,7 +89,7 @@ public class InstancesResource {
      * Parses the status query parameter, rejecting terminal statuses and unknown values.
      *
      * @return the parsed {@link WorkflowStatus}, or {@code null} if {@code status} is blank/null (no filter)
-     * @throws IllegalArgumentException if the value is unknown or a terminal status
+     * @throws InvalidStatusFilterException if the value is unknown or a terminal status
      */
     private WorkflowStatus parseActiveStatus(String status) {
         if (status == null || status.isBlank()) {
@@ -104,11 +99,11 @@ public class InstancesResource {
         try {
             parsed = WorkflowStatus.valueOf(status.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Unknown status value: '" + status
+            throw new InvalidStatusFilterException("Unknown status value: '" + status
                     + "'. Valid non-terminal values are: PENDING, RUNNING, WAITING, SUSPENDED");
         }
         if (TERMINAL_STATUSES.contains(parsed)) {
-            throw new IllegalArgumentException("Terminal status '" + parsed
+            throw new InvalidStatusFilterException("Terminal status '" + parsed
                     + "' is not a valid filter — completed, faulted, and cancelled instances are not tracked in the active registry");
         }
         return parsed;
