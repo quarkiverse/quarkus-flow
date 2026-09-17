@@ -10,6 +10,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import dev.langchain4j.agentic.workflow.ConditionalAgentInstance;
+import dev.langchain4j.agentic.workflow.LoopAgentInstance;
+import dev.langchain4j.agentic.workflow.impl.LoopPlanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -161,5 +164,43 @@ public class FlowPlanner implements Planner {
      * Encapsulates the bidirectional exchange between workflow execution and planner actions.
      */
     private record AgentExchange(AgentInstance agent, CompletableFuture<Void> continuation) {
+    }
+
+    @Override
+    public <T extends AgentInstance> T as(Class<T> agentInstanceClass, AgentInstance agentInstance) {
+        if (agentInstanceClass == LoopAgentInstance.class) {
+            // This is a loop, so where should I get the maxIterations, testExitAtLoopEnd, and exitConditionDescription from?
+            return (T) new FlowLoopAgentInstance(agentInstance, 0, false, "");
+        }
+        return Planner.super.as(agentInstanceClass, agentInstance);
+    }
+
+    public static class FlowLoopAgentInstance extends AbstractAgentInstance implements LoopAgentInstance {
+
+        private final int maxIterations;
+        private final boolean testExitAtLoopEnd;
+        private final String exitConditionDescription;
+
+        public FlowLoopAgentInstance(AgentInstance delegate, int maxIterations, boolean testExitAtLoopEnd, String exitConditionDescription) {
+            super(delegate);
+            this.maxIterations = maxIterations;
+            this.testExitAtLoopEnd = testExitAtLoopEnd;
+            this.exitConditionDescription = exitConditionDescription;
+        }
+
+        @Override
+        public int maxIterations() {
+            return maxIterations;
+        }
+
+        @Override
+        public boolean testExitAtLoopEnd() {
+            return testExitAtLoopEnd;
+        }
+
+        @Override
+        public String exitCondition() {
+            return exitConditionDescription;
+        }
     }
 }
