@@ -79,7 +79,9 @@ final class FlowNativeProcessor {
                 "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForCollection",
                 "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForMap",
                 "org.hibernate.validator.internal.constraintvalidators.bv.number.bound.decimal.DecimalMaxValidatorForInteger",
-                "org.hibernate.validator.internal.constraintvalidators.bv.number.bound.decimal.DecimalMinValidatorForInteger")
+                "org.hibernate.validator.internal.constraintvalidators.bv.number.bound.decimal.DecimalMinValidatorForInteger",
+                "io.serverlessworkflow.impl.model.jackson.JacksonModelCollectionSerializer",
+                "io.serverlessworkflow.impl.model.jackson.JacksonModelCollectionDeserializer")
                 .queryConstructors(true)
                 .constructors(true)
                 .methods(true)
