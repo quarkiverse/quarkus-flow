@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -24,9 +25,11 @@ import io.quarkiverse.flow.oidc.FlowOidcConfig;
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClients;
 import io.serverlessworkflow.api.types.OAuth2AuthenticationData;
+import io.serverlessworkflow.api.types.OAuth2AuthenticationDataClient;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 
 class OidcWorkflowRegistrarTest {
 
@@ -302,5 +305,48 @@ class OidcWorkflowRegistrarTest {
         assertThat(nameCaptor.getAllValues().stream()
                 .filter(n -> n.startsWith("acme:orders:1.0.0.task."))
                 .count()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("registerDynamicOidcClientFor - resolves the created client and registers it by endpoint, without blocking")
+    void register_dynamic_client_resolves_and_registers() {
+        // Given
+        EndpointKey endpointKey = new EndpointKey(
+                "https://auth.example.com", null, null, true,
+                "client-id", "client-secret",
+                OAuth2AuthenticationDataClient.ClientAuthentication.CLIENT_SECRET_POST,
+                OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS,
+                List.of(), List.of());
+
+        // When
+        Uni<OidcClient> result = listener.registerDynamicOidcClientFor(endpointKey, Duration.ofSeconds(10),
+                Duration.ofSeconds(10));
+
+        // Then: the Uni resolves without the caller ever blocking on it
+        UniAssertSubscriber<OidcClient> subscriber = result.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitItem(Duration.ofSeconds(1)).assertCompleted();
+        verify(registry).register(subscriber.getItem(), endpointKey);
+    }
+
+    @Test
+    @DisplayName("registerDynamicOidcClientFor - fails the Uni (does not block the calling thread) when creation exceeds creationTimeout")
+    void register_dynamic_client_times_out_without_blocking() {
+        // Given: client creation that never emits
+        when(oidcClients.newClient(any())).thenReturn(Uni.createFrom().nothing());
+        EndpointKey endpointKey = new EndpointKey(
+                "https://auth.example.com", null, null, true,
+                "client-id", "client-secret",
+                OAuth2AuthenticationDataClient.ClientAuthentication.CLIENT_SECRET_POST,
+                OAuth2AuthenticationData.OAuth2AuthenticationDataGrant.CLIENT_CREDENTIALS,
+                List.of(), List.of());
+
+        // When
+        Uni<OidcClient> result = listener.registerDynamicOidcClientFor(endpointKey, Duration.ofMillis(50),
+                Duration.ofSeconds(10));
+
+        // Then
+        UniAssertSubscriber<OidcClient> subscriber = result.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitFailure(Duration.ofSeconds(1));
+        verify(registry, never()).register(any(OidcClient.class), any());
     }
 }

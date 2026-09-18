@@ -63,33 +63,44 @@ public final class OidcClientAuthProvider implements AuthProvider {
 
     @Override
     public CompletableFuture<String> content(WorkflowContext workflow, TaskContext task, WorkflowModel model, URI uri) {
-        // First get the configured static OidcClients built in build-time or configured by users
-        OidcClient client = clientRegistry.get(configResolver.resolveOidcClientName(workflow.definition().id(), task.taskName(),
-                authPolicyName).orElse(null));
         Duration connectionTimeout = configResolver.resolveConnectionTimeout(
                 workflow.definition().id(), task.taskName(), authPolicyName);
-        // Let's try to configure/find the OidcClient in runtime (might require runtime expression evaluation)
-        if (client == null) {
-            final EndpointKey endpointKey = endPointKeyResolver.apply(workflow, task, model);
-            client = clientRegistry.getByEndpoint(endpointKey);
-            if (client == null) {
-                client = clientWorkflowRegistrar.registerDynamicOidcClientFor(endpointKey,
-                        configResolver.resolveCreationTimeout(
-                                workflow.definition().id(), task.taskName(), authPolicyName),
-                        connectionTimeout);
-                if (client == null) {
-                    throw new IllegalStateException(
-                            "Unable to create OIDC client for " + workflow.definition().id() + ", task: "
-                                    + task.taskName() + " to access URI " + uri);
-                }
-            }
-        }
+
+        // First try the configured static OidcClients built in build-time or configured by users;
+        // if none is found, try to configure/find the OidcClient in runtime (might require runtime expression evaluation)
+        final Uni<OidcClient> clientUni = configResolver.resolveOidcClientName(
+                workflow.definition().id(), task.taskName(), authPolicyName)
+                .map(clientRegistry::get)
+                .map(Uni.createFrom()::item)
+                .orElseGet(() -> configureOidcClientInRuntime(workflow, task, model, uri, connectionTimeout));
+
         // Resolve dynamic grant parameters (for token exchange)
         final Map<String, String> dynamicParams = paramsResolver.apply(workflow, task, model);
-        final Uni<Tokens> tokens = dynamicParams.isEmpty()
-                ? client.getTokens()
-                : client.getTokens(dynamicParams);
-        return tokens.ifNoItem().after(connectionTimeout).fail().subscribeAsCompletionStage()
-                .thenApply(t -> t.getAccessToken());
+        return clientUni
+                .onItem().transformToUni(client -> {
+                    final Uni<Tokens> tokens = dynamicParams.isEmpty()
+                            ? client.getTokens()
+                            : client.getTokens(dynamicParams);
+                    return tokens.ifNoItem().after(connectionTimeout).fail();
+                })
+                .subscribeAsCompletionStage()
+                .thenApply(Tokens::getAccessToken);
+    }
+
+    private Uni<OidcClient> configureOidcClientInRuntime(WorkflowContext workflow, TaskContext task, WorkflowModel model,
+            URI uri, Duration connectionTimeout) {
+        final Uni<OidcClient> clientUni;
+        final EndpointKey endpointKey = endPointKeyResolver.apply(workflow, task, model);
+        OidcClient cachedClient = clientRegistry.getByEndpoint(endpointKey);
+        clientUni = cachedClient != null
+                ? Uni.createFrom().item(cachedClient)
+                : clientWorkflowRegistrar.registerDynamicOidcClientFor(endpointKey,
+                        configResolver.resolveCreationTimeout(
+                                workflow.definition().id(), task.taskName(), authPolicyName),
+                        connectionTimeout)
+                        .onItem().ifNull().failWith(() -> new IllegalStateException(
+                                "Unable to create OIDC client for " + workflow.definition().id() + ", task: "
+                                        + task.taskName() + " to access URI " + uri));
+        return clientUni;
     }
 }
