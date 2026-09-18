@@ -13,7 +13,7 @@ class FlowWorkflowBuilderValidationTest {
     void test_build_rejects_namespace_with_invalid_characters() {
         assertThatIllegalArgumentException()
                 .isThrownBy(() -> FlowWorkflowBuilder.workflow("processPhotoWorkflow", "guru.quarkus").build())
-                .withMessageContaining("document.namespace: must match \"^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$");
+                .withMessageContaining("Invalid workflow definition [guru.quarkus:processPhotoWorkflow:0.0.1]");
     }
 
     @Test
