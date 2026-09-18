@@ -63,19 +63,16 @@ public final class OidcClientAuthProvider implements AuthProvider {
 
     @Override
     public CompletableFuture<String> content(WorkflowContext workflow, TaskContext task, WorkflowModel model, URI uri) {
-        // First get the configured static OidcClients built in build-time or configured by users
-        OidcClient staticClient = clientRegistry.get(configResolver.resolveOidcClientName(
-                workflow.definition().id(), task.taskName(), authPolicyName).orElse(null));
         Duration connectionTimeout = configResolver.resolveConnectionTimeout(
                 workflow.definition().id(), task.taskName(), authPolicyName);
 
-        final Uni<OidcClient> clientUni;
-        if (staticClient != null) {
-            clientUni = Uni.createFrom().item(staticClient);
-        } else {
-            // Let's try to configure/find the OidcClient in runtime (might require runtime expression evaluation)
-            clientUni = configureOidcClientInRuntime(workflow, task, model, uri, connectionTimeout);
-        }
+        // First try the configured static OidcClients built in build-time or configured by users;
+        // if none is found, try to configure/find the OidcClient in runtime (might require runtime expression evaluation)
+        final Uni<OidcClient> clientUni = configResolver.resolveOidcClientName(
+                workflow.definition().id(), task.taskName(), authPolicyName)
+                .map(clientRegistry::get)
+                .map(Uni.createFrom()::item)
+                .orElseGet(() -> configureOidcClientInRuntime(workflow, task, model, uri, connectionTimeout));
 
         // Resolve dynamic grant parameters (for token exchange)
         final Map<String, String> dynamicParams = paramsResolver.apply(workflow, task, model);
