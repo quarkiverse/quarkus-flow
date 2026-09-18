@@ -73,6 +73,12 @@ import io.serverlessworkflow.impl.WorkflowDefinitionId;
 @Unremovable
 public class WorkflowOpenApiFilter implements OASFilter {
 
+    /**
+     * Reference to the {@code ExecutionResponse} component schema registered by
+     * {@link io.quarkiverse.flow.runner.resources.RunnerExecResource} annotations.
+     */
+    static final String EXECUTION_RESPONSE_SCHEMA_REF = "#/components/schemas/ExecutionResponse";
+
     @Inject
     FlowRunnerConfig config;
 
@@ -212,12 +218,14 @@ public class WorkflowOpenApiFilter implements OASFilter {
 
         APIResponse successResponse = OASFactory.createAPIResponse();
         successResponse.setDescription(
-                "Workflow execution completed (only when wait=true). Returns workflow output.");
+                "Workflow execution completed (only when wait=true). Returns workflow output and the workflowApplicationId of the Runner instance that executed it.");
+        successResponse.setContent(createExecutionResponseContent());
         responses.addAPIResponse("200", successResponse);
 
         APIResponse acceptedResponse = OASFactory.createAPIResponse();
         acceptedResponse.setDescription(
-                "Workflow accepted for async processing (when wait=false). Always returned with workflowOutput=null, regardless of whether the workflow has completed.");
+                "Workflow accepted for async processing (when wait=false). Always returned with workflowOutput=null, regardless of whether the workflow has completed. Includes the workflowApplicationId of the Runner instance that accepted it.");
+        acceptedResponse.setContent(createExecutionResponseContent());
         responses.addAPIResponse("202", acceptedResponse);
 
         APIResponse unauthorizedResponse = OASFactory.createAPIResponse();
@@ -235,6 +243,24 @@ public class WorkflowOpenApiFilter implements OASFilter {
         operation.setResponses(responses);
 
         return operation;
+    }
+
+    /**
+     * Creates the response content referencing the shared {@code ExecutionResponse} schema, so every
+     * generated workflow operation documents the same response fields (including {@code workflowApplicationId}).
+     *
+     * @return OpenAPI content for the execution response
+     */
+    Content createExecutionResponseContent() {
+        Schema schema = OASFactory.createSchema();
+        schema.setRef(EXECUTION_RESPONSE_SCHEMA_REF);
+
+        MediaType mediaType = OASFactory.createMediaType();
+        mediaType.setSchema(schema);
+
+        Content content = OASFactory.createContent();
+        content.addMediaType("application/json", mediaType);
+        return content;
     }
 
     /**

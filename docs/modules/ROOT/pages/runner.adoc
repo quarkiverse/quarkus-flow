@@ -357,7 +357,14 @@ curl -X POST http://localhost:8080/q/flow/exec/examples/hello-runner?wait=true \
 [source,json]
 ----
 {
-  "greeting": "Hello, World!"
+  "workflowApplicationId": "quarkus-flow-runner",
+  "instanceId": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "COMPLETED",
+  "startedAt": "2026-06-11T10:15:30.123Z",
+  "completedAt": "2026-06-11T10:15:30.456Z",
+  "workflowOutput": {
+    "greeting": "Hello, World!"
+  }
 }
 ----
 
@@ -377,6 +384,7 @@ curl -X POST http://localhost:8080/q/flow/exec/examples/hello-runner?wait=false 
 [source,json]
 ----
 {
+  "workflowApplicationId": "quarkus-flow-runner",
   "instanceId": "550e8400-e29b-41d4-a716-446655440000",
   "status": "WAITING",
   "startedAt": "2026-06-11T10:15:30.123Z",
@@ -396,6 +404,41 @@ The Runner follows the HTTP API contract strictly when `wait=false`:
 This ensures clients can rely on a consistent API contract: `wait=false` means "acknowledge receipt and start execution" with no output, while `wait=true` means "wait for completion and return output".
 
 For truly long-running workflows, use `wait=false` and poll for status or implement callbacks (future feature).
+
+=== Execution response fields
+
+Both synchronous (`200 OK`) and asynchronous (`202 Accepted`) executions return the same JSON structure:
+
+[cols="1,1,3"]
+|===
+|Field |Type |Description
+
+|`workflowApplicationId`
+|string
+|Identifier of the workflow application (the Runner instance) that executed the workflow. It is derived from `quarkus.application.name` when set; otherwise the engine generates one. Use it to correlate an execution with the Runner instance that processed it, for example when several Runner replicas sit behind a gateway. The same identifier is exposed by the health check and the OpenTelemetry `flow.application.id` span attribute.
+
+|`instanceId`
+|string
+|Unique identifier of the workflow instance.
+
+|`status`
+|string
+|Current status of the instance (`WAITING`, `RUNNING`, `COMPLETED`, `FAULTED`, ...).
+
+|`startedAt`
+|string (ISO-8601)
+|Timestamp when the instance started.
+
+|`completedAt`
+|string (ISO-8601) or `null`
+|Timestamp when the instance completed, or `null` if it is still running.
+
+|`workflowOutput`
+|any or `null`
+|Workflow output. Always `null` when `wait=false`.
+|===
+
+TIP: Set `quarkus.application.name` in `application.properties` to control the `workflowApplicationId` reported by the Runner.
 
 === Execute specific workflow version
 

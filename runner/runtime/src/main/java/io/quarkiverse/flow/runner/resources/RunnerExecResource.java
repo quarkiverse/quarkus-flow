@@ -54,6 +54,7 @@ public class RunnerExecResource {
             "With wait=false (asynchronous): returns immediately with 202 Accepted, workflowOutput is always null regardless of completion status. "
             +
             "This ensures a consistent API contract where async execution never includes output. " +
+            "Both responses include the workflowApplicationId of the Runner instance that executed the workflow. " +
             "Namespace access is validated when namespace authorization is enabled.")
     @APIResponse(responseCode = "200", description = "Workflow execution completed (only when wait=true). Returns workflow output.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
     @APIResponse(responseCode = "202", description = "Workflow accepted for async processing (when wait=false). Always returned with workflowOutput=null, regardless of whether the workflow has completed.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
@@ -83,6 +84,7 @@ public class RunnerExecResource {
             "With wait=false (asynchronous): returns immediately with 202 Accepted, workflowOutput is always null regardless of completion status. "
             +
             "This ensures a consistent API contract where async execution never includes output. " +
+            "Both responses include the workflowApplicationId of the Runner instance that executed the workflow. " +
             "Namespace access is validated when namespace authorization is enabled.")
     @APIResponse(responseCode = "200", description = "Workflow execution completed (only when wait=true). Returns workflow output.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
     @APIResponse(responseCode = "202", description = "Workflow accepted for async processing (when wait=false). Always returned with workflowOutput=null, regardless of whether the workflow has completed.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
@@ -109,16 +111,19 @@ public class RunnerExecResource {
                             .build());
         }
 
+        final String workflowApplicationId = application.id();
         final WorkflowInstance instance = definition.instance(request);
         final CompletableFuture<WorkflowModel> workflowOutput = instance.start();
         if (wait) {
             return Uni.createFrom()
                     .completionStage(workflowOutput)
                     .onItem()
-                    .transform(model -> Response.ok().entity(ExecutionResponse.from(instance, model)).build());
+                    .transform(model -> Response.ok()
+                            .entity(ExecutionResponse.from(workflowApplicationId, instance, model)).build());
         }
         return Uni.createFrom()
-                .item(Response.status(Response.Status.ACCEPTED).entity(ExecutionResponse.from(instance)).build());
+                .item(Response.status(Response.Status.ACCEPTED)
+                        .entity(ExecutionResponse.from(workflowApplicationId, instance)).build());
     }
 
 }
