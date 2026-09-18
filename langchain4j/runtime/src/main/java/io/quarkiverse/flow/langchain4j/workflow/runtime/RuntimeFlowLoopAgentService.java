@@ -50,16 +50,16 @@ public final class RuntimeFlowLoopAgentService<T> extends FlowLoopAgentService<T
     public LoopAgentServiceImpl<T> exitCondition(
             String exitConditionDescription, Predicate<AgenticScope> exitCondition) {
         // Convert Predicate to BiPredicate (ignoring loop counter)
-        // Description is passed to parent but we still need to track in our flow
         ((RuntimeLoopAgenticFlow) flow).setExitCondition((scope, loopCounter) -> exitCondition.test(scope));
+        ((RuntimeLoopAgenticFlow) flow).setExitConditionDescription(exitConditionDescription);
         return super.exitCondition(exitConditionDescription, exitCondition);
     }
 
     @Override
     public LoopAgentServiceImpl<T> exitCondition(
             String exitConditionDescription, BiPredicate<AgenticScope, Integer> exitCondition) {
-        // Description is passed to parent but we still need to track in our flow
         ((RuntimeLoopAgenticFlow) flow).setExitCondition(exitCondition);
+        ((RuntimeLoopAgenticFlow) flow).setExitConditionDescription(exitConditionDescription);
         return super.exitCondition(exitConditionDescription, exitCondition);
     }
 

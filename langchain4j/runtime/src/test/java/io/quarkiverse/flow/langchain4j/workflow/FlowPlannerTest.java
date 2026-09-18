@@ -14,6 +14,8 @@ import org.junit.jupiter.api.Test;
 import dev.langchain4j.agentic.planner.AgentInstance;
 import dev.langchain4j.agentic.planner.AgenticSystemTopology;
 import dev.langchain4j.agentic.planner.InitPlanningContext;
+import dev.langchain4j.agentic.workflow.ConditionalAgentInstance;
+import dev.langchain4j.agentic.workflow.LoopAgentInstance;
 import io.quarkiverse.flow.langchain4j.workflow.builder.*;
 import io.quarkiverse.flow.langchain4j.workflow.flow.*;
 import io.quarkiverse.flow.langchain4j.workflow.runtime.*;
@@ -108,6 +110,44 @@ class FlowPlannerTest {
         assertThat(planner.getAgentByIndex(0).agentId()).isEqualTo("agent1$0");
         assertThat(planner.getAgentByIndex(1)).isNotNull();
         assertThat(planner.getAgentByIndex(1).agentId()).isEqualTo("agent2$1");
+    }
+
+    @Test
+    @DisplayName("as() should return FlowLoopAgentInstance for LoopAgentInstance class")
+    void test_as_returnsLoopAgentInstance() {
+        LoopAgenticFlow loopFlow = mock(LoopAgenticFlow.class);
+        when(loopFlow.definition()).thenReturn(mock(WorkflowDefinition.class));
+        when(loopFlow.maxIterations()).thenReturn(5);
+        when(loopFlow.testExitAtLoopEnd()).thenReturn(true);
+        when(loopFlow.exitConditionDescription()).thenReturn("test exit");
+
+        FlowPlanner planner = new FlowPlanner(AgenticSystemTopology.LOOP, loopFlow);
+        AgentInstance mockAgent = createMockAgent("loopAgent$0");
+
+        LoopAgentInstance result = planner.as(LoopAgentInstance.class, mockAgent);
+
+        assertThat(result).isNotNull();
+        assertThat(result).isInstanceOf(FlowLoopAgentInstance.class);
+        assertThat(result.maxIterations()).isEqualTo(5);
+        assertThat(result.testExitAtLoopEnd()).isTrue();
+        assertThat(result.exitCondition()).isEqualTo("test exit");
+    }
+
+    @Test
+    @DisplayName("as() should return FlowConditionalAgentInstance for ConditionalAgentInstance class")
+    void test_as_returnsConditionalAgentInstance() {
+        ConditionalAgenticFlow conditionalFlow = mock(ConditionalAgenticFlow.class);
+        when(conditionalFlow.definition()).thenReturn(mock(WorkflowDefinition.class));
+        when(conditionalFlow.conditionalAgents()).thenReturn(List.of());
+
+        FlowPlanner planner = new FlowPlanner(AgenticSystemTopology.ROUTER, conditionalFlow);
+        AgentInstance mockAgent = createMockAgent("conditionalAgent$0");
+
+        ConditionalAgentInstance result = planner.as(ConditionalAgentInstance.class, mockAgent);
+
+        assertThat(result).isNotNull();
+        assertThat(result).isInstanceOf(FlowConditionalAgentInstance.class);
+        assertThat(result.conditionalSubagents()).isNotNull();
     }
 
     // ========== Helper Methods ==========

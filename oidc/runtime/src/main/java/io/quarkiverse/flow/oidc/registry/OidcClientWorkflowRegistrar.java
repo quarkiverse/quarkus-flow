@@ -21,6 +21,7 @@ import io.quarkus.oidc.client.OidcClients;
 import io.quarkus.oidc.client.runtime.OidcClientConfig;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
+import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
 @Unremovable
@@ -38,14 +39,12 @@ public class OidcClientWorkflowRegistrar {
     @Inject
     OidcConfigResolver configResolver;
 
-    public OidcClient registerDynamicOidcClientFor(EndpointKey endpointKey, Duration creationTimeout,
+    public Uni<OidcClient> registerDynamicOidcClientFor(EndpointKey endpointKey, Duration creationTimeout,
             Duration connectionTimeout) {
         final OidcClientConfig clientConfig = OidcClientConfigFactory.from(endpointKey, connectionTimeout);
-        final OidcClient client = oidcClients.newClient(clientConfig)
-                .await()
-                .atMost(creationTimeout);
-        registry.register(client, endpointKey);
-        return client;
+        return oidcClients.newClient(clientConfig)
+                .ifNoItem().after(creationTimeout).fail()
+                .invoke(client -> registry.register(client, endpointKey));
     }
 
     /**

@@ -19,16 +19,18 @@ import dev.langchain4j.agentic.planner.AgenticSystemTopology;
 import dev.langchain4j.agentic.planner.InitPlanningContext;
 import dev.langchain4j.agentic.planner.Planner;
 import dev.langchain4j.agentic.planner.PlanningContext;
-import io.quarkiverse.flow.langchain4j.workflow.flow.*;
-import io.quarkiverse.flow.langchain4j.workflow.runtime.*;
-import io.serverlessworkflow.impl.WorkflowDefinition;
+import dev.langchain4j.agentic.workflow.ConditionalAgentInstance;
+import dev.langchain4j.agentic.workflow.LoopAgentInstance;
+import io.quarkiverse.flow.langchain4j.workflow.flow.AgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.flow.ConditionalAgenticFlow;
+import io.quarkiverse.flow.langchain4j.workflow.flow.LoopAgenticFlow;
 import io.serverlessworkflow.impl.WorkflowInstance;
 
 public class FlowPlanner implements Planner {
 
     private static final Logger LOG = LoggerFactory.getLogger(FlowPlanner.class);
     private final AgenticSystemTopology topology;
-    private final WorkflowDefinition definition;
+    private final AgenticFlow flow;
     private List<AgentInstance> subAgentsList;
     private BlockingQueue<AgentExchange> agentExchangeQueue;
     private Map<String, AgentExchange> currentExchanges;
@@ -36,7 +38,7 @@ public class FlowPlanner implements Planner {
 
     public FlowPlanner(AgenticSystemTopology topology, AgenticFlow flow) {
         this.topology = topology;
-        this.definition = flow.definition();
+        this.flow = flow;
     }
 
     @Override
@@ -57,7 +59,7 @@ public class FlowPlanner implements Planner {
 
     @Override
     public Action firstAction(PlanningContext planningContext) {
-        final WorkflowInstance instance = definition.instance(planningContext.agenticScope());
+        final WorkflowInstance instance = flow.definition().instance(planningContext.agenticScope());
         planningContext.agenticScope().writeExecutionContext(instance.id(), this);
 
         // Starts workflow on a different thread
@@ -88,6 +90,18 @@ public class FlowPlanner implements Planner {
         }
 
         return internalNextAction();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T extends AgentInstance> T as(Class<T> agentInstanceClass, AgentInstance agentInstance) {
+        if (agentInstanceClass == LoopAgentInstance.class) {
+            return (T) new FlowLoopAgentInstance((LoopAgenticFlow) flow, agentInstance);
+        }
+        if (agentInstanceClass == ConditionalAgentInstance.class) {
+            return (T) new FlowConditionalAgentInstance((ConditionalAgenticFlow) flow, agentInstance);
+        }
+        return Planner.super.as(agentInstanceClass, agentInstance);
     }
 
     private Action internalNextAction() {
