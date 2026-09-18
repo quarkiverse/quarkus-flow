@@ -238,15 +238,13 @@ public class RunnerExecResource {
         final String workflowApplicationId = application.id();
         final WorkflowInstance instance = definition.instance(request);
         final CompletableFuture<WorkflowModel> workflowOutput = instance.start();
-        if (wait) {
-            return Uni.createFrom()
-                    .completionStage(workflowOutput)
-                    .onItem()
-                    .transform(model -> Response.ok()
-                            .entity(ExecutionResponse.from(workflowApplicationId, instance, model)).build());
-        }
-        return Uni.createFrom()
-                .item(Response.status(Response.Status.ACCEPTED)
-                        .entity(ExecutionResponse.from(workflowApplicationId, instance)).build());
+        return wait ? Uni.createFrom()
+                .completionStage(workflowOutput)
+                .onItem()
+                .transform(model -> Response.ok()
+                        .entity(ExecutionResponse.from(workflowApplicationId, instance, model)).build())
+                : Uni.createFrom()
+                        .item(Response.status(Response.Status.ACCEPTED)
+                                .entity(ExecutionResponse.from(workflowApplicationId, instance)).build());
     }
 }
