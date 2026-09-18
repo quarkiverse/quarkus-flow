@@ -9,6 +9,8 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.stream.Stream;
 
+import jakarta.enterprise.inject.Instance;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
 import io.quarkiverse.flow.config.TimestampFormat;
+import io.quarkiverse.flow.spi.observability.TraceCorrelationProvider;
 import io.serverlessworkflow.impl.TaskContext;
 import io.serverlessworkflow.impl.WorkflowContext;
 import io.serverlessworkflow.impl.WorkflowInstance;
@@ -92,7 +95,7 @@ public class StructuredLoggingListenerTest {
     @DisplayName("shouldLog should correctly match event patterns")
     void testPatternMatching(String pattern, String eventType, boolean shouldMatch) throws Exception {
         when(config.events()).thenReturn(List.of(pattern));
-        listener = new StructuredLoggingListener(config, objectMapper);
+        listener = new StructuredLoggingListener(config, objectMapper, noProviders());
 
         boolean result = invokeShouldLog(listener, eventType);
 
@@ -104,7 +107,7 @@ public class StructuredLoggingListenerTest {
     void testShouldLogWhenDisabled() throws Exception {
         when(config.enabled()).thenReturn(false);
         when(config.events()).thenReturn(List.of("workflow.*"));
-        listener = new StructuredLoggingListener(config, objectMapper);
+        listener = new StructuredLoggingListener(config, objectMapper, noProviders());
 
         boolean result = invokeShouldLog(listener, "workflow.instance.started");
 
@@ -115,7 +118,7 @@ public class StructuredLoggingListenerTest {
     @DisplayName("shouldLog should match against multiple patterns")
     void testMultiplePatterns() throws Exception {
         when(config.events()).thenReturn(List.of("workflow.instance.faulted", "workflow.task.faulted"));
-        listener = new StructuredLoggingListener(config, objectMapper);
+        listener = new StructuredLoggingListener(config, objectMapper, noProviders());
 
         assertThat(invokeShouldLog(listener, "workflow.instance.faulted")).isTrue();
         assertThat(invokeShouldLog(listener, "workflow.task.faulted")).isTrue();
@@ -127,7 +130,7 @@ public class StructuredLoggingListenerTest {
     @DisplayName("shouldLog should match if any pattern matches")
     void testAnyPatternMatches() throws Exception {
         when(config.events()).thenReturn(List.of("workflow.instance.*", "workflow.task.faulted"));
-        listener = new StructuredLoggingListener(config, objectMapper);
+        listener = new StructuredLoggingListener(config, objectMapper, noProviders());
 
         // Matches first pattern
         assertThat(invokeShouldLog(listener, "workflow.instance.started")).isTrue();
@@ -145,7 +148,7 @@ public class StructuredLoggingListenerTest {
     @DisplayName("shouldLog should handle empty pattern list")
     void testEmptyPatternList() throws Exception {
         when(config.events()).thenReturn(List.of());
-        listener = new StructuredLoggingListener(config, objectMapper);
+        listener = new StructuredLoggingListener(config, objectMapper, noProviders());
 
         boolean result = invokeShouldLog(listener, "workflow.instance.started");
 
@@ -191,6 +194,14 @@ public class StructuredLoggingListenerTest {
         Method method = StructuredLoggingListener.class.getDeclaredMethod("shouldLog", String.class);
         method.setAccessible(true);
         return (boolean) method.invoke(listener, eventType);
+    }
+
+    // An unsatisfied TraceCorrelationProvider Instance - the listener falls back to NOOP
+    @SuppressWarnings("unchecked")
+    private static Instance<TraceCorrelationProvider> noProviders() {
+        Instance<TraceCorrelationProvider> providers = mock(Instance.class);
+        when(providers.isResolvable()).thenReturn(false);
+        return providers;
     }
 
     @Test

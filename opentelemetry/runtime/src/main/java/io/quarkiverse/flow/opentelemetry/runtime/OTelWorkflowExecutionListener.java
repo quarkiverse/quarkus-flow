@@ -25,10 +25,14 @@ import org.slf4j.LoggerFactory;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
+import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.quarkiverse.flow.opentelemetry.runtime.config.FlowOTelConfig;
+import io.quarkiverse.flow.spi.observability.TraceCorrelationProvider.TraceContext;
 import io.serverlessworkflow.api.types.TaskBase;
+import io.serverlessworkflow.impl.ServicePriority;
 import io.serverlessworkflow.impl.WorkflowPosition;
 import io.serverlessworkflow.impl.lifecycle.TaskCancelledEvent;
 import io.serverlessworkflow.impl.lifecycle.TaskCompletedEvent;
@@ -84,8 +88,9 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
                 .withStartTime(Instant.now())
                 .build();
 
-        setWorkflowInstrumentationContext(ev.workflowContext().instanceData(),
-                new WorkflowInstrumentationContext(workflowInstanceContext));
+        WorkflowInstrumentationContext instrumentationContext = new WorkflowInstrumentationContext(workflowInstanceContext);
+        instrumentationContext.setWorkflowTraceContext(toTraceContext(startSpan));
+        setWorkflowInstrumentationContext(ev.workflowContext().instanceData(), instrumentationContext);
     }
 
     @Override
@@ -192,6 +197,9 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
         workflowContext.putTaskInstanceInstanceContext(eventInfo.taskId(),
                 eventInfo.taskInstanceIteration(),
                 eventInfo.taskInstanceRetryAttempt(), taskInstanceContext);
+        workflowContext.putTaskTraceContext(eventInfo.taskId(),
+                eventInfo.taskInstanceIteration(),
+                eventInfo.taskInstanceRetryAttempt(), toTraceContext(startSpan));
     }
 
     @Override
@@ -321,5 +329,31 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
 
     private void enrichSpan(SpanBuilder span, TaskBase task) {
         SpanUtils.getTaskSpanEnricher(task).enrich(span, task);
+    }
+
+    static TraceContext toTraceContext(Span span) {
+        if (span == null) {
+            return null;
+        }
+        SpanContext spanContext = span.getSpanContext();
+        if (!spanContext.isValid()) {
+            return null;
+        }
+        String parentId = "";
+        if (span instanceof ReadableSpan readableSpan) {
+            SpanContext parent = readableSpan.getParentSpanContext();
+            if (parent.isValid()) {
+                parentId = parent.getSpanId();
+            }
+        }
+        return new TraceContext(spanContext.getTraceId(), spanContext.getSpanId(),
+                Boolean.toString(spanContext.isSampled()), parentId);
+    }
+
+    @Override
+    public int priority() {
+        // Soft ordering only: running before TraceLoggerExecutionListener lets workflow.started
+        // and task.started log lines carry their own (just-created) span id.
+        return ServicePriority.DEFAULT_PRIORITY - 100;
     }
 }

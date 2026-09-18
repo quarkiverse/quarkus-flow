@@ -17,6 +17,7 @@ import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.
 
 import java.util.logging.Handler;
 
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -27,6 +28,7 @@ import org.jboss.logmanager.formatters.PatternFormatter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
+import io.quarkiverse.flow.spi.observability.TraceCorrelationProvider;
 import io.quarkus.arc.lookup.LookupIfProperty;
 import io.serverlessworkflow.impl.lifecycle.TaskCancelledEvent;
 import io.serverlessworkflow.impl.lifecycle.TaskCompletedEvent;
@@ -61,9 +63,13 @@ public class StructuredLoggingListener implements WorkflowExecutionListener {
     private volatile boolean formatterOverridden = false;
 
     @Inject
-    public StructuredLoggingListener(FlowStructuredLoggingConfig config, ObjectMapper objectMapper) {
+    public StructuredLoggingListener(FlowStructuredLoggingConfig config, ObjectMapper objectMapper,
+            Instance<TraceCorrelationProvider> traceCorrelationProviders) {
         this.config = config;
-        this.formatter = new EventFormatter(config, objectMapper);
+        TraceCorrelationProvider traceCorrelation = traceCorrelationProviders.isResolvable()
+                ? traceCorrelationProviders.get()
+                : TraceCorrelationProvider.NOOP;
+        this.formatter = new EventFormatter(config, objectMapper, traceCorrelation);
     }
 
     // Workflow Instance Events
