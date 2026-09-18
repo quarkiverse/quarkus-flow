@@ -23,6 +23,7 @@ import io.serverlessworkflow.impl.executors.TaskExecutorFactory;
 import io.serverlessworkflow.impl.executors.http.HttpRequestDecorator;
 import io.serverlessworkflow.impl.expressions.ExpressionFactory;
 import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener;
+import io.serverlessworkflow.impl.resources.URITemplateResolver;
 
 final class FlowNativeProcessor {
 
@@ -44,6 +45,7 @@ final class FlowNativeProcessor {
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(NamedWorkflowAdditionalObject.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(CloudEventPredicateFactory.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(RunnableTaskBuilder.class.getName()));
+        sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(URITemplateResolver.class.getName()));
     }
 
     @BuildStep
