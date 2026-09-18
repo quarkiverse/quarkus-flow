@@ -201,6 +201,59 @@ class InstancesResourceTest {
         assertThat(body(response).applicationId()).isEqualTo("runner-pod-0");
     }
 
+    @Test
+    @DisplayName("test_scoped_endpoint_filters_by_namespace_name_and_version")
+    void test_scoped_endpoint_filters_by_namespace_name_and_version() {
+        seedRegistry(
+                snap("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
+                snap("i2", "flow-a", "default", "2.0.0", WorkflowStatus.RUNNING),
+                snap("i3", "flow-a", "other-ns", "1.0.0", WorkflowStatus.RUNNING),
+                snap("i4", "flow-b", "default", "1.0.0", WorkflowStatus.RUNNING));
+
+        Response response = resource.listActiveInstancesForWorkflow("default", "flow-a", "1.0.0", null);
+
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(body(response).instances()).hasSize(1);
+        assertThat(body(response).instances().get(0).instanceId()).isEqualTo("i1");
+    }
+
+    @Test
+    @DisplayName("test_scoped_endpoint_filters_by_status")
+    void test_scoped_endpoint_filters_by_status() {
+        seedRegistry(
+                snap("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
+                snap("i2", "flow-a", "default", "1.0.0", WorkflowStatus.SUSPENDED));
+
+        Response response = resource.listActiveInstancesForWorkflow("default", "flow-a", "1.0.0", "SUSPENDED");
+
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(body(response).instances()).hasSize(1);
+        assertThat(body(response).instances().get(0).instanceId()).isEqualTo("i2");
+    }
+
+    @Test
+    @DisplayName("test_scoped_endpoint_no_match_returns_empty_instances_with_application_id")
+    void test_scoped_endpoint_no_match_returns_empty_instances_with_application_id() {
+        seedRegistry(snap("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING));
+
+        Response response = resource.listActiveInstancesForWorkflow("default", "flow-a", "9.9.9", null);
+
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(body(response).instances()).isEmpty();
+        assertThat(body(response).applicationId()).isEqualTo("runner-pod-0");
+    }
+
+    @Test
+    @DisplayName("test_scoped_endpoint_unknown_status_throws_invalid_status_filter_exception")
+    void test_scoped_endpoint_unknown_status_throws_invalid_status_filter_exception() {
+        seedRegistry(snap("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING));
+
+        assertThatThrownBy(
+                () -> resource.listActiveInstancesForWorkflow("default", "flow-a", "1.0.0", "NOT_A_STATUS"))
+                .isInstanceOf(InvalidStatusFilterException.class)
+                .hasMessageContaining("NOT_A_STATUS");
+    }
+
     /**
      * Stub registry that returns a predefined list of snapshots.
      */

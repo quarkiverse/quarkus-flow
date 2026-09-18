@@ -67,6 +67,48 @@ class InstancesResourceIT {
     }
 
     @Test
+    @DisplayName("test_running_instance_appears_in_scoped_active_instances")
+    void test_running_instance_appears_in_scoped_active_instances() {
+        // Start the long-running workflow asynchronously (it sleeps 5 seconds)
+        given()
+                .contentType("application/json")
+                .body(Map.of("testId", "instances-test-scoped-1"))
+                .queryParam("wait", "false")
+                .when()
+                .post("/q/flow/exec/test-namespace/long-running/1.0.0")
+                .then()
+                .statusCode(202);
+
+        // The instance should appear when scoped to its own namespace/name/version
+        await()
+                .atMost(Duration.ofSeconds(3))
+                .pollInterval(Duration.ofMillis(200))
+                .untilAsserted(() -> {
+                    Map<String, Object> response = given()
+                            .when()
+                            .get("/q/flow/test-namespace/long-running/1.0.0/instances")
+                            .then()
+                            .statusCode(200)
+                            .extract()
+                            .as(Map.class);
+
+                    List<?> instances = (List<?>) response.get("instances");
+                    assertThat(instances).isNotEmpty();
+                });
+
+        // A different version should not see it
+        Map<String, Object> otherVersionResponse = given()
+                .when()
+                .get("/q/flow/test-namespace/long-running/9.9.9/instances")
+                .then()
+                .statusCode(200)
+                .extract()
+                .as(Map.class);
+
+        assertThat((List<?>) otherVersionResponse.get("instances")).isEmpty();
+    }
+
+    @Test
     @DisplayName("test_active_instance_has_required_fields")
     void test_active_instance_has_required_fields() {
         // Start a long-running workflow
