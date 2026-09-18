@@ -8,6 +8,7 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
@@ -40,10 +41,12 @@ import io.serverlessworkflow.impl.WorkflowStatus;
  * GET /q/flow/instances?workflowName=my-flow
  * GET /q/flow/instances?status=RUNNING
  * GET /q/flow/instances?workflowName=my-flow&amp;status=SUSPENDED
+ * GET /q/flow/{namespace}/{name}/{version}/instances
+ * GET /q/flow/{namespace}/{name}/{version}/instances?status=RUNNING
  * </pre>
  */
 @FlowRunnerEndpoint
-@Path("/q/flow/instances")
+@Path("/q/flow")
 @RolesAllowed({ AuthzConsts.ROLE_ADMIN, AuthzConsts.ROLE_INVOKER })
 @Tag(name = "Workflow Instances", description = "Query in-memory active workflow instances on this runner")
 @SecurityRequirement(name = "BearerAuth")
@@ -59,6 +62,7 @@ public class InstancesResource {
     ActiveInstanceRegistry registry;
 
     @GET
+    @Path("/instances")
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "List active in-memory workflow instances", description = "Returns the workflow instances currently tracked in this runner's in-memory active instance registry. "
             + "Only non-terminal instances (not yet COMPLETED, FAULTED, or CANCELLED) are included. "
@@ -83,6 +87,40 @@ public class InstancesResource {
                 .toList();
 
         return Response.ok(new ActiveInstancesResponse(application.id(), instances)).build();
+    }
+
+    @GET
+    @Path("/{namespace}/{name}/{version}/instances")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "List active in-memory workflow instances for a specific workflow", description = "Returns the workflow instances currently tracked in this runner's in-memory active instance "
+            + "registry for the given namespace, name, and version. Only non-terminal instances (not yet "
+            + "COMPLETED, FAULTED, or CANCELLED) are included. Namespace access is validated when namespace "
+            + "authorization is enabled.")
+    @APIResponse(responseCode = "200", description = "Active in-memory workflow instances for the requested workflow on this runner", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ActiveInstancesResponse.class)))
+    @APIResponse(responseCode = "400", description = "Invalid status filter — terminal statuses (COMPLETED, FAULTED, CANCELLED) and unknown values are not allowed")
+    @APIResponse(responseCode = "401", description = "Authentication required - missing or invalid credentials")
+    @APIResponse(responseCode = "403", description = "Access denied to requested namespace")
+    public Response listActiveInstancesForWorkflow(
+            @Parameter(description = "Workflow namespace (access validated if namespace authorization enabled)", required = true) @PathParam("namespace") String namespace,
+            @Parameter(description = "Workflow name", required = true) @PathParam("name") String name,
+            @Parameter(description = "Workflow version", required = true) @PathParam("version") String version,
+            @Parameter(description = "Filter by workflow status (optional). Only non-terminal values accepted: PENDING, RUNNING, WAITING, SUSPENDED") @QueryParam("status") String status) {
+
+        WorkflowStatus statusFilter = parseActiveStatus(status);
+
+        List<InstanceSnapshot> instances = registry.activeInstances().stream()
+                .filter(s -> matchesWorkflow(s, namespace, name, version, statusFilter))
+                .toList();
+
+        return Response.ok(new ActiveInstancesResponse(application.id(), instances)).build();
+    }
+
+    private static boolean matchesWorkflow(InstanceSnapshot snapshot, String namespace, String name, String version,
+            WorkflowStatus statusFilter) {
+        return namespace.equals(snapshot.workflowNamespace())
+                && name.equals(snapshot.workflowName())
+                && version.equals(snapshot.workflowVersion())
+                && (statusFilter == null || statusFilter == snapshot.status());
     }
 
     /**
