@@ -118,6 +118,12 @@
             <groupId>org.wiremock</groupId>
             <artifactId>wiremock</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-testing</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

@@ -37,6 +37,11 @@
             <artifactId>quarkus-flow-scheduler-deployment</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-testing</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkiverse.langchain4j</groupId>
@@ -70,7 +75,7 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <scope>runtime</scope>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.awaitility</groupId>
