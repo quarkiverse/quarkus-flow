@@ -203,68 +203,6 @@ class InstancesResourceIT {
     }
 
     @Test
-    @DisplayName("test_includeInput_true_returns_workflow_input")
-    void test_includeInput_true_returns_workflow_input() {
-        given()
-                .contentType("application/json")
-                .body(Map.of("testId", "instances-include-input-test"))
-                .queryParam("wait", "false")
-                .when()
-                .post("/q/flow/exec/test-namespace/long-running/1.0.0")
-                .then()
-                .statusCode(202);
-
-        await()
-                .atMost(Duration.ofSeconds(3))
-                .pollInterval(Duration.ofMillis(200))
-                .untilAsserted(() -> {
-                    Map<String, Object> response = given()
-                            .queryParam("includeInput", "true")
-                            .when()
-                            .get("/q/flow/test-namespace/long-running/1.0.0/instances")
-                            .then()
-                            .statusCode(200)
-                            .extract()
-                            .as(Map.class);
-
-                    List<Map<String, Object>> instances = (List<Map<String, Object>>) response.get("instances");
-                    assertThat(instances)
-                            .anySatisfy(instance -> assertThat(instance.get("input"))
-                                    .isEqualTo(Map.of("testId", "instances-include-input-test")));
-                });
-    }
-
-    @Test
-    @DisplayName("test_includeInput_default_omits_workflow_input")
-    void test_includeInput_default_omits_workflow_input() {
-        given()
-                .contentType("application/json")
-                .body(Map.of("testId", "instances-omit-input-test"))
-                .queryParam("wait", "false")
-                .when()
-                .post("/q/flow/exec/test-namespace/long-running/1.0.0")
-                .then()
-                .statusCode(202);
-
-        await()
-                .atMost(Duration.ofSeconds(3))
-                .pollInterval(Duration.ofMillis(200))
-                .untilAsserted(() -> {
-                    Map<String, Object> response = given()
-                            .when()
-                            .get("/q/flow/test-namespace/long-running/1.0.0/instances")
-                            .then()
-                            .statusCode(200)
-                            .extract()
-                            .as(Map.class);
-
-                    List<Map<String, Object>> instances = (List<Map<String, Object>>) response.get("instances");
-                    assertThat(instances).isNotEmpty();
-                    assertThat(instances).allSatisfy(instance -> assertThat(instance.get("input")).isNull());
-                });
-    }
-
-    @Test
     @DisplayName("test_terminal_status_filter_returns_400")
     void test_terminal_status_filter_returns_400() {
         given()
