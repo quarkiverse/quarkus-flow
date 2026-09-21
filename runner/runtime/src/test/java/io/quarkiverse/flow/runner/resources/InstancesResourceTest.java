@@ -132,7 +132,7 @@ class InstancesResourceTest {
                 seed("i2", "flow-b", "default", "1.0.0", WorkflowStatus.SUSPENDED),
                 seed("i3", "flow-a", "default", "2.0.0", WorkflowStatus.RUNNING));
 
-        Response response = resource.listActiveInstances(null, "RUNNING");
+        Response response = resource.listActiveInstances(null, WorkflowStatus.RUNNING);
 
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(body(response).instances()).hasSize(2);
@@ -148,7 +148,7 @@ class InstancesResourceTest {
                 seed("i2", "flow-a", "default", "1.0.0", WorkflowStatus.SUSPENDED),
                 seed("i3", "flow-b", "default", "1.0.0", WorkflowStatus.RUNNING));
 
-        Response response = resource.listActiveInstances("flow-a", "RUNNING");
+        Response response = resource.listActiveInstances("flow-a", WorkflowStatus.RUNNING);
 
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(body(response).instances()).hasSize(1);
@@ -156,19 +156,9 @@ class InstancesResourceTest {
     }
 
     @Test
-    @DisplayName("test_unknown_status_throws_invalid_status_filter_exception")
-    void test_unknown_status_throws_invalid_status_filter_exception() {
-        seedDefinitions(seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING));
-
-        assertThatThrownBy(() -> resource.listActiveInstances(null, "NOT_A_STATUS"))
-                .isInstanceOf(InvalidStatusFilterException.class)
-                .hasMessageContaining("NOT_A_STATUS");
-    }
-
-    @Test
     @DisplayName("test_terminal_status_completed_throws_invalid_status_filter_exception")
     void test_terminal_status_completed_throws_invalid_status_filter_exception() {
-        assertThatThrownBy(() -> resource.listActiveInstances(null, "COMPLETED"))
+        assertThatThrownBy(() -> resource.listActiveInstances(null, WorkflowStatus.COMPLETED))
                 .isInstanceOf(InvalidStatusFilterException.class)
                 .hasMessageContaining("COMPLETED");
     }
@@ -176,7 +166,7 @@ class InstancesResourceTest {
     @Test
     @DisplayName("test_terminal_status_faulted_throws_invalid_status_filter_exception")
     void test_terminal_status_faulted_throws_invalid_status_filter_exception() {
-        assertThatThrownBy(() -> resource.listActiveInstances(null, "FAULTED"))
+        assertThatThrownBy(() -> resource.listActiveInstances(null, WorkflowStatus.FAULTED))
                 .isInstanceOf(InvalidStatusFilterException.class)
                 .hasMessageContaining("FAULTED");
     }
@@ -184,36 +174,9 @@ class InstancesResourceTest {
     @Test
     @DisplayName("test_terminal_status_cancelled_throws_invalid_status_filter_exception")
     void test_terminal_status_cancelled_throws_invalid_status_filter_exception() {
-        assertThatThrownBy(() -> resource.listActiveInstances(null, "CANCELLED"))
+        assertThatThrownBy(() -> resource.listActiveInstances(null, WorkflowStatus.CANCELLED))
                 .isInstanceOf(InvalidStatusFilterException.class)
                 .hasMessageContaining("CANCELLED");
-    }
-
-    @Test
-    @DisplayName("test_status_filter_is_case_insensitive")
-    void test_status_filter_is_case_insensitive() {
-        seedDefinitions(
-                seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.SUSPENDED),
-                seed("i2", "flow-b", "default", "1.0.0", WorkflowStatus.RUNNING));
-
-        Response response = resource.listActiveInstances(null, "suspended");
-
-        assertThat(response.getStatus()).isEqualTo(200);
-        assertThat(body(response).instances()).hasSize(1);
-        assertThat(body(response).instances().get(0).instanceId()).isEqualTo("i1");
-    }
-
-    @Test
-    @DisplayName("test_blank_status_filter_returns_all")
-    void test_blank_status_filter_returns_all() {
-        seedDefinitions(
-                seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
-                seed("i2", "flow-b", "default", "1.0.0", WorkflowStatus.SUSPENDED));
-
-        Response response = resource.listActiveInstances(null, "  ");
-
-        assertThat(response.getStatus()).isEqualTo(200);
-        assertThat(body(response).instances()).hasSize(2);
     }
 
     @Test
@@ -251,7 +214,7 @@ class InstancesResourceTest {
                 seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
                 seed("i2", "flow-a", "default", "1.0.0", WorkflowStatus.SUSPENDED));
 
-        Response response = resource.listActiveInstancesForWorkflow("default", "flow-a", "1.0.0", "SUSPENDED");
+        Response response = resource.listActiveInstancesForWorkflow("default", "flow-a", "1.0.0", WorkflowStatus.SUSPENDED);
 
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(body(response).instances()).hasSize(1);
@@ -271,13 +234,13 @@ class InstancesResourceTest {
     }
 
     @Test
-    @DisplayName("test_scoped_endpoint_unknown_status_throws_invalid_status_filter_exception")
-    void test_scoped_endpoint_unknown_status_throws_invalid_status_filter_exception() {
+    @DisplayName("test_scoped_endpoint_terminal_status_throws_invalid_status_filter_exception")
+    void test_scoped_endpoint_terminal_status_throws_invalid_status_filter_exception() {
         seedDefinitions(seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING));
 
         assertThatThrownBy(
-                () -> resource.listActiveInstancesForWorkflow("default", "flow-a", "1.0.0", "NOT_A_STATUS"))
+                () -> resource.listActiveInstancesForWorkflow("default", "flow-a", "1.0.0", WorkflowStatus.CANCELLED))
                 .isInstanceOf(InvalidStatusFilterException.class)
-                .hasMessageContaining("NOT_A_STATUS");
+                .hasMessageContaining("CANCELLED");
     }
 }
