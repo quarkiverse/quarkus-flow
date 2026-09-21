@@ -67,8 +67,8 @@ class InstancesResourceIT {
     }
 
     @Test
-    @DisplayName("test_running_instance_appears_in_scoped_active_instances")
-    void test_running_instance_appears_in_scoped_active_instances() {
+    @DisplayName("test_running_instance_appears_in_version_scoped_active_instances")
+    void test_running_instance_appears_in_version_scoped_active_instances() {
         // Start the long-running workflow asynchronously (it sleeps 5 seconds)
         given()
                 .contentType("application/json")
@@ -106,6 +106,48 @@ class InstancesResourceIT {
                 .as(Map.class);
 
         assertThat((List<?>) otherVersionResponse.get("instances")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("test_running_instance_appears_in_latest_version_active_instances")
+    void test_running_instance_appears_in_latest_version_active_instances() {
+        // Start the long-running workflow asynchronously (it sleeps 5 seconds)
+        given()
+                .contentType("application/json")
+                .body(Map.of("testId", "instances-test-latest-1"))
+                .queryParam("wait", "false")
+                .when()
+                .post("/q/flow/exec/test-namespace/long-running/1.0.0")
+                .then()
+                .statusCode(202);
+
+        // The namespace/name endpoint (no version) resolves to the latest version and should see it
+        await()
+                .atMost(Duration.ofSeconds(3))
+                .pollInterval(Duration.ofMillis(200))
+                .untilAsserted(() -> {
+                    Map<String, Object> response = given()
+                            .when()
+                            .get("/q/flow/test-namespace/long-running/instances")
+                            .then()
+                            .statusCode(200)
+                            .extract()
+                            .as(Map.class);
+
+                    List<?> instances = (List<?>) response.get("instances");
+                    assertThat(instances).isNotEmpty();
+                });
+
+        // An unrelated workflow name should not see it
+        Map<String, Object> otherWorkflowResponse = given()
+                .when()
+                .get("/q/flow/test-namespace/simple-greeting/instances")
+                .then()
+                .statusCode(200)
+                .extract()
+                .as(Map.class);
+
+        assertThat((List<?>) otherWorkflowResponse.get("instances")).isEmpty();
     }
 
     @Test
@@ -155,12 +197,11 @@ class InstancesResourceIT {
     }
 
     @Test
-    @DisplayName("test_filter_by_workflow_name_returns_only_matching_instances")
-    void test_filter_by_workflow_name_returns_only_matching_instances() {
-        // Start long-running workflow
+    @DisplayName("test_includeInput_true_returns_workflow_input")
+    void test_includeInput_true_returns_workflow_input() {
         given()
                 .contentType("application/json")
-                .body(Map.of("testId", "filter-name-test"))
+                .body(Map.of("testId", "instances-include-input-test"))
                 .queryParam("wait", "false")
                 .when()
                 .post("/q/flow/exec/test-namespace/long-running/1.0.0")
@@ -171,32 +212,50 @@ class InstancesResourceIT {
                 .atMost(Duration.ofSeconds(3))
                 .pollInterval(Duration.ofMillis(200))
                 .untilAsserted(() -> {
-                    // Filter by correct name → finds instances
                     Map<String, Object> response = given()
-                            .queryParam("workflowName", "long-running")
+                            .queryParam("includeInput", "true")
                             .when()
-                            .get("/q/flow/instances")
+                            .get("/q/flow/test-namespace/long-running/1.0.0/instances")
                             .then()
                             .statusCode(200)
                             .extract()
                             .as(Map.class);
 
-                    List<?> instances = (List<?>) response.get("instances");
-                    assertThat(instances).isNotEmpty();
+                    List<Map<String, Object>> instances = (List<Map<String, Object>>) response.get("instances");
+                    assertThat(instances)
+                            .anySatisfy(instance -> assertThat(instance.get("input"))
+                                    .isEqualTo(Map.of("testId", "instances-include-input-test")));
                 });
+    }
 
-        // Filter by non-existent name → empty list
-        Map<String, Object> response = given()
-                .queryParam("workflowName", "non-existent-workflow")
+    @Test
+    @DisplayName("test_includeInput_default_omits_workflow_input")
+    void test_includeInput_default_omits_workflow_input() {
+        given()
+                .contentType("application/json")
+                .body(Map.of("testId", "instances-omit-input-test"))
+                .queryParam("wait", "false")
                 .when()
-                .get("/q/flow/instances")
+                .post("/q/flow/exec/test-namespace/long-running/1.0.0")
                 .then()
-                .statusCode(200)
-                .extract()
-                .as(Map.class);
+                .statusCode(202);
 
-        List<?> instances = (List<?>) response.get("instances");
-        assertThat(instances).isEmpty();
+        await()
+                .atMost(Duration.ofSeconds(3))
+                .pollInterval(Duration.ofMillis(200))
+                .untilAsserted(() -> {
+                    Map<String, Object> response = given()
+                            .when()
+                            .get("/q/flow/test-namespace/long-running/1.0.0/instances")
+                            .then()
+                            .statusCode(200)
+                            .extract()
+                            .as(Map.class);
+
+                    List<Map<String, Object>> instances = (List<Map<String, Object>>) response.get("instances");
+                    assertThat(instances).isNotEmpty();
+                    assertThat(instances).allSatisfy(instance -> assertThat(instance.get("input")).isNull());
+                });
     }
 
     @Test
@@ -250,9 +309,8 @@ class InstancesResourceIT {
 
         // The fast workflow completed — it should NOT be in the active instances list
         Map<String, Object> response = given()
-                .queryParam("workflowName", "simple-greeting")
                 .when()
-                .get("/q/flow/instances")
+                .get("/q/flow/test-namespace/simple-greeting/1.0.0/instances")
                 .then()
                 .statusCode(200)
                 .extract()

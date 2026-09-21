@@ -23,6 +23,7 @@ import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
 import io.serverlessworkflow.impl.WorkflowInstance;
+import io.serverlessworkflow.impl.WorkflowModel;
 import io.serverlessworkflow.impl.WorkflowStatus;
 
 @DisplayName("InstancesResource Tests")
@@ -36,6 +37,10 @@ class InstancesResourceTest {
         resource = new InstancesResource();
         mockApplication = mock(WorkflowApplication.class);
         resource.application = mockApplication;
+
+        WorkflowDefinitionLookup lookup = new WorkflowDefinitionLookup();
+        lookup.application = mockApplication;
+        resource.definitionLookup = lookup;
 
         when(mockApplication.id()).thenReturn("runner-pod-0");
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of());
@@ -55,6 +60,9 @@ class InstancesResourceTest {
         when(instance.id()).thenReturn(id);
         when(instance.status()).thenReturn(status);
         when(instance.startedAt()).thenReturn(Instant.now());
+        WorkflowModel input = mock(WorkflowModel.class);
+        when(input.asJavaObject()).thenReturn(Map.of("key", "value"));
+        when(instance.input()).thenReturn(input);
         return instance;
     }
 
@@ -81,12 +89,12 @@ class InstancesResourceTest {
         return (ActiveInstancesResponse) response.getEntity();
     }
 
-    // --- tests ---
+    // --- tests: GET /q/flow/instances ---
 
     @Test
     @DisplayName("test_returns_empty_instances_and_application_id_when_registry_empty")
     void test_returns_empty_instances_and_application_id_when_registry_empty() {
-        Response response = resource.listActiveInstances(null, null);
+        Response response = resource.listActiveInstances(null, false);
 
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(body(response).applicationId()).isEqualTo("runner-pod-0");
@@ -94,34 +102,18 @@ class InstancesResourceTest {
     }
 
     @Test
-    @DisplayName("test_returns_all_instances_when_no_filters")
-    void test_returns_all_instances_when_no_filters() {
+    @DisplayName("test_returns_all_instances_across_definitions_when_no_status_filter")
+    void test_returns_all_instances_across_definitions_when_no_status_filter() {
         seedDefinitions(
                 seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
                 seed("i2", "flow-b", "default", "1.0.0", WorkflowStatus.WAITING),
                 seed("i3", "flow-a", "default", "2.0.0", WorkflowStatus.SUSPENDED));
 
-        Response response = resource.listActiveInstances(null, null);
+        Response response = resource.listActiveInstances(null, false);
 
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(body(response).instances()).hasSize(3);
         assertThat(body(response).applicationId()).isEqualTo("runner-pod-0");
-    }
-
-    @Test
-    @DisplayName("test_filters_by_workflow_name")
-    void test_filters_by_workflow_name() {
-        seedDefinitions(
-                seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
-                seed("i2", "flow-b", "default", "1.0.0", WorkflowStatus.RUNNING),
-                seed("i3", "flow-a", "default", "2.0.0", WorkflowStatus.SUSPENDED));
-
-        Response response = resource.listActiveInstances("flow-a", null);
-
-        assertThat(response.getStatus()).isEqualTo(200);
-        assertThat(body(response).instances()).hasSize(2);
-        assertThat(body(response).instances()).extracting(InstanceSnapshot::workflowName)
-                .containsOnly("flow-a");
     }
 
     @Test
@@ -132,7 +124,7 @@ class InstancesResourceTest {
                 seed("i2", "flow-b", "default", "1.0.0", WorkflowStatus.SUSPENDED),
                 seed("i3", "flow-a", "default", "2.0.0", WorkflowStatus.RUNNING));
 
-        Response response = resource.listActiveInstances(null, WorkflowStatus.RUNNING);
+        Response response = resource.listActiveInstances(WorkflowStatus.RUNNING, false);
 
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(body(response).instances()).hasSize(2);
@@ -141,24 +133,9 @@ class InstancesResourceTest {
     }
 
     @Test
-    @DisplayName("test_filters_by_both_workflow_name_and_status")
-    void test_filters_by_both_workflow_name_and_status() {
-        seedDefinitions(
-                seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
-                seed("i2", "flow-a", "default", "1.0.0", WorkflowStatus.SUSPENDED),
-                seed("i3", "flow-b", "default", "1.0.0", WorkflowStatus.RUNNING));
-
-        Response response = resource.listActiveInstances("flow-a", WorkflowStatus.RUNNING);
-
-        assertThat(response.getStatus()).isEqualTo(200);
-        assertThat(body(response).instances()).hasSize(1);
-        assertThat(body(response).instances().get(0).instanceId()).isEqualTo("i1");
-    }
-
-    @Test
     @DisplayName("test_terminal_status_completed_throws_invalid_status_filter_exception")
     void test_terminal_status_completed_throws_invalid_status_filter_exception() {
-        assertThatThrownBy(() -> resource.listActiveInstances(null, WorkflowStatus.COMPLETED))
+        assertThatThrownBy(() -> resource.listActiveInstances(WorkflowStatus.COMPLETED, false))
                 .isInstanceOf(InvalidStatusFilterException.class)
                 .hasMessageContaining("COMPLETED");
     }
@@ -166,7 +143,7 @@ class InstancesResourceTest {
     @Test
     @DisplayName("test_terminal_status_faulted_throws_invalid_status_filter_exception")
     void test_terminal_status_faulted_throws_invalid_status_filter_exception() {
-        assertThatThrownBy(() -> resource.listActiveInstances(null, WorkflowStatus.FAULTED))
+        assertThatThrownBy(() -> resource.listActiveInstances(WorkflowStatus.FAULTED, false))
                 .isInstanceOf(InvalidStatusFilterException.class)
                 .hasMessageContaining("FAULTED");
     }
@@ -174,22 +151,61 @@ class InstancesResourceTest {
     @Test
     @DisplayName("test_terminal_status_cancelled_throws_invalid_status_filter_exception")
     void test_terminal_status_cancelled_throws_invalid_status_filter_exception() {
-        assertThatThrownBy(() -> resource.listActiveInstances(null, WorkflowStatus.CANCELLED))
+        assertThatThrownBy(() -> resource.listActiveInstances(WorkflowStatus.CANCELLED, false))
                 .isInstanceOf(InvalidStatusFilterException.class)
                 .hasMessageContaining("CANCELLED");
     }
 
     @Test
-    @DisplayName("test_no_match_returns_empty_instances_with_application_id")
-    void test_no_match_returns_empty_instances_with_application_id() {
+    @DisplayName("test_includeInput_false_omits_input")
+    void test_includeInput_false_omits_input() {
         seedDefinitions(seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING));
 
-        Response response = resource.listActiveInstances("non-existent-flow", null);
+        Response response = resource.listActiveInstances(null, false);
+
+        assertThat(body(response).instances().get(0).input()).isNull();
+    }
+
+    @Test
+    @DisplayName("test_includeInput_true_populates_input")
+    void test_includeInput_true_populates_input() {
+        seedDefinitions(seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING));
+
+        Response response = resource.listActiveInstances(null, true);
+
+        assertThat(body(response).instances().get(0).input()).isEqualTo(Map.of("key", "value"));
+    }
+
+    // --- tests: GET /q/flow/{namespace}/{name}/instances (latest version) ---
+
+    @Test
+    @DisplayName("test_latest_version_endpoint_resolves_highest_version")
+    void test_latest_version_endpoint_resolves_highest_version() {
+        seedDefinitions(
+                seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
+                seed("i2", "flow-a", "default", "2.0.0", WorkflowStatus.RUNNING),
+                seed("i3", "flow-b", "default", "1.0.0", WorkflowStatus.RUNNING));
+
+        Response response = resource.listActiveInstancesForWorkflow("default", "flow-a", null, false);
+
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(body(response).instances()).hasSize(1);
+        assertThat(body(response).instances().get(0).instanceId()).isEqualTo("i2");
+    }
+
+    @Test
+    @DisplayName("test_latest_version_endpoint_no_match_returns_empty_instances_with_application_id")
+    void test_latest_version_endpoint_no_match_returns_empty_instances_with_application_id() {
+        seedDefinitions(seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING));
+
+        Response response = resource.listActiveInstancesForWorkflow("default", "unknown-flow", null, false);
 
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(body(response).instances()).isEmpty();
         assertThat(body(response).applicationId()).isEqualTo("runner-pod-0");
     }
+
+    // --- tests: GET /q/flow/{namespace}/{name}/{version}/instances ---
 
     @Test
     @DisplayName("test_scoped_endpoint_filters_by_namespace_name_and_version")
@@ -200,7 +216,7 @@ class InstancesResourceTest {
                 seed("i3", "flow-a", "other-ns", "1.0.0", WorkflowStatus.RUNNING),
                 seed("i4", "flow-b", "default", "1.0.0", WorkflowStatus.RUNNING));
 
-        Response response = resource.listActiveInstancesForWorkflow("default", "flow-a", "1.0.0", null);
+        Response response = resource.listActiveInstancesForWorkflowVersion("default", "flow-a", "1.0.0", null, false);
 
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(body(response).instances()).hasSize(1);
@@ -214,7 +230,8 @@ class InstancesResourceTest {
                 seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
                 seed("i2", "flow-a", "default", "1.0.0", WorkflowStatus.SUSPENDED));
 
-        Response response = resource.listActiveInstancesForWorkflow("default", "flow-a", "1.0.0", WorkflowStatus.SUSPENDED);
+        Response response = resource.listActiveInstancesForWorkflowVersion("default", "flow-a", "1.0.0",
+                WorkflowStatus.SUSPENDED, false);
 
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(body(response).instances()).hasSize(1);
@@ -226,7 +243,7 @@ class InstancesResourceTest {
     void test_scoped_endpoint_no_match_returns_empty_instances_with_application_id() {
         seedDefinitions(seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING));
 
-        Response response = resource.listActiveInstancesForWorkflow("default", "flow-a", "9.9.9", null);
+        Response response = resource.listActiveInstancesForWorkflowVersion("default", "flow-a", "9.9.9", null, false);
 
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(body(response).instances()).isEmpty();
@@ -239,8 +256,19 @@ class InstancesResourceTest {
         seedDefinitions(seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING));
 
         assertThatThrownBy(
-                () -> resource.listActiveInstancesForWorkflow("default", "flow-a", "1.0.0", WorkflowStatus.CANCELLED))
+                () -> resource.listActiveInstancesForWorkflowVersion("default", "flow-a", "1.0.0",
+                        WorkflowStatus.CANCELLED, false))
                 .isInstanceOf(InvalidStatusFilterException.class)
                 .hasMessageContaining("CANCELLED");
+    }
+
+    @Test
+    @DisplayName("test_scoped_endpoint_includeInput_true_populates_input")
+    void test_scoped_endpoint_includeInput_true_populates_input() {
+        seedDefinitions(seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING));
+
+        Response response = resource.listActiveInstancesForWorkflowVersion("default", "flow-a", "1.0.0", null, true);
+
+        assertThat(body(response).instances().get(0).input()).isEqualTo(Map.of("key", "value"));
     }
 }

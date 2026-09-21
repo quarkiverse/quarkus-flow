@@ -38,6 +38,10 @@ class RunnerExecResourceTest {
         mockApplication = mock(WorkflowApplication.class);
         when(mockApplication.id()).thenReturn(APP_ID);
         resource.application = mockApplication;
+
+        WorkflowDefinitionLookup lookup = new WorkflowDefinitionLookup();
+        lookup.application = mockApplication;
+        resource.definitionLookup = lookup;
     }
 
     @Test

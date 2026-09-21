@@ -6,6 +6,7 @@ import java.util.Set;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -40,11 +41,11 @@ import io.serverlessworkflow.impl.WorkflowStatus;
  *
  * <pre>
  * GET /q/flow/instances
- * GET /q/flow/instances?workflowName=my-flow
  * GET /q/flow/instances?status=RUNNING
- * GET /q/flow/instances?workflowName=my-flow&amp;status=SUSPENDED
+ * GET /q/flow/{namespace}/{name}/instances
+ * GET /q/flow/{namespace}/{name}/instances?status=RUNNING
  * GET /q/flow/{namespace}/{name}/{version}/instances
- * GET /q/flow/{namespace}/{name}/{version}/instances?status=RUNNING
+ * GET /q/flow/{namespace}/{name}/{version}/instances?status=RUNNING&amp;includeInput=true
  * </pre>
  */
 @FlowRunnerEndpoint
@@ -60,10 +61,14 @@ public class InstancesResource {
     @Inject
     WorkflowApplication application;
 
+    @Inject
+    WorkflowDefinitionLookup definitionLookup;
+
     @GET
     @Path("/instances")
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "List active in-memory workflow instances", description = "Returns the workflow instances currently tracked in this runner's in-memory active instance registry. "
+    @Operation(summary = "List active in-memory workflow instances", description = "Returns the workflow instances currently tracked in this runner's in-memory active instance registry, "
+            + "across every registered workflow definition. "
             + "Only non-terminal instances (not yet COMPLETED, FAULTED, or CANCELLED) are included. "
             + "The response also includes the applicationId of this runner. When the durable-kubernetes module is "
             + "active, this corresponds to the Kubernetes Lease holder identity used for durable sharding; otherwise "
@@ -75,27 +80,26 @@ public class InstancesResource {
     @APIResponse(responseCode = "401", description = "Authentication required - missing or invalid credentials")
     @APIResponse(responseCode = "403", description = "Access denied")
     public Response listActiveInstances(
-            @Parameter(description = "Filter by workflow name (optional)") @QueryParam("workflowName") String workflowName,
-            @Parameter(description = "Filter by workflow status (optional). Only non-terminal values accepted: PENDING, RUNNING, WAITING, SUSPENDED") @QueryParam("status") WorkflowStatus status) {
+            @Parameter(description = "Filter by workflow status (optional). Only non-terminal values accepted: PENDING, RUNNING, WAITING, SUSPENDED") @QueryParam("status") WorkflowStatus status,
+            @Parameter(description = "Include each instance's workflow input in the response (optional, default: false)") @QueryParam("includeInput") @DefaultValue("false") boolean includeInput) {
 
         validateActiveStatus(status);
 
         List<InstanceSnapshot> instances = application.workflowDefinitions()
                 .entrySet().stream()
-                .filter(e -> workflowName == null || workflowName.equals(e.getKey().name()))
                 .flatMap(e -> e.getValue().activeInstances().stream()
                         .filter(instance -> status == null || status == instance.status())
-                        .map(instance -> toSnapshot(e.getKey(), instance)))
+                        .map(instance -> toSnapshot(e.getKey(), instance, includeInput)))
                 .toList();
 
         return Response.ok(new ActiveInstancesResponse(application.id(), instances)).build();
     }
 
     @GET
-    @Path("/{namespace}/{name}/{version}/instances")
+    @Path("/{namespace}/{name}/instances")
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "List active in-memory workflow instances for a specific workflow", description = "Returns the workflow instances currently tracked in this runner's in-memory active instance "
-            + "registry for the given namespace, name, and version. Only non-terminal instances (not yet "
+    @Operation(summary = "List active in-memory workflow instances (latest version)", description = "Returns the workflow instances currently tracked in this runner's in-memory active instance "
+            + "registry for the latest version of the given namespace/name. Only non-terminal instances (not yet "
             + "COMPLETED, FAULTED, or CANCELLED) are included. Namespace access is validated when namespace "
             + "authorization is enabled.")
     @APIResponse(responseCode = "200", description = "Active in-memory workflow instances for the requested workflow on this runner", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ActiveInstancesResponse.class)))
@@ -105,32 +109,58 @@ public class InstancesResource {
     public Response listActiveInstancesForWorkflow(
             @Parameter(description = "Workflow namespace (access validated if namespace authorization enabled)", required = true) @PathParam("namespace") String namespace,
             @Parameter(description = "Workflow name", required = true) @PathParam("name") String name,
-            @Parameter(description = "Workflow version", required = true) @PathParam("version") String version,
-            @Parameter(description = "Filter by workflow status (optional). Only non-terminal values accepted: PENDING, RUNNING, WAITING, SUSPENDED") @QueryParam("status") WorkflowStatus status) {
+            @Parameter(description = "Filter by workflow status (optional). Only non-terminal values accepted: PENDING, RUNNING, WAITING, SUSPENDED") @QueryParam("status") WorkflowStatus status,
+            @Parameter(description = "Include each instance's workflow input in the response (optional, default: false)") @QueryParam("includeInput") @DefaultValue("false") boolean includeInput) {
 
+        return listActiveInstancesForDefinition(
+                new WorkflowDefinitionId(namespace, name, WorkflowDefinitionLookup.LATEST), status, includeInput);
+    }
+
+    @GET
+    @Path("/{namespace}/{name}/{version}/instances")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "List active in-memory workflow instances for a specific version", description = "Returns the workflow instances currently tracked in this runner's in-memory active instance "
+            + "registry for the given namespace, name, and version. Only non-terminal instances (not yet "
+            + "COMPLETED, FAULTED, or CANCELLED) are included. Namespace access is validated when namespace "
+            + "authorization is enabled.")
+    @APIResponse(responseCode = "200", description = "Active in-memory workflow instances for the requested workflow on this runner", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ActiveInstancesResponse.class)))
+    @APIResponse(responseCode = "400", description = "Invalid status filter — terminal statuses (COMPLETED, FAULTED, CANCELLED) and unknown values are not allowed")
+    @APIResponse(responseCode = "401", description = "Authentication required - missing or invalid credentials")
+    @APIResponse(responseCode = "403", description = "Access denied to requested namespace")
+    public Response listActiveInstancesForWorkflowVersion(
+            @Parameter(description = "Workflow namespace (access validated if namespace authorization enabled)", required = true) @PathParam("namespace") String namespace,
+            @Parameter(description = "Workflow name", required = true) @PathParam("name") String name,
+            @Parameter(description = "Workflow version", required = true) @PathParam("version") String version,
+            @Parameter(description = "Filter by workflow status (optional). Only non-terminal values accepted: PENDING, RUNNING, WAITING, SUSPENDED") @QueryParam("status") WorkflowStatus status,
+            @Parameter(description = "Include each instance's workflow input in the response (optional, default: false)") @QueryParam("includeInput") @DefaultValue("false") boolean includeInput) {
+
+        return listActiveInstancesForDefinition(new WorkflowDefinitionId(namespace, name, version), status, includeInput);
+    }
+
+    private Response listActiveInstancesForDefinition(WorkflowDefinitionId id, WorkflowStatus status, boolean includeInput) {
         validateActiveStatus(status);
 
-        WorkflowDefinition definition = application.workflowDefinitions()
-                .get(new WorkflowDefinitionId(namespace, name, version));
+        WorkflowDefinition definition = definitionLookup.find(id);
 
         List<InstanceSnapshot> instances = definition == null
                 ? List.of()
                 : definition.activeInstances().stream()
                         .filter(instance -> status == null || status == instance.status())
-                        .map(instance -> toSnapshot(definition.id(), instance))
+                        .map(instance -> toSnapshot(definition.id(), instance, includeInput))
                         .toList();
 
         return Response.ok(new ActiveInstancesResponse(application.id(), instances)).build();
     }
 
-    private static InstanceSnapshot toSnapshot(WorkflowDefinitionId id, WorkflowInstance instance) {
+    private static InstanceSnapshot toSnapshot(WorkflowDefinitionId id, WorkflowInstance instance, boolean includeInput) {
         return new InstanceSnapshot(
                 instance.id(),
                 id.name(),
                 id.namespace(),
                 id.version(),
                 instance.status(),
-                instance.startedAt());
+                instance.startedAt(),
+                includeInput ? instance.input().asJavaObject() : null);
     }
 
     /**
