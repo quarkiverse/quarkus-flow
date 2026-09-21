@@ -96,16 +96,12 @@ class InstancesResourceIT {
                     assertThat(instances).isNotEmpty();
                 });
 
-        // A different version should not see it
-        Map<String, Object> otherVersionResponse = given()
+        // A version that doesn't exist should 404
+        given()
                 .when()
                 .get("/q/flow/test-namespace/long-running/9.9.9/instances")
                 .then()
-                .statusCode(200)
-                .extract()
-                .as(Map.class);
-
-        assertThat((List<?>) otherVersionResponse.get("instances")).isEmpty();
+                .statusCode(404);
     }
 
     @Test
@@ -148,6 +144,16 @@ class InstancesResourceIT {
                 .as(Map.class);
 
         assertThat((List<?>) otherWorkflowResponse.get("instances")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("test_latest_version_endpoint_returns_404_for_unknown_workflow")
+    void test_latest_version_endpoint_returns_404_for_unknown_workflow() {
+        given()
+                .when()
+                .get("/q/flow/test-namespace/unknown-workflow/instances")
+                .then()
+                .statusCode(404);
     }
 
     @Test

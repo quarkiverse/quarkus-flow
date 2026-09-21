@@ -11,6 +11,10 @@ import io.serverlessworkflow.impl.WorkflowStatus;
  * @param input the workflow instance's input, or {@code null} unless the caller opted in via the
  *        {@code includeInput} query parameter (omitted by default to avoid inflating the response
  *        with potentially large payloads)
+ * @param context the workflow instance's current model/context (the live state, as opposed to the
+ *        static {@code input}), or {@code null} unless the caller opted in via the
+ *        {@code includeContext} query parameter (omitted by default to avoid inflating the response
+ *        with potentially large payloads)
  */
 public record InstanceSnapshot(
         String instanceId,
@@ -19,5 +23,6 @@ public record InstanceSnapshot(
         String workflowVersion,
         WorkflowStatus status,
         Instant startedAt,
-        Object input) {
+        Object input,
+        Object context) {
 }

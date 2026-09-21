@@ -2,10 +2,13 @@ package io.quarkiverse.flow.runner.resources;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -23,10 +26,13 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
+import io.quarkiverse.flow.runner.FlowRunnerConfig;
 import io.quarkiverse.flow.runner.model.ActiveInstancesResponse;
 import io.quarkiverse.flow.runner.model.InstanceSnapshot;
 import io.quarkiverse.flow.runner.security.AuthzConsts;
 import io.quarkiverse.flow.runner.security.FlowRunnerEndpoint;
+import io.quarkiverse.flow.runner.security.NamespaceAuthorizationService;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
@@ -45,7 +51,7 @@ import io.serverlessworkflow.impl.WorkflowStatus;
  * GET /q/flow/{namespace}/{name}/instances
  * GET /q/flow/{namespace}/{name}/instances?status=RUNNING
  * GET /q/flow/{namespace}/{name}/{version}/instances
- * GET /q/flow/{namespace}/{name}/{version}/instances?status=RUNNING&amp;includeInput=true
+ * GET /q/flow/{namespace}/{name}/{version}/instances?status=RUNNING&amp;includeInput=true&amp;includeContext=true
  * </pre>
  */
 @FlowRunnerEndpoint
@@ -64,6 +70,15 @@ public class InstancesResource {
     @Inject
     WorkflowDefinitionLookup definitionLookup;
 
+    @Inject
+    NamespaceAuthorizationService namespaceAuth;
+
+    @Inject
+    FlowRunnerConfig config;
+
+    @Inject
+    SecurityIdentity securityIdentity;
+
     @GET
     @Path("/instances")
     @Produces(MediaType.APPLICATION_JSON)
@@ -81,15 +96,28 @@ public class InstancesResource {
     @APIResponse(responseCode = "403", description = "Access denied")
     public Response listActiveInstances(
             @Parameter(description = "Filter by workflow status (optional). Only non-terminal values accepted: PENDING, RUNNING, WAITING, SUSPENDED") @QueryParam("status") WorkflowStatus status,
-            @Parameter(description = "Include each instance's workflow input in the response (optional, default: false)") @QueryParam("includeInput") @DefaultValue("false") boolean includeInput) {
+            @Parameter(description = "Include each instance's workflow input in the response (optional, default: false)") @QueryParam("includeInput") @DefaultValue("false") boolean includeInput,
+            @Parameter(description = "Include each instance's current workflow model/context in the response (optional, default: false)") @QueryParam("includeContext") @DefaultValue("false") boolean includeContext) {
 
-        validateActiveStatus(status);
+        validateIfTerminalStatus(status);
 
-        List<InstanceSnapshot> instances = application.workflowDefinitions()
-                .entrySet().stream()
+        Stream<Map.Entry<WorkflowDefinitionId, WorkflowDefinition>> definitions = application.workflowDefinitions()
+                .entrySet().stream();
+
+        if (config.security().namespace().validate() && !securityIdentity.hasRole(AuthzConsts.ROLE_ADMIN)) {
+            Set<String> authorizedNamespaces = namespaceAuth.getAuthorizedNamespaces();
+
+            if (authorizedNamespaces == null || authorizedNamespaces.isEmpty()) {
+                definitions = Stream.empty();
+            } else if (!authorizedNamespaces.contains(AuthzConsts.ALL_NAMESPACES)) {
+                definitions = definitions.filter(e -> authorizedNamespaces.contains(e.getKey().namespace()));
+            }
+        }
+
+        List<InstanceSnapshot> instances = definitions
                 .flatMap(e -> e.getValue().activeInstances().stream()
                         .filter(instance -> status == null || status == instance.status())
-                        .map(instance -> toSnapshot(e.getKey(), instance, includeInput)))
+                        .map(instance -> toSnapshot(e.getKey(), instance, includeInput, includeContext)))
                 .toList();
 
         return Response.ok(new ActiveInstancesResponse(application.id(), instances)).build();
@@ -106,14 +134,17 @@ public class InstancesResource {
     @APIResponse(responseCode = "400", description = "Invalid status filter — terminal statuses (COMPLETED, FAULTED, CANCELLED) and unknown values are not allowed")
     @APIResponse(responseCode = "401", description = "Authentication required - missing or invalid credentials")
     @APIResponse(responseCode = "403", description = "Access denied to requested namespace")
+    @APIResponse(responseCode = "404", description = "Workflow definition not found")
     public Response listActiveInstancesForWorkflow(
             @Parameter(description = "Workflow namespace (access validated if namespace authorization enabled)", required = true) @PathParam("namespace") String namespace,
             @Parameter(description = "Workflow name", required = true) @PathParam("name") String name,
             @Parameter(description = "Filter by workflow status (optional). Only non-terminal values accepted: PENDING, RUNNING, WAITING, SUSPENDED") @QueryParam("status") WorkflowStatus status,
-            @Parameter(description = "Include each instance's workflow input in the response (optional, default: false)") @QueryParam("includeInput") @DefaultValue("false") boolean includeInput) {
+            @Parameter(description = "Include each instance's workflow input in the response (optional, default: false)") @QueryParam("includeInput") @DefaultValue("false") boolean includeInput,
+            @Parameter(description = "Include each instance's current workflow model/context in the response (optional, default: false)") @QueryParam("includeContext") @DefaultValue("false") boolean includeContext) {
 
         return listActiveInstancesForDefinition(
-                new WorkflowDefinitionId(namespace, name, WorkflowDefinitionLookup.LATEST), status, includeInput);
+                new WorkflowDefinitionId(namespace, name, WorkflowDefinitionLookup.LATEST), status, includeInput,
+                includeContext);
     }
 
     @GET
@@ -127,32 +158,41 @@ public class InstancesResource {
     @APIResponse(responseCode = "400", description = "Invalid status filter — terminal statuses (COMPLETED, FAULTED, CANCELLED) and unknown values are not allowed")
     @APIResponse(responseCode = "401", description = "Authentication required - missing or invalid credentials")
     @APIResponse(responseCode = "403", description = "Access denied to requested namespace")
+    @APIResponse(responseCode = "404", description = "Workflow definition not found")
     public Response listActiveInstancesForWorkflowVersion(
             @Parameter(description = "Workflow namespace (access validated if namespace authorization enabled)", required = true) @PathParam("namespace") String namespace,
             @Parameter(description = "Workflow name", required = true) @PathParam("name") String name,
             @Parameter(description = "Workflow version", required = true) @PathParam("version") String version,
             @Parameter(description = "Filter by workflow status (optional). Only non-terminal values accepted: PENDING, RUNNING, WAITING, SUSPENDED") @QueryParam("status") WorkflowStatus status,
-            @Parameter(description = "Include each instance's workflow input in the response (optional, default: false)") @QueryParam("includeInput") @DefaultValue("false") boolean includeInput) {
+            @Parameter(description = "Include each instance's workflow input in the response (optional, default: false)") @QueryParam("includeInput") @DefaultValue("false") boolean includeInput,
+            @Parameter(description = "Include each instance's current workflow model/context in the response (optional, default: false)") @QueryParam("includeContext") @DefaultValue("false") boolean includeContext) {
 
-        return listActiveInstancesForDefinition(new WorkflowDefinitionId(namespace, name, version), status, includeInput);
+        return listActiveInstancesForDefinition(new WorkflowDefinitionId(namespace, name, version), status, includeInput,
+                includeContext);
     }
 
-    private Response listActiveInstancesForDefinition(WorkflowDefinitionId id, WorkflowStatus status, boolean includeInput) {
-        validateActiveStatus(status);
+    private Response listActiveInstancesForDefinition(WorkflowDefinitionId id, WorkflowStatus status, boolean includeInput,
+            boolean includeContext) {
+
+        validateIfTerminalStatus(status);
 
         WorkflowDefinition definition = definitionLookup.find(id);
+        if (definition == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Workflow '" + id + "' not found")
+                    .build();
+        }
 
-        List<InstanceSnapshot> instances = definition == null
-                ? List.of()
-                : definition.activeInstances().stream()
-                        .filter(instance -> status == null || status == instance.status())
-                        .map(instance -> toSnapshot(definition.id(), instance, includeInput))
-                        .toList();
+        List<InstanceSnapshot> instances = definition.activeInstances().stream()
+                .filter(instance -> status == null || status == instance.status())
+                .map(instance -> toSnapshot(definition.id(), instance, includeInput, includeContext))
+                .toList();
 
         return Response.ok(new ActiveInstancesResponse(application.id(), instances)).build();
     }
 
-    private static InstanceSnapshot toSnapshot(WorkflowDefinitionId id, WorkflowInstance instance, boolean includeInput) {
+    private static InstanceSnapshot toSnapshot(WorkflowDefinitionId id, WorkflowInstance instance, boolean includeInput,
+            boolean includeContext) {
         return new InstanceSnapshot(
                 instance.id(),
                 id.name(),
@@ -160,17 +200,18 @@ public class InstancesResource {
                 id.version(),
                 instance.status(),
                 instance.startedAt(),
-                includeInput ? instance.input().asJavaObject() : null);
+                includeInput ? instance.input().asJavaObject() : null,
+                includeContext ? instance.context().asJavaObject() : null);
     }
 
     /**
      * Rejects terminal statuses as filter values; {@code null} (no filter) is always allowed.
      *
-     * @throws InvalidStatusFilterException if the status is a terminal status
+     * @throws BadRequestException if the status is a terminal status
      */
-    private static void validateActiveStatus(WorkflowStatus status) {
+    private void validateIfTerminalStatus(WorkflowStatus status) {
         if (status != null && TERMINAL_STATUSES.contains(status)) {
-            throw new InvalidStatusFilterException("Terminal status '" + status
+            throw new BadRequestException("Terminal status '" + status
                     + "' is not a valid filter — completed, faulted, and cancelled instances are not tracked in the active registry");
         }
     }
