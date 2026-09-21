@@ -3,6 +3,7 @@ package io.quarkiverse.flow.runner.resources;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -22,12 +23,14 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
-import io.quarkiverse.flow.runner.instances.ActiveInstanceRegistry;
 import io.quarkiverse.flow.runner.model.ActiveInstancesResponse;
 import io.quarkiverse.flow.runner.model.InstanceSnapshot;
 import io.quarkiverse.flow.runner.security.AuthzConsts;
 import io.quarkiverse.flow.runner.security.FlowRunnerEndpoint;
 import io.serverlessworkflow.impl.WorkflowApplication;
+import io.serverlessworkflow.impl.WorkflowDefinition;
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
+import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.WorkflowStatus;
 
 /**
@@ -58,9 +61,6 @@ public class InstancesResource {
     @Inject
     WorkflowApplication application;
 
-    @Inject
-    ActiveInstanceRegistry registry;
-
     @GET
     @Path("/instances")
     @Produces(MediaType.APPLICATION_JSON)
@@ -81,7 +81,10 @@ public class InstancesResource {
 
         WorkflowStatus statusFilter = parseActiveStatus(status);
 
-        List<InstanceSnapshot> instances = registry.activeInstances().stream()
+        List<InstanceSnapshot> instances = application.workflowDefinitions()
+                .values()
+                .stream()
+                .flatMap(InstancesResource::toSnapshots)
                 .filter(s -> workflowName == null || workflowName.equals(s.workflowName()))
                 .filter(s -> statusFilter == null || statusFilter == s.status())
                 .toList();
@@ -108,19 +111,32 @@ public class InstancesResource {
 
         WorkflowStatus statusFilter = parseActiveStatus(status);
 
-        List<InstanceSnapshot> instances = registry.activeInstances().stream()
-                .filter(s -> matchesWorkflow(s, namespace, name, version, statusFilter))
-                .toList();
+        WorkflowDefinition definition = application.workflowDefinitions()
+                .get(new WorkflowDefinitionId(namespace, name, version));
+
+        List<InstanceSnapshot> instances = definition == null
+                ? List.of()
+                : toSnapshots(definition)
+                        .filter(s -> statusFilter == null || statusFilter == s.status())
+                        .toList();
 
         return Response.ok(new ActiveInstancesResponse(application.id(), instances)).build();
     }
 
-    private static boolean matchesWorkflow(InstanceSnapshot snapshot, String namespace, String name, String version,
-            WorkflowStatus statusFilter) {
-        return namespace.equals(snapshot.workflowNamespace())
-                && name.equals(snapshot.workflowName())
-                && version.equals(snapshot.workflowVersion())
-                && (statusFilter == null || statusFilter == snapshot.status());
+    private static Stream<InstanceSnapshot> toSnapshots(WorkflowDefinition definition) {
+        WorkflowDefinitionId id = definition.id();
+        return definition.activeInstances().stream()
+                .map(instance -> toSnapshot(id, instance));
+    }
+
+    private static InstanceSnapshot toSnapshot(WorkflowDefinitionId id, WorkflowInstance instance) {
+        return new InstanceSnapshot(
+                instance.id(),
+                id.name(),
+                id.namespace(),
+                id.version(),
+                instance.status(),
+                instance.startedAt());
     }
 
     /**

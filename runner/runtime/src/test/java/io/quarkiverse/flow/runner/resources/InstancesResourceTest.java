@@ -6,8 +6,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import jakarta.ws.rs.core.Response;
 
@@ -15,10 +17,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.quarkiverse.flow.runner.instances.ActiveInstanceRegistry;
 import io.quarkiverse.flow.runner.model.ActiveInstancesResponse;
 import io.quarkiverse.flow.runner.model.InstanceSnapshot;
 import io.serverlessworkflow.impl.WorkflowApplication;
+import io.serverlessworkflow.impl.WorkflowDefinition;
+import io.serverlessworkflow.impl.WorkflowDefinitionId;
+import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.WorkflowStatus;
 
 @DisplayName("InstancesResource Tests")
@@ -31,22 +35,45 @@ class InstancesResourceTest {
     void setUp() {
         resource = new InstancesResource();
         mockApplication = mock(WorkflowApplication.class);
-
-        resource.registry = new ActiveInstanceRegistry();
         resource.application = mockApplication;
 
         when(mockApplication.id()).thenReturn("runner-pod-0");
+        when(mockApplication.workflowDefinitions()).thenReturn(Map.of());
     }
 
     // --- helpers ---
 
-    private InstanceSnapshot snap(String id, String name, String namespace, String version,
-            WorkflowStatus status) {
-        return new InstanceSnapshot(id, name, namespace, version, status, Instant.now());
+    private record Seed(String id, String name, String namespace, String version, WorkflowStatus status) {
     }
 
-    private void seedRegistry(InstanceSnapshot... snapshots) {
-        resource.registry = new StubRegistry(List.of(snapshots));
+    private Seed seed(String id, String name, String namespace, String version, WorkflowStatus status) {
+        return new Seed(id, name, namespace, version, status);
+    }
+
+    private WorkflowInstance instance(String id, WorkflowStatus status) {
+        WorkflowInstance instance = mock(WorkflowInstance.class);
+        when(instance.id()).thenReturn(id);
+        when(instance.status()).thenReturn(status);
+        when(instance.startedAt()).thenReturn(Instant.now());
+        return instance;
+    }
+
+    private void seedDefinitions(Seed... seeds) {
+        Map<WorkflowDefinitionId, List<WorkflowInstance>> grouped = new LinkedHashMap<>();
+        for (Seed s : seeds) {
+            WorkflowDefinitionId id = new WorkflowDefinitionId(s.namespace(), s.name(), s.version());
+            grouped.computeIfAbsent(id, k -> new ArrayList<>()).add(instance(s.id(), s.status()));
+        }
+
+        Map<WorkflowDefinitionId, WorkflowDefinition> definitions = new LinkedHashMap<>();
+        grouped.forEach((id, instances) -> {
+            WorkflowDefinition definition = mock(WorkflowDefinition.class);
+            when(definition.id()).thenReturn(id);
+            when(definition.activeInstances()).thenReturn(instances);
+            definitions.put(id, definition);
+        });
+
+        when(mockApplication.workflowDefinitions()).thenReturn(definitions);
     }
 
     @SuppressWarnings("unchecked")
@@ -69,10 +96,10 @@ class InstancesResourceTest {
     @Test
     @DisplayName("test_returns_all_instances_when_no_filters")
     void test_returns_all_instances_when_no_filters() {
-        seedRegistry(
-                snap("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
-                snap("i2", "flow-b", "default", "1.0.0", WorkflowStatus.WAITING),
-                snap("i3", "flow-a", "default", "2.0.0", WorkflowStatus.SUSPENDED));
+        seedDefinitions(
+                seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
+                seed("i2", "flow-b", "default", "1.0.0", WorkflowStatus.WAITING),
+                seed("i3", "flow-a", "default", "2.0.0", WorkflowStatus.SUSPENDED));
 
         Response response = resource.listActiveInstances(null, null);
 
@@ -84,10 +111,10 @@ class InstancesResourceTest {
     @Test
     @DisplayName("test_filters_by_workflow_name")
     void test_filters_by_workflow_name() {
-        seedRegistry(
-                snap("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
-                snap("i2", "flow-b", "default", "1.0.0", WorkflowStatus.RUNNING),
-                snap("i3", "flow-a", "default", "2.0.0", WorkflowStatus.SUSPENDED));
+        seedDefinitions(
+                seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
+                seed("i2", "flow-b", "default", "1.0.0", WorkflowStatus.RUNNING),
+                seed("i3", "flow-a", "default", "2.0.0", WorkflowStatus.SUSPENDED));
 
         Response response = resource.listActiveInstances("flow-a", null);
 
@@ -100,10 +127,10 @@ class InstancesResourceTest {
     @Test
     @DisplayName("test_filters_by_status")
     void test_filters_by_status() {
-        seedRegistry(
-                snap("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
-                snap("i2", "flow-b", "default", "1.0.0", WorkflowStatus.SUSPENDED),
-                snap("i3", "flow-a", "default", "2.0.0", WorkflowStatus.RUNNING));
+        seedDefinitions(
+                seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
+                seed("i2", "flow-b", "default", "1.0.0", WorkflowStatus.SUSPENDED),
+                seed("i3", "flow-a", "default", "2.0.0", WorkflowStatus.RUNNING));
 
         Response response = resource.listActiveInstances(null, "RUNNING");
 
@@ -116,10 +143,10 @@ class InstancesResourceTest {
     @Test
     @DisplayName("test_filters_by_both_workflow_name_and_status")
     void test_filters_by_both_workflow_name_and_status() {
-        seedRegistry(
-                snap("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
-                snap("i2", "flow-a", "default", "1.0.0", WorkflowStatus.SUSPENDED),
-                snap("i3", "flow-b", "default", "1.0.0", WorkflowStatus.RUNNING));
+        seedDefinitions(
+                seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
+                seed("i2", "flow-a", "default", "1.0.0", WorkflowStatus.SUSPENDED),
+                seed("i3", "flow-b", "default", "1.0.0", WorkflowStatus.RUNNING));
 
         Response response = resource.listActiveInstances("flow-a", "RUNNING");
 
@@ -131,7 +158,7 @@ class InstancesResourceTest {
     @Test
     @DisplayName("test_unknown_status_throws_invalid_status_filter_exception")
     void test_unknown_status_throws_invalid_status_filter_exception() {
-        seedRegistry(snap("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING));
+        seedDefinitions(seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING));
 
         assertThatThrownBy(() -> resource.listActiveInstances(null, "NOT_A_STATUS"))
                 .isInstanceOf(InvalidStatusFilterException.class)
@@ -165,9 +192,9 @@ class InstancesResourceTest {
     @Test
     @DisplayName("test_status_filter_is_case_insensitive")
     void test_status_filter_is_case_insensitive() {
-        seedRegistry(
-                snap("i1", "flow-a", "default", "1.0.0", WorkflowStatus.SUSPENDED),
-                snap("i2", "flow-b", "default", "1.0.0", WorkflowStatus.RUNNING));
+        seedDefinitions(
+                seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.SUSPENDED),
+                seed("i2", "flow-b", "default", "1.0.0", WorkflowStatus.RUNNING));
 
         Response response = resource.listActiveInstances(null, "suspended");
 
@@ -179,9 +206,9 @@ class InstancesResourceTest {
     @Test
     @DisplayName("test_blank_status_filter_returns_all")
     void test_blank_status_filter_returns_all() {
-        seedRegistry(
-                snap("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
-                snap("i2", "flow-b", "default", "1.0.0", WorkflowStatus.SUSPENDED));
+        seedDefinitions(
+                seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
+                seed("i2", "flow-b", "default", "1.0.0", WorkflowStatus.SUSPENDED));
 
         Response response = resource.listActiveInstances(null, "  ");
 
@@ -192,7 +219,7 @@ class InstancesResourceTest {
     @Test
     @DisplayName("test_no_match_returns_empty_instances_with_application_id")
     void test_no_match_returns_empty_instances_with_application_id() {
-        seedRegistry(snap("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING));
+        seedDefinitions(seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING));
 
         Response response = resource.listActiveInstances("non-existent-flow", null);
 
@@ -204,11 +231,11 @@ class InstancesResourceTest {
     @Test
     @DisplayName("test_scoped_endpoint_filters_by_namespace_name_and_version")
     void test_scoped_endpoint_filters_by_namespace_name_and_version() {
-        seedRegistry(
-                snap("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
-                snap("i2", "flow-a", "default", "2.0.0", WorkflowStatus.RUNNING),
-                snap("i3", "flow-a", "other-ns", "1.0.0", WorkflowStatus.RUNNING),
-                snap("i4", "flow-b", "default", "1.0.0", WorkflowStatus.RUNNING));
+        seedDefinitions(
+                seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
+                seed("i2", "flow-a", "default", "2.0.0", WorkflowStatus.RUNNING),
+                seed("i3", "flow-a", "other-ns", "1.0.0", WorkflowStatus.RUNNING),
+                seed("i4", "flow-b", "default", "1.0.0", WorkflowStatus.RUNNING));
 
         Response response = resource.listActiveInstancesForWorkflow("default", "flow-a", "1.0.0", null);
 
@@ -220,9 +247,9 @@ class InstancesResourceTest {
     @Test
     @DisplayName("test_scoped_endpoint_filters_by_status")
     void test_scoped_endpoint_filters_by_status() {
-        seedRegistry(
-                snap("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
-                snap("i2", "flow-a", "default", "1.0.0", WorkflowStatus.SUSPENDED));
+        seedDefinitions(
+                seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
+                seed("i2", "flow-a", "default", "1.0.0", WorkflowStatus.SUSPENDED));
 
         Response response = resource.listActiveInstancesForWorkflow("default", "flow-a", "1.0.0", "SUSPENDED");
 
@@ -234,7 +261,7 @@ class InstancesResourceTest {
     @Test
     @DisplayName("test_scoped_endpoint_no_match_returns_empty_instances_with_application_id")
     void test_scoped_endpoint_no_match_returns_empty_instances_with_application_id() {
-        seedRegistry(snap("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING));
+        seedDefinitions(seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING));
 
         Response response = resource.listActiveInstancesForWorkflow("default", "flow-a", "9.9.9", null);
 
@@ -246,27 +273,11 @@ class InstancesResourceTest {
     @Test
     @DisplayName("test_scoped_endpoint_unknown_status_throws_invalid_status_filter_exception")
     void test_scoped_endpoint_unknown_status_throws_invalid_status_filter_exception() {
-        seedRegistry(snap("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING));
+        seedDefinitions(seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING));
 
         assertThatThrownBy(
                 () -> resource.listActiveInstancesForWorkflow("default", "flow-a", "1.0.0", "NOT_A_STATUS"))
                 .isInstanceOf(InvalidStatusFilterException.class)
                 .hasMessageContaining("NOT_A_STATUS");
-    }
-
-    /**
-     * Stub registry that returns a predefined list of snapshots.
-     */
-    private static class StubRegistry extends ActiveInstanceRegistry {
-        private final List<InstanceSnapshot> snapshots;
-
-        StubRegistry(List<InstanceSnapshot> snapshots) {
-            this.snapshots = snapshots;
-        }
-
-        @Override
-        public Collection<InstanceSnapshot> activeInstances() {
-            return snapshots;
-        }
     }
 }
