@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -35,6 +36,8 @@ import io.quarkus.redis.datasource.keys.KeyCommands;
 import io.quarkus.redis.datasource.keys.KeyScanArgs;
 import io.quarkus.redis.datasource.keys.KeyScanCursor;
 import io.quarkus.redis.datasource.keys.TransactionalKeyCommands;
+import io.quarkus.redis.datasource.set.SetCommands;
+import io.quarkus.redis.datasource.set.TransactionalSetCommands;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 import io.quarkus.redis.datasource.value.SetArgs;
@@ -44,6 +47,7 @@ import io.serverlessworkflow.impl.TaskContextData;
 import io.serverlessworkflow.impl.WorkflowContextData;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionData;
+import io.serverlessworkflow.impl.WorkflowInstanceData;
 import io.serverlessworkflow.impl.WorkflowStatus;
 import io.serverlessworkflow.impl.executors.AbstractTaskExecutor;
 import io.serverlessworkflow.impl.executors.TransitionInfo;
@@ -57,6 +61,7 @@ import io.serverlessworkflow.impl.persistence.PersistenceInstanceTransaction;
 import io.serverlessworkflow.impl.persistence.PersistenceTaskInfo;
 import io.serverlessworkflow.impl.persistence.PersistenceWorkflowInfo;
 import io.serverlessworkflow.impl.persistence.RetriedTaskInfo;
+import io.serverlessworkflow.impl.persistence.hashing.*;
 
 public class RedisInstanceTransaction implements PersistenceInstanceTransaction {
 
@@ -65,12 +70,16 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     private final static String INPUT = "input";
     private final static String OUTPUT = "output";
     private final static String CONTEXT = "context";
+
+    private final static String BLOB = "blob";
+    private final static String META = "meta_";
+    private final static String IDX = "_idx";
     private final static String RETRY_ATTEMPT = "retryAttempt";
     private final static String END_NODE = "endNode";
     private final static String NEXT = "next";
     private final static String ITERATION = "iteration";
     private final static String SCHEMA_VERSION = "schemaVersion";
-    private final static byte[] SCHEMA_VERSION_1 = { 1 };
+    private final static byte[] SCHEMA_VERSION_2 = { 2 };
     private final static String SEPARATOR = ":";
 
     private static final String CE_SOURCE = "source";
@@ -94,38 +103,70 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     private final WorkflowBufferFactory factory;
     private final KeyCommands<String> keyCommands;
     private final HashCommands<String, String, byte[]> hashCommands;
-    private final ValueCommands<String, String> lockCommands;
+    private final ValueCommands<String, String> valueCommands;
+    private final SetCommands<String, String> setCommands;
+    private final HashFactory hashFactory;
+    private final HashMappingCoordinator hashCoordinator;
 
     private final List<Consumer<TransactionalRedisDataSource>> operations;
 
     private TransactionalHashCommands<String, String, byte[]> txHashCommands;
+    private TransactionalSetCommands<String, String> txSetCommands;
     private TransactionalKeyCommands<String> txKeyCommands;
 
     private String correlationLockUUID;
 
     public RedisInstanceTransaction(RedisDataSource ds, KeyCommands<String> keyCommands,
             HashCommands<String, String, byte[]> hashCommands,
-            WorkflowBufferFactory factory) {
+            ValueCommands<String, String> valueCommands,
+            SetCommands<String, String> setCommands,
+            WorkflowBufferFactory factory,
+            HashFactory hashFactory) {
         this.ds = ds;
         this.keyCommands = keyCommands;
         this.hashCommands = hashCommands;
-        this.lockCommands = ds.value(String.class);
+        this.valueCommands = valueCommands;
+        this.setCommands = setCommands;
         this.operations = new ArrayList<>();
         this.factory = factory;
+        this.hashFactory = hashFactory;
+        this.hashCoordinator = HashMappingCoordinator.build(hashFactory, this::retrieveBlobData, this::writeBlobData);
+    }
+
+    private Map<String, Map<HashIndex, byte[]>> retrieveBlobData(String instanceId) {
+        Map<String, Map<HashIndex, byte[]>> result = new HashMap<>();
+        setCommands.smembers(blobSetKey(instanceId)).forEach(s -> hashCommands.hgetall(s)
+                .forEach((k, v) -> result.computeIfAbsent(k, __ -> new HashMap<>()).put(hashFactory.indexFromString(k), v)));
+        return result;
+    }
+
+    private void writeBlobData(Map<String, List<HashMappingInfo>> writeInfo) {
+        for (Entry<String, List<HashMappingInfo>> entry : writeInfo.entrySet()) {
+            String setKey = blobSetKey(entry.getKey());
+            for (HashMappingInfo item : entry.getValue()) {
+                String key = blobKey(setKey, item.key());
+                operations.add(tx -> setCommands(tx).sadd(setKey, key));
+                operations.add(
+                        tx -> hashCommands(tx).hset(key, item.index().toString(), item.bytes()));
+            }
+        }
     }
 
     @Override
     public void commit(WorkflowDefinitionData definition) {
+        hashCoordinator.persist();
         if (!operations.isEmpty()) {
             ds.withTransaction(tx -> {
                 operations.forEach(x -> x.accept(tx));
             });
         }
+        hashCoordinator.afterCommit();
         releaseLock();
     }
 
     @Override
     public void rollback(WorkflowDefinitionData definition) {
+        hashCoordinator.afterRollback();
         releaseLock();
     }
 
@@ -136,7 +177,8 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
                 MarshallingUtils.writeInstant(factory, workflowContext.instanceData().startedAt())));
         operations.add(tx -> hashCommands(tx).hset(instanceId, INPUT,
                 MarshallingUtils.writeModel(factory, workflowContext.instanceData().input())));
-        operations.add(tx -> hashCommands(tx).hset(instanceId, SCHEMA_VERSION, SCHEMA_VERSION_1));
+        operations.add(tx -> hashCommands(tx).hset(instanceId, SCHEMA_VERSION, SCHEMA_VERSION_2));
+        writeMetadata(workflowContext.instanceData(), instanceId, k -> k);
 
     }
 
@@ -147,6 +189,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
                 MarshallingUtils.writeEnum(factory, TaskStatus.RETRIED)));
         operations.add(tx -> hashCommands(tx).hset(key, taskId(taskContext, RETRY_ATTEMPT),
                 MarshallingUtils.writeInt(factory, ((TaskContext) taskContext).retryAttempt())));
+        writeMetadata(workflowContext.instanceData(), key, k -> taskId(taskContext, k));
     }
 
     @Override
@@ -158,13 +201,13 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
         operations.add(
                 tx -> hashCommands(tx).hset(key, taskId(taskContext, DATE),
                         MarshallingUtils.writeInstant(factory, taskContext.completedAt())));
-        operations.add(tx -> hashCommands(tx).hset(key, taskId(taskContext, OUTPUT),
-                MarshallingUtils.writeModel(factory, taskContext.output())));
+        writeLargeByteArray(key, OUTPUT, k -> taskId(taskContext, k),
+                MarshallingUtils.writeModel(factory, taskContext.output()));
         if (workflowContext.context() != null) {
-            operations.add(
-                    tx -> hashCommands(tx).hset(key, taskId(taskContext, CONTEXT),
-                            MarshallingUtils.writeModel(factory, workflowContext.context())));
+            writeLargeByteArray(key, CONTEXT, k -> taskId(taskContext, k),
+                    MarshallingUtils.writeModel(factory, workflowContext.context()));
         }
+        writeMetadata(workflowContext.instanceData(), key, k -> taskId(taskContext, k));
         TransitionInfo transition = ((TaskContext) taskContext).transition();
         operations.add(
                 tx -> hashCommands(tx).hset(key, taskId(taskContext, END_NODE),
@@ -175,7 +218,26 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
                     MarshallingUtils.writeString(factory, next.position().jsonPointer())));
         }
         operations.add(
-                tx -> hashCommands(tx).hset(key, taskId(taskContext, ITERATION), writeInt(factory, taskContext.iteration())));
+                tx -> hashCommands(tx).hset(key, taskId(taskContext, ITERATION),
+                        MarshallingUtils.writeInt(factory, taskContext.iteration())));
+    }
+
+    private void writeMetadata(WorkflowInstanceData instanceData, String instanceKey, Function<String, String> keySupplier) {
+        instanceData.metadata()
+                .forEach((k, v) -> writeLargeByteArray(instanceKey, metaKey(k), keySupplier,
+                        MarshallingUtils.writeObject(factory, v)));
+    }
+
+    private Map<String, Object> readMetadata(Map<String, byte[]> taskInfo, String instanceKey) {
+        Map<String, Object> metadata = new HashMap<>();
+        for (Entry<String, byte[]> entry : taskInfo.entrySet()) {
+            if (entry.getKey().startsWith(META) && !entry.getKey().endsWith(IDX)) {
+                String metaKey = entry.getKey().substring(META.length());
+                metadata.put(metaKey, MarshallingUtils.readObject(factory, readLargeByteArray(instanceKey,
+                        entry.getValue(), taskInfo.get(idxKey(metaKey)))));
+            }
+        }
+        return metadata;
     }
 
     @Override
@@ -188,6 +250,8 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
         String key = key(workflowContext);
         if (hashCommands.hexists(key, SCHEMA_VERSION)) {
             operations.add(tx -> keyCommands(tx).del(key(workflowContext)));
+            setCommands.smembers(blobSetKey(key)).forEach(k -> operations.add(tx -> keyCommands(tx).del(k)));
+            hashCoordinator.afterRemove(workflowContext.instanceData().id());
         } else {
             legacyRemoveProcessInstance(workflowContext);
         }
@@ -264,7 +328,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
         short attempCounter = 20;
         String result;
         do {
-            result = lockCommands.setGet(CORRELATION_LOCK_KEY, uuid, new SetArgs().nx().ex(CORRELATION_LOCK_TIMEOUT));
+            result = valueCommands.setGet(CORRELATION_LOCK_KEY, uuid, new SetArgs().nx().ex(CORRELATION_LOCK_TIMEOUT));
             if (result != null) {
                 logger.trace("Failed to acquire lock with uuid {}, lock already acquired with uuid {}", uuid, result);
                 try {
@@ -290,7 +354,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     private void releaseLock() {
         if (correlationLockUUID != null) {
             logger.debug("try to release lock {}", correlationLockUUID);
-            String currentUUID = lockCommands.get(CORRELATION_LOCK_KEY);
+            String currentUUID = valueCommands.get(CORRELATION_LOCK_KEY);
             if (correlationLockUUID.equals(currentUUID)) {
                 logger.debug("releasing lock {}", correlationLockUUID);
                 TransactionResult txResult = ds.withTransaction(tx -> {
@@ -410,23 +474,58 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
         }
     }
 
+    private void writeLargeByteArray(String instanceKey, String itemKey, Function<String, String> keySupplier, byte[] bytes) {
+        hashFactory.fromData(bytes).ifPresentOrElse(item -> writeLargeByteArray(item, instanceKey, itemKey, keySupplier, bytes),
+                () -> operations.add(tx -> hashCommands(tx).hset(instanceKey, keySupplier.apply(itemKey), bytes)));
+    }
+
+    private void writeLargeByteArray(HashItem hashItem, String instanceKey, String itemKey,
+            Function<String, String> keySupplier, byte[] bytes) {
+        HashIndex index = hashCoordinator.calculateIndex(instanceKey, hashItem, bytes);
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        try (WorkflowOutputBuffer out = factory.output(byteStream)) {
+            hashItem.writeKey(out);
+            out.writeBytes(index.toBytes());
+        }
+        operations
+                .add(tx -> hashCommands(tx).hset(instanceKey, keySupplier.apply(idxKey(itemKey)),
+                        new byte[] { hashItem.id() }));
+        operations.add(tx -> hashCommands(tx).hset(instanceKey, keySupplier.apply(itemKey), byteStream.toByteArray()));
+    }
+
+    private byte[] readLargeByteArray(String key, byte[] data, byte[] idByte) {
+        if (idByte == null) {
+            return data;
+        }
+        ByteArrayInputStream byteStream = new ByteArrayInputStream(data);
+        try (WorkflowInputBuffer input = factory.input(byteStream)) {
+            return hashFactory.fromBuffer(idByte[0], input).map(item -> {
+                return hashCoordinator.readBytes(key, item, hashFactory.indexFromBytes(input.readBytes())).orElseThrow();
+            }).orElse(data);
+        }
+    }
+
     private String lastChunk(String key) {
         return key.substring(key.lastIndexOf(SEPARATOR) + 1);
     }
 
     private PersistenceWorkflowInfo readPersistenceInfo(String key, String instanceId) {
         Map<String, byte[]> instanceData = hashCommands.hgetall(key);
-        Map<String, PersistenceTaskInfo> tasksInfo = readTasksInfo(instanceData);
-        if (!instanceData.containsKey(SCHEMA_VERSION)) {
+        byte[] schemaVersion = instanceData.get(SCHEMA_VERSION);
+        Map<String, PersistenceTaskInfo> tasksInfo = readTasksInfo(instanceData, key, schemaVersion);
+        if (schemaVersion == null) {
             tasksInfo = legacyReadTasksInfo(instanceId, tasksInfo);
         }
         return instanceData.isEmpty() ? null
                 : new PersistenceWorkflowInfo(instanceId, MarshallingUtils.readInstant(factory,
-                        instanceData.get(DATE)), MarshallingUtils.readModel(factory, instanceData.get(INPUT)),
-                        MarshallingUtils.readEnum(factory, instanceData.get(STATUS), WorkflowStatus.class), tasksInfo);
+                        instanceData.get(DATE)),
+                        MarshallingUtils.readModel(factory, instanceData.get(INPUT)),
+                        MarshallingUtils.readEnum(factory, instanceData.get(STATUS), WorkflowStatus.class), tasksInfo,
+                        readMetadata(instanceData, instanceId));
     }
 
-    private Map<String, PersistenceTaskInfo> readTasksInfo(Map<String, byte[]> instanceData) {
+    private Map<String, PersistenceTaskInfo> readTasksInfo(Map<String, byte[]> instanceData, String instanceKey,
+            byte[] schemaVersion) {
         Map<String, Map<String, byte[]>> taskMap = new HashMap<>();
         for (Entry<String, byte[]> item : instanceData.entrySet()) {
             if (item.getKey().startsWith(TASK_PREFIX)) {
@@ -434,7 +533,8 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
                 taskMap.computeIfAbsent(tokens[1], k -> new HashMap<>()).put(tokens[2], item.getValue());
             }
         }
-        return taskMap.entrySet().stream().collect(Collectors.toMap(Entry::getKey, e -> readTaskInfo(e.getValue())));
+        return taskMap.entrySet().stream()
+                .collect(Collectors.toMap(Entry::getKey, e -> readTaskInfo(e.getValue(), instanceKey)));
     }
 
     private Map<String, PersistenceTaskInfo> legacyReadTasksInfo(String instanceId,
@@ -443,24 +543,26 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
         KeyScanCursor<String> cursor = keyCommands.scan(new KeyScanArgs().match(legacyTaskPrefix(instanceId) + "*"));
         Map<String, PersistenceTaskInfo> result = new HashMap<>(tasksInfo);
         while (cursor.hasNext()) {
-            cursor.next().forEach(s -> result.put(lastChunk(s), readTaskInfo(hashCommands.hgetall(s))));
+            cursor.next().forEach(s -> result.put(lastChunk(s), readTaskInfo(hashCommands.hgetall(s), null)));
         }
         return result;
     }
 
-    private PersistenceTaskInfo readTaskInfo(Map<String, byte[]> data) {
+    private PersistenceTaskInfo readTaskInfo(Map<String, byte[]> data, String instanceKey) {
         TaskStatus status = MarshallingUtils.readEnum(factory, data.get(STATUS), TaskStatus.class);
         if (status == TaskStatus.COMPLETED) {
             return new CompletedTaskInfo(MarshallingUtils.readInstant(factory, data.get(DATE)),
-                    MarshallingUtils.readModel(factory, data.get(OUTPUT)),
-                    MarshallingUtils.readModel(factory, data.get(CONTEXT)),
+                    MarshallingUtils.readModel(factory,
+                            readLargeByteArray(instanceKey, data.get(OUTPUT), data.get(idxKey(OUTPUT)))),
+                    MarshallingUtils.readModel(factory,
+                            readLargeByteArray(instanceKey, data.get(CONTEXT), data.get(idxKey(CONTEXT)))),
                     MarshallingUtils.readBoolean(factory, data.get(END_NODE)),
                     MarshallingUtils.readString(factory, data.get(NEXT)),
-                    readInt(factory, data.get(ITERATION)));
+                    MarshallingUtils.readInt(factory, data.get(ITERATION)), readMetadata(data, instanceKey));
         } else if (status == TaskStatus.RETRIED) {
             byte[] retryBytes = data.get(RETRY_ATTEMPT);
             return new RetriedTaskInfo(retryBytes.length == 4 ? MarshallingUtils.readInt(factory, retryBytes)
-                    : MarshallingUtils.readShort(factory, retryBytes));
+                    : MarshallingUtils.readShort(factory, retryBytes), readMetadata(data, instanceKey));
         } else {
             throw new IllegalArgumentException("Unsupported status " + status);
         }
@@ -485,6 +587,13 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
         return txKeyCommands;
     }
 
+    private TransactionalSetCommands<String, String> setCommands(TransactionalRedisDataSource tx) {
+        if (txSetCommands == null) {
+            txSetCommands = tx.set(String.class);
+        }
+        return txSetCommands;
+    }
+
     private String key(WorkflowContextData workflowContext) {
         return key(workflowContext.definition(), workflowContext.instanceData().id());
     }
@@ -506,25 +615,23 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
         return TASK_PREFIX + position + SEPARATOR + name;
     }
 
+    private static String idxKey(String itemName) {
+        return itemName + IDX;
+    }
+
+    private static String metaKey(String metaKey) {
+        return META + metaKey;
+    }
+
+    private static String blobSetKey(String key) {
+        return BLOB + SEPARATOR + key;
+    }
+
+    private String blobKey(String setKey, String key) {
+        return setKey + SEPARATOR + key;
+    }
+
     private String legacyTaskPrefix(String instanceId) {
         return instanceId + SEPARATOR;
-    }
-
-    private static byte[] writeInt(WorkflowBufferFactory factory, int iteration) {
-        ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
-        try (WorkflowOutputBuffer buffer = factory.output(bytesOut)) {
-            buffer.writeInt(iteration);
-        }
-        return bytesOut.toByteArray();
-    }
-
-    private int readInt(WorkflowBufferFactory factory, byte[] bytes) {
-        if (bytes == null) {
-            return 0;
-        }
-        ByteArrayInputStream bytesIn = new ByteArrayInputStream(bytes);
-        try (WorkflowInputBuffer buffer = factory.input(bytesIn)) {
-            return buffer.readInt();
-        }
     }
 }

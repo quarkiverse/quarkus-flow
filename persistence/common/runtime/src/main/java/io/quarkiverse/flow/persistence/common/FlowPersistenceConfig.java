@@ -3,6 +3,7 @@ package io.quarkiverse.flow.persistence.common;
 import java.util.List;
 import java.util.Optional;
 
+import io.quarkiverse.flow.persistence.common.hashing.HashingPersistenceConfig;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -27,4 +28,10 @@ public interface FlowPersistenceConfig {
      * Example: quarkus.flow.persistence.exclude-workflows=com.example:workflow:0.1.0,org.acme:workflow:1.2.0
      */
     Optional<List<String>> excludeWorkflows();
+
+    /**
+     * Configuration related with hashing functionality
+     */
+    HashingPersistenceConfig hashing();
+
 }
