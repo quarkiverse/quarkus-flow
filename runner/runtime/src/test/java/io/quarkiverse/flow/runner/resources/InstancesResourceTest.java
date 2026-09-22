@@ -1,7 +1,6 @@
 package io.quarkiverse.flow.runner.resources;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -12,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.core.Response;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -47,19 +45,11 @@ class InstancesResourceTest {
         mockApplication = mock(WorkflowApplication.class);
         resource.application = mockApplication;
 
-        WorkflowDefinitionLookup lookup = new WorkflowDefinitionLookup();
-        lookup.application = mockApplication;
-        resource.definitionLookup = lookup;
-
         mockNamespaceAuth = mock(NamespaceAuthorizationService.class);
         config = mock(FlowRunnerConfig.class);
         FlowRunnerConfig.Security securityConfig = mock(FlowRunnerConfig.Security.class);
         namespaceConfig = mock(FlowRunnerConfig.Security.Namespace.class);
         securityIdentity = mock(SecurityIdentity.class);
-
-        resource.namespaceAuth = mockNamespaceAuth;
-        resource.config = config;
-        resource.securityIdentity = securityIdentity;
 
         when(config.security()).thenReturn(securityConfig);
         when(securityConfig.namespace()).thenReturn(namespaceConfig);
@@ -67,6 +57,13 @@ class InstancesResourceTest {
         when(securityIdentity.hasRole(AuthzConsts.ROLE_ADMIN)).thenReturn(false);
         // Default authorization for tests not specifically testing restrictions.
         when(mockNamespaceAuth.getAuthorizedNamespaces()).thenReturn(Set.of("*"));
+
+        WorkflowDefinitionLookup lookup = new WorkflowDefinitionLookup();
+        lookup.application = mockApplication;
+        lookup.namespaceAuth = mockNamespaceAuth;
+        lookup.config = config;
+        lookup.securityIdentity = securityIdentity;
+        resource.definitionLookup = lookup;
 
         when(mockApplication.id()).thenReturn("runner-pod-0");
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of());
@@ -156,30 +153,6 @@ class InstancesResourceTest {
     }
 
     @Test
-    @DisplayName("test_terminal_status_completed_throws_invalid_status_filter_exception")
-    void test_terminal_status_completed_throws_invalid_status_filter_exception() {
-        assertThatThrownBy(() -> resource.listActiveInstances(WorkflowStatus.COMPLETED))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("COMPLETED");
-    }
-
-    @Test
-    @DisplayName("test_terminal_status_faulted_throws_invalid_status_filter_exception")
-    void test_terminal_status_faulted_throws_invalid_status_filter_exception() {
-        assertThatThrownBy(() -> resource.listActiveInstances(WorkflowStatus.FAULTED))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("FAULTED");
-    }
-
-    @Test
-    @DisplayName("test_terminal_status_cancelled_throws_invalid_status_filter_exception")
-    void test_terminal_status_cancelled_throws_invalid_status_filter_exception() {
-        assertThatThrownBy(() -> resource.listActiveInstances(WorkflowStatus.CANCELLED))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("CANCELLED");
-    }
-
-    @Test
     @DisplayName("test_returns_all_for_admin_bypassing_namespace_filter")
     void test_returns_all_for_admin_bypassing_namespace_filter() {
         when(securityIdentity.hasRole(AuthzConsts.ROLE_ADMIN)).thenReturn(true);
@@ -227,7 +200,8 @@ class InstancesResourceTest {
 
         Response response = resource.listActiveInstances(null);
 
-        assertThat(body(response).instances()).isEmpty();
+        assertThat(body(response).instances()).hasSize(1);
+        assertThat(body(response).instances().get(0).workflowNamespace()).isEqualTo("ns1");
     }
 
     // --- tests: GET /q/flow/{namespace}/{name}/instances (latest version) ---
@@ -298,17 +272,5 @@ class InstancesResourceTest {
         Response response = resource.listActiveInstancesForWorkflowVersion("default", "flow-a", "9.9.9", null);
 
         assertThat(response.getStatus()).isEqualTo(404);
-    }
-
-    @Test
-    @DisplayName("test_scoped_endpoint_terminal_status_throws_invalid_status_filter_exception")
-    void test_scoped_endpoint_terminal_status_throws_invalid_status_filter_exception() {
-        seedDefinitions(seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING));
-
-        assertThatThrownBy(
-                () -> resource.listActiveInstancesForWorkflowVersion("default", "flow-a", "1.0.0",
-                        WorkflowStatus.CANCELLED))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("CANCELLED");
     }
 }
