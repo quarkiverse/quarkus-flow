@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.runner.resources;
 
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Set;
 
 import jakarta.ws.rs.BadRequestException;
@@ -15,7 +16,7 @@ class StatusConverter implements ParamConverter<WorkflowStatus> {
             return null;
         }
         try {
-            WorkflowStatus status = WorkflowStatus.valueOf(value.toUpperCase());
+            WorkflowStatus status = WorkflowStatus.valueOf(value.toUpperCase(Locale.ROOT));
             Set<WorkflowStatus> validStatuses = validStatuses();
             if (!validStatuses.isEmpty() && !validStatuses.contains(status)) {
                 throw new BadRequestException("Invalid status value: '" + value

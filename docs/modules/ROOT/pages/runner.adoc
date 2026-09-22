@@ -517,7 +517,7 @@ The Runner enforces two predefined roles across all endpoints:
 
 | `flow-invoker`
 | Execute and read
-| `POST /q/flow/exec/*`, `GET /q/flow/definitions`
+| `POST /q/flow/exec/*`, `GET /q/flow/definitions`, `GET /q/flow/instances`, `GET /q/flow/*/instances`
 |===
 
 Configure roles per API key or extract them from OIDC JWT tokens.
@@ -748,6 +748,129 @@ Get the full workflow definition for a specific version.
 * `version` (string, required) - Workflow version
 
 **Request headers and responses:** Same as the latest version endpoint.
+
+=== Workflow instances
+
+These endpoints expose the workflow instances currently tracked in this runner's **in-memory active instance registry**. They report only what this specific pod/process is actively holding — not the full execution history persisted to a database. Use them to distinguish instances actively being processed on this runner from instances that are persisted but not running on any pod, for example when building a rebalancer service.
+
+Requires the `flow-admin` or `flow-invoker` role.
+
+==== GET /q/flow/instances
+
+List active in-memory workflow instances across every workflow definition registered on this runner.
+
+**Query parameters:**
+
+* `status` (string, optional) - Filter by workflow status. Only non-terminal values are accepted: `PENDING`, `RUNNING`, `WAITING`, `SUSPENDED`
+
+**Responses:**
+
+* **200 OK** - Active in-memory workflow instances on this runner
+* **400 Bad Request** - Invalid status filter (terminal statuses `COMPLETED`, `FAULTED`, `CANCELLED`, and unknown values are not allowed)
+* **401 Unauthorized** - Authentication required
+* **403 Forbidden** - Access denied
+
+**Example:**
+
+[source,bash]
+----
+curl -H "Authorization: Bearer ${API_KEY}" \
+  "http://localhost:8080/q/flow/instances?status=RUNNING"
+----
+
+**Response body example:**
+
+[source,json]
+----
+{
+  "applicationId": "quarkus-flow-runner",
+  "instances": [
+    {
+      "instanceId": "550e8400-e29b-41d4-a716-446655440000",
+      "workflowName": "order-processing",
+      "workflowNamespace": "examples",
+      "workflowVersion": "2.1.0",
+      "status": "RUNNING",
+      "startedAt": "2026-06-11T10:15:30.123Z"
+    }
+  ]
+}
+----
+
+NOTE: When namespace authorization is enabled, the returned instances are filtered to the definitions in the user's authorized namespaces (`flow-admin` bypasses this filtering).
+
+==== GET /q/flow/\{namespace}/\{name}/instances
+
+List active in-memory workflow instances for the **latest version** of the given namespace/name.
+
+**Path parameters:**
+
+* `namespace` (string, required) - Workflow namespace (access validated if namespace authorization enabled)
+* `name` (string, required) - Workflow name
+
+**Query parameters and responses:** Same as `GET /q/flow/instances`, plus **404 Not Found** if the workflow definition does not exist.
+
+==== GET /q/flow/\{namespace}/\{name}/\{version}/instances
+
+List active in-memory workflow instances for a specific namespace/name/version.
+
+**Path parameters:**
+
+* `namespace` (string, required) - Workflow namespace (access validated if namespace authorization enabled)
+* `name` (string, required) - Workflow name
+* `version` (string, required) - Workflow version
+
+**Query parameters and responses:** Same as the latest version endpoint above.
+
+**Example:**
+
+[source,bash]
+----
+curl -H "Authorization: Bearer ${API_KEY}" \
+  http://localhost:8080/q/flow/examples/order-processing/2.1.0/instances
+----
+
+==== Instance fields
+
+[cols="1,1,3"]
+|===
+|Field |Type |Description
+
+|`applicationId`
+|string
+|Identifier of the workflow application (the Runner instance) reporting these instances. Same value as `workflowApplicationId` in the execution response.
+
+|`instances`
+|array
+|List of active instance snapshots (empty array when none match).
+
+|`instances[].instanceId`
+|string
+|Unique identifier of the workflow instance.
+
+|`instances[].workflowName`
+|string
+|Name of the workflow the instance belongs to.
+
+|`instances[].workflowNamespace`
+|string
+|Namespace of the workflow the instance belongs to.
+
+|`instances[].workflowVersion`
+|string
+|Version of the workflow the instance belongs to.
+
+|`instances[].status`
+|string
+|Current status of the instance. Always one of the non-terminal values `PENDING`, `RUNNING`, `WAITING`, `SUSPENDED` — terminal instances (`COMPLETED`, `FAULTED`, `CANCELLED`) are removed from the in-memory registry and never appear here.
+
+|`instances[].startedAt`
+|string (ISO-8601)
+|Timestamp when the instance started.
+|===
+
+IMPORTANT: This registry is in-memory and per-pod.
+It does not persist across restarts and, when running multiple Runner replicas, each replica only reports the instances it is currently holding.
 
 == Configuration reference
 
