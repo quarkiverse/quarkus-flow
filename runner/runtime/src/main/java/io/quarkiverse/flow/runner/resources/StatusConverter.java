@@ -18,7 +18,7 @@ class StatusConverter implements ParamConverter<WorkflowStatus> {
             WorkflowStatus status = WorkflowStatus.valueOf(value.toUpperCase());
             Set<WorkflowStatus> validStatuses = validStatuses();
             if (!validStatuses.isEmpty() && !validStatuses.contains(status)) {
-                throw new BadRequestException("Invalidd status value: '" + value
+                throw new BadRequestException("Invalid status value: '" + value
                         + "'. Valid values are : " + validStatuses);
             }
             return status;
