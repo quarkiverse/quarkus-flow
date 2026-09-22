@@ -29,7 +29,7 @@ public class WorkflowApplicationIdIT {
     GreetingsFlow flow;
 
     @Test
-    void workflowApplicationIdMatchesLease() {
+    void workflowApplicationIdMatchesLease() throws Exception {
         // This will block until the controller fires ACQUIRED
         String lease = memberLeaseCoordinator.awaitLease(Duration.ofSeconds(30));
 

@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.durable.kube.config.LeaseGroupConfig;
 import io.quarkiverse.flow.recorders.WorkflowApplicationBuilderCustomizer;
+import io.quarkus.runtime.Quarkus;
 import io.serverlessworkflow.impl.WorkflowApplication;
 
 @ApplicationScoped
@@ -50,9 +51,12 @@ public class InjectLeaseWorkflowApplicationBuilderCustomizer implements Workflow
         LOG.debug("Flow: Firing LeaseStartupEvent to initialize Kubernetes polling...");
         leaseStartupEvent.fire(new LeaseStartupEvent());
 
-        final String lease = memberLeaseCoordinator.awaitLease(leaseConfig.member().acquireTimeout());
-        builder.withId(lease);
-
-        LOG.info("Flow: Kubernetes Lease to Workflow Application ID is {}", lease);
+        try {
+            final String lease = memberLeaseCoordinator.awaitLease(leaseConfig.member().acquireTimeout());
+            builder.withId(lease);
+            LOG.info("Flow: Kubernetes Lease to Workflow Application ID is {}", lease);
+        } catch (LeaseAcquisitionException e) {
+            Quarkus.asyncExit(1, e);
+        }
     }
 }
