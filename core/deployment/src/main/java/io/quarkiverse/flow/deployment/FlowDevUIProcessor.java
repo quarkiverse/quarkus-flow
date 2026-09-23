@@ -3,7 +3,6 @@ package io.quarkiverse.flow.deployment;
 import io.quarkiverse.flow.config.FlowDevUIConfig;
 import io.quarkiverse.flow.devui.InMemoryWorkflowInstanceStore;
 import io.quarkiverse.flow.devui.LifecycleManagementBackendObjectMapperCustomizer;
-import io.quarkiverse.flow.devui.MVStoreWorkflowInstanceStore;
 import io.quarkiverse.flow.devui.ManagementLifecycleListener;
 import io.quarkiverse.flow.devui.ManagementLifecycleRPCService;
 import io.quarkiverse.flow.devui.RuntimeDevApplicationBuilderCustomizer;
@@ -51,19 +50,14 @@ public class FlowDevUIProcessor {
             return null;
         }
 
-        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder()
+        return AdditionalBeanBuildItem.builder()
                 .addBeanClasses(
                         RuntimeDevApplicationBuilderCustomizer.class,
                         ManagementLifecycleListener.class,
                         ManagementLifecycleRPCService.class,
-                        LifecycleManagementBackendObjectMapperCustomizer.class)
-                .setUnremovable();
-
-        switch (flowDevUIConfig.storageType()) {
-            case MVSTORE -> builder.addBeanClass(MVStoreWorkflowInstanceStore.class);
-            case IN_MEMORY -> builder.addBeanClass(InMemoryWorkflowInstanceStore.class);
-        }
-
-        return builder.build();
+                        LifecycleManagementBackendObjectMapperCustomizer.class,
+                        InMemoryWorkflowInstanceStore.class)
+                .setUnremovable()
+                .build();
     }
 }
