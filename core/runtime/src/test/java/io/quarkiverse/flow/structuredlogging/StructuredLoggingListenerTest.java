@@ -9,6 +9,8 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.stream.Stream;
 
+import jakarta.enterprise.inject.Instance;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
 import io.quarkiverse.flow.config.TimestampFormat;
+import io.quarkiverse.flow.tracing.TraceCorrelationProvider;
 import io.serverlessworkflow.impl.TaskContext;
 import io.serverlessworkflow.impl.WorkflowContext;
 import io.serverlessworkflow.impl.WorkflowInstance;
@@ -191,6 +194,14 @@ public class StructuredLoggingListenerTest {
         Method method = StructuredLoggingListener.class.getDeclaredMethod("shouldLog", String.class);
         method.setAccessible(true);
         return (boolean) method.invoke(listener, eventType);
+    }
+
+    // An unsatisfied TraceCorrelationProvider Instance - the listener falls back to NOOP
+    @SuppressWarnings("unchecked")
+    private static Instance<TraceCorrelationProvider> noProviders() {
+        Instance<TraceCorrelationProvider> providers = mock(Instance.class);
+        when(providers.isResolvable()).thenReturn(false);
+        return providers;
     }
 
     @Test

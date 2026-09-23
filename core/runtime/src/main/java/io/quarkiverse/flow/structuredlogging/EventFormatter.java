@@ -14,6 +14,10 @@ import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.
 import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_RETRIED;
 import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_STARTED;
 import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_SUSPENDED;
+import static io.quarkiverse.flow.tracing.TraceCorrelationProvider.PARENT_ID;
+import static io.quarkiverse.flow.tracing.TraceCorrelationProvider.SAMPLED_ID;
+import static io.quarkiverse.flow.tracing.TraceCorrelationProvider.SPAN_ID;
+import static io.quarkiverse.flow.tracing.TraceCorrelationProvider.TRACE_ID;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -27,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
 import io.quarkiverse.flow.config.TimestampFormat;
+import io.quarkiverse.flow.tracing.TraceCorrelationProvider;
 import io.serverlessworkflow.impl.WorkflowDefinitionData;
 import io.serverlessworkflow.impl.WorkflowError;
 import io.serverlessworkflow.impl.WorkflowStatus;
@@ -83,12 +88,19 @@ public class EventFormatter {
 
     private final FlowStructuredLoggingConfig config;
     private final ObjectMapper objectMapper;
+    private final TraceCorrelationProvider traceCorrelation;
 
     private final DateTimeFormatter customDateFormat;
 
     public EventFormatter(FlowStructuredLoggingConfig config, ObjectMapper objectMapper) {
+        this(config, objectMapper, TraceCorrelationProvider.NOOP);
+    }
+
+    public EventFormatter(FlowStructuredLoggingConfig config, ObjectMapper objectMapper,
+            TraceCorrelationProvider traceCorrelation) {
         this.config = config;
         this.objectMapper = objectMapper;
+        this.traceCorrelation = traceCorrelation == null ? TraceCorrelationProvider.NOOP : traceCorrelation;
 
         // Validate custom pattern if CUSTOM format is selected
         customDateFormat = config.timestampFormat() == TimestampFormat.CUSTOM
@@ -254,6 +266,12 @@ public class EventFormatter {
         json.put(FIELD_EVENT_TYPE, StructuredLoggingEventTypes.toCloudEventType(filterKey));
         json.put(FIELD_TIMESTAMP, formatTimestamp(event.eventDate()));
         json.put(FIELD_INSTANCE_ID, event.workflowContext().instanceData().id());
+        traceCorrelation.traceContextFor(event).ifPresent(tc -> {
+            json.put(TRACE_ID, tc.traceId());
+            json.put(SPAN_ID, tc.spanId());
+            json.put(SAMPLED_ID, tc.sampled());
+            json.put(PARENT_ID, tc.parentId());
+        });
         return json;
     }
 
