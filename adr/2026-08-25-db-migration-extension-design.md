@@ -85,7 +85,7 @@ The existing `flyway_quarkus_history` naming on the Quartz module isolates the f
 | Artifact | Flyway history table | Migration classpath location |
 |---|---|---|
 | `quarkus-flow-db-migration-runtime` | `flyway_flow_runtime_history` | `db/migration/flow-runtime` |
-| `quarkus-flow-db-migration-quartz` | `flyway_quarkus_history` (unchanged) | `db/migration/flow-quartz` (moved from the current `db/migration` root in `scheduler/quartz/runtime`) |
+| `quarkus-flow-db-migration-quartz` | `flyway_flow_quartz_history` | `db/migration/flow-quartz` (moved from the current `db/migration` root in `scheduler/quartz/runtime`) |
 
 Moving the Quartz script off the default `db/migration` location matters: Quarkus Flyway's default scan picks up everything under `db/migration` on the classpath, including a user's own scripts. A dedicated named Flyway configuration per extension, pointed at its own location, prevents cross-contamination between framework-owned and user-owned migrations, and between the two framework streams themselves — a user may install one stream without the other, and each must migrate independently.
 
