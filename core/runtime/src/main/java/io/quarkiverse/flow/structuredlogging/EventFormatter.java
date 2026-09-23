@@ -14,6 +14,10 @@ import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.
 import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_RETRIED;
 import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_STARTED;
 import static io.quarkiverse.flow.structuredlogging.StructuredLoggingEventTypes.WORKFLOW_TASK_SUSPENDED;
+import static io.quarkiverse.flow.tracing.TraceCorrelationProvider.PARENT_ID;
+import static io.quarkiverse.flow.tracing.TraceCorrelationProvider.SAMPLED_ID;
+import static io.quarkiverse.flow.tracing.TraceCorrelationProvider.SPAN_ID;
+import static io.quarkiverse.flow.tracing.TraceCorrelationProvider.TRACE_ID;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -81,12 +85,6 @@ public class EventFormatter {
     private static final String FIELD_TRUNCATED = "__truncated__";
     private static final String FIELD_ORIGINAL_SIZE = "__originalSize__";
     private static final String FIELD_PREVIEW = "__preview__";
-    // Trace-correlation fields, named to match the SLF4J MDC keys Quarkus' own OpenTelemetry
-    // logging instrumentation uses, so dashboards can rely on a single set of names.
-    private static final String FIELD_TRACE_ID = "traceId";
-    private static final String FIELD_SPAN_ID = "spanId";
-    private static final String FIELD_SAMPLED = "sampled";
-    private static final String FIELD_PARENT_ID = "parentId";
 
     private final FlowStructuredLoggingConfig config;
     private final ObjectMapper objectMapper;
@@ -269,10 +267,10 @@ public class EventFormatter {
         json.put(FIELD_TIMESTAMP, formatTimestamp(event.eventDate()));
         json.put(FIELD_INSTANCE_ID, event.workflowContext().instanceData().id());
         traceCorrelation.traceContextFor(event).ifPresent(tc -> {
-            json.put(FIELD_TRACE_ID, tc.traceId());
-            json.put(FIELD_SPAN_ID, tc.spanId());
-            json.put(FIELD_SAMPLED, tc.sampled());
-            json.put(FIELD_PARENT_ID, tc.parentId());
+            json.put(TRACE_ID, tc.traceId());
+            json.put(SPAN_ID, tc.spanId());
+            json.put(SAMPLED_ID, tc.sampled());
+            json.put(PARENT_ID, tc.parentId());
         });
         return json;
     }

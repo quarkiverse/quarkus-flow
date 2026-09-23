@@ -30,9 +30,9 @@ public class OTelTraceCorrelationProvider implements TraceCorrelationProvider {
         }
 
         if (ev instanceof TaskEvent taskEvent) {
-            TaskEventInfo info = TaskEventInfo.from(taskEvent);
+            var taskContext = taskEvent.taskContext();
             TraceContext captured = workflowContext.getTaskTraceContext(
-                    info.taskId(), info.taskInstanceIteration(), info.taskInstanceRetryAttempt());
+                    taskContext.position().jsonPointer(), taskContext.iteration(), taskContext.retryAttempt());
             if (captured != null) {
                 return Optional.of(captured);
             }

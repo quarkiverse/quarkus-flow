@@ -95,7 +95,7 @@ public class StructuredLoggingListenerTest {
     @DisplayName("shouldLog should correctly match event patterns")
     void testPatternMatching(String pattern, String eventType, boolean shouldMatch) throws Exception {
         when(config.events()).thenReturn(List.of(pattern));
-        listener = new StructuredLoggingListener(config, objectMapper, noProviders());
+        listener = new StructuredLoggingListener(config, objectMapper);
 
         boolean result = invokeShouldLog(listener, eventType);
 
@@ -107,7 +107,7 @@ public class StructuredLoggingListenerTest {
     void testShouldLogWhenDisabled() throws Exception {
         when(config.enabled()).thenReturn(false);
         when(config.events()).thenReturn(List.of("workflow.*"));
-        listener = new StructuredLoggingListener(config, objectMapper, noProviders());
+        listener = new StructuredLoggingListener(config, objectMapper);
 
         boolean result = invokeShouldLog(listener, "workflow.instance.started");
 
@@ -118,7 +118,7 @@ public class StructuredLoggingListenerTest {
     @DisplayName("shouldLog should match against multiple patterns")
     void testMultiplePatterns() throws Exception {
         when(config.events()).thenReturn(List.of("workflow.instance.faulted", "workflow.task.faulted"));
-        listener = new StructuredLoggingListener(config, objectMapper, noProviders());
+        listener = new StructuredLoggingListener(config, objectMapper);
 
         assertThat(invokeShouldLog(listener, "workflow.instance.faulted")).isTrue();
         assertThat(invokeShouldLog(listener, "workflow.task.faulted")).isTrue();
@@ -130,7 +130,7 @@ public class StructuredLoggingListenerTest {
     @DisplayName("shouldLog should match if any pattern matches")
     void testAnyPatternMatches() throws Exception {
         when(config.events()).thenReturn(List.of("workflow.instance.*", "workflow.task.faulted"));
-        listener = new StructuredLoggingListener(config, objectMapper, noProviders());
+        listener = new StructuredLoggingListener(config, objectMapper);
 
         // Matches first pattern
         assertThat(invokeShouldLog(listener, "workflow.instance.started")).isTrue();
@@ -148,7 +148,7 @@ public class StructuredLoggingListenerTest {
     @DisplayName("shouldLog should handle empty pattern list")
     void testEmptyPatternList() throws Exception {
         when(config.events()).thenReturn(List.of());
-        listener = new StructuredLoggingListener(config, objectMapper, noProviders());
+        listener = new StructuredLoggingListener(config, objectMapper);
 
         boolean result = invokeShouldLog(listener, "workflow.instance.started");
 

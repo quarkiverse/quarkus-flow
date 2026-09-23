@@ -31,8 +31,8 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.quarkiverse.flow.opentelemetry.runtime.config.FlowOTelConfig;
 import io.quarkiverse.flow.tracing.TraceCorrelationProvider;
+import io.quarkiverse.flow.tracing.TraceLoggerExecutionListener;
 import io.serverlessworkflow.api.types.TaskBase;
-import io.serverlessworkflow.impl.ServicePriority;
 import io.serverlessworkflow.impl.WorkflowPosition;
 import io.serverlessworkflow.impl.lifecycle.TaskCancelledEvent;
 import io.serverlessworkflow.impl.lifecycle.TaskCompletedEvent;
@@ -354,6 +354,6 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
     public int priority() {
         // Soft ordering only: running before TraceLoggerExecutionListener lets workflow.started
         // and task.started log lines carry their own (just-created) span id.
-        return ServicePriority.DEFAULT_PRIORITY - 100;
+        return TraceLoggerExecutionListener.PRIORITY - 100;
     }
 }

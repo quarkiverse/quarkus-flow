@@ -28,6 +28,7 @@ import io.quarkiverse.flow.providers.JQScopeSupplier;
 import io.quarkiverse.flow.providers.QuarkusManagedExecutorServiceFactory;
 import io.quarkiverse.flow.providers.WorkflowTaskContext;
 import io.quarkiverse.flow.tracing.TraceCorrelationProvider;
+import io.quarkiverse.flow.tracing.TraceCorrelationProviders;
 import io.quarkiverse.flow.tracing.TraceLoggerExecutionListener;
 import io.quarkus.runtime.LaunchMode;
 import io.serverlessworkflow.api.types.CallHTTP;
@@ -116,7 +117,8 @@ public class WorkflowApplicationCreator {
         final Builder builder = WorkflowApplication.builder();
         if (tracingConfig.enabled().orElse(launchMode.isDevOrTest())) {
             LOG.debug("Flow: Tracing enabled");
-            builder.withListener(new TraceLoggerExecutionListener(resolveTraceCorrelationProvider()));
+            builder.withListener(new TraceLoggerExecutionListener(
+                    TraceCorrelationProviders.resolve(traceCorrelationProviders)));
         }
 
         builder.withContextFactory(new JavaModelFactory()).withModelFactory(new JacksonModelFactory());
@@ -245,17 +247,6 @@ public class WorkflowApplicationCreator {
         if (micrometerListeners.isResolvable()) {
             builder.withListener(micrometerListeners.get());
         }
-    }
-
-    /**
-     * Resolves the optional {@link TraceCorrelationProvider} contributed by the OpenTelemetry
-     * extension, falling back to {@link TraceCorrelationProvider#NOOP} when tracing is not
-     * installed so that flow logs still emit (just without trace identifiers).
-     */
-    private TraceCorrelationProvider resolveTraceCorrelationProvider() {
-        return traceCorrelationProviders.isResolvable()
-                ? traceCorrelationProviders.get()
-                : TraceCorrelationProvider.NOOP;
     }
 
     private void injectJQExpressionFactory(Builder builder) {

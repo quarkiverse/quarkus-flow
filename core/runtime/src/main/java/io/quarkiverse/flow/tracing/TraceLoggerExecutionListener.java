@@ -15,6 +15,10 @@
  */
 package io.quarkiverse.flow.tracing;
 
+import static io.quarkiverse.flow.tracing.TraceCorrelationProvider.PARENT_ID;
+import static io.quarkiverse.flow.tracing.TraceCorrelationProvider.SAMPLED_ID;
+import static io.quarkiverse.flow.tracing.TraceCorrelationProvider.SPAN_ID;
+import static io.quarkiverse.flow.tracing.TraceCorrelationProvider.TRACE_ID;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.util.Map;
@@ -23,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+import io.serverlessworkflow.impl.ServicePriority;
 import io.serverlessworkflow.impl.jackson.JsonUtils;
 import io.serverlessworkflow.impl.lifecycle.TaskCancelledEvent;
 import io.serverlessworkflow.impl.lifecycle.TaskCompletedEvent;
@@ -49,6 +54,8 @@ public final class TraceLoggerExecutionListener implements WorkflowExecutionList
 
     private static final Logger log = LoggerFactory.getLogger(TraceLoggerExecutionListener.class);
 
+    public static final int PRIORITY = ServicePriority.DEFAULT_PRIORITY;
+
     /**
      * Max bytes to include from serialized payloads to keep logs sane.
      */
@@ -60,13 +67,6 @@ public final class TraceLoggerExecutionListener implements WorkflowExecutionList
     private static final String K_TIME = "quarkus.flow.time";
     private static final String K_TASK_POS = "quarkus.flow.taskPos";
     private static final String K_TASK_NAME = "quarkus.flow.task";
-
-    // Trace-correlation MDC keys, matching the names Quarkus' own logging instrumentation uses
-    // so existing log formats and dashboards pick them up unchanged.
-    private static final String K_TRACE_ID = "traceId";
-    private static final String K_SPAN_ID = "spanId";
-    private static final String K_SAMPLED = "sampled";
-    private static final String K_PARENT_ID = "parentId";
 
     private final TraceCorrelationProvider traceCorrelation;
 
@@ -99,10 +99,10 @@ public final class TraceLoggerExecutionListener implements WorkflowExecutionList
                 MDC.put(K_TASK_NAME, taskEv.taskContext().taskName());
             }
             traceCorrelation.traceContextFor(ev).ifPresent(tc -> {
-                MDC.put(K_TRACE_ID, tc.traceId());
-                MDC.put(K_SPAN_ID, tc.spanId());
-                MDC.put(K_SAMPLED, tc.sampled());
-                MDC.put(K_PARENT_ID, tc.parentId());
+                MDC.put(TRACE_ID, tc.traceId());
+                MDC.put(SPAN_ID, tc.spanId());
+                MDC.put(SAMPLED_ID, tc.sampled());
+                MDC.put(PARENT_ID, tc.parentId());
             });
             r.run();
         } finally {
@@ -236,5 +236,10 @@ public final class TraceLoggerExecutionListener implements WorkflowExecutionList
         withMdc(ev, "task.retried", () -> log.info(
                 "Task '{}' retried at {} pos={}",
                 ev.taskContext().taskName(), ev.eventDate(), pos(ev)));
+    }
+
+    @Override
+    public int priority() {
+        return TraceLoggerExecutionListener.PRIORITY;
     }
 }

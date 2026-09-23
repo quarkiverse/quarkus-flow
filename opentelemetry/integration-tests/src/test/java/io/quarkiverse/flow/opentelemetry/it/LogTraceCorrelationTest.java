@@ -49,6 +49,7 @@ class LogTraceCorrelationTest {
     }
 
     @Test
+    @DisplayName("terminal_events_resolve_the_matching_trace_and_span_ids")
     void terminal_events_resolve_the_matching_trace_and_span_ids() {
         RestAssured.given()
                 .contentType(ContentType.JSON)

@@ -10,6 +10,11 @@ import io.serverlessworkflow.impl.lifecycle.WorkflowEvent;
  */
 public interface TraceCorrelationProvider {
 
+    String TRACE_ID = "traceId";
+    String SPAN_ID = "spanId";
+    String SAMPLED_ID = "sampled";
+    String PARENT_ID = "parentId";
+
     /**
      * Returns the trace/span identifiers of the span the tracing integration is currently
      * tracking for the given lifecycle event (the workflow-instance span for workflow events,

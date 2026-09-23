@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
 import io.quarkiverse.flow.tracing.TraceCorrelationProvider;
+import io.quarkiverse.flow.tracing.TraceCorrelationProviders;
 import io.quarkus.arc.lookup.LookupIfProperty;
 import io.serverlessworkflow.impl.lifecycle.TaskCancelledEvent;
 import io.serverlessworkflow.impl.lifecycle.TaskCompletedEvent;
@@ -62,14 +63,17 @@ public class StructuredLoggingListener implements WorkflowExecutionListener {
     // Volatile flag to ensure we only override the formatters once
     private volatile boolean formatterOverridden = false;
 
+    public StructuredLoggingListener(FlowStructuredLoggingConfig config, ObjectMapper objectMapper) {
+        this.config = config;
+        this.formatter = new EventFormatter(config, objectMapper, TraceCorrelationProvider.NOOP);
+    }
+
     @Inject
     public StructuredLoggingListener(FlowStructuredLoggingConfig config, ObjectMapper objectMapper,
             Instance<TraceCorrelationProvider> traceCorrelationProviders) {
         this.config = config;
-        TraceCorrelationProvider traceCorrelation = traceCorrelationProviders.isResolvable()
-                ? traceCorrelationProviders.get()
-                : TraceCorrelationProvider.NOOP;
-        this.formatter = new EventFormatter(config, objectMapper, traceCorrelation);
+        this.formatter = new EventFormatter(config, objectMapper,
+                TraceCorrelationProviders.resolve(traceCorrelationProviders));
     }
 
     // Workflow Instance Events
