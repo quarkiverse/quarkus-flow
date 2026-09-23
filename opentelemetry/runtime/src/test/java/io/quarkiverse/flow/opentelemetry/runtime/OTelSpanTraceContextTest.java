@@ -12,7 +12,7 @@ import io.opentelemetry.api.trace.TraceState;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
-import io.quarkiverse.flow.spi.observability.TraceCorrelationProvider.TraceContext;
+import io.quarkiverse.flow.tracing.TraceCorrelationProvider.TraceContext;
 
 @DisplayName("OTelWorkflowExecutionListener.toTraceContext span extraction")
 class OTelSpanTraceContextTest {

@@ -13,7 +13,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.quarkiverse.flow.spi.observability.TraceCorrelationProvider.TraceContext;
+import io.quarkiverse.flow.tracing.TraceCorrelationProvider.TraceContext;
 import io.serverlessworkflow.api.types.SetTask;
 import io.serverlessworkflow.impl.TaskContext;
 import io.serverlessworkflow.impl.WorkflowInstanceData;

@@ -7,7 +7,7 @@ import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.quarkiverse.flow.spi.observability.TraceCorrelationProvider.TraceContext;
+import io.quarkiverse.flow.tracing.TraceCorrelationProvider.TraceContext;
 
 @DisplayName("WorkflowInstrumentationContext trace-correlation store")
 class WorkflowInstrumentationContextTest {
