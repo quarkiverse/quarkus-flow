@@ -26,7 +26,6 @@ public class LifecycleManagementDevUIJsonRPCTest extends DevUIJsonRPCTest {
     static final QuarkusDevModeTest devMode = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource(new StringAsset("""
-                            quarkus.flow.devui.mvstore.db-path=target/flow-lifecycle-management.mv.db
                             quarkus.flow.devui.backend.storage.enabled=true
                             """),
                             "application.properties")
