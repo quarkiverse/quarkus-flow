@@ -559,12 +559,12 @@ The claim can contain:
 * Single namespace: `"namespace": "team-a"`
 * Array of namespaces: `"namespace": ["team-a", "team-b"]`
 * Comma-separated string: `"namespace": "team-a,team-b"`
-* Wildcard `*`, which grants access to all namespaces: `"namespace": "*"`
-  The wildcard can also be included in an array: `"namespace": ["*"]`
+* Wildcard `+*+`, which grants access to all namespaces: `+"namespace": "*"+`.
+The wildcard can also be included in an array: `+"namespace": ["*"]+`
 
-IMPORTANT: Only the exact namespace value `*` grants access to all namespaces.
-Namespace matching is exact and case-sensitive. Values such as `team-*`,
-`my*`, `**`, or ` * ` are treated as ordinary namespace names and do not act
+IMPORTANT: Only the exact namespace value `+*+` grants access to all namespaces.
+Namespace matching is exact and case-sensitive. Values such as `+team-*+`,
+`+my*+`, `+**+`, or `+" * "+` are treated as ordinary namespace names and do not act
 as wildcard patterns.
 
 **Disabling namespace validation:**

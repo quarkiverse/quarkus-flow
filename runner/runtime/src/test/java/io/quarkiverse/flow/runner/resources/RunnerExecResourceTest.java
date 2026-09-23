@@ -2,12 +2,12 @@ package io.quarkiverse.flow.runner.resources;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import jakarta.ws.rs.core.Response;
@@ -16,11 +16,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.quarkiverse.flow.runner.FlowRunnerConfig;
 import io.quarkiverse.flow.runner.model.ExecutionResponse;
-import io.quarkiverse.flow.runner.security.AuthzConsts;
 import io.quarkiverse.flow.runner.security.NamespaceAuthorizationService;
-import io.quarkus.security.identity.SecurityIdentity;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
@@ -36,9 +33,6 @@ class RunnerExecResourceTest {
     private RunnerExecResource resource;
     private WorkflowApplication mockApplication;
     private NamespaceAuthorizationService mockNamespaceAuth;
-    private FlowRunnerConfig config;
-    private FlowRunnerConfig.Security.Namespace namespaceConfig;
-    private SecurityIdentity securityIdentity;
 
     @BeforeEach
     void setUp() {
@@ -49,25 +43,13 @@ class RunnerExecResourceTest {
         resource.application = mockApplication;
 
         mockNamespaceAuth = mock(NamespaceAuthorizationService.class);
-        config = mock(FlowRunnerConfig.class);
-        FlowRunnerConfig.Security securityConfig = mock(FlowRunnerConfig.Security.class);
-        namespaceConfig = mock(FlowRunnerConfig.Security.Namespace.class);
-        securityIdentity = mock(SecurityIdentity.class);
-
-        when(config.security()).thenReturn(securityConfig);
-        when(securityConfig.namespace()).thenReturn(namespaceConfig);
-        when(namespaceConfig.validate()).thenReturn(true);
-        when(securityIdentity.hasRole(AuthzConsts.ROLE_ADMIN)).thenReturn(false);
         // Default authorization for tests not specifically testing restrictions.
-        when(mockNamespaceAuth.getAuthorizedNamespaces()).thenReturn(Set.of("*"));
+        when(mockNamespaceAuth.isNamespaceAuthorized(anyString())).thenReturn(true);
 
         WorkflowDefinitionLookup lookup = new WorkflowDefinitionLookup();
         lookup.application = mockApplication;
         lookup.namespaceAuth = mockNamespaceAuth;
-        lookup.config = config;
-        lookup.securityIdentity = securityIdentity;
         resource.definitionLookup = lookup;
-
     }
 
     @Test

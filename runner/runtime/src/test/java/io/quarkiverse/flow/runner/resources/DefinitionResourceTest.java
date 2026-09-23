@@ -1,14 +1,12 @@
 package io.quarkiverse.flow.runner.resources;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
@@ -18,11 +16,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.quarkiverse.flow.runner.FlowRunnerConfig;
 import io.quarkiverse.flow.runner.model.WorkflowDefinitionHeader;
-import io.quarkiverse.flow.runner.security.AuthzConsts;
 import io.quarkiverse.flow.runner.security.NamespaceAuthorizationService;
-import io.quarkus.security.identity.SecurityIdentity;
 import io.serverlessworkflow.api.types.Document;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.api.types.WorkflowMetadata;
@@ -37,10 +32,6 @@ class DefinitionResourceTest {
     private WorkflowApplication mockApplication;
     private HttpHeaders mockHeaders;
     private NamespaceAuthorizationService mockNamespaceAuth;
-    private FlowRunnerConfig config;
-    private FlowRunnerConfig.Security securityConfig;
-    private FlowRunnerConfig.Security.Namespace namespaceConfig;
-    private SecurityIdentity securityIdentity;
 
     @BeforeEach
     void setUp() {
@@ -50,25 +41,11 @@ class DefinitionResourceTest {
         mockHeaders = mock(HttpHeaders.class);
         mockNamespaceAuth = mock(NamespaceAuthorizationService.class);
 
-        config = mock(FlowRunnerConfig.class);
-        securityConfig = mock(FlowRunnerConfig.Security.class);
-        namespaceConfig = mock(FlowRunnerConfig.Security.Namespace.class);
-        securityIdentity = mock(SecurityIdentity.class);
-
         resource.application = mockApplication;
         resource.namespaceAuth = mockNamespaceAuth;
-        resource.config = config;
-        resource.securityIdentity = securityIdentity;
-
-        when(config.security()).thenReturn(securityConfig);
-        when(securityConfig.namespace()).thenReturn(namespaceConfig);
-        when(namespaceConfig.validate()).thenReturn(true);
-        when(securityIdentity.hasRole(AuthzConsts.ROLE_ADMIN))
-                .thenReturn(false);
 
         // Default authorization for tests not specifically testing restrictions.
-        when(mockNamespaceAuth.getAuthorizedNamespaces())
-                .thenReturn(Set.of("*"));
+        when(mockNamespaceAuth.isNamespaceAuthorized(anyString())).thenReturn(true);
 
         WorkflowDefinition examplesDefinition = createMockDefinition("examples", "greeting", "1.0.0");
 
@@ -88,8 +65,6 @@ class DefinitionResourceTest {
     void test_list_definitions_returns_empty_list_when_no_workflows() {
         // Given
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of());
-        when(mockNamespaceAuth.getAuthorizedNamespaces())
-                .thenReturn(Set.of("*"));
 
         // When
         Response response = resource.listDefinitions(null);
@@ -103,9 +78,6 @@ class DefinitionResourceTest {
     @Test
     @DisplayName("test_list_definitions_returns_all_workflows_when_no_namespace_filter")
     void test_list_definitions_returns_all_workflows_when_no_namespace_filter() {
-        when(mockNamespaceAuth.getAuthorizedNamespaces())
-                .thenReturn(Set.of("*"));
-
         Response response = resource.listDefinitions(null);
 
         assertThat(response.getStatus()).isEqualTo(200);
@@ -119,9 +91,6 @@ class DefinitionResourceTest {
     @Test
     @DisplayName("test_list_definitions_returns_all_for_wildcard_namespace")
     void test_list_definitions_returns_all_for_wildcard_namespace() {
-        when(mockNamespaceAuth.getAuthorizedNamespaces())
-                .thenReturn(Set.of("*"));
-
         Response response = resource.listDefinitions(null);
 
         assertThat(response.getStatus()).isEqualTo(200);
@@ -137,9 +106,8 @@ class DefinitionResourceTest {
     @Test
     @DisplayName("test_list_definitions_returns_all_for_admin")
     void test_list_definitions_returns_all_for_admin() {
-        when(securityIdentity.hasRole(AuthzConsts.ROLE_ADMIN))
-                .thenReturn(true);
-
+        // Admin bypass is decided by NamespaceAuthorizationService; from the resource's
+        // perspective this looks identical to "authorized for every namespace" (the default stub).
         Response response = resource.listDefinitions(null);
 
         assertThat(response.getStatus()).isEqualTo(200);
@@ -148,16 +116,13 @@ class DefinitionResourceTest {
         List<WorkflowDefinitionHeader> definitions = (List<WorkflowDefinitionHeader>) response.getEntity();
 
         assertThat(definitions).hasSize(2);
-
-        verify(mockNamespaceAuth, never())
-                .getAuthorizedNamespaces();
     }
 
     @Test
     @DisplayName("test_list_definitions_returns_all_when_namespace_validation_is_disabled")
     void test_list_definitions_returns_all_when_namespace_validation_is_disabled() {
-        when(namespaceConfig.validate()).thenReturn(false);
-
+        // Validation-disabled is decided by NamespaceAuthorizationService; from the resource's
+        // perspective this looks identical to "authorized for every namespace" (the default stub).
         Response response = resource.listDefinitions(null);
 
         assertThat(response.getStatus()).isEqualTo(200);
@@ -166,9 +131,6 @@ class DefinitionResourceTest {
         List<WorkflowDefinitionHeader> definitions = (List<WorkflowDefinitionHeader>) response.getEntity();
 
         assertThat(definitions).hasSize(2);
-
-        verify(mockNamespaceAuth, never())
-                .getAuthorizedNamespaces();
     }
 
     @Test
@@ -209,8 +171,6 @@ class DefinitionResourceTest {
 
         when(mockApplication.workflowDefinitions())
                 .thenReturn(Map.of(new WorkflowDefinitionId("test-ns", "test-wf", "1.5.0"), def));
-        when(mockNamespaceAuth.getAuthorizedNamespaces())
-                .thenReturn(Set.of("*"));
 
         // When
         Response response = resource.listDefinitions(null);
@@ -369,7 +329,9 @@ class DefinitionResourceTest {
                 new WorkflowDefinitionId("ns2", "wf2", "2.0.0"), def2,
                 new WorkflowDefinitionId("ns3", "wf3", "1.0.0"), def3));
 
-        when(mockNamespaceAuth.getAuthorizedNamespaces()).thenReturn(Set.of("ns1", "ns2"));
+        when(mockNamespaceAuth.isNamespaceAuthorized(anyString())).thenReturn(false);
+        when(mockNamespaceAuth.isNamespaceAuthorized("ns1")).thenReturn(true);
+        when(mockNamespaceAuth.isNamespaceAuthorized("ns2")).thenReturn(true);
 
         // When
         Response response = resource.listDefinitions(null);
@@ -386,8 +348,8 @@ class DefinitionResourceTest {
     @Test
     @DisplayName("test_list_definitions_returns_empty_when_authorized_namespaces_is_null")
     void test_list_definitions_returns_empty_when_authorized_namespaces_is_null() {
-        when(mockNamespaceAuth.getAuthorizedNamespaces())
-                .thenReturn(null);
+        // Simulates an identity with no namespace claim: the service denies every namespace.
+        when(mockNamespaceAuth.isNamespaceAuthorized(anyString())).thenReturn(false);
 
         Response response = resource.listDefinitions(null);
 
@@ -402,8 +364,7 @@ class DefinitionResourceTest {
     @Test
     @DisplayName("test_list_definitions_returns_empty_when_authorized_namespaces_is_empty")
     void test_list_definitions_returns_empty_when_authorized_namespaces_is_empty() {
-        when(mockNamespaceAuth.getAuthorizedNamespaces())
-                .thenReturn(Set.of());
+        when(mockNamespaceAuth.isNamespaceAuthorized(anyString())).thenReturn(false);
 
         Response response = resource.listDefinitions(null);
 
@@ -426,8 +387,6 @@ class DefinitionResourceTest {
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of(
                 new WorkflowDefinitionId("ns1", "wf1", "1.0.0"), def1,
                 new WorkflowDefinitionId("ns2", "wf2", "2.0.0"), def2));
-
-        when(mockNamespaceAuth.getAuthorizedNamespaces()).thenReturn(Set.of("ns1"));
 
         // When - Requesting specific namespace (filter would block this in real scenario)
         Response response = resource.listDefinitions("ns2");
@@ -452,7 +411,8 @@ class DefinitionResourceTest {
                 new WorkflowDefinitionId("ns2", "wf1", "1.0.0"), def1,
                 new WorkflowDefinitionId("ns3", "wf2", "2.0.0"), def2));
 
-        when(mockNamespaceAuth.getAuthorizedNamespaces()).thenReturn(Set.of("ns1"));
+        when(mockNamespaceAuth.isNamespaceAuthorized(anyString())).thenReturn(false);
+        when(mockNamespaceAuth.isNamespaceAuthorized("ns1")).thenReturn(true);
 
         // When
         Response response = resource.listDefinitions(null);

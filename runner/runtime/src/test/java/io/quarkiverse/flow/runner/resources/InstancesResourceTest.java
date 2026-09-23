@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.runner.resources;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -9,7 +10,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import jakarta.ws.rs.core.Response;
 
@@ -17,12 +17,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.quarkiverse.flow.runner.FlowRunnerConfig;
 import io.quarkiverse.flow.runner.model.ActiveInstancesResponse;
 import io.quarkiverse.flow.runner.model.InstanceSnapshot;
-import io.quarkiverse.flow.runner.security.AuthzConsts;
 import io.quarkiverse.flow.runner.security.NamespaceAuthorizationService;
-import io.quarkus.security.identity.SecurityIdentity;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
@@ -35,9 +32,6 @@ class InstancesResourceTest {
     private InstancesResource resource;
     private WorkflowApplication mockApplication;
     private NamespaceAuthorizationService mockNamespaceAuth;
-    private FlowRunnerConfig config;
-    private FlowRunnerConfig.Security.Namespace namespaceConfig;
-    private SecurityIdentity securityIdentity;
 
     @BeforeEach
     void setUp() {
@@ -46,23 +40,12 @@ class InstancesResourceTest {
         resource.application = mockApplication;
 
         mockNamespaceAuth = mock(NamespaceAuthorizationService.class);
-        config = mock(FlowRunnerConfig.class);
-        FlowRunnerConfig.Security securityConfig = mock(FlowRunnerConfig.Security.class);
-        namespaceConfig = mock(FlowRunnerConfig.Security.Namespace.class);
-        securityIdentity = mock(SecurityIdentity.class);
-
-        when(config.security()).thenReturn(securityConfig);
-        when(securityConfig.namespace()).thenReturn(namespaceConfig);
-        when(namespaceConfig.validate()).thenReturn(true);
-        when(securityIdentity.hasRole(AuthzConsts.ROLE_ADMIN)).thenReturn(false);
         // Default authorization for tests not specifically testing restrictions.
-        when(mockNamespaceAuth.getAuthorizedNamespaces()).thenReturn(Set.of("*"));
+        when(mockNamespaceAuth.isNamespaceAuthorized(anyString())).thenReturn(true);
 
         WorkflowDefinitionLookup lookup = new WorkflowDefinitionLookup();
         lookup.application = mockApplication;
         lookup.namespaceAuth = mockNamespaceAuth;
-        lookup.config = config;
-        lookup.securityIdentity = securityIdentity;
         resource.definitionLookup = lookup;
 
         when(mockApplication.id()).thenReturn("runner-pod-0");
@@ -155,7 +138,9 @@ class InstancesResourceTest {
     @Test
     @DisplayName("test_returns_all_for_admin_bypassing_namespace_filter")
     void test_returns_all_for_admin_bypassing_namespace_filter() {
-        when(securityIdentity.hasRole(AuthzConsts.ROLE_ADMIN)).thenReturn(true);
+        // Admin bypass is decided by NamespaceAuthorizationService; from the resource's
+        // perspective this looks identical to "authorized for every namespace".
+        when(mockNamespaceAuth.isNamespaceAuthorized(anyString())).thenReturn(true);
         seedDefinitions(
                 seed("i1", "flow-a", "ns1", "1.0.0", WorkflowStatus.RUNNING),
                 seed("i2", "flow-b", "ns2", "1.0.0", WorkflowStatus.RUNNING));
@@ -168,7 +153,9 @@ class InstancesResourceTest {
     @Test
     @DisplayName("test_returns_all_when_namespace_validation_disabled")
     void test_returns_all_when_namespace_validation_disabled() {
-        when(namespaceConfig.validate()).thenReturn(false);
+        // Validation-disabled is decided by NamespaceAuthorizationService; from the resource's
+        // perspective this looks identical to "authorized for every namespace".
+        when(mockNamespaceAuth.isNamespaceAuthorized(anyString())).thenReturn(true);
         seedDefinitions(
                 seed("i1", "flow-a", "ns1", "1.0.0", WorkflowStatus.RUNNING),
                 seed("i2", "flow-b", "ns2", "1.0.0", WorkflowStatus.RUNNING));
@@ -181,7 +168,8 @@ class InstancesResourceTest {
     @Test
     @DisplayName("test_filters_by_authorized_namespaces")
     void test_filters_by_authorized_namespaces() {
-        when(mockNamespaceAuth.getAuthorizedNamespaces()).thenReturn(Set.of("ns1"));
+        when(mockNamespaceAuth.isNamespaceAuthorized(anyString())).thenReturn(false);
+        when(mockNamespaceAuth.isNamespaceAuthorized("ns1")).thenReturn(true);
         seedDefinitions(
                 seed("i1", "flow-a", "ns1", "1.0.0", WorkflowStatus.RUNNING),
                 seed("i2", "flow-b", "ns2", "1.0.0", WorkflowStatus.RUNNING));
@@ -195,13 +183,12 @@ class InstancesResourceTest {
     @Test
     @DisplayName("test_returns_empty_when_no_authorized_namespaces")
     void test_returns_empty_when_no_authorized_namespaces() {
-        when(mockNamespaceAuth.getAuthorizedNamespaces()).thenReturn(Set.of());
+        when(mockNamespaceAuth.isNamespaceAuthorized(anyString())).thenReturn(false);
         seedDefinitions(seed("i1", "flow-a", "ns1", "1.0.0", WorkflowStatus.RUNNING));
 
         Response response = resource.listActiveInstances(null);
 
-        assertThat(body(response).instances()).hasSize(1);
-        assertThat(body(response).instances().get(0).workflowNamespace()).isEqualTo("ns1");
+        assertThat(body(response).instances()).isEmpty();
     }
 
     // --- tests: GET /q/flow/{namespace}/{name}/instances (latest version) ---
