@@ -44,11 +44,6 @@
       </dependency>
       <dependency>
         <groupId>io.quarkiverse.flow</groupId>
-        <artifactId>quarkus-flow-spi</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.quarkiverse.flow</groupId>
         <artifactId>quarkus-flow-deployment</artifactId>
         <version>${project.version}</version>
       </dependency>

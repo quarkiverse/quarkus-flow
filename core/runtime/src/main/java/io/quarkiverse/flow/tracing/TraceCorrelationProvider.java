@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.spi.observability;
+package io.quarkiverse.flow.tracing;
 
 import java.util.Optional;
 

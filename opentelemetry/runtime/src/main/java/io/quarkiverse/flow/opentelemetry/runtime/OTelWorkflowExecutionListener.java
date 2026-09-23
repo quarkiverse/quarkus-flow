@@ -30,7 +30,7 @@ import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.quarkiverse.flow.opentelemetry.runtime.config.FlowOTelConfig;
-import io.quarkiverse.flow.spi.observability.TraceCorrelationProvider.TraceContext;
+import io.quarkiverse.flow.tracing.TraceCorrelationProvider;
 import io.serverlessworkflow.api.types.TaskBase;
 import io.serverlessworkflow.impl.ServicePriority;
 import io.serverlessworkflow.impl.WorkflowPosition;
@@ -331,7 +331,7 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
         SpanUtils.getTaskSpanEnricher(task).enrich(span, task);
     }
 
-    static TraceContext toTraceContext(Span span) {
+    static TraceCorrelationProvider.TraceContext toTraceContext(Span span) {
         if (span == null) {
             return null;
         }
@@ -346,7 +346,7 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
                 parentId = parent.getSpanId();
             }
         }
-        return new TraceContext(spanContext.getTraceId(), spanContext.getSpanId(),
+        return new TraceCorrelationProvider.TraceContext(spanContext.getTraceId(), spanContext.getSpanId(),
                 Boolean.toString(spanContext.isSampled()), parentId);
     }
 

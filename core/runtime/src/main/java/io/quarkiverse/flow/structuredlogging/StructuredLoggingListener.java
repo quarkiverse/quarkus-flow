@@ -28,7 +28,7 @@ import org.jboss.logmanager.formatters.PatternFormatter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
-import io.quarkiverse.flow.spi.observability.TraceCorrelationProvider;
+import io.quarkiverse.flow.tracing.TraceCorrelationProvider;
 import io.quarkus.arc.lookup.LookupIfProperty;
 import io.serverlessworkflow.impl.lifecycle.TaskCancelledEvent;
 import io.serverlessworkflow.impl.lifecycle.TaskCompletedEvent;

@@ -20,12 +20,9 @@
             <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.serverlessworkflow</groupId>
-            <artifactId>serverlessworkflow-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.serverlessworkflow</groupId>
-            <artifactId>serverlessworkflow-impl-http</artifactId>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
@@ -34,11 +31,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-opentelemetry</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkiverse.flow</groupId>
-            <artifactId>quarkus-flow-spi</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

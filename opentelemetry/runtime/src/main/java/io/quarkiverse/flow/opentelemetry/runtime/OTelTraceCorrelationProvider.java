@@ -4,7 +4,7 @@ import static io.quarkiverse.flow.opentelemetry.runtime.WorkflowInstrumentationC
 
 import java.util.Optional;
 
-import io.quarkiverse.flow.spi.observability.TraceCorrelationProvider;
+import io.quarkiverse.flow.tracing.TraceCorrelationProvider;
 import io.serverlessworkflow.impl.lifecycle.TaskEvent;
 import io.serverlessworkflow.impl.lifecycle.WorkflowEvent;
 

@@ -17,8 +17,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
 import io.quarkiverse.flow.config.TimestampFormat;
-import io.quarkiverse.flow.spi.observability.TraceCorrelationProvider;
-import io.quarkiverse.flow.spi.observability.TraceCorrelationProvider.TraceContext;
+import io.quarkiverse.flow.tracing.TraceCorrelationProvider;
+import io.quarkiverse.flow.tracing.TraceCorrelationProvider.TraceContext;
 import io.serverlessworkflow.impl.lifecycle.TaskStartedEvent;
 import io.serverlessworkflow.impl.lifecycle.WorkflowStartedEvent;
 

@@ -21,7 +21,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 
-import io.quarkiverse.flow.spi.observability.TraceCorrelationProvider;
 import io.serverlessworkflow.impl.lifecycle.TaskStartedEvent;
 
 @DisplayName("TraceLoggerExecutionListener trace correlation")

@@ -6,7 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import io.quarkiverse.flow.spi.observability.TraceCorrelationProvider.TraceContext;
+import io.quarkiverse.flow.tracing.TraceCorrelationProvider.TraceContext;
 import io.serverlessworkflow.impl.WorkflowInstanceData;
 import io.serverlessworkflow.impl.WorkflowMutableInstance;
 

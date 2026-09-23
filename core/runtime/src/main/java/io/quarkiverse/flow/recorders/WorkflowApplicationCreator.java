@@ -27,7 +27,7 @@ import io.quarkiverse.flow.providers.HttpClientProvider;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
 import io.quarkiverse.flow.providers.QuarkusManagedExecutorServiceFactory;
 import io.quarkiverse.flow.providers.WorkflowTaskContext;
-import io.quarkiverse.flow.spi.observability.TraceCorrelationProvider;
+import io.quarkiverse.flow.tracing.TraceCorrelationProvider;
 import io.quarkiverse.flow.tracing.TraceLoggerExecutionListener;
 import io.quarkus.runtime.LaunchMode;
 import io.serverlessworkflow.api.types.CallHTTP;
