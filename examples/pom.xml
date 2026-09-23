@@ -124,6 +124,7 @@
         <module>resilient-task-orchestrator</module>
         <module>greeting-runner</module>
         <module>auth-oauth2-oidc</module>
+        <module>workflows-from-jars</module>
         <module>opentelemetry</module>
     </modules>
 
