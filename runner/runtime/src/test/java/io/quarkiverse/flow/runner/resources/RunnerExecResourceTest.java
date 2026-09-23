@@ -2,6 +2,7 @@ package io.quarkiverse.flow.runner.resources;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.quarkiverse.flow.runner.model.ExecutionResponse;
+import io.quarkiverse.flow.runner.security.NamespaceAuthorizationService;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
@@ -30,6 +32,7 @@ class RunnerExecResourceTest {
 
     private RunnerExecResource resource;
     private WorkflowApplication mockApplication;
+    private NamespaceAuthorizationService mockNamespaceAuth;
 
     @BeforeEach
     void setUp() {
@@ -38,6 +41,15 @@ class RunnerExecResourceTest {
         mockApplication = mock(WorkflowApplication.class);
         when(mockApplication.id()).thenReturn(APP_ID);
         resource.application = mockApplication;
+
+        mockNamespaceAuth = mock(NamespaceAuthorizationService.class);
+        // Default authorization for tests not specifically testing restrictions.
+        when(mockNamespaceAuth.isNamespaceAuthorized(anyString())).thenReturn(true);
+
+        WorkflowDefinitionLookup lookup = new WorkflowDefinitionLookup();
+        lookup.application = mockApplication;
+        lookup.namespaceAuth = mockNamespaceAuth;
+        resource.definitionLookup = lookup;
     }
 
     @Test

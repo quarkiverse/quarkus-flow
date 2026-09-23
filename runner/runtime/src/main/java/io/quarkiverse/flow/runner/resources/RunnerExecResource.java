@@ -27,7 +27,6 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
-import io.quarkiverse.flow.internal.WorkflowVersionComparator;
 import io.quarkiverse.flow.runner.model.ExecutionResponse;
 import io.quarkiverse.flow.runner.model.StatusResponse;
 import io.quarkiverse.flow.runner.security.AuthzConsts;
@@ -46,10 +45,13 @@ import io.smallrye.mutiny.Uni;
 @SecurityRequirement(name = "BearerAuth")
 public class RunnerExecResource {
 
-    private static final String LATEST = "latest";
+    private static final String LATEST = WorkflowDefinitionLookup.LATEST;
 
     @Inject
     WorkflowApplication application;
+
+    @Inject
+    WorkflowDefinitionLookup definitionLookup;
 
     private Map<String, CompletableFuture<Boolean>> completableMap;
 
@@ -202,7 +204,7 @@ public class RunnerExecResource {
     private Uni<Response> instanceOperation(String namespace, String name, String version, String instanceId,
             Function<WorkflowInstance, CompletableFuture<Boolean>> function) {
         WorkflowDefinitionId definitionId = new WorkflowDefinitionId(namespace, name, version);
-        WorkflowDefinition definition = findWorkflowDefinition(definitionId);
+        WorkflowDefinition definition = definitionLookup.find(definitionId);
         return definition != null ? definition.activeInstance(instanceId)
                 .map(instance -> completableMap
                         .compute(instanceId,
@@ -223,15 +225,8 @@ public class RunnerExecResource {
                 .item(Response.status(Status.NOT_FOUND).entity("Workflow version '" + definitionId + "' not found").build());
     }
 
-    private WorkflowDefinition findWorkflowDefinition(WorkflowDefinitionId id) {
-        return id.version() == null || id.version().equals(LATEST) ? application.workflowDefinitions().entrySet().stream()
-                .filter(entry -> id.name().equals(entry.getKey().name()) && id.namespace().equals(entry.getKey().namespace()))
-                .max(new WorkflowVersionComparator())
-                .map(Map.Entry::getValue).orElse(null) : application.workflowDefinitions().get(id);
-    }
-
     private Uni<Response> executeWorkflow(boolean wait, Object request, WorkflowDefinitionId id) {
-        WorkflowDefinition definition = findWorkflowDefinition(id);
+        WorkflowDefinition definition = definitionLookup.find(id);
         if (definition == null) {
             return notFoundResponse(id);
         }

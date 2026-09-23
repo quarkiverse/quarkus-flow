@@ -317,4 +317,112 @@ class SecurityOidcAbacIT {
                 .then()
                 .statusCode(anyOf(is(200), is(202)));
     }
+
+    // --- GET /q/flow/instances (list active instances, no namespace in URL) ---
+
+    @Test
+    @TestSecurity(user = "alice", roles = "flow-invoker")
+    @OidcSecurity(claims = { @Claim(key = "namespace", value = "test-namespace") })
+    @DisplayName("test_list_active_instances_allowed_for_authorized_user")
+    void test_list_active_instances_allowed_for_authorized_user() {
+        // No namespace in the URL itself; the endpoint must filter server-side rather than
+        // relying on NamespaceAuthorizationFilter (which only intercepts a namespace path/query param).
+        given()
+                .when()
+                .get("/q/flow/instances")
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
+    @TestSecurity(user = "bob", roles = "flow-invoker")
+    @OidcSecurity(claims = { @Claim(key = "namespace", value = "team-a") })
+    @DisplayName("test_list_active_instances_allowed_but_scoped_for_unrelated_namespace")
+    void test_list_active_instances_allowed_but_scoped_for_unrelated_namespace() {
+        // A caller with no overlap with any registered workflow's namespace still gets 200
+        // (not 403) - the endpoint filters results rather than denying the whole request.
+        given()
+                .when()
+                .get("/q/flow/instances")
+                .then()
+                .statusCode(200);
+    }
+
+    // --- GET /q/flow/{namespace}/{name}/instances (latest version) ---
+
+    @Test
+    @TestSecurity(user = "alice", roles = "flow-invoker")
+    @OidcSecurity(claims = { @Claim(key = "namespace", value = "test-namespace") })
+    @DisplayName("test_list_active_instances_for_workflow_allowed_in_authorized_namespace")
+    void test_list_active_instances_for_workflow_allowed_in_authorized_namespace() {
+        given()
+                .when()
+                .get("/q/flow/test-namespace/simple-greeting/instances")
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
+    @TestSecurity(user = "bob", roles = "flow-invoker")
+    @OidcSecurity(claims = { @Claim(key = "namespace", value = "team-a") })
+    @DisplayName("test_list_active_instances_for_workflow_denied_in_unauthorized_namespace")
+    void test_list_active_instances_for_workflow_denied_in_unauthorized_namespace() {
+        given()
+                .when()
+                .get("/q/flow/test-namespace/simple-greeting/instances")
+                .then()
+                .statusCode(403);
+    }
+
+    // --- GET /q/flow/{namespace}/{name}/{version}/instances ---
+
+    @Test
+    @TestSecurity(user = "alice", roles = "flow-invoker")
+    @OidcSecurity(claims = { @Claim(key = "namespace", value = "test-namespace") })
+    @DisplayName("test_list_active_instances_for_workflow_version_allowed_in_authorized_namespace")
+    void test_list_active_instances_for_workflow_version_allowed_in_authorized_namespace() {
+        given()
+                .when()
+                .get("/q/flow/test-namespace/simple-greeting/1.0.0/instances")
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
+    @TestSecurity(user = "bob", roles = "flow-invoker")
+    @OidcSecurity(claims = { @Claim(key = "namespace", value = "team-a") })
+    @DisplayName("test_list_active_instances_for_workflow_version_denied_in_unauthorized_namespace")
+    void test_list_active_instances_for_workflow_version_denied_in_unauthorized_namespace() {
+        given()
+                .when()
+                .get("/q/flow/test-namespace/simple-greeting/1.0.0/instances")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "flow-admin")
+    @OidcSecurity(claims = { @Claim(key = "namespace", value = "team-a") })
+    @DisplayName("test_admin_bypasses_namespace_check_for_instances_endpoints")
+    void test_admin_bypasses_namespace_check_for_instances_endpoints() {
+        // Admin's namespace claim (team-a) has no overlap with test-namespace, but the
+        // flow-admin role bypasses namespace authorization on every InstancesResource endpoint.
+        given()
+                .when()
+                .get("/q/flow/instances")
+                .then()
+                .statusCode(200);
+
+        given()
+                .when()
+                .get("/q/flow/test-namespace/simple-greeting/instances")
+                .then()
+                .statusCode(200);
+
+        given()
+                .when()
+                .get("/q/flow/test-namespace/simple-greeting/1.0.0/instances")
+                .then()
+                .statusCode(200);
+    }
 }

@@ -3,7 +3,6 @@ package io.quarkiverse.flow.runner.resources;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import jakarta.annotation.security.RolesAllowed;
@@ -27,13 +26,11 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import io.quarkiverse.flow.internal.WorkflowVersionComparator;
-import io.quarkiverse.flow.runner.FlowRunnerConfig;
 import io.quarkiverse.flow.runner.model.WorkflowDefinitionHeader;
 import io.quarkiverse.flow.runner.model.WorkflowFormatUtils;
 import io.quarkiverse.flow.runner.security.AuthzConsts;
 import io.quarkiverse.flow.runner.security.FlowRunnerEndpoint;
 import io.quarkiverse.flow.runner.security.NamespaceAuthorizationService;
-import io.quarkus.security.identity.SecurityIdentity;
 import io.serverlessworkflow.api.WorkflowFormat;
 import io.serverlessworkflow.api.WorkflowWriter;
 import io.serverlessworkflow.api.types.Document;
@@ -52,12 +49,6 @@ public class DefinitionResource {
 
     @Inject
     NamespaceAuthorizationService namespaceAuth;
-
-    @Inject
-    FlowRunnerConfig config;
-
-    @Inject
-    SecurityIdentity securityIdentity;
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -83,21 +74,12 @@ public class DefinitionResource {
                             definition.workflow()
                                     .getDocument()
                                     .getNamespace()));
-        } else if (config.security().namespace().validate()
-                && !securityIdentity.hasRole(AuthzConsts.ROLE_ADMIN)) {
-
-            Set<String> authorizedNamespaces = namespaceAuth.getAuthorizedNamespaces();
-
-            if (authorizedNamespaces == null
-                    || authorizedNamespaces.isEmpty()) {
-                definitions = Stream.empty();
-            } else if (!authorizedNamespaces.contains("*")) {
-                definitions = definitions.filter(
-                        definition -> authorizedNamespaces.contains(
-                                definition.workflow()
-                                        .getDocument()
-                                        .getNamespace()));
-            }
+        } else {
+            definitions = definitions.filter(
+                    definition -> namespaceAuth.isNamespaceAuthorized(
+                            definition.workflow()
+                                    .getDocument()
+                                    .getNamespace()));
         }
 
         return Response.ok(

@@ -24,25 +24,11 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.security.identity.SecurityIdentity;
 
 /**
- * Service for retrieving authorized namespaces from the current security context.
+ * Service for deciding namespace-level authorization (ABAC) for the current security context.
  * <p>
- * This service extracts namespace information from {@link SecurityIdentity} attributes
- * that were set by authentication mechanisms during login. It supports multiple authentication
- * modes transparently:
- * <ul>
- * <li><b>API_KEY mode:</b> Namespaces from {@code api-keys.*.namespaces} configuration</li>
- * <li><b>OIDC mode:</b> Namespaces from JWT claim (configurable via {@code security.namespace.claim})</li>
- * <li><b>NONE mode:</b> No namespaces attribute (returns null = all allowed)</li>
- * </ul>
- * <p>
- * The service returns {@code null} or empty set to indicate "all namespaces allowed".
- * A non-empty set restricts access to only those namespaces.
- * <p>
- * This is a pure data provider service with no side effects - it does not throw
- * authorization exceptions. Authorization enforcement is handled by
- * {@link NamespaceAuthorizationFilter}.
+ * {@link #isNamespaceAuthorized(String)} is the single source of truth for this decision;
+ * every namespace-aware endpoint and helper should call it instead of re-implementing the policy.
  *
- * @see NamespaceAuthorizationFilter
  * @see io.quarkiverse.flow.runner.security.ApiKeyAuthenticationMechanism
  */
 @ApplicationScoped
@@ -59,24 +45,61 @@ public class NamespaceAuthorizationService {
     ObjectMapper objectMapper;
 
     /**
-     * Gets the set of namespaces the current user is authorized to access.
+     * Determines whether the current identity is authorized to access the given namespace.
      * <p>
-     * The method checks for namespace information in the following order:
+     * Authorization logic:
+     * <ul>
+     * <li>If namespace validation is disabled ({@code quarkus.flow.runner.security.namespace.validate=false}),
+     * every namespace is allowed.</li>
+     * <li>If the identity has the {@code flow-admin} role, every namespace is allowed.</li>
+     * <li>If the identity's authorized-namespace set is null, empty, or contains only blank
+     * values, no namespace is allowed.</li>
+     * <li>If the authorized-namespace set contains the exact value {@code "*"} or the requested
+     * namespace, access is allowed.</li>
+     * <li>Otherwise, access is denied.</li>
+     * </ul>
+     * <p>
+     * Namespace matching is exact and case-sensitive; values such as {@code "team-*"}, {@code "my*"},
+     * or {@code "**"} are not wildcard expressions.
+     *
+     * @param namespace the namespace to check access for
+     * @return {@code true} if the current identity may access the namespace, {@code false} otherwise
+     */
+    public boolean isNamespaceAuthorized(String namespace) {
+        if (!config.security().namespace().validate()) {
+            return true;
+        }
+        if (securityIdentity.hasRole(AuthzConsts.ROLE_ADMIN)) {
+            return true;
+        }
+        Set<String> authorizedNamespaces = getAuthorizedNamespaces();
+        if (hasNoAuthorizedNamespaces(authorizedNamespaces)) {
+            return false;
+        }
+        return authorizedNamespaces.contains(AuthzConsts.ALL_NAMESPACES)
+                || authorizedNamespaces.contains(namespace);
+    }
+
+    private boolean hasNoAuthorizedNamespaces(Set<String> authorizedNamespaces) {
+        return authorizedNamespaces == null
+                || authorizedNamespaces.isEmpty()
+                || authorizedNamespaces.stream().allMatch(ns -> ns == null || ns.isBlank());
+    }
+
+    /**
+     * Extracts and normalizes the raw namespace claim for the current identity.
+     * <p>
+     * This is a data accessor only - it does not apply any authorization policy. Checks, in order:
      * <ol>
      * <li>Standard {@code "namespaces"} attribute (set by API_KEY authentication)</li>
      * <li>Configured claim name from {@code security.namespace.claim} (for OIDC)</li>
      * </ol>
-     * <p>
-     * Return values:
-     * <ul>
-     * <li>{@code null} - User has access to all namespaces (no restrictions)</li>
-     * <li>Empty set - User has access to all namespaces (no restrictions)</li>
-     * <li>Non-empty set - User can only access workflows in these specific namespaces</li>
-     * </ul>
+     * An empty result simply means no namespace claim was found; it carries no authorization
+     * meaning by itself. Use {@link #isNamespaceAuthorized(String)} for authorization decisions.
      *
-     * @return set of authorized namespace names, or null/empty if all namespaces are allowed
+     * @return the raw set of namespace names found on the identity, or an empty set if none
      */
-    public Set<String> getAuthorizedNamespaces() {
+    Set<String> getAuthorizedNamespaces() {
         // Try standard "namespaces" attribute (API_KEY mode)
         Object attr = securityIdentity.getAttribute(CLAIM_NAMESPACES);
 
@@ -100,16 +123,6 @@ public class NamespaceAuthorizationService {
         return convertToSet(attr);
     }
 
-    /**
-     * Extracts namespace claim from JWT token if available.
-     * <p>
-     * This method safely handles the case where quarkus-oidc is not present by catching
-     * {@link NoClassDefFoundError}. When OIDC is not available, returns null.
-     *
-     * @param securityIdentity the security identity
-     * @param claimName the claim name to extract
-     * @return the claim value, or null if not found or OIDC is not available
-     */
     private Object extractFromJwt(SecurityIdentity securityIdentity, String claimName) {
         try {
             if (securityIdentity.getPrincipal() instanceof JsonWebToken jwt) {
@@ -121,22 +134,6 @@ public class NamespaceAuthorizationService {
         return null;
     }
 
-    /**
-     * Converts namespace attribute value to a Set of namespace names.
-     * <p>
-     * Handles multiple attribute types from different sources:
-     * <ul>
-     * <li>{@code Set<String>} - Already a set (from API_KEY mechanism)</li>
-     * <li>{@code Collection<String>} - Convert to set (from OIDC JWT array claim)</li>
-     * <li>{@code String} - Single namespace or comma-separated list</li>
-     * <li>Other - Convert via {@code toString()}</li>
-     * </ul>
-     * <p>
-     * Empty or blank strings return {@code null} to indicate "all namespaces allowed".
-     *
-     * @param attr the namespace attribute value from SecurityIdentity
-     * @return set of namespace names, or null if empty/blank
-     */
     @SuppressWarnings("unchecked")
     private Set<String> convertToSet(Object attr) {
         if (attr instanceof Collection<?> collection) {
