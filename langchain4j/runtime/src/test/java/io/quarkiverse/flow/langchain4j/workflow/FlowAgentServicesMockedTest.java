@@ -144,6 +144,74 @@ public class FlowAgentServicesMockedTest {
         assertThat(calls.get()).isEqualTo(counter);
     }
 
+    /**
+     * Regression test for Bug 1: exit predicate must not throw when a state key it reads
+     * has not been written yet (i.e. on the first evaluation before any subagent has run).
+     * The predicate should treat the missing key as null and evaluate the null-guard correctly.
+     */
+    @Test
+    void whileModeLoop_exitPredicate_toleratesMissingKeyOnFirstEvaluation() {
+        AtomicInteger bodyRuns = new AtomicInteger();
+
+        // Subagent writes "score" after running
+        var loopExec = AgenticServices.agentAction(scope -> {
+            scope.writeState("score", 0.9);
+            bodyRuns.incrementAndGet();
+        });
+
+        FlowLoopAgentService<TestLoopAgent> service = FlowLoopAgentService.builder(TestLoopAgent.class, runtimeAppProvider);
+        service.maxIterations(10);
+        // Predicate reads "score" — not present before the first body run.
+        // Without the fix this threw MissingArgumentException; with the fix it returns false
+        // on the first call (null-guard) and true after the first body run (score = 0.9).
+        service.exitCondition((scope, idx) -> {
+            Double score = scope.readState("score", (Double) null);
+            return score != null && score >= 0.8;
+        });
+        service.subAgents(loopExec);
+
+        TestLoopAgent agent = service.build();
+
+        // Should not throw and should exit after exactly one body execution
+        ResultWithAgenticScope<String> result = agent.run("any-topic");
+        assertThat(result.agenticScope().readState("score", (Double) null)).isEqualTo(0.9);
+        assertThat(bodyRuns.get()).isEqualTo(1);
+    }
+
+    /**
+     * Regression test for Bug 2: in while-mode, subagents after the one that satisfies the
+     * exit condition must be skipped within the same cycle.
+     */
+    @Test
+    void whileModeLoop_skipsRemainingSubagentsAfterExitConditionMet() {
+        AtomicInteger evaluatorRuns = new AtomicInteger();
+        AtomicInteger reviserRuns = new AtomicInteger();
+
+        // evaluator: writes a passing score on first run
+        var evaluator = AgenticServices.agentAction(scope -> {
+            scope.writeState("score", 0.9);
+            evaluatorRuns.incrementAndGet();
+        });
+        // reviser: should NOT run in the cycle where exit was already met
+        var reviser = AgenticServices.agentAction(scope -> reviserRuns.incrementAndGet());
+
+        FlowLoopAgentService<TestLoopAgent> service = FlowLoopAgentService.builder(TestLoopAgent.class, runtimeAppProvider);
+        service.maxIterations(10);
+        service.exitCondition((scope, idx) -> {
+            Double score = scope.readState("score", (Double) null);
+            return score != null && score >= 0.8;
+        });
+        service.subAgents(evaluator, reviser);
+
+        TestLoopAgent agent = service.build();
+
+        ResultWithAgenticScope<String> result = agent.run("any-topic");
+        assertThat(result.agenticScope().readState("score", (Double) null)).isEqualTo(0.9);
+        // evaluator ran once, reviser must not have run (exit was met before it)
+        assertThat(evaluatorRuns.get()).isEqualTo(1);
+        assertThat(reviserRuns.get()).isEqualTo(0);
+    }
+
     @Test
     void executionContext_isolates_workflow_instances() {
         // Test that multiple sequential workflow executions each have isolated executionContext

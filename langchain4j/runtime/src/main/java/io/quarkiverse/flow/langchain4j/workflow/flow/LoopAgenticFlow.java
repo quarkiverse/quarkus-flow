@@ -57,12 +57,6 @@ public abstract class LoopAgenticFlow extends AgenticFlow {
                                 .positionalArgs();
                         return (boolean) method.invoke(null, args);
                     } catch (MissingArgumentException e) {
-                        // A while-style loop (testExitAtLoopEnd = false) evaluates the exit
-                        // predicate before the first body execution, so a state key the
-                        // predicate reads (e.g. an evaluator's output) may not be written yet.
-                        // The native loop never tests exit before a body run. Resolve the
-                        // missing key as null and retry, so a predicate guarded with a
-                        // null-check (e.g. evaluation != null && ...) behaves as written.
                         additionalArgs.put(e.argumentName(), null);
                     } catch (Exception e) {
                         throw new RuntimeException("Error invoking exit predicate", e);
@@ -181,21 +175,12 @@ public abstract class LoopAgenticFlow extends AgenticFlow {
                                                         DefaultAgenticScope.class)
                                                         .outputAs((out, wf, tf) -> agenticScopePassthrough(tf.rawInput()));
                                                 if (!testAtEnd && index > 0) {
-                                                    // While-mode: a preceding subagent of this cycle may have
-                                                    // satisfied the exit condition, in which case the native
-                                                    // loop does not run the remaining subagents.
                                                     fn.when(
                                                             scope -> !Boolean.TRUE.equals(scope.readState(EXIT_PROP, false)),
                                                             DefaultAgenticScope.class);
                                                 }
                                             });
                                     if (!testAtEnd) {
-                                        // While-mode: test the exit condition after every
-                                        // subagent, mirroring the native loop planner which
-                                        // evaluates the exit condition after each agent step
-                                        // (and never before the first one). The outcome is
-                                        // published to the state so the remaining subagents of
-                                        // the cycle are skipped and the loop can stop.
                                         forDo.function(
                                                 "check-exit-" + index,
                                                 fn -> fn.function((scope, wf, tf) -> {
