@@ -183,15 +183,20 @@ public abstract class LoopAgenticFlow extends AgenticFlow {
                                     if (!testAtEnd) {
                                         forDo.function(
                                                 "check-exit-" + index,
-                                                fn -> fn.function((scope, wf, tf) -> {
-                                                    Integer cycleIndex = (Integer) ((TaskContext) tf).variables()
-                                                            .get(AT);
-                                                    if (exitPredicate.test(scope, cycleIndex)) {
-                                                        scope.writeState(EXIT_PROP, true);
-                                                    }
-                                                    return scope;
-                                                }, DefaultAgenticScope.class)
-                                                        .outputAs((out, wf, tf) -> agenticScopePassthrough(tf.rawInput())));
+                                                fn -> {
+                                                    fn.function((scope, wf, tf) -> {
+                                                        Integer cycleIndex = (Integer) ((TaskContext) tf).variables()
+                                                                .get(AT);
+                                                        if (exitPredicate.test(scope, cycleIndex)) {
+                                                            scope.writeState(EXIT_PROP, true);
+                                                        }
+                                                        return scope;
+                                                    }, DefaultAgenticScope.class)
+                                                            .outputAs((out, wf, tf) -> agenticScopePassthrough(tf.rawInput()));
+                                                    fn.when(
+                                                            scope -> !Boolean.TRUE.equals(scope.readState(EXIT_PROP, false)),
+                                                            DefaultAgenticScope.class);
+                                                });
                                     }
                                 }
                             })

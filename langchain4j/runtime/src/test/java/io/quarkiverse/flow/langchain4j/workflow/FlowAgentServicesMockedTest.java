@@ -2,7 +2,9 @@ package io.quarkiverse.flow.langchain4j.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 import jakarta.inject.Inject;
@@ -14,6 +16,7 @@ import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
 import dev.langchain4j.service.V;
+import io.quarkiverse.flow.langchain4j.workflow.runtime.RuntimeLoopAgenticFlow;
 import io.quarkiverse.flow.langchain4j.workflow.runtime.RuntimeWorkflowApplicationProvider;
 import io.quarkiverse.flow.langchain4j.workflow.service.FlowConditionalAgentService;
 import io.quarkiverse.flow.langchain4j.workflow.service.FlowLoopAgentService;
@@ -142,6 +145,40 @@ public class FlowAgentServicesMockedTest {
         // - the loop body ran a few times but not more than maxIterations
         assertThat(counter).isBetween(1, 10);
         assertThat(calls.get()).isEqualTo(counter);
+    }
+
+    @Test
+    void buildLoopExitPredicate_toleratesMissingKeyOnFirstEvaluation() {
+        // Exercises buildLoopExitPredicate via the reflection path — not via a raw
+        // BiPredicate passed to service.exitCondition(), which bypasses that code.
+        // ScoreExitConditionHolder is a top-level public class so that LoopAgenticFlow
+        // can invoke its static method reflectively without IllegalAccessException.
+        AtomicInteger bodyRuns = new AtomicInteger();
+
+        var loopExec = AgenticServices.agentAction(scope -> {
+            scope.writeState("score", 0.9);
+            bodyRuns.incrementAndGet();
+        });
+
+        RuntimeLoopAgenticFlow runtimeFlow = new RuntimeLoopAgenticFlow(
+                ScoreExitConditionHolder.class.getName(), runtimeAppProvider);
+        BiPredicate<AgenticScope, Integer> predicate = runtimeFlow.buildLoopExitPredicate(
+                ScoreExitConditionHolder.class,
+                "exit",
+                List.of(Double.class.getName()));
+
+        FlowLoopAgentService<TestLoopAgent> service = FlowLoopAgentService.builder(TestLoopAgent.class, runtimeAppProvider);
+        service.maxIterations(10);
+        service.exitCondition(predicate);
+        service.subAgents(loopExec);
+
+        TestLoopAgent agent = service.build();
+
+        // Should not throw: predicate handles "score" being absent before the first body
+        // run by substituting null (MissingArgumentException recovery in buildLoopExitPredicate).
+        ResultWithAgenticScope<String> result = agent.run("any-topic");
+        assertThat(result.agenticScope().readState("score", (Double) null)).isEqualTo(0.9);
+        assertThat(bodyRuns.get()).isEqualTo(1);
     }
 
     @Test
