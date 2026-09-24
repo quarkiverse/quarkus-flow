@@ -52,7 +52,14 @@ quarkus.flow.durable.kube.pool.name=durable-flow
 
 # Gate the Pod's Readiness status on successfully acquiring a lease
 quarkus.flow.durable.kube.health.readiness.require-lease=true
+
+# Timeout for lease acquisition (default: PT30S)
+# If a pod cannot acquire a lease within this timeout, it exits with code 1
+# and Kubernetes restarts it for a fresh attempt
+quarkus.flow.durable.kube.lease.member.acquire-timeout=PT30S
 ----
+
+IMPORTANT: If lease acquisition fails within the configured timeout, the application will **exit with code 1** and log a clear error message. This triggers Kubernetes to restart the pod immediately, providing faster recovery than waiting for liveness probe failures. Ensure your timeout is appropriate for your cluster's performance characteristics.
 
 == 4. Configure Kubernetes Manifests
 
@@ -155,18 +162,44 @@ spec:
       maxSurge: 1
 ----
 
-== 6. Verify the Architecture in Production
+== 6. Lease Acquisition Failure and Recovery
+
+If a pod cannot acquire a lease within the configured timeout (default `PT30S`), the application will exit immediately with a clear error message:
+
+[source,text]
+----
+Failed to acquire Kubernetes lease after PT30S. This pod cannot participate
+in the durable workflow pool. Exiting to allow Kubernetes to restart with
+a fresh lease attempt.
+----
+
+The pod exits with **exit code 1**, which triggers Kubernetes to restart it. This provides:
+
+* **Faster recovery**: No waiting for liveness probe timeouts
+* **Clearer operational state**: CrashLoopBackoff is more visible than perpetual readiness failure
+* **Clean retry logic**: Each restart gets a fresh attempt to acquire an available lease
+
+Common causes of lease acquisition timeouts:
+
+* **Insufficient RBAC permissions**: The ServiceAccount cannot manage Leases
+* **Pool size mismatch**: The pool has fewer leases than deployment replicas
+* **Kubernetes API latency**: The control plane is slow or unreachable
+* **Lease stuck in held state**: Previous pods crashed without releasing leases cleanly
+
+To diagnose, check the pod logs for the specific timeout message, verify RBAC permissions, and inspect existing leases with `kubectl get lease -l io.quarkiverse.flow.durable.k8s/pool=POOL_NAME`.
+
+== 7. Verify the Architecture in Production
 
 Once deployed, you can use `kubectl` to verify the leader election and sharding are working correctly.
 
-=== View the Leases
+=== 7.1 View the Leases
 [source,bash]
 ----
 kubectl get lease -l io.quarkiverse.flow.durable.k8s/pool=durable-flow -o wide
 ----
 You should see one `leader` lease, and exactly as many `member` leases as you have Pod replicas.
 
-=== Check Readiness
+=== 7.2 Check Readiness
 Execute a health check directly against a running Pod:
 [source,bash]
 ----
@@ -174,7 +207,7 @@ kubectl exec -it deploy/my-flow-app -- curl -s localhost:8080/q/health/ready
 ----
 If configured correctly, the JSON output will include `"leaseAcquired": true` and `"leaseName": "flow-pool-member-durable-flow-00"`.
 
-=== Test Failover
+=== 7.3 Test Failover
 To see the durability in action, manually delete a Pod holding a lease:
 
 [source,bash]

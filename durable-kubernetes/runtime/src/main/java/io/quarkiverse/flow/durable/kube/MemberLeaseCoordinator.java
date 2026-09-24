@@ -47,7 +47,7 @@ public class MemberLeaseCoordinator {
         return current.get();
     }
 
-    public String awaitLease(Duration timeout) {
+    public String awaitLease(Duration timeout) throws LeaseAcquisitionException {
         String now = current.get();
         if (now != null) {
             return now;
@@ -55,7 +55,7 @@ public class MemberLeaseCoordinator {
         try {
             return gate.get().get(timeout.toMillis(), TimeUnit.MILLISECONDS);
         } catch (Exception e) {
-            throw new RuntimeException("Timeout waiting for member lease after " + timeout, e);
+            throw new LeaseAcquisitionException(e, timeout);
         }
     }
 }

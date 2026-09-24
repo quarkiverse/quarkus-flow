@@ -209,19 +209,22 @@ Understanding when each phase occurs:
 
 === Lease Acquisition Timeout (Kubernetes)
 
-*Symptom*: Pod never becomes ready, and logs show a lease acquisition failure.
+*Symptom*: Pod exits with code 1 and logs show `LeaseAcquisitionException` with message "Failed to acquire Kubernetes lease after PT30S. This pod cannot participate in the durable workflow pool. Exiting to allow Kubernetes to restart with a fresh lease attempt."
+
+*Behavior*: When lease acquisition times out, the application exits immediately with exit code 1, triggering Kubernetes to restart the pod for a fresh acquisition attempt. This provides faster recovery than waiting for liveness probe failures.
 
 *Possible causes*:
 
 * The pod lacks RBAC permissions to manage Leases.
-* Another pod already holds the lease.
-* The Kubernetes API server is unreachable.
+* All available leases in the pool are held by other pods.
+* The Kubernetes API server is unreachable or slow to respond.
 
 *Solution*:
 
 * Verify RBAC with `kubectl auth can-i create leases --as=system:serviceaccount:NAMESPACE:SERVICE_ACCOUNT`.
 * Check existing leases with `kubectl get lease -l io.quarkiverse.flow.durable.k8s/pool=POOL_NAME`.
 * Increase the timeout with `quarkus.flow.durable.kube.lease.member.acquire-timeout=60s`.
+* Ensure the pool size matches your deployment replica count.
 
 === Persistence Not Working
 
