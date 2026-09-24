@@ -144,11 +144,6 @@ public class FlowAgentServicesMockedTest {
         assertThat(calls.get()).isEqualTo(counter);
     }
 
-    /**
-     * Regression test for Bug 1: exit predicate must not throw when a state key it reads
-     * has not been written yet (i.e. on the first evaluation before any subagent has run).
-     * The predicate should treat the missing key as null and evaluate the null-guard correctly.
-     */
     @Test
     void whileModeLoop_exitPredicate_toleratesMissingKeyOnFirstEvaluation() {
         AtomicInteger bodyRuns = new AtomicInteger();
@@ -178,10 +173,6 @@ public class FlowAgentServicesMockedTest {
         assertThat(bodyRuns.get()).isEqualTo(1);
     }
 
-    /**
-     * Regression test for Bug 2: in while-mode, subagents after the one that satisfies the
-     * exit condition must be skipped within the same cycle.
-     */
     @Test
     void whileModeLoop_skipsRemainingSubagentsAfterExitConditionMet() {
         AtomicInteger evaluatorRuns = new AtomicInteger();
