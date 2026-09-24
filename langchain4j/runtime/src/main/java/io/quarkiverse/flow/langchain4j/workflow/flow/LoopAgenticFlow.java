@@ -1,12 +1,14 @@
 package io.quarkiverse.flow.langchain4j.workflow.flow;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
+import dev.langchain4j.agentic.agent.MissingArgumentException;
 import dev.langchain4j.agentic.internal.AgentUtil;
 import dev.langchain4j.agentic.planner.AgentArgument;
 import dev.langchain4j.agentic.scope.AgenticScope;
@@ -43,16 +45,28 @@ public abstract class LoopAgenticFlow extends AgenticFlow {
             List<AgentArgument> agentArguments = AgentUtil.argumentsFromMethod(method);
 
             return (agenticScope, loopCounter) -> {
-                try {
-                    Object[] args = AgentUtil.agentInvocationArguments(
-                            agenticScope,
-                            agentArguments,
-                            Map.of(AgentUtil.AGENTIC_SCOPE_ARG_NAME, agenticScope,
-                                    AgentUtil.LOOP_COUNTER_ARG_NAME, loopCounter))
-                            .positionalArgs();
-                    return (boolean) method.invoke(null, args);
-                } catch (Exception e) {
-                    throw new RuntimeException("Error invoking exit predicate", e);
+                Map<String, Object> additionalArgs = new HashMap<>();
+                additionalArgs.put(AgentUtil.AGENTIC_SCOPE_ARG_NAME, agenticScope);
+                additionalArgs.put(AgentUtil.LOOP_COUNTER_ARG_NAME, loopCounter);
+                while (true) {
+                    try {
+                        Object[] args = AgentUtil.agentInvocationArguments(
+                                agenticScope,
+                                agentArguments,
+                                additionalArgs)
+                                .positionalArgs();
+                        return (boolean) method.invoke(null, args);
+                    } catch (MissingArgumentException e) {
+                        // A while-style loop (testExitAtLoopEnd = false) evaluates the exit
+                        // predicate before the first body execution, so a state key the
+                        // predicate reads (e.g. an evaluator's output) may not be written yet.
+                        // The native loop never tests exit before a body run. Resolve the
+                        // missing key as null and retry, so a predicate guarded with a
+                        // null-check (e.g. evaluation != null && ...) behaves as written.
+                        additionalArgs.put(e.argumentName(), null);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error invoking exit predicate", e);
+                    }
                 }
             };
         } catch (Exception e) {
@@ -159,12 +173,41 @@ public abstract class LoopAgenticFlow extends AgenticFlow {
                                     String taskName = taskNames.get(i) + "-" + i;
                                     forDo.function(
                                             taskName,
-                                            fn -> fn.function(
-                                                    (DefaultAgenticScope scope, WorkflowContextData ctx) -> executeAgent(
-                                                            ctx.instanceData().id(), scope,
-                                                            index),
-                                                    DefaultAgenticScope.class)
-                                                    .outputAs((out, wf, tf) -> agenticScopePassthrough(tf.rawInput())));
+                                            fn -> {
+                                                fn.function(
+                                                        (DefaultAgenticScope scope, WorkflowContextData ctx) -> executeAgent(
+                                                                ctx.instanceData().id(), scope,
+                                                                index),
+                                                        DefaultAgenticScope.class)
+                                                        .outputAs((out, wf, tf) -> agenticScopePassthrough(tf.rawInput()));
+                                                if (!testAtEnd && index > 0) {
+                                                    // While-mode: a preceding subagent of this cycle may have
+                                                    // satisfied the exit condition, in which case the native
+                                                    // loop does not run the remaining subagents.
+                                                    fn.when(
+                                                            scope -> !Boolean.TRUE.equals(scope.readState(EXIT_PROP, false)),
+                                                            DefaultAgenticScope.class);
+                                                }
+                                            });
+                                    if (!testAtEnd) {
+                                        // While-mode: test the exit condition after every
+                                        // subagent, mirroring the native loop planner which
+                                        // evaluates the exit condition after each agent step
+                                        // (and never before the first one). The outcome is
+                                        // published to the state so the remaining subagents of
+                                        // the cycle are skipped and the loop can stop.
+                                        forDo.function(
+                                                "check-exit-" + index,
+                                                fn -> fn.function((scope, wf, tf) -> {
+                                                    Integer cycleIndex = (Integer) ((TaskContext) tf).variables()
+                                                            .get(AT);
+                                                    if (exitPredicate.test(scope, cycleIndex)) {
+                                                        scope.writeState(EXIT_PROP, true);
+                                                    }
+                                                    return scope;
+                                                }, DefaultAgenticScope.class)
+                                                        .outputAs((out, wf, tf) -> agenticScopePassthrough(tf.rawInput())));
+                                    }
                                 }
                             })
                             .tasks(checkExitAtEnd(testAtEnd, exitPredicate))
@@ -172,7 +215,8 @@ public abstract class LoopAgenticFlow extends AgenticFlow {
                             .at(AT)
                             .collection(ignored -> IntStream.range(0, max).boxed().toList())
                             .whileC(testAtEnd ? EXIT_COND_END
-                                    : (AgenticScope scope, Object item, Integer idx) -> !exitCondition().test(scope, idx)));
+                                    : (AgenticScope scope, Object item, Integer idx) -> !Boolean.TRUE.equals(
+                                            scope.readState(EXIT_PROP, false))));
                 })
                 .build();
     }
