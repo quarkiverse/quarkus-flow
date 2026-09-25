@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.quarkiverse.flow</groupId>
         <artifactId>quarkus-flow-messaging-parent</artifactId>
-        <version>1.1.3-SNAPSHOT</version>
+        <version>1.1.3</version>
     </parent>
 
     <artifactId>quarkus-flow-messaging</artifactId>
