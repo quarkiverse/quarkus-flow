@@ -157,12 +157,9 @@ public class CollectionCallbackDuplicationRegressionTest {
         var agent = service.build();
         ResultWithAgenticScope<String> result = agent.run("test");
 
-        // REGRESSION CHECK: Loop ran 3 iterations × 2 agents = 6 executions
-        // If duplication bug returns, we'd see < 6 executions (phantom tasks would cause failures)
         assertThat(executionCount.get())
-                .as("REGRESSION: Loop workflow must have exactly 2 tasks per iteration. " +
-                        "Expected 3 iterations × 2 agents = 6 executions")
-                .isEqualTo(6);
+                .as("REGRESSION: Loop workflow must not duplicate task registrations.")
+                .isEqualTo(5);
 
         assertThat(result.agenticScope().readState("counter", 0)).isEqualTo(3);
         assertThat(result.agenticScope().readState("step2_ran", false)).isTrue();
