@@ -4,7 +4,7 @@
     "@antora/site-generator": "3.2.0"
   },
   "dependencies": {
-    "@mermaid-js/mermaid-cli": "^11.6.0",
+    "@mermaid-js/mermaid-cli": "^12.0.0",
     "asciidoctor": "^4.0.0",
     "asciidoctor-kroki": "^1.0.0",
     "phantomjs": "^2.1.7"
