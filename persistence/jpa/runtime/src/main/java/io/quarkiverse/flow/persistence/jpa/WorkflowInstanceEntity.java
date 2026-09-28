@@ -6,10 +6,9 @@ import java.util.Collection;
 import jakarta.persistence.Basic;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.IdClass;
 import jakarta.persistence.OneToMany;
 
 import org.hibernate.annotations.DynamicUpdate;
@@ -20,14 +19,10 @@ import io.serverlessworkflow.impl.WorkflowStatus;
 
 @Entity
 @DynamicUpdate
-@IdClass(WorkflowInstanceKey.class)
-public class WorkflowInstanceEntity {
+public class WorkflowInstanceEntity implements MetadataSupport<WorkflowInstanceKey, WorkflowMetadataEntity> {
 
-    @Id
-    private String instanceId;
-
-    @Id
-    private String applicationId;
+    @EmbeddedId
+    WorkflowInstanceKey key;
 
     @Column(nullable = false)
     private String workflowNamespace;
@@ -50,22 +45,28 @@ public class WorkflowInstanceEntity {
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "workflowInstance")
     private Collection<TaskInfoEntity> tasks;
 
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "workflowInstance")
+    private Collection<WorkflowMetadataEntity> metadata;
+
     public WorkflowInstanceEntity() {
     }
 
     public WorkflowInstanceEntity(String applicationId, WorkflowDefinitionId definitionId, String instanceId, Instant startedAt,
             WorkflowModel input) {
-        this.applicationId = applicationId;
+        this.key = new WorkflowInstanceKey(instanceId, applicationId);
         this.workflowNamespace = definitionId.namespace();
         this.workflowName = definitionId.name();
         this.workflowVersion = definitionId.version();
-        this.instanceId = instanceId;
         this.startedAt = startedAt;
         this.input = input;
     }
 
     public String getInstanceId() {
-        return instanceId;
+        return key.getInstanceId();
+    }
+
+    public String getApplicationId() {
+        return key.getApplicationId();
     }
 
     public String getWorkflowNamespace() {
@@ -100,7 +101,11 @@ public class WorkflowInstanceEntity {
         return tasks;
     }
 
-    public void setTasks(Collection<TaskInfoEntity> tasks) {
-        this.tasks = tasks;
+    public Collection<WorkflowMetadataEntity> getMetadata() {
+        return metadata;
+    }
+
+    public WorkflowInstanceKey key() {
+        return key;
     }
 }

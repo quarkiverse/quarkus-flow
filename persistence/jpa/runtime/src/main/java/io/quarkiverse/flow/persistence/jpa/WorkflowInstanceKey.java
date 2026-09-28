@@ -3,12 +3,18 @@ package io.quarkiverse.flow.persistence.jpa;
 import java.io.Serializable;
 import java.util.Objects;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
+
+@Embeddable
 public class WorkflowInstanceKey implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    @Column
     private String instanceId;
 
+    @Column
     private String applicationId;
 
     public WorkflowInstanceKey() {
@@ -18,6 +24,14 @@ public class WorkflowInstanceKey implements Serializable {
         super();
         this.instanceId = instanceId;
         this.applicationId = applicationId;
+    }
+
+    public String getInstanceId() {
+        return instanceId;
+    }
+
+    public String getApplicationId() {
+        return applicationId;
     }
 
     @Override
