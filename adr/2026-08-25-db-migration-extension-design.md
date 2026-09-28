@@ -51,17 +51,17 @@ Sources:
 
 **Before:** A user adding PostgreSQL persistence to a Quarkus Flow app has exactly one documented option — set `quarkus.hibernate-orm.database.generation=update` and accept the risk, or hand-copy the guide's SQL into their own `src/main/resources/db/migration/` and wire up Flyway themselves with no framework support if something doesn't match the entity mappings. Quartz scheduling is one step ahead — `docs/quartz.adoc` documents the exact `quarkus.flyway.*` properties to set, and the script itself already ships on the classpath — but the gap is packaging and isolation, not discovery: the documented setup uses a dedicated history table (`flyway_quarkus_history`) but still points Flyway at the default `db/migration` location, so the script's *history* is isolated from the user's own but its *script* sits unpackaged alongside whatever migrations the user's own application defines at that same path, and nothing turns it on by default. There's no signal, at upgrade time, whether a new Quarkus Flow version changed anything about either schema.
 
-**After:** Managed migrations come from two thin, independently-installable extensions and a dedicated migration image built from them.
+**After:** Managed migrations come from two thin, independently-installable extensions.
 
 - A user running a **standalone deployment** (single instance, or a developer setup) adds `quarkus-flow-db-migration-runtime` and/or `quarkus-flow-db-migration-quartz` to their application and sets `migrate-at-start=true` on the corresponding Flyway config — today's `update` convenience, but with a real, auditable migration history.
-- A user deploying through an **external orchestrator** (a Kubernetes operator, a Job-based rollout, a CI pipeline) runs the **dedicated `quarkus-flow-db-migration` image** as a short-lived step before application pods start. The image contains both extensions; each stream is switched on or off by its own environment variable. It applies the enabled migrations, reports an exit code, and stops — it never starts a workflow engine or an HTTP listener.
+- A user deploying through an **external orchestrator** (a Kubernetes operator, a Job-based rollout, a CI pipeline) builds their own short-lived migration step — a bare Quarkus app bundling the enabled extension(s), since neither depends on the Quarkus Flow runtime — and runs it before application pods start, applying migrations via Flyway and gating rollout on its exit code. Quarkus Flow does not build or publish that image or app; the extensions are designed so building one is straightforward.
 - Release notes and the migration scripts themselves (`V{version}.{sequence}__…sql`) say exactly what changed and when.
 - Upgrading an existing, already-populated database from `update` to Flyway-managed is a documented, one-time baseline step (`baseline-on-migrate`), shipped with the extension rather than discovered through a GitHub issue.
 - A user who wants none of this changes nothing — `update`/`none` keep working exactly as before.
 
 ## Decision
 
-Ship **two extensions** plus **one dedicated migration image** built from them.
+Ship **two extensions**.
 
 ### Two extensions, co-located, with no dependency on the Quarkus Flow runtime
 
@@ -99,21 +99,9 @@ Vendor-specific SQL syntax also has to be handled explicitly: the persistence gu
 
 The existing `V2.0.0__QuarkusQuartzTasks.sql` moves from `scheduler/quartz/runtime` into `quarkus-flow-db-migration-quartz`, with one content change: the leading `DROP TABLE IF EXISTS` statements for all eleven `QRTZ_*` tables are removed. As written, the script is a reset — a first run against a database that already has Quartz tables (from the previous manual setup, or from Quarkus Quartz's own runtime DDL) would drop and recreate them, discarding scheduler state. Without the drops, a genuinely fresh database is unaffected (`CREATE TABLE` with nothing pre-existing is safe), and a database that already has the tables must instead be baselined — `baseline-on-migrate=true` with a `baseline-version` below the script's own version — the same onboarding treatment this design already requires for the JPA runtime stream moving off Hibernate `update` (see Versioning convention and Consequences). `scheduler/quartz/runtime` drops its `quarkus-flyway` dependency, since migration ownership moves to the new extension.
 
-### The dedicated migration image's migrate-only contract
-
-The image asserted elsewhere in this document (User Experience, Consequences) needs a defined contract, or an orchestrator has nothing concrete to invoke:
-
-- **Entrypoint**: on start, the image runs Flyway's `migrate()` for each stream whose extension is enabled, in either order — the streams are independent — then exits. It never starts the workflow engine, never opens an HTTP listener, and holds no long-lived process beyond the migration run itself.
-- **Enablement**: both streams live on the one image; each is toggled independently by a standard Quarkus config property, auto-mapped to an environment variable (`quarkus.flow.db-migration.runtime.enabled` → `QUARKUS_FLOW_DB_MIGRATION_RUNTIME_ENABLED`, and the `quartz` equivalent). Setting neither is a no-op that exits `0`.
-- **Exit code**: `0` once every enabled stream reports zero pending migrations (including the case where all were already applied); non-zero on the first migration failure, with the failing stream and script identified in the log output. A caller (Job, pipeline step, operator) gates rollout on this exit code.
-- **Idempotency**: re-running against an already-migrated database is safe — Flyway reports zero pending migrations for that stream and the image exits `0` — so a caller that retries the step does not need to guard against double-application.
-- **Datasource(s)**: supplied through standard Quarkus datasource configuration, one named datasource per enabled stream (`flow-runtime` / `flow-quartz`, per Decision above), which lets the image run under a DDL-scoped credential distinct from the one the application runtime uses.
-
-Packaging (native vs. JVM, base image, JDBC driver bundling) is left to Open Questions below — this section defines the contract the image must satisfy, not its build.
-
 ### migrate-at-start, for standalone deployments
 
-Where rollout is *not* a distinct step from application startup — a single instance, a developer environment — a consuming application adds the relevant extension directly and sets `quarkus.flyway."flow-runtime".migrate-at-start=true` and/or `quarkus.flyway."flow-quartz".migrate-at-start=true` for the streams it enables. This is the non-orchestrated option. Whenever more than one instance runs against the same database, or rollout is externally managed, the dedicated image is the correct choice for the reasons in Industry Practice above.
+Where rollout is *not* a distinct step from application startup — a single instance, a developer environment — a consuming application adds the relevant extension directly and sets `quarkus.flyway."flow-runtime".migrate-at-start=true` and/or `quarkus.flyway."flow-quartz".migrate-at-start=true` for the streams it enables. This is the non-orchestrated option. Whenever more than one instance runs against the same database, or rollout is externally managed, a consumer-built minimal migration step (per Industry Practice above) is the correct choice, not `migrate-at-start`. Quarkus Flow does not build or publish that step itself — the extensions are designed with no runtime/HTTP dependency specifically so a consumer can bundle either (or both) into their own bare Quarkus app and run it however their orchestrator expects.
 
 ### Versioning convention
 
@@ -129,33 +117,28 @@ Nothing here changes default behavior. Without either extension on the classpath
 
 Moving `V2.0.0__QuarkusQuartzTasks.sql` off the default `db/migration` classpath location is a breaking change for any user who already enabled Flyway manually against `scheduler/quartz/runtime`'s old location: once the script's only copy lives under the new extension's `db/flow-migration/quartz` location, the old location is empty on the classpath, so a Flyway configuration still pointed at it finds nothing to run, regardless of any warning. To keep that setup working through a deprecation window, `scheduler/quartz/runtime` retains a copy of the same script at the old `db/migration` location — kept identical to the new extension's copy by the same blocking CI check that guards the JPA runtime schema against drift (see Consequences) — and logs a startup warning when it detects a manually-configured Flyway setup targeting that location, pointing to `quarkus-flow-db-migration-quartz` and the upgrade docs. The duplicated copy, and the warning, are removed together in a future major version once the deprecation window closes.
 
+The history **table name** is also changing, not just the location: the new extension's Flyway configuration uses `flyway_flow_quartz_history`, distinct from the `flyway_quarkus_history` name already established by the existing manual setup (see Context). A user migrating from that manual setup to the new extension therefore starts with an empty history table under the new name — Flyway has no record that `V2.0.0__QuarkusQuartzTasks.sql` already ran, and without the leading `DROP TABLE IF EXISTS` statements (removed above), re-running it against a database that already has the `QRTZ_*` tables fails on already-existing objects instead of silently resetting them. This needs the same baseline treatment as a brand-new adopter — `baseline-on-migrate=true` with `baseline-version=1.0` — and must be documented explicitly in the upgrade/migration guide for users coming from the manual setup, not only for users coming from Hibernate `update`.
+
 ## Consequences
 
 **Positive**
 - Schema changes are documented, versioned, and released alongside the Quarkus Flow code that needs them, closing the gap the persistence guide already flags as a production concern.
 - Generalizes a pattern (isolated Flyway history) already proven in the Quartz module rather than inventing a new one.
-- The dedicated image gives any orchestrator — a Kubernetes operator, a Job-based rollout, a CI pipeline — a stable, minimal target to run, with a clean exit code and isolated logs, and without that orchestrator owning or vendoring SQL scripts itself.
-- Because neither extension depends on the Quarkus Flow runtime, the migration image stays small, builds native cleanly, and its dependency surface is decoupled from the full runtime's.
+- Because neither extension depends on the Quarkus Flow runtime or the HTTP layer, a consumer can bundle either (or both) into a minimal, non-serving Quarkus app for their own orchestrator — a Kubernetes operator, a Job-based rollout, a CI pipeline — to run as a distinct rollout step, with a clean exit code and isolated logs, without that orchestrator owning or vendoring SQL scripts itself.
 - Migrations can run under a database credential scoped to DDL, separate from the runtime's credential.
 
 **Negative / costs**
-- Three artifacts to build and release in lockstep with each Quarkus Flow release: the two extensions and the migration image.
+- Two artifacts to build and release in lockstep with each Quarkus Flow release: the two extensions.
 - Nothing intrinsically keeps Hibernate entity mappings and the runtime Flyway scripts in sync. A blocking CI job is required: on every PR, boot a test application with `quarkus.hibernate-orm.database.generation=validate` against a schema produced purely by the `quarkus-flow-db-migration-runtime` Flyway scripts (via Dev Services/Testcontainers, no Hibernate DDL) and fail the build on any mismatch. This must land with the runtime extension, not as a follow-up.
-- Native packaging of the migration image requires each extension to register its Flyway migration location at build time so scripts are discoverable under GraalVM.
+- Each extension must register its Flyway migration location at build time so scripts are discoverable under GraalVM, since any consumer wanting a native migration step depends on that.
 - Quartz schema tracking becomes an ongoing upstream-watching task.
 - An application upgrading from `update` to Flyway-managed on an existing, already-populated database needs a Flyway baseline (`baseline-on-migrate=true`), with a stream-specific `baseline-version` below that stream's first script (`0.1` for the runtime stream; `1.0` for Quartz, per the existing IT precedent — see Versioning convention). This upgrade path needs explicit documentation, including the "back up first, rehearse on a copy" guidance from industry practice.
 
 ## Alternatives Considered
 
 - **Leave scripts ad hoc, no dedicated extension.** Rejected — no stable artifact for an orchestrator to run, and the JPA runtime schema has no migration path at all.
-- **`migrate-at-start` only, no dedicated image.** Rejected as the sole mechanism — it races under replication, can blow the pod start-up budget, surfaces migration failure as a crash loop, and offers no separation between DDL and runtime credentials. Kept as the explicit option for standalone, non-orchestrated deployments.
-- **Reuse the full Quarkus Flow runner image, gated by a "migrate-only" property.** Rejected — it drags the entire workflow engine and HTTP stack into the migration path, prevents a minimal native image, and couples the migration step's dependency surface to the full runtime's.
-- **Extensions that depend on the persistence/scheduler runtime modules.** Rejected — that dependency would pull the Quarkus Flow runtime into any migration deployment and defeat the minimal-image goal. The CI drift check removes the need for a compile-time link.
+- **`migrate-at-start` as the only supported mechanism.** Rejected as the sole mechanism — it races under replication, can blow the pod start-up budget, surfaces migration failure as a crash loop, and offers no separation between DDL and runtime credentials. Kept as the explicit option for standalone, non-orchestrated deployments; consumers needing the orchestrated path build their own minimal migration step from the extensions.
+- **Bundling migrations into the full Quarkus Flow runner image, gated by a "migrate-only" property.** Not recommended for consumers building their own migration step — it drags the entire workflow engine and HTTP stack into the migration path, prevents a minimal native image, and couples the migration step's dependency surface to the full runtime's. This is why the extensions are designed with no dependency on the Quarkus Flow runtime.
+- **Extensions that depend on the persistence/scheduler runtime modules.** Rejected — that dependency would pull the Quarkus Flow runtime into any migration deployment and defeat the goal of extensions being usable in a minimal, non-serving app. The CI drift check removes the need for a compile-time link.
 - **Single combined Flyway stream for runtime + Quartz.** Rejected — the two are independently optional; one history table and location would force both to always be present together.
 - **An external orchestrator owns and vendors the migration scripts itself.** Rejected — couples that orchestrator's release cadence to Quarkus Flow's schema evolution and duplicates schema knowledge Quarkus Flow already has.
-
-## Open Questions
-
-- **Migration image build.** Native vs. JVM mode and base image choice — a start-up-latency-versus-build-complexity trade-off, independent of the migrate-only contract defined in Decision above.
-- **JDBC drivers in the migration image.** Whether to bundle all supported drivers in one image or publish per-database variants — a size-versus-simplicity trade-off to settle before the image is first published.
-- **Image coordinates and publishing pipeline.** Registry, naming, and tagging scheme for `quarkus-flow-db-migration`, aligned with how Quarkus Flow publishes its other images.
