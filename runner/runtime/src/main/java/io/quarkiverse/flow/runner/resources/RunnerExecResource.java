@@ -63,7 +63,7 @@ public class RunnerExecResource {
     @POST
     @Path("/{namespace}/{name}")
     @Consumes(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Execute workflow (latest version)", description = "Executes the latest version of the specified workflow. "
+    @Operation(operationId = "executeLatestWorkflow", summary = "Execute workflow (latest version)", description = "Executes the latest version of the specified workflow. "
             +
             "With wait=true (synchronous): blocks until workflow completes, always returns 200 OK with output. " +
             "With wait=false (asynchronous): returns immediately with 202 Accepted, workflowOutput is always null regardless of completion status. "
@@ -87,7 +87,8 @@ public class RunnerExecResource {
     @POST
     @Path("/{namespace}/{name}/{version}")
     @Consumes(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Execute workflow (specific version)", description = "Executes a specific version of the workflow. " +
+    @Operation(operationId = "executeWorkflowVersion", summary = "Execute workflow (specific version)", description = "Executes a specific version of the workflow. "
+            +
             "With wait=true (synchronous): blocks until workflow completes, always returns 200 OK with output. " +
             "With wait=false (asynchronous): returns immediately with 202 Accepted, workflowOutput is always null regardless of completion status. "
             +
@@ -111,7 +112,7 @@ public class RunnerExecResource {
     @POST
     @Path("/{namespace}/{name}/{version}/{instanceId}/suspend")
     @Consumes(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Suspend workflow execution", description = "Suspend workflow execution upon user request. "
+    @Operation(operationId = "suspendWorkflowVersion", summary = "Suspend workflow execution", description = "Suspend workflow execution upon user request. "
             + "This means that once the current task is completed, the next task wont start till the user explicitly resumes the wokflow")
     @APIResponse(responseCode = "200", description = "Workflow suspended successfully")
     @APIResponse(responseCode = "304", description = "Workflow not in a state that can be suspended", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = StatusResponse.class)))
@@ -127,7 +128,7 @@ public class RunnerExecResource {
     @POST
     @Path("/{namespace}/{name}/{instanceId}/suspend")
     @Consumes(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Suspend workflow execution", description = "Suspend workflow execution upon user request. "
+    @Operation(operationId = "suspendLatestWorkflow", summary = "Suspend workflow execution", description = "Suspend workflow execution upon user request. "
             + "This means that once the current task is completed, the next task wont start till the user explicitly resumes the wokflow")
     @APIResponse(responseCode = "200", description = "Workflow suspended successfully")
     @APIResponse(responseCode = "304", description = "Workflow not in a state that can be suspended", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = StatusResponse.class)))
@@ -142,7 +143,7 @@ public class RunnerExecResource {
     @POST
     @Path("/{namespace}/{name}/{version}/{instanceId}/resume")
     @Consumes(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Resume workflow execution", description = "Resume workflow execution upon user request. "
+    @Operation(operationId = "resumeWorkflowVersion", summary = "Resume workflow execution", description = "Resume workflow execution upon user request. "
             + "The workflow will continue with the next task.")
     @APIResponse(responseCode = "200", description = "Workflow resumed successfully")
     @APIResponse(responseCode = "304", description = "Workflow not in a state that can be resumed", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = StatusResponse.class)))
@@ -158,7 +159,7 @@ public class RunnerExecResource {
     @POST
     @Path("/{namespace}/{name}/{instanceId}/resume")
     @Consumes(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Resume workflow execution", description = "Resume workflow execution upon user request. "
+    @Operation(operationId = "resumeLatestWorkflow", summary = "Resume workflow execution", description = "Resume workflow execution upon user request. "
             + "The workflow will continue with the next task.")
     @APIResponse(responseCode = "200", description = "Workflow resumed successfully")
     @APIResponse(responseCode = "304", description = "Workflow not in a state that can be resumed", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = StatusResponse.class)))
@@ -173,7 +174,7 @@ public class RunnerExecResource {
     @POST
     @Path("/{namespace}/{name}/{version}/{instanceId}/cancel")
     @Consumes(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Cancel workflow execution", description = "Cancel workflow execution upon user request. "
+    @Operation(operationId = "cancelWorkflowVersion", summary = "Cancel workflow execution", description = "Cancel workflow execution upon user request. "
             + "It might try to cancel current task. Once that task is done, the workflow will not continue with the next task and will remain cancelled forever.")
     @APIResponse(responseCode = "200", description = "Workflow cancelled successfully")
     @APIResponse(responseCode = "304", description = "Workflow not in a state that can be cancelled", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = StatusResponse.class)))
@@ -189,7 +190,7 @@ public class RunnerExecResource {
     @POST
     @Path("/{namespace}/{name}/{instanceId}/cancel")
     @Consumes(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Cancel workflow execution", description = "Cancel workflow execution upon user request. "
+    @Operation(operationId = "cancelLatestWorkflow", summary = "Cancel workflow execution", description = "Cancel workflow execution upon user request. "
             + "It might try to cancel current task. Once that task is done, the workflow will not continue with the next task and will remain cancelled forever.")
     @APIResponse(responseCode = "200", description = "Workflow cancelled successfully")
     @APIResponse(responseCode = "304", description = "Workflow not in a state that can be cancelled", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = StatusResponse.class)))
