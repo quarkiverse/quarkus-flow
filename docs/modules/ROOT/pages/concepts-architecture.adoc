@@ -47,7 +47,7 @@ Quarkus Flow treats LangChain4j Agents as native task workers. Conceptually, an 
 
 The engine relies on the broader Quarkus ecosystem to do the heavy lifting for external communications:
 
-* **HTTP & OpenAPI:** Uses RESTEasy Reactive to perform non-blocking HTTP calls. (See xref:http-openapi-tasks.adoc[Call HTTP services]).
+* **HTTP & OpenAPI:** Uses Quarkus REST to perform non-blocking HTTP calls. (See xref:http-openapi-tasks.adoc[Call HTTP services]).
 * **Messaging:** Uses SmallRye Reactive Messaging to consume and emit CloudEvents to brokers like Kafka or RabbitMQ. (See xref:messaging.adoc[Use messaging]).
 * **AI & LLMs:** Uses the Quarkus LangChain4j extension to inject AI services directly into tasks. (See xref:langchain4j.adoc[Agentic workflows]).
 

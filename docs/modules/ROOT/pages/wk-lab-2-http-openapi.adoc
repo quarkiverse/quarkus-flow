@@ -50,7 +50,7 @@ quarkus.http.auth.basic=true
 quarkus.flow.http.client.connect-timeout=5000
 quarkus.flow.http.client.read-timeout=10000
 
-# Enable RESTEasy Reactive wire logging
+# Enable Quarkus REST wire logging
 quarkus.flow.http.client.logging.scope=request-response
 quarkus.flow.http.client.logging.body-limit=2048
 quarkus.log.category."org.jboss.resteasy.reactive.client.logging".level=DEBUG

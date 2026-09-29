@@ -5,7 +5,7 @@ include::includes/attributes.adoc[]
 
 include::includes/status-stable.adoc[]
 
-Quarkus Flow supports calling external services over HTTP and OpenAPI. All HTTP and OpenAPI tasks share a common, tunable HTTP client layer powered by RESTEasy Reactive and Vert.x.
+Quarkus Flow supports calling external services over HTTP and OpenAPI. All HTTP and OpenAPI tasks share a common, tunable HTTP client layer powered by Quarkus REST and Vert.x.
 
 This guide shows how to:
 
@@ -142,7 +142,7 @@ quarkus.flow.http.client.named.secureA.static-headers=X-Env=prod,X-Region=us-eas
 
 == 6. Logging and debugging HTTP requests
 
-Enable the RESTEasy Reactive client logger to see the exact payloads on the wire:
+Enable the Quarkus REST client logger to see the exact payloads on the wire:
 
 [source,properties]
 ----
@@ -199,7 +199,7 @@ quarkus.flow.http.client.max-chunk-size=16384
 
 [source,properties]
 ----
-# See MultiQueryParamMode enum in RESTEasy Reactive
+# See MultiQueryParamMode enum in Quarkus REST
 quarkus.flow.http.client.multi-query-param-mode=multi
 ----
 
