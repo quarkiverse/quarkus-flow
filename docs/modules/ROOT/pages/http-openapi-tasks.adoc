@@ -164,7 +164,7 @@ public class PetstoreFlow extends Flow {
 
 == 3. Logging and troubleshooting
 
-When dealing with external APIs, you need to see the exact HTTP request/response on the wire. Configure the underlying RESTEasy Reactive client logging in your `application.properties`:
+When dealing with external APIs, you need to see the exact HTTP request/response on the wire. Configure the underlying Quarkus REST client logging in your `application.properties`:
 
 [source,properties]
 ----

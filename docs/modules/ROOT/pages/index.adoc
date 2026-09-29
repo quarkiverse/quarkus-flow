@@ -17,7 +17,7 @@ image::architecture.svg[Quarkus Flow Architecture Diagram, align="center"]
 * **Build-Time Optimization:** Compile-time discovery of workflow descriptors and automatic injection of compiled beans.
 * **Standard Orchestration:** Robust state management, retries, branching, and event routing directly within your Quarkus app.
 * **AI First-Class Citizen:** Seamless Agentic workflows integrating with link:https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html[LangChain4j].
-* **Ecosystem Integration:** Native messaging support via link:https://quarkus.io/guides/messaging[SmallRye] and HTTP client support via link:https://resteasy.dev/[RESTEasy Reactive].
+* **Ecosystem Integration:** Native messaging support via link:https://quarkus.io/guides/messaging[SmallRye] and HTTP client support via link:https://quarkus.io/guides/rest/[Quarkus REST].
 
 == Why Quarkus Flow?
 
