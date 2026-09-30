@@ -7,6 +7,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.quarkiverse.flow.opentelemetry.runtime.OTelTraceCorrelationProvider;
 import io.quarkiverse.flow.opentelemetry.runtime.OTelWorkflowExecutionListener;
 import io.quarkiverse.flow.opentelemetry.runtime.SpanBuilderFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -38,6 +39,7 @@ class FlowOTelProcessor {
             additionalBeans.produce(AdditionalBeanBuildItem.builder()
                     .addBeanClass(SpanBuilderFactory.class)
                     .addBeanClass(OTelWorkflowExecutionListener.class)
+                    .addBeanClass(OTelTraceCorrelationProvider.class)
                     .setDefaultScope(SINGLETON)
                     .setUnremovable()
                     .build());
