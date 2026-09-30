@@ -16,6 +16,8 @@ import '@vaadin/number-field';
 import '@vaadin/checkbox';
 import '@vaadin/text-area';
 
+import './components/qwc-flow-workflow-header.js'
+
 import 'qui-themed-code-block';
 import 'qui-badge';
 
@@ -56,16 +58,6 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
         .button-container {
             display: flex;
             justify-content: flex-start;
-        }
-
-        .workflow-name {
-            margin: 12px 0px 4px 0px;
-        }
-
-        .workflow-meta {
-            font-size: var(--lumo-font-size-s);
-            color: var(--lumo-secondary-text-color);
-            margin-bottom: 12px;
         }
 
         .form-field {
@@ -138,27 +130,12 @@ export class QwcFlowExecution extends observeState(QwcHotReloadElement) {
     }
 
     _renderTopBar() {
-        const id = this.workflowId || {};
-        const name = id.name || '(unknown)';
-        const ns = id.namespace || '';
-        const version = id.version || '';
-
         return html`
-            <div>
-                <vaadin-button @click="${this._backAction}" class="backButton">
-                    <vaadin-icon icon="font-awesome-solid:caret-left" slot="prefix"></vaadin-icon>
-                    Back
-                </vaadin-button>
-                <h2 class="workflow-name">${name}</h2>
-                <div class="workflow-meta">
-                    ${ns ? html`<span><b>Namespace:</b> ${ns}</span>` : ''}
-                    ${version ? html`${ns ? ' · ' : ''}<span><b>Version:</b> ${version}</span>` : ''}
-                    ${this.description ? html`
-                        <br/>
-                        <span>${this.description}</span>
-                    ` : ''}
-                </div>
-            </div>
+            <qwc-flow-workflow-header
+                .workflowId=${this.workflowId}
+                description="${this.description}"
+                @flow-header-back=${this._backAction}>
+            </qwc-flow-workflow-header>
         `;
     }
 

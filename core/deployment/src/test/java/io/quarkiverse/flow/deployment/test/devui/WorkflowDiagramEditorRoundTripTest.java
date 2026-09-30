@@ -276,13 +276,52 @@ public class WorkflowDiagramEditorRoundTripTest {
 
         page.navigate(DEV_UI_URL);
 
-        // Step 1 — wait for the grid data to arrive (any eye button in the DOM).
-        // The vaadin-grid virtual-scroll only renders rows currently in the viewport;
-        // rows outside the visible area are not attached to the DOM at all.
-        // We use locator.evaluate() — Playwright resolves the vaadin-grid element
-        // through shadow DOM and then calls scrollToIndex on it directly, which is
-        // the only reliable way to reach into a shadow root from page.evaluate().
+        // Step 1 — scroll the target row into teh DOM and click the eye button.
+        openDiagramFor(diagramEditorId);
+
+        // Step 2 — the eye button navigates to a full page diagram screen.
+        // The shared header attaching is the signal the navigation happened
+        page.locator("qwc-flow-workflow-header")
+                .waitFor(new Locator.WaitForOptions()
+                        .setState(WaitForSelectorState.ATTACHED));
+
+        // Step 3 — diagram container appears (loading completes)
+        page.locator("[data-testid='diagram-container']").waitFor();
+
+        // Step 4 — expected task node is rendered with correct text
+        Locator taskNode = page.locator("[data-testid='" + taskTestId + "']");
+        taskNode.waitFor();
+        assertThat(taskNode.textContent())
+                .as("task node '%s' must contain text '%s'", taskTestId, taskName)
+                .contains(taskName);
+
+        // Step 5 - navigate back and re-enter: re-renders correctly (no stale state)
+        page.locator(".backButton").click();
+        page.locator("[data-testid='diagram-container']")
+                .waitFor(new Locator.WaitForOptions()
+                        .setState(WaitForSelectorState.DETACHED));
+
+        // Back on the list the grid re-virtualises, so scroll to row again
+        openDiagramFor(diagramEditorId);
+        page.locator("[data-testid='diagram-container']").waitFor();
+
+        Locator taskNodeAfterReopen = page.locator("[data-testid='" + taskTestId + "']");
+        taskNodeAfterReopen.waitFor();
+        assertThat(taskNodeAfterReopen.textContent())
+                .as("task node '%s' must still render correctly after reopen", taskTestId)
+                .contains(taskName);
+    }
+
+    // Scrolls the workflow grid until the row for {@code diagramEditorId} is rendered,
+    // then clicks its eye button.
+    // The vaadin-grid virtual-scroll only renders rows currently in the viewport;
+    // rows outside the visible area are not attached to the DOM at all. We use
+    // locator.evaluate() — Playwright resolves the vaadin-grid element through shadow
+    // DOM and then calls scrollToIndex on it directly, which is the only reliable way
+    // to reach into a shadow root from page.evaluate().
+    private void openDiagramFor(String diagramEditorId) {
         String buttonSelector = "#see-" + diagramEditorId;
+        // Wait for the grid data to arrive (any eye button in the DOM).
         page.waitForSelector("[id^='see-diagramEditor-']");
         // Find the row index whose generated button id matches our target, then
         // scroll the grid to that index so Vaadin renders the row into the DOM.
@@ -304,39 +343,6 @@ public class WorkflowDiagramEditorRoundTripTest {
                 new Page.WaitForSelectorOptions()
                         .setState(WaitForSelectorState.ATTACHED)
                         .setTimeout(10_000));
-
-        // Step 2 — click eye button; wait for dialog to attach (it is inside a Vaadin
-        // overlay and never becomes "visible" in Playwright's sense while animating)
         page.locator(buttonSelector).click();
-        page.locator("vaadin-dialog[opened]")
-                .waitFor(new Locator.WaitForOptions()
-                        .setState(WaitForSelectorState.ATTACHED));
-
-        // Step 3 — diagram container appears (loading completes)
-        page.locator("[data-testid='diagram-container']").waitFor();
-
-        // Step 4 — expected task node is rendered with correct text
-        Locator taskNode = page.locator("[data-testid='" + taskTestId + "']");
-        taskNode.waitFor();
-        assertThat(taskNode.textContent())
-                .as("task node '%s' must contain text '%s'", taskTestId, taskName)
-                .contains(taskName);
-
-        // Step 5 — close and reopen: re-renders correctly (no stale state)
-        page.keyboard().press("Escape");
-        page.locator("vaadin-dialog[opened]")
-                .waitFor(new Locator.WaitForOptions()
-                        .setState(WaitForSelectorState.HIDDEN));
-        page.locator(buttonSelector).click();
-        page.locator("vaadin-dialog[opened]")
-                .waitFor(new Locator.WaitForOptions()
-                        .setState(WaitForSelectorState.ATTACHED));
-        page.locator("[data-testid='diagram-container']").waitFor();
-
-        Locator taskNodeAfterReopen = page.locator("[data-testid='" + taskTestId + "']");
-        taskNodeAfterReopen.waitFor();
-        assertThat(taskNodeAfterReopen.textContent())
-                .as("task node '%s' must still render correctly after reopen", taskTestId)
-                .contains(taskName);
     }
 }
