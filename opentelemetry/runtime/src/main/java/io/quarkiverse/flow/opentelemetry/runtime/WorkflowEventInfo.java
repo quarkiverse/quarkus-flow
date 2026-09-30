@@ -10,6 +10,7 @@ record WorkflowEventInfo(
         String wfVersion,
         String wfInstanceId,
         EventType eventType) {
+
     public static WorkflowEventInfo from(WorkflowEvent ev) {
         var context = ev.workflowContext();
         var definition = context.definition();
@@ -21,5 +22,15 @@ record WorkflowEventInfo(
                 definition.id().version(),
                 context.instanceData().id(),
                 ev.type());
+    }
+
+    WorkflowEventInfo(String wfApplicationId, String wfNamespace, String wfName, String wfVersion, String wfInstanceId,
+            EventType eventType) {
+        this.wfApplicationId = wfApplicationId;
+        this.wfNamespace = wfNamespace;
+        this.wfName = wfName;
+        this.wfVersion = wfVersion;
+        this.wfInstanceId = wfInstanceId;
+        this.eventType = eventType;
     }
 }

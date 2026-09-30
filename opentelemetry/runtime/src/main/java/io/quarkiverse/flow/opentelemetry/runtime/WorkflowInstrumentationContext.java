@@ -1,12 +1,21 @@
 package io.quarkiverse.flow.opentelemetry.runtime;
 
+import static io.opentelemetry.semconv.ErrorAttributes.ERROR_TYPE;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.END_REASON_UNKNOWN;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.FLOW_TASK_EXECUTION_END_REASON_ATTR;
+
 import java.util.Comparator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.StatusCode;
 import io.serverlessworkflow.impl.WorkflowInstanceData;
 import io.serverlessworkflow.impl.WorkflowMutableInstance;
+import io.serverlessworkflow.impl.persistence.metadata.MetaTransient;
 
+@MetaTransient
 public class WorkflowInstrumentationContext implements AutoCloseable {
     private static final String OTEL_CONTEXT = "OTEL_CONTEXT";
     private final InstrumentationContext workflowInstanceContext;
@@ -71,27 +80,37 @@ public class WorkflowInstrumentationContext implements AutoCloseable {
         return parentInstrumentationContext;
     }
 
-    public void ensureAllTaskSpansAreClosed() {
+    public void ensureAllTaskSpansAreClosed(String endReason) {
+        endTaskSpans(taskSpan -> taskSpan.setAttribute(FLOW_TASK_EXECUTION_END_REASON_ATTR, endReason));
+        workflowInstanceTaskContext.clear();
+    }
+
+    public void failActiveTaskSpans(String statusDescription, String errorType, String endReason) {
+        endTaskSpans(taskSpan -> {
+            taskSpan.setStatus(StatusCode.ERROR, statusDescription);
+            taskSpan.setAttribute(ERROR_TYPE, errorType);
+            taskSpan.setAttribute(FLOW_TASK_EXECUTION_END_REASON_ATTR, endReason);
+        });
+        workflowInstanceTaskContext.clear();
+    }
+
+    private void endTaskSpans(Consumer<Span> withSettings) {
         workflowInstanceTaskContext.entrySet().stream()
                 .sorted(Comparator
                         .comparing((Map.Entry<String, InstrumentationContext> entry) -> entry.getValue().getStartTime())
                         .reversed())
-                .forEach(entry -> {
-                    if (entry.getValue().getStartSpan() != null) {
-                        entry.getValue().getStartSpan().end();
-                    }
-                });
-        workflowInstanceTaskContext.clear();
+                .forEach(entry -> entry.getValue().endStartSpan(withSettings));
     }
 
     @Override
-    public void close() throws Exception {
-        ensureAllTaskSpansAreClosed();
+    public void close() {
+        ensureAllTaskSpansAreClosed(END_REASON_UNKNOWN);
     }
 
     public static void setWorkflowInstrumentationContext(WorkflowInstanceData instanceData,
             WorkflowInstrumentationContext workflowContext) {
-        ((WorkflowMutableInstance) instanceData).addMetadataIfAbsent(OTEL_CONTEXT, () -> workflowContext);
+        ((WorkflowMutableInstance) instanceData).addMetadataIfAbsent(WorkflowInstrumentationContext.OTEL_CONTEXT,
+                () -> workflowContext);
     }
 
     public static WorkflowInstrumentationContext getWorkflowInstrumentationContext(WorkflowInstanceData instanceData) {

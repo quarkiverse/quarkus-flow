@@ -1,6 +1,8 @@
 package io.quarkiverse.flow.opentelemetry.runtime;
 
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
@@ -15,6 +17,7 @@ public class InstrumentationContext {
     private final Context parentContext;
     private final Instant startTime;
     private final Span startSpan;
+    private final AtomicBoolean startSpanEnded = new AtomicBoolean(false);
 
     private InstrumentationContext(String jsonPosition,
             int iteration,
@@ -72,6 +75,13 @@ public class InstrumentationContext {
 
     public Instant getStartTime() {
         return startTime;
+    }
+
+    public void endStartSpan(Consumer<Span> withSettings) {
+        if (startSpanEnded.compareAndSet(false, true)) {
+            withSettings.accept(startSpan);
+            startSpan.end();
+        }
     }
 
     public static Builder newBuilder() {
