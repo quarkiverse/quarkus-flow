@@ -1,0 +1,104 @@
+= Migration Guide: 1.x to 2.0.0
+include::includes/attributes.adoc[]
+
+Quarkus Flow 2.0.0 introduces two new optional extensions for versioned database schema migration:
+
+* **`quarkus-flow-db-migration`**: versioned Flyway scripts for the JPA runtime persistence schema.
+* **`quarkus-flow-db-migration-quartz`**: versioned Flyway scripts for the Quartz `QRTZ_*` schema, extracted out of `quarkus-flow-quartz-scheduler`.
+
+== What changed
+
+=== Quartz Flyway script moved to its own extension
+
+[cols="1,1",options="header"]
+|===
+| Before (1.x) | After (2.0.0)
+
+| `QRTZ_*` DDL script shipped inside `quarkus-flow-quartz-scheduler`
+| Script moved to the new `quarkus-flow-db-migration-quartz` extension
+
+| Classpath location: `db/migration` (Flyway default)
+| Classpath location: `db/flow-migration/quartz`
+
+| Flyway history table: `flyway_quarkus_history`
+| Flyway history table: `flyway_flow_quartz_history`
+
+| Activated via the unnamed `quarkus.flyway.migrate-at-start=true`
+| Activated via the named `quarkus.flyway.flow-quartz.migrate-at-start=true`
+
+| `quarkus-flow-quartz-scheduler` pulled in a `quarkus-flyway` dependency
+| `quarkus-flow-quartz-scheduler` no longer has a Flyway dependency
+|===
+
+== Step-by-step migration
+
+=== If you use `quarkus-flow-quartz-scheduler` with Flyway
+
+The `QRTZ_*` script is no longer on the default `db/migration` location, so your existing `quarkus.flyway.migrate-at-start=true` will no longer pick it up. Follow these steps:
+
+==== 1. Add `quarkus-flow-db-migration-quartz`
+
+.pom.xml
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkiverse.flow</groupId>
+  <artifactId>quarkus-flow-db-migration-quartz</artifactId>
+  <version>${project.version}</version>
+</dependency>
+----
+
+==== 2. Add the named `flow-quartz` datasource
+
+Point it at the same physical database your default datasource uses:
+
+.application.properties
+[source,properties]
+----
+quarkus.datasource.flow-quartz.db-kind=postgresql
+quarkus.datasource.flow-quartz.jdbc.url=jdbc:postgresql://<host>/<database>
+quarkus.datasource.flow-quartz.username=<user>
+quarkus.datasource.flow-quartz.password=<password>
+
+quarkus.flyway.flow-quartz.table=flyway_flow_quartz_history
+quarkus.flyway.flow-quartz.migrate-at-start=true
+quarkus.flyway.flow-quartz.locations=db/flow-migration/quartz
+----
+
+==== 3. Baseline the existing `QRTZ_*` tables
+
+Because the `QRTZ_*` tables already exist from the previous setup and the history table name has changed, Flyway has no record that `V2.0.0__QuarkusQuartzTasks.sql` already ran. Add the baseline properties so Flyway does not attempt to re-create those tables:
+
+[source,properties]
+----
+quarkus.flyway.flow-quartz.baseline-on-migrate=true
+quarkus.flyway.flow-quartz.baseline-version=2.0.0
+----
+
+[WARNING]
+====
+Back up your database and rehearse the baseline against a copy of it before running against production. `baseline-on-migrate` tells Flyway "assume everything up to this version already exists," so schema drift will not be caught.
+====
+
+==== 4. Remove the old unnamed Flyway properties
+
+If you had Flyway properties solely to manage the Quartz schema, remove them:
+
+[source,properties]
+----
+# Remove these if they were only for the Quartz schema
+quarkus.flyway.migrate-at-start=true
+quarkus.flyway.locations=db/migration
+----
+
+If your application also uses `quarkus.flyway.*` for its own migrations, keep those properties but verify the old `db/migration` location no longer contains the Quartz script (it is no longer shipped there).
+
+=== If you are adopting managed migrations for JPA persistence for the first time
+
+Add `quarkus-flow-db-migration` and follow the setup in xref:db-migration.adoc[Database Schema Migration].
+If your tables already exist (created by Hibernate's `update` strategy), also apply the baseline step described there.
+
+== Further reading
+
+* xref:db-migration.adoc[Database Schema Migration] — full reference for both extensions, including datasource configuration, versioning convention, and the baseline procedure for existing databases.
+* xref:quartz.adoc[Quartz workflow scheduler] — full Quartz setup including the named `flow-quartz` datasource.
