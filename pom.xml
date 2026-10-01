@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.quarkiverse</groupId>
         <artifactId>quarkiverse-parent</artifactId>
-        <version>22</version>
+        <version>23</version>
     </parent>
     <groupId>io.quarkiverse.flow</groupId>
     <artifactId>quarkus-flow-parent</artifactId>
@@ -37,6 +37,14 @@
     </scm>
 
     <properties>
+        <!-- Pinned below quarkiverse-parent's default (3.6.0): that version has a JDK 25 regression
+             where StackWalkerStrategy.<clinit> NPEs on the "Attach Listener" thread when a Java agent
+             (e.g. Mockito's inline mock maker, or Quarkus continuous-testing) self-attaches, poisoning
+             the forked JVM with NoClassDefFoundError. See https://github.com/apache/maven-surefire/issues/3460
+             (fixed by https://github.com/apache/maven-surefire/pull/3464, targeted for 3.6.1, not yet released).
+             Remove this override once 3.6.1+ is available on Maven Central. -->
+        <version.surefire.plugin>3.5.6</version.surefire.plugin>
+        <version.failsafe.plugin>3.5.6</version.failsafe.plugin>
         <compiler-plugin.version>3.16.0</compiler-plugin.version>
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
