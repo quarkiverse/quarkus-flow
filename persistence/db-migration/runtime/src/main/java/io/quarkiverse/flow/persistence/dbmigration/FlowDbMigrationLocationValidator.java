@@ -1,7 +1,7 @@
 package io.quarkiverse.flow.persistence.dbmigration;
 
+import java.util.EnumSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 
@@ -10,6 +10,7 @@ import jakarta.enterprise.event.Observes;
 
 import org.eclipse.microprofile.config.Config;
 
+import io.quarkus.datasource.common.runtime.DatabaseKind.SupportedDatabaseKind;
 import io.quarkus.runtime.StartupEvent;
 
 /**
@@ -23,30 +24,33 @@ import io.quarkus.runtime.StartupEvent;
 public class FlowDbMigrationLocationValidator {
 
     private static final String DATASOURCE_NAME = "flow-runtime";
-    private static final Set<String> SUPPORTED_DB_KINDS = Set.of("h2", "mysql", "postgresql", "oracle", "mssql");
+    private static final Set<SupportedDatabaseKind> SUPPORTED_DB_KINDS = EnumSet.of(SupportedDatabaseKind.H2,
+            SupportedDatabaseKind.MYSQL, SupportedDatabaseKind.POSTGRESQL, SupportedDatabaseKind.ORACLE,
+            SupportedDatabaseKind.MSSQL);
 
     void onStart(@Observes StartupEvent event, Config config) {
-        Optional<String> dbKind = config.getOptionalValue("quarkus.datasource." + DATASOURCE_NAME + ".db-kind", String.class)
-                .map(kind -> kind.toLowerCase(Locale.ROOT));
+        Optional<SupportedDatabaseKind> dbKind = config
+                .getOptionalValue("quarkus.datasource." + DATASOURCE_NAME + ".db-kind", String.class)
+                .flatMap(SupportedDatabaseKind::from);
         if (dbKind.isEmpty() || !SUPPORTED_DB_KINDS.contains(dbKind.get())) {
             return;
         }
 
         List<String> locations = config.getOptionalValues("quarkus.flyway." + DATASOURCE_NAME + ".locations", String.class)
                 .orElse(List.of());
-        String expectedLocation = "db/flow-migration/runtime/" + dbKind.get();
-        boolean pointsAtExpectedLocation = locations.stream()
+        String expectedLocation = "db/flow-migration/runtime/" + dbKind.get().getMainName();
+        boolean isExpectedLocationPresent = locations.stream()
                 .map(location -> location.startsWith("classpath:") ? location.substring("classpath:".length()) : location)
                 .anyMatch(expectedLocation::equals);
 
-        if (!pointsAtExpectedLocation) {
+        if (!isExpectedLocationPresent) {
             throw new IllegalStateException(
                     "quarkus-flow-db-migration is configured (quarkus.datasource." + DATASOURCE_NAME + ".db-kind is set to "
-                            + dbKind.get() + "), but quarkus.flyway.\"" + DATASOURCE_NAME + "\".locations is " + locations
-                            + " instead of [" + expectedLocation + "]. Set quarkus.flyway.\"" + DATASOURCE_NAME
+                            + dbKind.get().getMainName() + "), but quarkus.flyway.\"" + DATASOURCE_NAME + "\".locations is "
+                            + locations + " instead of [" + expectedLocation + "]. Set quarkus.flyway.\"" + DATASOURCE_NAME
                             + "\".locations=" + expectedLocation
-                            + " (see the Database Schema Migration guide) so Flyway applies this extension's " + dbKind.get()
-                            + " migration scripts through the isolated flow-runtime datasource.");
+                            + " (see the Database Schema Migration guide) so Flyway applies this extension's "
+                            + dbKind.get().getMainName() + " migration scripts through the isolated flow-runtime datasource.");
         }
     }
 }
