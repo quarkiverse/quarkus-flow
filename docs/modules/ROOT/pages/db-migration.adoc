@@ -65,6 +65,68 @@ The `locations` path is deliberately off Flyway's default `db/migration` scan ro
 Ships the `QRTZ_*` schema Quarkus Quartz's `jdbc-cmt`/`jdbc-tx` store types need, through its own isolated `flow-quartz` named datasource and Flyway configuration. 
 See xref:quartz.adoc[Quartz workflow scheduler] for the full setup.
 
+[[manual-migration]]
+== Manual migration
+
+If you'd rather manage the migration yourself instead of using `quarkus-flow-db-migration`, add the Flyway extension (and the matching database support artifact, if required for your database):
+
+.pom.xml
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-flyway</artifactId>
+</dependency>
+----
+
+Enable migration at startup and disable Hibernate ORM schema generation in your `application.properties`:
+
+[source,properties]
+----
+quarkus.hibernate-orm.schema-management.strategy=none
+quarkus.hibernate-orm.physical-naming-strategy=org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+quarkus.flyway.enabled=true
+quarkus.flyway.migrate-at-start=true
+----
+
+Then create a migration script at `src/main/resources/db/migration/` (e.g. `V1__create_tables.sql`) with the three tables required by the JPA provider. Use the script that matches your target database — these are `quarkus-flow-db-migration`'s own scripts, included straight from the extension's source so they can't drift from what it actually ships:
+
+.H2
+[source,sql]
+----
+include::{examples-dir}/persistence/db-migration/h2/V1.0.0__CreateWorkflowSchema.sql[]
+----
+
+.MySQL
+[source,sql]
+----
+include::{examples-dir}/persistence/db-migration/mysql/V1.0.0__CreateWorkflowSchema.sql[]
+----
+
+.PostgreSQL
+[source,sql]
+----
+include::{examples-dir}/persistence/db-migration/postgresql/V1.0.0__CreateWorkflowSchema.sql[]
+----
+
+.Oracle
+[source,sql]
+----
+include::{examples-dir}/persistence/db-migration/oracle/V1.0.0__CreateWorkflowSchema.sql[]
+----
+
+.MSSQL
+[source,sql]
+----
+include::{examples-dir}/persistence/db-migration/mssql/V1.0.0__CreateWorkflowSchema.sql[]
+----
+
+[NOTE]
+====
+Pick the script that matches your target database and adapt it further if your schema or naming conventions differ.
+Note that the `time` column is a reserved word in some databases, so it is quoted on MySQL (`` `time` ``) and MSSQL (`[time]`).
+====
+
 == Versioning convention
 
 Scripts follow `V{quarkus-flow version}.{sequence}__Description.sql`, so a script's version communicates which Quarkus Flow release introduced it. 
