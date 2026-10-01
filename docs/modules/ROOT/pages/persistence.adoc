@@ -173,68 +173,7 @@ quarkus.hibernate-orm.schema-management.strategy=update
 
 This is convenient for development and testing. For production, prefer managing the schema explicitly with a migration tool such as link:https://quarkus.io/guides/flyway[Flyway].
 
-The recommended way to do that is the `quarkus-flow-db-migration` extension, which ships versioned Flyway scripts for this schema for you,
-see xref:db-migration.adoc[Database Schema Migration] for the full setup.
-If you'd rather manage the migration yourself, the rest of this section shows the equivalent manual setup.
-
-Add the Flyway extension (and the matching database support artifact, if required for your database):
-
-.pom.xml
-[source,xml]
-----
-<dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-flyway</artifactId>
-</dependency>
-----
-
-Enable migration at startup and disable Hibernate ORM schema generation in your `application.properties`:
-
-[source,properties]
-----
-quarkus.hibernate-orm.schema-management.strategy=none
-quarkus.hibernate-orm.physical-naming-strategy=org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
-quarkus.flyway.enabled=true
-quarkus.flyway.migrate-at-start=true
-----
-
-Then create a migration script at `src/main/resources/db/migration/V1__create_tables.sql` with the three tables required by the JPA provider. Use the script that matches your target database (these are the same scripts `quarkus-flow-db-migration` ships, so you can start from the extension and drop down to this manual path later if you ever need to diverge from it):
-
-.H2
-[source,sql]
-----
-include::{examples-dir}/persistence/V1__create_tables_h2.sql[]
-----
-
-.MySQL
-[source,sql]
-----
-include::{examples-dir}/persistence/V1__create_tables_mysql.sql[]
-----
-
-.PostgreSQL
-[source,sql]
-----
-include::{examples-dir}/persistence/V1__create_tables_pg.sql[]
-----
-
-.Oracle
-[source,sql]
-----
-include::{examples-dir}/persistence/V1__create_tables_oracle.sql[]
-----
-
-.MSSQL
-[source,sql]
-----
-include::{examples-dir}/persistence/V1__create_tables_mssql.sql[]
-----
-
-[NOTE]
-====
-Pick the script that matches your target database and adapt it further if your schema or naming conventions differ.
-Note that the `time` column is a reserved word in some databases, so it is quoted on MySQL (`` `time` ``) and MSSQL (`[time]`).
-====
+The recommended way to do that is the xref:db-migration.adoc[`quarkus-flow-db-migration`] extension, which ships versioned Flyway scripts for this schema for you; see xref:db-migration.adoc[Database Schema Migration] for the full setup. If you'd rather manage the migration yourself, see the xref:db-migration.adoc#manual-migration[Manual migration] section of that guide.
 
 === Option C: MVStore (Local file system)
 MVStore writes workflow state to a local file system file. This is an excellent, zero-infrastructure option for local development, testing, or single-node edge deployments.
