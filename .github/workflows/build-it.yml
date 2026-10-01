@@ -177,9 +177,9 @@ jobs:
           - name: messaging
             modules: core/deployment,messaging/runtime,messaging/deployment,messaging/integration-tests,messaging/integration-tests-amqp,grpc/runtime,grpc/deployment,grpc/integration-tests,oidc/runtime,oidc/deployment,oidc/integration-tests
           - name: persistence
-            modules: core/deployment,messaging/deployment,persistence/common/runtime,persistence/common/deployment,persistence/test-common,persistence/redis/runtime,persistence/redis/deployment,persistence/redis/integration-tests,persistence/jpa/runtime,persistence/jpa/deployment,persistence/jpa/integration-tests,persistence/mvstore/runtime,persistence/mvstore/deployment,persistence/mvstore/integration-tests,persistence/infinispan/integration-tests
+            modules: core/deployment,messaging/deployment,persistence/common/runtime,persistence/common/deployment,persistence/test-common,persistence/redis/runtime,persistence/redis/deployment,persistence/redis/integration-tests,persistence/jpa/runtime,persistence/jpa/deployment,persistence/jpa/integration-tests,persistence/mvstore/runtime,persistence/mvstore/deployment,persistence/mvstore/integration-tests,persistence/infinispan/integration-tests,persistence/db-migration/runtime,persistence/db-migration/deployment,persistence/db-migration/integration-tests
           - name: scheduling
-            modules: core/deployment,messaging/deployment,scheduler/memory/runtime,scheduler/memory/deployment,scheduler/memory/integration-tests,scheduler/quartz/runtime,scheduler/quartz/deployment,scheduler/quartz/integration-tests,durable-kubernetes/runtime,durable-kubernetes/deployment,durable-kubernetes/integration-tests
+            modules: core/deployment,messaging/deployment,scheduler/memory/runtime,scheduler/memory/deployment,scheduler/memory/integration-tests,scheduler/quartz/runtime,scheduler/quartz/deployment,scheduler/quartz/integration-tests,scheduler/db-migration-quartz/runtime,scheduler/db-migration-quartz/deployment,scheduler/db-migration-quartz/integration-tests,durable-kubernetes/runtime,durable-kubernetes/deployment,durable-kubernetes/integration-tests
           - name: runner
             # runner/app (image-minimal profile, active by default) needs persistence/mvstore
             # at build time; -am only follows plain <dependency> edges, not Quarkus's dynamic
