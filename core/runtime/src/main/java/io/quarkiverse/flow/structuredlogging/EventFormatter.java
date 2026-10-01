@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
 import io.quarkiverse.flow.config.TimestampFormat;
+import io.quarkiverse.flow.lifecycle.WorkflowApplicationIds;
 import io.serverlessworkflow.impl.WorkflowDefinitionData;
 import io.serverlessworkflow.impl.WorkflowError;
 import io.serverlessworkflow.impl.WorkflowStatus;
@@ -254,6 +255,7 @@ public class EventFormatter {
         json.put(FIELD_EVENT_TYPE, StructuredLoggingEventTypes.toCloudEventType(filterKey));
         json.put(FIELD_TIMESTAMP, formatTimestamp(event.eventDate()));
         json.put(FIELD_INSTANCE_ID, event.workflowContext().instanceData().id());
+        json.put(WorkflowApplicationIds.FIELD_NAME, WorkflowApplicationIds.from(event));
         return json;
     }
 
