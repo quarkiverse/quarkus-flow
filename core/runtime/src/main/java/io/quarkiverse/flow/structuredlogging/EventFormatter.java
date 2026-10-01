@@ -63,6 +63,7 @@ public class EventFormatter {
     private static final String FIELD_EVENT_TYPE = "eventType";
     private static final String FIELD_TIMESTAMP = "timestamp";
     private static final String FIELD_INSTANCE_ID = "instanceId";
+    private static final String FIELD_WORKFLOW_APPLICATION_ID = "workflowApplicationId";
     private static final String FIELD_TASK_EXECUTION_ID = "taskExecutionId";
     private static final String FIELD_TASK_NAME = "taskName";
     private static final String FIELD_TASK_POSITION = "taskPosition";
@@ -254,6 +255,7 @@ public class EventFormatter {
         json.put(FIELD_EVENT_TYPE, StructuredLoggingEventTypes.toCloudEventType(filterKey));
         json.put(FIELD_TIMESTAMP, formatTimestamp(event.eventDate()));
         json.put(FIELD_INSTANCE_ID, event.workflowContext().instanceData().id());
+        json.put(FIELD_WORKFLOW_APPLICATION_ID, event.workflowContext().definition().application().id());
         return json;
     }
 

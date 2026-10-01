@@ -1,5 +1,6 @@
 package io.quarkiverse.flow.messaging.it;
 
+import static io.serverlessworkflow.impl.LifecycleEvents.APPLICATION_ID_EXTENSION;
 import static java.time.Duration.ofSeconds;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.condition.OS;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
+import io.serverlessworkflow.impl.WorkflowApplication;
 import io.smallrye.reactive.messaging.ce.CloudEventMetadata;
 import io.smallrye.reactive.messaging.ce.OutgoingCloudEventMetadata;
 import io.smallrye.reactive.messaging.memory.InMemoryConnector;
@@ -53,9 +55,13 @@ public class HelloMessagingFlowInMemoryTest {
     @Inject
     HelloMessagingFlow workflow;
 
+    @Inject
+    WorkflowApplication application;
+
     @BeforeEach
     void setUp() {
         connector.sink("flow-out").clear();
+        connector.sink("flow-lifecycle-out").clear();
         workflow.instance(Map.of()).start();
     }
 
@@ -133,6 +139,27 @@ public class HelloMessagingFlowInMemoryTest {
             String payload = msg.getPayload();
             assertThat(payload).startsWith("{").endsWith("}");
             assertThat(payload).contains("\"Hello JsonCheck!\"");
+        });
+    }
+
+    @Test
+    @DisplayName("lifecycle_events_carry_application_id_extension")
+    void lifecycle_events_carry_application_id_extension() {
+        InMemorySink<String> lifecycleSink = connector.sink("flow-lifecycle-out");
+
+        await().atMost(ofSeconds(10)).untilAsserted(() -> {
+            List<? extends Message<String>> messages = lifecycleSink.received();
+            assertThat(messages)
+                    .as("Should receive lifecycle events on flow-lifecycle-out")
+                    .isNotEmpty();
+
+            assertThat(messages)
+                    .allSatisfy(m -> {
+                        CloudEventMetadata<?> ce = m.getMetadata(CloudEventMetadata.class).orElseThrow();
+                        assertThat(ce.getExtension(APPLICATION_ID_EXTENSION))
+                                .as("Lifecycle event %s should carry the application id extension", ce.getType())
+                                .hasValue(application.id());
+                    });
         });
     }
 
