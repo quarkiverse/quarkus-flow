@@ -82,7 +82,7 @@ public class WorkflowDiagramEditorTest {
         page.waitForSelector(BUTTON_SELECTOR);
         page.locator(BUTTON_SELECTOR).click();
 
-        page.waitForSelector("vaadin-dialog[opened]",
+        page.waitForSelector("qwc-flow-workflow-header",
                 new Page.WaitForSelectorOptions().setState(WaitForSelectorState.ATTACHED));
 
         page.waitForSelector("[data-testid='diagram-container']");
