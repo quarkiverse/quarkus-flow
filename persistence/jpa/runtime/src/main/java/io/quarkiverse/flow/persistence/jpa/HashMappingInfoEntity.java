@@ -22,6 +22,7 @@ public class HashMappingInfoEntity {
     @Column
     private HashItem key;
 
+    @Column
     private byte[] data;
 
     public HashMappingInfoEntity(HashIndex id, String instanceId, HashItem key, byte[] data) {

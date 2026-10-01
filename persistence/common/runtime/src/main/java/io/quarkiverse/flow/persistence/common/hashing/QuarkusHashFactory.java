@@ -18,13 +18,13 @@ public class QuarkusHashFactory extends DefaultHashFactory {
 
     @Override
     protected boolean intCondition(byte[] data) {
-        MD5 md5Config = config.hashing().md5();
-        return md5Config.enabled() && data.length > md5Config.threshold().orElse(MD5HashItem.SIZE_THRESHOLD);
+        SDK sdkConfig = config.hashing().sdk();
+        return sdkConfig.enabled() && data.length > sdkConfig.threshold().orElse(IntegerHashItem.SIZE_THRESHOLD);
     }
 
     @Override
     protected boolean md5Condition(byte[] data) {
-        SDK sdkConfig = config.hashing().sdk();
-        return sdkConfig.enabled() && data.length > sdkConfig.threshold().orElse(IntegerHashItem.SIZE_THRESHOLD);
+        MD5 md5Config = config.hashing().md5();
+        return md5Config.enabled() && data.length > md5Config.threshold().orElse(MD5HashItem.SIZE_THRESHOLD);
     }
 }
