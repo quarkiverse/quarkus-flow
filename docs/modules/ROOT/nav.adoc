@@ -30,6 +30,7 @@
 *** xref:messaging.adoc[Use messaging and events]
 ** State Persistence
 *** xref:persistence.adoc[Configure state persistence]
+*** xref:db-migration.adoc[Database Schema Migration]
 ** Monitoring
 *** xref:metrics-prometheus.adoc[Metrics & Prometheus Integration]
 *** xref:tracing.adoc[Enable distributed tracing]

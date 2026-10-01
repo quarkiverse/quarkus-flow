@@ -20,10 +20,6 @@
             <artifactId>quarkus-quartz-deployment</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-flyway-deployment</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow-deployment</artifactId>
             <version>${project.version}</version>

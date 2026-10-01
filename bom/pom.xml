@@ -129,6 +129,16 @@
         <artifactId>quarkus-flow-jpa-deployment</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-db-migration</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-db-migration-deployment</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 
       <dependency>
         <groupId>io.quarkiverse.flow</groupId>
@@ -170,6 +180,16 @@
       <dependency>
         <groupId>io.quarkiverse.flow</groupId>
         <artifactId>quarkus-flow-quartz-scheduler-deployment</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-db-migration-quartz</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkiverse.flow</groupId>
+        <artifactId>quarkus-flow-db-migration-quartz-deployment</artifactId>
         <version>${project.version}</version>
       </dependency>
 

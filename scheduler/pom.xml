@@ -14,5 +14,6 @@
     <modules>
         <module>memory</module>
         <module>quartz</module>
+        <module>db-migration-quartz</module>
     </modules>
 </project>
