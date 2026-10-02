@@ -16,6 +16,9 @@ public class TaskMetadataKey implements Serializable {
     @Embedded
     private TaskInfoKey taskKey;
 
+    protected TaskMetadataKey() {
+    }
+
     public TaskMetadataKey(String metaName, TaskInfoKey taskKey) {
         this.metaName = metaName;
         this.taskKey = taskKey;

@@ -25,6 +25,9 @@ public class HashMappingInfoEntity {
     @Column
     private byte[] data;
 
+    protected HashMappingInfoEntity() {
+    }
+
     public HashMappingInfoEntity(HashIndex id, String instanceId, HashItem key, byte[] data) {
         this.instance = instanceId;
         this.id = id.toString();

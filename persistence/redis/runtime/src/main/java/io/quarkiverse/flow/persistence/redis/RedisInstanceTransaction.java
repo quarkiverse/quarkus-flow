@@ -137,7 +137,8 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     private Map<String, Map<HashIndex, byte[]>> retrieveBlobData(String instanceId) {
         Map<String, Map<HashIndex, byte[]>> result = new HashMap<>();
         setCommands.smembers(blobSetKey(instanceId)).forEach(s -> hashCommands.hgetall(s)
-                .forEach((k, v) -> result.computeIfAbsent(k, __ -> new HashMap<>()).put(hashFactory.indexFromString(k), v)));
+                .forEach((k, v) -> result.computeIfAbsent(lastChunk(s), __ -> new HashMap<>())
+                        .put(hashFactory.indexFromString(k), v)));
         return result;
     }
 
@@ -235,7 +236,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
             if (entry.getKey().startsWith(META) && !entry.getKey().endsWith(IDX)) {
                 String metaKey = entry.getKey().substring(META.length());
                 metadata.put(metaKey, MarshallingUtils.readObject(factory, readLargeByteArray(instanceKey,
-                        entry.getValue(), taskInfo.get(idxKey(metaKey)))));
+                        entry.getValue(), taskInfo.get(idxKey(entry.getKey())))));
             }
         }
         return metadata;
@@ -250,8 +251,10 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     public void removeProcessInstance(WorkflowContextData workflowContext) {
         String key = key(workflowContext);
         if (hashCommands.hexists(key, SCHEMA_VERSION)) {
-            operations.add(tx -> keyCommands(tx).del(key(workflowContext)));
-            setCommands.smembers(blobSetKey(key)).forEach(k -> operations.add(tx -> keyCommands(tx).del(k)));
+            operations.add(tx -> keyCommands(tx).del(key));
+            String setKey = blobSetKey(key);
+            setCommands.smembers(setKey).forEach(k -> operations.add(tx -> keyCommands(tx).del(k)));
+            operations.add(tx -> keyCommands(tx).del(setKey));
             hashCoordinator.afterRemove(workflowContext.instanceData().id());
         } else {
             legacyRemoveProcessInstance(workflowContext);
@@ -507,7 +510,7 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     }
 
     private String lastChunk(String key) {
-        return key.substring(key.lastIndexOf(SEPARATOR) + 1);
+        return key.substring(key.lastIndexOf(SEPARATOR) + SEPARATOR.length());
     }
 
     private PersistenceWorkflowInfo readPersistenceInfo(String key, String instanceId) {

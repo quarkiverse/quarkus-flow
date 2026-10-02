@@ -96,8 +96,10 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
                 TaskInfoKey.from(workflowContext, taskContext), taskContext.completedAt(), taskContext.output(),
                 workflowContext.context(),
                 transition.isEndNode(), next == null ? null : next.position().jsonPointer());
-        writeLargeBytes(coordinator, workflowContext.instanceData(), entity.getModel(), entity::setModelHash, entity::setModel);
-        writeLargeBytes(coordinator, workflowContext.instanceData(), entity.getContext(), entity::setContextHash,
+        writeLargeBytes(coordinator, workflowContext.instanceData(),
+                MarshallingUtils.writeObject(bufferFactory, entity.getModel()), entity::setModelHash, entity::setModel);
+        writeLargeBytes(coordinator, workflowContext.instanceData(),
+                MarshallingUtils.writeObject(bufferFactory, entity.getContext()), entity::setContextHash,
                 entity::setContext);
         em.persist(entity);
         writeTaskMetadata(coordinator, workflowContext.instanceData(), entity);
@@ -117,7 +119,8 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
             MetadataSupport<K, E> entity, BiFunction<String, MetadataSupport<K, E>, E> function) {
         PersistenceMetaUtils.durableMetadataAsStream(instance).forEach(entry -> {
             E metadataEntity = function.apply(entry.getKey(), entity);
-            writeLargeBytes(coordinator, instance, entry.getValue(), metadataEntity::setHashValue, metadataEntity::setRawValue);
+            writeLargeBytes(coordinator, instance, MarshallingUtils.writeObject(bufferFactory, entry.getValue()),
+                    metadataEntity::setHashValue, metadataEntity::setRawValue);
             em.persist(metadataEntity);
         });
     }
@@ -266,10 +269,9 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
                 : rawData;
     }
 
-    private void writeLargeBytes(HashMappingCoordinator coordinator, WorkflowInstanceData instanceData, Object obj,
+    private void writeLargeBytes(HashMappingCoordinator coordinator, WorkflowInstanceData instanceData, byte[] data,
             Consumer<JPAHashMappingInfo> hashConsumer,
             Consumer<byte[]> byteConsumer) {
-        byte[] data = MarshallingUtils.writeObject(bufferFactory, obj);
         hashFactory.fromData(data)
                 .map(item -> new JPAHashMappingInfo(item,
                         coordinator.calculateIndex(instanceData.id(), item, data)))

@@ -16,9 +16,12 @@ public class WorkflowMetadataKey implements Serializable {
     @Embedded
     private WorkflowInstanceKey workflowKey;
 
-    public WorkflowMetadataKey(String metaName, WorkflowInstanceKey taskKey) {
+    protected WorkflowMetadataKey() {
+    }
+
+    public WorkflowMetadataKey(String metaName, WorkflowInstanceKey workflowKey) {
         this.metaName = metaName;
-        this.workflowKey = taskKey;
+        this.workflowKey = workflowKey;
     }
 
     public String getMetaName() {

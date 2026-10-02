@@ -10,6 +10,9 @@ import jakarta.persistence.ManyToOne;
 @Entity
 public class WorkflowMetadataEntity extends MetadataEntity {
 
+    protected WorkflowMetadataEntity() {
+    }
+
     public WorkflowMetadataEntity(WorkflowMetadataKey id) {
         this.id = id;
     }
