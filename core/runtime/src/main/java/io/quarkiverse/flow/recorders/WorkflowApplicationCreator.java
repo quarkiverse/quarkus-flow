@@ -20,6 +20,7 @@ import io.quarkiverse.flow.config.FlowRunConfig;
 import io.quarkiverse.flow.config.FlowTracingConfig;
 import io.quarkiverse.flow.dsl.model.JavaModelFactory;
 import io.quarkiverse.flow.internal.NoOpScheduler;
+import io.quarkiverse.flow.lifecycle.ce.FlowLifeCycleCloudEventFactory;
 import io.quarkiverse.flow.metrics.MicrometerExecutionListener;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
 import io.quarkiverse.flow.providers.FaultToleranceProvider;
@@ -120,6 +121,7 @@ public class WorkflowApplicationCreator {
         builder.withAllowedCommands(flowRunConfig.shell().allowedCommands().orElse(new ArrayList<>()));
 
         injectAppId(builder);
+        injectLifeCycleCloudEventFactory(builder);
         injectExecutorServiceFactory(builder);
         injectJQExpressionFactory(builder);
         injectEventConsumers(builder);
@@ -138,6 +140,10 @@ public class WorkflowApplicationCreator {
 
     private void injectAppId(final Builder builder) {
         ConfigProvider.getConfig().getOptionalValue("quarkus.application.name", String.class).ifPresent(builder::withId);
+    }
+
+    private void injectLifeCycleCloudEventFactory(final Builder builder) {
+        builder.withLifeCycleCloudEventFactory(new FlowLifeCycleCloudEventFactory());
     }
 
     private void injectExecutorServiceFactory(Builder builder) {

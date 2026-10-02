@@ -19,9 +19,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
+import io.serverlessworkflow.impl.WorkflowApplication;
 import io.smallrye.reactive.messaging.ce.CloudEventMetadata;
 import io.smallrye.reactive.messaging.ce.OutgoingCloudEventMetadata;
 import io.smallrye.reactive.messaging.memory.InMemoryConnector;
@@ -53,9 +57,16 @@ public class HelloMessagingFlowInMemoryTest {
     @Inject
     HelloMessagingFlow workflow;
 
+    @Inject
+    WorkflowApplication application;
+
+    @Inject
+    ObjectMapper objectMapper;
+
     @BeforeEach
     void setUp() {
         connector.sink("flow-out").clear();
+        connector.sink("flow-lifecycle-out").clear();
         workflow.instance(Map.of()).start();
     }
 
@@ -134,6 +145,43 @@ public class HelloMessagingFlowInMemoryTest {
             assertThat(payload).startsWith("{").endsWith("}");
             assertThat(payload).contains("\"Hello JsonCheck!\"");
         });
+    }
+
+    @Test
+    @DisplayName("lifecycle_events_include_workflow_application_id")
+    void lifecycle_events_include_workflow_application_id() {
+        InMemorySink<String> lifecycleSink = connector.sink("flow-lifecycle-out");
+        InMemorySource<Message<?>> source = connector.source("flow-in");
+
+        OutgoingCloudEventMetadata<?> ceMeta = OutgoingCloudEventMetadata.builder()
+                .withId(UUID.randomUUID().toString())
+                .withSource(URI.create("test:/in-memory"))
+                .withType("io.quarkiverse.flow.messaging.hello.request")
+                .withDataContentType("application/json")
+                .build();
+
+        source.send(Message.of("{\"name\":\"Lifecycle\"}".getBytes()).addMetadata(ceMeta));
+
+        await().atMost(ofSeconds(10)).untilAsserted(() -> {
+            List<String> types = lifecycleSink.received().stream()
+                    .map(m -> m.getMetadata(CloudEventMetadata.class).map(CloudEventMetadata::getType).orElse(null))
+                    .toList();
+            assertThat(types).contains(
+                    "io.serverlessworkflow.workflow.started.v1",
+                    "io.serverlessworkflow.task.started.v1",
+                    "io.serverlessworkflow.task.completed.v1",
+                    "io.serverlessworkflow.workflow.completed.v1");
+        });
+
+        assertThat(lifecycleSink.received())
+                .isNotEmpty()
+                .allSatisfy(m -> {
+                    JsonNode data = objectMapper.readTree(m.getPayload());
+                    assertThat(data.path("workflowApplicationId").asText(null))
+                            .as("workflowApplicationId of lifecycle event %s",
+                                    m.getMetadata(CloudEventMetadata.class).map(CloudEventMetadata::getType).orElse("?"))
+                            .isEqualTo(application.id());
+                });
     }
 
     public static class InMemoryProfile implements QuarkusTestProfile {
