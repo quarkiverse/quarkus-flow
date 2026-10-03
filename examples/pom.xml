@@ -125,6 +125,7 @@
         <module>greeting-runner</module>
         <module>auth-oauth2-oidc</module>
         <module>opentelemetry</module>
+        <module>spring-statemachine-migration</module>
     </modules>
 
     <build>
