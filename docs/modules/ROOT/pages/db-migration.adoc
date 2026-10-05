@@ -19,6 +19,7 @@ Both extensions do this: `quarkus-flow-db-migration` gets a dedicated `flow-runt
 
 The named datasource points at the *same physical database* your application's default datasource uses, meaning it is a separate Quarkus datasource/Flyway configuration, not a separate database. You're responsible for pointing it at the same JDBC URL (and typically the same or a DDL-scoped user) as your default datasource; nothing in the extension verifies the two agree, so a misconfigured named datasource would silently migrate a different database than the one your JPA entities actually connect to.
 
+[[quarkus-flow-db-migration]]
 == quarkus-flow-db-migration
 
 Ships the JPA runtime persistence schema (`workflow_instance_entity`, `cloud_event_entity`, `task_info_entity`) as versioned Flyway scripts, one per supported database (H2, PostgreSQL, MySQL, Oracle, MSSQL).
@@ -130,7 +131,7 @@ Note that the `time` column is a reserved word in some databases, so it is quote
 == Versioning convention
 
 Scripts follow `V{quarkus-flow version}.{sequence}__Description.sql`, so a script's version communicates which Quarkus Flow release introduced it. 
-`quarkus-flow-db-migration` starts at `V1.0.0__`; `quarkus-flow-db-migration-quartz` continues the numbering already in use (`V2.0.0__QuarkusQuartzTasks.sql`) from before it was split into its own extension.
+`quarkus-flow-db-migration` and `quarkus-flow-db-migration-quartz` both start at `V1.0.0__`.
 
 == Upgrading an existing database
 
@@ -146,22 +147,25 @@ quarkus.flyway.flow-runtime.baseline-on-migrate=true
 quarkus.flyway.flow-runtime.baseline-version=1.0.0
 ----
 
-For `quarkus-flow-db-migration-quartz` (first script `V2.0.0__`, continuing the numbering already in use before the split), prefix these with its `flow-quartz` named Flyway configuration:
+For `quarkus-flow-db-migration-quartz` (first script `V1.0.0__`), prefix these with its `flow-quartz` named Flyway configuration:
 
 [source,properties]
 ----
 quarkus.flyway.flow-quartz.baseline-on-migrate=true
-quarkus.flyway.flow-quartz.baseline-version=2.0.0
+quarkus.flyway.flow-quartz.baseline-version=1.0.0
 ----
 
 See xref:quartz.adoc[Quartz workflow scheduler] for the full Quartz setup.
 
 **Back up your database first, and rehearse the baseline against a copy of it before running it against production**, `baseline-on-migrate` tells Flyway "assume everything up to this version already exists," so any drift between your current schema and the version you baseline against will not be caught.
 
+[[upgrading-old-quartz-flyway]]
 == Upgrading from the old, unnamed Quartz Flyway setup
 
 Before `quarkus-flow-db-migration-quartz` existed, the `QRTZ_*` script shipped inside `quarkus-flow-quartz-scheduler` itself, on Flyway's default classpath location (`db/migration`), where it was picked up automatically whenever an application set `quarkus.flyway.migrate-at-start=true`. 
-That script has moved to this extension's own `db/flow-migration/quartz` location with no compatibility copy left behind: `quarkus-flow-quartz-scheduler` no longer ships the script, or a `quarkus-flyway` dependency, at all. 
+That script has moved to this extension's own `db/flow-migration/quartz` location with no compatibility copy left behind: `quarkus-flow-quartz-scheduler` no longer ships the script, or a `quarkus-flyway` dependency, at all.
 `quarkus.quartz` is still a preview-status extension, so there is no stable, generally-adopted setup this needs to keep working without changes - an application still on the old, unnamed `quarkus.flyway.*` configuration gets nothing at the old location and no warning, and must switch explicitly.
 
-To fix it, add `quarkus-flow-db-migration-quartz` and switch to the named `flow-quartz` datasource and Flyway configuration shown above. Because the QRTZ_* tables already exist from the old setup, this is the populated-database case from Upgrading an existing database, with one addition: the history **table name** is also changing, from the old setup's `flyway_quarkus_history` to this extension's `flyway_flow_quartz_history`. Starting from an empty history table under the new name, Flyway has no record that `V2.0.0__QuarkusQuartzTasks.sql` already ran, so the baseline step above (`baseline-on-migrate=true`, `baseline-version=2.0.0`) is required even though that script already ran once under the old setup.
+To fix it, add xref:quarkus-flow-db-migration[`quarkus-flow-db-migration-quartz`] and switch to the named `flow-quartz` datasource and Flyway configuration shown above. Because the QRTZ_* tables already exist from the old setup, this is the populated-database case from Upgrading an existing database, with one addition: the history **table name** is also changing, from the old setup's `flyway_quarkus_history` to this extension's `flyway_flow_quartz_history`. Starting from an empty history table under the new name, Flyway has no record that `V1.0.0__QuarkusQuartzTasks.sql` already ran, so the baseline step above (`baseline-on-migrate=true`, `baseline-version=1.0.0`) is required even though an equivalent script already ran once under the old setup (there, as part of `quarkus-flow-quartz-scheduler`'s own Flyway setup).
+
+See xref:migration-1.x-to-1.2.0.adoc[Migration Guide: 1.x to 1.2.0] for the complete step-by-step walkthrough of this upgrade.

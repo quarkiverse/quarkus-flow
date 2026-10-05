@@ -1,7 +1,7 @@
-= Migration Guide: 1.x to 2.0.0
+= Migration Guide: 1.x to 1.2.0
 include::includes/attributes.adoc[]
 
-Quarkus Flow 2.0.0 introduces two new optional extensions for versioned database schema migration:
+Quarkus Flow 1.2.0 introduces two new optional extensions for versioned database schema migration:
 
 * **`quarkus-flow-db-migration`**: versioned Flyway scripts for the JPA runtime persistence schema.
 * **`quarkus-flow-db-migration-quartz`**: versioned Flyway scripts for the Quartz `QRTZ_*` schema, extracted out of `quarkus-flow-quartz-scheduler`.
@@ -12,7 +12,7 @@ Quarkus Flow 2.0.0 introduces two new optional extensions for versioned database
 
 [cols="1,1",options="header"]
 |===
-| Before (1.x) | After (2.0.0)
+| Before (1.x) | After (1.2.0)
 
 | `QRTZ_*` DDL script shipped inside `quarkus-flow-quartz-scheduler`
 | Script moved to the new `quarkus-flow-db-migration-quartz` extension
@@ -67,12 +67,12 @@ quarkus.flyway.flow-quartz.locations=db/flow-migration/quartz
 
 ==== 3. Baseline the existing `QRTZ_*` tables
 
-Because the `QRTZ_*` tables already exist from the previous setup and the history table name has changed, Flyway has no record that `V2.0.0__QuarkusQuartzTasks.sql` already ran. Add the baseline properties so Flyway does not attempt to re-create those tables:
+Because the `QRTZ_*` tables already exist from the previous setup and the history table name has changed, Flyway has no record that `V1.0.0__QuarkusQuartzTasks.sql` already ran. Add the baseline properties so Flyway does not attempt to re-create those tables — see xref:db-migration.adoc#upgrading-old-quartz-flyway[Upgrading from the old, unnamed Quartz Flyway setup] for the full explanation of why this baseline step is required:
 
 [source,properties]
 ----
 quarkus.flyway.flow-quartz.baseline-on-migrate=true
-quarkus.flyway.flow-quartz.baseline-version=2.0.0
+quarkus.flyway.flow-quartz.baseline-version=1.0.0
 ----
 
 [WARNING]
