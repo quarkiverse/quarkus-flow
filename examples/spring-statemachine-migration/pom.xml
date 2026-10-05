@@ -22,6 +22,7 @@
         <surefire-plugin.version>3.6.0</surefire-plugin.version>
         <failsafe-plugin.version>3.6.0</failsafe-plugin.version>
         <version.assertj>3.27.7</version.assertj>
+        <version.awaitility>4.1.1</version.awaitility>
         <skipITs>true</skipITs>
     </properties>
 
@@ -73,6 +74,12 @@
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <version>${version.assertj}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>${version.awaitility}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

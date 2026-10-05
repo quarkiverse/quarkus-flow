@@ -1,6 +1,8 @@
 package org.acme.ssm;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.serverlessworkflow.impl.WorkflowInstance;
@@ -27,6 +29,10 @@ class OrderLifecycleWorkflowTest {
     @Inject
     OrderLifecycleWorkflow workflow;
 
+    // Uses in-memory connector for test isolation and speed. Alternative: Kafka with Dev Services
+    // (testcontainers) would validate the full REST→serialization→broker→listener path, but adds
+    // container overhead. In-memory is lightweight and sufficient to verify workflow state transitions
+    // and event correlation. REST endpoint contracts are tested separately in integration tests.
     @Inject
     @Any
     InMemoryConnector connector;
@@ -41,7 +47,10 @@ class OrderLifecycleWorkflowTest {
         InMemorySource<Message<String>> flowIn = connector.source("flow-in");
         flowIn.send(event(OrderLifecycleWorkflow.PAYMENT_RECEIVED, id,
                 "{\"orderId\":\"ORDER#1\",\"approved\":true,\"reference\":\"PAY-1\"}"));
-        awaitAwaitingShipment();
+
+        await().atMost(5, SECONDS).pollInterval(100, TimeUnit.MILLISECONDS)
+                .until(() -> !result.isDone() || (result.isDone() && result.isCompletedExceptionally()));
+
         flowIn.send(event(OrderLifecycleWorkflow.SHIPMENT_DISPATCHED, id,
                 "{\"orderId\":\"ORDER#1\",\"carrier\":\"DHL\",\"trackingId\":\"TRK-9\"}"));
 
@@ -66,10 +75,6 @@ class OrderLifecycleWorkflowTest {
         assertThat(output.orderId()).isEqualTo("ORDER#2");
     }
 
-    private static void awaitAwaitingShipment() throws InterruptedException {
-        // give the engine a moment to resume past the payment guard and reach awaitShipment
-        TimeUnit.MILLISECONDS.sleep(500);
-    }
 
     /** Builds a CloudEvent-carrying message the Flow engine can correlate to the instance. */
     private static Message<String> event(String type, String instanceId, String dataJson) {
