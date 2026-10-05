@@ -23,6 +23,7 @@
             <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow-db-migration-deployment</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <!-- Test-only: the JPA entities being validated against the Flyway-migrated schema -->
         <dependency>
