@@ -14,6 +14,12 @@ See the link:https://github.com/quarkiverse/quarkus-flow/blob/main/CONTRIBUTING.
 |Type |Author |Title |Date |Notes
 
 |Blog Post
+|https://www.linkedin.com/in/ricardozanini/[Ricardo Zanini]
+|https://zanini.biz/2026/10/02/from-spring-statemachine-to-quarkus-flow-a-maintained-open-source-path-for-state-driven-apps/[From Spring StateMachine to Quarkus Flow: A Maintained Open-Source Path for State-Driven Apps]
+|October 02, 2026
+|Migration guide
+
+|Blog Post
 |https://www.linkedin.com/in/alexander-argyriou/[Alex Argyriou]
 |https://pixel-pistons.com/posts/quarkus-flow/[Experimenting with Quarkus Flow]
 |September 09, 2026
