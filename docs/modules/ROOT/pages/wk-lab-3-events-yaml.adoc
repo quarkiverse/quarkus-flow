@@ -17,7 +17,7 @@ To enable event-driven capabilities, you need Quarkus Flow Messaging and a messa
 
 Add the following to your `pom.xml`:
 
-[source,xml]
+[source,xml,subs=attributes+]
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
