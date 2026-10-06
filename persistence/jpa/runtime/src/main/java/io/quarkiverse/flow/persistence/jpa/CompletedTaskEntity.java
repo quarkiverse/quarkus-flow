@@ -4,7 +4,11 @@ import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Transient;
+
+import org.hibernate.annotations.EmbeddedColumnNaming;
 
 import io.serverlessworkflow.impl.WorkflowModel;
 
@@ -15,9 +19,24 @@ public class CompletedTaskEntity extends TaskInfoEntity {
     @Column
     private Instant instant;
     @Column
-    private WorkflowModel model;
+    private byte[] model;
+    @Transient
+    private WorkflowModel modelPOJO;
+
+    @Embedded
+    @EmbeddedColumnNaming("model_%s")
+    private JPAHashMappingInfo modelHash;
+
     @Column
-    private WorkflowModel context;
+    private byte[] context;
+
+    @Embedded
+    @EmbeddedColumnNaming("context_%s")
+    private JPAHashMappingInfo contextHash;
+
+    @Transient
+    private WorkflowModel contextPOJO;
+
     @Column
     private boolean isEndNode;
     @Column
@@ -31,10 +50,11 @@ public class CompletedTaskEntity extends TaskInfoEntity {
             String nextPosition) {
         super(key);
         this.instant = instant;
-        this.model = model;
-        this.context = context;
+        this.modelPOJO = model;
+        this.contextPOJO = context;
         this.isEndNode = isEndNode;
         this.nextPosition = nextPosition;
+
     }
 
     public Instant getInstant() {
@@ -42,11 +62,27 @@ public class CompletedTaskEntity extends TaskInfoEntity {
     }
 
     public WorkflowModel getModel() {
+        return modelPOJO;
+    }
+
+    public byte[] getContextBytes() {
+        return context;
+    }
+
+    public byte[] getModelBytes() {
         return model;
     }
 
     public WorkflowModel getContext() {
-        return context;
+        return contextPOJO;
+    }
+
+    public void setContext(byte[] data) {
+        this.context = data;
+    }
+
+    public void setModel(byte[] data) {
+        this.model = data;
     }
 
     public boolean isEndNode() {
@@ -57,4 +93,19 @@ public class CompletedTaskEntity extends TaskInfoEntity {
         return nextPosition;
     }
 
+    public JPAHashMappingInfo getModelHash() {
+        return modelHash;
+    }
+
+    public void setModelHash(JPAHashMappingInfo modelHash) {
+        this.modelHash = modelHash;
+    }
+
+    public JPAHashMappingInfo getContextHash() {
+        return contextHash;
+    }
+
+    public void setContextHash(JPAHashMappingInfo contextHash) {
+        this.contextHash = contextHash;
+    }
 }
