@@ -7,6 +7,7 @@ import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.serverlessworkflow.impl.persistence.PersistenceInstanceHandlers;
+import io.serverlessworkflow.impl.persistence.hashing.HashFactory;
 import io.serverlessworkflow.impl.persistence.test.AbstractHandlerPersistenceTest;
 
 @QuarkusTest
@@ -15,7 +16,16 @@ public class QuarkusFlowJpaIT extends AbstractHandlerPersistenceTest {
     @Inject
     PersistenceInstanceHandlers handlers;
 
+    @Inject
+    HashFactory factory;
+
+    @Override
     protected PersistenceInstanceHandlers getPersistenceHandlers() {
         return handlers;
+    }
+
+    @Override
+    protected HashFactory hashFactory() {
+        return factory;
     }
 }

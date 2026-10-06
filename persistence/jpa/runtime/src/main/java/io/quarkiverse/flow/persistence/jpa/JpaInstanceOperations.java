@@ -247,8 +247,8 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
         writeInfo.entrySet().stream()
                 .flatMap(e -> e.getValue().stream()
                         .map(item -> new HashMappingInfoEntity(item.index(), e.getKey(), item.item(), item.bytes())))
-                .forEach(
-                        v -> em.persist(v));
+                .forEach(em::persist);
+        em.flush();
     }
 
     private Object readObject(byte[] rawData) {

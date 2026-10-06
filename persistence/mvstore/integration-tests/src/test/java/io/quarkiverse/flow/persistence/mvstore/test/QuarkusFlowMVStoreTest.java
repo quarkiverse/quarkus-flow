@@ -13,6 +13,7 @@ import org.junit.jupiter.api.condition.OS;
 import io.quarkiverse.flow.persistence.mvstore.MVStoreConfig;
 import io.quarkus.test.junit.QuarkusTest;
 import io.serverlessworkflow.impl.persistence.PersistenceInstanceHandlers;
+import io.serverlessworkflow.impl.persistence.hashing.HashFactory;
 import io.serverlessworkflow.impl.persistence.test.AbstractHandlerPersistenceTest;
 
 @QuarkusTest
@@ -21,6 +22,9 @@ public class QuarkusFlowMVStoreTest extends AbstractHandlerPersistenceTest {
 
     @Inject
     PersistenceInstanceHandlers handlers;
+
+    @Inject
+    HashFactory factory;
 
     @Inject
     MVStoreConfig config;
@@ -33,5 +37,10 @@ public class QuarkusFlowMVStoreTest extends AbstractHandlerPersistenceTest {
     @Override
     protected PersistenceInstanceHandlers getPersistenceHandlers() {
         return handlers;
+    }
+
+    @Override
+    protected HashFactory hashFactory() {
+        return factory;
     }
 }
