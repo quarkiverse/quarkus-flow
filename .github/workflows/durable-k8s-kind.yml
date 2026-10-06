@@ -9,7 +9,7 @@ name: Durable Workflows (Kubernetes Lease) - Kind Verification
 # For releasing images to Quay.io, see: .github/workflows/publish-runner-images.yml
 #
 # Key lessons learned:
-# 1. Build order: mvn install (filters k8s manifests) → make build-standard → kind load → kubectl apply
+# 1. Build order: ./mvnw install (filters k8s manifests) → make build-standard → kind load → kubectl apply
 # 2. Image version is automatically injected via Maven resource filtering:
 #    - Source manifests (src/main/k8s) use ${project.version} placeholder
 #    - Maven processes them to target/k8s with actual version (e.g., 1.0.0-SNAPSHOT-standard)
@@ -38,10 +38,12 @@ concurrency:
 
 jobs:
   kind-lease-verification:
-    runs-on: ubuntu-latest
+    runs-on: runs-on=${{ github.run_id }}/runner=ubuntu-latest
     timeout-minutes: 30
 
     steps:
+      - uses: runs-on/action@v2
+
       - name: Checkout
         uses: actions/checkout@v7
 
@@ -68,7 +70,7 @@ jobs:
           # Build all dependencies first to cache them locally before Docker build
           # This also processes k8s manifests with Maven filtering (${project.version} replacement)
           # Must include deployment modules explicitly since -pl -am only builds runtime dependencies
-          mvn -DskipTests -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp \
+          ./mvnw -DskipTests -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp \
               -pl runner/deployment,persistence/jpa/deployment,durable-kubernetes/deployment,oidc/deployment,runner/app -am -P image-standard install
 
       - name: Build runner standard image
@@ -83,7 +85,7 @@ jobs:
         run: |
           # Load the image into Kind BEFORE deploying manifests to avoid ImagePullBackOff
           # The image must be present in the cluster before pods try to pull it
-          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -pl runner/app)
+          VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout -pl runner/app)
           kind load docker-image quay.io/quarkiverse/quarkus-flow-runner:${VERSION}-standard --name kind
 
       - name: Deploy runner standard to Kind

@@ -52,7 +52,7 @@ jobs:
       - name: Verify release version
         run: |
           TAG="${{ steps.set-tag.outputs.TAG }}"
-          POM_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -pl runner/app)
+          POM_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout -pl runner/app)
           TRIGGER="${{ github.event_name }}"
 
           echo "Release tag: ${TAG}"
@@ -107,7 +107,7 @@ jobs:
         
       - name: Build
         run: |
-          POM_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -pl runner/app)
+          POM_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout -pl runner/app)
           VARIANT="${{ matrix.variant }}"
 
           # Determine which deployment modules are needed for this variant
@@ -126,11 +126,11 @@ jobs:
 
           if [[ "${POM_VERSION}" == *"-SNAPSHOT" ]]; then
             echo "📦 Building SNAPSHOT from source (including deployment modules: ${DEPLOYMENT_MODULES})"
-            mvn clean package -DskipTests -Dquarkus.log.level=OFF -ntp \
+            ./mvnw clean package -DskipTests -Dquarkus.log.level=OFF -ntp \
                 -pl ${DEPLOYMENT_MODULES},runner/app -am -P image-${VARIANT} -Dquarkus.profile=container,${VARIANT}
           else
             echo "📦 Building release from Maven Central (including deployment modules: ${DEPLOYMENT_MODULES})"
-            mvn clean package -DskipTests -Dquarkus.log.level=OFF -ntp \
+            ./mvnw clean package -DskipTests -Dquarkus.log.level=OFF -ntp \
                 -pl ${DEPLOYMENT_MODULES},runner/app -am -P image-${VARIANT} -Dquarkus.profile=container,${VARIANT}
           fi
 
