@@ -51,6 +51,7 @@ CREATE TABLE task_info_entity
     CONSTRAINT fk_task_workflow_instance
         FOREIGN KEY (application_id, workflow_instance_id)
             REFERENCES workflow_instance_entity (application_id, instance_id)
+            ON DELETE CASCADE
 );
 
 CREATE TABLE hash_mapping_info_entity
@@ -79,6 +80,7 @@ CREATE TABLE task_metadata_entity
     CONSTRAINT fk_task_metadata_task
         FOREIGN KEY (iteration, application_id, json_pointer, workflow_instance_id)
             REFERENCES task_info_entity (iteration, application_id, json_pointer, workflow_instance_id)
+            ON DELETE CASCADE
 );
 
 CREATE TABLE workflow_metadata_entity
@@ -94,4 +96,5 @@ CREATE TABLE workflow_metadata_entity
     CONSTRAINT fk_workflow_metadata_workflow
         FOREIGN KEY (application_id, instance_id)
             REFERENCES workflow_instance_entity (application_id, instance_id)
+            ON DELETE CASCADE
 );

@@ -17,8 +17,8 @@ CREATE TABLE cloud_event_entity
 
 CREATE TABLE workflow_instance_entity
 (
-    application_id     VARCHAR(255) NOT NULL,
-    instance_id        VARCHAR(255) NOT NULL,
+    application_id     VARCHAR(255) CHARACTER SET ascii NOT NULL,
+    instance_id        VARCHAR(255) CHARACTER SET ascii NOT NULL,
     workflow_name      VARCHAR(255) NOT NULL,
     workflow_namespace VARCHAR(255) NOT NULL,
     workflow_version   VARCHAR(255) NOT NULL,
@@ -30,9 +30,9 @@ CREATE TABLE workflow_instance_entity
 
 CREATE TABLE task_info_entity
 (
-    application_id       VARCHAR(255) NOT NULL,
-    workflow_instance_id VARCHAR(255) NOT NULL,
-    json_pointer         VARCHAR(255) NOT NULL,
+    application_id       VARCHAR(255) CHARACTER SET ascii NOT NULL,
+    workflow_instance_id VARCHAR(255) CHARACTER SET ascii NOT NULL,
+    json_pointer         VARCHAR(255) CHARACTER SET ascii NOT NULL,
     iteration            INTEGER      NOT NULL,
     task_type            INTEGER      NOT NULL CHECK (task_type IN (1, 2)),
     is_end_node          BOOLEAN,
@@ -51,6 +51,7 @@ CREATE TABLE task_info_entity
     CONSTRAINT fk_task_workflow_instance
         FOREIGN KEY (application_id, workflow_instance_id)
             REFERENCES workflow_instance_entity (application_id, instance_id)
+            ON DELETE CASCADE
 );
 
 CREATE TABLE hash_mapping_info_entity
@@ -67,11 +68,11 @@ CREATE INDEX instance_idx ON hash_mapping_info_entity (instance);
 
 CREATE TABLE task_metadata_entity
 (
-    meta_name            VARCHAR(255) NOT NULL,
+    meta_name            VARCHAR(255) CHARACTER SET ascii NOT NULL,
     iteration            INTEGER      NOT NULL,
-    json_pointer         VARCHAR(255) NOT NULL,
-    application_id       VARCHAR(255) NOT NULL,
-    workflow_instance_id VARCHAR(255) NOT NULL,
+    json_pointer         VARCHAR(255) CHARACTER SET ascii NOT NULL,
+    application_id       VARCHAR(255) CHARACTER SET ascii NOT NULL,
+    workflow_instance_id VARCHAR(255) CHARACTER SET ascii NOT NULL,
     hash_key             LONGBLOB,
     hash_index           LONGBLOB,
     raw_value            LONGBLOB,
@@ -79,14 +80,15 @@ CREATE TABLE task_metadata_entity
     CONSTRAINT fk_task_metadata_task
         FOREIGN KEY (iteration, application_id, json_pointer, workflow_instance_id)
             REFERENCES task_info_entity (iteration, application_id, json_pointer, workflow_instance_id)
+            ON DELETE CASCADE
 );
 
 CREATE TABLE workflow_metadata_entity
 (
-    meta_name            VARCHAR(255) NOT NULL,
-    instance_id          VARCHAR(255) NOT NULL,
-    application_id       VARCHAR(255) NOT NULL,
-    workflow_instance_id VARCHAR(255),
+    meta_name            VARCHAR(255) CHARACTER SET ascii NOT NULL,
+    instance_id          VARCHAR(255) CHARACTER SET ascii NOT NULL,
+    application_id       VARCHAR(255) CHARACTER SET ascii NOT NULL,
+    workflow_instance_id VARCHAR(255) CHARACTER SET ascii,
     hash_key             LONGBLOB,
     hash_index           LONGBLOB,
     raw_value            LONGBLOB,
@@ -94,4 +96,5 @@ CREATE TABLE workflow_metadata_entity
     CONSTRAINT fk_workflow_metadata_workflow
         FOREIGN KEY (application_id, instance_id)
             REFERENCES workflow_instance_entity (application_id, instance_id)
+            ON DELETE CASCADE
 );
