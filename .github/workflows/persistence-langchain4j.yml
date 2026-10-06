@@ -23,7 +23,7 @@ defaults:
 jobs:
   persistence-jpa:
     name: Persistence JPA (${{ matrix.kind }})
-    runs-on: ubuntu-latest
+    runs-on: runs-on=${{ github.run_id }}-${{ strategy.job-index }}/runner=ubuntu-latest
     strategy:
       # Keep every database leg running even if one fails, so a single engine
       # regression doesn't mask the others.
@@ -32,6 +32,8 @@ jobs:
         kind: [ h2, postgresql, mysql, oracle ]
 
     steps:
+      - uses: runs-on/action@v2
+
       - uses: actions/checkout@v7
 
       - name: Set up JDK 17

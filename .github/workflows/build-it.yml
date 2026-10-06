@@ -27,11 +27,12 @@ defaults:
 jobs:
   core:
     name: Build & test (core / JDK 25)
-    runs-on: ubuntu-latest
+    runs-on: runs-on=${{ github.run_id }}/runner=ubuntu-latest
     env:
       QUARKUS_LANGCHAIN4J_OLLAMA_CHAT_MODEL_MODEL_ID: llama3.2
 
     steps:
+      - uses: runs-on/action@v2
       - uses: actions/checkout@v7
       - name: Set up JDK 25
         uses: actions/setup-java@v6
@@ -111,9 +112,10 @@ jobs:
   # parallel forks in the same JVM, which would collide on that port.
   core-devui:
     name: Build & test (core-devui / JDK 25)
-    runs-on: ubuntu-latest
+    runs-on: runs-on=${{ github.run_id }}/runner=ubuntu-latest
 
     steps:
+      - uses: runs-on/action@v2
       - uses: actions/checkout@v7
       - name: Set up JDK 25
         uses: actions/setup-java@v6
@@ -167,7 +169,7 @@ jobs:
   # persistence-langchain4j.yml for langchain4j/integration-tests.
   extensions:
     name: Build & test (${{ matrix.name }} / JDK 25)
-    runs-on: ubuntu-latest
+    runs-on: runs-on=${{ github.run_id }}-${{ strategy.job-index }}/runner=ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -188,6 +190,7 @@ jobs:
             modules: core/deployment,messaging/deployment,opentelemetry/runtime,opentelemetry/deployment,opentelemetry/integration-tests
 
     steps:
+      - uses: runs-on/action@v2
       - uses: actions/checkout@v7
       - name: Set up JDK 25
         uses: actions/setup-java@v6

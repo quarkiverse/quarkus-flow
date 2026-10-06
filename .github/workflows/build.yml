@@ -26,8 +26,9 @@ defaults:
 jobs:
   validate:
     name: Quick validation (formatting & doc generation)
-    runs-on: ubuntu-latest
+    runs-on: runs-on=${{ github.run_id }}/runner=ubuntu-latest
     steps:
+      - uses: runs-on/action@v2
       - uses: actions/checkout@v7
 
       - name: Set up JDK 17
@@ -87,7 +88,7 @@ jobs:
 
   build:
     name: Build & test (${{ matrix.os }} / JDK ${{ matrix.java-version }})
-    runs-on: ${{ matrix.os }}
+    runs-on: runs-on=${{ github.run_id }}-${{ strategy.job-index }}/runner=${{ matrix.os }}
     strategy:
       matrix:
         os: [ ubuntu-latest, windows-latest ]
@@ -100,6 +101,8 @@ jobs:
             java-version: 25
 
     steps:
+      - uses: runs-on/action@v2
+
       - name: Prepare git (CRLF)
         if: matrix.os == 'windows-latest'
         run: git config --global core.autocrlf false
@@ -131,10 +134,11 @@ jobs:
 
   examples:
     name: Examples
-    runs-on: ubuntu-latest
+    runs-on: runs-on=${{ github.run_id }}/runner=ubuntu-latest
     needs: validate
 
     steps:
+      - uses: runs-on/action@v2
       - uses: actions/checkout@v7
 
       - name: Set up JDK 17
