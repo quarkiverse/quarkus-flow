@@ -50,11 +50,11 @@
 
         <io.quarkiverse.jackson-jq.version>2.6.1</io.quarkiverse.jackson-jq.version>
         <com.github.zafarkhaja.version>0.10.2</com.github.zafarkhaja.version>
-        <io.quarkiverse.langchain4j.version>1.13.3</io.quarkiverse.langchain4j.version>
+        <io.quarkiverse.langchain4j.version>1.14.1</io.quarkiverse.langchain4j.version>
 
         <!-- Tests and Docs -->
         <org.assertj.version>3.27.7</org.assertj.version>
-        <quarkus-antora.version>3.33.2</quarkus-antora.version>
+        <quarkus-antora.version>3.40.0</quarkus-antora.version>
         <version.org.jacoco>0.8.15</version.org.jacoco>
         <io.quarkiverse.playwright>2.3.10</io.quarkiverse.playwright>
         <com.h2database.version>2.5.252</com.h2database.version>
