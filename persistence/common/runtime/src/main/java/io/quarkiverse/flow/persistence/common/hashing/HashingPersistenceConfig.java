@@ -1,6 +1,6 @@
 package io.quarkiverse.flow.persistence.common.hashing;
 
-import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.smallrye.config.WithDefault;
 
@@ -18,7 +18,7 @@ public interface HashingPersistenceConfig {
          * byte[] in a separated place
          * If not, the byte[] will be written embedded
          */
-        Optional<Integer> threshold();
+        OptionalInt threshold();
 
         /** If this hashing strategy should be enable or not, default true */
         @WithDefault("true")
@@ -32,7 +32,7 @@ public interface HashingPersistenceConfig {
          * the byte[] in a separated place
          * If not, the byte[] will be written embedded
          */
-        Optional<Integer> threshold();
+        OptionalInt threshold();
 
         /** If this hashing strategy should be enable or not, default true */
         @WithDefault("false")
