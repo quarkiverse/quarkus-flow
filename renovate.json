@@ -20,6 +20,12 @@
       "matchPackagePrefixes": ["io.quarkiverse"]
     },
     {
+      "groupName": "Quarkiverse extensions (examples)",
+      "matchManagers": ["maven"],
+      "matchFileNames": ["examples/**/pom.xml"],
+      "matchPackagePrefixes": ["io.quarkiverse"]
+    },
+    {
       "groupName": "Infrastructure and Containers",
       "matchManagers": ["dockerfile", "docker-compose"],
       "matchUpdateTypes": ["minor", "patch"]
@@ -27,6 +33,23 @@
     {
       "groupName": "Testing Infrastructure & Code Quality",
       "matchManagers": ["maven"],
+      "matchPackagePrefixes": [
+        "org.junit",
+        "org.mockito",
+        "org.wiremock",
+        "com.github.tomakehurst",
+        "org.jboss.resteasy",
+        "io.rest-assured",
+        "org.testcontainers",
+        "org.assertj",
+        "io.quarkiverse.playwright",
+        "org.jacoco"
+      ]
+    },
+    {
+      "groupName": "Testing Infrastructure & Code Quality (examples)",
+      "matchManagers": ["maven"],
+      "matchFileNames": ["examples/**/pom.xml"],
       "matchPackagePrefixes": [
         "org.junit",
         "org.mockito",
