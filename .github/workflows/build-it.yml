@@ -65,7 +65,7 @@ jobs:
       # before Failsafe's own integration-test phase ever runs.
       - name: Build with Maven (core, full tests including ITs)
         run: |
-          mvn clean install \
+          ./mvnw clean install \
             -pl core/runtime,core/deployment,core/runtime-dev,core/integration-tests,bom,quarkus-platform-checks,docs-rag \
             -am \
             -Dquarkus.log.level=OFF \
@@ -126,7 +126,7 @@ jobs:
 
       - name: Build dependency modules (no tests)
         run: |
-          mvn install \
+          ./mvnw install \
             -pl core/deployment \
             -am \
             -DskipTests -DskipITs \
@@ -136,7 +136,7 @@ jobs:
 
       - name: Run core/deployment devui tests
         run: |
-          mvn test \
+          ./mvnw test \
             -pl core/deployment \
             -Dtest='**/devui/*' \
             -Dsurefire.failIfNoSpecifiedTests=false \
@@ -201,7 +201,7 @@ jobs:
 
       - name: Build dependency modules (no tests)
         run: |
-          mvn install \
+          ./mvnw install \
             -pl "${{ matrix.modules }}" \
             -am \
             -DskipTests -DskipITs \
@@ -211,7 +211,7 @@ jobs:
 
       - name: Run ${{ matrix.name }} integration tests
         run: |
-          mvn verify \
+          ./mvnw verify \
             -pl "${{ matrix.modules }}" \
             -Dquarkus.log.level=OFF \
             -DskipITs=false \

@@ -37,12 +37,12 @@ jobs:
           cache: maven
       
       - name: Build Quarkus Flow SNAPSHOT (skip docs, disable Ollama, single-threaded)
-        run: mvn -B clean install -Dno-format -DskipTests -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp -pl '!docs'
+        run: ./mvnw -B clean install -Dno-format -DskipTests -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp -pl '!docs'
 
       - name: Run Quarkus Flow tests in Quarkus Platform with the SNAPSHOT
         id: platform-build
         continue-on-error: true
-        run: mvn -B clean install -f quarkus-platform-checks/pom.xml -Pquarkus-platform-build-and-test -Dno-format -Dquarkus.log.level=OFF -Drestassured.config.http.client.params.SO_TIMEOUT=${{ env.RESTASSURED_TIMEOUT_MS }} -ntp
+        run: ./mvnw -B clean install -f quarkus-platform-checks/pom.xml -Pquarkus-platform-build-and-test -Dno-format -Dquarkus.log.level=OFF -Drestassured.config.http.client.params.SO_TIMEOUT=${{ env.RESTASSURED_TIMEOUT_MS }} -ntp
 
       - name: Prepare build reports archive
         if: always()

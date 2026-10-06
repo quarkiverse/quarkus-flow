@@ -36,7 +36,7 @@ jobs:
 
 
       - name: Build with Maven
-        run: mvn -B clean verify --file pom.xml -DskipTests -DskipITs
+        run: ./mvnw -B clean verify --file pom.xml -DskipTests -DskipITs
 
       - name: Validate generated documentation
         run: |
@@ -49,7 +49,7 @@ jobs:
             echo "$STATUS" | sed 's/^?? / /; s/^ M / /; s/^/* /'
             echo ""
             echo "To fix this:"
-            echo "  1. Run: mvn clean install"
+            echo "  1. Run: ./mvnw clean install"
             echo "  2. Commit the generated documentation files"
             exit 1
           else

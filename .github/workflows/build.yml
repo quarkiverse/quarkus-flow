@@ -39,7 +39,7 @@ jobs:
           cache: maven
 
       - name: Run build to validate formatting (core only)
-        run: mvn -B clean install -P!docs -DskipTests -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp
+        run: ./mvnw -B clean install -P!docs -DskipTests -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp
 
       - name: Upload core artifacts for examples-it
         uses: actions/upload-artifact@v7
@@ -76,11 +76,11 @@ jobs:
           echo "   Config reference docs were regenerated from @ConfigRoot classes."
           echo ""
           echo "🔧 How to fix:"
-          echo "   Run locally: mvn clean install -DskipTests"
+          echo "   Run locally: ./mvnw clean install -DskipTests"
           echo "   Review and commit the changes"
           echo "   Push again"
           echo ""
-          echo "💡 Tip: Always run 'mvn clean install -DskipTests' before pushing."
+          echo "💡 Tip: Always run './mvnw clean install -DskipTests' before pushing."
           echo ""
           echo "Diff of changes:"
           git diff
@@ -118,7 +118,7 @@ jobs:
 
       - name: Build with Maven (Linux, skip docs and examples)
         if: matrix.os == 'ubuntu-latest'
-        run: mvn -B clean install -Dno-format -P!docs -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -Drestassured.config.http.client.params.SO_TIMEOUT=${{ env.RESTASSURED_TIMEOUT_MS }} -ntp
+        run: ./mvnw -B clean install -Dno-format -P!docs -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -Drestassured.config.http.client.params.SO_TIMEOUT=${{ env.RESTASSURED_TIMEOUT_MS }} -ntp
 
       # core/deployment's devui/* tests (mostly a Playwright-driven editor round-trip test) run
       # ~2x slower on Windows than Linux and are already covered by the ubuntu-latest legs of
@@ -130,7 +130,7 @@ jobs:
       # (verified: that bare pattern crashes them with a JUnit ExtensionContext store conflict).
       - name: Build with Maven (Windows, skip docs, examples, and devui)
         if: matrix.os == 'windows-latest'
-        run: mvn -B clean install -Dno-format -P!docs -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -Dtest='**/Test*,**/*Test,**/*Tests,**/*TestCase,!**/devui/*' -Dsurefire.failIfNoSpecifiedTests=false -ntp
+        run: ./mvnw -B clean install -Dno-format -P!docs -DskipITs=true -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -Dtest='**/Test*,**/*Test,**/*Tests,**/*TestCase,!**/devui/*' -Dsurefire.failIfNoSpecifiedTests=false -ntp
 
   examples:
     name: Examples
@@ -159,4 +159,4 @@ jobs:
 
       - name: Run examples integration tests
         working-directory: examples
-        run: mvn -B install -Dno-format -DskipITs=false -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -Drestassured.config.http.client.params.SO_TIMEOUT=${{ env.RESTASSURED_TIMEOUT_MS }} -ntp
+        run: ../mvnw -B install -Dno-format -DskipITs=false -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -Drestassured.config.http.client.params.SO_TIMEOUT=${{ env.RESTASSURED_TIMEOUT_MS }} -ntp
