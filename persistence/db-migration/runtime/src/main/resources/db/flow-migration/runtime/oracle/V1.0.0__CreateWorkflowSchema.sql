@@ -30,21 +30,68 @@ CREATE TABLE workflow_instance_entity
 
 CREATE TABLE task_info_entity
 (
-    application_id      VARCHAR2(255) NOT NULL,
+    application_id       VARCHAR2(255) NOT NULL,
     workflow_instance_id VARCHAR2(255) NOT NULL,
-    json_pointer        VARCHAR2(255) NOT NULL,
-    iteration           NUMBER(10, 0) NOT NULL,
-    task_type           NUMBER(10, 0) NOT NULL CHECK (task_type IN (1, 2)),
-    is_end_node         NUMBER(1, 0),
-    retry_attempt       NUMBER(10, 0),
-    instant             TIMESTAMP(6) WITH TIME ZONE,
-    next_position       VARCHAR2(255),
-    context             BLOB,
-    model               BLOB,
+    json_pointer         VARCHAR2(255) NOT NULL,
+    iteration            NUMBER(10, 0) NOT NULL,
+    task_type            NUMBER(10, 0) NOT NULL CHECK (task_type IN (1, 2)),
+    is_end_node          NUMBER(1, 0),
+    retry_attempt        NUMBER(10, 0),
+    instant              TIMESTAMP(6) WITH TIME ZONE,
+    next_position        VARCHAR2(255),
+    context              BLOB,
+    model                BLOB,
+    context_hash_key     BLOB,
+    context_hash_index   BLOB,
+    model_hash_key       BLOB,
+    model_hash_index     BLOB,
     PRIMARY KEY (iteration, application_id, json_pointer, workflow_instance_id),
     CHECK (task_type <> 1 OR (is_end_node IS NOT NULL)),
     CHECK (task_type <> 2 OR (retry_attempt IS NOT NULL)),
     CONSTRAINT fk_task_workflow_instance
         FOREIGN KEY (application_id, workflow_instance_id)
+            REFERENCES workflow_instance_entity (application_id, instance_id)
+);
+
+CREATE TABLE hash_mapping_info_entity
+(
+    id       VARCHAR2(255) NOT NULL,
+    instance VARCHAR2(255),
+    key      RAW(255),
+    data     BLOB,
+    PRIMARY KEY (id)
+);
+
+CREATE INDEX hashKey_idx ON hash_mapping_info_entity (key);
+CREATE INDEX instance_idx ON hash_mapping_info_entity (instance);
+
+CREATE TABLE task_metadata_entity
+(
+    meta_name            VARCHAR2(255) NOT NULL,
+    iteration            NUMBER(10, 0) NOT NULL,
+    json_pointer         VARCHAR2(255) NOT NULL,
+    application_id       VARCHAR2(255) NOT NULL,
+    workflow_instance_id VARCHAR2(255) NOT NULL,
+    hash_key             BLOB,
+    hash_index           BLOB,
+    raw_value            BLOB,
+    PRIMARY KEY (meta_name, iteration, json_pointer, application_id, workflow_instance_id),
+    CONSTRAINT fk_task_metadata_task
+        FOREIGN KEY (iteration, application_id, json_pointer, workflow_instance_id)
+            REFERENCES task_info_entity (iteration, application_id, json_pointer, workflow_instance_id)
+);
+
+CREATE TABLE workflow_metadata_entity
+(
+    meta_name            VARCHAR2(255) NOT NULL,
+    instance_id          VARCHAR2(255) NOT NULL,
+    application_id       VARCHAR2(255) NOT NULL,
+    workflow_instance_id VARCHAR2(255),
+    hash_key             BLOB,
+    hash_index           BLOB,
+    raw_value            BLOB,
+    PRIMARY KEY (meta_name, instance_id, application_id),
+    CONSTRAINT fk_workflow_metadata_workflow
+        FOREIGN KEY (application_id, instance_id)
             REFERENCES workflow_instance_entity (application_id, instance_id)
 );
