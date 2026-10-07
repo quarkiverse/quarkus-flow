@@ -38,7 +38,7 @@ To disable Quarkus Flow OpenTelemetry specifically, set `quarkus.flow.otel.enabl
 
 Quarkus Flow generates two main types of spans to trace workflow execution:
 
-**Workflow Spans**: Represent the end-to-end lifecycle of a workflow instance, from its initial trigger to completion or failure.
+**Workflow Spans**: Represent the end-to-end lifecycle of a workflow instance, from its initial trigger to completion, failure or cancellation.
 
 **Task Spans**: Represent the execution of a workflow task within the context of a parent workflow.
 

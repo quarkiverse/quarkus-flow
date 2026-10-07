@@ -1,8 +1,10 @@
 package io.quarkiverse.flow.opentelemetry.it.util;
 
+import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SpanInfo {
@@ -11,6 +13,8 @@ public class SpanInfo {
     String parentSpanId;
     String name;
     Map<String, Object> attributes;
+    @JsonProperty("events")
+    List<Map<String, Object>> events;
 
     public String getTraceId() {
         return traceId;
@@ -66,5 +70,12 @@ public class SpanInfo {
 
     public Map<String, Object> getAttributes() {
         return attributes;
+    }
+
+    public List<String> getEventNames() {
+        return (events == null) ? List.of()
+                : events.stream()
+                        .map(event -> (String) event.get("name"))
+                        .toList();
     }
 }
