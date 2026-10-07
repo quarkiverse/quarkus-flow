@@ -126,6 +126,12 @@ This fixes (3). Agents that the planner did not dispatch (the root agentic syste
   - each AI service span is a child of the generated task that ran its agent.
 - Negative control: with `quarkus.flow.otel.task-span-current=false`, all 4 assertions fail (18 spans in 9 traces). This shows the test detects the bug.
 
+## Related
+
+- **[OpenTelemetry Trace Propagation Across CloudEvent-Triggered Workflow Execution](2026-08-28-opentelemetry-trace-propagation-design.md) ([#908](https://github.com/quarkiverse/quarkus-flow/issues/908)).** Gives a workflow *root* its parent from the incoming CloudEvent's `traceparent`. This ADR covers what happens after that point: context inside a running instance, and between a workflow and the agentic workflows it generates. The two are complementary. With both, a CloudEvent-triggered workflow that invokes agents lands in the producer's trace end to end.
+- **[#1013](https://github.com/quarkiverse/quarkus-flow/issues/1013) (log correlation).** Partly helped, not addressed. Quarkus's OTel context storage copies the current span into the logging MDC, so logs written by task code should now carry the task's `traceId`/`spanId`. Flow's own lifecycle logs, which are what #1013 is about, are emitted from listeners outside the task body and are unchanged.
+- **[#1040](https://github.com/quarkiverse/quarkus-flow/issues/1040) (trace continuity after JVM restart).** Not addressed. `FlowContextPropagator` snapshots are in-memory and thread-bound, and the per-agent snapshots live in the `AgenticScope`'s transient execution context, so none of them survive persistence or a restart.
+
 ## References
 
 - [#1056](https://github.com/quarkiverse/quarkus-flow/issues/1056)
