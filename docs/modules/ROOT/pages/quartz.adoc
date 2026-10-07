@@ -46,7 +46,7 @@ Currently Quarkus Quartz only supports relational DB. Add the `quarkus-flow-db-m
 </dependency>
 ----
 
-Point Quartz at a named `flow-quartz` datasource so its schema migration stays isolated from any Flyway history your application manages for its own tables, then set up your DB connection details and driver as indicated in link:https://quarkus.io/guides/datasource[Quarkus Datasource guide]. For example, for a PostgreSQL DB:
+Point Quartz at a named `flow-quartz` datasource so its schema migration stays isolated from any Flyway history your application manages for its own tables, then set up your DB connection details and driver as indicated in link:https://quarkus.io/guides/datasource[Quarkus Datasource guide]. `quarkus-flow-db-migration-quartz` only ships a PostgreSQL migration script, so `flow-quartz`'s `db-kind` must be `postgresql`:
 
 .application.properties
 [source,properties]

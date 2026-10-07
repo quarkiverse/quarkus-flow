@@ -8,12 +8,18 @@ import jakarta.enterprise.event.Observes;
 
 import org.eclipse.microprofile.config.Config;
 
+import io.quarkus.datasource.common.runtime.DatabaseKind.SupportedDatabaseKind;
 import io.quarkus.runtime.StartupEvent;
 
 /**
  * Mirrors FlowDbMigrationLocationValidator: the "flow-quartz" named datasource's
  * Flyway config can be set behind a runtime-activated profile, so it can only be checked
  * once that profile is resolved, i.e. at runtime rather than at build.
+ * <p>
+ * Unlike its sibling, this extension bundles a single, PostgreSQL-specific migration script
+ * (it relies on the {@code BOOL}/{@code BYTEA} column types), so any other db-kind - including
+ * one unrecognized by Quarkus - is rejected here rather than being allowed to fail later when
+ * Flyway actually runs the script.
  */
 @ApplicationScoped
 public class FlowDbMigrationQuartzLocationValidator {
@@ -25,6 +31,15 @@ public class FlowDbMigrationQuartzLocationValidator {
         Optional<String> dbKind = config.getOptionalValue("quarkus.datasource." + DATASOURCE_NAME + ".db-kind", String.class);
         if (dbKind.isEmpty()) {
             return;
+        }
+
+        if (SupportedDatabaseKind.from(dbKind.get()).filter(SupportedDatabaseKind.POSTGRESQL::equals).isEmpty()) {
+            throw new IllegalStateException(
+                    "quarkus-flow-db-migration-quartz is configured (quarkus.datasource." + DATASOURCE_NAME
+                            + ".db-kind is set to " + dbKind.get()
+                            + "), but it only ships a PostgreSQL migration script for the QRTZ_* schema. Set "
+                            + "quarkus.datasource." + DATASOURCE_NAME + ".db-kind=postgresql, or do not configure the "
+                            + DATASOURCE_NAME + " datasource (see the Database Schema Migration guide).");
         }
 
         List<String> locations = config

@@ -63,8 +63,11 @@ The `locations` path is deliberately off Flyway's default `db/migration` scan ro
 
 == quarkus-flow-db-migration-quartz
 
-Ships the `QRTZ_*` schema Quarkus Quartz's `jdbc-cmt`/`jdbc-tx` store types need, through its own isolated `flow-quartz` named datasource and Flyway configuration. 
+Ships the `QRTZ_*` schema Quarkus Quartz's `jdbc-cmt`/`jdbc-tx` store types need, through its own isolated `flow-quartz` named datasource and Flyway configuration.
 See xref:quartz.adoc[Quartz workflow scheduler] for the full setup.
+
+Unlike `quarkus-flow-db-migration`, this extension ships a single, PostgreSQL-specific migration script (it relies on the `BOOL` and `BYTEA` column types). The `flow-quartz` datasource's `db-kind` must be `postgresql`;
+any other value fails startup with a clear error instead of failing later when Flyway runs the script.
 
 [[manual-migration]]
 == Manual migration
