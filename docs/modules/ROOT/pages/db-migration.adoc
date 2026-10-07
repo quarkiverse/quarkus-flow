@@ -22,7 +22,7 @@ The named datasource points at the *same physical database* your application's d
 [[quarkus-flow-db-migration]]
 == quarkus-flow-db-migration
 
-Ships the JPA runtime persistence schema (`workflow_instance_entity`, `cloud_event_entity`, `task_info_entity`) as versioned Flyway scripts, one per supported database (H2, PostgreSQL, MySQL, Oracle, MSSQL).
+Ships the JPA runtime persistence schema (`workflow_instance_entity`, `cloud_event_entity`, `task_info_entity`, `hash_mapping_info_entity`, `task_metadata_entity`, `workflow_metadata_entity`) as versioned Flyway scripts, one per supported database (H2, PostgreSQL, MySQL, Oracle, MSSQL).
 
 .pom.xml
 [source,xml]
@@ -93,7 +93,7 @@ quarkus.flyway.enabled=true
 quarkus.flyway.migrate-at-start=true
 ----
 
-Then create a migration script at `src/main/resources/db/migration/` (e.g. `V1__create_tables.sql`) with the three tables required by the JPA provider. Use the script that matches your target database — these are `quarkus-flow-db-migration`'s own scripts, included straight from the extension's source so they can't drift from what it actually ships:
+Then create a migration script at `src/main/resources/db/migration/` (e.g. `V1__create_tables.sql`) with the six tables required by the JPA provider (`workflow_instance_entity`, `cloud_event_entity`, `task_info_entity`, `hash_mapping_info_entity`, `task_metadata_entity`, `workflow_metadata_entity`). Use the complete script that matches your target database below, as-is — these are `quarkus-flow-db-migration`'s own scripts, included straight from the extension's source so they can't drift from what it actually ships:
 
 .H2
 [source,sql]
