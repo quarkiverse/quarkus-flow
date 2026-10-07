@@ -41,6 +41,7 @@ public class FlowLoopAgentService<T> extends LoopAgentServiceImpl<T> {
 
     @Override
     public T build() {
+        listener(FlowAgentContextListener.INSTANCE);
         return build(() -> new FlowPlanner(AgenticSystemTopology.LOOP, flow));
     }
 }

@@ -28,5 +28,28 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |
 
+a| [[quarkus-flow-opentelemetry_quarkus-flow-otel-task-span-current]] [.property-path]##link:#quarkus-flow-opentelemetry_quarkus-flow-otel-task-span-current[`+++quarkus.flow.otel.task-span-current+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.otel.task-span-current+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Make each task's `task.execute` span the current span while the task body runs, so that spans created by the task body (for example LangChain4j AI service calls or REST client calls) are children of the task span and belong to the workflow's trace.
+
+Set to `false` to restore the previous behavior, where the task span is recorded but never current.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_OTEL_TASK_SPAN_CURRENT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_OTEL_TASK_SPAN_CURRENT+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
 |===
 

@@ -409,3 +409,43 @@ Tasks of type `raise` produce these additional attributes:
 | String
 | Error details. Only present if configured in the workflow definition.
 |===
+
+== Trace Context Propagation
+
+=== Spans created inside a task
+
+While a call task runs, its `task.execute` span is the current span. Spans the task creates, such as REST client calls, JDBC queries, LangChain4j AI service calls or your own `Span` instances, become children of the task span. They stay in the workflow's trace.
+
+To keep the task span from being current inside task bodies, set:
+
+[source,properties]
+----
+quarkus.flow.otel.task-span-current=false
+----
+
+With this setting the task span is still recorded, but `Span.current()` inside the task body is whatever was current on the executing thread.
+
+=== Agentic workflows
+
+When a task invokes a LangChain4j agentic system (`@SequenceAgent`, `@ParallelAgent`, `@ConditionalAgent`, `@LoopAgent`) through `quarkus-flow-langchain4j`, Quarkus Flow passes the trace context through the whole run:
+
+* The workflow generated for the agentic system becomes a child of the invoking task.
+* Each agent's AI service call becomes a child of the task that ran it, including agents run in parallel on LangChain4j's executor.
+
+The whole run is a single trace:
+
+[source,text]
+----
+workflow.execute my-workflow
+└── task.execute runAgents
+    └── workflow.execute intake-agents
+        ├── task.execute classify-0
+        │   └── langchain4j.aiservices.ClassifierAgent.classify
+        └── task.execute extract-1
+            └── workflow.execute extraction-agent
+                └── task.execute parallel
+                    ├── task.execute details-0
+                    │   └── langchain4j.aiservices.DetailsAgent.details
+                    └── task.execute summarize-1
+                        └── langchain4j.aiservices.SummaryAgent.summarize
+----

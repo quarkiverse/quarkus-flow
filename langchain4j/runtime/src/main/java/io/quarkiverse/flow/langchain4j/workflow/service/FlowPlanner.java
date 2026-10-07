@@ -19,8 +19,10 @@ import dev.langchain4j.agentic.planner.AgenticSystemTopology;
 import dev.langchain4j.agentic.planner.InitPlanningContext;
 import dev.langchain4j.agentic.planner.Planner;
 import dev.langchain4j.agentic.planner.PlanningContext;
+import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.workflow.ConditionalAgentInstance;
 import dev.langchain4j.agentic.workflow.LoopAgentInstance;
+import io.quarkiverse.flow.internal.FlowContextPropagator;
 import io.quarkiverse.flow.langchain4j.workflow.flow.AgenticFlow;
 import io.quarkiverse.flow.langchain4j.workflow.flow.ConditionalAgenticFlow;
 import io.quarkiverse.flow.langchain4j.workflow.flow.LoopAgenticFlow;
@@ -31,10 +33,12 @@ public class FlowPlanner implements Planner {
     private static final Logger LOG = LoggerFactory.getLogger(FlowPlanner.class);
     private final AgenticSystemTopology topology;
     private final AgenticFlow flow;
+    private final FlowContextPropagator contextPropagator = FlowContextPropagator.current();
     private List<AgentInstance> subAgentsList;
     private BlockingQueue<AgentExchange> agentExchangeQueue;
     private Map<String, AgentExchange> currentExchanges;
     private AtomicInteger parallelAgents;
+    private AgenticScope currentAgenticScope;
 
     public FlowPlanner(AgenticSystemTopology topology, AgenticFlow flow) {
         this.topology = topology;
@@ -61,12 +65,19 @@ public class FlowPlanner implements Planner {
     public Action firstAction(PlanningContext planningContext) {
         final WorkflowInstance instance = flow.definition().instance(planningContext.agenticScope());
         planningContext.agenticScope().writeExecutionContext(instance.id(), this);
+        this.currentAgenticScope = planningContext.agenticScope();
 
         // Starts workflow on a different thread
         // Despite returning a CompletableFuture, the start() method executes on the same thread by design.
         // We use supplyAsync to force execution on the async executor thread, then flatten the nested future.
-        CompletableFuture.supplyAsync(instance::start)
-                .thenCompose(future -> future)
+        // The caller's context (e.g. the OpenTelemetry span of the task invoking this agentic system) is carried over,
+        // so the generated workflow joins the caller's trace.
+        FlowContextPropagator.Snapshot callerContext = contextPropagator.capture();
+        CompletableFuture.supplyAsync(() -> {
+            try (FlowContextPropagator.Scope ignored = callerContext.activate()) {
+                return instance.start();
+            }
+        }).thenCompose(future -> future)
                 .whenComplete((r, e) -> {
                     if (e != null) {
                         LOG.error("Workflow failed", e);
@@ -129,6 +140,18 @@ public class FlowPlanner implements Planner {
 
             parallelAgents.set(agents.size());
 
+            // Agents run on the planner thread or on LangChain4j's executor, not on the workflow task's thread:
+            // hand each one the context of the task that requested it (activated by FlowAgentContextListener)
+            if (currentAgenticScope != null) {
+                for (AgentInstance agent : agents) {
+                    AgentExchange exchange = currentExchanges.get(agent.agentId());
+                    if (exchange != null) {
+                        currentAgenticScope.writeExecutionContext(FlowAgentContextListener.contextKey(agent.agentId()),
+                                exchange.context());
+                    }
+                }
+            }
+
             LOG.debug("Executing {} agent(s)", agents.size());
             return agents.isEmpty() ? done() : call(agents);
         } catch (InterruptedException e) {
@@ -144,7 +167,7 @@ public class FlowPlanner implements Planner {
 
     public CompletableFuture<Void> executeAgent(AgentInstance agent) {
         CompletableFuture<Void> continuation = new CompletableFuture<>();
-        AgentExchange exchange = new AgentExchange(agent, continuation);
+        AgentExchange exchange = new AgentExchange(agent, continuation, contextPropagator.capture());
 
         try {
             agentExchangeQueue.put(exchange);
@@ -168,12 +191,14 @@ public class FlowPlanner implements Planner {
     }
 
     private void signalTermination() {
-        agentExchangeQueue.offer(new AgentExchange(null, CompletableFuture.completedFuture(null)));
+        agentExchangeQueue
+                .offer(new AgentExchange(null, CompletableFuture.completedFuture(null), FlowContextPropagator.Snapshot.NONE));
     }
 
     /**
      * Encapsulates the bidirectional exchange between workflow execution and planner actions.
      */
-    private record AgentExchange(AgentInstance agent, CompletableFuture<Void> continuation) {
+    private record AgentExchange(AgentInstance agent, CompletableFuture<Void> continuation,
+            FlowContextPropagator.Snapshot context) {
     }
 }

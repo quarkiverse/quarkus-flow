@@ -39,6 +39,7 @@ public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> {
 
     @Override
     public T build() {
+        listener(FlowAgentContextListener.INSTANCE);
         return build(() -> new FlowPlanner(AgenticSystemTopology.PARALLEL, flow));
     }
 

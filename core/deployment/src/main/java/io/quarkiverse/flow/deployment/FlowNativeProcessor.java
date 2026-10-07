@@ -4,6 +4,7 @@ import org.jboss.jandex.ClassInfo;
 
 import io.quarkiverse.flow.Flowable;
 import io.quarkiverse.flow.dsl.executors.DataTypeConverter;
+import io.quarkiverse.flow.internal.FlowContextPropagator;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -18,6 +19,7 @@ import io.serverlessworkflow.impl.events.CloudEventPredicateFactory;
 import io.serverlessworkflow.impl.events.EventConsumer;
 import io.serverlessworkflow.impl.events.EventPublisher;
 import io.serverlessworkflow.impl.executors.CallableTaskBuilder;
+import io.serverlessworkflow.impl.executors.CallableTaskProxyBuilder;
 import io.serverlessworkflow.impl.executors.RunnableTaskBuilder;
 import io.serverlessworkflow.impl.executors.TaskExecutorFactory;
 import io.serverlessworkflow.impl.executors.http.HttpRequestDecorator;
@@ -46,6 +48,8 @@ final class FlowNativeProcessor {
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(CloudEventPredicateFactory.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(RunnableTaskBuilder.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(URITemplateResolver.class.getName()));
+        sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(CallableTaskProxyBuilder.class.getName()));
+        sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(FlowContextPropagator.class.getName()));
     }
 
     @BuildStep

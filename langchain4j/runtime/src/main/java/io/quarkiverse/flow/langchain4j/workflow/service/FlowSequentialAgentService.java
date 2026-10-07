@@ -42,6 +42,7 @@ public class FlowSequentialAgentService<T> extends SequentialAgentServiceImpl<T>
 
     @Override
     public T build() {
+        listener(FlowAgentContextListener.INSTANCE);
         return build(() -> new FlowPlanner(AgenticSystemTopology.SEQUENCE, this.flow));
     }
 
