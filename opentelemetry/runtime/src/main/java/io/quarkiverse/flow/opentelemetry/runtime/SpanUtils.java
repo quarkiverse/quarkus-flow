@@ -4,8 +4,8 @@ import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_A2A_A
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_A2A_AGENT_CARD_NAME_ATTR;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_A2A_METHOD_ATTR;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_A2A_SERVER_ATTR;
-import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_HTTP_TASK_REQUEST_METHOD_ATTRIBUTE;
-import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_HTTP_TASK_URL_FULL_ATTRIBUTE;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_HTTP_TASK_REQUEST_METHOD_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_HTTP_TASK_URL_FULL_ATTR;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_TASK_FUNCTION_NAME_ATTR;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_TASK_GRPC_METHOD_ATTR;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_TASK_GRPC_SERVER_ADDRESS_ATTR;
@@ -149,10 +149,10 @@ public class SpanUtils {
     private static void enrichCallHTTP(SpanBuilder span, CallHTTP task) {
         HTTPArguments httpArguments = task.getWith();
         if (httpArguments != null) {
-            setIfNotNull(span, CALL_HTTP_TASK_REQUEST_METHOD_ATTRIBUTE, httpArguments.getMethod(),
+            setIfNotNull(span, CALL_HTTP_TASK_REQUEST_METHOD_ATTR, httpArguments.getMethod(),
                     String::toUpperCase);
             if (httpArguments.getEndpoint() != null) {
-                span.setAttribute(CALL_HTTP_TASK_URL_FULL_ATTRIBUTE,
+                span.setAttribute(CALL_HTTP_TASK_URL_FULL_ATTR,
                         extractFullUri(httpArguments.getEndpoint()));
             }
         }

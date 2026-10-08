@@ -23,14 +23,4 @@ record WorkflowEventInfo(
                 context.instanceData().id(),
                 ev.type());
     }
-
-    WorkflowEventInfo(String wfApplicationId, String wfNamespace, String wfName, String wfVersion, String wfInstanceId,
-            EventType eventType) {
-        this.wfApplicationId = wfApplicationId;
-        this.wfNamespace = wfNamespace;
-        this.wfName = wfName;
-        this.wfVersion = wfVersion;
-        this.wfInstanceId = wfInstanceId;
-        this.eventType = eventType;
-    }
 }

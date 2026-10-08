@@ -5,7 +5,7 @@ import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.END_REASON
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.END_REASON_COMPLETED;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.END_REASON_FAULTED;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.END_REASON_JVM_SHUTDOWN;
-import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.END_REASON_UNKNOWN;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.END_REASON_WORKFLOW_FAULTED;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.FLOW_TASK_EXECUTION_END_REASON_ATTR;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.FLOW_WF_EXECUTION_END_REASON_ATTR;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanUtils.appendTaskEvent;
@@ -171,7 +171,7 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
                 startSpan.setStatus(StatusCode.OK);
                 String endReason = eventInfo.eventType() == WORKFLOW_COMPLETED ? END_REASON_COMPLETED : END_REASON_CANCELLED;
                 startSpan.setAttribute(FLOW_WF_EXECUTION_END_REASON_ATTR, endReason);
-                workflowContext.ensureAllTaskSpansAreClosed(END_REASON_UNKNOWN);
+                workflowContext.ensureAllTaskSpansAreClosed(endReason);
                 appendWorkflowEvent(startSpan, eventInfo.eventType());
             });
         } else {
@@ -182,7 +182,7 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
                 startSpan.setStatus(StatusCode.ERROR, failedEvent.cause().getMessage());
                 startSpan.setAttribute(ERROR_TYPE, failedEvent.cause().getClass().getName());
                 startSpan.setAttribute(FLOW_WF_EXECUTION_END_REASON_ATTR, END_REASON_FAULTED);
-                workflowContext.ensureAllTaskSpansAreClosed(END_REASON_UNKNOWN);
+                workflowContext.ensureAllTaskSpansAreClosed(END_REASON_WORKFLOW_FAULTED);
                 appendWorkflowEvent(startSpan, eventInfo.eventType());
             });
         }
