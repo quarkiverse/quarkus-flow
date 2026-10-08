@@ -17,7 +17,7 @@ CREATE TABLE cloud_event_entity
 
 CREATE TABLE workflow_instance_entity
 (
-    application_id     VARCHAR(26) CHARACTER SET ascii NOT NULL,
+    application_id     VARCHAR(63) CHARACTER SET ascii NOT NULL,
     instance_id        VARCHAR(26) CHARACTER SET ascii NOT NULL,
     workflow_name      VARCHAR(255) NOT NULL,
     workflow_namespace VARCHAR(255) NOT NULL,
@@ -30,9 +30,9 @@ CREATE TABLE workflow_instance_entity
 
 CREATE TABLE task_info_entity
 (
-    application_id       VARCHAR(26) CHARACTER SET ascii NOT NULL,
+    application_id       VARCHAR(63) CHARACTER SET ascii NOT NULL,
     workflow_instance_id VARCHAR(26) CHARACTER SET ascii NOT NULL,
-    json_pointer         VARCHAR(716) CHARACTER SET ascii NOT NULL,
+    json_pointer         VARCHAR(679) CHARACTER SET ascii NOT NULL,
     iteration            INTEGER      NOT NULL,
     task_type            INTEGER      NOT NULL CHECK (task_type IN (1, 2)),
     is_end_node          BOOLEAN,
@@ -70,8 +70,8 @@ CREATE TABLE task_metadata_entity
 (
     meta_name            VARCHAR(128) CHARACTER SET ascii NOT NULL,
     iteration            INTEGER      NOT NULL,
-    json_pointer         VARCHAR(716) CHARACTER SET ascii NOT NULL,
-    application_id       VARCHAR(26) CHARACTER SET ascii NOT NULL,
+    json_pointer         VARCHAR(679) CHARACTER SET ascii NOT NULL,
+    application_id       VARCHAR(63) CHARACTER SET ascii NOT NULL,
     workflow_instance_id VARCHAR(26) CHARACTER SET ascii NOT NULL,
     hash_key             LONGBLOB,
     hash_index           LONGBLOB,
@@ -87,7 +87,7 @@ CREATE TABLE workflow_metadata_entity
 (
     meta_name            VARCHAR(128) CHARACTER SET ascii NOT NULL,
     instance_id          VARCHAR(26) CHARACTER SET ascii NOT NULL,
-    application_id       VARCHAR(26) CHARACTER SET ascii NOT NULL,
+    application_id       VARCHAR(63) CHARACTER SET ascii NOT NULL,
     workflow_instance_id VARCHAR(255) CHARACTER SET ascii,
     hash_key             LONGBLOB,
     hash_index           LONGBLOB,

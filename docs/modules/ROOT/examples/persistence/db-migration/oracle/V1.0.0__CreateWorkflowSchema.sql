@@ -17,7 +17,7 @@ CREATE TABLE cloud_event_entity
 
 CREATE TABLE workflow_instance_entity
 (
-    application_id     VARCHAR2(26)                NOT NULL,
+    application_id     VARCHAR2(63)                NOT NULL,
     instance_id        VARCHAR2(26)                NOT NULL,
     workflow_name      VARCHAR2(255)               NOT NULL,
     workflow_namespace VARCHAR2(255)               NOT NULL,
@@ -30,9 +30,9 @@ CREATE TABLE workflow_instance_entity
 
 CREATE TABLE task_info_entity
 (
-    application_id       VARCHAR2(26) NOT NULL,
+    application_id       VARCHAR2(63) NOT NULL,
     workflow_instance_id VARCHAR2(26) NOT NULL,
-    json_pointer         VARCHAR2(716) NOT NULL,
+    json_pointer         VARCHAR2(679) NOT NULL,
     iteration            NUMBER(10, 0) NOT NULL,
     task_type            NUMBER(10, 0) NOT NULL CHECK (task_type IN (1, 2)),
     is_end_node          NUMBER(1, 0),
@@ -70,8 +70,8 @@ CREATE TABLE task_metadata_entity
 (
     meta_name            VARCHAR2(128) NOT NULL,
     iteration            NUMBER(10, 0) NOT NULL,
-    json_pointer         VARCHAR2(716) NOT NULL,
-    application_id       VARCHAR2(26) NOT NULL,
+    json_pointer         VARCHAR2(679) NOT NULL,
+    application_id       VARCHAR2(63) NOT NULL,
     workflow_instance_id VARCHAR2(26) NOT NULL,
     hash_key             RAW(255),
     hash_index           RAW(255),
@@ -87,7 +87,7 @@ CREATE TABLE workflow_metadata_entity
 (
     meta_name            VARCHAR2(128) NOT NULL,
     instance_id          VARCHAR2(26) NOT NULL,
-    application_id       VARCHAR2(26) NOT NULL,
+    application_id       VARCHAR2(63) NOT NULL,
     workflow_instance_id VARCHAR2(255),
     hash_key             RAW(255),
     hash_index           RAW(255),

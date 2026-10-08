@@ -16,10 +16,10 @@ import io.quarkus.test.junit.QuarkusTest;
 @QuarkusTest
 class TaskMetadataMaxLengthKeyIT {
 
-    private static final String APPLICATION_ID = "a".repeat(26);
+    private static final String APPLICATION_ID = "a".repeat(63);
     private static final String INSTANCE_ID = "i".repeat(26);
     private static final String META_NAME = "m".repeat(128);
-    private static final String JSON_POINTER = "/" + "p".repeat(715);
+    private static final String JSON_POINTER = "/" + "p".repeat(678);
 
     @Inject
     EntityManager entityManager;

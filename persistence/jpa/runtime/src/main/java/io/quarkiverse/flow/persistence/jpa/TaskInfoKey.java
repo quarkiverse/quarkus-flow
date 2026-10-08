@@ -26,10 +26,10 @@ public class TaskInfoKey implements Serializable {
     @Column
     private int iteration;
 
-    @Column(length = 716)
+    @Column(length = 679)
     private String jsonPointer;
 
-    @Column(length = 26)
+    @Column(length = 63)
     private String applicationId;
 
     @Column(length = 26)

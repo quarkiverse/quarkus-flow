@@ -14,7 +14,7 @@ public class WorkflowInstanceKey implements Serializable {
     @Column(length = 26)
     private String instanceId;
 
-    @Column(length = 26)
+    @Column(length = 63)
     private String applicationId;
 
     public WorkflowInstanceKey() {

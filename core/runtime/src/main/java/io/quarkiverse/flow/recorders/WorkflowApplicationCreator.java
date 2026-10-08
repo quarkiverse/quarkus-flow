@@ -53,7 +53,7 @@ public class WorkflowApplicationCreator {
 
     private static final Logger LOG = LoggerFactory.getLogger(WorkflowApplicationCreator.class);
 
-    private static final int MAX_APPLICATION_ID_LENGTH = 26;
+    private static final int MAX_APPLICATION_ID_LENGTH = 63;
 
     @Inject
     QuarkusManagedExecutorServiceFactory executorServiceFactory;
