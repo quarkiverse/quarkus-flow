@@ -3,6 +3,12 @@ package io.quarkiverse.flow.langchain4j.workflow;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
@@ -17,6 +23,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.agentic.AgenticServices;
+import dev.langchain4j.agentic.declarative.ParallelExecutor;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
 import dev.langchain4j.service.V;
@@ -86,6 +93,72 @@ public class FlowAgentServicesMockedTest {
         assertThat(scope.readState("calledA", false)).isTrue();
         assertThat(scope.readState("calledB", false)).isTrue();
         assertThat(scope.readState("calledC", false)).isTrue();
+    }
+
+    @Test
+    @DisplayName("parallel_agent_runs_branches_on_programmatic_executor")
+    void parallel_agent_runs_branches_on_programmatic_executor() {
+        ExecutorService pool = Executors.newFixedThreadPool(3, namedThreads("custom-parallel-"));
+        try {
+            AtomicInteger submitted = new AtomicInteger();
+            Set<String> agentThreads = ConcurrentHashMap.newKeySet();
+
+            FlowParallelAgentService<TestParallelAgent> service = FlowParallelAgentService.builder(TestParallelAgent.class,
+                    runtimeAppProvider);
+            service.executor(task -> {
+                submitted.incrementAndGet();
+                pool.execute(task);
+            });
+            service.subAgents(recordingAgent("calledA", agentThreads), recordingAgent("calledB", agentThreads),
+                    recordingAgent("calledC", agentThreads));
+
+            AgenticScope scope = service.build().run("parallel-input").agenticScope();
+
+            assertThat(scope.readState("calledA", false)).isTrue();
+            assertThat(scope.readState("calledB", false)).isTrue();
+            assertThat(scope.readState("calledC", false)).isTrue();
+            assertThat(submitted.get()).as("custom executor should receive the parallel branches").isPositive();
+            assertThat(agentThreads).anyMatch(name -> name.startsWith("custom-parallel-"));
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    @Test
+    @DisplayName("parallel_agent_runs_branches_on_declared_parallel_executor")
+    void parallel_agent_runs_branches_on_declared_parallel_executor() {
+        TestParallelAgentWithExecutor.SUBMITTED.set(0);
+        Set<String> agentThreads = ConcurrentHashMap.newKeySet();
+
+        // ParallelAgentServiceImpl's constructor passes the @ParallelExecutor method's executor to executor(..)
+        FlowParallelAgentService<TestParallelAgentWithExecutor> service = FlowParallelAgentService
+                .builder(TestParallelAgentWithExecutor.class, runtimeAppProvider);
+        service.subAgents(recordingAgent("calledA", agentThreads), recordingAgent("calledB", agentThreads));
+
+        AgenticScope scope = service.build().run("parallel-input").agenticScope();
+
+        assertThat(scope.readState("calledA", false)).isTrue();
+        assertThat(scope.readState("calledB", false)).isTrue();
+        assertThat(TestParallelAgentWithExecutor.SUBMITTED.get())
+                .as("@ParallelExecutor executor should receive the parallel branches")
+                .isPositive();
+        assertThat(agentThreads).anyMatch(name -> name.startsWith(TestParallelAgentWithExecutor.THREAD_PREFIX));
+    }
+
+    private static Object recordingAgent(String stateKey, Set<String> agentThreads) {
+        return AgenticServices.agentAction(scope -> {
+            agentThreads.add(Thread.currentThread().getName());
+            scope.writeState(stateKey, true);
+        });
+    }
+
+    private static ThreadFactory namedThreads(String prefix) {
+        AtomicInteger counter = new AtomicInteger();
+        return runnable -> {
+            Thread thread = new Thread(runnable, prefix + counter.incrementAndGet());
+            thread.setDaemon(true);
+            return thread;
+        };
     }
 
     @Test
@@ -315,6 +388,22 @@ public class FlowAgentServicesMockedTest {
 
     interface TestParallelAgent {
         ResultWithAgenticScope<String> run(@V("input") String input);
+    }
+
+    public interface TestParallelAgentWithExecutor {
+        String THREAD_PREFIX = "declared-parallel-";
+        AtomicInteger SUBMITTED = new AtomicInteger();
+        ExecutorService POOL = Executors.newFixedThreadPool(2, namedThreads(THREAD_PREFIX));
+
+        ResultWithAgenticScope<String> run(@V("input") String input);
+
+        @ParallelExecutor
+        static Executor executor() {
+            return task -> {
+                SUBMITTED.incrementAndGet();
+                POOL.execute(task);
+            };
+        }
     }
 
     interface TestConditionalAgent {

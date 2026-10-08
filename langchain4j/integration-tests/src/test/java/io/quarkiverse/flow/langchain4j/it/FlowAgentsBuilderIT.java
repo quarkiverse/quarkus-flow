@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import jakarta.inject.Inject;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import dev.langchain4j.agentic.scope.AgentInvocation;
@@ -24,6 +25,9 @@ public class FlowAgentsBuilderIT {
 
     @Inject
     Agents.EveningPlannerAgent eveningPlannerAgent;
+
+    @Inject
+    Agents.EveningPlannerAgentWithExecutor eveningPlannerAgentWithExecutor;
 
     @Inject
     Agents.ExpertRouterAgent expertRouterAgent;
@@ -46,6 +50,19 @@ public class FlowAgentsBuilderIT {
         assertThat(eveningPlannerAgent).isNotNull();
         final List<Agents.EveningPlan> plan = eveningPlannerAgent.plan("romantic");
         assertThat(plan).hasSize(3);
+    }
+
+    @Test
+    @DisplayName("parallel_agent_with_parallel_executor_runs_on_custom_executor")
+    void parallel_agent_with_parallel_executor_runs_on_custom_executor() {
+        int submittedBefore = Agents.EveningPlannerAgentWithExecutor.SUBMITTED.get();
+
+        final List<Agents.EveningPlan> plan = eveningPlannerAgentWithExecutor.plan("romantic");
+
+        assertThat(plan).hasSize(3);
+        assertThat(Agents.EveningPlannerAgentWithExecutor.SUBMITTED.get())
+                .as("@ParallelExecutor executor should receive the parallel branches")
+                .isGreaterThan(submittedBefore);
     }
 
     @Test
