@@ -53,6 +53,8 @@ public class WorkflowApplicationCreator {
 
     private static final Logger LOG = LoggerFactory.getLogger(WorkflowApplicationCreator.class);
 
+    private static final int MAX_APPLICATION_ID_LENGTH = 26;
+
     @Inject
     QuarkusManagedExecutorServiceFactory executorServiceFactory;
 
@@ -137,7 +139,17 @@ public class WorkflowApplicationCreator {
     }
 
     private void injectAppId(final Builder builder) {
-        ConfigProvider.getConfig().getOptionalValue("quarkus.application.name", String.class).ifPresent(builder::withId);
+        ConfigProvider.getConfig().getOptionalValue("quarkus.application.name", String.class).ifPresent(name -> {
+            if (name.length() > MAX_APPLICATION_ID_LENGTH) {
+                LOG.warn(
+                        "Flow: quarkus.application.name is {} characters long ('{}'), exceeding the {}-character width "
+                                + "Quarkus Flow's persistence backends allocate for the workflow application id. "
+                                + "Persisting workflow state may fail or be truncated depending on the configured persistence "
+                                + "provider; consider shortening quarkus.application.name.",
+                        name.length(), name, MAX_APPLICATION_ID_LENGTH);
+            }
+            builder.withId(name);
+        });
     }
 
     private void injectExecutorServiceFactory(Builder builder) {

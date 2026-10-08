@@ -11,10 +11,10 @@ public class WorkflowInstanceKey implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Column
+    @Column(length = 26)
     private String instanceId;
 
-    @Column
+    @Column(length = 26)
     private String applicationId;
 
     public WorkflowInstanceKey() {

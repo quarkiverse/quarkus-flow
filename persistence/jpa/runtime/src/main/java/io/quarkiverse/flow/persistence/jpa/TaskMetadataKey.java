@@ -3,6 +3,7 @@ package io.quarkiverse.flow.persistence.jpa;
 import java.io.Serializable;
 import java.util.Objects;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Embedded;
 
@@ -11,6 +12,7 @@ public class TaskMetadataKey implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    @Column(length = 128)
     private String metaName;
 
     @Embedded
