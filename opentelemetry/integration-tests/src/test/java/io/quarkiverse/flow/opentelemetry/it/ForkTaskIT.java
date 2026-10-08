@@ -23,7 +23,7 @@ class ForkTaskIT extends OTelBaseIT {
 
     @Test
     void producedSpans() {
-        IndexedSpanInfo indexedSpanInfo = executeAndGetSpans(7);
+        IndexedSpanInfo indexedSpanInfo = executeAndGetSpans(8);
 
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(FORK_TASK), workflowParentSpan());
 

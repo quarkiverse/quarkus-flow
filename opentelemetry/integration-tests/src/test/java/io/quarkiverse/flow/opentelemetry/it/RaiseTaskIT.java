@@ -24,7 +24,7 @@ class RaiseTaskIT extends OTelBaseIT {
 
     @Test
     void producedSpans() {
-        IndexedSpanInfo indexedSpanInfo = executeAndGetSpans(3);
+        IndexedSpanInfo indexedSpanInfo = executeAndGetSpans(4);
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(SET_BEFORE_RAISE), workflowParentSpan());
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(RAISE_TASK), workflowParentSpan());
     }

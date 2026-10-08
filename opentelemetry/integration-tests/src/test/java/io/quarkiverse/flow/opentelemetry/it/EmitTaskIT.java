@@ -23,7 +23,7 @@ class EmitTaskIT extends OTelBaseIT {
 
     @Test
     void producedSpans() {
-        IndexedSpanInfo indexedSpanInfo = executeAndGetSpans(2);
+        IndexedSpanInfo indexedSpanInfo = executeAndGetSpans(3);
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(EMIT_TASK), workflowParentSpan());
     }
 }

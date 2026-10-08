@@ -20,7 +20,7 @@ class WaitTaskIT extends OTelBaseIT {
 
     @Test
     void producedSpans() {
-        IndexedSpanInfo indexedSpanInfo = executeAndGetSpans(4);
+        IndexedSpanInfo indexedSpanInfo = executeAndGetSpans(5);
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(WAIT_TASK1), workflowParentSpan());
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(SET_TASK), workflowParentSpan());
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(WAIT_TASK2), workflowParentSpan());
