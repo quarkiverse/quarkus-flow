@@ -37,7 +37,7 @@ public final class FlowAgentContextListener implements AgentListener {
     public void beforeAgentInvocation(AgentRequest request) {
         FlowContextPropagator.Snapshot snapshot = lookup(request.agenticScope(), request.agentId());
         if (snapshot != null) {
-            OPEN_SCOPES.get().push(new OpenScope(request.agentId(), snapshot.activate()));
+            OPEN_SCOPES.get().push(new OpenScope(request.agenticScope(), request.agentId(), snapshot.activate()));
         }
     }
 
@@ -51,11 +51,21 @@ public final class FlowAgentContextListener implements AgentListener {
         close(error.agentId());
     }
 
+    /**
+     * Closes the contexts this thread opened for agents of the suspended agentic system.
+     * <p>
+     * A suspending agentic system throws {@code AgenticSystemSuspendedException} instead of returning, so the agents
+     * it was running never get {@code afterAgentInvocation}/{@code onAgentInvocationError}. Every level of a nested
+     * agentic system shares the same {@link AgenticScope}, and each level fires this callback as the suspension
+     * unwinds up to the root call, which never opened a context. Closing only the entries opened for
+     * {@code agenticScope}, from the top of this thread's stack down to the first entry of another scope, closes
+     * each abandoned context exactly once, in reverse opening order, and never touches the context of an enclosing,
+     * unrelated agentic system.
+     */
     @Override
     public void onAgenticSystemSuspended(AgenticScope agenticScope) {
-        // A suspended invocation ends without afterAgentInvocation/onAgentInvocationError and carries no agent id
         Deque<OpenScope> scopes = OPEN_SCOPES.get();
-        if (!scopes.isEmpty()) {
+        while (!scopes.isEmpty() && scopes.peek().agenticScope() == agenticScope) {
             scopes.pop().scope().close();
         }
     }
@@ -81,6 +91,6 @@ public final class FlowAgentContextListener implements AgentListener {
         }
     }
 
-    private record OpenScope(String agentId, FlowContextPropagator.Scope scope) {
+    private record OpenScope(AgenticScope agenticScope, String agentId, FlowContextPropagator.Scope scope) {
     }
 }

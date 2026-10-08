@@ -25,14 +25,15 @@ class FlowAgentContextListenerTest {
 
     private final List<String> events = new ArrayList<>();
     private final AgenticScope agenticScope = mock(AgenticScope.class);
+    private final AgenticScope otherAgenticScope = mock(AgenticScope.class);
     private final AgentInstance agent = agent(AGENT_ID);
 
     @AfterEach
     void drainOpenScopes() {
         // never leak a scope into another test running on this thread
-        for (int i = 0; i < 10; i++) {
-            FlowAgentContextListener.INSTANCE.onAgenticSystemSuspended(agenticScope);
-        }
+        FlowAgentContextListener.INSTANCE.onAgenticSystemSuspended(agenticScope);
+        FlowAgentContextListener.INSTANCE.onAgenticSystemSuspended(otherAgenticScope);
+        FlowAgentContextListener.INSTANCE.onAgenticSystemSuspended(agenticScope);
     }
 
     @Test
@@ -68,6 +69,53 @@ class FlowAgentContextListenerTest {
         FlowAgentContextListener.INSTANCE.onAgenticSystemSuspended(agenticScope);
 
         assertThat(events).containsExactly("activate task-ctx", "close task-ctx");
+    }
+
+    @Test
+    @DisplayName("test_nested_suspension_closes_each_abandoned_context_once")
+    void test_nested_suspension_closes_each_abandoned_context_once() {
+        // sequence(..., extract = parallel(...)) on one thread, all levels sharing one AgenticScope
+        AgentInstance extract = agent("extract-1");
+        storeSnapshot("extract-1", "extract-task");
+
+        FlowAgentContextListener.INSTANCE.beforeAgentInvocation(new AgentRequest(agenticScope, extract, Map.of()));
+        // the nested system suspends, then its parent, then the root call: one callback per level
+        FlowAgentContextListener.INSTANCE.onAgenticSystemSuspended(agenticScope);
+        FlowAgentContextListener.INSTANCE.onAgenticSystemSuspended(agenticScope);
+        FlowAgentContextListener.INSTANCE.onAgenticSystemSuspended(agenticScope);
+
+        assertThat(events).containsExactly("activate extract-task", "close extract-task");
+    }
+
+    @Test
+    @DisplayName("test_suspension_never_closes_the_context_of_an_enclosing_agentic_system")
+    void test_suspension_never_closes_the_context_of_an_enclosing_agentic_system() {
+        // an agent of one agentic system invokes a second, unrelated agentic system (its own AgenticScope) that
+        // suspends; the root call of the second system has no context of its own
+        storeSnapshot(AGENT_ID, "outer-task");
+        AgentInstance inner = agent("inner-agent");
+        storeSnapshot(otherAgenticScope, "inner-agent", "inner-task");
+
+        FlowAgentContextListener.INSTANCE.beforeAgentInvocation(new AgentRequest(agenticScope, agent, Map.of()));
+        FlowAgentContextListener.INSTANCE.beforeAgentInvocation(new AgentRequest(otherAgenticScope, inner, Map.of()));
+        FlowAgentContextListener.INSTANCE.onAgenticSystemSuspended(otherAgenticScope);
+        FlowAgentContextListener.INSTANCE.onAgenticSystemSuspended(otherAgenticScope);
+
+        assertThat(events).containsExactly("activate outer-task", "activate inner-task", "close inner-task");
+
+        FlowAgentContextListener.INSTANCE.afterAgentInvocation(response(agent));
+        assertThat(events).endsWith("close outer-task");
+    }
+
+    @Test
+    @DisplayName("test_suspension_of_a_system_without_open_contexts_closes_nothing")
+    void test_suspension_of_a_system_without_open_contexts_closes_nothing() {
+        storeSnapshot(AGENT_ID, "task-ctx");
+
+        FlowAgentContextListener.INSTANCE.beforeAgentInvocation(new AgentRequest(agenticScope, agent, Map.of()));
+        FlowAgentContextListener.INSTANCE.onAgenticSystemSuspended(otherAgenticScope);
+
+        assertThat(events).containsExactly("activate task-ctx");
     }
 
     @Test
@@ -108,11 +156,15 @@ class FlowAgentContextListenerTest {
     }
 
     private void storeSnapshot(String agentId, String name) {
+        storeSnapshot(agenticScope, agentId, name);
+    }
+
+    private void storeSnapshot(AgenticScope scope, String agentId, String name) {
         FlowContextPropagator.Snapshot snapshot = () -> {
             events.add("activate " + name);
             return () -> events.add("close " + name);
         };
-        when(agenticScope.executionContext(FlowAgentContextListener.contextKey(agentId))).thenReturn(snapshot);
+        when(scope.executionContext(FlowAgentContextListener.contextKey(agentId))).thenReturn(snapshot);
     }
 
     private AgentResponse response(AgentInstance agentInstance) {
