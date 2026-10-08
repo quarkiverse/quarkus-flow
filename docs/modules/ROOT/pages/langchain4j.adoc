@@ -297,6 +297,28 @@ The `quarkus-flow-langchain4j` extension acts as an ahead-of-time compiler for L
 | Conditional branching based on predicates
 |===
 
+=== Custom Executor for Parallel Agents
+
+By default, the sub-agents of a `@ParallelAgent` run on LangChain4j's default executor. To use your own, declare a static method annotated with `@ParallelExecutor` that returns an `Executor`, or call `executor(..)` on a builder from `newParallel()`. A common use is to propagate context, such as the OpenTelemetry trace context, to the sub-agents:
+
+[source,java]
+----
+public interface EveningPlannerAgent {
+
+    @ParallelAgent(outputKey = "plans", subAgents = { FoodExpert.class, MovieExpert.class })
+    List<EveningPlan> plan(@V("mood") String mood);
+
+    @ParallelExecutor
+    static Executor executor() {
+        return Context.taskWrapping(Executors.newVirtualThreadPerTaskExecutor());
+    }
+}
+----
+
+The executor applies only to that agent; it doesn't change the executor Quarkus Flow uses for other workflows. Quarkus Flow doesn't manage its lifecycle, so shut it down yourself if it holds threads.
+
+NOTE: The executor is used only when two or more sub-agents are dispatched together. As in LangChain4j, a sub-agent dispatched on its own runs on the calling thread. This always happens for a parallel agent with a single sub-agent. It can also happen to a branch that starts noticeably later than the others, for example under heavy load.
+
 === How It Works
 
 When you start your application in dev mode (`./mvnw quarkus:dev`):

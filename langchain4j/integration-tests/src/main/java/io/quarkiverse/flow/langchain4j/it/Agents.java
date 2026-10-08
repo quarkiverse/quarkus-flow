@@ -2,6 +2,9 @@ package io.quarkiverse.flow.langchain4j.it;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import dev.langchain4j.agent.tool.Tool;
@@ -13,6 +16,7 @@ import dev.langchain4j.agentic.declarative.LoopAgent;
 import dev.langchain4j.agentic.declarative.LoopCounter;
 import dev.langchain4j.agentic.declarative.Output;
 import dev.langchain4j.agentic.declarative.ParallelAgent;
+import dev.langchain4j.agentic.declarative.ParallelExecutor;
 import dev.langchain4j.agentic.declarative.SequenceAgent;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
@@ -82,6 +86,34 @@ public class Agents {
                 moviesAndMeals.add(new EveningPlan(movies.get(i), meals.get(i)));
             }
             return moviesAndMeals;
+        }
+
+        @ParallelAgent(outputKey = "plans", subAgents = { FoodExpert.class, MovieExpert.class })
+        List<EveningPlan> plan(@V("mood") String mood);
+    }
+
+    /**
+     * Same as {@link EveningPlannerAgent} but supplies its own executor for the parallel branches (#1057).
+     */
+    public interface EveningPlannerAgentWithExecutor {
+        AtomicInteger SUBMITTED = new AtomicInteger();
+        ExecutorService POOL = Executors.newFixedThreadPool(2, runnable -> {
+            Thread thread = new Thread(runnable, "evening-planner-parallel");
+            thread.setDaemon(true);
+            return thread;
+        });
+
+        @Output
+        static List<EveningPlan> createPlans(@V("movies") List<String> movies, @V("meals") List<String> meals) {
+            return EveningPlannerAgent.createPlans(movies, meals);
+        }
+
+        @ParallelExecutor
+        static Executor executor() {
+            return task -> {
+                SUBMITTED.incrementAndGet();
+                POOL.execute(task);
+            };
         }
 
         @ParallelAgent(outputKey = "plans", subAgents = { FoodExpert.class, MovieExpert.class })

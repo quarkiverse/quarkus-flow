@@ -3,7 +3,6 @@ package io.quarkiverse.flow.langchain4j.workflow.service;
 import static dev.langchain4j.agentic.internal.AgentUtil.validateAgentClass;
 
 import java.lang.reflect.Method;
-import java.util.concurrent.Executor;
 
 import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.agentic.declarative.ParallelAgent;
@@ -36,12 +35,6 @@ public class FlowParallelAgentService<T> extends ParallelAgentServiceImpl<T> {
         return new RuntimeFlowParallelAgentService<>(agentServiceClass,
                 validateAgentClass(agentServiceClass, false, ParallelAgent.class),
                 new RuntimeParallelAgenticFlow(agentServiceClass.getName(), runtimeAppProvider));
-    }
-
-    @Override
-    public FlowParallelAgentService<T> executor(Executor executor) {
-        throw new UnsupportedOperationException(
-                "Changing the default WorkflowApplication executor is not supported at this time.");
     }
 
     @Override
