@@ -30,7 +30,7 @@ quarkus extension add io.quarkiverse.flow:quarkus-flow
 
 *(If you are not using the CLI, you can manually add the `quarkus-flow` dependency to your `pom.xml`).*
 
-[source,xml]
+[source,xml,subs=attributes+]
 ----
 <dependency>
     <groupId>io.quarkiverse.flow</groupId>
