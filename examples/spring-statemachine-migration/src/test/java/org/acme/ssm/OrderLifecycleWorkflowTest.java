@@ -75,7 +75,6 @@ class OrderLifecycleWorkflowTest {
         assertThat(output.orderId()).isEqualTo("ORDER#2");
     }
 
-
     /** Builds a CloudEvent-carrying message the Flow engine can correlate to the instance. */
     private static Message<String> event(String type, String instanceId, String dataJson) {
         CloudEventMetadata<String> meta = new DefaultCloudEventMetadataBuilder<String>()

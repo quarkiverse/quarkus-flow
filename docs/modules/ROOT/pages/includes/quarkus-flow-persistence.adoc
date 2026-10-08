@@ -51,5 +51,89 @@ endif::add-copy-button-to-env-var[]
 |list of string
 |
 
+a| [[quarkus-flow-persistence_quarkus-flow-persistence-hashing-md5-threshold]] [.property-path]##link:#quarkus-flow-persistence_quarkus-flow-persistence-hashing-md5-threshold[`+++quarkus.flow.persistence.hashing.md5.threshold+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.persistence.hashing.md5.threshold+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+If the object byte representation is larger than the configured threshold, MD5 hashing will be used to store the byte++[]++ in a separated place If not, the byte++[]++ will be written embedded
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_PERSISTENCE_HASHING_MD5_THRESHOLD+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_PERSISTENCE_HASHING_MD5_THRESHOLD+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow-persistence_quarkus-flow-persistence-hashing-md5-enabled]] [.property-path]##link:#quarkus-flow-persistence_quarkus-flow-persistence-hashing-md5-enabled[`+++quarkus.flow.persistence.hashing.md5.enabled+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.persistence.hashing.md5.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+If this hashing strategy should be enable or not, default true
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_PERSISTENCE_HASHING_MD5_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_PERSISTENCE_HASHING_MD5_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a| [[quarkus-flow-persistence_quarkus-flow-persistence-hashing-sdk-threshold]] [.property-path]##link:#quarkus-flow-persistence_quarkus-flow-persistence-hashing-sdk-threshold[`+++quarkus.flow.persistence.hashing.sdk.threshold+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.persistence.hashing.sdk.threshold+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+If the object byte representation is larger than the configured threshold, Java SDK trivial hashing will be used to store the byte++[]++ in a separated place If not, the byte++[]++ will be written embedded
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_PERSISTENCE_HASHING_SDK_THRESHOLD+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_PERSISTENCE_HASHING_SDK_THRESHOLD+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-flow-persistence_quarkus-flow-persistence-hashing-sdk-enabled]] [.property-path]##link:#quarkus-flow-persistence_quarkus-flow-persistence-hashing-sdk-enabled[`+++quarkus.flow.persistence.hashing.sdk.enabled+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.persistence.hashing.sdk.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+If this hashing strategy should be enable or not, default true
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_PERSISTENCE_HASHING_SDK_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_PERSISTENCE_HASHING_SDK_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++false+++`
+
 |===
 
