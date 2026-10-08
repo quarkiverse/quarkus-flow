@@ -19,7 +19,7 @@ jobs:
     secrets: inherit
     with:
       ecosystem_ci_repo_path: quarkiverse-flow
-      java_version: 17
+      java_version: 21
       quarkus_version_pom_property: 'quarkus.version'
   lts:
     name: "Build against Quarkus LTS ${{ matrix.version }}"
@@ -28,7 +28,7 @@ jobs:
     with:
       ecosystem_ci_repo_path: quarkiverse-flow
       alternative: ${{ matrix.version }}
-      java_version: 17
+      java_version: 21
     strategy:
       matrix:
         version: [ "3.40" ]
