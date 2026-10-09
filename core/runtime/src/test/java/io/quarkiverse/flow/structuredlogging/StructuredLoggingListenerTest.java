@@ -21,7 +21,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
 import io.quarkiverse.flow.config.TimestampFormat;
 import io.serverlessworkflow.impl.TaskContext;
+import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowContext;
+import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.WorkflowPosition;
 import io.serverlessworkflow.impl.lifecycle.TaskFailedEvent;
@@ -209,6 +211,11 @@ public class StructuredLoggingListenerTest {
         WorkflowInstance instance = mock(WorkflowInstance.class);
         when(instance.id()).thenReturn("theFinalInstance");
         when(context.instanceData()).thenReturn(instance);
+        WorkflowApplication application = mock(WorkflowApplication.class);
+        when(application.id()).thenReturn("theApplication");
+        WorkflowDefinition definition = mock(WorkflowDefinition.class);
+        when(definition.application()).thenReturn(application);
+        when(context.definition()).thenReturn(definition);
         Exception ex = new IllegalArgumentException("Javierito was here");
         assertThat(new EventFormatter(config, objectMapper).formatTaskFailed(new TaskFailedEvent(context, taskContext, ex)))
                 .contains("testExceptionTruncate").doesNotContain("org.junit");
