@@ -1,8 +1,11 @@
 package io.quarkiverse.flow.opentelemetry.runtime;
 
 import static io.opentelemetry.semconv.ErrorAttributes.ERROR_TYPE;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.END_REASON_CANCELLED;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.END_REASON_UNKNOWN;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.FLOW_TASK_EXECUTION_END_REASON_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.FLOW_WF_EXECUTION_END_REASON_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanUtils.appendWorkflowEvent;
 
 import java.util.Comparator;
 import java.util.Map;
@@ -13,15 +16,19 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
 import io.serverlessworkflow.impl.WorkflowInstanceData;
 import io.serverlessworkflow.impl.WorkflowMutableInstance;
+import io.serverlessworkflow.impl.WorkflowStatus;
+import io.serverlessworkflow.impl.lifecycle.EventType;
 import io.serverlessworkflow.impl.persistence.metadata.MetaTransient;
 
 @MetaTransient
 public class WorkflowInstrumentationContext implements AutoCloseable {
     private static final String OTEL_CONTEXT = "OTEL_CONTEXT";
+    private final WorkflowInstanceData instanceData;
     private final InstrumentationContext workflowInstanceContext;
     private final Map<String, InstrumentationContext> workflowInstanceTaskContext = new ConcurrentHashMap<>();
 
-    public WorkflowInstrumentationContext(InstrumentationContext workflowInstanceContext) {
+    public WorkflowInstrumentationContext(WorkflowInstanceData instanceData, InstrumentationContext workflowInstanceContext) {
+        this.instanceData = instanceData;
         this.workflowInstanceContext = workflowInstanceContext;
     }
 
@@ -102,9 +109,25 @@ public class WorkflowInstrumentationContext implements AutoCloseable {
                 .forEach(entry -> entry.getValue().endStartSpan(withSettings));
     }
 
+    /**
+     * Called by the engine when it clears the instance metadata. For a cancelled instance that can happen before the
+     * {@code onWorkflowCancelled} listener event is published (e.g. when cancelling an instance waiting on a
+     * {@code listen} task), and then the listener can no longer find this context. The instance status is already
+     * {@link WorkflowStatus#CANCELLED} by then, so the workflow span is ended here instead of being lost. The workflow
+     * span is only ever ended once, so whichever of this or the cancelled listener event comes first wins.
+     */
     @Override
     public void close() {
-        ensureAllTaskSpansAreClosed(END_REASON_UNKNOWN);
+        if (instanceData.status() == WorkflowStatus.CANCELLED) {
+            workflowInstanceContext.endStartSpan(startSpan -> {
+                startSpan.setStatus(StatusCode.OK);
+                startSpan.setAttribute(FLOW_WF_EXECUTION_END_REASON_ATTR, END_REASON_CANCELLED);
+                ensureAllTaskSpansAreClosed(END_REASON_CANCELLED);
+                appendWorkflowEvent(startSpan, EventType.WORKFLOW_CANCELLED);
+            });
+        } else {
+            ensureAllTaskSpansAreClosed(END_REASON_UNKNOWN);
+        }
     }
 
     public static void setWorkflowInstrumentationContext(WorkflowInstanceData instanceData,

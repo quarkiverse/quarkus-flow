@@ -119,7 +119,7 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
                 .build();
 
         WorkflowInstrumentationContext workflowInstrumentationContext = new WorkflowInstrumentationContext(
-                workflowInstanceContext);
+                ev.workflowContext().instanceData(), workflowInstanceContext);
         setWorkflowInstrumentationContext(ev.workflowContext().instanceData(), workflowInstrumentationContext);
         activeWorkflowContextRegistry.put(eventInfo.wfInstanceId(), workflowInstrumentationContext);
     }
@@ -157,15 +157,19 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
         logWorkflowEvent(eventInfo);
 
         WorkflowInstrumentationContext workflowContext = getOrResumeWorkflowContext(ev.workflowContext(), eventInfo);
-        if (workflowContext == null) {
+        if ((workflowContext == null) && (eventInfo.eventType() == WORKFLOW_CANCELLED)) {
+            // The engine can clear the instance metadata before publishing the cancelled event (e.g. when cancelling
+            // an instance waiting on a listen task). WorkflowInstrumentationContext.close() has already ended the
+            // workflow span in that case.
+            activeWorkflowContextRegistry.remove(eventInfo.wfInstanceId());
+            LOGGER.debug("Workflow span already ended on close for cancelled workflowName: {}, workflowInstanceId: {}",
+                    eventInfo.wfName(), eventInfo.wfInstanceId());
+        } else if (workflowContext == null) {
             warnNoWorkflowContext(eventInfo);
-            return;
-        }
-
-        if (eventInfo.eventType() == WORKFLOW_SUSPENDED || eventInfo.eventType() == WORKFLOW_RESUMED) {
+        } else if ((eventInfo.eventType() == WORKFLOW_SUSPENDED) || (eventInfo.eventType() == WORKFLOW_RESUMED)) {
             Span startSpan = workflowContext.getWorkflowInstanceContext().getStartSpan();
             appendWorkflowEvent(startSpan, eventInfo.eventType());
-        } else if (eventInfo.eventType() == WORKFLOW_COMPLETED || eventInfo.eventType() == WORKFLOW_CANCELLED) {
+        } else if ((eventInfo.eventType() == WORKFLOW_COMPLETED) || (eventInfo.eventType() == WORKFLOW_CANCELLED)) {
             activeWorkflowContextRegistry.remove(eventInfo.wfInstanceId());
             workflowContext.getWorkflowInstanceContext().endStartSpan(startSpan -> {
                 startSpan.setStatus(StatusCode.OK);
@@ -280,7 +284,8 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
                         .withStartTime(Instant.now())
                         .build();
 
-                workflowContext = new WorkflowInstrumentationContext(workflowInstanceContext);
+                workflowContext = new WorkflowInstrumentationContext(workflowContextData.instanceData(),
+                        workflowInstanceContext);
                 setWorkflowInstrumentationContext(workflowContextData.instanceData(), workflowContext);
                 activeWorkflowContextRegistry.put(eventInfo.wfInstanceId(), workflowContext);
             }
