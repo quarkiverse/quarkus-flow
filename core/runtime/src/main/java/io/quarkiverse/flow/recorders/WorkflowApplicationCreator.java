@@ -27,6 +27,8 @@ import io.quarkiverse.flow.providers.HttpClientProvider;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
 import io.quarkiverse.flow.providers.QuarkusManagedExecutorServiceFactory;
 import io.quarkiverse.flow.providers.WorkflowTaskContext;
+import io.quarkiverse.flow.tracing.TraceCorrelationProvider;
+import io.quarkiverse.flow.tracing.TraceCorrelationProviders;
 import io.quarkiverse.flow.tracing.TraceLoggerExecutionListener;
 import io.quarkus.runtime.LaunchMode;
 import io.serverlessworkflow.api.types.CallHTTP;
@@ -93,6 +95,9 @@ public class WorkflowApplicationCreator {
     Instance<MicrometerExecutionListener> micrometerListeners;
 
     @Inject
+    Instance<TraceCorrelationProvider> traceCorrelationProviders;
+
+    @Inject
     @Any
     Instance<WorkflowApplicationBuilderCustomizer> customizers;
 
@@ -112,7 +117,8 @@ public class WorkflowApplicationCreator {
         final Builder builder = WorkflowApplication.builder();
         if (tracingConfig.enabled().orElse(launchMode.isDevOrTest())) {
             LOG.debug("Flow: Tracing enabled");
-            builder.withListener(new TraceLoggerExecutionListener());
+            builder.withListener(new TraceLoggerExecutionListener(
+                    TraceCorrelationProviders.resolve(traceCorrelationProviders)));
         }
 
         builder.withContextFactory(new JavaModelFactory()).withModelFactory(new JacksonModelFactory());
