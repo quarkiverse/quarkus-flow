@@ -1,0 +1,33 @@
+document:
+  dsl: '1.0.0'
+  namespace: otel
+  name: otel-http-fork
+  version: '1.0.0'
+do:
+  - forkTask1:
+      fork:
+        compete: true
+        branches:
+          - branch1:
+              call: http
+              with:
+                method: post
+                endpoint: '${ $workflow.input.baseUrl + "/http-echo/one" }'
+                body:
+                  message: one
+          - branch2:
+              do:
+                - call2OnBranch2:
+                    call: http
+                    with:
+                      method: post
+                      endpoint: '${ $workflow.input.baseUrl + "/http-echo/two" }'
+                      body:
+                        message: two
+                - call3OnBranch2:
+                    call: http
+                    with:
+                      method: post
+                      endpoint: '${ $workflow.input.baseUrl + "/http-echo/three" }'
+                      body:
+                        message: three

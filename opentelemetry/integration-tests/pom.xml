@@ -38,6 +38,21 @@
             <artifactId>opentelemetry-sdk-testing</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-langchain4j</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.langchain4j</groupId>
+            <artifactId>quarkus-langchain4j-agentic</artifactId>
+            <version>${io.quarkiverse.langchain4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.langchain4j</groupId>
+            <artifactId>quarkus-langchain4j-ollama</artifactId>
+            <version>${io.quarkiverse.langchain4j.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit</artifactId>
             <scope>test</scope>
@@ -57,11 +72,22 @@
             <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- Force dependency graph for parallel execution -->
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow-opentelemetry-deployment</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-langchain4j-deployment</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

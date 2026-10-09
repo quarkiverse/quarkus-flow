@@ -45,6 +45,7 @@ public class FlowConditionalAgentService<T> extends ConditionalAgentServiceImpl<
         // Copy conditionalAgents from parent ConditionalAgentServiceImpl to the flow
         // This ensures annotation-based flows also expose the list for dev-ui topology rendering
         flow.setConditionalAgents(this.conditionalAgents);
+        listener(FlowAgentContextListener.INSTANCE);
         return build(() -> new FlowPlanner(AgenticSystemTopology.ROUTER, flow));
     }
 }
