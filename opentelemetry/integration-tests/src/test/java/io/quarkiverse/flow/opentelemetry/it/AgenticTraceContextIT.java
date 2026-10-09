@@ -37,6 +37,7 @@ import io.quarkus.test.junit.QuarkusTest;
 class AgenticTraceContextIT {
 
     private static final String WORKFLOW_SPAN_PREFIX = "workflow.execute ";
+    private static final String WORKFLOW_CREATE_SPAN_PREFIX = "workflow.create ";
     private static final String TASK_SPAN_PREFIX = "task.execute ";
     private static final String AI_SERVICE_SPAN_PREFIX = "langchain4j.aiservices.";
 
@@ -69,11 +70,12 @@ class AgenticTraceContextIT {
         List<SpanData> spans = run();
         printTraces(spans);
 
-        // 3 workflows, 6 tasks, and for each of the 3 agents an AI service span and a model completion span
+        // 3 workflows (a create and an execute span each), 6 tasks, and for each of the 3 agents an AI service span
+        // and a model completion span
         String trace = span(spans, WORKFLOW_SPAN_PREFIX + AgenticTracingFlow.NAME).getTraceId();
         assertThat(spans)
                 .filteredOn(span -> span.getKind() != SpanKind.CLIENT)
-                .hasSize(15)
+                .hasSize(18)
                 .allSatisfy(span -> assertThat(span.getTraceId()).as(span.getName()).isEqualTo(trace));
     }
 
@@ -83,9 +85,10 @@ class AgenticTraceContextIT {
         List<SpanData> spans = run();
         Map<String, SpanData> byId = spans.stream().collect(Collectors.toMap(SpanData::getSpanId, Function.identity()));
 
+        // each workflow.execute span is a child of its workflow.create span, which is created by the invoking task
         List<SpanData> generatedWorkflows = spans.stream()
-                .filter(span -> span.getName().startsWith(WORKFLOW_SPAN_PREFIX))
-                .filter(span -> !span.getName().equals(WORKFLOW_SPAN_PREFIX + AgenticTracingFlow.NAME))
+                .filter(span -> span.getName().startsWith(WORKFLOW_CREATE_SPAN_PREFIX))
+                .filter(span -> !span.getName().equals(WORKFLOW_CREATE_SPAN_PREFIX + AgenticTracingFlow.NAME))
                 .toList();
 
         assertThat(generatedWorkflows).hasSize(2)
