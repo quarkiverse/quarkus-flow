@@ -21,7 +21,7 @@ class DoTaskIT extends OTelBaseIT {
 
     @Test
     void producedSpans() {
-        IndexedSpanInfo indexedSpanInfo = executeAndGetSpans(5);
+        IndexedSpanInfo indexedSpanInfo = executeAndGetSpans(6);
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(DO_TASK), workflowParentSpan());
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(DO_TASK_SET1), TaskSpanKey.from(DO_TASK));
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(DO_TASK_SET2), TaskSpanKey.from(DO_TASK));

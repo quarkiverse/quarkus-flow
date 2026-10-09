@@ -25,7 +25,7 @@ class SwitchTaskIT extends OTelBaseIT {
 
     @Test
     void producedSpansCase1() {
-        IndexedSpanInfo indexedSpanInfo = executeAndGetSpans(4, "{\"selectedCase\" : \"case1\"}");
+        IndexedSpanInfo indexedSpanInfo = executeAndGetSpans(5, "{\"selectedCase\" : \"case1\"}");
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(SWITCH_TASK), workflowParentSpan());
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(PROCESS_CASE1_TASK), workflowParentSpan());
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(PROCESS_CASE1_SET_TASK), TaskSpanKey.from(PROCESS_CASE1_TASK));
@@ -33,7 +33,7 @@ class SwitchTaskIT extends OTelBaseIT {
 
     @Test
     void producedSpansCase2() {
-        IndexedSpanInfo indexedSpanInfo = executeAndGetSpans(4, "{\"selectedCase\" : \"case2\"}");
+        IndexedSpanInfo indexedSpanInfo = executeAndGetSpans(5, "{\"selectedCase\" : \"case2\"}");
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(SWITCH_TASK), workflowParentSpan());
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(PROCESS_CASE2_TASK), workflowParentSpan());
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(PROCESS_CASE2_SET_TASK), TaskSpanKey.from(PROCESS_CASE2_TASK));
@@ -41,7 +41,7 @@ class SwitchTaskIT extends OTelBaseIT {
 
     @Test
     void producedSpansUnknownCase() {
-        IndexedSpanInfo indexedSpanInfo = executeAndGetSpans(5);
+        IndexedSpanInfo indexedSpanInfo = executeAndGetSpans(6);
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(SWITCH_TASK), workflowParentSpan());
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(HANDLE_UNKNOWN_CASE_TASK), workflowParentSpan());
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(HANDLE_UNKNOWN_CASE_SET1_TASK),

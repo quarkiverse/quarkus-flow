@@ -25,7 +25,7 @@ class TryTaskIT extends OTelBaseIT {
 
     @Test
     void producedSpans() {
-        IndexedSpanInfo indexedSpanInfo = executeAndGetSpans(10);
+        IndexedSpanInfo indexedSpanInfo = executeAndGetSpans(11);
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(TRY_TASK), workflowParentSpan());
 
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(FAILING_TASK, 1, 0, false), TaskSpanKey.from(TRY_TASK));

@@ -39,7 +39,7 @@ class ForTaskIT extends OTelBaseIT {
 
     void doProducedSpans(int iterations) {
         ObjectNode input = buildInput(iterations);
-        IndexedSpanInfo indexedSpanInfo = executeAndGetSpans(1 + 1 + iterations * 2, input.toString());
+        IndexedSpanInfo indexedSpanInfo = executeAndGetSpans(1 + 1 + 1 + iterations * 2, input.toString());
         assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(FOR_TASK), workflowParentSpan());
         for (int i = 1; i <= iterations; i++) {
             assertThatHasParent(indexedSpanInfo, TaskSpanKey.from(SET_TASK1, i),

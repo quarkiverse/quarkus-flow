@@ -1,5 +1,53 @@
 package io.quarkiverse.flow.opentelemetry.runtime;
 
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_A2A_AGENT_CARD_ENDPOINT_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_A2A_AGENT_CARD_NAME_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_A2A_METHOD_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_A2A_SERVER_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_HTTP_TASK_REQUEST_METHOD_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_HTTP_TASK_URL_FULL_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_TASK_FUNCTION_NAME_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_TASK_GRPC_METHOD_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_TASK_GRPC_SERVER_ADDRESS_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_TASK_GRPC_SERVER_PORT_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_TASK_GRPC_SERVICE_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_TASK_OPENAPI_DOCUMENT_ENDPOINT_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_TASK_OPENAPI_DOCUMENT_NAME_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_TASK_OPENAPI_OPERATION_ID_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.RAISE_TASK_ERROR_DETAILS_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.RAISE_TASK_ERROR_INSTANCE_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.RAISE_TASK_ERROR_REFERENCE_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.RAISE_TASK_ERROR_STATUS_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.RAISE_TASK_ERROR_TITLE_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.RAISE_TASK_ERROR_TYPE_EXPRESSION_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.RAISE_TASK_ERROR_TYPE_URI_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.RUN_TASK_RUN_CONTAINER_COMMAND_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.RUN_TASK_RUN_CONTAINER_IMAGE_NAME_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.RUN_TASK_RUN_CONTAINER_NAME_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.RUN_TASK_RUN_KIND_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.RUN_TASK_RUN_SCRIPT_CODE_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.RUN_TASK_RUN_SCRIPT_LANGUAGE_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.RUN_TASK_RUN_SCRIPT_SOURCE_ENDPOINT_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.RUN_TASK_RUN_SCRIPT_SOURCE_NAME_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.RUN_TASK_RUN_SHELL_COMMAND_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.RUN_TASK_RUN_WORKFLOW_NAMESPACE_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.RUN_TASK_RUN_WORKFLOW_NAME_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.RUN_TASK_RUN_WORKFLOW_VERSION_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.TASK_EMIT_EVENT_ID_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.TASK_EMIT_EVENT_SOURCE_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.TASK_EMIT_EVENT_SUBJECT_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.TASK_EMIT_EVENT_TYPE_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.TASK_EXECUTE_ACTION;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.WAIT_TASK_DURATION_DAYS_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.WAIT_TASK_DURATION_EXPRESSION_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.WAIT_TASK_DURATION_HOURS_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.WAIT_TASK_DURATION_LITERAL_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.WAIT_TASK_DURATION_MILLISECONDS_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.WAIT_TASK_DURATION_MINUTES_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.WAIT_TASK_DURATION_SECONDS_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.WORKFLOW_CREATE_ACTION;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.WORKFLOW_EXECUTE_ACTION;
+
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Function;
@@ -41,53 +89,6 @@ import io.serverlessworkflow.api.types.WithGRPCService;
 import io.serverlessworkflow.impl.lifecycle.EventType;
 
 public class SpanUtils {
-    public static final String CALL_A2A_AGENT_CARD_ENDPOINT_ATTRIBUTE = "flow.task.call.a2a.agent_card.url.full";
-    private static final String WORKFLOW_EXECUTE_ACTION = "workflow.execute";
-    private static final String TASK_EXECUTE_ACTION = "task.execute";
-
-    private static final String CALL_HTTP_TASK_REQUEST_METHOD_ATTRIBUTE = "flow.task.call.http.request.method";
-    private static final String CALL_HTTP_TASK_URL_FULL_ATTRIBUTE = "flow.task.call.http.url.full";
-    private static final String RUN_TASK_RUN_KIND_ATTRIBUTE = "flow.task.run.kind";
-    private static final String RUN_TASK_RUN_WORKFLOW_NAMESPACE_ATTRIBUTE = "flow.task.run.workflow.namespace";
-    private static final String RUN_TASK_RUN_WORKFLOW_NAME_ATTRIBUTE = "flow.task.run.workflow.name";
-    private static final String RUN_TASK_RUN_WORKFLOW_VERSION_ATTRIBUTE = "flow.task.run.workflow.version";
-    private static final String RUN_TASK_RUN_CONTAINER_NAME_ATTRIBUTE = "flow.task.run.container.name";
-    private static final String RUN_TASK_RUN_CONTAINER_IMAGE_NAME_ATTRIBUTE = "flow.task.run.container.image.name";
-    private static final String RUN_TASK_RUN_CONTAINER_COMMAND_ATTRIBUTE = "flow.task.run.container.command";
-    private static final String RUN_TASK_RUN_SCRIPT_LANGUAGE_ATTRIBUTE = "flow.task.run.script.language";
-    private static final String RUN_TASK_RUN_SCRIPT_CODE_ATTRIBUTE = "flow.task.run.script.code";
-    private static final String RUN_TASK_RUN_SCRIPT_SOURCE_NAME_ATTRIBUTE = "flow.task.run.script.source.name";
-    private static final String RUN_TASK_RUN_SCRIPT_SOURCE_ENDPOINT_ATTRIBUTE = "flow.task.run.script.source.url.full";
-    private static final String RUN_TASK_RUN_SHELL_COMMAND_ATTRIBUTE = "flow.task.run.shell.command";
-    public static final String CALL_TASK_GRPC_METHOD_ATTRIBUTE = "flow.task.call.grpc.method";
-    public static final String CALL_TASK_GRPC_SERVICE_ATTRIBUTE = "flow.task.call.grpc.service";
-    public static final String CALL_TASK_GRPC_SERVER_ADDRESS_ATTRIBUTE = "flow.task.call.grpc.server.address";
-    public static final String CALL_TASK_GRPC_SERVER_PORT_ATTRIBUTE = "flow.task.call.grpc.server.port";
-    public static final String CALL_TASK_OPENAPI_OPERATION_ID_ATTRIBUTE = "flow.task.call.openapi.operation_id";
-    public static final String CALL_TASK_OPENAPI_DOCUMENT_NAME_ATTRIBUTE = "flow.task.call.openapi.document.name";
-    public static final String CALL_TASK_OPENAPI_DOCUMENT_ENDPOINT_ATTRIBUTE = "flow.task.call.openapi.document.url.full";
-    public static final String WAIT_TASK_DURATION_LITERAL_ATTRIBUTE = "flow.task.wait.duration.literal";
-    public static final String WAIT_TASK_DURATION_EXPRESSION_ATTRIBUTE = "flow.task.wait.duration.expression";
-    public static final String WAIT_TASK_DURATION_DAYS_ATTRIBUTE = "flow.task.wait.duration.days";
-    public static final String WAIT_TASK_DURATION_HOURS_ATTRIBUTE = "flow.task.wait.duration.hours";
-    public static final String WAIT_TASK_DURATION_MINUTES_ATTRIBUTE = "flow.task.wait.duration.minutes";
-    public static final String WAIT_TASK_DURATION_SECONDS_ATTRIBUTE = "flow.task.wait.duration.seconds";
-    public static final String WAIT_TASK_DURATION_MILLISECONDS_ATTRIBUTE = "flow.task.wait.duration.milliseconds";
-    public static final String CALL_TASK_FUNCTION_NAME_ATTRIBUTE = "flow.task.call.function.name";
-    public static final String CALL_A2A_METHOD_ATTRIBUTE = "flow.task.call.a2a.method";
-    public static final String CALL_A2A_SERVER_ATTRIBUTE = "flow.task.call.a2a.server.url.full";
-    public static final String CALL_A2A_AGENT_CARD_NAME_ATTRIBUTE = "flow.task.call.a2a.agent_card.name";
-    public static final String RAISE_TASK_ERROR_REFERENCE_ATTRIBUTE = "flow.task.raise.error.reference";
-    public static final String RAISE_TASK_ERROR_TYPE_EXPRESSION_ATTRIBUTE = "flow.task.raise.error.type.expression";
-    public static final String RAISE_TASK_ERROR_TYPE_URI_ATTRIBUTE = "flow.task.raise.error.type.uri";
-    public static final String RAISE_TASK_ERROR_STATUS_ATTRIBUTE = "flow.task.raise.error.status";
-    public static final String RAISE_TASK_ERROR_INSTANCE_ATTRIBUTE = "flow.task.raise.error.instance";
-    public static final String RAISE_TASK_ERROR_TITLE_ATTRIBUTE = "flow.task.raise.error.title";
-    public static final String RAISE_TASK_ERROR_DETAILS_ATTRIBUTE = "flow.task.raise.error.details";
-    public static final String TASK_EMIT_EVENT_ID_ATTRIBUTE = "flow.task.emit.event.id";
-    public static final String TASK_EMIT_EVENT_TYPE_ATTRIBUTE = "flow.task.emit.event.type";
-    public static final String TASK_EMIT_EVENT_SOURCE_ATTRIBUTE = "flow.task.emit.event.source";
-    public static final String TASK_EMIT_EVENT_SUBJECT_ATTRIBUTE = "flow.task.emit.event.subject";
 
     public enum TaskNameStrategy {
         ACTION_AND_TASK_NAME,
@@ -121,7 +122,11 @@ public class SpanUtils {
         }
     }
 
-    public static String generateWorkflowSpanName(String workflowName) {
+    public static String generateWorkflowCreateSpanName(String workflowName) {
+        return WORKFLOW_CREATE_ACTION + " " + workflowName;
+    }
+
+    public static String generateWorkflowExecuteSpanName(String workflowName) {
         return WORKFLOW_EXECUTE_ACTION + " " + workflowName;
     }
 
@@ -144,9 +149,11 @@ public class SpanUtils {
     private static void enrichCallHTTP(SpanBuilder span, CallHTTP task) {
         HTTPArguments httpArguments = task.getWith();
         if (httpArguments != null) {
-            setIfNotNull(span, CALL_HTTP_TASK_REQUEST_METHOD_ATTRIBUTE, httpArguments.getMethod(), String::toUpperCase);
+            setIfNotNull(span, CALL_HTTP_TASK_REQUEST_METHOD_ATTR, httpArguments.getMethod(),
+                    String::toUpperCase);
             if (httpArguments.getEndpoint() != null) {
-                span.setAttribute(CALL_HTTP_TASK_URL_FULL_ATTRIBUTE, extractFullUri(httpArguments.getEndpoint()));
+                span.setAttribute(CALL_HTTP_TASK_URL_FULL_ATTR,
+                        extractFullUri(httpArguments.getEndpoint()));
             }
         }
     }
@@ -154,12 +161,13 @@ public class SpanUtils {
     private static void enrichCallGRPC(SpanBuilder span, CallGRPC task) {
         GRPCArguments grpcArguments = task.getWith();
         if (grpcArguments != null) {
-            setIfNotNull(span, CALL_TASK_GRPC_METHOD_ATTRIBUTE, grpcArguments.getMethod());
+            setIfNotNull(span, CALL_TASK_GRPC_METHOD_ATTR, grpcArguments.getMethod());
             if (grpcArguments.getService() != null) {
                 WithGRPCService grpcService = grpcArguments.getService();
-                setIfNotNull(span, CALL_TASK_GRPC_SERVICE_ATTRIBUTE, grpcService.getName());
-                setIfNotNull(span, CALL_TASK_GRPC_SERVER_ADDRESS_ATTRIBUTE, grpcService.getHost());
-                setIfNotNull(span, CALL_TASK_GRPC_SERVER_PORT_ATTRIBUTE, Integer.toString(grpcService.getPort()));
+                setIfNotNull(span, CALL_TASK_GRPC_SERVICE_ATTR, grpcService.getName());
+                setIfNotNull(span, CALL_TASK_GRPC_SERVER_ADDRESS_ATTR, grpcService.getHost());
+                setIfNotNull(span, CALL_TASK_GRPC_SERVER_PORT_ATTR,
+                        Integer.toString(grpcService.getPort()));
             }
         }
     }
@@ -167,12 +175,12 @@ public class SpanUtils {
     private static void enrichCallOpenAPI(SpanBuilder span, CallOpenAPI task) {
         OpenAPIArguments openAPIArguments = task.getWith();
         if (openAPIArguments != null) {
-            setIfNotNull(span, CALL_TASK_OPENAPI_OPERATION_ID_ATTRIBUTE, openAPIArguments.getOperationId());
+            setIfNotNull(span, CALL_TASK_OPENAPI_OPERATION_ID_ATTR, openAPIArguments.getOperationId());
             ExternalResource externalResource = openAPIArguments.getDocument();
             if (externalResource != null) {
-                setIfNotNull(span, CALL_TASK_OPENAPI_DOCUMENT_NAME_ATTRIBUTE, externalResource.getName());
+                setIfNotNull(span, CALL_TASK_OPENAPI_DOCUMENT_NAME_ATTR, externalResource.getName());
                 if (externalResource.getEndpoint() != null) {
-                    setIfNotNull(span, CALL_TASK_OPENAPI_DOCUMENT_ENDPOINT_ATTRIBUTE,
+                    setIfNotNull(span, CALL_TASK_OPENAPI_DOCUMENT_ENDPOINT_ATTR,
                             extractFullUri(externalResource.getEndpoint()));
                 }
             }
@@ -180,19 +188,20 @@ public class SpanUtils {
     }
 
     private static void enrichCallFunction(SpanBuilder span, CallFunction task) {
-        setIfNotNull(span, CALL_TASK_FUNCTION_NAME_ATTRIBUTE, task.getCall());
+        setIfNotNull(span, CALL_TASK_FUNCTION_NAME_ATTR, task.getCall());
     }
 
     private static void enrichA2A(SpanBuilder span, CallA2A task) {
         A2AArguments a2AArguments = task.getWith();
         if (a2AArguments != null) {
-            setIfNotNull(span, CALL_A2A_METHOD_ATTRIBUTE, Objects.toString(a2AArguments.getMethod()));
-            setIfNotNull(span, CALL_A2A_SERVER_ATTRIBUTE, extractFullUri(a2AArguments.getServer()));
+            setIfNotNull(span, CALL_A2A_METHOD_ATTR, Objects.toString(a2AArguments.getMethod()));
+            setIfNotNull(span, CALL_A2A_SERVER_ATTR, extractFullUri(a2AArguments.getServer()));
             ExternalResource agentCard = a2AArguments.getAgentCard();
             if (agentCard != null) {
-                setIfNotNull(span, CALL_A2A_AGENT_CARD_NAME_ATTRIBUTE, agentCard.getName());
+                setIfNotNull(span, CALL_A2A_AGENT_CARD_NAME_ATTR, agentCard.getName());
                 if (agentCard.getEndpoint() != null) {
-                    setIfNotNull(span, CALL_A2A_AGENT_CARD_ENDPOINT_ATTRIBUTE, extractFullUri(agentCard.getEndpoint()));
+                    setIfNotNull(span, CALL_A2A_AGENT_CARD_ENDPOINT_ATTR,
+                            extractFullUri(agentCard.getEndpoint()));
                 }
             }
         }
@@ -217,44 +226,45 @@ public class SpanUtils {
         if (task.getRun().getRunWorkflow() != null) {
             SubflowConfiguration subFlowConfig = task.getRun().getRunWorkflow().getWorkflow();
             if (subFlowConfig != null) {
-                span.setAttribute(RUN_TASK_RUN_KIND_ATTRIBUTE, "workflow");
-                setIfNotNull(span, RUN_TASK_RUN_WORKFLOW_NAMESPACE_ATTRIBUTE, subFlowConfig.getNamespace());
-                setIfNotNull(span, RUN_TASK_RUN_WORKFLOW_NAME_ATTRIBUTE, subFlowConfig.getName());
-                setIfNotNull(span, RUN_TASK_RUN_WORKFLOW_VERSION_ATTRIBUTE, subFlowConfig.getVersion());
+                span.setAttribute(RUN_TASK_RUN_KIND_ATTR, "workflow");
+                setIfNotNull(span, RUN_TASK_RUN_WORKFLOW_NAMESPACE_ATTR, subFlowConfig.getNamespace());
+                setIfNotNull(span, RUN_TASK_RUN_WORKFLOW_NAME_ATTR, subFlowConfig.getName());
+                setIfNotNull(span, RUN_TASK_RUN_WORKFLOW_VERSION_ATTR, subFlowConfig.getVersion());
             }
         } else if (task.getRun().getRunContainer() != null) {
             Container container = task.getRun().getRunContainer().getContainer();
             if (container != null) {
-                span.setAttribute(RUN_TASK_RUN_KIND_ATTRIBUTE, "container");
-                setIfNotNull(span, RUN_TASK_RUN_CONTAINER_NAME_ATTRIBUTE, container.getName());
-                setIfNotNull(span, RUN_TASK_RUN_CONTAINER_IMAGE_NAME_ATTRIBUTE, container.getImage());
-                setIfNotNull(span, RUN_TASK_RUN_CONTAINER_COMMAND_ATTRIBUTE, container.getCommand());
+                span.setAttribute(RUN_TASK_RUN_KIND_ATTR, "container");
+                setIfNotNull(span, RUN_TASK_RUN_CONTAINER_NAME_ATTR, container.getName());
+                setIfNotNull(span, RUN_TASK_RUN_CONTAINER_IMAGE_NAME_ATTR, container.getImage());
+                setIfNotNull(span, RUN_TASK_RUN_CONTAINER_COMMAND_ATTR, container.getCommand());
             }
         } else if (task.getRun().getRunScript() != null) {
             RunScript runScript = task.getRun().getRunScript();
             Script script = task.getRun().getRunScript().getScript() != null ? task.getRun().getRunScript().getScript().get()
                     : null;
-            span.setAttribute(RUN_TASK_RUN_KIND_ATTRIBUTE, "script");
+            span.setAttribute(RUN_TASK_RUN_KIND_ATTR, "script");
             if (script != null) {
-                setIfNotNull(span, RUN_TASK_RUN_SCRIPT_LANGUAGE_ATTRIBUTE, script.getLanguage());
+                setIfNotNull(span, RUN_TASK_RUN_SCRIPT_LANGUAGE_ATTR, script.getLanguage());
             }
             if (runScript.getScript() != null && runScript.getScript().getInlineScript() != null) {
-                setIfNotNull(span, RUN_TASK_RUN_SCRIPT_CODE_ATTRIBUTE, runScript.getScript().getInlineScript().getCode());
+                setIfNotNull(span, RUN_TASK_RUN_SCRIPT_CODE_ATTR,
+                        runScript.getScript().getInlineScript().getCode());
             } else if (runScript.getScript() != null && runScript.getScript().getExternalScript() != null) {
                 ExternalResource externalResource = runScript.getScript().getExternalScript().getSource();
                 if (externalResource != null) {
-                    setIfNotNull(span, RUN_TASK_RUN_SCRIPT_SOURCE_NAME_ATTRIBUTE, externalResource.getName());
+                    setIfNotNull(span, RUN_TASK_RUN_SCRIPT_SOURCE_NAME_ATTR, externalResource.getName());
                     if (externalResource.getEndpoint() != null) {
-                        setIfNotNull(span, RUN_TASK_RUN_SCRIPT_SOURCE_ENDPOINT_ATTRIBUTE,
+                        setIfNotNull(span, RUN_TASK_RUN_SCRIPT_SOURCE_ENDPOINT_ATTR,
                                 extractFullUri(externalResource.getEndpoint()));
                     }
                 }
             }
         } else if (task.getRun().getRunShell() != null) {
-            span.setAttribute(RUN_TASK_RUN_KIND_ATTRIBUTE, "shell");
+            span.setAttribute(RUN_TASK_RUN_KIND_ATTR, "shell");
             RunShell runShell = task.getRun().getRunShell();
             if (runShell != null && runShell.getShell() != null) {
-                setIfNotNull(span, RUN_TASK_RUN_SHELL_COMMAND_ATTRIBUTE, runShell.getShell().getCommand());
+                setIfNotNull(span, RUN_TASK_RUN_SHELL_COMMAND_ATTR, runShell.getShell().getCommand());
             }
         }
     }
@@ -263,25 +273,27 @@ public class SpanUtils {
         TimeoutAfter timeoutAfter = task.getWait();
         if (timeoutAfter != null) {
             if (timeoutAfter.getDurationLiteral() != null) {
-                setIfNotNull(span, WAIT_TASK_DURATION_LITERAL_ATTRIBUTE, timeoutAfter.getDurationLiteral());
+                setIfNotNull(span, WAIT_TASK_DURATION_LITERAL_ATTR, timeoutAfter.getDurationLiteral());
             } else if (timeoutAfter.getDurationExpression() != null) {
-                setIfNotNull(span, WAIT_TASK_DURATION_EXPRESSION_ATTRIBUTE, timeoutAfter.getDurationExpression());
+                setIfNotNull(span, WAIT_TASK_DURATION_EXPRESSION_ATTR,
+                        timeoutAfter.getDurationExpression());
             } else if (timeoutAfter.getDurationInline() != null) {
                 DurationInline durationInline = timeoutAfter.getDurationInline();
                 if (durationInline.getDays() > 0) {
-                    span.setAttribute(WAIT_TASK_DURATION_DAYS_ATTRIBUTE, durationInline.getDays());
+                    span.setAttribute(WAIT_TASK_DURATION_DAYS_ATTR, durationInline.getDays());
                 }
                 if (durationInline.getHours() > 0) {
-                    span.setAttribute(WAIT_TASK_DURATION_HOURS_ATTRIBUTE, durationInline.getHours());
+                    span.setAttribute(WAIT_TASK_DURATION_HOURS_ATTR, durationInline.getHours());
                 }
                 if (durationInline.getMinutes() > 0) {
-                    span.setAttribute(WAIT_TASK_DURATION_MINUTES_ATTRIBUTE, durationInline.getMinutes());
+                    span.setAttribute(WAIT_TASK_DURATION_MINUTES_ATTR, durationInline.getMinutes());
                 }
                 if (durationInline.getSeconds() > 0) {
-                    span.setAttribute(WAIT_TASK_DURATION_SECONDS_ATTRIBUTE, durationInline.getSeconds());
+                    span.setAttribute(WAIT_TASK_DURATION_SECONDS_ATTR, durationInline.getSeconds());
                 }
                 if (durationInline.getMilliseconds() > 0) {
-                    span.setAttribute(WAIT_TASK_DURATION_MILLISECONDS_ATTRIBUTE, durationInline.getMilliseconds());
+                    span.setAttribute(WAIT_TASK_DURATION_MILLISECONDS_ATTR,
+                            durationInline.getMilliseconds());
                 }
             }
         }
@@ -291,40 +303,46 @@ public class SpanUtils {
         RaiseTaskError raiseTaskError = task.getRaise() != null ? task.getRaise().getError() : null;
         if (raiseTaskError != null) {
             if (raiseTaskError.getRaiseErrorReference() != null) {
-                span.setAttribute(RAISE_TASK_ERROR_REFERENCE_ATTRIBUTE, raiseTaskError.getRaiseErrorReference());
+                span.setAttribute(RAISE_TASK_ERROR_REFERENCE_ATTR, raiseTaskError.getRaiseErrorReference());
             } else if (raiseTaskError.getRaiseErrorDefinition() != null) {
                 Error error = raiseTaskError.getRaiseErrorDefinition();
                 if (error.getType() != null) {
                     if (error.getType().getExpressionErrorType() != null) {
-                        span.setAttribute(RAISE_TASK_ERROR_TYPE_EXPRESSION_ATTRIBUTE, error.getType().getExpressionErrorType());
+                        span.setAttribute(RAISE_TASK_ERROR_TYPE_EXPRESSION_ATTR,
+                                error.getType().getExpressionErrorType());
                     } else if (error.getType().getLiteralErrorType() != null) {
-                        setIfNotNull(span, RAISE_TASK_ERROR_TYPE_URI_ATTRIBUTE,
+                        setIfNotNull(span, RAISE_TASK_ERROR_TYPE_URI_ATTR,
                                 extractFullUri(error.getType().getLiteralErrorType()));
                     }
                 }
-                span.setAttribute(RAISE_TASK_ERROR_STATUS_ATTRIBUTE, error.getStatus());
+                span.setAttribute(RAISE_TASK_ERROR_STATUS_ATTR, error.getStatus());
                 ErrorInstance errorInstance = error.getInstance();
                 if (errorInstance != null) {
                     if (errorInstance.getExpressionErrorInstance() != null) {
-                        span.setAttribute(RAISE_TASK_ERROR_INSTANCE_ATTRIBUTE, errorInstance.getExpressionErrorInstance());
+                        span.setAttribute(RAISE_TASK_ERROR_INSTANCE_ATTR,
+                                errorInstance.getExpressionErrorInstance());
                     } else if (errorInstance.getLiteralErrorInstance() != null) {
-                        span.setAttribute(RAISE_TASK_ERROR_INSTANCE_ATTRIBUTE, errorInstance.getLiteralErrorInstance());
+                        span.setAttribute(RAISE_TASK_ERROR_INSTANCE_ATTR,
+                                errorInstance.getLiteralErrorInstance());
                     }
                 }
                 ErrorTitle errorTitle = error.getTitle();
                 if (errorTitle != null) {
                     if (errorTitle.getExpressionErrorTitle() != null) {
-                        span.setAttribute(RAISE_TASK_ERROR_TITLE_ATTRIBUTE, errorTitle.getExpressionErrorTitle());
+                        span.setAttribute(RAISE_TASK_ERROR_TITLE_ATTR,
+                                errorTitle.getExpressionErrorTitle());
                     } else if (errorTitle.getLiteralErrorTitle() != null) {
-                        span.setAttribute(RAISE_TASK_ERROR_TITLE_ATTRIBUTE, errorTitle.getLiteralErrorTitle());
+                        span.setAttribute(RAISE_TASK_ERROR_TITLE_ATTR, errorTitle.getLiteralErrorTitle());
                     }
                 }
                 ErrorDetails errorDetails = error.getDetail();
                 if (errorDetails != null) {
                     if (errorDetails.getExpressionErrorDetails() != null) {
-                        span.setAttribute(RAISE_TASK_ERROR_DETAILS_ATTRIBUTE, errorDetails.getExpressionErrorDetails());
+                        span.setAttribute(RAISE_TASK_ERROR_DETAILS_ATTR,
+                                errorDetails.getExpressionErrorDetails());
                     } else if (errorDetails.getLiteralErrorDetails() != null) {
-                        span.setAttribute(RAISE_TASK_ERROR_DETAILS_ATTRIBUTE, errorDetails.getLiteralErrorDetails());
+                        span.setAttribute(RAISE_TASK_ERROR_DETAILS_ATTR,
+                                errorDetails.getLiteralErrorDetails());
                     }
                 }
             }
@@ -334,17 +352,18 @@ public class SpanUtils {
     private static void enrichEmitTask(SpanBuilder span, EmitTask task) {
         if (task.getEmit() != null && task.getEmit().getEvent() != null && task.getEmit().getEvent().getWith() != null) {
             EventProperties eventProperties = task.getEmit().getEvent().getWith();
-            setIfNotNull(span, TASK_EMIT_EVENT_ID_ATTRIBUTE, eventProperties.getId());
-            setIfNotNull(span, TASK_EMIT_EVENT_TYPE_ATTRIBUTE, eventProperties.getType());
+            setIfNotNull(span, TASK_EMIT_EVENT_ID_ATTR, eventProperties.getId());
+            setIfNotNull(span, TASK_EMIT_EVENT_TYPE_ATTR, eventProperties.getType());
             if (eventProperties.getSource() != null) {
                 EventSource source = eventProperties.getSource();
                 if (source.getRuntimeExpression() != null) {
-                    span.setAttribute(TASK_EMIT_EVENT_SOURCE_ATTRIBUTE, source.getRuntimeExpression());
+                    span.setAttribute(TASK_EMIT_EVENT_SOURCE_ATTR, source.getRuntimeExpression());
                 } else if (source.getUriTemplate() != null) {
-                    setIfNotNull(span, TASK_EMIT_EVENT_SOURCE_ATTRIBUTE, extractFullUri(source.getUriTemplate()));
+                    setIfNotNull(span, TASK_EMIT_EVENT_SOURCE_ATTR,
+                            extractFullUri(source.getUriTemplate()));
                 }
             }
-            setIfNotNull(span, TASK_EMIT_EVENT_SUBJECT_ATTRIBUTE, eventProperties.getSubject());
+            setIfNotNull(span, TASK_EMIT_EVENT_SUBJECT_ATTR, eventProperties.getSubject());
         }
     }
 

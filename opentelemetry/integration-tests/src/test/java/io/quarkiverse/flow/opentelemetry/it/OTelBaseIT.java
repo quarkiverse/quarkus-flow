@@ -47,7 +47,7 @@ abstract class OTelBaseIT {
         IndexedSpanInfo indexedSpanInfo = IndexedSpanInfo.from(spanList);
 
         assertThat(indexedSpanInfo.getIndexedWorkflowSpans()).hasSize(1);
-        assertThat(indexedSpanInfo.getIndexedTaskSpans()).hasSize(expectedSpans - 1);
+        assertThat(indexedSpanInfo.getIndexedTaskSpans()).hasSize(expectedSpans - 2);
         return indexedSpanInfo;
     }
 

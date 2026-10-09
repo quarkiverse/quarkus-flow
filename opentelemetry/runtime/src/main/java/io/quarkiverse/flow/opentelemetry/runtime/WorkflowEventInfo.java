@@ -10,6 +10,7 @@ record WorkflowEventInfo(
         String wfVersion,
         String wfInstanceId,
         EventType eventType) {
+
     public static WorkflowEventInfo from(WorkflowEvent ev) {
         var context = ev.workflowContext();
         var definition = context.definition();
