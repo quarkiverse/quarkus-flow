@@ -54,7 +54,25 @@ Excluded workflows will:
 * Lose all state if the application crashes or restarts
 ====
 
-== 3. Choose a Persistence Provider
+== 3. Periodic Re-scan (Self-Healing Recovery)
+
+Automatic restoration (xref:#_1_automatic_restoration[see above]) only runs once, at application startup. In rare cases, a workflow instance can end up persisted to the datastore under this runner's application ID without being tracked in memory — for example, if the JVM is interrupted between writing the instance to the datastore and registering it in memory. Such an instance would otherwise stay stuck until the next restart.
+
+To cover this, Quarkus Flow can periodically re-scan the datastore for instances that belong to this runner's application ID but aren't currently active in memory, and resume them automatically. This also lays the groundwork for a future external rebalancer that reassigns workflow instances across runners: a runner newly assigned an instance picks it up on its next scan cycle, without needing a restart.
+
+Periodic re-scanning is **disabled by default** — enable it by setting a scan interval in your `application.properties`:
+
+[source,properties]
+----
+quarkus.flow.persistence.scan-interval=30s
+----
+
+[NOTE]
+====
+The periodic scan respects `quarkus.flow.persistence.auto-restore` — if automatic restoration is disabled, the periodic scan is disabled as well, regardless of `scan-interval`.
+====
+
+== 4. Choose a Persistence Provider
 
 Quarkus Flow provides three drop-in persistence implementations. You should only include **one** of these dependencies in your project at a time.
 

@@ -51,6 +51,29 @@ endif::add-copy-button-to-env-var[]
 |list of string
 |
 
+a| [[quarkus-flow-persistence_quarkus-flow-persistence-scan-interval]] [.property-path]##link:#quarkus-flow-persistence_quarkus-flow-persistence-scan-interval[`+++quarkus.flow.persistence.scan-interval+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.persistence.scan-interval+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Interval at which Quarkus Flow periodically re-scans the persistence store for workflow instances belonging to this runner's application ID that are not currently tracked in memory, and restores them. Covers instances missed during startup restore (e.g. a crash between the DB write and in-memory tracking) and, in the future, instances reassigned to this runner by an external rebalancer.
+
+If not set, periodic scanning is disabled; instances are only restored once at startup.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_PERSISTENCE_SCAN_INTERVAL+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_PERSISTENCE_SCAN_INTERVAL+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow-persistence_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
+|
+
 a| [[quarkus-flow-persistence_quarkus-flow-persistence-hashing-md5-threshold]] [.property-path]##link:#quarkus-flow-persistence_quarkus-flow-persistence-hashing-md5-threshold[`+++quarkus.flow.persistence.hashing.md5.threshold+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.persistence.hashing.md5.threshold+++[]
@@ -137,3 +160,22 @@ endif::add-copy-button-to-env-var[]
 
 |===
 
+ifndef::no-duration-note[]
+[NOTE]
+[id=duration-note-anchor-quarkus-flow-persistence_quarkus-flow]
+.About the Duration format
+====
+To write duration values, use the standard `java.time.Duration` format.
+See the link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#parse(java.lang.CharSequence)[Duration#parse() Java API documentation] for more information.
+
+You can also use a simplified format, starting with a number:
+
+* If the value is only a number, it represents time in seconds.
+* If the value is a number followed by `ms`, it represents time in milliseconds.
+
+In other cases, the simplified format is translated to the `java.time.Duration` format for parsing:
+
+* If the value is a number followed by `h`, `m`, or `s`, it is prefixed with `PT`.
+* If the value is a number followed by `d`, it is prefixed with `P`.
+====
+endif::no-duration-note[]
