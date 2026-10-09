@@ -1,8 +1,11 @@
 package io.quarkiverse.flow.opentelemetry.runtime;
 
 import static io.opentelemetry.semconv.ErrorAttributes.ERROR_TYPE;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.END_REASON_CANCELLED;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.END_REASON_UNKNOWN;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.FLOW_TASK_EXECUTION_END_REASON_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.FLOW_WF_EXECUTION_END_REASON_ATTR;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanUtils.appendWorkflowEvent;
 
 import java.util.Comparator;
 import java.util.Map;
@@ -13,15 +16,19 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
 import io.serverlessworkflow.impl.WorkflowInstanceData;
 import io.serverlessworkflow.impl.WorkflowMutableInstance;
+import io.serverlessworkflow.impl.WorkflowStatus;
+import io.serverlessworkflow.impl.lifecycle.EventType;
 import io.serverlessworkflow.impl.persistence.metadata.MetaTransient;
 
 @MetaTransient
 public class WorkflowInstrumentationContext implements AutoCloseable {
     private static final String OTEL_CONTEXT = "OTEL_CONTEXT";
     private final InstrumentationContext workflowInstanceContext;
+    private final WorkflowInstanceData instanceData;
     private final Map<String, InstrumentationContext> workflowInstanceTaskContext = new ConcurrentHashMap<>();
 
-    public WorkflowInstrumentationContext(InstrumentationContext workflowInstanceContext) {
+    public WorkflowInstrumentationContext(WorkflowInstanceData instanceData, InstrumentationContext workflowInstanceContext) {
+        this.instanceData = instanceData;
         this.workflowInstanceContext = workflowInstanceContext;
     }
 
@@ -105,6 +112,13 @@ public class WorkflowInstrumentationContext implements AutoCloseable {
     @Override
     public void close() {
         ensureAllTaskSpansAreClosed(END_REASON_UNKNOWN);
+        if (instanceData != null && instanceData.status() == WorkflowStatus.CANCELLED) {
+            workflowInstanceContext.endStartSpan(startSpan -> {
+                startSpan.setStatus(StatusCode.OK);
+                startSpan.setAttribute(FLOW_WF_EXECUTION_END_REASON_ATTR, END_REASON_CANCELLED);
+                appendWorkflowEvent(startSpan, EventType.WORKFLOW_CANCELLED);
+            });
+        }
     }
 
     public static void setWorkflowInstrumentationContext(WorkflowInstanceData instanceData,

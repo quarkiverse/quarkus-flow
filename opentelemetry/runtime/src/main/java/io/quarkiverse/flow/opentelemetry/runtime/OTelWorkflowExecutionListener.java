@@ -119,6 +119,7 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
                 .build();
 
         WorkflowInstrumentationContext workflowInstrumentationContext = new WorkflowInstrumentationContext(
+                ev.workflowContext().instanceData(),
                 workflowInstanceContext);
         setWorkflowInstrumentationContext(ev.workflowContext().instanceData(), workflowInstrumentationContext);
         activeWorkflowContextRegistry.put(eventInfo.wfInstanceId(), workflowInstrumentationContext);
@@ -280,7 +281,8 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
                         .withStartTime(Instant.now())
                         .build();
 
-                workflowContext = new WorkflowInstrumentationContext(workflowInstanceContext);
+                workflowContext = new WorkflowInstrumentationContext(workflowContextData.instanceData(),
+                        workflowInstanceContext);
                 setWorkflowInstrumentationContext(workflowContextData.instanceData(), workflowContext);
                 activeWorkflowContextRegistry.put(eventInfo.wfInstanceId(), workflowContext);
             }
