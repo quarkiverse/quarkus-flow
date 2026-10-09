@@ -6,9 +6,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 import io.serverlessworkflow.impl.persistence.hashing.HashIndex;
 import io.serverlessworkflow.impl.persistence.hashing.HashItem;
 
@@ -26,7 +23,6 @@ public class HashMappingInfoEntity {
     private HashItem key;
 
     @Column
-    @JdbcTypeCode(SqlTypes.LONG32VARBINARY)
     private byte[] data;
 
     protected HashMappingInfoEntity() {

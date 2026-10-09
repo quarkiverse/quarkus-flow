@@ -7,9 +7,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 import io.cloudevents.CloudEvent;
 import io.cloudevents.CloudEventData;
 import io.cloudevents.SpecVersion;
@@ -48,11 +45,9 @@ public class CloudEventEntity {
     private String dataContentType;
 
     @Column
-    @JdbcTypeCode(SqlTypes.LONG32VARBINARY)
     private CloudEventData data;
 
     @Column
-    @JdbcTypeCode(SqlTypes.LONG32VARBINARY)
     private byte[] extensions;
 
     public CloudEventEntity() {
