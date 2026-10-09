@@ -444,16 +444,19 @@ The whole run is a single trace:
 
 [source,text]
 ----
-workflow.execute my-workflow
-└── task.execute runAgents
-    └── workflow.execute intake-agents
-        ├── task.execute classify-0
-        │   └── langchain4j.aiservices.ClassifierAgent.classify
-        └── task.execute extract-1
-            └── workflow.execute extraction-agent
-                └── task.execute parallel
-                    ├── task.execute details-0
-                    │   └── langchain4j.aiservices.DetailsAgent.details
-                    └── task.execute summarize-1
-                        └── langchain4j.aiservices.SummaryAgent.summarize
+workflow.create my-workflow
+└── workflow.execute my-workflow
+    └── task.execute runAgents
+        └── workflow.create intake-agents
+            └── workflow.execute intake-agents
+                ├── task.execute classify-0
+                │   └── langchain4j.aiservices.ClassifierAgent.classify
+                └── task.execute extract-1
+                    └── workflow.create extraction-agent
+                        └── workflow.execute extraction-agent
+                            └── task.execute parallel
+                                ├── task.execute details-0
+                                │   └── langchain4j.aiservices.DetailsAgent.details
+                                └── task.execute summarize-1
+                                    └── langchain4j.aiservices.SummaryAgent.summarize
 ----

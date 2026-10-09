@@ -129,10 +129,10 @@ This fixes (3). Agents that the planner did not dispatch (the root agentic syste
     - which call task types are accepted (`call: Java` only).
 - Integration test: `AgenticTraceContextIT` in `opentelemetry/integration-tests` runs a workflow task invoking `sequence(classify, parallel(details, summary))` against a WireMock Ollama. It asserts:
   - `Span.current()` inside the task body is the task span;
-  - all 15 Flow, AI service and model spans share one trace;
-  - both generated workflows are children of the invoking task;
+  - all 18 Flow, AI service and model spans share one trace (3 workflows with a `workflow.create` and a `workflow.execute` span each, 6 tasks, and an AI service span and a model span for each of the 3 agents);
+  - both generated workflows are children of the invoking task (their `workflow.create` span is its child);
   - each AI service span is a child of the generated task that ran its agent.
-- Negative control: with `quarkus.flow.otel.task-span-current=false`, all 4 assertions fail (18 spans in 9 traces). This shows the test detects the bug.
+- Negative control: with `quarkus.flow.otel.task-span-current=false`, all 4 assertions fail (the same 18 spans split across 6 traces). This shows the test detects the bug.
 - Integration test: `HttpCallTaskSpanIT` runs two workflows of HTTP call tasks, one sequential and one fork, 10 times each. It asserts that no HTTP client span is ever attached to a task span. It fails when HTTP tasks are not excluded from the proxy.
 
 ## Known limitations
