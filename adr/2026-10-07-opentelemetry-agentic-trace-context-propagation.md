@@ -53,7 +53,11 @@ Fix each boundary where it occurs, without making `quarkus-flow` core or `quarku
 
 Proxies are applied in ascending priority order. `OTelTaskSpanProxy` uses priority `100`, lower than the fault tolerance proxy's default `1000`. It therefore wraps the task body directly, and the span is current on every retry attempt.
 
-**Adjustable default.** This is on by default, which fixes (1) for every workflow, not only agentic ones. It can be turned off:
+**Scope: Java function call tasks only.** The proxy applies only to `call: Java` tasks. These are what the Java DSL's `function(..)`, `consume(..)` and `agent(..)` produce, including the tasks of generated agentic workflows. Their body runs inside `CallableTask.apply`, or is submitted from inside it to the workflow's managed executor, which carries the context over.
+
+HTTP, OpenAPI, gRPC, A2A, AsyncAPI and MCP call tasks don't do their work inside `apply`; they finish it asynchronously after `apply` returns. Making the task span current around `apply` doesn't reliably reach their client spans. In testing, with HTTP tasks included, most client spans kept the incoming request's span as parent, some got their own task span, and a few got a different task's span. These task types therefore keep the previous behavior. A `call: <function>` that refers to a catalog or inline function can resolve to any of them, so it is excluded too. See Known limitations below.
+
+**Adjustable default.** This is on by default, which fixes (1) for every Java function call task, in any workflow, not only agentic ones. It can be turned off:
 
 ```properties
 quarkus.flow.otel.task-span-current=false
@@ -103,14 +107,14 @@ This fixes (3). Agents that the planner did not dispatch (the root agentic syste
 ### Positive
 
 - An agentic system invoked from a workflow task produces a single trace, with every workflow, task, AI service and model span under its correct parent.
-- Any span created in a task body (REST clients, JDBC, custom spans) now nests under its task span, for every workflow.
+- Any span created in the body of a Java function call task (REST clients, JDBC, custom spans) now nests under its task span, for every workflow.
 - No new dependency edges: `quarkus-flow-langchain4j` has no OTel dependency, and `quarkus-flow-opentelemetry` depends only on `quarkus-flow` (which it already needed at runtime) and does not depend on LangChain4j.
 - Only public SPIs are used: `CallableTaskProxyBuilder` and LangChain4j's `AgentListener`.
 
 ### Negative / Risks
 
-- **Behavior change.** Task bodies now run with the task span current. Code that read `Span.current()` in a task body and expected the caller's span will see the task span. The opt-out above covers this.
-- `FlowAgentContextListener` relies on LangChain4j calling `beforeAgentInvocation` and its matching end callback on the same thread. This holds for `AgentInvoker.invoke` in LangChain4j 1.14.1. A suspended system ends with `onAgenticSystemSuspended`, which carries no agent id, so it closes the innermost open scope.
+- **Behavior change.** The bodies of Java function call tasks now run with the task span current. Code that read `Span.current()` in such a task body and expected the caller's span will see the task span. The opt-out above covers this.
+- `FlowAgentContextListener` relies on LangChain4j calling `beforeAgentInvocation` and its matching end callback on the same thread. This holds for `AgentInvoker.invoke` in LangChain4j 1.14.1. A suspended system ends with `onAgenticSystemSuspended`, which carries no agent id. Every level of a nested system fires it, and they all share one `AgenticScope`, so it closes only the open scopes on top of the thread's stack that belong to that `AgenticScope`. This closes each abandoned context once and never touches an enclosing, unrelated system's context.
 - The Ollama client's HTTP `POST` spans still start their own traces. This happens without Quarkus Flow too: a plain `ChatModel.chat(..)` inside an active span gives the same result. It is outside this change.
 
 ## Verification
@@ -118,13 +122,26 @@ This fixes (3). Agents that the planner did not dispatch (the root agentic syste
 - Unit tests:
   - `FlowContextPropagatorTest` (core) covers no-op, single and composed propagators, and close order.
   - `FlowAgentContextListenerTest` (langchain4j) covers activation and closing on success, error and suspension, agents not dispatched by the planner, and nested agents.
-  - `OTelTaskSpanProxyTest` (opentelemetry) covers the span being current inside the delegate and cleared afterwards, the disabled switch, and running with no instrumentation context.
+  - `OTelTaskSpanProxyTest` (opentelemetry) covers:
+    - the span being current inside the delegate and cleared afterwards;
+    - the disabled switch;
+    - running with no instrumentation context;
+    - which call task types are accepted (`call: Java` only).
 - Integration test: `AgenticTraceContextIT` in `opentelemetry/integration-tests` runs a workflow task invoking `sequence(classify, parallel(details, summary))` against a WireMock Ollama. It asserts:
   - `Span.current()` inside the task body is the task span;
   - all 15 Flow, AI service and model spans share one trace;
   - both generated workflows are children of the invoking task;
   - each AI service span is a child of the generated task that ran its agent.
 - Negative control: with `quarkus.flow.otel.task-span-current=false`, all 4 assertions fail (18 spans in 9 traces). This shows the test detects the bug.
+- Integration test: `HttpCallTaskSpanIT` runs two workflows of HTTP call tasks, one sequential and one fork, 10 times each. It asserts that no HTTP client span is ever attached to a task span. It fails when HTTP tasks are not excluded from the proxy.
+
+## Known limitations
+
+- **Asynchronous call tasks** (HTTP, OpenAPI, gRPC, A2A, AsyncAPI, MCP) are not made children of their task span. They behave as before this change:
+  - When the workflow is started from an incoming request, their client spans are children of that request's server span.
+  - When the workflow is started directly (`flow.instance(..).start()`), their client spans start their own trace.
+
+  Fixing this needs the context carried into the asynchronous part of those executors. It is tracked as a follow-up; see [PR #1065 discussion](https://github.com/quarkiverse/quarkus-flow/pull/1065#issuecomment-6082482137).
 
 ## Related
 

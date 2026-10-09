@@ -414,7 +414,15 @@ Tasks of type `raise` produce these additional attributes:
 
 === Spans created inside a task
 
-While a call task runs, its `task.execute` span is the current span. Spans the task creates, such as REST client calls, JDBC queries, LangChain4j AI service calls or your own `Span` instances, become children of the task span. They stay in the workflow's trace.
+While a Java function call task runs, its `task.execute` span is the current span. These are the tasks created with the Java DSL's `function(..)`, `consume(..)` and `agent(..)`. Spans the task creates, such as REST client calls, JDBC queries, LangChain4j AI service calls or your own `Span` instances, become children of the task span. They stay in the workflow's trace.
+
+[NOTE]
+====
+HTTP, OpenAPI, gRPC, A2A, AsyncAPI and MCP call tasks are not covered yet. Their outgoing request spans are not children of their task span:
+
+* When the workflow is started from an incoming request, they are children of that request's span.
+* Otherwise, they start their own trace.
+====
 
 To keep the task span from being current inside task bodies, set:
 

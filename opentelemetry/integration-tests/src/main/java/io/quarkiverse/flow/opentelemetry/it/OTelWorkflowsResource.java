@@ -116,6 +116,26 @@ public class OTelWorkflowsResource {
         return doCall(runTaskFlow, input);
     }
 
+    @Inject
+    @Identifier("otel:otel-http-simple:1.0.0")
+    Flow httpSimpleFlow;
+
+    @Inject
+    @Identifier("otel:otel-http-fork:1.0.0")
+    Flow httpForkFlow;
+
+    @Path("otel-http-simple")
+    @POST
+    public Uni<Map<String, Object>> postHttpSimpleFlow(ObjectNode input) {
+        return doCall(httpSimpleFlow, input);
+    }
+
+    @Path("otel-http-fork")
+    @POST
+    public Uni<Map<String, Object>> postHttpForkFlow(ObjectNode input) {
+        return doCall(httpForkFlow, input);
+    }
+
     Uni<Map<String, Object>> doCall(Flow flow, ObjectNode input) {
         return flow.startInstance(input)
                 .onItem()
