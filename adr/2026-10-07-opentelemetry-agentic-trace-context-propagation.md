@@ -141,13 +141,13 @@ This fixes (3). Agents that the planner did not dispatch (the root agentic syste
   - When the workflow is started from an incoming request, their client spans are children of that request's server span.
   - When the workflow is started directly (`flow.instance(..).start()`), their client spans start their own trace.
 
-  Fixing this needs the context carried into the asynchronous part of those executors. It is tracked as a follow-up; see [PR #1065 discussion](https://github.com/quarkiverse/quarkus-flow/pull/1065#issuecomment-6082482137).
+  This is tracked in [#1071](https://github.com/quarkiverse/quarkus-flow/issues/1071), which has the analysis.
 
 ## Related
 
 - **[OpenTelemetry Trace Propagation Across CloudEvent-Triggered Workflow Execution](2026-08-28-opentelemetry-trace-propagation-design.md) ([#908](https://github.com/quarkiverse/quarkus-flow/issues/908)).** Gives a workflow *root* its parent from the incoming CloudEvent's `traceparent`. This ADR covers what happens after that point: context inside a running instance, and between a workflow and the agentic workflows it generates. The two are complementary. With both, a CloudEvent-triggered workflow that invokes agents lands in the producer's trace end to end.
 - **[#1013](https://github.com/quarkiverse/quarkus-flow/issues/1013) (log correlation).** Partly helped, not addressed. Quarkus's OTel context storage copies the current span into the logging MDC, so logs written by task code should now carry the task's `traceId`/`spanId`. Flow's own lifecycle logs, which are what #1013 is about, are emitted from listeners outside the task body and are unchanged.
-- **[#1040](https://github.com/quarkiverse/quarkus-flow/issues/1040) (trace continuity after JVM restart).** Not addressed. `FlowContextPropagator` snapshots are in-memory and thread-bound, and the per-agent snapshots live in the `AgenticScope`'s transient execution context, so none of them survive persistence or a restart.
+- **[#1040](https://github.com/quarkiverse/quarkus-flow/issues/1040) (trace continuity after JVM restart).** Not addressed here; fixed separately in [#1066](https://github.com/quarkiverse/quarkus-flow/pull/1066). `FlowContextPropagator` snapshots are in-memory and thread-bound, and the per-agent snapshots live in the `AgenticScope`'s transient execution context, so none of them survive persistence or a restart.
 
 ## References
 
