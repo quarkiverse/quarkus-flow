@@ -24,7 +24,7 @@ CREATE TABLE workflow_instance_entity
     workflow_version   VARCHAR2(255)               NOT NULL,
     started_at         TIMESTAMP(6) WITH TIME ZONE NOT NULL,
     status             NUMBER(3, 0) CHECK (status BETWEEN 0 AND 6),
-    input              BLOB,
+    input              RAW(255),
     PRIMARY KEY (application_id, instance_id)
 );
 
@@ -39,12 +39,12 @@ CREATE TABLE task_info_entity
     retry_attempt        NUMBER(10, 0),
     instant              TIMESTAMP(6) WITH TIME ZONE,
     next_position        VARCHAR2(255),
-    context              BLOB,
-    model                BLOB,
-    context_hash_key     BLOB,
-    context_hash_index   BLOB,
-    model_hash_key       BLOB,
-    model_hash_index     BLOB,
+    context              RAW(255),
+    model                RAW(255),
+    context_hash_key     RAW(255),
+    context_hash_index   RAW(255),
+    model_hash_key       RAW(255),
+    model_hash_index     RAW(255),
     PRIMARY KEY (iteration, application_id, json_pointer, workflow_instance_id),
     CHECK (task_type <> 1 OR (is_end_node IS NOT NULL)),
     CHECK (task_type <> 2 OR (retry_attempt IS NOT NULL)),
@@ -73,9 +73,9 @@ CREATE TABLE task_metadata_entity
     json_pointer         VARCHAR2(255) NOT NULL,
     application_id       VARCHAR2(255) NOT NULL,
     workflow_instance_id VARCHAR2(255) NOT NULL,
-    hash_key             BLOB,
-    hash_index           BLOB,
-    raw_value            BLOB,
+    hash_key             RAW(255),
+    hash_index           RAW(255),
+    raw_value            RAW(255),
     PRIMARY KEY (meta_name, iteration, json_pointer, application_id, workflow_instance_id),
     CONSTRAINT fk_task_metadata_task
         FOREIGN KEY (iteration, application_id, json_pointer, workflow_instance_id)
@@ -89,9 +89,9 @@ CREATE TABLE workflow_metadata_entity
     instance_id          VARCHAR2(255) NOT NULL,
     application_id       VARCHAR2(255) NOT NULL,
     workflow_instance_id VARCHAR2(255),
-    hash_key             BLOB,
-    hash_index           BLOB,
-    raw_value            BLOB,
+    hash_key             RAW(255),
+    hash_index           RAW(255),
+    raw_value            RAW(255),
     PRIMARY KEY (meta_name, instance_id, application_id),
     CONSTRAINT fk_workflow_metadata_workflow
         FOREIGN KEY (application_id, instance_id)
