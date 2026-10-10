@@ -53,7 +53,7 @@ class WorkflowInstrumentationContextTest {
     @BeforeEach
     void setUp() {
         var workflowSpan = tracer.spanBuilder(WORKFLOW_SPAN).startSpan();
-        context = new WorkflowInstrumentationContext(instanceData, instrumentationContext(workflowSpan, null));
+        context = new WorkflowInstrumentationContext(instanceData, instrumentationContext(workflowSpan, null), 0);
         context.putTaskInstanceInstanceContext(TASK_ID, 1, 0,
                 instrumentationContext(tracer.spanBuilder(TASK_SPAN).startSpan(), TASK_ID));
     }

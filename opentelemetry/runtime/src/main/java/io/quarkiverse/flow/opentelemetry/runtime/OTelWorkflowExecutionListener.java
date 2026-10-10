@@ -25,6 +25,7 @@ import static io.serverlessworkflow.impl.lifecycle.EventType.WORKFLOW_SUSPENDED;
 import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
 
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -38,7 +39,10 @@ import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.TraceFlags;
 import io.opentelemetry.api.trace.TraceState;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.quarkiverse.flow.opentelemetry.runtime.config.FlowOTelConfig;
+import io.quarkiverse.flow.tracing.TraceCorrelationProvider;
+import io.quarkiverse.flow.tracing.TraceLoggerExecutionListener;
 import io.serverlessworkflow.api.types.TaskBase;
 import io.serverlessworkflow.impl.WorkflowContextData;
 import io.serverlessworkflow.impl.WorkflowMutableInstance;
@@ -80,6 +84,9 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
     @Inject
     FlowOTelConfig oTelConfig;
 
+    @Inject
+    Instance<TraceCorrelationProvider> traceCorrelationProviders;
+
     private final ConcurrentHashMap<String, WorkflowInstrumentationContext> activeWorkflowContextRegistry = new ConcurrentHashMap<>();
 
     @Override
@@ -118,8 +125,12 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
                 .withStartTime(Instant.now())
                 .build();
 
+        int registeredConsumers = traceCorrelationProviders.isResolvable()
+                ? traceCorrelationProviders.get().registeredConsumerCount()
+                : 0;
         WorkflowInstrumentationContext workflowInstrumentationContext = new WorkflowInstrumentationContext(
-                ev.workflowContext().instanceData(), workflowInstanceContext);
+                ev.workflowContext().instanceData(), workflowInstanceContext, registeredConsumers);
+        workflowInstrumentationContext.setWorkflowTraceContext(toTraceContext(startSpan));
         setWorkflowInstrumentationContext(ev.workflowContext().instanceData(), workflowInstrumentationContext);
         activeWorkflowContextRegistry.put(eventInfo.wfInstanceId(), workflowInstrumentationContext);
     }
@@ -240,6 +251,9 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
         workflowContext.putTaskInstanceInstanceContext(eventInfo.taskId(),
                 eventInfo.taskInstanceIteration(),
                 eventInfo.taskInstanceRetryAttempt(), taskInstanceContext);
+        workflowContext.putTaskTraceContext(eventInfo.taskId(),
+                eventInfo.taskInstanceIteration(),
+                eventInfo.taskInstanceRetryAttempt(), toTraceContext(startSpan));
     }
 
     private WorkflowInstrumentationContext getOrResumeWorkflowContext(WorkflowContextData workflowContextData,
@@ -284,8 +298,12 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
                         .withStartTime(Instant.now())
                         .build();
 
+                int registeredConsumers = traceCorrelationProviders.isResolvable()
+                        ? traceCorrelationProviders.get().registeredConsumerCount()
+                        : 0;
                 workflowContext = new WorkflowInstrumentationContext(workflowContextData.instanceData(),
-                        workflowInstanceContext);
+                        workflowInstanceContext, registeredConsumers);
+                workflowContext.setWorkflowTraceContext(toTraceContext(startSpan));
                 setWorkflowInstrumentationContext(workflowContextData.instanceData(), workflowContext);
                 activeWorkflowContextRegistry.put(eventInfo.wfInstanceId(), workflowContext);
             }
@@ -440,5 +458,31 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
 
     private void enrichSpan(SpanBuilder span, TaskBase task) {
         SpanUtils.getTaskSpanEnricher(task).enrich(span, task);
+    }
+
+    static TraceCorrelationProvider.TraceContext toTraceContext(Span span) {
+        if (span == null) {
+            return null;
+        }
+        SpanContext spanContext = span.getSpanContext();
+        if (!spanContext.isValid()) {
+            return null;
+        }
+        String parentId = "";
+        if (span instanceof ReadableSpan readableSpan) {
+            SpanContext parent = readableSpan.getParentSpanContext();
+            if (parent.isValid()) {
+                parentId = parent.getSpanId();
+            }
+        }
+        return new TraceCorrelationProvider.TraceContext(spanContext.getTraceId(), spanContext.getSpanId(),
+                Boolean.toString(spanContext.isSampled()), parentId);
+    }
+
+    @Override
+    public int priority() {
+        // Soft ordering only: running before TraceLoggerExecutionListener lets workflow.started
+        // and task.started log lines carry their own (just-created) span id.
+        return TraceLoggerExecutionListener.PRIORITY - 100;
     }
 }
