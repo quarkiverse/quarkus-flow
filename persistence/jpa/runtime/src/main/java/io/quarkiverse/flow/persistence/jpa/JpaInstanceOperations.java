@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
@@ -18,6 +19,9 @@ import jakarta.transaction.Transactional;
 
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.builder.CloudEventBuilder;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.serverlessworkflow.impl.TaskContext;
 import io.serverlessworkflow.impl.TaskContextData;
@@ -64,7 +68,30 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     Event<HashMappingCoordinator> hashEvents;
 
     @Inject
-    EntityManager em;
+    FlowPersistenceJpaConfig config;
+
+    private EntityManager em;
+
+    @PostConstruct
+    void resolveEntityManager() {
+        if (tryResolveNamedEntityManager())
+            return;
+
+        try (InstanceHandle<EntityManager> defaultHandle = Arc.container().instance(EntityManager.class)) {
+            em = defaultHandle.get();
+        }
+    }
+
+    private boolean tryResolveNamedEntityManager() {
+        try (InstanceHandle<EntityManager> named = Arc.container().instance(EntityManager.class,
+                PersistenceUnitUtil.qualifier(config.name()))) {
+            if (named.isAvailable()) {
+                em = named.get();
+                return true;
+            }
+        }
+        return false;
+    }
 
     @Override
     public void writeInstanceData(WorkflowContextData workflowContext) {

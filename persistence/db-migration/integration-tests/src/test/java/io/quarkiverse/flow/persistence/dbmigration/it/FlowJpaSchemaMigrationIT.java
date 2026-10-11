@@ -8,6 +8,7 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.test.junit.QuarkusTest;
 
 /**
@@ -21,6 +22,7 @@ import io.quarkus.test.junit.QuarkusTest;
 class FlowJpaSchemaMigrationIT {
 
     @Inject
+    @PersistenceUnit("flow-runtime")
     EntityManager entityManager;
 
     @Test

@@ -10,6 +10,7 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 
@@ -22,6 +23,7 @@ class TaskMetadataMaxLengthKeyIT {
     private static final String JSON_POINTER = "/" + "p".repeat(678);
 
     @Inject
+    @PersistenceUnit("flow-runtime")
     EntityManager entityManager;
 
     @Test
