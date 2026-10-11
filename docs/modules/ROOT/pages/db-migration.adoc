@@ -61,6 +61,22 @@ quarkus.flyway.flow-runtime.locations=db/flow-migration/runtime/postgresql
 Replace `postgresql` in the datasource `db-kind` and the Flyway `locations` path with your target database: `h2`, `mysql`, `oracle`, or `mssql`.
 The `locations` path is deliberately off Flyway's default `db/migration` scan root so it won't collide with any migration scripts your own application ships.
 
+=== Dedicated vs. shared persistence unit
+
+Once `flow-runtime` is configured, `quarkus-flow-jpa` routes its entities to their own Hibernate ORM persistence unit bound to it, instead of your application's default one. This is the safer default (guaranteed migrate-before-validate ordering, no schema overlap with your own entities), but it has two trade-offs:
+
+* Flow's entities no longer share a single local transaction with your own default-datasource entities.
+* The dedicated unit bypasses `quarkus.hibernate-orm.*` config entirely, so convenience features tied to the default unit — like a `sql-load-script`/`init-script.sql` for seeding data — don't apply to Flow's tables.
+
+If either of those matters more than the isolation, opt back into the shared default unit:
+
+[source,properties]
+----
+quarkus.flow.persistence.jpa.persistence-unit-name=<default>
+----
+
+In that case, enable Flyway directly on your *default* datasource (not `flow-runtime`) so Quarkus still guarantees migration runs before Hibernate ORM validates.
+
 == quarkus-flow-db-migration-quartz
 
 Ships the `QRTZ_*` schema Quarkus Quartz's `jdbc-cmt`/`jdbc-tx` store types need, through its own isolated `flow-quartz` named datasource and Flyway configuration.

@@ -37,7 +37,7 @@ public class FlowPersistenceJpaProcessor {
 
     /**
      * Only contributes Flow's entities to the persistence unit named by
-     * {@link FlowPersistenceJpaConfig#name()} when a datasource with that exact name is
+     * {@link FlowPersistenceJpaConfig#persistenceUnitName()} when a datasource with that exact name is
      * actually configured; otherwise does nothing, leaving them to Hibernate ORM's normal
      * classpath auto-discovery into the application's default persistence unit. This keeps
      * applications that never configured that datasource unaffected: contributing a persistence
@@ -49,7 +49,7 @@ public class FlowPersistenceJpaProcessor {
             CombinedIndexBuildItem index,
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             BuildProducer<AdditionalPersistenceUnitBuildItem> additionalPersistenceUnit) {
-        String persistenceUnitName = config.name();
+        String persistenceUnitName = config.persistenceUnitName();
         boolean dataSourceConfigured = jdbcDataSources.stream()
                 .anyMatch(ds -> persistenceUnitName.equals(ds.getName()));
         if (!dataSourceConfigured) {

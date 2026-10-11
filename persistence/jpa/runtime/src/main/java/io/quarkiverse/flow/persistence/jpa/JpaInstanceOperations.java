@@ -84,7 +84,7 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
 
     private boolean tryResolveNamedEntityManager() {
         try (InstanceHandle<EntityManager> named = Arc.container().instance(EntityManager.class,
-                PersistenceUnitUtil.qualifier(config.name()))) {
+                PersistenceUnitUtil.qualifier(config.persistenceUnitName()))) {
             if (named.isAvailable()) {
                 em = named.get();
                 return true;
