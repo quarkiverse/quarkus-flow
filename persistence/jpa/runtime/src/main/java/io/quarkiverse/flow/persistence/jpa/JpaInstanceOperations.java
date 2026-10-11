@@ -10,9 +10,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
-import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
@@ -42,29 +40,28 @@ import io.serverlessworkflow.impl.persistence.hashing.HashMappingCoordinator;
 import io.serverlessworkflow.impl.persistence.hashing.HashMappingInfo;
 import io.serverlessworkflow.impl.persistence.metadata.PersistenceMetaUtils;
 
-@ApplicationScoped
 public class JpaInstanceOperations implements PersistenceInstanceOperations {
 
-    @Inject
-    WorkflowInstanceRepository repository;
-
-    @Inject
-    HashMappingInfoRepository hashRepository;
-
-    @Inject
-    CloudEventRepository ceRepository;
-
-    @Inject
-    WorkflowBufferFactory bufferFactory;
-
-    @Inject
+    WorkflowInstanceRepository workflowInstanceRepository;
+    HashMappingInfoRepository hashMappingInfoRepository;
+    CloudEventRepository cloudEventRepository;
+    WorkflowBufferFactory workflowBufferFactory;
     HashFactory hashFactory;
-
-    @Inject
-    Event<HashMappingCoordinator> hashEvents;
-
-    @Inject
+    Event<HashMappingCoordinator> coordinatorEvent;
     EntityManager em;
+
+    public JpaInstanceOperations(EntityManager em, WorkflowInstanceRepository workflowInstanceRepository,
+            HashMappingInfoRepository hashMappingInfoRepository,
+            CloudEventRepository cloudEventRepository, WorkflowBufferFactory workflowBufferFactory, HashFactory hashFactory,
+            Event<HashMappingCoordinator> coordinatorEvent) {
+        this.em = em;
+        this.workflowInstanceRepository = workflowInstanceRepository;
+        this.hashMappingInfoRepository = hashMappingInfoRepository;
+        this.cloudEventRepository = cloudEventRepository;
+        this.workflowBufferFactory = workflowBufferFactory;
+        this.hashFactory = hashFactory;
+        this.coordinatorEvent = coordinatorEvent;
+    }
 
     @Override
     public void writeInstanceData(WorkflowContextData workflowContext) {
@@ -72,19 +69,19 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
         WorkflowInstanceData instance = workflowContext.instanceData();
         WorkflowInstanceEntity entity = new WorkflowInstanceEntity(workflowContext.definition().application().id(),
                 workflowContext.definition().id(), instance.id(), instance.startedAt(), instance.input());
-        repository.persist(entity);
+        workflowInstanceRepository.persist(entity);
         writeWorkflowMetadata(coordinator, instance, entity);
-        hashEvents.fire(coordinator);
+        coordinatorEvent.fire(coordinator);
     }
 
     @Override
     public void writeRetryTask(WorkflowContextData workflowContext, TaskContextData taskContext) {
         HashMappingCoordinator coordinator = hashFactory.mapCoordinator(this::retrieveBlobData, this::writeBlobData);
         RetriedTaskEntity entity = new RetriedTaskEntity(TaskInfoKey.from(workflowContext, taskContext),
-                ((TaskContext) taskContext).retryAttempt());
+                taskContext.retryAttempt());
         em.persist(entity);
         writeTaskMetadata(coordinator, workflowContext.instanceData(), entity);
-        hashEvents.fire(coordinator);
+        coordinatorEvent.fire(coordinator);
     }
 
     @Override
@@ -97,13 +94,13 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
                 workflowContext.context(),
                 transition.isEndNode(), next == null ? null : next.position().jsonPointer());
         writeLargeBytes(coordinator, workflowContext.instanceData(),
-                MarshallingUtils.writeObject(bufferFactory, entity.getModel()), entity::setModelHash, entity::setModel);
+                MarshallingUtils.writeObject(workflowBufferFactory, entity.getModel()), entity::setModelHash, entity::setModel);
         writeLargeBytes(coordinator, workflowContext.instanceData(),
-                MarshallingUtils.writeObject(bufferFactory, entity.getContext()), entity::setContextHash,
+                MarshallingUtils.writeObject(workflowBufferFactory, entity.getContext()), entity::setContextHash,
                 entity::setContext);
         em.persist(entity);
         writeTaskMetadata(coordinator, workflowContext.instanceData(), entity);
-        hashEvents.fire(coordinator);
+        coordinatorEvent.fire(coordinator);
     }
 
     private void writeTaskMetadata(HashMappingCoordinator coordinator, WorkflowInstanceData instance, TaskInfoEntity entity) {
@@ -119,7 +116,7 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
             MetadataSupport<K, E> entity, BiFunction<String, MetadataSupport<K, E>, E> function) {
         PersistenceMetaUtils.durableMetadataAsStream(instance).forEach(entry -> {
             E metadataEntity = function.apply(entry.getKey(), entity);
-            writeLargeBytes(coordinator, instance, MarshallingUtils.writeObject(bufferFactory, entry.getValue()),
+            writeLargeBytes(coordinator, instance, MarshallingUtils.writeObject(workflowBufferFactory, entry.getValue()),
                     metadataEntity::setHashValue, metadataEntity::setRawValue);
             em.persist(metadataEntity);
         });
@@ -128,7 +125,7 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     private Map<String, Object> readMetadata(HashMappingCoordinator coordinator, String instanceId,
             MetadataSupport<?, ?> entity) {
         return entity.getMetadata().stream()
-                .collect(Collectors.toMap(x -> x.getName(), x -> readObject(readLargeBytes(instanceId, coordinator,
+                .collect(Collectors.toMap(MetadataEntity::getName, x -> readObject(readLargeBytes(instanceId, coordinator,
                         x.getRawValue(), x.getHashValue()))));
     }
 
@@ -140,14 +137,14 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     @Override
     public void removeProcessInstance(WorkflowContextData workflowContext) {
         HashMappingCoordinator coordinator = hashFactory.mapCoordinator(this::retrieveBlobData, this::writeBlobData);
-        repository.deleteById(toKey(workflowContext));
-        hashRepository.deleteByInstance(workflowContext.instanceData().id());
+        workflowInstanceRepository.deleteById(toKey(workflowContext));
+        hashMappingInfoRepository.deleteByInstance(workflowContext.instanceData().id());
         coordinator.afterRemove(workflowContext.instanceData().id());
-        hashEvents.fire(coordinator);
+        coordinatorEvent.fire(coordinator);
     }
 
     public void retrieveEvents(Map<String, Collection<CloudEvent>> reg2EventsMap) {
-        ceRepository.findByRegId(reg2EventsMap.keySet())
+        cloudEventRepository.findByRegId(reg2EventsMap.keySet())
                 .forEach(entity -> reg2EventsMap.get(entity.getRegId()).add(from(entity)));
     }
 
@@ -156,29 +153,30 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
                 .withSource(entity.getSource()).withId(entity.getId()).withTime(entity.getTime())
                 .withSubject(entity.getSubject()).withDataSchema(entity.getDataSchema())
                 .withDataContentType(entity.getDataContentType()).withData(entity.getData());
-        MarshallingUtils.readCloudEventExtensions(bufferFactory, entity.getExtensions(), builder);
+        MarshallingUtils.readCloudEventExtensions(workflowBufferFactory, entity.getExtensions(), builder);
         return builder.build();
     }
 
     @Override
     public void storeEvent(String regId, CloudEvent event) {
-        ceRepository
-                .persist(new CloudEventEntity(regId, event, MarshallingUtils.writeCloudEventExtensions(bufferFactory, event)));
+        cloudEventRepository
+                .persist(new CloudEventEntity(regId, event,
+                        MarshallingUtils.writeCloudEventExtensions(workflowBufferFactory, event)));
     }
 
     @Override
     public void markAsProcessed(Map<String, Collection<String>> regCeIds) {
-        ceRepository.setProcessed(regCeIds.values().stream().flatMap(c -> c.stream()).toList());
+        cloudEventRepository.setProcessed(regCeIds.values().stream().flatMap(Collection::stream).toList());
     }
 
     @Override
     public void clearProcessed() {
-        ceRepository.clearProcessed();
+        cloudEventRepository.clearProcessed();
     }
 
     @Override
     public void removeCloudEvents(Map<String, String> ids) {
-        ceRepository.deleteByIds(ids.values());
+        cloudEventRepository.deleteByIds(ids.values());
     }
 
     @Override
@@ -191,10 +189,10 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
         HashMappingCoordinator coordinator = hashFactory.mapCoordinator(this::retrieveBlobData, this::writeBlobData);
         QuarkusTransaction.begin();
         WorkflowDefinitionId id = definition.id();
-        return repository.stream(
+        return workflowInstanceRepository.stream(
                 "select x from WorkflowInstanceEntity x where x.key.applicationId=?1 and x.workflowNamespace=?2 and x.workflowName=?3 and x.workflowVersion=?4",
                 applicationId, id.namespace(), id.name(), id.version()).map(i -> from(coordinator, i))
-                .onClose(() -> QuarkusTransaction.commit());
+                .onClose(QuarkusTransaction::commit);
     }
 
     private PersistenceWorkflowInfo from(HashMappingCoordinator coordinator, WorkflowInstanceEntity x) {
@@ -225,12 +223,12 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     @Transactional
     public Optional<PersistenceWorkflowInfo> readWorkflowInfo(WorkflowDefinition definition, String instanceId) {
         HashMappingCoordinator coordinator = hashFactory.mapCoordinator(this::retrieveBlobData, this::writeBlobData);
-        return repository.findByIdOptional(new WorkflowInstanceKey(instanceId, definition.application().id()))
+        return workflowInstanceRepository.findByIdOptional(new WorkflowInstanceKey(instanceId, definition.application().id()))
                 .map(i -> from(coordinator, i));
     }
 
     private WorkflowInstanceEntity find(WorkflowContextData workflowContext) {
-        return repository.findById(toKey(workflowContext));
+        return workflowInstanceRepository.findById(toKey(workflowContext));
     }
 
     private WorkflowInstanceKey toKey(WorkflowContextData workflowContext) {
@@ -238,7 +236,7 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     }
 
     private Map<String, Map<HashIndex, byte[]>> retrieveBlobData(String instanceId) {
-        return hashRepository.stream("instance = ?1", instanceId)
+        return hashMappingInfoRepository.stream("instance = ?1", instanceId)
                 .collect(Collectors.groupingBy(e -> e.getKey().key(), Collectors.toMap(
                         v -> hashFactory.indexFromString(v.getId()), HashMappingInfoEntity::getData)));
     }
@@ -252,11 +250,11 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
     }
 
     private Object readObject(byte[] rawData) {
-        return MarshallingUtils.readObject(bufferFactory, rawData);
+        return MarshallingUtils.readObject(workflowBufferFactory, rawData);
     }
 
     private WorkflowModel readModel(byte[] rawData) {
-        return MarshallingUtils.readModel(bufferFactory, rawData);
+        return MarshallingUtils.readModel(workflowBufferFactory, rawData);
     }
 
     private byte[] readLargeBytes(String instanceId, HashMappingCoordinator coordinator, byte[] rawData,

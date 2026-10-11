@@ -1,0 +1,100 @@
+CREATE TABLE cloud_event_entity
+(
+    id                VARCHAR2(255) NOT NULL,
+    reg_id            VARCHAR2(255) NOT NULL,
+    source            VARCHAR2(255) NOT NULL,
+    type              VARCHAR2(255) NOT NULL,
+    subject           VARCHAR2(255),
+    data_content_type VARCHAR2(255),
+    data_schema       VARCHAR2(255),
+    time              TIMESTAMP(6) WITH TIME ZONE,
+    data              BLOB,
+    extensions        BLOB,
+    processed_flag    NUMBER(1, 0) DEFAULT 0,
+    version           NUMBER(3, 0)  NOT NULL CHECK (version BETWEEN 0 AND 1),
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE workflow_instance_entity
+(
+    application_id     VARCHAR2(63)                NOT NULL,
+    instance_id        VARCHAR2(26)                NOT NULL,
+    workflow_name      VARCHAR2(255)               NOT NULL,
+    workflow_namespace VARCHAR2(255)               NOT NULL,
+    workflow_version   VARCHAR2(255)               NOT NULL,
+    started_at         TIMESTAMP(6) WITH TIME ZONE NOT NULL,
+    status             NUMBER(3, 0) CHECK (status BETWEEN 0 AND 6),
+    input              RAW(255),
+    PRIMARY KEY (application_id, instance_id)
+);
+
+CREATE TABLE task_info_entity
+(
+    application_id       VARCHAR2(63) NOT NULL,
+    workflow_instance_id VARCHAR2(26) NOT NULL,
+    json_pointer         VARCHAR2(679) NOT NULL,
+    iteration            NUMBER(10, 0) NOT NULL,
+    task_type            NUMBER(10, 0) NOT NULL CHECK (task_type IN (1, 2)),
+    is_end_node          NUMBER(1, 0),
+    retry_attempt        NUMBER(10, 0),
+    instant              TIMESTAMP(6) WITH TIME ZONE,
+    next_position        VARCHAR2(255),
+    context              RAW(255),
+    model                RAW(255),
+    context_hash_key     RAW(255),
+    context_hash_index   RAW(255),
+    model_hash_key       RAW(255),
+    model_hash_index     RAW(255),
+    PRIMARY KEY (iteration, application_id, json_pointer, workflow_instance_id),
+    CHECK (task_type <> 1 OR (is_end_node IS NOT NULL)),
+    CHECK (task_type <> 2 OR (retry_attempt IS NOT NULL)),
+    CONSTRAINT fk_task_workflow_instance
+        FOREIGN KEY (application_id, workflow_instance_id)
+            REFERENCES workflow_instance_entity (application_id, instance_id)
+            ON DELETE CASCADE
+);
+
+CREATE TABLE hash_mapping_info_entity
+(
+    id       VARCHAR2(255) NOT NULL,
+    instance VARCHAR2(255),
+    key      RAW(255),
+    data     BLOB,
+    PRIMARY KEY (id)
+);
+
+CREATE INDEX hashKey_idx ON hash_mapping_info_entity (key);
+CREATE INDEX instance_idx ON hash_mapping_info_entity (instance);
+
+CREATE TABLE task_metadata_entity
+(
+    meta_name            VARCHAR2(128) NOT NULL,
+    iteration            NUMBER(10, 0) NOT NULL,
+    json_pointer         VARCHAR2(679) NOT NULL,
+    application_id       VARCHAR2(63) NOT NULL,
+    workflow_instance_id VARCHAR2(26) NOT NULL,
+    hash_key             RAW(255),
+    hash_index           RAW(255),
+    raw_value            RAW(255),
+    PRIMARY KEY (meta_name, iteration, json_pointer, application_id, workflow_instance_id),
+    CONSTRAINT fk_task_metadata_task
+        FOREIGN KEY (iteration, application_id, json_pointer, workflow_instance_id)
+            REFERENCES task_info_entity (iteration, application_id, json_pointer, workflow_instance_id)
+            ON DELETE CASCADE
+);
+
+CREATE TABLE workflow_metadata_entity
+(
+    meta_name            VARCHAR2(128) NOT NULL,
+    instance_id          VARCHAR2(26) NOT NULL,
+    application_id       VARCHAR2(63) NOT NULL,
+    workflow_instance_id VARCHAR2(255),
+    hash_key             RAW(255),
+    hash_index           RAW(255),
+    raw_value            RAW(255),
+    PRIMARY KEY (meta_name, instance_id, application_id),
+    CONSTRAINT fk_workflow_metadata_workflow
+        FOREIGN KEY (application_id, instance_id)
+            REFERENCES workflow_instance_entity (application_id, instance_id)
+            ON DELETE CASCADE
+);

@@ -33,36 +33,44 @@ To replace the default engine scheduler with the Quartz Scheduler, the first ste
 
 Adding this dependency automatically wires Quarkus Flow to use the underlying Quarkus Quartz scheduling infrastructure. This gives you access to robust application lifecycle management and all standard link:https://quarkus.io/guides/scheduler-reference#configuration-reference[Quarkus Scheduler configuration properties].
 
-Quarkus Quartz scheduler requires persistence to properly function in a clustered environment. Currently Quarkus Quartz only supports relational DB. Quarkus Flow provides a Flyway script that contains the definition of the tables required by Quarkus. To enable persistence for Quartz in your Quarkus application and use that script to automatically create the tables, you need to add the following configuration to your application.properties file.
+Quarkus Quartz scheduler requires persistence to properly function in a clustered environment.
+Currently Quarkus Quartz only supports relational DB. Add the `quarkus-flow-db-migration-quartz` extension to get a versioned, packaged Flyway script that creates the tables Quarkus Quartz needs - see xref:db-migration.adoc[Database Schema Migration] for the full picture of what it ships and why it uses a named datasource.
+
+.pom.xml
+[source,xml]
+----
+<dependency>
+   <groupId>io.quarkiverse.flow</groupId>
+   <artifactId>quarkus-flow-db-migration-quartz</artifactId>
+   <version>${project.version}</version>
+</dependency>
+----
+
+Point Quartz at a named `flow-quartz` datasource so its schema migration stays isolated from any Flyway history your application manages for its own tables, then set up your DB connection details and driver as indicated in link:https://quarkus.io/guides/datasource[Quarkus Datasource guide]. `quarkus-flow-db-migration-quartz` only ships a PostgreSQL migration script, so `flow-quartz`'s `db-kind` must be `postgresql`:
 
 .application.properties
 [source,properties]
 ----
 # Quartz configuration
 quarkus.quartz.clustered=true
-quarkus.quartz.store-type=jdbc-cmt 
+quarkus.quartz.store-type=jdbc-cmt
+quarkus.quartz.datasource=flow-quartz
 quarkus.quartz.misfire-policy.task-job=ignore-misfire-policy
 
+# Datasource configuration - same DB Quartz will use, under the "flow-quartz" name.
+quarkus.datasource.flow-quartz.db-kind=postgresql
+quarkus.datasource.flow-quartz.username=<replace with your postgresql user>
+quarkus.datasource.flow-quartz.password=<replace with your postgresql password>
+quarkus.datasource.flow-quartz.jdbc.url=jdbc:postgresql://<replace with db host name>/<replace with your database name>
+
 # flyway configuration
-quarkus.flyway.connect-retries=10
-quarkus.flyway.table=flyway_quarkus_history
-quarkus.flyway.migrate-at-start=true
-quarkus.flyway.baseline-on-migrate=true
-quarkus.flyway.baseline-version=1.0
-quarkus.flyway.baseline-description=Quartz
+quarkus.flyway.flow-quartz.connect-retries=10
+quarkus.flyway.flow-quartz.table=flyway_flow_quartz_history
+quarkus.flyway.flow-quartz.locations=db/flow-migration/quartz
+quarkus.flyway.flow-quartz.migrate-at-start=true
 ----
 
-In addition to these properties, you need to set up your DB connection details and driver as indicated in link:https://quarkus.io/guides/datasource[Quarkus Datasource guide]. For example, for a postgresql DB, you will need to update your application.properties and pom.xml files in the following way:
-
-.application.properties
-[source,properties]
-----
-# Datasource configuration.
-quarkus.datasource.db-kind=postgresql
-quarkus.datasource.username=<replace with your postgresql user>
-quarkus.datasource.password=<replace with your postgresql password >
-quarkus.datasource.jdbc.url=jdbc:postgresql://<replace with db host name>/<replace with your database name>
-----
+This is the setup for a genuinely new database with no `QRTZ_*` tables yet - the migration above runs as an ordinary first migration, no baseline needed. If your database already has these tables (from a prior manual Flyway setup, or Quarkus Quartz's own bootstrap), see xref:db-migration.adoc[Database Schema Migration]'s baseline guidance instead.
 
 .pom.xml
 [source,xml]
@@ -72,6 +80,11 @@ quarkus.datasource.jdbc.url=jdbc:postgresql://<replace with db host name>/<repla
    <artifactId>quarkus-jdbc-postgresql</artifactId>
 </dependency>
 ----
+
+[NOTE]
+====
+Upgrading from a setup that relied on the old, unnamed `quarkus.flyway.*` configuration (the QRTZ_\* script used to ship on the default Flyway classpath location inside `quarkus-flow-quartz-scheduler` itself)? That script no longer ships there at all, with no compatibility warning - `quarkus.quartz` is still preview-status, so this is a breaking change rather than a deprecation window. See xref:db-migration.adoc[Database Schema Migration] for the migration path.
+====
 
 
 == 2. Define a schedule in your workflow

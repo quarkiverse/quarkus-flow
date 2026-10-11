@@ -30,6 +30,7 @@
 *** xref:messaging.adoc[Use messaging and events]
 ** State Persistence
 *** xref:persistence.adoc[Configure state persistence]
+*** xref:db-migration.adoc[Database Schema Migration]
 ** Monitoring
 *** xref:metrics-prometheus.adoc[Metrics & Prometheus Integration]
 *** xref:tracing.adoc[Enable distributed tracing]
@@ -49,6 +50,7 @@
 ** xref:idempotency-correlation.adoc[Idempotency and Correlation]
 
 * Migration Guides
+** xref:migration-1.2.x-to-1.3.0.adoc[1.2.x to 1.3.0]
 ** xref:migration-0.15-to-0.16.adoc[0.15.x to 0.16.0]
 ** xref:migration-0.14-to-0.15.adoc[0.14.x to 0.15.0]
 ** xref:migration-0.13-to-0.14.adoc[0.13.x to 0.14.0]
