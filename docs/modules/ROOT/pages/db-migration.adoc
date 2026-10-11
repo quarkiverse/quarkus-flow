@@ -187,4 +187,4 @@ That script has moved to this extension's own `db/flow-migration/quartz` locatio
 
 To fix it, add xref:quarkus-flow-db-migration[`quarkus-flow-db-migration-quartz`] and switch to the named `flow-quartz` datasource and Flyway configuration shown above. Because the QRTZ_* tables already exist from the old setup, this is the populated-database case from Upgrading an existing database, with one addition: the history **table name** is also changing, from the old setup's `flyway_quarkus_history` to this extension's `flyway_flow_quartz_history`. Starting from an empty history table under the new name, Flyway has no record that `V1.0.0__QuarkusQuartzTasks.sql` already ran, so the baseline step above (`baseline-on-migrate=true`, `baseline-version=1.0.0`) is required even though an equivalent script already ran once under the old setup (there, as part of `quarkus-flow-quartz-scheduler`'s own Flyway setup).
 
-See xref:migration-1.x-to-1.2.0.adoc[Migration Guide: 1.x to 1.2.0] for the complete step-by-step walkthrough of this upgrade.
+See xref:migration-1.2.x-to-1.3.0.adoc[Migration Guide: 1.2.x to 1.3.0] for the complete step-by-step walkthrough of this upgrade.

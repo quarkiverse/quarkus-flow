@@ -1,7 +1,7 @@
-= Migration Guide: 1.x to 1.2.0
+= Migration Guide: 1.2.x to 1.3.0
 include::includes/attributes.adoc[]
 
-Quarkus Flow 1.2.0 introduces two new optional extensions for versioned database schema migration:
+Quarkus Flow 1.3.0 introduces two new optional extensions for versioned database schema migration:
 
 * **`quarkus-flow-db-migration`**: versioned Flyway scripts for the JPA runtime persistence schema.
 * **`quarkus-flow-db-migration-quartz`**: versioned Flyway scripts for the Quartz `QRTZ_*` schema, extracted out of `quarkus-flow-quartz-scheduler`.
@@ -12,7 +12,7 @@ Quarkus Flow 1.2.0 introduces two new optional extensions for versioned database
 
 [cols="1,1",options="header"]
 |===
-| Before (1.x) | After (1.2.0)
+| Before (1.2.x) | After (1.3.0)
 
 | `QRTZ_*` DDL script shipped inside `quarkus-flow-quartz-scheduler`
 | Script moved to the new `quarkus-flow-db-migration-quartz` extension
