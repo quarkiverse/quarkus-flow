@@ -16,7 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.quarkiverse.flow.runner.model.ExecutionResponse;
+import io.quarkiverse.flow.runner.model.AsyncExecutionResponse;
 import io.quarkiverse.flow.runner.security.NamespaceAuthorizationService;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
@@ -59,7 +59,7 @@ class RunnerExecResourceTest {
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of());
 
         // When
-        Response response = resource.executeWorkflow("test-ns", "test-wf", false, Map.of()).await().indefinitely();
+        Response response = resource.executeWorkflow("test-ns", "test-wf", Map.of()).await().indefinitely();
 
         // Then
         assertThat(response.getStatus()).isEqualTo(404);
@@ -73,7 +73,7 @@ class RunnerExecResourceTest {
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of());
 
         // When
-        Response response = resource.executeWorkflow("test-ns", "test-wf", "1.0.0", false, Map.of()).await()
+        Response response = resource.executeWorkflow("test-ns", "test-wf", "1.0.0", Map.of()).await()
                 .indefinitely();
 
         // Then
@@ -100,14 +100,14 @@ class RunnerExecResourceTest {
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of(id, mockDefinition));
 
         // When
-        Response response = resource.executeWorkflow("test-ns", "test-wf", "1.0.0", false, Map.of("input", "data"))
+        Response response = resource.executeWorkflow("test-ns", "test-wf", "1.0.0", Map.of("input", "data"))
                 .await().indefinitely();
 
         // Then
         assertThat(response.getStatus()).isEqualTo(202);
-        assertThat(response.getEntity()).isInstanceOf(ExecutionResponse.class);
+        assertThat(response.getEntity()).isInstanceOf(AsyncExecutionResponse.class);
 
-        ExecutionResponse executionResponse = (ExecutionResponse) response.getEntity();
+        AsyncExecutionResponse executionResponse = (AsyncExecutionResponse) response.getEntity();
         assertThat(executionResponse.workflowApplicationId()).isEqualTo(APP_ID);
         assertThat(executionResponse.instanceId()).isEqualTo("instance-123");
         assertThat(executionResponse.status()).isEqualTo(WorkflowStatus.RUNNING);
@@ -129,25 +129,14 @@ class RunnerExecResourceTest {
         when(mockInstance.start()).thenReturn(CompletableFuture.completedFuture(mockModel));
         when(mockDefinition.instance(any())).thenReturn(mockInstance);
 
-        when(mockModel.asJavaObject()).thenReturn("success");
-
         WorkflowDefinitionId id = new WorkflowDefinitionId("test-ns", "test-wf", "1.0.0");
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of(id, mockDefinition));
 
         // When
-        Response response = resource.executeWorkflow("test-ns", "test-wf", "1.0.0", true, Map.of("input", "data"))
-                .await().indefinitely();
-
+        Response response = resource.executeWorkflowSync("test-ns", "test-wf", "1.0.0", Map.of("input", "data"));
         // Then
         assertThat(response.getStatus()).isEqualTo(200);
-        assertThat(response.getEntity()).isInstanceOf(ExecutionResponse.class);
-
-        ExecutionResponse executionResponse = (ExecutionResponse) response.getEntity();
-        assertThat(executionResponse.workflowApplicationId()).isEqualTo(APP_ID);
-        assertThat(executionResponse.instanceId()).isEqualTo("instance-456");
-        assertThat(executionResponse.status()).isEqualTo(WorkflowStatus.COMPLETED);
-        assertThat(executionResponse.workflowOutput()).isNotNull();
-        assertThat(executionResponse.workflowOutput()).asString().isEqualTo("success");
+        assertThat(response.getEntity()).isEqualTo(mockModel);
     }
 
     @Test
@@ -168,7 +157,7 @@ class RunnerExecResourceTest {
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of(id, mockDefinition));
 
         // When - null input should be accepted
-        Response response = resource.executeWorkflow("test-ns", "test-wf", "1.0.0", false, null).await().indefinitely();
+        Response response = resource.executeWorkflow("test-ns", "test-wf", "1.0.0", null).await().indefinitely();
 
         // Then
         assertThat(response.getStatus()).isEqualTo(202);
@@ -203,11 +192,11 @@ class RunnerExecResourceTest {
                 id3, mockDef3));
 
         // When - request latest version (no version in path)
-        Response response = resource.executeWorkflow("test-ns", "test-wf", false, Map.of()).await().indefinitely();
+        Response response = resource.executeWorkflow("test-ns", "test-wf", Map.of()).await().indefinitely();
 
         // Then
         assertThat(response.getStatus()).isEqualTo(202);
-        ExecutionResponse executionResponse = (ExecutionResponse) response.getEntity();
+        AsyncExecutionResponse executionResponse = (AsyncExecutionResponse) response.getEntity();
         assertThat(executionResponse.instanceId()).isEqualTo("instance-latest");
     }
 
@@ -223,7 +212,7 @@ class RunnerExecResourceTest {
                 id2, mock(WorkflowDefinition.class)));
 
         // When - request workflow that doesn't match namespace+name combo
-        Response response = resource.executeWorkflow("test-ns", "test-wf", false, Map.of()).await().indefinitely();
+        Response response = resource.executeWorkflow("test-ns", "test-wf", Map.of()).await().indefinitely();
 
         // Then - should return 404 (no matching workflow)
         assertThat(response.getStatus()).isEqualTo(404);

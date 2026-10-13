@@ -9,11 +9,9 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
@@ -27,7 +25,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
-import io.quarkiverse.flow.runner.model.ExecutionResponse;
+import io.quarkiverse.flow.runner.model.AsyncExecutionResponse;
 import io.quarkiverse.flow.runner.model.StatusResponse;
 import io.quarkiverse.flow.runner.security.AuthzConsts;
 import io.quarkiverse.flow.runner.security.FlowRunnerEndpoint;
@@ -35,7 +33,6 @@ import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
 import io.serverlessworkflow.impl.WorkflowInstance;
-import io.serverlessworkflow.impl.WorkflowModel;
 import io.smallrye.mutiny.Uni;
 
 @FlowRunnerEndpoint
@@ -63,40 +60,31 @@ public class RunnerExecResource {
     @POST
     @Path("/{namespace}/{name}")
     @Consumes(MediaType.APPLICATION_JSON)
-    @Operation(operationId = "executeLatestWorkflow", summary = "Execute workflow (latest version)", description = "Executes the latest version of the specified workflow. "
+    @Operation(operationId = "executeLatestWorkflow", summary = "Execute workflow (latest version)", description = "Executes the latest version of the specified workflow asynchronously. "
             +
-            "With wait=true (synchronous): blocks until workflow completes, always returns 200 OK with output. " +
-            "With wait=false (asynchronous): returns immediately with 202 Accepted, workflowOutput is always null regardless of completion status. "
-            +
-            "This ensures a consistent API contract where async execution never includes output. " +
-            "Both responses include the workflowApplicationId of the Runner instance that executed the workflow. " +
+            "Returns immediately with 202 Accepted" +
+            "Response includes the workflowApplicationId of the Runner instance that executed the workflow. " +
             "Namespace access is validated when namespace authorization is enabled.")
-    @APIResponse(responseCode = "200", description = "Workflow execution completed (only when wait=true). Returns workflow output.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
-    @APIResponse(responseCode = "202", description = "Workflow accepted for async processing (when wait=false). Always returned with workflowOutput=null, regardless of whether the workflow has completed.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
+    @APIResponse(responseCode = "202", description = "Workflow accepted for async processing (when wait=false). Always returned with workflowOutput=null, regardless of whether the workflow has completed.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = AsyncExecutionResponse.class)))
     @APIResponse(responseCode = "401", description = "Authentication required - missing or invalid credentials")
     @APIResponse(responseCode = "403", description = "Access denied to requested namespace")
     @APIResponse(responseCode = "404", description = "Workflow not found")
     public Uni<Response> executeWorkflow(
             @Parameter(description = "Workflow namespace (access validated if namespace authorization enabled)", required = true) @PathParam("namespace") String namespace,
             @Parameter(description = "Workflow name", required = true) @PathParam("name") String name,
-            @Parameter(description = "Wait for workflow completion (default: false)") @QueryParam("wait") @DefaultValue("false") boolean wait,
             @RequestBody(description = "Workflow input data (can be object, array, string, number, or boolean)", required = false) Object request) {
-        return executeWorkflow(wait, request, new WorkflowDefinitionId(namespace, name, LATEST));
+        return executeWorkflowAsync(request, new WorkflowDefinitionId(namespace, name, LATEST));
     }
 
     @POST
     @Path("/{namespace}/{name}/{version}")
     @Consumes(MediaType.APPLICATION_JSON)
-    @Operation(operationId = "executeWorkflowVersion", summary = "Execute workflow (specific version)", description = "Executes a specific version of the workflow. "
+    @Operation(operationId = "executeWorkflowVersion", summary = "Execute workflow (specific version)", description = "Executes a specific version of the workflow asynchronusly. "
             +
-            "With wait=true (synchronous): blocks until workflow completes, always returns 200 OK with output. " +
-            "With wait=false (asynchronous): returns immediately with 202 Accepted, workflowOutput is always null regardless of completion status. "
-            +
-            "This ensures a consistent API contract where async execution never includes output. " +
-            "Both responses include the workflowApplicationId of the Runner instance that executed the workflow. " +
+            "Returns immediately with 202 Accepted, workflowOutput is always null regardless of completion status. " +
+            "Response includes the workflowApplicationId of the Runner instance that executed the workflow. " +
             "Namespace access is validated when namespace authorization is enabled.")
-    @APIResponse(responseCode = "200", description = "Workflow execution completed (only when wait=true). Returns workflow output.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
-    @APIResponse(responseCode = "202", description = "Workflow accepted for async processing (when wait=false). Always returned with workflowOutput=null, regardless of whether the workflow has completed.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExecutionResponse.class)))
+    @APIResponse(responseCode = "202", description = "Workflow accepted for async processing (when wait=false). Always returned with workflowOutput=null, regardless of whether the workflow has completed.", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = AsyncExecutionResponse.class)))
     @APIResponse(responseCode = "401", description = "Authentication required - missing or invalid credentials")
     @APIResponse(responseCode = "403", description = "Access denied to requested namespace")
     @APIResponse(responseCode = "404", description = "Workflow version not found")
@@ -104,9 +92,45 @@ public class RunnerExecResource {
             @Parameter(description = "Workflow namespace (access validated if namespace authorization enabled)", required = true) @PathParam("namespace") String namespace,
             @Parameter(description = "Workflow name", required = true) @PathParam("name") String name,
             @Parameter(description = "Workflow version", required = true) @PathParam("version") String version,
-            @Parameter(description = "Wait for workflow completion (default: false)") @QueryParam("wait") @DefaultValue("false") boolean wait,
             @RequestBody(description = "Workflow input data (can be object, array, string, number, or boolean)", required = false) Object request) {
-        return executeWorkflow(wait, request, new WorkflowDefinitionId(namespace, name, version));
+        return executeWorkflowAsync(request, new WorkflowDefinitionId(namespace, name, version));
+    }
+
+    @POST
+    @Path("/{namespace}/{name}/sync")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Operation(operationId = "executeLatestWorkflowSync", summary = "Execute workflow (latest version)", description = "Executes the latest version of the specified workflow synchronously. "
+            +
+            "Returns workflow output after completion" +
+            "Namespace access is validated when namespace authorization is enabled.")
+    @APIResponse(responseCode = "200", description = "Workflow execution completed. Returns workflow output.", content = @Content(mediaType = MediaType.APPLICATION_JSON))
+    @APIResponse(responseCode = "401", description = "Authentication required - missing or invalid credentials")
+    @APIResponse(responseCode = "403", description = "Access denied to requested namespace")
+    @APIResponse(responseCode = "404", description = "Workflow not found")
+    public Response executeWorkflowSync(
+            @Parameter(description = "Workflow namespace (access validated if namespace authorization enabled)", required = true) @PathParam("namespace") String namespace,
+            @Parameter(description = "Workflow name", required = true) @PathParam("name") String name,
+            @RequestBody(description = "Workflow input data (can be object, array, string, number, or boolean)", required = false) Object request) {
+        return executeWorkflowSync(request, new WorkflowDefinitionId(namespace, name, LATEST));
+    }
+
+    @POST
+    @Path("/{namespace}/{name}/{version}/sync")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Operation(operationId = "executeWorkflowVersionSync", summary = "Execute workflow (specific version)", description = "Executes a specific version of the workflow synchronusly. "
+            +
+            "Returns workflow output after completion. " +
+            "Namespace access is validated when namespace authorization is enabled.")
+    @APIResponse(responseCode = "200", description = "Workflow execution completed. Returns workflow output.", content = @Content(mediaType = MediaType.APPLICATION_JSON))
+    @APIResponse(responseCode = "401", description = "Authentication required - missing or invalid credentials")
+    @APIResponse(responseCode = "403", description = "Access denied to requested namespace")
+    @APIResponse(responseCode = "404", description = "Workflow version not found")
+    public Response executeWorkflowSync(
+            @Parameter(description = "Workflow namespace (access validated if namespace authorization enabled)", required = true) @PathParam("namespace") String namespace,
+            @Parameter(description = "Workflow name", required = true) @PathParam("name") String name,
+            @Parameter(description = "Workflow version", required = true) @PathParam("version") String version,
+            @RequestBody(description = "Workflow input data (can be object, array, string, number, or boolean)", required = false) Object request) {
+        return executeWorkflowSync(request, new WorkflowDefinitionId(namespace, name, version));
     }
 
     @POST
@@ -213,7 +237,7 @@ public class RunnerExecResource {
                         .thenApply(v -> v ? Response.ok().build()
                                 : Response.notModified().entity(StatusResponse.from(instance)).build()))
                 .map(Uni.createFrom()::completionStage)
-                .orElseGet(() -> notFoundResponse(instanceId)) : notFoundResponse(definitionId);
+                .orElseGet(() -> notFoundResponse(instanceId)) : notFoundUniResponse(definitionId);
     }
 
     private Uni<Response> notFoundResponse(String instanceId) {
@@ -221,26 +245,30 @@ public class RunnerExecResource {
                 .item(Response.status(Status.NOT_FOUND).entity("Workflow instance '" + instanceId + "' not found").build());
     }
 
-    private Uni<Response> notFoundResponse(WorkflowDefinitionId definitionId) {
+    private Uni<Response> notFoundUniResponse(WorkflowDefinitionId definitionId) {
         return Uni.createFrom()
                 .item(Response.status(Status.NOT_FOUND).entity("Workflow version '" + definitionId + "' not found").build());
     }
 
-    private Uni<Response> executeWorkflow(boolean wait, Object request, WorkflowDefinitionId id) {
+    private Response notFoundResponse(WorkflowDefinitionId definitionId) {
+        return Response.status(Status.NOT_FOUND).entity("Workflow version '" + definitionId + "' not found").build();
+    }
+
+    private Uni<Response> executeWorkflowAsync(Object request, WorkflowDefinitionId id) {
         WorkflowDefinition definition = definitionLookup.find(id);
+
         if (definition == null) {
-            return notFoundResponse(id);
+            return notFoundUniResponse(id);
         }
-        final String workflowApplicationId = application.id();
-        final WorkflowInstance instance = definition.instance(request);
-        final CompletableFuture<WorkflowModel> workflowOutput = instance.start();
-        return wait ? Uni.createFrom()
-                .completionStage(workflowOutput)
-                .onItem()
-                .transform(model -> Response.ok()
-                        .entity(ExecutionResponse.from(workflowApplicationId, instance, model)).build())
-                : Uni.createFrom()
-                        .item(Response.status(Response.Status.ACCEPTED)
-                                .entity(ExecutionResponse.from(workflowApplicationId, instance)).build());
+        WorkflowInstance instance = definition.instance(request);
+        instance.start();
+        return Uni.createFrom()
+                .item(Response.status(Response.Status.ACCEPTED)
+                        .entity(AsyncExecutionResponse.from(application.id(), instance)).build());
+    }
+
+    private Response executeWorkflowSync(Object request, WorkflowDefinitionId id) {
+        WorkflowDefinition definition = definitionLookup.find(id);
+        return definition == null ? notFoundResponse(id) : Response.ok(definition.instance(request).start().join()).build();
     }
 }

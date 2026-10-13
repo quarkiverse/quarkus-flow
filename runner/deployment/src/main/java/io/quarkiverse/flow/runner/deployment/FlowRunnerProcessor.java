@@ -7,7 +7,7 @@ import org.jboss.jandex.DotName;
 import io.quarkiverse.flow.runner.FlowRunnerSourceWatchConfig;
 import io.quarkiverse.flow.runner.WorkflowFileWatcher;
 import io.quarkiverse.flow.runner.model.ActiveInstancesResponse;
-import io.quarkiverse.flow.runner.model.ExecutionResponse;
+import io.quarkiverse.flow.runner.model.AsyncExecutionResponse;
 import io.quarkiverse.flow.runner.model.InstanceSnapshot;
 import io.quarkiverse.flow.runner.model.Link;
 import io.quarkiverse.flow.runner.model.Links;
@@ -47,7 +47,7 @@ class FlowRunnerProcessor {
     @BuildStep
     ReflectiveClassBuildItem registerForReflection() {
         return ReflectiveClassBuildItem.builder(
-                ExecutionResponse.class,
+                AsyncExecutionResponse.class,
                 WorkflowDefinitionHeader.class,
                 Link.class,
                 Links.class,

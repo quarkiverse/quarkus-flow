@@ -10,11 +10,9 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.quarkiverse.flow.runner.model.ExecutionResponse;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.serverlessworkflow.impl.WorkflowApplication;
-import io.serverlessworkflow.impl.WorkflowStatus;
 
 @SuppressWarnings("unchecked")
 @QuarkusTest
@@ -32,24 +30,17 @@ class RunnerExecResourceIT {
         Map<String, Object> input = Map.of("name", "Quarkus");
 
         // When
-        ExecutionResponse response = given()
+        Map<String, Object> response = given()
                 .contentType("application/json")
                 .body(input)
-                .queryParam("wait", "true")
                 .when()
-                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0/sync")
                 .then()
                 .statusCode(200)
                 .extract()
-                .as(ExecutionResponse.class);
-
-        // Then
+                .as(Map.class);
         assertThat(response).isNotNull();
-        assertThat(response.workflowApplicationId()).isNotBlank().isEqualTo(application.id());
-        assertThat(response.instanceId()).isNotBlank();
-        assertThat(response.status()).isEqualTo(WorkflowStatus.COMPLETED);
-        assertThat(response.workflowOutput()).isNotNull();
-        assertThat(response.workflowOutput()).asString().contains("Quarkus says hello!");
+        assertThat(response).containsEntry("greeting", "Quarkus says hello!");
     }
 
     @Test
@@ -88,11 +79,10 @@ class RunnerExecResourceIT {
         Map<String, Object> response = given()
                 .contentType("application/json")
                 .body(input)
-                .queryParam("wait", "true")
                 .when()
                 .post("/q/flow/exec/test-namespace/simple-greeting")
                 .then()
-                .statusCode(200)
+                .statusCode(202)
                 .extract()
                 .as(Map.class);
 
@@ -108,22 +98,15 @@ class RunnerExecResourceIT {
         Map<String, Object> input = Map.of("name", "Latest Version");
 
         // When
-        Map<String, Object> response = given()
+        Map<String, Object> output = given()
                 .contentType("application/json")
                 .body(input)
-                .queryParam("wait", "true")
                 .when()
-                .post("/q/flow/exec/test-namespace/simple-greeting")
+                .post("/q/flow/exec/test-namespace/simple-greeting/sync")
                 .then()
                 .statusCode(200)
                 .extract()
                 .as(Map.class);
-
-        // Then
-        assertThat(response).isNotNull();
-        assertThat(response).containsKey("workflowOutput");
-
-        Map<String, Object> output = (Map<String, Object>) response.get("workflowOutput");
         assertThat(output).containsEntry("greeting", "Latest Version says hello from version v2.0.0!");
     }
 
@@ -154,11 +137,10 @@ class RunnerExecResourceIT {
         Map<String, Object> response = given()
                 .contentType("application/json")
                 .body(Map.of("workflowInput", emptyInput))
-                .queryParam("wait", "true")
                 .when()
                 .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
                 .then()
-                .statusCode(200)
+                .statusCode(202)
                 .extract()
                 .as(Map.class);
 
@@ -176,11 +158,10 @@ class RunnerExecResourceIT {
         Map<String, Object> response = given()
                 .contentType("application/json")
                 .body("")
-                .queryParam("wait", "true")
                 .when()
                 .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
                 .then()
-                .statusCode(200)
+                .statusCode(202)
                 .extract()
                 .as(Map.class);
 
@@ -196,22 +177,16 @@ class RunnerExecResourceIT {
         Map<String, Object> input = Map.of("name", "Version Test");
 
         // When - calling without version should resolve to 2.0.0 (latest)
-        Map<String, Object> response = given()
+        Map<String, Object> output = given()
                 .contentType("application/json")
                 .body(input)
-                .queryParam("wait", "true")
                 .when()
-                .post("/q/flow/exec/test-namespace/simple-greeting")
+                .post("/q/flow/exec/test-namespace/simple-greeting/sync")
                 .then()
                 .statusCode(200)
                 .extract()
                 .as(Map.class);
 
-        // Then - should execute v2.0.0
-        assertThat(response).isNotNull();
-        assertThat(response).containsKey("workflowOutput");
-
-        Map<String, Object> output = (Map<String, Object>) response.get("workflowOutput");
         assertThat(output).containsEntry("greeting", "Version Test says hello from version v2.0.0!");
     }
 
@@ -222,22 +197,16 @@ class RunnerExecResourceIT {
         Map<String, Object> input = Map.of("name", "Old Version");
 
         // When - explicitly requesting v1.0.0
-        Map<String, Object> response = given()
+        Map<String, Object> output = given()
                 .contentType("application/json")
                 .body(input)
-                .queryParam("wait", "true")
                 .when()
-                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0/sync")
                 .then()
                 .statusCode(200)
                 .extract()
                 .as(Map.class);
-
         // Then - should execute v1.0.0
-        assertThat(response).isNotNull();
-        assertThat(response).containsKey("workflowOutput");
-
-        Map<String, Object> output = (Map<String, Object>) response.get("workflowOutput");
         assertThat(output).containsEntry("greeting", "Old Version says hello!");
     }
 
@@ -248,22 +217,16 @@ class RunnerExecResourceIT {
         Map<String, Object> input = Map.of("name", "Middle Version");
 
         // When - explicitly requesting v1.5.0
-        Map<String, Object> response = given()
+        Map<String, Object> output = given()
                 .contentType("application/json")
                 .body(input)
-                .queryParam("wait", "true")
                 .when()
-                .post("/q/flow/exec/test-namespace/simple-greeting/1.5.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.5.0/sync")
                 .then()
                 .statusCode(200)
                 .extract()
                 .as(Map.class);
 
-        // Then - should execute v1.5.0
-        assertThat(response).isNotNull();
-        assertThat(response).containsKey("workflowOutput");
-
-        Map<String, Object> output = (Map<String, Object>) response.get("workflowOutput");
         assertThat(output).containsEntry("greeting", "Middle Version says hello from version v1.5.0!");
     }
 }

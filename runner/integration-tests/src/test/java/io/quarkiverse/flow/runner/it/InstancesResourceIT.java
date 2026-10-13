@@ -245,9 +245,8 @@ class InstancesResourceIT {
         given()
                 .contentType("application/json")
                 .body(Map.of("name", "Completed Test"))
-                .queryParam("wait", "true")
                 .when()
-                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0/sync")
                 .then()
                 .statusCode(200);
 

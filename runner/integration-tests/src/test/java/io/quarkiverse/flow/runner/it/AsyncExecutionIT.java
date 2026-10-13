@@ -10,7 +10,7 @@ import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.quarkiverse.flow.runner.model.ExecutionResponse;
+import io.quarkiverse.flow.runner.model.AsyncExecutionResponse;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.serverlessworkflow.impl.WorkflowStatus;
@@ -29,16 +29,15 @@ class AsyncExecutionIT {
         // When - executing with wait=false (async mode)
         long startTime = System.currentTimeMillis();
 
-        ExecutionResponse response = given()
+        AsyncExecutionResponse response = given()
                 .contentType("application/json")
                 .body(input)
-                .queryParam("wait", "false")
                 .when()
                 .post("/q/flow/exec/test-namespace/long-running/1.0.0")
                 .then()
                 .statusCode(202) // Async returns 202 Accepted
                 .extract()
-                .as(ExecutionResponse.class);
+                .as(AsyncExecutionResponse.class);
 
         long responseTime = System.currentTimeMillis() - startTime;
 
@@ -53,7 +52,9 @@ class AsyncExecutionIT {
         assertThat(response.status()).isEqualTo(WorkflowStatus.WAITING);
         assertThat(response.startedAt()).isNotNull();
         assertThat(response.completedAt()).isNull(); // Not completed yet
-        assertThat(response.workflowOutput()).isNull(); // No output yet
+    }
+
+    private record EndResponse(double start, double end) {
     }
 
     @Test
@@ -65,16 +66,15 @@ class AsyncExecutionIT {
         // When - executing with wait=true (sync mode)
         long startTime = System.currentTimeMillis();
 
-        ExecutionResponse response = given()
+        EndResponse response = given()
                 .contentType("application/json")
                 .body(input)
-                .queryParam("wait", "true")
                 .when()
-                .post("/q/flow/exec/test-namespace/long-running/1.0.0")
+                .post("/q/flow/exec/test-namespace/long-running/1.0.0/sync")
                 .then()
                 .statusCode(200) // Sync returns 200 OK
                 .extract()
-                .as(ExecutionResponse.class);
+                .as(EndResponse.class);
 
         long responseTime = System.currentTimeMillis() - startTime;
 
@@ -85,12 +85,7 @@ class AsyncExecutionIT {
 
         // And - response should indicate workflow is completed
         assertThat(response).isNotNull();
-        assertThat(response.instanceId()).isNotBlank();
-        assertThat(response.status()).isEqualTo(WorkflowStatus.COMPLETED);
-        assertThat(response.startedAt()).isNotNull();
-        assertThat(response.completedAt()).isNotNull();
-        assertThat(response.workflowOutput()).isNotNull();
-        assertThat(response.workflowOutput()).asString().contains("end");
+        assertThat(response.end()).isGreaterThan(response.start());
     }
 
     @Test
@@ -100,16 +95,15 @@ class AsyncExecutionIT {
         Map<String, Object> input = Map.of("testId", "async-completion-test");
 
         // When - executing async
-        ExecutionResponse asyncResponse = given()
+        AsyncExecutionResponse asyncResponse = given()
                 .contentType("application/json")
                 .body(input)
-                .queryParam("wait", "false")
                 .when()
                 .post("/q/flow/exec/test-namespace/long-running/1.0.0")
                 .then()
                 .statusCode(202)
                 .extract()
-                .as(ExecutionResponse.class);
+                .as(AsyncExecutionResponse.class);
 
         String instanceId = asyncResponse.instanceId();
         assertThat(instanceId).isNotBlank();
@@ -138,21 +132,19 @@ class AsyncExecutionIT {
 
         // When - executing async (wait=false)
         // The workflow might complete before the response is sent
-        ExecutionResponse response = given()
+        AsyncExecutionResponse response = given()
                 .contentType("application/json")
                 .body(input)
-                .queryParam("wait", "false")
                 .when()
                 .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(202)
                 .extract()
-                .as(ExecutionResponse.class);
+                .as(AsyncExecutionResponse.class);
 
         // Then - if it completed before response, status should be COMPLETED
         assertThat(response).isNotNull();
         assertThat(response.instanceId()).isNotBlank();
         assertThat(response.status()).isEqualTo(WorkflowStatus.COMPLETED);
-        assertThat(response.workflowOutput()).isNull();
     }
 }
