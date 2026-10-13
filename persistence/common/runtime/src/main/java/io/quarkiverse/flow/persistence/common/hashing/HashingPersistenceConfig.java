@@ -34,7 +34,7 @@ public interface HashingPersistenceConfig {
          */
         OptionalInt threshold();
 
-        /** If this hashing strategy should be enable or not, default true */
+        /** If this hashing strategy should be enable or not, default false */
         @WithDefault("false")
         boolean enabled();
     }
