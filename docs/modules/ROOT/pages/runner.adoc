@@ -363,6 +363,9 @@ The response body contains the workflow output directly, allowing REST clients t
 }
 ----
 
+Note that using sync for workflows with `listen` or `wait` tasks might lead to REST client timeouts. 
+Therefore, it is expected that you use the async version of the API for long running workflows.
+
 === Asynchronous execution
 
 Start the workflow and return immediately (non-blocking):
@@ -432,11 +435,11 @@ Returns execution metadata without workflow output:
 |Timestamp when the instance completed, or `null` if it is still running.
 |===
 
+TIP: Set `quarkus.application.name` in `application.properties` to control the `workflowApplicationId` reported by asynchronous executions.
+
 **Synchronous execution (200 OK):**
 
 Returns the workflow output directly in the response body. The structure depends on your workflow definition and can be any valid JSON type (object, array, string, number, boolean, or null). This allows REST clients to directly map the response to business POJOs without unwrapping.
-
-TIP: Set `quarkus.application.name` in `application.properties` to control the `workflowApplicationId` reported by asynchronous executions.
 
 === Execute specific workflow version
 
