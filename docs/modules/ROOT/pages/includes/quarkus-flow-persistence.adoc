@@ -145,7 +145,7 @@ endif::add-copy-button-to-config-props[]
 
 [.description]
 --
-If this hashing strategy should be enable or not, default true
+If this hashing strategy should be enable or not, default false
 
 
 ifdef::add-copy-button-to-env-var[]
