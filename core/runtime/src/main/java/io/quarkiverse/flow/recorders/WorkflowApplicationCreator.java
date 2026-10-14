@@ -18,8 +18,10 @@ import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.config.FlowRunConfig;
 import io.quarkiverse.flow.config.FlowTracingConfig;
+import io.quarkiverse.flow.config.FlowValidationConfig;
 import io.quarkiverse.flow.dsl.model.JavaModelFactory;
 import io.quarkiverse.flow.internal.NoOpScheduler;
+import io.quarkiverse.flow.internal.NoOpSchemaValidatorFactory;
 import io.quarkiverse.flow.metrics.MicrometerExecutionListener;
 import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
 import io.quarkiverse.flow.providers.FaultToleranceProvider;
@@ -108,6 +110,9 @@ public class WorkflowApplicationCreator {
     @Inject
     FlowRunConfig flowRunConfig;
 
+    @Inject
+    FlowValidationConfig validationConfig;
+
     public WorkflowApplication create() {
         final Builder builder = WorkflowApplication.builder();
         if (tracingConfig.enabled().orElse(launchMode.isDevOrTest())) {
@@ -130,6 +135,7 @@ public class WorkflowApplicationCreator {
         injectMicrometerListener(builder);
         injectFaultTolerance(builder);
         injectCustomListeners(builder);
+        injectSchemaValidation(builder);
 
         customizers.stream().forEachOrdered(customizer -> customizer.customize(builder));
 
@@ -240,6 +246,13 @@ public class WorkflowApplicationCreator {
     private void injectMicrometerListener(Builder builder) {
         if (micrometerListeners.isResolvable()) {
             builder.withListener(micrometerListeners.get());
+        }
+    }
+
+    private void injectSchemaValidation(Builder builder) {
+        if (!validationConfig.input().enabled()) {
+            LOG.debug("Flow: Input schema validation disabled; using no-op SchemaValidatorFactory");
+            builder.withSchemaValidatorFactory(new NoOpSchemaValidatorFactory());
         }
     }
 

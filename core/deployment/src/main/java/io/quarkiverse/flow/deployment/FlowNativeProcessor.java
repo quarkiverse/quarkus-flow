@@ -26,6 +26,7 @@ import io.serverlessworkflow.impl.executors.http.HttpRequestDecorator;
 import io.serverlessworkflow.impl.expressions.ExpressionFactory;
 import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener;
 import io.serverlessworkflow.impl.resources.URITemplateResolver;
+import io.serverlessworkflow.impl.schema.SchemaValidatorFactory;
 
 final class FlowNativeProcessor {
 
@@ -50,6 +51,7 @@ final class FlowNativeProcessor {
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(URITemplateResolver.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(CallableTaskProxyBuilder.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(FlowContextPropagator.class.getName()));
+        sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(SchemaValidatorFactory.class.getName()));
     }
 
     @BuildStep
