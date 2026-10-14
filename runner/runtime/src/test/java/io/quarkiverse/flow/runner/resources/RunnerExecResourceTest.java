@@ -59,7 +59,7 @@ class RunnerExecResourceTest {
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of());
 
         // When
-        Response response = resource.executeWorkflow("test-ns", "test-wf", Map.of()).await().indefinitely();
+        Response response = resource.executeWorkflow("test-ns", "test-wf", Map.of(), false).await().indefinitely();
 
         // Then
         assertThat(response.getStatus()).isEqualTo(404);
@@ -73,7 +73,7 @@ class RunnerExecResourceTest {
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of());
 
         // When
-        Response response = resource.executeWorkflow("test-ns", "test-wf", "1.0.0", Map.of()).await()
+        Response response = resource.executeWorkflow("test-ns", "test-wf", "1.0.0", Map.of(), false).await()
                 .indefinitely();
 
         // Then
@@ -100,7 +100,7 @@ class RunnerExecResourceTest {
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of(id, mockDefinition));
 
         // When
-        Response response = resource.executeWorkflow("test-ns", "test-wf", "1.0.0", Map.of("input", "data"))
+        Response response = resource.executeWorkflow("test-ns", "test-wf", "1.0.0", Map.of("input", "data"), false)
                 .await().indefinitely();
 
         // Then
@@ -157,7 +157,7 @@ class RunnerExecResourceTest {
         when(mockApplication.workflowDefinitions()).thenReturn(Map.of(id, mockDefinition));
 
         // When - null input should be accepted
-        Response response = resource.executeWorkflow("test-ns", "test-wf", "1.0.0", null).await().indefinitely();
+        Response response = resource.executeWorkflow("test-ns", "test-wf", "1.0.0", null, false).await().indefinitely();
 
         // Then
         assertThat(response.getStatus()).isEqualTo(202);
@@ -192,7 +192,7 @@ class RunnerExecResourceTest {
                 id3, mockDef3));
 
         // When - request latest version (no version in path)
-        Response response = resource.executeWorkflow("test-ns", "test-wf", Map.of()).await().indefinitely();
+        Response response = resource.executeWorkflow("test-ns", "test-wf", Map.of(), false).await().indefinitely();
 
         // Then
         assertThat(response.getStatus()).isEqualTo(202);
@@ -212,7 +212,7 @@ class RunnerExecResourceTest {
                 id2, mock(WorkflowDefinition.class)));
 
         // When - request workflow that doesn't match namespace+name combo
-        Response response = resource.executeWorkflow("test-ns", "test-wf", Map.of()).await().indefinitely();
+        Response response = resource.executeWorkflow("test-ns", "test-wf", Map.of(), false).await().indefinitely();
 
         // Then - should return 404 (no matching workflow)
         assertThat(response.getStatus()).isEqualTo(404);

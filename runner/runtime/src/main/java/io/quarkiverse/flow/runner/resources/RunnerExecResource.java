@@ -9,9 +9,11 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
@@ -26,6 +28,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import io.quarkiverse.flow.runner.model.AsyncExecutionResponse;
+import io.quarkiverse.flow.runner.model.ExecutionResponse;
 import io.quarkiverse.flow.runner.model.StatusResponse;
 import io.quarkiverse.flow.runner.security.AuthzConsts;
 import io.quarkiverse.flow.runner.security.FlowRunnerEndpoint;
@@ -33,6 +36,7 @@ import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
 import io.serverlessworkflow.impl.WorkflowInstance;
+import io.serverlessworkflow.impl.WorkflowModel;
 import io.smallrye.mutiny.Uni;
 
 @FlowRunnerEndpoint
@@ -72,8 +76,9 @@ public class RunnerExecResource {
     public Uni<Response> executeWorkflow(
             @Parameter(description = "Workflow namespace (access validated if namespace authorization enabled)", required = true) @PathParam("namespace") String namespace,
             @Parameter(description = "Workflow name", required = true) @PathParam("name") String name,
-            @RequestBody(description = "Workflow input data (can be object, array, string, number, or boolean)", required = false) Object request) {
-        return executeWorkflowAsync(request, new WorkflowDefinitionId(namespace, name, LATEST));
+            @RequestBody(description = "Workflow input data (can be object, array, string, number, or boolean)", required = false) Object request,
+            @Deprecated @QueryParam("wait") @DefaultValue("false") boolean wait) {
+        return executeWorkflowAsync(request, new WorkflowDefinitionId(namespace, name, LATEST), wait);
     }
 
     @POST
@@ -92,8 +97,9 @@ public class RunnerExecResource {
             @Parameter(description = "Workflow namespace (access validated if namespace authorization enabled)", required = true) @PathParam("namespace") String namespace,
             @Parameter(description = "Workflow name", required = true) @PathParam("name") String name,
             @Parameter(description = "Workflow version", required = true) @PathParam("version") String version,
-            @RequestBody(description = "Workflow input data (can be object, array, string, number, or boolean)", required = false) Object request) {
-        return executeWorkflowAsync(request, new WorkflowDefinitionId(namespace, name, version));
+            @RequestBody(description = "Workflow input data (can be object, array, string, number, or boolean)", required = false) Object request,
+            @Deprecated @QueryParam("wait") @DefaultValue("false") boolean wait) {
+        return executeWorkflowAsync(request, new WorkflowDefinitionId(namespace, name, version), wait);
     }
 
     @POST
@@ -254,17 +260,23 @@ public class RunnerExecResource {
         return Response.status(Status.NOT_FOUND).entity("Workflow version '" + definitionId + "' not found").build();
     }
 
-    private Uni<Response> executeWorkflowAsync(Object request, WorkflowDefinitionId id) {
+    private Uni<Response> executeWorkflowAsync(Object request, WorkflowDefinitionId id, boolean wait) {
         WorkflowDefinition definition = definitionLookup.find(id);
 
         if (definition == null) {
             return notFoundUniResponse(id);
         }
+        String appId = application.id();
         WorkflowInstance instance = definition.instance(request);
-        instance.start();
-        return Uni.createFrom()
-                .item(Response.status(Response.Status.ACCEPTED)
-                        .entity(AsyncExecutionResponse.from(application.id(), instance)).build());
+        CompletableFuture<WorkflowModel> future = instance.start();
+        return wait ? Uni.createFrom()
+                .completionStage(future)
+                .onItem()
+                .transform(model -> Response.ok()
+                        .entity(ExecutionResponse.from(appId, instance, model)).build())
+                : Uni.createFrom()
+                        .item(Response.status(Response.Status.ACCEPTED)
+                                .entity(AsyncExecutionResponse.from(appId, instance)).build());
     }
 
     private Response executeWorkflowSync(Object request, WorkflowDefinitionId id) {
