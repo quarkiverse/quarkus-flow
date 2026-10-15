@@ -10,11 +10,16 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
+
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.builder.CloudEventBuilder;
@@ -45,6 +50,11 @@ import io.serverlessworkflow.impl.persistence.metadata.PersistenceMetaUtils;
 @ApplicationScoped
 public class JpaInstanceOperations implements PersistenceInstanceOperations {
 
+    // Matches the applicationId column width in Flow's JPA entities and in the db-migration schema scripts.
+    private static final int MAX_APPLICATION_ID_LENGTH = 63;
+
+    private static final Logger LOG = LoggerFactory.getLogger(JpaInstanceOperations.class);
+
     @Inject
     WorkflowInstanceRepository repository;
 
@@ -65,6 +75,18 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
 
     @Inject
     EntityManager em;
+
+    @PostConstruct
+    void init() {
+        ConfigProvider.getConfig().getOptionalValue("quarkus.application.name", String.class)
+                .filter(name -> name.length() > MAX_APPLICATION_ID_LENGTH)
+                .ifPresent(name -> LOG.warn(
+                        "Flow: quarkus.application.name is {} characters long ('{}'), exceeding the {}-character "
+                                + "width this JPA persistence backend allocates for the workflow application id. "
+                                + "Persisting workflow state may fail or be truncated; consider shortening "
+                                + "quarkus.application.name.",
+                        name.length(), name, MAX_APPLICATION_ID_LENGTH));
+    }
 
     @Override
     public void writeInstanceData(WorkflowContextData workflowContext) {

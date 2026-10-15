@@ -249,6 +249,11 @@
                                     <exclude>**/GrpcClientHolder.java</exclude>
                                 </excludes>
                                 </resource>
+                                <resource>
+                                    <directory>${project.basedir}/../persistence/db-migration/runtime/src/main/resources/db/flow-migration/runtime</directory>
+                                    <targetPath>persistence/db-migration</targetPath>
+                                    <filtering>false</filtering>
+                                </resource>
                             </resources>
                         </configuration>
                     </execution>

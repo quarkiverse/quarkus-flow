@@ -1,19 +1,21 @@
 = Migration Guide: 1.2.x to 1.3.0
 include::includes/attributes.adoc[]
 
-Quarkus Flow 1.3.0 includes a breaking change:
+Quarkus Flow 1.3.0 includes a breaking change and introduces two new optional extensions for versioned database schema migration:
 
-* **Input schema validation**: workflow input is now validated against the declared `input.schema` by default,
-rejecting non-conforming input.
+* **Breaking**: workflow input is now validated against the declared `input.schema` by default, rejecting non-conforming input.
+* **New**: **`quarkus-flow-db-migration`** and **`quarkus-flow-db-migration-quartz`** - versioned Flyway scripts for the JPA runtime persistence schema and the Quartz `QRTZ_*` schema respectively, the latter extracted out of `quarkus-flow-quartz-scheduler`.
 
-== Why the change?
+== Breaking change: input schema validation enforced by default
+
+=== Why the change?
 
 In 1.2.x, a workflow could declare an `input.schema`, but it was never enforced — non-conforming input was silently accepted and ran through the workflow as-is.
 This masked integration bugs: a caller sending the wrong shape of input would not fail until something downstream broke, if at all.
 
 1.3.0 enables the SDK's `serverlessworkflow-impl-validation` schema validator by default, so a declared `input.schema` is now a real contract.
 
-== What changed
+=== What changed
 
 [cols="1,1",options="header"]
 |===
@@ -34,17 +36,17 @@ io.serverlessworkflow.impl.WorkflowException: required property 'name' not found
 
 NOTE: Workflows that do not declare an `input.schema` are unaffected — there is nothing to validate against. This includes workflows that only declare `input.from` (a JQ expression to transform input): `schema` and `from` are independent settings, and validation runs against the raw input *before* `from` is applied. Without a `schema`, your `from` expression keeps working exactly as before.
 
-== Step-by-step migration
+=== Step-by-step migration
 
-=== 1. Find workflows that declare `input.schema`
+==== 1. Find workflows that declare `input.schema`
 
 Audit your workflow definitions (YAML or Java DSL) for `input.schema`. Only those are affected.
 
-=== 2. Verify callers send conforming input
+==== 2. Verify callers send conforming input
 
 For each affected workflow, confirm every caller's input actually satisfies the declared schema. Run your test suite and watch for `WorkflowException` failures surfacing from previously-passing calls — they indicate input that was always non-conforming but silently tolerated.
 
-=== 3. If you are not ready to enforce validation yet
+==== 3. If you are not ready to enforce validation yet
 
 Opt back out of validation to restore the 1.2.x behavior while you fix call sites incrementally:
 
@@ -55,6 +57,100 @@ quarkus.flow.validation.input.enabled=false
 
 Remove this property once all callers send conforming input.
 
+== New: database schema migration extensions
+
+=== Quartz Flyway script moved to its own extension
+
+[cols="1,1",options="header"]
+|===
+| Before (1.2.x) | After (1.3.0)
+
+| `QRTZ_*` DDL script shipped inside `quarkus-flow-quartz-scheduler`
+| Script moved to the new `quarkus-flow-db-migration-quartz` extension
+
+| Classpath location: `db/migration` (Flyway default)
+| Classpath location: `db/flow-migration/quartz/postgresql`
+
+| Flyway history table: `flyway_quarkus_history`
+| Flyway history table: `flyway_flow_quartz_history`
+
+| Activated via the unnamed `quarkus.flyway.migrate-at-start=true`
+| Activated via the named `quarkus.flyway.flow-quartz.migrate-at-start=true`
+
+| `quarkus-flow-quartz-scheduler` pulled in a `quarkus-flyway` dependency
+| `quarkus-flow-quartz-scheduler` no longer has a Flyway dependency
+|===
+
+=== Step-by-step migration
+
+==== If you use `quarkus-flow-quartz-scheduler` with Flyway
+
+The `QRTZ_*` script is no longer on the default `db/migration` location, so your existing `quarkus.flyway.migrate-at-start=true` will no longer pick it up. Follow these steps:
+
+===== 1. Add `quarkus-flow-db-migration-quartz`
+
+.pom.xml
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkiverse.flow</groupId>
+  <artifactId>quarkus-flow-db-migration-quartz</artifactId>
+  <version>${project.version}</version>
+</dependency>
+----
+
+===== 2. Add the named `flow-quartz` datasource
+
+Point it at the same physical database your default datasource uses:
+
+.application.properties
+[source,properties]
+----
+quarkus.datasource.flow-quartz.db-kind=postgresql
+quarkus.datasource.flow-quartz.jdbc.url=jdbc:postgresql://<host>/<database>
+quarkus.datasource.flow-quartz.username=<user>
+quarkus.datasource.flow-quartz.password=<password>
+
+quarkus.flyway.flow-quartz.table=flyway_flow_quartz_history
+quarkus.flyway.flow-quartz.migrate-at-start=true
+quarkus.flyway.flow-quartz.locations=db/flow-migration/quartz/postgresql
+----
+
+===== 3. Baseline the existing `QRTZ_*` tables
+
+Because the `QRTZ_*` tables already exist from the previous setup and the history table name has changed, Flyway has no record that `V1.0.0__QuarkusQuartzTasks.sql` already ran. Add the baseline properties so Flyway does not attempt to re-create those tables — see xref:db-migration.adoc#upgrading-old-quartz-flyway[Upgrading from the old, unnamed Quartz Flyway setup] for the full explanation of why this baseline step is required:
+
+[source,properties]
+----
+quarkus.flyway.flow-quartz.baseline-on-migrate=true
+quarkus.flyway.flow-quartz.baseline-version=1.0.0
+----
+
+[WARNING]
+====
+Back up your database and rehearse the baseline against a copy of it before running against production. `baseline-on-migrate` tells Flyway "assume everything up to this version already exists," so schema drift will not be caught.
+====
+
+===== 4. Remove the old unnamed Flyway properties
+
+If you had Flyway properties solely to manage the Quartz schema, remove them:
+
+[source,properties]
+----
+# Remove these if they were only for the Quartz schema
+quarkus.flyway.migrate-at-start=true
+quarkus.flyway.locations=db/migration
+----
+
+If your application also uses `quarkus.flyway.*` for its own migrations, keep those properties but verify the old `db/migration` location no longer contains the Quartz script (it is no longer shipped there).
+
+==== If you are adopting managed migrations for JPA persistence for the first time
+
+Add `quarkus-flow-db-migration` and follow the setup in xref:db-migration.adoc[Database Schema Migration].
+If your tables already exist (created by Hibernate's `update` strategy), also apply the baseline step described there.
+
 == Further reading
 
+* xref:db-migration.adoc[Database Schema Migration] — full reference for both extensions, including datasource configuration, versioning convention, and the baseline procedure for existing databases.
+* xref:quartz.adoc[Quartz workflow scheduler] — full Quartz setup including the named `flow-quartz` datasource.
 * xref:runner.adoc[Execute workflows via REST API] — mentions `input.schema` as part of a workflow's document metadata.
