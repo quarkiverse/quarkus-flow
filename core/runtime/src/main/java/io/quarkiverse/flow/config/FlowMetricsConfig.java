@@ -3,9 +3,7 @@ package io.quarkiverse.flow.config;
 import java.util.List;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigPhase;
-import io.quarkus.runtime.annotations.ConfigRoot;
-import io.smallrye.config.ConfigMapping;
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 
 /**
@@ -23,8 +21,7 @@ import io.smallrye.config.WithDefault;
  *
  * Then restart the application (no rebuild required).
  */
-@ConfigMapping(prefix = "quarkus.flow.metrics")
-@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+@ConfigGroup
 public interface FlowMetricsConfig {
 
     /**

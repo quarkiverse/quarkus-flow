@@ -1,6 +1,6 @@
 package io.quarkiverse.flow.deployment;
 
-import io.quarkiverse.flow.config.FlowDevUIConfig;
+import io.quarkiverse.flow.config.FlowBuildFixedConfig;
 import io.quarkiverse.flow.devui.InMemoryWorkflowInstanceStore;
 import io.quarkiverse.flow.devui.LifecycleManagementBackendObjectMapperCustomizer;
 import io.quarkiverse.flow.devui.ManagementLifecycleListener;
@@ -36,17 +36,18 @@ public class FlowDevUIProcessor {
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    void createJsonRPCProviders(BuildProducer<JsonRPCProvidersBuildItem> rpcProviders, FlowDevUIConfig flowDevUIConfig) {
+    void createJsonRPCProviders(BuildProducer<JsonRPCProvidersBuildItem> rpcProviders,
+            FlowBuildFixedConfig flowBuildFixedConfig) {
         rpcProviders.produce(new JsonRPCProvidersBuildItem(WorkflowRPCService.class));
-        if (flowDevUIConfig.backend().storage().enabled()) {
+        if (flowBuildFixedConfig.devui().backend().storage().enabled()) {
             rpcProviders.produce(new JsonRPCProvidersBuildItem(ManagementLifecycleRPCService.class));
         }
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    AdditionalBeanBuildItem additionalBeans(FlowDevUIConfig flowDevUIConfig) {
+    AdditionalBeanBuildItem additionalBeans(FlowBuildFixedConfig flowBuildFixedConfig) {
 
-        if (!flowDevUIConfig.backend().storage().enabled()) {
+        if (!flowBuildFixedConfig.devui().backend().storage().enabled()) {
             return null;
         }
 

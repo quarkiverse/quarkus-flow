@@ -32,6 +32,7 @@ import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.quarkiverse.flow.config.FlowConfig;
 import io.quarkiverse.flow.config.FlowHttpConfig;
 import io.quarkiverse.flow.config.HttpClientConfig;
 import io.quarkus.arc.Arc;
@@ -89,8 +90,8 @@ public class HttpClientProvider {
     private volatile Client defaultClient;
 
     @Inject
-    public HttpClientProvider(FlowHttpConfig config) {
-        this.config = config;
+    public HttpClientProvider(FlowConfig flowConfig) {
+        this.config = flowConfig.http().client();
         this.routingNameResolver = new RoutingNameResolver(config);
     }
 

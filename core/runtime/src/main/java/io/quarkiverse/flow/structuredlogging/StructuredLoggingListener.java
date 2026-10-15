@@ -26,6 +26,7 @@ import org.jboss.logmanager.formatters.PatternFormatter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkiverse.flow.config.FlowConfig;
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
 import io.quarkus.arc.lookup.LookupIfProperty;
 import io.serverlessworkflow.impl.lifecycle.TaskCancelledEvent;
@@ -61,8 +62,8 @@ public class StructuredLoggingListener implements WorkflowExecutionListener {
     private volatile boolean formatterOverridden = false;
 
     @Inject
-    public StructuredLoggingListener(FlowStructuredLoggingConfig config, ObjectMapper objectMapper) {
-        this.config = config;
+    public StructuredLoggingListener(FlowConfig flowConfig, ObjectMapper objectMapper) {
+        this.config = flowConfig.structuredLogging();
         this.formatter = new EventFormatter(config, objectMapper);
     }
 

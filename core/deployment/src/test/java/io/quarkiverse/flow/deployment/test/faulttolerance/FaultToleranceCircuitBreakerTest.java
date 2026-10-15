@@ -8,8 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkiverse.flow.config.FlowHttpConfig;
-import io.quarkiverse.flow.config.FlowMetricsConfig;
+import io.quarkiverse.flow.config.FlowConfig;
 import io.quarkiverse.flow.providers.FaultToleranceProvider;
 import io.quarkiverse.flow.providers.WorkflowTaskContext;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
@@ -25,23 +24,18 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_open_circuit_breaker_after_failure_threshold() {
-        FlowHttpConfig flowHttpConfig = new SmallRyeConfigBuilder()
+        FlowConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowHttpConfig.class)
+                .withMapping(FlowConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold", "4")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio", "0.5")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.max-retries", "10")
-                .build().getConfigMapping(FlowHttpConfig.class);
+                .build().getConfigMapping(FlowConfig.class);
 
-        FlowMetricsConfig flowMetricsConfig = new SmallRyeConfigBuilder()
-                .addDiscoveredConverters()
-                .withMapping(FlowMetricsConfig.class)
-                .build().getConfigMapping(FlowMetricsConfig.class);
-
-        FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
+        FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
                 .guardFor(new WorkflowTaskContext(wfId("payment"), "process"));
@@ -68,20 +62,15 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_not_open_circuit_breaker_when_disabled() {
-        FlowHttpConfig flowHttpConfig = new SmallRyeConfigBuilder()
+        FlowConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowHttpConfig.class)
+                .withMapping(FlowConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "false")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "false")
-                .build().getConfigMapping(FlowHttpConfig.class);
+                .build().getConfigMapping(FlowConfig.class);
 
-        FlowMetricsConfig flowMetricsConfig = new SmallRyeConfigBuilder()
-                .addDiscoveredConverters()
-                .withMapping(FlowMetricsConfig.class)
-                .build().getConfigMapping(FlowMetricsConfig.class);
-
-        FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
+        FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
                 .guardFor(new WorkflowTaskContext(wfId("payment"), "process"));
@@ -105,9 +94,9 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_configure_circuit_breaker_at_workflow_level() {
-        FlowHttpConfig flowHttpConfig = new SmallRyeConfigBuilder()
+        FlowConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowHttpConfig.class)
+                .withMapping(FlowConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "false")
                 .withDefaultValue("quarkus.flow.http.client.workflow.payment.name", "paymentClient")
                 .withDefaultValue("quarkus.flow.http.client.named.paymentClient.resilience.circuit-breaker.enabled", "true")
@@ -118,14 +107,9 @@ public class FaultToleranceCircuitBreakerTest {
                 .withDefaultValue("quarkus.flow.http.client.named.paymentClient.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.named.paymentClient.resilience.retry.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.named.paymentClient.resilience.retry.max-retries", "5")
-                .build().getConfigMapping(FlowHttpConfig.class);
+                .build().getConfigMapping(FlowConfig.class);
 
-        FlowMetricsConfig flowMetricsConfig = new SmallRyeConfigBuilder()
-                .addDiscoveredConverters()
-                .withMapping(FlowMetricsConfig.class)
-                .build().getConfigMapping(FlowMetricsConfig.class);
-
-        FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
+        FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
                 .guardFor(new WorkflowTaskContext(wfId("payment"), "process"));
@@ -148,9 +132,9 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_configure_circuit_breaker_at_task_level() {
-        FlowHttpConfig flowHttpConfig = new SmallRyeConfigBuilder()
+        FlowConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowHttpConfig.class)
+                .withMapping(FlowConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "false")
                 .withDefaultValue("quarkus.flow.http.client.workflow.\"payment.task.validate\".name", "paymentValidator")
                 .withDefaultValue("quarkus.flow.http.client.named.paymentValidator.resilience.circuit-breaker.enabled", "true")
@@ -162,14 +146,9 @@ public class FaultToleranceCircuitBreakerTest {
                 .withDefaultValue("quarkus.flow.http.client.named.paymentValidator.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.named.paymentValidator.resilience.retry.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.named.paymentValidator.resilience.retry.max-retries", "5")
-                .build().getConfigMapping(FlowHttpConfig.class);
+                .build().getConfigMapping(FlowConfig.class);
 
-        FlowMetricsConfig flowMetricsConfig = new SmallRyeConfigBuilder()
-                .addDiscoveredConverters()
-                .withMapping(FlowMetricsConfig.class)
-                .build().getConfigMapping(FlowMetricsConfig.class);
-
-        FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
+        FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
                 .guardFor(new WorkflowTaskContext(wfId("payment"), "validate"));
@@ -192,23 +171,18 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_respect_custom_failure_ratio() {
-        FlowHttpConfig flowHttpConfig = new SmallRyeConfigBuilder()
+        FlowConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowHttpConfig.class)
+                .withMapping(FlowConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold", "10")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio", "0.3")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.max-retries", "15")
-                .build().getConfigMapping(FlowHttpConfig.class);
+                .build().getConfigMapping(FlowConfig.class);
 
-        FlowMetricsConfig flowMetricsConfig = new SmallRyeConfigBuilder()
-                .addDiscoveredConverters()
-                .withMapping(FlowMetricsConfig.class)
-                .build().getConfigMapping(FlowMetricsConfig.class);
-
-        FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
+        FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
                 .guardFor(new WorkflowTaskContext(wfId("order"), "create"));
@@ -231,22 +205,17 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_remain_closed_when_below_failure_threshold() {
-        FlowHttpConfig flowHttpConfig = new SmallRyeConfigBuilder()
+        FlowConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowHttpConfig.class)
+                .withMapping(FlowConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold", "10")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio", "0.5")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "false")
-                .build().getConfigMapping(FlowHttpConfig.class);
+                .build().getConfigMapping(FlowConfig.class);
 
-        FlowMetricsConfig flowMetricsConfig = new SmallRyeConfigBuilder()
-                .addDiscoveredConverters()
-                .withMapping(FlowMetricsConfig.class)
-                .build().getConfigMapping(FlowMetricsConfig.class);
-
-        FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
+        FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
                 .guardFor(new WorkflowTaskContext(wfId("inventory"), "check"));
@@ -286,22 +255,17 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_not_open_circuit_before_request_volume_threshold() {
-        FlowHttpConfig flowHttpConfig = new SmallRyeConfigBuilder()
+        FlowConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowHttpConfig.class)
+                .withMapping(FlowConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold", "5")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio", "0.5")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "false")
-                .build().getConfigMapping(FlowHttpConfig.class);
+                .build().getConfigMapping(FlowConfig.class);
 
-        FlowMetricsConfig flowMetricsConfig = new SmallRyeConfigBuilder()
-                .addDiscoveredConverters()
-                .withMapping(FlowMetricsConfig.class)
-                .build().getConfigMapping(FlowMetricsConfig.class);
-
-        FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
+        FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
                 .guardFor(new WorkflowTaskContext(wfId("shipping"), "calculate"));
@@ -335,22 +299,17 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_open_circuit_with_100_percent_failure_ratio() {
-        FlowHttpConfig flowHttpConfig = new SmallRyeConfigBuilder()
+        FlowConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowHttpConfig.class)
+                .withMapping(FlowConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold", "3")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio", "1.0")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "false")
-                .build().getConfigMapping(FlowHttpConfig.class);
+                .build().getConfigMapping(FlowConfig.class);
 
-        FlowMetricsConfig flowMetricsConfig = new SmallRyeConfigBuilder()
-                .addDiscoveredConverters()
-                .withMapping(FlowMetricsConfig.class)
-                .build().getConfigMapping(FlowMetricsConfig.class);
-
-        FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
+        FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
                 .guardFor(new WorkflowTaskContext(wfId("notification"), "send"));
@@ -386,23 +345,18 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_handle_mixed_success_and_failure_calls() {
-        FlowHttpConfig flowHttpConfig = new SmallRyeConfigBuilder()
+        FlowConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowHttpConfig.class)
+                .withMapping(FlowConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold", "6")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio", "0.5")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.max-retries", "10")
-                .build().getConfigMapping(FlowHttpConfig.class);
+                .build().getConfigMapping(FlowConfig.class);
 
-        FlowMetricsConfig flowMetricsConfig = new SmallRyeConfigBuilder()
-                .addDiscoveredConverters()
-                .withMapping(FlowMetricsConfig.class)
-                .build().getConfigMapping(FlowMetricsConfig.class);
-
-        FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
+        FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
                 .guardFor(new WorkflowTaskContext(wfId("user"), "register"));
@@ -425,9 +379,9 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_override_default_circuit_breaker_with_task_specific_config() {
-        FlowHttpConfig flowHttpConfig = new SmallRyeConfigBuilder()
+        FlowConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowHttpConfig.class)
+                .withMapping(FlowConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold", "10")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio", "0.5")
@@ -441,14 +395,9 @@ public class FaultToleranceCircuitBreakerTest {
                 .withDefaultValue("quarkus.flow.http.client.named.billingCharger.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.named.billingCharger.resilience.retry.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.named.billingCharger.resilience.retry.max-retries", "5")
-                .build().getConfigMapping(FlowHttpConfig.class);
+                .build().getConfigMapping(FlowConfig.class);
 
-        FlowMetricsConfig flowMetricsConfig = new SmallRyeConfigBuilder()
-                .addDiscoveredConverters()
-                .withMapping(FlowMetricsConfig.class)
-                .build().getConfigMapping(FlowMetricsConfig.class);
-
-        FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
+        FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
                 .guardFor(new WorkflowTaskContext(wfId("billing"), "charge"));
@@ -471,22 +420,17 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_handle_all_successful_calls_without_opening_circuit() {
-        FlowHttpConfig flowHttpConfig = new SmallRyeConfigBuilder()
+        FlowConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowHttpConfig.class)
+                .withMapping(FlowConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold", "5")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio", "0.2")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "false")
-                .build().getConfigMapping(FlowHttpConfig.class);
+                .build().getConfigMapping(FlowConfig.class);
 
-        FlowMetricsConfig flowMetricsConfig = new SmallRyeConfigBuilder()
-                .addDiscoveredConverters()
-                .withMapping(FlowMetricsConfig.class)
-                .build().getConfigMapping(FlowMetricsConfig.class);
-
-        FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
+        FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
                 .guardFor(new WorkflowTaskContext(wfId("analytics"), "track"));
@@ -521,23 +465,18 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_handle_edge_case_with_minimum_request_volume() {
-        FlowHttpConfig flowHttpConfig = new SmallRyeConfigBuilder()
+        FlowConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowHttpConfig.class)
+                .withMapping(FlowConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold", "1")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio", "1.0")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.max-retries", "5")
-                .build().getConfigMapping(FlowHttpConfig.class);
+                .build().getConfigMapping(FlowConfig.class);
 
-        FlowMetricsConfig flowMetricsConfig = new SmallRyeConfigBuilder()
-                .addDiscoveredConverters()
-                .withMapping(FlowMetricsConfig.class)
-                .build().getConfigMapping(FlowMetricsConfig.class);
-
-        FaultToleranceProvider sut = new FaultToleranceProvider(flowHttpConfig, flowMetricsConfig);
+        FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
         TypedGuard<CompletionStage<WorkflowModel>> typeGuard = sut
                 .guardFor(new WorkflowTaskContext(wfId("cache"), "invalidate"));

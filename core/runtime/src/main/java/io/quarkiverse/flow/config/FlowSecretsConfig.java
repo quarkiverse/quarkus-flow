@@ -1,16 +1,11 @@
 package io.quarkiverse.flow.config;
 
-import static io.quarkiverse.flow.config.FlowSecretsConfig.SECRETS_ROOT_KEY;
-
 import java.util.Map;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigPhase;
-import io.quarkus.runtime.annotations.ConfigRoot;
-import io.smallrye.config.ConfigMapping;
+import io.quarkus.runtime.annotations.ConfigGroup;
 
-@ConfigMapping(prefix = SECRETS_ROOT_KEY)
-@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+@ConfigGroup
 public interface FlowSecretsConfig {
 
     String SECRETS_ROOT_KEY = "quarkus.flow.secrets";
