@@ -3,6 +3,8 @@ package io.quarkiverse.flow.langchain4j.workflow.builder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.Map;
+
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.DisplayName;
@@ -53,7 +55,7 @@ public class FlowAgentsBuilderServiceTest {
                 .subAgents(agent1, agent2)
                 .build();
 
-        ResultWithAgenticScope<String> result = agent.invokeWithAgenticScope(java.util.Map.of());
+        ResultWithAgenticScope<String> result = agent.invokeWithAgenticScope(Map.of());
 
         assertThat(result.agenticScope().readState("step", ""))
                 .as("UntypedAgent sequential workflow should execute all agents")
@@ -92,7 +94,7 @@ public class FlowAgentsBuilderServiceTest {
                 .subAgents(agent1, agent2)
                 .build();
 
-        ResultWithAgenticScope<String> result = agent.invokeWithAgenticScope(java.util.Map.of());
+        ResultWithAgenticScope<String> result = agent.invokeWithAgenticScope(Map.of());
 
         assertThat(result.agenticScope().readState("a", false)).isTrue();
         assertThat(result.agenticScope().readState("b", false)).isTrue();
@@ -134,10 +136,31 @@ public class FlowAgentsBuilderServiceTest {
                 .subAgents(loopAgent)
                 .build();
 
-        ResultWithAgenticScope<String> result = agent.invokeWithAgenticScope(java.util.Map.of());
+        ResultWithAgenticScope<String> result = agent.invokeWithAgenticScope(Map.of());
 
         assertThat(result.agenticScope().readState("counter", 0))
                 .as("UntypedAgent loop workflow should iterate 3 times")
+                .isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("newLoop_with_exit_condition_description_still_honors_exit_condition")
+    void newLoop_with_exit_condition_description_still_honors_exit_condition() {
+        var loopAgent = AgenticServices.agentAction(scope -> {
+            int counter = scope.readState("counter", 0);
+            scope.writeState("counter", counter + 1);
+        });
+
+        UntypedAgent agent = builderService.newLoop()
+                .maxIterations(10)
+                .exitCondition("counter reaches 3", scope -> scope.readState("counter", 0) >= 3)
+                .subAgents(loopAgent)
+                .build();
+
+        ResultWithAgenticScope<String> result = agent.invokeWithAgenticScope(Map.of());
+
+        assertThat(result.agenticScope().readState("counter", 0))
+                .as("Exit condition with description should stop the loop before maxIterations")
                 .isEqualTo(3);
     }
 
@@ -175,13 +198,13 @@ public class FlowAgentsBuilderServiceTest {
                 .build();
 
         // Test branch A
-        ResultWithAgenticScope<String> resultA = agent.invokeWithAgenticScope(java.util.Map.of("type", "A"));
+        ResultWithAgenticScope<String> resultA = agent.invokeWithAgenticScope(Map.of("type", "A"));
         assertThat(resultA.agenticScope().readState("branch", ""))
                 .as("Conditional should route to branch A")
                 .isEqualTo("A");
 
         // Test branch B
-        ResultWithAgenticScope<String> resultB = agent.invokeWithAgenticScope(java.util.Map.of("type", "B"));
+        ResultWithAgenticScope<String> resultB = agent.invokeWithAgenticScope(Map.of("type", "B"));
         assertThat(resultB.agenticScope().readState("branch", ""))
                 .as("Conditional should route to branch B")
                 .isEqualTo("B");
@@ -253,10 +276,10 @@ public class FlowAgentsBuilderServiceTest {
                 .build();
 
         // All should execute successfully
-        assertThat(sequential.invokeWithAgenticScope(java.util.Map.of()).agenticScope().readState("executed", false)).isTrue();
-        assertThat(parallel.invokeWithAgenticScope(java.util.Map.of()).agenticScope().readState("executed", false)).isTrue();
-        assertThat(loop.invokeWithAgenticScope(java.util.Map.of()).agenticScope().readState("executed", false)).isTrue();
-        assertThat(conditional.invokeWithAgenticScope(java.util.Map.of()).agenticScope().readState("executed", false)).isTrue();
+        assertThat(sequential.invokeWithAgenticScope(Map.of()).agenticScope().readState("executed", false)).isTrue();
+        assertThat(parallel.invokeWithAgenticScope(Map.of()).agenticScope().readState("executed", false)).isTrue();
+        assertThat(loop.invokeWithAgenticScope(Map.of()).agenticScope().readState("executed", false)).isTrue();
+        assertThat(conditional.invokeWithAgenticScope(Map.of()).agenticScope().readState("executed", false)).isTrue();
     }
 
     // ==================== Test Helper Interfaces ====================

@@ -15,7 +15,12 @@ import org.junit.jupiter.api.Test;
 
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.scope.AgenticScope;
+import io.quarkiverse.flow.dsl.types.utils.ForTaskFunction;
 import io.quarkus.test.junit.QuarkusTest;
+import io.serverlessworkflow.api.types.ForTask;
+import io.serverlessworkflow.api.types.TaskMetadata;
+import io.serverlessworkflow.api.types.Workflow;
+import io.serverlessworkflow.fluent.spec.TaskMetadataBuilder;
 
 @QuarkusTest
 @DisplayName("RuntimeLoopAgenticFlow unit tests")
@@ -192,6 +197,40 @@ public class RuntimeLoopAgenticFlowTest {
 
         // Verify it's accessible (important for dev-ui topology rendering)
         assertThat(flow.exitConditionDescription()).isEqualTo("Exit when counter reaches 10");
+    }
+
+    @Test
+    @DisplayName("descriptor_exposes_exit_condition_description_as_loop_task_metadata")
+    void descriptor_exposes_exit_condition_description_as_loop_task_metadata() {
+        flow.addSubAgentTaskName("task1");
+        flow.setExitConditionDescription("Exit when counter reaches 10");
+
+        TaskMetadata metadata = loopTask(flow.descriptor()).getMetadata();
+
+        assertThat(metadata).isNotNull();
+        assertThat(metadata.getAdditionalProperties())
+                .containsEntry(TaskMetadataBuilder.DESCRIPTION, "Exit when counter reaches 10")
+                // the description must not wipe the loop functions the DSL keeps in the same metadata
+                .containsKey(ForTaskFunction.WHILE_PREDICATE);
+    }
+
+    @Test
+    @DisplayName("descriptor_omits_description_metadata_without_exit_condition_description")
+    void descriptor_omits_description_metadata_without_exit_condition_description() {
+        flow.addSubAgentTaskName("task1");
+
+        assertThat(loopTask(flow.descriptor()).getMetadata().getAdditionalProperties())
+                .doesNotContainKey(TaskMetadataBuilder.DESCRIPTION)
+                .containsKey(ForTaskFunction.WHILE_PREDICATE);
+    }
+
+    private static ForTask loopTask(Workflow workflow) {
+        return workflow.getDo().stream()
+                .filter(item -> "loop".equals(item.getName()))
+                .findFirst()
+                .orElseThrow()
+                .getTask()
+                .getForTask();
     }
 
     @Test
