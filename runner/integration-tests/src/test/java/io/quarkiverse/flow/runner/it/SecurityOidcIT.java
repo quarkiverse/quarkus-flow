@@ -1,20 +1,17 @@
 package io.quarkiverse.flow.runner.it;
 
 import static io.restassured.RestAssured.given;
-import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.quarkiverse.flow.runner.model.ExecutionResponse;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.security.TestSecurity;
 import io.quarkus.test.security.oidc.Claim;
 import io.quarkus.test.security.oidc.OidcSecurity;
-import io.serverlessworkflow.impl.WorkflowStatus;
 
 /**
  * Integration tests for OIDC authentication using @TestSecurity.
@@ -80,22 +77,13 @@ class SecurityOidcIT {
     @DisplayName("test_execute_workflow_with_admin_role")
     void test_execute_workflow_with_admin_role() {
         Map<String, Object> input = Map.of("name", "OIDC Test");
-
-        ExecutionResponse response = given()
+        given()
                 .contentType("application/json")
                 .body(input)
-                .queryParam("wait", "true")
                 .when()
-                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0/sync")
                 .then()
-                .statusCode(200)
-                .extract()
-                .as(ExecutionResponse.class);
-
-        assertThat(response).isNotNull();
-        assertThat(response.instanceId()).isNotBlank();
-        assertThat(response.status()).isEqualTo(WorkflowStatus.COMPLETED);
-        assertThat(response.workflowOutput()).asString().isNotBlank();
+                .statusCode(200);
     }
 
     @Test
@@ -105,19 +93,13 @@ class SecurityOidcIT {
     void test_execute_workflow_with_invoker_role() {
         Map<String, Object> input = Map.of("name", "OIDC Invoker");
 
-        ExecutionResponse response = given()
+        given()
                 .contentType("application/json")
                 .body(input)
-                .queryParam("wait", "true")
                 .when()
-                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0/sync")
                 .then()
-                .statusCode(200)
-                .extract()
-                .as(ExecutionResponse.class);
-
-        assertThat(response).isNotNull();
-        assertThat(response.status()).isEqualTo(WorkflowStatus.COMPLETED);
+                .statusCode(200);
     }
 
     @Test
@@ -203,9 +185,8 @@ class SecurityOidcIT {
         given()
                 .contentType("application/json")
                 .body(input)
-                .queryParam("wait", "true")
                 .when()
-                .post("/q/flow/exec/test-namespace/simple-greeting")
+                .post("/q/flow/exec/test-namespace/simple-greeting/sync")
                 .then()
                 .statusCode(200);
     }

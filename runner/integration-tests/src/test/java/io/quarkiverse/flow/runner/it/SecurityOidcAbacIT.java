@@ -62,9 +62,8 @@ class SecurityOidcAbacIT {
         given()
                 .contentType("application/json")
                 .body(Map.of("name", "Test"))
-                .queryParam("wait", "true")
                 .when()
-                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0/sync")
                 .then()
                 .statusCode(200);
     }
@@ -78,7 +77,6 @@ class SecurityOidcAbacIT {
         given()
                 .contentType("application/json")
                 .body(Map.of("name", "Test"))
-                .queryParam("wait", "true")
                 .when()
                 .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
                 .then()
@@ -185,9 +183,8 @@ class SecurityOidcAbacIT {
         given()
                 .contentType("application/json")
                 .body(Map.of("name", "Latest Test"))
-                .queryParam("wait", "true")
                 .when()
-                .post("/q/flow/exec/test-namespace/simple-greeting")
+                .post("/q/flow/exec/test-namespace/simple-greeting/sync")
                 .then()
                 .statusCode(200);
     }

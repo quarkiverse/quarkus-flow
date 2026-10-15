@@ -16,11 +16,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.quarkiverse.flow.runner.model.ExecutionResponse;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
-import io.serverlessworkflow.impl.WorkflowStatus;
 import io.smallrye.reactive.messaging.ce.CloudEventMetadata;
 import io.smallrye.reactive.messaging.memory.InMemoryConnector;
 import io.smallrye.reactive.messaging.memory.InMemorySink;
@@ -49,20 +47,13 @@ class EmitEventWorkflowTest {
         Map<String, Object> input = Map.of("name", "Test User");
 
         // When - Execute the emit-event workflow synchronously
-        ExecutionResponse response = given()
+        given()
                 .contentType("application/json")
                 .body(input)
-                .queryParam("wait", "true")
                 .when()
-                .post("/q/flow/exec/quarkiverse-flow-runner/emit-event/0.1.0")
+                .post("/q/flow/exec/quarkiverse-flow-runner/emit-event/0.1.0/sync")
                 .then()
-                .statusCode(200)
-                .extract()
-                .as(ExecutionResponse.class);
-
-        // Then - Verify workflow completed
-        assertThat(response).isNotNull();
-        assertThat(response.status()).isEqualTo(WorkflowStatus.COMPLETED);
+                .statusCode(200);
 
         // And - Verify event was emitted to flow-out channel
         await().atMost(ofSeconds(5)).untilAsserted(() -> {

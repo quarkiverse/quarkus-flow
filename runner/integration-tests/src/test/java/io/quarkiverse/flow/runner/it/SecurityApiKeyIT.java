@@ -157,9 +157,8 @@ class SecurityApiKeyIT {
                 .header("Authorization", "Bearer " + ADMIN_API_KEY)
                 .contentType("application/json")
                 .body(input)
-                .queryParam("wait", "true")
                 .when()
-                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0/sync")
                 .then()
                 .statusCode(200);
     }
@@ -173,9 +172,8 @@ class SecurityApiKeyIT {
                 .header("Authorization", "Bearer " + INVOKER_API_KEY)
                 .contentType("application/json")
                 .body(input)
-                .queryParam("wait", "true")
                 .when()
-                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0/sync")
                 .then()
                 .statusCode(200);
     }
@@ -266,9 +264,8 @@ class SecurityApiKeyIT {
                 .header("Authorization", "Bearer " + ADMIN_API_KEY)
                 .contentType("application/json")
                 .body(Map.of("name", "Admin"))
-                .queryParam("wait", "true")
                 .when()
-                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0/sync")
                 .then()
                 .statusCode(200);
     }
@@ -301,9 +298,8 @@ class SecurityApiKeyIT {
                 .header("Authorization", "Bearer " + INVOKER_API_KEY)
                 .contentType("application/json")
                 .body(Map.of("name", "Invoker"))
-                .queryParam("wait", "true")
                 .when()
-                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0")
+                .post("/q/flow/exec/test-namespace/simple-greeting/1.0.0/sync")
                 .then()
                 .statusCode(200);
     }

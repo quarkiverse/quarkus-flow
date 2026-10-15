@@ -21,12 +21,10 @@ class GreetingRunnerTest {
                 .body("{\"name\": \"World\"}")
                 .queryParam("wait", "true")
                 .when()
-                .post("/q/flow/exec/examples/greeting/1.0.0")
+                .post("/q/flow/exec/examples/greeting/1.0.0/sync")
                 .then()
                 .statusCode(200)
-                .body("instanceId", notNullValue())
-                .body("status", is("COMPLETED"))
-                .body("workflowOutput.message", is("Hello, World!"));
+                .body("message", is("Hello, World!"));
     }
 
     @Test
@@ -37,10 +35,10 @@ class GreetingRunnerTest {
                 .body("{\"name\": \"Runner\"}")
                 .queryParam("wait", "true")
                 .when()
-                .post("/q/flow/exec/examples/greeting")
+                .post("/q/flow/exec/examples/greeting/sync")
                 .then()
                 .statusCode(200)
-                .body("workflowOutput.message", is("Hello, Runner!"));
+                .body("message", is("Hello, Runner!"));
     }
 
     @Test

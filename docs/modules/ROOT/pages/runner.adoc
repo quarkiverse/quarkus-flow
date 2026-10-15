@@ -343,30 +343,28 @@ INFO  [io.qua.flo.run.loa] Loaded 1 workflow definition(s)
 
 === Synchronous execution
 
-Execute the workflow and wait for the result (blocks until completion):
+Execute the workflow and wait for the result (blocks until completion) using the `/sync` endpoint:
 
 [source,bash]
 ----
-curl -X POST http://localhost:8080/q/flow/exec/examples/hello-runner?wait=true \
+curl -X POST http://localhost:8080/q/flow/exec/examples/hello-runner/sync \
   -H "Content-Type: application/json" \
   -d '{"name": "World"}'
 ----
 
 **Response (200 OK):**
 
+The response body contains the workflow output directly, allowing REST clients to map it to business POJOs:
+
 [source,json]
 ----
 {
-  "workflowApplicationId": "quarkus-flow-runner",
-  "instanceId": "550e8400-e29b-41d4-a716-446655440000",
-  "status": "COMPLETED",
-  "startedAt": "2026-06-11T10:15:30.123Z",
-  "completedAt": "2026-06-11T10:15:30.456Z",
-  "workflowOutput": {
-    "greeting": "Hello, World!"
-  }
+  "greeting": "Hello, World!"
 }
 ----
+
+Note that using sync for workflows with `listen` or `wait` tasks might lead to REST client timeouts. 
+Therefore, it is expected that you use the async version of the API for long running workflows.
 
 === Asynchronous execution
 
@@ -374,7 +372,7 @@ Start the workflow and return immediately (non-blocking):
 
 [source,bash]
 ----
-curl -X POST http://localhost:8080/q/flow/exec/examples/hello-runner?wait=false \
+curl -X POST http://localhost:8080/q/flow/exec/examples/hello-runner \
   -H "Content-Type: application/json" \
   -d '{"name": "World"}'
 ----
@@ -388,26 +386,29 @@ curl -X POST http://localhost:8080/q/flow/exec/examples/hello-runner?wait=false 
   "instanceId": "550e8400-e29b-41d4-a716-446655440000",
   "status": "WAITING",
   "startedAt": "2026-06-11T10:15:30.123Z",
-  "completedAt": null,
-  "workflowOutput": null
+  "completedAt": null
 }
 ----
 
 **API Contract:**
 
-The Runner follows the HTTP API contract strictly when `wait=false`:
+The Runner follows the HTTP API contract strictly for asynchronous execution:
 
 * **Always returns 202 Accepted** - Regardless of how quickly the workflow completes
-* **Output is always null** - Even if the workflow finishes before the response is sent
+* **No workflow output returned** - Output is only available via synchronous `/sync` endpoints
 * **Status reflects current state** - Can be `WAITING`, `RUNNING`, or `COMPLETED` depending on when the response was captured
 
-This ensures clients can rely on a consistent API contract: `wait=false` means "acknowledge receipt and start execution" with no output, while `wait=true` means "wait for completion and return output".
+This ensures clients can rely on a consistent API contract: asynchronous execution means "acknowledge receipt and start execution" with no output, while synchronous execution (using `/sync` endpoints) means "wait for completion and return output".
 
-For truly long-running workflows, use `wait=false` and poll for status or implement callbacks (future feature).
+For truly long-running workflows, use asynchronous execution and poll for status or implement callbacks (future feature).
 
 === Execution response fields
 
-Both synchronous (`200 OK`) and asynchronous (`202 Accepted`) executions return the same JSON structure:
+Synchronous and asynchronous executions return different response structures:
+
+**Asynchronous execution (202 Accepted):**
+
+Returns execution metadata without workflow output:
 
 [cols="1,1,3"]
 |===
@@ -432,13 +433,13 @@ Both synchronous (`200 OK`) and asynchronous (`202 Accepted`) executions return 
 |`completedAt`
 |string (ISO-8601) or `null`
 |Timestamp when the instance completed, or `null` if it is still running.
-
-|`workflowOutput`
-|any or `null`
-|Workflow output. Always `null` when `wait=false`.
 |===
 
-TIP: Set `quarkus.application.name` in `application.properties` to control the `workflowApplicationId` reported by the Runner.
+TIP: Set `quarkus.application.name` in `application.properties` to control the `workflowApplicationId` reported by asynchronous executions.
+
+**Synchronous execution (200 OK):**
+
+Returns the workflow output directly in the response body. The structure depends on your workflow definition and can be any valid JSON type (object, array, string, number, boolean, or null). This allows REST clients to directly map the response to business POJOs without unwrapping.
 
 === Execute specific workflow version
 
@@ -446,12 +447,12 @@ If you have multiple versions of the same workflow, specify the version in the p
 
 [source,bash]
 ----
-curl -X POST http://localhost:8080/q/flow/exec/examples/hello-runner/1.0.0?wait=true \
+curl -X POST http://localhost:8080/q/flow/exec/examples/hello-runner/1.0.0/sync \
   -H "Content-Type: application/json" \
   -d '{"name": "World"}'
 ----
 
-When you omit the version (`/exec/\{namespace}/\{name}`), the Runner automatically selects the **latest version** based on semantic versioning.
+When you omit the version (`/exec/\{namespace}/\{name}/sync` or `/exec/\{namespace}/\{name}`), the Runner automatically selects the **latest version** based on semantic versioning.
 
 == 7. Explore the OpenAPI documentation
 
@@ -602,16 +603,14 @@ If you need to hide the workflow catalog, customize the Runner resource via CDI 
 
 ==== POST /q/flow/exec/\{namespace}/\{name}
 
-Execute the latest version of a workflow.
+Execute the latest version of a workflow asynchronously (non-blocking).
 
 **Path parameters:**
 
 * `namespace` (string, required) - Workflow namespace
 * `name` (string, required) - Workflow name
 
-**Query parameters:**
 
-* `wait` (boolean, default: `false`) - Wait for workflow completion
 
 **Request body (JSON, optional):**
 
@@ -625,21 +624,20 @@ Execute the latest version of a workflow.
 
 **Responses:**
 
-* **200 OK** - Workflow completed (only when `wait=true`, includes output)
-* **202 Accepted** - Workflow accepted for processing (when `wait=false`, always returned with null output regardless of completion status)
+* **202 Accepted** - Workflow accepted for asynchronous processing
 * **400 Bad Request** - Invalid input JSON
 * **401 Unauthorized** - Authentication required
 * **403 Forbidden** - Access denied to namespace
 * **404 Not Found** - No versions of the workflow found
 * **429 Too Many Requests** - Rate limit exceeded (if configured)
 
-NOTE: When `wait=false`, the API strictly returns **202 Accepted** with `workflowOutput: null` even if the workflow completes before the response is sent. This ensures a consistent contract where async execution never includes output in the response.
+NOTE: This endpoint strictly returns **202 Accepted** without workflow output, even if the workflow completes before the response is sent. This ensures a consistent contract where async execution never includes output in the response.
 
 **Example:**
 
 [source,bash]
 ----
-curl -X POST "http://localhost:8080/q/flow/exec/examples/order-processing?wait=true" \
+curl -X POST "http://localhost:8080/q/flow/exec/examples/order-processing" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${API_KEY}" \
   -d '{"orderId": "12345", "customerId": "alice@example.com"}'
@@ -647,7 +645,7 @@ curl -X POST "http://localhost:8080/q/flow/exec/examples/order-processing?wait=t
 
 ==== POST /q/flow/exec/\{namespace}/\{name}/\{version}
 
-Execute a specific version of a workflow.
+Execute a specific version of a workflow asynchronously (non-blocking).
 
 **Path parameters:**
 
@@ -655,16 +653,91 @@ Execute a specific version of a workflow.
 * `name` (string, required) - Workflow name
 * `version` (string, required) - Workflow version (semantic version format)
 
-**Query parameters and responses:** Same as the latest version endpoint.
+**Request body (JSON, optional):** Same as the latest version endpoint.
+
+**Responses:** Same as the latest version endpoint (always 202 Accepted).
 
 **Example:**
 
 [source,bash]
 ----
-curl -X POST "http://localhost:8080/q/flow/exec/examples/order-processing/2.1.0?wait=false" \
+curl -X POST "http://localhost:8080/q/flow/exec/examples/order-processing/2.1.0" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${API_KEY}" \
   -d '{"orderId": "12345"}'
+----
+
+==== POST /q/flow/exec/\{namespace}/\{name}/sync
+
+Execute the latest version of a workflow synchronously (blocking until completion).
+
+**Path parameters:**
+
+* `namespace` (string, required) - Workflow namespace
+* `name` (string, required) - Workflow name
+
+**Request body (JSON, optional):**
+
+[source,json]
+----
+{
+  "orderId": "12345",
+  "customerId": "alice@example.com"
+}
+----
+
+**Responses:**
+
+* **200 OK** - Workflow completed successfully. Response body contains the workflow output directly (structure depends on workflow definition)
+* **400 Bad Request** - Invalid input JSON
+* **401 Unauthorized** - Authentication required
+* **403 Forbidden** - Access denied to namespace
+* **404 Not Found** - Workflow not found
+* **429 Too Many Requests** - Rate limit exceeded (if configured)
+
+**Example:**
+
+[source,bash]
+----
+curl -X POST "http://localhost:8080/q/flow/exec/examples/order-processing/sync" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${API_KEY}" \
+  -d '{"orderId": "12345", "customerId": "alice@example.com"}'
+----
+
+**Example response (200 OK):**
+
+[source,json]
+----
+{
+  "orderId": "12345",
+  "status": "fulfilled",
+  "trackingNumber": "TRK-789"
+}
+----
+
+==== POST /q/flow/exec/\{namespace}/\{name}/\{version}/sync
+
+Execute a specific version of a workflow synchronously (blocking until completion).
+
+**Path parameters:**
+
+* `namespace` (string, required) - Workflow namespace
+* `name` (string, required) - Workflow name
+* `version` (string, required) - Workflow version (semantic version format)
+
+**Request body (JSON, optional):** Same as the latest version sync endpoint.
+
+**Responses:** Same as the latest version sync endpoint (200 OK returns workflow output directly).
+
+**Example:**
+
+[source,bash]
+----
+curl -X POST "http://localhost:8080/q/flow/exec/examples/order-processing/2.1.0/sync" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${API_KEY}" \
+  -d '{"orderId": "12345", "customerId": "alice@example.com"}'
 ----
 
 === Workflow definitions
