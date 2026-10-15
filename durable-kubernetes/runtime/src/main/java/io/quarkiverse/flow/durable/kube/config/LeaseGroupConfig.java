@@ -2,13 +2,10 @@ package io.quarkiverse.flow.durable.kube.config;
 
 import java.time.Duration;
 
-import io.quarkus.runtime.annotations.ConfigPhase;
-import io.quarkus.runtime.annotations.ConfigRoot;
-import io.smallrye.config.ConfigMapping;
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 
-@ConfigRoot(phase = ConfigPhase.RUN_TIME)
-@ConfigMapping(prefix = "quarkus.flow.durable.kube.lease")
+@ConfigGroup
 public interface LeaseGroupConfig {
 
     /**

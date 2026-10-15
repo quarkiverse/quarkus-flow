@@ -18,7 +18,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.quarkiverse.flow.config.FlowConfig;
+import io.quarkiverse.flow.config.FlowRuntimeConfig;
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
 import io.quarkiverse.flow.config.TimestampFormat;
 import io.serverlessworkflow.impl.TaskContext;
@@ -33,14 +33,14 @@ import io.serverlessworkflow.impl.lifecycle.TaskFailedEvent;
 public class StructuredLoggingListenerTest {
 
     private FlowStructuredLoggingConfig config;
-    private FlowConfig flowConfig;
+    private FlowRuntimeConfig flowConfig;
     private ObjectMapper objectMapper;
     private StructuredLoggingListener listener;
 
     @BeforeEach
     void setUp() {
         config = mock(FlowStructuredLoggingConfig.class);
-        flowConfig = mock(FlowConfig.class);
+        flowConfig = mock(FlowRuntimeConfig.class);
         when(flowConfig.structuredLogging()).thenReturn(config);
         objectMapper = new ObjectMapper();
 

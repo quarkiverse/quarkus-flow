@@ -23,8 +23,7 @@ import io.fabric8.kubernetes.api.model.apps.ReplicaSetBuilder;
 import io.fabric8.kubernetes.api.model.coordination.v1.Lease;
 import io.fabric8.kubernetes.api.model.coordination.v1.LeaseBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.quarkiverse.flow.durable.kube.config.LeaseGroupConfig;
-import io.quarkiverse.flow.durable.kube.config.PoolConfig;
+import io.quarkiverse.flow.durable.kube.config.FlowDurableKubeConfig;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kubernetes.client.WithKubernetesTestServer;
@@ -43,10 +42,7 @@ public class LeaseServiceTest {
     KubeInfoStrategy kubeInfo;
 
     @Inject
-    PoolConfig poolConfig;
-
-    @Inject
-    LeaseGroupConfig leaseConfig;
+    FlowDurableKubeConfig config;
 
     @BeforeEach
     void setup() {
@@ -136,7 +132,7 @@ public class LeaseServiceTest {
         var labels = lease.getMetadata().getLabels();
         assertEquals("quarkus-flow", labels.get("app.kubernetes.io/managed-by"));
         assertEquals("durable", labels.get("app.kubernetes.io/component"));
-        assertEquals(poolConfig.name(), labels.get("io.quarkiverse.flow.durable.k8s/pool"));
+        assertEquals(config.pool().name(), labels.get("io.quarkiverse.flow.durable.k8s/pool"));
 
         // spec TTL set
         assertNotNull(lease.getSpec());
@@ -164,7 +160,7 @@ public class LeaseServiceTest {
                 .withLabels(Map.of(
                         "app.kubernetes.io/managed-by", "quarkus-flow",
                         "app.kubernetes.io/component", "durable",
-                        "io.quarkiverse.flow.durable.k8s/pool", poolConfig.name(),
+                        "io.quarkiverse.flow.durable.k8s/pool", config.pool().name(),
                         "io.quarkiverse.flow.durable.k8s/is-leader", "false"))
                 .endMetadata()
                 .withNewSpec()
@@ -176,7 +172,7 @@ public class LeaseServiceTest {
 
         client.leases().inNamespace("default").resource(expired).create();
 
-        Lease acquired = leaseService.tryAcquireMemberLease("pod-1", poolConfig.name())
+        Lease acquired = leaseService.tryAcquireMemberLease("pod-1", config.pool().name())
                 .orElseThrow();
 
         assertEquals("pod-1", acquired.getSpec().getHolderIdentity());
@@ -192,7 +188,7 @@ public class LeaseServiceTest {
                 .withLabels(Map.of(
                         "app.kubernetes.io/managed-by", "quarkus-flow",
                         "app.kubernetes.io/component", "durable",
-                        "io.quarkiverse.flow.durable.k8s/pool", poolConfig.name(),
+                        "io.quarkiverse.flow.durable.k8s/pool", config.pool().name(),
                         "io.quarkiverse.flow.durable.k8s/is-leader", "false"))
                 .endMetadata()
                 .withNewSpec()
@@ -224,7 +220,7 @@ public class LeaseServiceTest {
                 .withLabels(Map.of(
                         "app.kubernetes.io/managed-by", "quarkus-flow",
                         "app.kubernetes.io/component", "durable",
-                        "io.quarkiverse.flow.durable.k8s/pool", poolConfig.name(),
+                        "io.quarkiverse.flow.durable.k8s/pool", config.pool().name(),
                         "io.quarkiverse.flow.durable.k8s/is-leader", "false"))
                 .endMetadata()
                 .withNewSpec()
@@ -242,7 +238,7 @@ public class LeaseServiceTest {
 
     @Test
     void existingLease_isUpdated_whenManagedFieldsDiffer() {
-        String pool = poolConfig.name();
+        String pool = config.pool().name();
         String leaseName = "flow-pool-member-" + pool + "-00";
 
         client.leases().inNamespace("default").resource(new LeaseBuilder()
@@ -263,7 +259,7 @@ public class LeaseServiceTest {
         assertTrue(updatedOpt.isPresent());
 
         var updated = client.leases().inNamespace("default").withName(leaseName).get();
-        assertEquals(leaseConfig.member().duration(), updated.getSpec().getLeaseDurationSeconds());
+        assertEquals(config.lease().member().duration(), updated.getSpec().getLeaseDurationSeconds());
 
         // base labels enforced + pool/is-leader labels enforced + existing labels preserved
         Map<String, String> labels = updated.getMetadata().getLabels();

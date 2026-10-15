@@ -14,8 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.fabric8.kubernetes.api.model.coordination.v1.Lease;
+import io.quarkiverse.flow.durable.kube.config.FlowDurableKubeConfig;
 import io.quarkiverse.flow.durable.kube.config.LeaseGroupConfig;
-import io.quarkiverse.flow.durable.kube.config.PoolConfig;
 import io.quarkiverse.flow.durable.kube.config.SchedulerGroupConfig;
 import io.quarkus.runtime.Quarkus;
 
@@ -32,13 +32,7 @@ public class PoolMemberController extends PoolController {
     private final AtomicInteger reacquireAttempts = new AtomicInteger(0);
 
     @Inject
-    PoolConfig poolConfig;
-
-    @Inject
-    LeaseGroupConfig leaseConfig;
-
-    @Inject
-    SchedulerGroupConfig schedulerConfig;
+    FlowDurableKubeConfig config;
 
     @Inject
     Event<MemberLeaseEvent> leaseEvents;
@@ -46,7 +40,7 @@ public class PoolMemberController extends PoolController {
     @Override
     public void run() {
         LOG.debug("Attempt to run pool member controller scheduler");
-        if (!leaseConfig.member().enabled())
+        if (!config.lease().member().enabled())
             return;
 
         if (!running.compareAndSet(false, true))
@@ -76,14 +70,14 @@ public class PoolMemberController extends PoolController {
             if (boundLeaseName != null) {
                 return reacquireBoundLease();
             }
-            Optional<Lease> lease = leaseService.tryAcquireMemberLease(kubeInfo.podName(), poolConfig.name());
+            Optional<Lease> lease = leaseService.tryAcquireMemberLease(kubeInfo.podName(), config.pool().name());
             if (lease.isPresent()) {
                 String name = lease.get().getMetadata().getName();
                 boundLeaseName = name;
                 leaseName.set(name);
                 leaseEvents.fire(new MemberLeaseEvent(
                         MemberLeaseEvent.Type.ACQUIRED,
-                        poolConfig.name(),
+                        config.pool().name(),
                         kubeInfo.podName(),
                         name));
                 return true;
@@ -96,7 +90,7 @@ public class PoolMemberController extends PoolController {
             leaseName.set(null);
             leaseEvents.fire(new MemberLeaseEvent(
                     MemberLeaseEvent.Type.LOST,
-                    poolConfig.name(),
+                    config.pool().name(),
                     kubeInfo.podName(),
                     current));
             return false;
@@ -111,14 +105,14 @@ public class PoolMemberController extends PoolController {
             reacquireAttempts.set(0);
             leaseEvents.fire(new MemberLeaseEvent(
                     MemberLeaseEvent.Type.ACQUIRED,
-                    poolConfig.name(),
+                    config.pool().name(),
                     kubeInfo.podName(),
                     boundLeaseName));
             return true;
         }
 
         int attempts = reacquireAttempts.incrementAndGet();
-        int max = leaseConfig.member().maxReacquireAttempts();
+        int max = config.lease().member().maxReacquireAttempts();
         LOG.warn("Flow: Failed to re-acquire bound lease '{}' (attempt {}/{})",
                 boundLeaseName, attempts, max);
 
@@ -136,7 +130,7 @@ public class PoolMemberController extends PoolController {
     protected void released() {
         leaseEvents.fire(new MemberLeaseEvent(
                 MemberLeaseEvent.Type.RELEASED,
-                poolConfig.name(),
+                config.pool().name(),
                 kubeInfo.podName(),
                 leaseName.get()));
     }
@@ -152,16 +146,16 @@ public class PoolMemberController extends PoolController {
 
     @Override
     protected String scheduledExecutorName() {
-        return String.format(POOL_MEMBER_SCHEDULER_FMT, poolConfig.name(), kubeInfo.podName());
+        return String.format(POOL_MEMBER_SCHEDULER_FMT, config.pool().name(), kubeInfo.podName());
     }
 
     @Override
     protected SchedulerGroupConfig.SchedulerConfig schedulerConfig() {
-        return schedulerConfig.member();
+        return config.schedulers().member();
     }
 
     @Override
     protected LeaseGroupConfig.LeaseConfig leaseConfig() {
-        return leaseConfig.member();
+        return config.lease().member();
     }
 }

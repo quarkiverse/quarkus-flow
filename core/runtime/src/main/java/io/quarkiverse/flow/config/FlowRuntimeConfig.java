@@ -10,7 +10,7 @@ import io.smallrye.config.ConfigMapping;
  */
 @ConfigMapping(prefix = "quarkus.flow")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
-public interface FlowConfig {
+public interface FlowRuntimeConfig {
 
     /**
      * Secrets configuration.

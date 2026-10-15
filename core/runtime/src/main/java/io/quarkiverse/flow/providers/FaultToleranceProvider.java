@@ -24,9 +24,9 @@ import org.slf4j.LoggerFactory;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Metrics;
-import io.quarkiverse.flow.config.FlowConfig;
 import io.quarkiverse.flow.config.FlowHttpConfig;
 import io.quarkiverse.flow.config.FlowMetricsConfig;
+import io.quarkiverse.flow.config.FlowRuntimeConfig;
 import io.quarkiverse.flow.config.HttpClientConfig;
 import io.quarkiverse.flow.metrics.FlowMetrics;
 import io.quarkus.arc.Arc;
@@ -56,7 +56,7 @@ public class FaultToleranceProvider {
 
     private volatile TypedGuard<CompletionStage<WorkflowModel>> defaultGuard;
 
-    public FaultToleranceProvider(FlowConfig flowConfig) {
+    public FaultToleranceProvider(FlowRuntimeConfig flowConfig) {
         this.flowHttpConfig = flowConfig.http().client();
         this.flowMetricsConfig = flowConfig.metrics();
         this.routingNameResolver = new RoutingNameResolver(flowHttpConfig);

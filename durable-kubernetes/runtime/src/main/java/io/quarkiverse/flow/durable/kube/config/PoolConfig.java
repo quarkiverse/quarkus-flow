@@ -1,12 +1,9 @@
 package io.quarkiverse.flow.durable.kube.config;
 
-import io.quarkus.runtime.annotations.ConfigPhase;
-import io.quarkus.runtime.annotations.ConfigRoot;
-import io.smallrye.config.ConfigMapping;
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 
-@ConfigRoot(phase = ConfigPhase.RUN_TIME)
-@ConfigMapping(prefix = "quarkus.flow.durable.kube.pool")
+@ConfigGroup
 public interface PoolConfig {
 
     /**

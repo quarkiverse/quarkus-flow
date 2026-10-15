@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkiverse.flow.config.FlowConfig;
+import io.quarkiverse.flow.config.FlowRuntimeConfig;
 import io.quarkiverse.flow.providers.FaultToleranceProvider;
 import io.quarkiverse.flow.providers.WorkflowTaskContext;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
@@ -24,16 +24,16 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_open_circuit_breaker_after_failure_threshold() {
-        FlowConfig flowConfig = new SmallRyeConfigBuilder()
+        FlowRuntimeConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowConfig.class)
+                .withMapping(FlowRuntimeConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold", "4")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio", "0.5")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.max-retries", "10")
-                .build().getConfigMapping(FlowConfig.class);
+                .build().getConfigMapping(FlowRuntimeConfig.class);
 
         FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
@@ -62,13 +62,13 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_not_open_circuit_breaker_when_disabled() {
-        FlowConfig flowConfig = new SmallRyeConfigBuilder()
+        FlowRuntimeConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowConfig.class)
+                .withMapping(FlowRuntimeConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "false")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "false")
-                .build().getConfigMapping(FlowConfig.class);
+                .build().getConfigMapping(FlowRuntimeConfig.class);
 
         FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
@@ -94,9 +94,9 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_configure_circuit_breaker_at_workflow_level() {
-        FlowConfig flowConfig = new SmallRyeConfigBuilder()
+        FlowRuntimeConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowConfig.class)
+                .withMapping(FlowRuntimeConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "false")
                 .withDefaultValue("quarkus.flow.http.client.workflow.payment.name", "paymentClient")
                 .withDefaultValue("quarkus.flow.http.client.named.paymentClient.resilience.circuit-breaker.enabled", "true")
@@ -107,7 +107,7 @@ public class FaultToleranceCircuitBreakerTest {
                 .withDefaultValue("quarkus.flow.http.client.named.paymentClient.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.named.paymentClient.resilience.retry.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.named.paymentClient.resilience.retry.max-retries", "5")
-                .build().getConfigMapping(FlowConfig.class);
+                .build().getConfigMapping(FlowRuntimeConfig.class);
 
         FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
@@ -132,9 +132,9 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_configure_circuit_breaker_at_task_level() {
-        FlowConfig flowConfig = new SmallRyeConfigBuilder()
+        FlowRuntimeConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowConfig.class)
+                .withMapping(FlowRuntimeConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "false")
                 .withDefaultValue("quarkus.flow.http.client.workflow.\"payment.task.validate\".name", "paymentValidator")
                 .withDefaultValue("quarkus.flow.http.client.named.paymentValidator.resilience.circuit-breaker.enabled", "true")
@@ -146,7 +146,7 @@ public class FaultToleranceCircuitBreakerTest {
                 .withDefaultValue("quarkus.flow.http.client.named.paymentValidator.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.named.paymentValidator.resilience.retry.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.named.paymentValidator.resilience.retry.max-retries", "5")
-                .build().getConfigMapping(FlowConfig.class);
+                .build().getConfigMapping(FlowRuntimeConfig.class);
 
         FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
@@ -171,16 +171,16 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_respect_custom_failure_ratio() {
-        FlowConfig flowConfig = new SmallRyeConfigBuilder()
+        FlowRuntimeConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowConfig.class)
+                .withMapping(FlowRuntimeConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold", "10")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio", "0.3")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.max-retries", "15")
-                .build().getConfigMapping(FlowConfig.class);
+                .build().getConfigMapping(FlowRuntimeConfig.class);
 
         FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
@@ -205,15 +205,15 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_remain_closed_when_below_failure_threshold() {
-        FlowConfig flowConfig = new SmallRyeConfigBuilder()
+        FlowRuntimeConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowConfig.class)
+                .withMapping(FlowRuntimeConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold", "10")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio", "0.5")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "false")
-                .build().getConfigMapping(FlowConfig.class);
+                .build().getConfigMapping(FlowRuntimeConfig.class);
 
         FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
@@ -255,15 +255,15 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_not_open_circuit_before_request_volume_threshold() {
-        FlowConfig flowConfig = new SmallRyeConfigBuilder()
+        FlowRuntimeConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowConfig.class)
+                .withMapping(FlowRuntimeConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold", "5")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio", "0.5")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "false")
-                .build().getConfigMapping(FlowConfig.class);
+                .build().getConfigMapping(FlowRuntimeConfig.class);
 
         FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
@@ -299,15 +299,15 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_open_circuit_with_100_percent_failure_ratio() {
-        FlowConfig flowConfig = new SmallRyeConfigBuilder()
+        FlowRuntimeConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowConfig.class)
+                .withMapping(FlowRuntimeConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold", "3")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio", "1.0")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "false")
-                .build().getConfigMapping(FlowConfig.class);
+                .build().getConfigMapping(FlowRuntimeConfig.class);
 
         FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
@@ -345,16 +345,16 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_handle_mixed_success_and_failure_calls() {
-        FlowConfig flowConfig = new SmallRyeConfigBuilder()
+        FlowRuntimeConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowConfig.class)
+                .withMapping(FlowRuntimeConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold", "6")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio", "0.5")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.max-retries", "10")
-                .build().getConfigMapping(FlowConfig.class);
+                .build().getConfigMapping(FlowRuntimeConfig.class);
 
         FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
@@ -379,9 +379,9 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_override_default_circuit_breaker_with_task_specific_config() {
-        FlowConfig flowConfig = new SmallRyeConfigBuilder()
+        FlowRuntimeConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowConfig.class)
+                .withMapping(FlowRuntimeConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold", "10")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio", "0.5")
@@ -395,7 +395,7 @@ public class FaultToleranceCircuitBreakerTest {
                 .withDefaultValue("quarkus.flow.http.client.named.billingCharger.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.named.billingCharger.resilience.retry.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.named.billingCharger.resilience.retry.max-retries", "5")
-                .build().getConfigMapping(FlowConfig.class);
+                .build().getConfigMapping(FlowRuntimeConfig.class);
 
         FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
@@ -420,15 +420,15 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_handle_all_successful_calls_without_opening_circuit() {
-        FlowConfig flowConfig = new SmallRyeConfigBuilder()
+        FlowRuntimeConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowConfig.class)
+                .withMapping(FlowRuntimeConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold", "5")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio", "0.2")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "false")
-                .build().getConfigMapping(FlowConfig.class);
+                .build().getConfigMapping(FlowRuntimeConfig.class);
 
         FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
@@ -465,16 +465,16 @@ public class FaultToleranceCircuitBreakerTest {
 
     @Test
     void should_handle_edge_case_with_minimum_request_volume() {
-        FlowConfig flowConfig = new SmallRyeConfigBuilder()
+        FlowRuntimeConfig flowConfig = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(FlowConfig.class)
+                .withMapping(FlowRuntimeConfig.class)
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.request-volume-threshold", "1")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.failure-ratio", "1.0")
                 .withDefaultValue("quarkus.flow.http.client.resilience.circuit-breaker.delay", "0s")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.enabled", "true")
                 .withDefaultValue("quarkus.flow.http.client.resilience.retry.max-retries", "5")
-                .build().getConfigMapping(FlowConfig.class);
+                .build().getConfigMapping(FlowRuntimeConfig.class);
 
         FaultToleranceProvider sut = new FaultToleranceProvider(flowConfig);
 
