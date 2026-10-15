@@ -20,6 +20,7 @@
         <io.quarkiverse.langchain4j.version>1.14.1</io.quarkiverse.langchain4j.version>
         <version.assertj>3.27.7</version.assertj>
         <org.wiremock.version>3.13.2</org.wiremock.version>
+        <com.networknt.json-schema-validator.version>2.0.7</com.networknt.json-schema-validator.version>
     </properties>
 
     <dependencyManagement>
@@ -30,6 +31,11 @@
                 <version>${quarkus.platform.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.networknt</groupId>
+                <artifactId>json-schema-validator</artifactId>
+                <version>${com.networknt.json-schema-validator.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

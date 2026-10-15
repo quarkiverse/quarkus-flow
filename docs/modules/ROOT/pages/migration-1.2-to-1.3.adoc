@@ -1,0 +1,60 @@
+= Migration Guide: 1.2.x to 1.3.0
+include::includes/attributes.adoc[]
+
+Quarkus Flow 1.3.0 includes a breaking change:
+
+* **Input schema validation**: workflow input is now validated against the declared `input.schema` by default,
+rejecting non-conforming input.
+
+== Why the change?
+
+In 1.2.x, a workflow could declare an `input.schema`, but it was never enforced — non-conforming input was silently accepted and ran through the workflow as-is.
+This masked integration bugs: a caller sending the wrong shape of input would not fail until something downstream broke, if at all.
+
+1.3.0 enables the SDK's `serverlessworkflow-impl-validation` schema validator by default, so a declared `input.schema` is now a real contract.
+
+== What changed
+
+[cols="1,1",options="header"]
+|===
+| Before (1.2.x) | After (1.3.0)
+
+| `input.schema` was declarative only; non-conforming input ran anyway
+| `input.schema` is enforced; non-conforming input is rejected before the workflow instance starts
+
+| `quarkus.flow.validation.input.enabled` defaulted to `false`
+| `quarkus.flow.validation.input.enabled` defaults to `true`
+|===
+
+Rejected input fails with an `io.serverlessworkflow.impl.WorkflowException` thrown from `WorkflowApplication#instance(...)`, before `start()` is called, e.g.:
+
+----
+io.serverlessworkflow.impl.WorkflowException: required property 'name' not found
+----
+
+NOTE: Workflows that do not declare an `input.schema` are unaffected — there is nothing to validate against. This includes workflows that only declare `input.from` (a JQ expression to transform input): `schema` and `from` are independent settings, and validation runs against the raw input *before* `from` is applied. Without a `schema`, your `from` expression keeps working exactly as before.
+
+== Step-by-step migration
+
+=== 1. Find workflows that declare `input.schema`
+
+Audit your workflow definitions (YAML or Java DSL) for `input.schema`. Only those are affected.
+
+=== 2. Verify callers send conforming input
+
+For each affected workflow, confirm every caller's input actually satisfies the declared schema. Run your test suite and watch for `WorkflowException` failures surfacing from previously-passing calls — they indicate input that was always non-conforming but silently tolerated.
+
+=== 3. If you are not ready to enforce validation yet
+
+Opt back out of validation to restore the 1.2.x behavior while you fix call sites incrementally:
+
+[source,properties]
+----
+quarkus.flow.validation.input.enabled=false
+----
+
+Remove this property once all callers send conforming input.
+
+== Further reading
+
+* xref:runner.adoc[Execute workflows via REST API] — mentions `input.schema` as part of a workflow's document metadata.
