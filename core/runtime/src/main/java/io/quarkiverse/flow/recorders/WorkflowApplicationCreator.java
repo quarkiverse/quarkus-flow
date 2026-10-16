@@ -16,9 +16,9 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.quarkiverse.flow.config.FlowRunConfig;
+import io.quarkiverse.flow.config.FlowBuildConfig;
+import io.quarkiverse.flow.config.FlowRuntimeConfig;
 import io.quarkiverse.flow.config.FlowTracingConfig;
-import io.quarkiverse.flow.config.FlowValidationConfig;
 import io.quarkiverse.flow.dsl.model.JavaModelFactory;
 import io.quarkiverse.flow.internal.NoOpScheduler;
 import io.quarkiverse.flow.internal.NoOpSchemaValidatorFactory;
@@ -105,24 +105,24 @@ public class WorkflowApplicationCreator {
     NoOpScheduler scheduler;
 
     @Inject
-    FlowTracingConfig tracingConfig;
+    FlowRuntimeConfig flowRuntimeConfig;
 
     @Inject
-    FlowRunConfig flowRunConfig;
+    FlowBuildConfig flowBuildConfig;
 
     @Inject
-    FlowValidationConfig validationConfig;
+    FlowTracingConfig flowTracingConfig;
 
     public WorkflowApplication create() {
         final Builder builder = WorkflowApplication.builder();
-        if (tracingConfig.enabled().orElse(launchMode.isDevOrTest())) {
+        if (flowTracingConfig.enabled().orElse(launchMode.isDevOrTest())) {
             LOG.debug("Flow: Tracing enabled");
             builder.withListener(new TraceLoggerExecutionListener());
         }
 
         builder.withContextFactory(new JavaModelFactory()).withModelFactory(new JacksonModelFactory());
         builder.withScheduler(scheduler);
-        builder.withAllowedCommands(flowRunConfig.shell().allowedCommands().orElse(new ArrayList<>()));
+        builder.withAllowedCommands(flowBuildConfig.run().shell().allowedCommands().orElse(new ArrayList<>()));
 
         injectAppId(builder);
         injectExecutorServiceFactory(builder);
@@ -250,7 +250,7 @@ public class WorkflowApplicationCreator {
     }
 
     private void injectSchemaValidation(Builder builder) {
-        if (!validationConfig.input().enabled()) {
+        if (!flowRuntimeConfig.validation().input().enabled()) {
             LOG.debug("Flow: Input schema validation disabled; using no-op SchemaValidatorFactory");
             builder.withSchemaValidatorFactory(new NoOpSchemaValidatorFactory());
         }

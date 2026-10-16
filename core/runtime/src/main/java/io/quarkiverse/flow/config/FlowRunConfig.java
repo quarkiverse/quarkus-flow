@@ -3,17 +3,14 @@ package io.quarkiverse.flow.config;
 import java.util.List;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigPhase;
-import io.quarkus.runtime.annotations.ConfigRoot;
-import io.smallrye.config.ConfigMapping;
+import io.quarkus.runtime.annotations.ConfigGroup;
 
 /**
  * Run task configuration for Quarkus Flow.
  * <p>
  * Controls the behavior of {@code run.shell} task execution.
  */
-@ConfigMapping(prefix = "quarkus.flow.run")
-@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+@ConfigGroup
 public interface FlowRunConfig {
 
     /**

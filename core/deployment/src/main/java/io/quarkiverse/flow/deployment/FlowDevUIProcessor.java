@@ -36,7 +36,8 @@ public class FlowDevUIProcessor {
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    void createJsonRPCProviders(BuildProducer<JsonRPCProvidersBuildItem> rpcProviders, FlowDevUIConfig flowDevUIConfig) {
+    void createJsonRPCProviders(BuildProducer<JsonRPCProvidersBuildItem> rpcProviders,
+            FlowDevUIConfig flowDevUIConfig) {
         rpcProviders.produce(new JsonRPCProvidersBuildItem(WorkflowRPCService.class));
         if (flowDevUIConfig.backend().storage().enabled()) {
             rpcProviders.produce(new JsonRPCProvidersBuildItem(ManagementLifecycleRPCService.class));

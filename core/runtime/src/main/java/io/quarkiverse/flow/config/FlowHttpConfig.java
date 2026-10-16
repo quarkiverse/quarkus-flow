@@ -56,7 +56,7 @@ import io.smallrye.config.WithDefault;
  * quarkus.flow.http.client.workflow."acme\:orders\:1.0.0".name = secureA
  * </pre>
  */
-@ConfigMapping(prefix = "quarkus.flow.http.client")
+@ConfigMapping(prefix = FlowRuntimeConfig.FLOW_PREFIX + ".http.client")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface FlowHttpConfig extends HttpClientConfig {
 

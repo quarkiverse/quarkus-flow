@@ -6,7 +6,7 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 
-@ConfigMapping(prefix = "quarkus.flow.tracing")
+@ConfigMapping(prefix = FlowRuntimeConfig.FLOW_PREFIX + ".tracing")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface FlowTracingConfig {
 

@@ -23,7 +23,7 @@ import io.smallrye.config.WithDefault;
  *
  * Then restart the application (no rebuild required).
  */
-@ConfigMapping(prefix = "quarkus.flow.metrics")
+@ConfigMapping(prefix = FlowRuntimeConfig.FLOW_PREFIX + ".metrics")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface FlowMetricsConfig {
 

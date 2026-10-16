@@ -8,7 +8,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
-@ConfigMapping(prefix = "quarkus.flow.structured-logging")
+@ConfigMapping(prefix = FlowRuntimeConfig.FLOW_PREFIX + ".structured-logging")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface FlowStructuredLoggingConfig {
 
