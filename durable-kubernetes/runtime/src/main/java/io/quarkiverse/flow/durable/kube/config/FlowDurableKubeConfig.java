@@ -10,6 +10,8 @@ import io.smallrye.config.WithDefault;
 @ConfigMapping(prefix = "quarkus.flow.durable.kube")
 public interface FlowDurableKubeConfig {
 
+    String FLOW_PREFIX = "quarkus.flow.durable.kube";
+
     Health health();
 
     /**

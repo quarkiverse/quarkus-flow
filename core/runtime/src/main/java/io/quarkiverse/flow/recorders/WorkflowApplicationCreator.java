@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.config.FlowBuildConfig;
 import io.quarkiverse.flow.config.FlowRuntimeConfig;
+import io.quarkiverse.flow.config.FlowTracingConfig;
 import io.quarkiverse.flow.dsl.model.JavaModelFactory;
 import io.quarkiverse.flow.internal.NoOpScheduler;
 import io.quarkiverse.flow.internal.NoOpSchemaValidatorFactory;
@@ -109,9 +110,12 @@ public class WorkflowApplicationCreator {
     @Inject
     FlowBuildConfig flowBuildConfig;
 
+    @Inject
+    FlowTracingConfig flowTracingConfig;
+
     public WorkflowApplication create() {
         final Builder builder = WorkflowApplication.builder();
-        if (flowRuntimeConfig.tracing().enabled().orElse(launchMode.isDevOrTest())) {
+        if (flowTracingConfig.enabled().orElse(launchMode.isDevOrTest())) {
             LOG.debug("Flow: Tracing enabled");
             builder.withListener(new TraceLoggerExecutionListener());
         }

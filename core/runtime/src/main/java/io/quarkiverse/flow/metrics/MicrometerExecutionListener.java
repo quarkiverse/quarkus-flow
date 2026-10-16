@@ -16,7 +16,6 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.quarkiverse.flow.config.FlowMetricsConfig;
-import io.quarkiverse.flow.config.FlowRuntimeConfig;
 import io.quarkus.arc.lookup.LookupUnlessProperty;
 import io.serverlessworkflow.api.types.Document;
 import io.serverlessworkflow.impl.WorkflowStatus;
@@ -43,8 +42,7 @@ public class MicrometerExecutionListener implements WorkflowExecutionListener {
     private final ConcurrentHashMap<WorkflowMetadata, WorkflowInstanceCounters> countersForGauge = new ConcurrentHashMap<>();
 
     @Inject
-    public MicrometerExecutionListener(MeterRegistry meterRegistry, FlowRuntimeConfig flowConfig) {
-        FlowMetricsConfig flowMetricsConfig = flowConfig.metrics();
+    public MicrometerExecutionListener(MeterRegistry meterRegistry, FlowMetricsConfig flowMetricsConfig) {
         this.meterRegistry = meterRegistry;
         this.prefix = flowMetricsConfig.prefix().orElse(DEFAULT_PREFIX);
         this.enableDurations = flowMetricsConfig.durations().enabled();

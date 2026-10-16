@@ -3,10 +3,13 @@ package io.quarkiverse.flow.config;
 import java.util.List;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
-@ConfigGroup
+@ConfigMapping(prefix = FlowRuntimeConfig.FLOW_PREFIX + ".structured-logging")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface FlowStructuredLoggingConfig {
 
     /**

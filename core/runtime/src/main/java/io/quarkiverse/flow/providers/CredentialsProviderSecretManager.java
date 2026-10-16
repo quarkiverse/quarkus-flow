@@ -17,7 +17,6 @@ import jakarta.enterprise.inject.literal.NamedLiteral;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
-import io.quarkiverse.flow.config.FlowRuntimeConfig;
 import io.quarkiverse.flow.config.FlowSecretsConfig;
 import io.quarkus.credentials.CredentialsProvider;
 import io.serverlessworkflow.impl.config.SecretManager;
@@ -35,7 +34,7 @@ import io.serverlessworkflow.impl.config.SecretManager;
 @ApplicationScoped
 public class CredentialsProviderSecretManager implements SecretManager {
 
-    private static final String ROOT = FlowSecretsConfig.SECRETS_ROOT_KEY;
+    private static final String ROOT = "quarkus.flow.secrets";
     private static final String GLOBAL_KEY = ROOT + ".credentials-provider-name";
     private static final String PER_SECRET_KEY = ROOT + ".credentials-provider-names.<secret>";
 
@@ -43,7 +42,7 @@ public class CredentialsProviderSecretManager implements SecretManager {
     private final Map<String, CredentialsProvider> secretCache = new ConcurrentHashMap<>();
 
     @Inject
-    FlowRuntimeConfig flowRuntimeConfig;
+    FlowSecretsConfig flowSecrets;
 
     @Inject
     @Any
@@ -93,12 +92,12 @@ public class CredentialsProviderSecretManager implements SecretManager {
             return singleProvider.get();
         }
 
-        String per = nullSafeTrim(flowRuntimeConfig.secrets().credentialsProviderNames().get(secretName));
+        String per = nullSafeTrim(flowSecrets.credentialsProviderNames().get(secretName));
         if (per != null) {
             return selectConfigProvider(per);
         }
 
-        Optional<String> global = flowRuntimeConfig.secrets().credentialsProviderName().filter(s -> !s.isBlank());
+        Optional<String> global = flowSecrets.credentialsProviderName().filter(s -> !s.isBlank());
         if (global.isPresent()) {
             return selectConfigProvider(global.get());
         }

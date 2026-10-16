@@ -2,9 +2,12 @@ package io.quarkiverse.flow.config;
 
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
 
-@ConfigGroup
+@ConfigMapping(prefix = FlowRuntimeConfig.FLOW_PREFIX + ".tracing")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface FlowTracingConfig {
 
     /**

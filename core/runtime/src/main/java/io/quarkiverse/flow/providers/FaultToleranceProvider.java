@@ -26,7 +26,6 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Metrics;
 import io.quarkiverse.flow.config.FlowHttpConfig;
 import io.quarkiverse.flow.config.FlowMetricsConfig;
-import io.quarkiverse.flow.config.FlowRuntimeConfig;
 import io.quarkiverse.flow.config.HttpClientConfig;
 import io.quarkiverse.flow.metrics.FlowMetrics;
 import io.quarkus.arc.Arc;
@@ -56,9 +55,9 @@ public class FaultToleranceProvider {
 
     private volatile TypedGuard<CompletionStage<WorkflowModel>> defaultGuard;
 
-    public FaultToleranceProvider(FlowRuntimeConfig flowRuntimeConfig) {
-        this.flowHttpConfig = flowRuntimeConfig.http().client();
-        this.flowMetricsConfig = flowRuntimeConfig.metrics();
+    public FaultToleranceProvider(FlowHttpConfig flowHttpConfig, FlowMetricsConfig flowMetricsConfig) {
+        this.flowHttpConfig = flowHttpConfig;
+        this.flowMetricsConfig = flowMetricsConfig;
         this.routingNameResolver = new RoutingNameResolver(flowHttpConfig);
     }
 

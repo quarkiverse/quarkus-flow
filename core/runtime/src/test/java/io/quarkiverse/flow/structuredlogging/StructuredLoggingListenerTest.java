@@ -18,7 +18,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.quarkiverse.flow.config.FlowRuntimeConfig;
 import io.quarkiverse.flow.config.FlowStructuredLoggingConfig;
 import io.quarkiverse.flow.config.TimestampFormat;
 import io.serverlessworkflow.impl.TaskContext;
@@ -33,15 +32,12 @@ import io.serverlessworkflow.impl.lifecycle.TaskFailedEvent;
 public class StructuredLoggingListenerTest {
 
     private FlowStructuredLoggingConfig config;
-    private FlowRuntimeConfig flowConfig;
     private ObjectMapper objectMapper;
     private StructuredLoggingListener listener;
 
     @BeforeEach
     void setUp() {
         config = mock(FlowStructuredLoggingConfig.class);
-        flowConfig = mock(FlowRuntimeConfig.class);
-        when(flowConfig.structuredLogging()).thenReturn(config);
         objectMapper = new ObjectMapper();
 
         when(config.enabled()).thenReturn(true);
@@ -96,7 +92,7 @@ public class StructuredLoggingListenerTest {
     @DisplayName("shouldLog should correctly match event patterns")
     void testPatternMatching(String pattern, String eventType, boolean shouldMatch) throws Exception {
         when(config.events()).thenReturn(List.of(pattern));
-        listener = new StructuredLoggingListener(flowConfig, objectMapper);
+        listener = new StructuredLoggingListener(config, objectMapper);
 
         boolean result = invokeShouldLog(listener, eventType);
 
@@ -108,7 +104,7 @@ public class StructuredLoggingListenerTest {
     void testShouldLogWhenDisabled() throws Exception {
         when(config.enabled()).thenReturn(false);
         when(config.events()).thenReturn(List.of("workflow.*"));
-        listener = new StructuredLoggingListener(flowConfig, objectMapper);
+        listener = new StructuredLoggingListener(config, objectMapper);
 
         boolean result = invokeShouldLog(listener, "workflow.instance.started");
 
@@ -119,7 +115,7 @@ public class StructuredLoggingListenerTest {
     @DisplayName("shouldLog should match against multiple patterns")
     void testMultiplePatterns() throws Exception {
         when(config.events()).thenReturn(List.of("workflow.instance.faulted", "workflow.task.faulted"));
-        listener = new StructuredLoggingListener(flowConfig, objectMapper);
+        listener = new StructuredLoggingListener(config, objectMapper);
 
         assertThat(invokeShouldLog(listener, "workflow.instance.faulted")).isTrue();
         assertThat(invokeShouldLog(listener, "workflow.task.faulted")).isTrue();
@@ -131,7 +127,7 @@ public class StructuredLoggingListenerTest {
     @DisplayName("shouldLog should match if any pattern matches")
     void testAnyPatternMatches() throws Exception {
         when(config.events()).thenReturn(List.of("workflow.instance.*", "workflow.task.faulted"));
-        listener = new StructuredLoggingListener(flowConfig, objectMapper);
+        listener = new StructuredLoggingListener(config, objectMapper);
 
         // Matches first pattern
         assertThat(invokeShouldLog(listener, "workflow.instance.started")).isTrue();
@@ -149,7 +145,7 @@ public class StructuredLoggingListenerTest {
     @DisplayName("shouldLog should handle empty pattern list")
     void testEmptyPatternList() throws Exception {
         when(config.events()).thenReturn(List.of());
-        listener = new StructuredLoggingListener(flowConfig, objectMapper);
+        listener = new StructuredLoggingListener(config, objectMapper);
 
         boolean result = invokeShouldLog(listener, "workflow.instance.started");
 

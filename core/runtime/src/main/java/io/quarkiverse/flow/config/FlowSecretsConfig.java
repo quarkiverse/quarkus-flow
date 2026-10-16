@@ -3,12 +3,13 @@ package io.quarkiverse.flow.config;
 import java.util.Map;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
 
-@ConfigGroup
+@ConfigMapping(prefix = FlowRuntimeConfig.FLOW_PREFIX + ".secrets")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface FlowSecretsConfig {
-
-    String SECRETS_ROOT_KEY = "quarkus.flow.secrets";
 
     /**
      * Name of the custom {@link io.quarkus.credentials.CredentialsProvider} bean name to use as a global source for Workflow

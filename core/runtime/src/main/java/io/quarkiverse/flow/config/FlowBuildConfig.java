@@ -12,14 +12,11 @@ import io.smallrye.config.ConfigMapping;
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public interface FlowBuildConfig {
 
+    String FLOW_PREFIX = "quarkus.flow";
+
     /**
      * Run task configuration.
      */
     FlowRunConfig run();
-
-    /**
-     * Dev UI configuration.
-     */
-    FlowDevUIConfig devui();
 
 }

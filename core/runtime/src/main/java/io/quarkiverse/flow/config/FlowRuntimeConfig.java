@@ -12,6 +12,8 @@ import io.smallrye.config.ConfigMapping;
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface FlowRuntimeConfig {
 
+    String FLOW_PREFIX = "quarkus.flow";
+
     /**
      * Secrets configuration.
      */
