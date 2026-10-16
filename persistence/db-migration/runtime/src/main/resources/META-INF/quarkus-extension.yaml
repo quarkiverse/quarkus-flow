@@ -7,7 +7,7 @@ metadata:
     - workflow
     - workflows
     - cncf
-    - serverless
+    - open workflow
     - cloudevents
     - flyway
     - migration
