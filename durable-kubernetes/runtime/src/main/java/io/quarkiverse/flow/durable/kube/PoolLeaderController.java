@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import io.fabric8.kubernetes.api.model.coordination.v1.Lease;
 import io.quarkiverse.flow.durable.kube.config.FlowDurableKubeConfig;
 import io.quarkiverse.flow.durable.kube.config.LeaseGroupConfig;
+import io.quarkiverse.flow.durable.kube.config.PoolConfig;
 import io.quarkiverse.flow.durable.kube.config.SchedulerGroupConfig;
 
 /**
@@ -31,6 +32,9 @@ public class PoolLeaderController extends PoolController {
 
     @Inject
     FlowDurableKubeConfig config;
+
+    @Inject
+    PoolConfig poolConfig;
 
     @Inject
     KubeInfoStrategy kubeInfo;
@@ -69,7 +73,7 @@ public class PoolLeaderController extends PoolController {
 
         final Optional<Integer> replicas = leaseService.desiredReplicas();
         if (replicas.isPresent()) {
-            final String poolName = config.pool().name();
+            final String poolName = poolConfig.name();
             for (int i = 0; i < replicas.get(); i++) {
                 final String poolMemberName = String.format(POOL_MEMBER_NAME_FMT, poolName, i);
                 final Optional<Lease> leaseMember = leaseService.createOrUpdateMemberLease(poolMemberName);
@@ -86,12 +90,12 @@ public class PoolLeaderController extends PoolController {
 
     @Override
     protected String scheduledExecutorName() {
-        return String.format(POOL_LEADER_SCHEDULER_FMT, config.pool().name());
+        return String.format(POOL_LEADER_SCHEDULER_FMT, poolConfig.name());
     }
 
     @Override
     protected String leaseName() {
-        return String.format(POOL_LEADER_NAME_FMT, config.pool().name());
+        return String.format(POOL_LEADER_NAME_FMT, poolConfig.name());
     }
 
     @Override

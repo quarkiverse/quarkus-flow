@@ -23,6 +23,7 @@ import io.fabric8.kubernetes.api.model.coordination.v1.LeaseBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.quarkiverse.flow.durable.kube.config.FlowDurableKubeConfig;
+import io.quarkiverse.flow.durable.kube.config.PoolConfig;
 
 /**
  * Manages the creation of Kubernetes Lease objects to support the workers pool.
@@ -48,6 +49,9 @@ public class LeaseService {
 
     @Inject
     FlowDurableKubeConfig config;
+
+    @Inject
+    PoolConfig poolConfig;
 
     @Inject
     PoolTopologyResolver poolTopologyResolver;
@@ -286,7 +290,7 @@ public class LeaseService {
         if (labels != null) {
             out.putAll(labels);
         }
-        out.put(POOL_NAME_LABEL_KEY, config.pool().name());
+        out.put(POOL_NAME_LABEL_KEY, poolConfig.name());
         return out;
     }
 

@@ -15,45 +15,8 @@ public interface FlowRuntimeConfig {
     String FLOW_PREFIX = "quarkus.flow";
 
     /**
-     * Secrets configuration.
-     */
-    FlowSecretsConfig secrets();
-
-    /**
-     * Structured logging configuration.
-     */
-    FlowStructuredLoggingConfig structuredLogging();
-
-    /**
      * Serverless Workflow schema validation configuration.
      */
     FlowValidationConfig validation();
-
-    /**
-     * Metrics configuration.
-     */
-    FlowMetricsConfig metrics();
-
-    /**
-     * HTTP/OpenAPI client configuration.
-     */
-    Http http();
-
-    /**
-     * Tracing configuration.
-     */
-    FlowTracingConfig tracing();
-
-    /**
-     * Groups the HTTP client configuration under {@code quarkus.flow.http.client}.
-     */
-    interface Http {
-
-        /**
-         * HTTP/OpenAPI client configuration.
-         */
-        FlowHttpConfig client();
-
-    }
 
 }

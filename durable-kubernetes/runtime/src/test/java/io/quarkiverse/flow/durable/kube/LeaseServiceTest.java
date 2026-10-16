@@ -24,6 +24,7 @@ import io.fabric8.kubernetes.api.model.coordination.v1.Lease;
 import io.fabric8.kubernetes.api.model.coordination.v1.LeaseBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkiverse.flow.durable.kube.config.FlowDurableKubeConfig;
+import io.quarkiverse.flow.durable.kube.config.PoolConfig;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kubernetes.client.WithKubernetesTestServer;
@@ -43,6 +44,9 @@ public class LeaseServiceTest {
 
     @Inject
     FlowDurableKubeConfig config;
+
+    @Inject
+    PoolConfig poolConfig;
 
     @BeforeEach
     void setup() {
@@ -132,7 +136,7 @@ public class LeaseServiceTest {
         var labels = lease.getMetadata().getLabels();
         assertEquals("quarkus-flow", labels.get("app.kubernetes.io/managed-by"));
         assertEquals("durable", labels.get("app.kubernetes.io/component"));
-        assertEquals(config.pool().name(), labels.get("io.quarkiverse.flow.durable.k8s/pool"));
+        assertEquals(poolConfig.name(), labels.get("io.quarkiverse.flow.durable.k8s/pool"));
 
         // spec TTL set
         assertNotNull(lease.getSpec());
@@ -160,7 +164,7 @@ public class LeaseServiceTest {
                 .withLabels(Map.of(
                         "app.kubernetes.io/managed-by", "quarkus-flow",
                         "app.kubernetes.io/component", "durable",
-                        "io.quarkiverse.flow.durable.k8s/pool", config.pool().name(),
+                        "io.quarkiverse.flow.durable.k8s/pool", poolConfig.name(),
                         "io.quarkiverse.flow.durable.k8s/is-leader", "false"))
                 .endMetadata()
                 .withNewSpec()
@@ -172,7 +176,7 @@ public class LeaseServiceTest {
 
         client.leases().inNamespace("default").resource(expired).create();
 
-        Lease acquired = leaseService.tryAcquireMemberLease("pod-1", config.pool().name())
+        Lease acquired = leaseService.tryAcquireMemberLease("pod-1", poolConfig.name())
                 .orElseThrow();
 
         assertEquals("pod-1", acquired.getSpec().getHolderIdentity());
@@ -188,7 +192,7 @@ public class LeaseServiceTest {
                 .withLabels(Map.of(
                         "app.kubernetes.io/managed-by", "quarkus-flow",
                         "app.kubernetes.io/component", "durable",
-                        "io.quarkiverse.flow.durable.k8s/pool", config.pool().name(),
+                        "io.quarkiverse.flow.durable.k8s/pool", poolConfig.name(),
                         "io.quarkiverse.flow.durable.k8s/is-leader", "false"))
                 .endMetadata()
                 .withNewSpec()
@@ -220,7 +224,7 @@ public class LeaseServiceTest {
                 .withLabels(Map.of(
                         "app.kubernetes.io/managed-by", "quarkus-flow",
                         "app.kubernetes.io/component", "durable",
-                        "io.quarkiverse.flow.durable.k8s/pool", config.pool().name(),
+                        "io.quarkiverse.flow.durable.k8s/pool", poolConfig.name(),
                         "io.quarkiverse.flow.durable.k8s/is-leader", "false"))
                 .endMetadata()
                 .withNewSpec()
@@ -238,7 +242,7 @@ public class LeaseServiceTest {
 
     @Test
     void existingLease_isUpdated_whenManagedFieldsDiffer() {
-        String pool = config.pool().name();
+        String pool = poolConfig.name();
         String leaseName = "flow-pool-member-" + pool + "-00";
 
         client.leases().inNamespace("default").resource(new LeaseBuilder()

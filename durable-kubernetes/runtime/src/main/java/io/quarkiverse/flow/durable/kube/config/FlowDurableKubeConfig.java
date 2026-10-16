@@ -15,11 +15,6 @@ public interface FlowDurableKubeConfig {
     Health health();
 
     /**
-     * Pool configuration.
-     */
-    PoolConfig pool();
-
-    /**
      * Scheduler configuration for the pool leader/member controllers.
      */
     SchedulerGroupConfig schedulers();
