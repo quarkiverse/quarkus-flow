@@ -1,0 +1,196 @@
+= Database Schema Migration
+:page-role: howto
+include::includes/attributes.adoc[]
+
+include::includes/status-preview.adoc[]
+
+Quarkus Flow has two schema-bearing modules: xref:persistence.adoc[JPA persistence] and the xref:quartz.adoc[Quartz scheduler].
+Both can create their tables automatically for development (Hibernate ORM's `update` mode, or Quartz's own bundled DDL),
+but neither is a safe, versioned migration path for production.
+Schema changes need to be reviewed, tied to a Quarkus Flow release, and applied without racing across replicas.
+
+`quarkus-flow-db-migration` and `quarkus-flow-db-migration-quartz` package versioned Flyway scripts for each of these schemas.
+They are independent, optional extensions, add either one on its own, both, or neither.
+
+== Avoiding collisions with your own Flyway migrations
+
+Neither extension requires anything from your application,
+each one simply packages its versioned SQL scripts onto the classpath, one subdirectory per supported `db-kind` (`quarkus-flow-db-migration` under `db/flow-migration/runtime/<db-kind>`, `quarkus-flow-db-migration-quartz` under `db/flow-migration/quartz/<db-kind>`).
+
+You could point your application's own *default* Flyway configuration at one of these locations, and it would run the scripts, but it would then share your application's Flyway history table and scanned location with them,
+any overlap in version numbers or table names between your own migrations and the extension's becomes something you have to manage yourself.
+
+To avoid that, you can instead give the extension's migrations their own https://quarkus.io/guides/flyway[named Flyway configuration] and,
+since Quarkus Flyway ties a named configuration to an identically-named datasource, a named datasource to go with it,
+pointed at the same physical database as your default one.
+
+That's what the setup below uses: `flow-runtime` for `quarkus-flow-db-migration`, `flow-quartz` for `quarkus-flow-db-migration-quartz`, each with its own history table (`flyway_flow_runtime_history`, `flyway_flow_quartz_history`) and migration location,
+so neither can collide with whatever Flyway setup your own application already has.
+If you do set up the named datasource, point it at the same JDBC URL (and typically the same or a DDL-scoped user) as your default datasource; nothing in the extension verifies the two agree, so a misconfigured named datasource would silently migrate a different database than the one your JPA entities actually connect to.
+
+[[quarkus-flow-db-migration]]
+== quarkus-flow-db-migration
+
+Ships the JPA runtime persistence schema (`workflow_instance_entity`, `cloud_event_entity`, `task_info_entity`, `hash_mapping_info_entity`, `task_metadata_entity`, `workflow_metadata_entity`) as versioned Flyway scripts, one per supported database (H2, PostgreSQL, MySQL, Oracle, MSSQL).
+
+.pom.xml
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkiverse.flow</groupId>
+  <artifactId>quarkus-flow-db-migration</artifactId>
+  <version>${project.version}</version>
+</dependency>
+----
+
+.application.properties
+[source,properties]
+----
+quarkus.hibernate-orm.schema-management.strategy=validate
+quarkus.hibernate-orm.physical-naming-strategy=org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+
+# Default datasource
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.jdbc.url=jdbc:postgresql://<host>/<database>
+quarkus.datasource.username=<user>
+quarkus.datasource.password=<password>
+
+# Named "flow-runtime" datasource - an isolated Flyway migration history/location only,
+# not a separate persistence unit. Reusing the default datasource's own connection
+# properties here (rather than retyping literal values) keeps the two from drifting apart,
+# since nothing checks that they still point at the same physical database.
+quarkus.datasource.flow-runtime.db-kind=postgresql
+quarkus.datasource.flow-runtime.jdbc.url=${quarkus.datasource.jdbc.url}
+quarkus.datasource.flow-runtime.username=${quarkus.datasource.username}
+quarkus.datasource.flow-runtime.password=${quarkus.datasource.password}
+
+quarkus.flyway.flow-runtime.table=flyway_flow_runtime_history
+quarkus.flyway.flow-runtime.migrate-at-start=true
+quarkus.flyway.flow-runtime.locations=db/flow-migration/runtime/postgresql
+----
+
+Replace `postgresql` in the datasource `db-kind` and the Flyway `locations` path with your target database: `h2`, `mysql`, `oracle`, or `mssql`.
+The `locations` path is deliberately off Flyway's default `db/migration` scan root so it won't collide with any migration scripts your own application ships.
+
+=== JPA entities still use the default persistence unit
+
+`flow-runtime` exists only to give this extension's Flyway migration its own isolated history/location;
+it is not a separate Hibernate ORM persistence unit, and `quarkus-flow-jpa` has no awareness of it.
+`quarkus-flow-jpa` always maps its entities into the Hibernate ORM *default* persistence unit,
+on your application's *default* datasource, which is why `flow-runtime` must point at the same physical database,
+per the previous section.
+
+The one extra consequence specific to JPA: `quarkus.hibernate-orm.schema-management.strategy` on the *default* persistence unit (not a `flow-runtime` one) must stay `none` or `validate`, never `update`/`drop-and-create`, so Hibernate ORM doesn't race Flyway's migration - and the migration must run before that validation happens, which Quarkus's Flyway-before-Hibernate-validate startup ordering already guarantees for `migrate-at-start=true`.
+
+[[quarkus-flow-db-migration-quartz]]
+== quarkus-flow-db-migration-quartz
+
+Ships the `QRTZ_*` schema Quarkus Quartz's `jdbc-cmt`/`jdbc-tx` store types need, through its own isolated `flow-quartz` named datasource and Flyway configuration.
+See xref:quartz.adoc[Quartz workflow scheduler] for the full setup.
+
+Unlike `quarkus-flow-db-migration`, this extension ships only one `db-kind` subdirectory today, `postgresql` (its script relies on that database's `BOOL` and `BYTEA` column types) - more may be added later, following the same per-`db-kind` layout `quarkus-flow-db-migration` already uses.
+
+[[manual-migration]]
+== Manual migration
+
+If you'd rather manage the migration yourself instead of using `quarkus-flow-db-migration`, add the Flyway extension (and the matching database support artifact, if required for your database):
+
+.pom.xml
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-flyway</artifactId>
+</dependency>
+----
+
+Enable migration at startup and disable Hibernate ORM schema generation in your `application.properties`:
+
+[source,properties]
+----
+quarkus.hibernate-orm.schema-management.strategy=none
+quarkus.hibernate-orm.physical-naming-strategy=org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+quarkus.flyway.enabled=true
+quarkus.flyway.migrate-at-start=true
+----
+
+Then create a migration script at `src/main/resources/db/migration/` (e.g. `V1__create_tables.sql`) with the six tables required by the JPA provider (`workflow_instance_entity`, `cloud_event_entity`, `task_info_entity`, `hash_mapping_info_entity`, `task_metadata_entity`, `workflow_metadata_entity`). Use the complete script that matches your target database below, as-is — these are `quarkus-flow-db-migration`'s own scripts, included straight from the extension's source so they can't drift from what it actually ships:
+
+.H2
+[source,sql]
+----
+include::{examples-dir}/persistence/db-migration/h2/V1.0.0__CreateWorkflowSchema.sql[]
+----
+
+.MySQL
+[source,sql]
+----
+include::{examples-dir}/persistence/db-migration/mysql/V1.0.0__CreateWorkflowSchema.sql[]
+----
+
+.PostgreSQL
+[source,sql]
+----
+include::{examples-dir}/persistence/db-migration/postgresql/V1.0.0__CreateWorkflowSchema.sql[]
+----
+
+.Oracle
+[source,sql]
+----
+include::{examples-dir}/persistence/db-migration/oracle/V1.0.0__CreateWorkflowSchema.sql[]
+----
+
+.MSSQL
+[source,sql]
+----
+include::{examples-dir}/persistence/db-migration/mssql/V1.0.0__CreateWorkflowSchema.sql[]
+----
+
+[NOTE]
+====
+Pick the script that matches your target database and adapt it further if your schema or naming conventions differ.
+Note that the `time` column is a reserved word in some databases, so it is quoted on MySQL (`` `time` ``) and MSSQL (`[time]`).
+====
+
+== Versioning convention
+
+Scripts follow `V{quarkus-flow version}.{sequence}__Description.sql`, so a script's version communicates which Quarkus Flow release introduced it. 
+`quarkus-flow-db-migration` and `quarkus-flow-db-migration-quartz` both start at `V1.0.0__`.
+
+[[upgrading-existing-database]]
+== Upgrading an existing database
+
+If you're already running with `quarkus.hibernate-orm.schema-management.strategy=update` (or Quartz's schema was created by hand) and want to switch to managed migrations without recreating your tables, use Flyway's `baseline-on-migrate`.
+
+The `baseline-version` must match that stream's own first script - Flyway treats every migration at or below the baseline version as already applied and skips it, so a lower value does not skip that first script, it just hides the problem until the baseline path actually engages against a populated database, at which point Flyway tries to run `CREATE TABLE` a second time and fails on already-existing objects.
+
+For `quarkus-flow-db-migration` (first script `V1.0.0__`), prefix these with its `flow-runtime` named Flyway configuration:
+
+[source,properties]
+----
+quarkus.flyway.flow-runtime.baseline-on-migrate=true
+quarkus.flyway.flow-runtime.baseline-version=1.0.0
+----
+
+For `quarkus-flow-db-migration-quartz` (first script `V1.0.0__`), prefix these with its `flow-quartz` named Flyway configuration:
+
+[source,properties]
+----
+quarkus.flyway.flow-quartz.baseline-on-migrate=true
+quarkus.flyway.flow-quartz.baseline-version=1.0.0
+----
+
+See xref:quartz.adoc[Quartz workflow scheduler] for the full Quartz setup.
+
+**Back up your database first, and rehearse the baseline against a copy of it before running it against production**, `baseline-on-migrate` tells Flyway "assume everything up to this version already exists," so any drift between your current schema and the version you baseline against will not be caught.
+
+[[upgrading-old-quartz-flyway]]
+== Upgrading from Quartz's old default-location Flyway setup
+
+Before `quarkus-flow-db-migration-quartz` existed, the `QRTZ_*` script shipped inside `quarkus-flow-quartz-scheduler` itself, on Flyway's default classpath location (`db/migration`), where it was picked up automatically whenever an application set `quarkus.flyway.migrate-at-start=true`.
+That script has moved to this extension's own `db/flow-migration/quartz/postgresql` location with no compatibility copy left behind: `quarkus-flow-quartz-scheduler` no longer ships the script, or a `quarkus-flyway` dependency, at all.
+`quarkus.quartz` is still a preview-status extension, so there is no stable, generally-adopted setup this needs to keep working without changes - an application still relying on that default-location `quarkus.flyway.*` configuration gets nothing at the old location and no warning, and must switch explicitly.
+
+To fix it, add xref:quarkus-flow-db-migration-quartz[`quarkus-flow-db-migration-quartz`], switch to the `flow-quartz` datasource and Flyway configuration shown above, and apply the baseline step from <<upgrading-existing-database,Upgrading an existing database>> - the QRTZ_* tables already exist, so this is that section's populated-database case, with one addition: the history **table name** is also changing, from the old setup's `flyway_quarkus_history` to this extension's `flyway_flow_quartz_history`. Starting from an empty history table under the new name, Flyway has no record that `V1.0.0__QuarkusQuartzTasks.sql` already ran, so the baseline is required even though an equivalent script already ran once under the old setup (there, as part of `quarkus-flow-quartz-scheduler`'s own Flyway setup).
+
+See xref:migration-1.2-to-1.3.adoc[Migration Guide: 1.2.x to 1.3.0] for the complete step-by-step walkthrough of this upgrade.
