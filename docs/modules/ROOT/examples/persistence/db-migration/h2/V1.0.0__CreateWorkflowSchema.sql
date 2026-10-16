@@ -8,8 +8,8 @@ CREATE TABLE cloud_event_entity
     data_content_type VARCHAR(255),
     data_schema       VARCHAR(255),
     time              TIMESTAMP(6) WITH TIME ZONE,
-    data              VARBINARY,
-    extensions        VARBINARY,
+    data              BLOB,
+    extensions        BLOB,
     processed_flag    BOOLEAN DEFAULT FALSE,
     version           TINYINT      NOT NULL CHECK (version BETWEEN 0 AND 1),
     PRIMARY KEY (id)
@@ -59,7 +59,7 @@ CREATE TABLE hash_mapping_info_entity
     id       VARCHAR(255) NOT NULL,
     instance VARCHAR(255),
     "key"    VARBINARY,
-    data     VARBINARY,
+    data     BLOB,
     PRIMARY KEY (id)
 );
 
