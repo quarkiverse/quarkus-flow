@@ -43,7 +43,7 @@ public class CredentialsProviderSecretManager implements SecretManager {
     private final Map<String, CredentialsProvider> secretCache = new ConcurrentHashMap<>();
 
     @Inject
-    FlowRuntimeConfig flowConfig;
+    FlowRuntimeConfig flowRuntimeConfig;
 
     @Inject
     @Any
@@ -93,12 +93,12 @@ public class CredentialsProviderSecretManager implements SecretManager {
             return singleProvider.get();
         }
 
-        String per = nullSafeTrim(flowConfig.secrets().credentialsProviderNames().get(secretName));
+        String per = nullSafeTrim(flowRuntimeConfig.secrets().credentialsProviderNames().get(secretName));
         if (per != null) {
             return selectConfigProvider(per);
         }
 
-        Optional<String> global = flowConfig.secrets().credentialsProviderName().filter(s -> !s.isBlank());
+        Optional<String> global = flowRuntimeConfig.secrets().credentialsProviderName().filter(s -> !s.isBlank());
         if (global.isPresent()) {
             return selectConfigProvider(global.get());
         }

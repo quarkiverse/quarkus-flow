@@ -16,7 +16,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.quarkiverse.flow.config.FlowBuildRuntimeFixedConfig;
+import io.quarkiverse.flow.config.FlowBuildConfig;
 import io.quarkiverse.flow.config.FlowRuntimeConfig;
 import io.quarkiverse.flow.dsl.model.JavaModelFactory;
 import io.quarkiverse.flow.internal.NoOpScheduler;
@@ -104,21 +104,21 @@ public class WorkflowApplicationCreator {
     NoOpScheduler scheduler;
 
     @Inject
-    FlowRuntimeConfig flowConfig;
+    FlowRuntimeConfig flowRuntimeConfig;
 
     @Inject
-    FlowBuildRuntimeFixedConfig flowBuildFixedConfig;
+    FlowBuildConfig flowBuildConfig;
 
     public WorkflowApplication create() {
         final Builder builder = WorkflowApplication.builder();
-        if (flowConfig.tracing().enabled().orElse(launchMode.isDevOrTest())) {
+        if (flowRuntimeConfig.tracing().enabled().orElse(launchMode.isDevOrTest())) {
             LOG.debug("Flow: Tracing enabled");
             builder.withListener(new TraceLoggerExecutionListener());
         }
 
         builder.withContextFactory(new JavaModelFactory()).withModelFactory(new JacksonModelFactory());
         builder.withScheduler(scheduler);
-        builder.withAllowedCommands(flowBuildFixedConfig.run().shell().allowedCommands().orElse(new ArrayList<>()));
+        builder.withAllowedCommands(flowBuildConfig.run().shell().allowedCommands().orElse(new ArrayList<>()));
 
         injectAppId(builder);
         injectExecutorServiceFactory(builder);
@@ -246,7 +246,7 @@ public class WorkflowApplicationCreator {
     }
 
     private void injectSchemaValidation(Builder builder) {
-        if (!flowConfig.validation().input().enabled()) {
+        if (!flowRuntimeConfig.validation().input().enabled()) {
             LOG.debug("Flow: Input schema validation disabled; using no-op SchemaValidatorFactory");
             builder.withSchemaValidatorFactory(new NoOpSchemaValidatorFactory());
         }

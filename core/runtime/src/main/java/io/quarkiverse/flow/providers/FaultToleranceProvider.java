@@ -56,9 +56,9 @@ public class FaultToleranceProvider {
 
     private volatile TypedGuard<CompletionStage<WorkflowModel>> defaultGuard;
 
-    public FaultToleranceProvider(FlowRuntimeConfig flowConfig) {
-        this.flowHttpConfig = flowConfig.http().client();
-        this.flowMetricsConfig = flowConfig.metrics();
+    public FaultToleranceProvider(FlowRuntimeConfig flowRuntimeConfig) {
+        this.flowHttpConfig = flowRuntimeConfig.http().client();
+        this.flowMetricsConfig = flowRuntimeConfig.metrics();
         this.routingNameResolver = new RoutingNameResolver(flowHttpConfig);
     }
 

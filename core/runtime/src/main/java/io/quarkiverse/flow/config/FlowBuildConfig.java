@@ -10,7 +10,7 @@ import io.smallrye.config.ConfigMapping;
  */
 @ConfigMapping(prefix = "quarkus.flow")
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
-public interface FlowBuildRuntimeFixedConfig {
+public interface FlowBuildConfig {
 
     /**
      * Run task configuration.
