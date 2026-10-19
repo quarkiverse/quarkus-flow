@@ -3,6 +3,9 @@
   "extends": [
     "local>quarkiverse/renovate-config"
   ],
+  "ignorePaths": [
+    "**/node_modules/**"
+  ],
   "packageRules": [
     {
       "groupName": "Documentation tools",
