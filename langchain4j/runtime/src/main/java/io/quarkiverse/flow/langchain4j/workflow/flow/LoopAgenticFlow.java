@@ -115,8 +115,14 @@ public abstract class LoopAgenticFlow extends AgenticFlow {
         return false;
     }
 
-    // TODO: add as a "description" in the task metadata field once SDK supports it.
-    // See: https://github.com/open-workflow-specification/sdk-java/issues/1689
+    /**
+     * Returns a human-readable description of the loop exit condition.
+     * <p>
+     * When present, it is exposed as the {@code description} entry of the loop task metadata, so tools such as the
+     * Dev UI topology can render it. Default implementation returns null (no description).
+     *
+     * @return exit condition description, or null if none
+     */
     public String exitConditionDescription() {
         return null;
     }
@@ -141,6 +147,7 @@ public abstract class LoopAgenticFlow extends AgenticFlow {
         final int max = maxIterations();
         final BiPredicate<AgenticScope, Integer> exit = exitCondition();
         final boolean testAtEnd = testExitAtLoopEnd();
+        final String exitDescription = exitConditionDescription();
 
         BiPredicate<AgenticScope, Integer> exitPredicate = exit != null ? exit
                 : (scope, idx) -> false;
@@ -156,55 +163,62 @@ public abstract class LoopAgenticFlow extends AgenticFlow {
                             }, DefaultAgenticScope.class)
                                     .outputAs((out, wf, tf) -> agenticScopePassthrough(tf.rawInput())));
 
-                    tasks.forEach("loop", does -> does
-                            .tasks(forDo -> {
-                                List<String> taskNames = subAgentTaskNames();
-                                for (int i = 0; i < taskNames.size(); i++) {
-                                    final int index = i; // capture for lambda
-                                    String taskName = taskNames.get(i) + "-" + i;
-                                    forDo.function(
-                                            taskName,
-                                            fn -> {
-                                                fn.function(
-                                                        (DefaultAgenticScope scope, WorkflowContextData ctx) -> executeAgent(
-                                                                ctx.instanceData().id(), scope,
-                                                                index),
-                                                        DefaultAgenticScope.class)
-                                                        .outputAs((out, wf, tf) -> agenticScopePassthrough(tf.rawInput()));
-                                                if (!testAtEnd && index > 0) {
-                                                    fn.when(
-                                                            scope -> !Boolean.TRUE
-                                                                    .equals(scope.readState(exitProperty(), false)),
-                                                            DefaultAgenticScope.class);
-                                                }
-                                            });
-                                    // Cache the result so skipped agents never re-evaluate a user predicate.
-                                    if (!testAtEnd) {
+                    tasks.forEach("loop", does -> {
+                        if (exitDescription != null && !exitDescription.isBlank()) {
+                            does.metadata(meta -> meta.description(exitDescription));
+                        }
+                        does
+                                .tasks(forDo -> {
+                                    List<String> taskNames = subAgentTaskNames();
+                                    for (int i = 0; i < taskNames.size(); i++) {
+                                        final int index = i; // capture for lambda
+                                        String taskName = taskNames.get(i) + "-" + i;
                                         forDo.function(
-                                                "check-exit-" + index,
+                                                taskName,
                                                 fn -> {
-                                                    fn.function((scope, wf, tf) -> {
-                                                        Integer cycleIndex = (Integer) ((TaskContext) tf).variables()
-                                                                .get(AT);
-                                                        if (exitPredicate.test(scope, cycleIndex)) {
-                                                            scope.writeState(exitProperty(), true);
-                                                        }
-                                                        return scope;
-                                                    }, DefaultAgenticScope.class)
+                                                    fn.function(
+                                                            (DefaultAgenticScope scope,
+                                                                    WorkflowContextData ctx) -> executeAgent(
+                                                                            ctx.instanceData().id(), scope,
+                                                                            index),
+                                                            DefaultAgenticScope.class)
                                                             .outputAs((out, wf, tf) -> agenticScopePassthrough(tf.rawInput()));
-                                                    fn.when(
-                                                            scope -> !Boolean.TRUE
-                                                                    .equals(scope.readState(exitProperty(), false)),
-                                                            DefaultAgenticScope.class);
+                                                    if (!testAtEnd && index > 0) {
+                                                        fn.when(
+                                                                scope -> !Boolean.TRUE
+                                                                        .equals(scope.readState(exitProperty(), false)),
+                                                                DefaultAgenticScope.class);
+                                                    }
                                                 });
+                                        // Cache the result so skipped agents never re-evaluate a user predicate.
+                                        if (!testAtEnd) {
+                                            forDo.function(
+                                                    "check-exit-" + index,
+                                                    fn -> {
+                                                        fn.function((scope, wf, tf) -> {
+                                                            Integer cycleIndex = (Integer) ((TaskContext) tf).variables()
+                                                                    .get(AT);
+                                                            if (exitPredicate.test(scope, cycleIndex)) {
+                                                                scope.writeState(exitProperty(), true);
+                                                            }
+                                                            return scope;
+                                                        }, DefaultAgenticScope.class)
+                                                                .outputAs((out, wf,
+                                                                        tf) -> agenticScopePassthrough(tf.rawInput()));
+                                                        fn.when(
+                                                                scope -> !Boolean.TRUE
+                                                                        .equals(scope.readState(exitProperty(), false)),
+                                                                DefaultAgenticScope.class);
+                                                    });
+                                        }
                                     }
-                                }
-                            })
-                            .tasks(checkExitAtEnd(testAtEnd, exitPredicate))
-                            .each(ITEM)
-                            .at(AT)
-                            .collection(ignored -> IntStream.range(0, max).boxed().toList())
-                            .whileC(CONTINUE_LOOP));
+                                })
+                                .tasks(checkExitAtEnd(testAtEnd, exitPredicate))
+                                .each(ITEM)
+                                .at(AT)
+                                .collection(ignored -> IntStream.range(0, max).boxed().toList())
+                                .whileC(CONTINUE_LOOP);
+                    });
                 })
                 .build();
     }
