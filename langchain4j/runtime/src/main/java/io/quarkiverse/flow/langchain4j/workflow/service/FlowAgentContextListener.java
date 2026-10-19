@@ -17,6 +17,9 @@ import io.quarkiverse.flow.internal.FlowContextPropagator;
  * or on its own executor. The planner stores the requesting task's {@link FlowContextPropagator.Snapshot} in the
  * {@link AgenticScope} execution context under {@link #contextKey(String)}; this listener activates it in
  * {@link #beforeAgentInvocation(AgentRequest)} and closes it when the invocation ends, on the same thread.
+ * <p>
+ * It also tells a {@link FlowPlanner} when the agentic system it runs has failed (see
+ * {@link #onAgentInvocationError(AgentInvocationError)}).
  */
 public final class FlowAgentContextListener implements AgentListener {
 
@@ -46,9 +49,17 @@ public final class FlowAgentContextListener implements AgentListener {
         close(response.agentId());
     }
 
+    /**
+     * Closes the failed agent's context and, if the agent is an agentic system run by a {@link FlowPlanner}, fails
+     * the agent calls its workflow is still waiting for, so the workflow ends.
+     * <p>
+     * An agentic system's failure is reported only once its planning loop has ended, whatever its parent's error handler
+     * then decides; a leaf agent's failure is reported before the error handler runs, but a leaf has no planner.
+     */
     @Override
     public void onAgentInvocationError(AgentInvocationError error) {
         close(error.agentId());
+        FlowPlanner.abort(error.agenticScope(), error.agentId(), error.error());
     }
 
     /**
