@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.fabric8.kubernetes.api.model.coordination.v1.Lease;
+import io.quarkiverse.flow.durable.kube.config.FlowDurableKubeConfig;
 import io.quarkiverse.flow.durable.kube.config.LeaseGroupConfig;
 import io.quarkiverse.flow.durable.kube.config.PoolConfig;
 import io.quarkiverse.flow.durable.kube.config.SchedulerGroupConfig;
@@ -30,13 +31,10 @@ public class PoolLeaderController extends PoolController {
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     @Inject
-    LeaseGroupConfig leaseConfig;
+    FlowDurableKubeConfig config;
 
     @Inject
     PoolConfig poolConfig;
-
-    @Inject
-    SchedulerGroupConfig schedulerConfig;
 
     @Inject
     KubeInfoStrategy kubeInfo;
@@ -44,7 +42,7 @@ public class PoolLeaderController extends PoolController {
     @Override
     public void run() {
         LOG.debug("Attempt to run pool leader controller scheduler");
-        if (!leaseConfig.leader().enabled())
+        if (!config.lease().leader().enabled())
             return;
 
         if (!running.compareAndSet(false, true))
@@ -102,11 +100,11 @@ public class PoolLeaderController extends PoolController {
 
     @Override
     protected SchedulerGroupConfig.SchedulerConfig schedulerConfig() {
-        return schedulerConfig.leader();
+        return config.schedulers().leader();
     }
 
     @Override
     protected LeaseGroupConfig.LeaseConfig leaseConfig() {
-        return leaseConfig.leader();
+        return config.lease().leader();
     }
 }

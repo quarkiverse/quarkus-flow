@@ -34,9 +34,8 @@ import io.serverlessworkflow.impl.config.SecretManager;
 @ApplicationScoped
 public class CredentialsProviderSecretManager implements SecretManager {
 
-    private static final String ROOT = FlowSecretsConfig.SECRETS_ROOT_KEY;
-    private static final String GLOBAL_KEY = ROOT + ".credentials-provider-name";
-    private static final String PER_SECRET_KEY = ROOT + ".credentials-provider-names.<secret>";
+    private static final String GLOBAL_KEY = FlowSecretsConfig.PREFIX + ".credentials-provider-name";
+    private static final String PER_SECRET_KEY = FlowSecretsConfig.PREFIX + ".credentials-provider-names.<secret>";
 
     private final Map<String, CredentialsProvider> configProviderBeanCache = new ConcurrentHashMap<>();
     private final Map<String, CredentialsProvider> secretCache = new ConcurrentHashMap<>();

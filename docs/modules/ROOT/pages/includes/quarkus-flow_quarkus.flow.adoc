@@ -131,29 +131,6 @@ endif::add-copy-button-to-env-var[]
 |string
 |
 
-a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-devui-backend-storage-enabled]] [.property-path]##link:#quarkus-flow_quarkus-flow-devui-backend-storage-enabled[`+++quarkus.flow.devui.backend.storage.enabled+++`]##
-ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.devui.backend.storage.enabled+++[]
-endif::add-copy-button-to-config-props[]
-
-
-[.description]
---
-Enables or disables backend persistence for Dev UI workflow data.
-
-When disabled, no storage is used and no workflow metadata is persisted (DevUI only).
-
-
-ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DEVUI_BACKEND_STORAGE_ENABLED+++[]
-endif::add-copy-button-to-env-var[]
-ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_DEVUI_BACKEND_STORAGE_ENABLED+++`
-endif::add-copy-button-to-env-var[]
---
-|boolean
-|`+++false+++`
-
 a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-run-shell-allowed-commands]] [.property-path]##link:#quarkus-flow_quarkus-flow-run-shell-allowed-commands[`+++quarkus.flow.run.shell.allowed-commands+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.run.shell.allowed-commands+++[]
@@ -176,6 +153,29 @@ endif::add-copy-button-to-env-var[]
 --
 |list of string
 |
+
+a|icon:lock[title=Fixed at build time] [[quarkus-flow_quarkus-flow-devui-backend-storage-enabled]] [.property-path]##link:#quarkus-flow_quarkus-flow-devui-backend-storage-enabled[`+++quarkus.flow.devui.backend.storage.enabled+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.devui.backend.storage.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Enables or disables backend persistence for Dev UI workflow data.
+
+When disabled, no storage is used and no workflow metadata is persisted (DevUI only).
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_DEVUI_BACKEND_STORAGE_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_DEVUI_BACKEND_STORAGE_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++false+++`
 
 a| [[quarkus-flow_quarkus-flow-http-client-connect-timeout]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-connect-timeout[`+++quarkus.flow.http.client.connect-timeout+++`]##
 ifdef::add-copy-button-to-config-props[]
@@ -1712,6 +1712,29 @@ endif::add-copy-button-to-env-var[]
 |list of string
 |
 
+a| [[quarkus-flow_quarkus-flow-validation-input-enabled]] [.property-path]##link:#quarkus-flow_quarkus-flow-validation-input-enabled[`+++quarkus.flow.validation.input.enabled+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.validation.input.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether to validate workflow input against the declared `input.schema` at execution time, rejecting non-conforming input.
+
+Disabled by default: non-conforming input is silently accepted, preserving the behavior Quarkus Flow has always had.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_VALIDATION_INPUT_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_VALIDATION_INPUT_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
 a| [[quarkus-flow_quarkus-flow-secrets-credentials-provider-name]] [.property-path]##link:#quarkus-flow_quarkus-flow-secrets-credentials-provider-name[`+++quarkus.flow.secrets.credentials-provider-name+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.secrets.credentials-provider-name+++[]
@@ -2077,29 +2100,6 @@ endif::add-copy-button-to-env-var[]
 --
 |boolean
 |
-
-a| [[quarkus-flow_quarkus-flow-validation-input-enabled]] [.property-path]##link:#quarkus-flow_quarkus-flow-validation-input-enabled[`+++quarkus.flow.validation.input.enabled+++`]##
-ifdef::add-copy-button-to-config-props[]
-config_property_copy_button:+++quarkus.flow.validation.input.enabled+++[]
-endif::add-copy-button-to-config-props[]
-
-
-[.description]
---
-Whether to validate workflow input against the declared `input.schema` at execution time, rejecting non-conforming input.
-
-Disabled by default: non-conforming input is silently accepted, preserving the behavior Quarkus Flow has always had.
-
-
-ifdef::add-copy-button-to-env-var[]
-Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_VALIDATION_INPUT_ENABLED+++[]
-endif::add-copy-button-to-env-var[]
-ifndef::add-copy-button-to-env-var[]
-Environment variable: `+++QUARKUS_FLOW_VALIDATION_INPUT_ENABLED+++`
-endif::add-copy-button-to-env-var[]
---
-|boolean
-|`+++true+++`
 
 a| [[quarkus-flow_quarkus-flow-http-client-named-named-connect-timeout]] [.property-path]##link:#quarkus-flow_quarkus-flow-http-client-named-named-connect-timeout[`+++quarkus.flow.http.client.named."named".connect-timeout+++`]##
 ifdef::add-copy-button-to-config-props[]
