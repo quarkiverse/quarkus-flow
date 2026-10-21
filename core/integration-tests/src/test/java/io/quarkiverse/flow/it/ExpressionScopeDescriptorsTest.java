@@ -1,11 +1,12 @@
 package io.quarkiverse.flow.it;
 
-import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.RestAssured;
+import static org.hamcrest.Matchers.containsString;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.Matchers.containsString;
+import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.RestAssured;
 
 @QuarkusTest
 public class ExpressionScopeDescriptorsTest {
