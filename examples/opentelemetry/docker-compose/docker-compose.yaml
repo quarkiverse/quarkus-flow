@@ -2,7 +2,7 @@ services:
   # This configuration is intended for the example purposes and do not represent a recommended configuration for a
   # production environment.
   jaeger:
-    image: jaegertracing/jaeger:2.0.0
+    image: jaegertracing/jaeger:2.22.0
     container_name: jaeger
     restart: unless-stopped
 
