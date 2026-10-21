@@ -239,6 +239,9 @@ public class FlowPlanner implements Planner {
             while ((exchange = agentExchangeQueue.poll()) != null) {
                 exchange.continuation().completeExceptionally(cause);
             }
+            // Signal the planning loop to exit gracefully
+            // Any exchanges queued after this will be caught by the abortCause check in executeAgent()
+            signalTermination();
         }
     }
 
