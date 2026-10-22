@@ -60,23 +60,16 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.runtime.metrics.MetricsFactory;
-import io.serverlessworkflow.impl.AuthorizationDescriptor;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowException;
 import io.serverlessworkflow.impl.events.EventConsumer;
 import io.serverlessworkflow.impl.events.EventPublisher;
-import io.serverlessworkflow.impl.expressions.DateTimeDescriptor;
-import io.serverlessworkflow.impl.expressions.ExpressionDescriptor;
-import io.serverlessworkflow.impl.expressions.RuntimeDescriptor;
-import io.serverlessworkflow.impl.expressions.TaskDescriptor;
-import io.serverlessworkflow.impl.expressions.WorkflowDescriptor;
 import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionCompletableListener;
 import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener;
 import io.smallrye.common.annotation.Identifier;
@@ -198,28 +191,6 @@ class FlowProcessor {
                 .addBeanClass(WorkflowEngineHealthCheck.class)
                 .addBeanClass(StructuredLoggingListener.class)
                 .setUnremovable()
-                .build();
-    }
-
-    /**
-     * It is a "workaround" until we have a sdk-java release with the changes
-     * added on this <a href="https://github.com/open-workflow-specification/sdk-java/pull/1781">pull request</a>.
-     */
-    @BuildStep
-    ReflectiveClassBuildItem registerJQScopeDescriptorsForReflection() {
-        return ReflectiveClassBuildItem.builder(
-                RuntimeDescriptor.class,
-                WorkflowDescriptor.class,
-                TaskDescriptor.class,
-                DateTimeDescriptor.class,
-                DateTimeDescriptor.Epoch.class,
-                ExpressionDescriptor.class,
-                AuthorizationDescriptor.class)
-                .queryConstructors(true)
-                .constructors(true)
-                .methods(true)
-                .fields(true)
-                .classes()
                 .build();
     }
 
