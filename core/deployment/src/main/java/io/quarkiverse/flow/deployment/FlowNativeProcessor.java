@@ -103,7 +103,7 @@ final class FlowNativeProcessor {
     }
 
     /**
-     * It is a "workaround" until we have a sdk-java release with the changes
+     * TODO: It is a "workaround" until we have a sdk-java release with the changes
      * added on this <a href="https://github.com/open-workflow-specification/sdk-java/pull/1781">pull request</a>.
      */
     @BuildStep
