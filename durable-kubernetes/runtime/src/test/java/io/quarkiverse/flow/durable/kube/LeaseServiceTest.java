@@ -273,4 +273,91 @@ public class LeaseServiceTest {
         assertEquals("false", labels.get("io.quarkiverse.flow.durable.k8s/is-leader"));
         assertEquals("bar", labels.get("foo"));
     }
+
+    @Test
+    void renewLease_refusesToSteal_whenLeaseHeldByOtherPod() {
+        // Create a lease held by pod-2
+        Lease heldByPodTwo = new LeaseBuilder()
+                .withNewMetadata()
+                .withName("m-held-by-other")
+                .withNamespace("default")
+                .endMetadata()
+                .withNewSpec()
+                .withHolderIdentity("pod-2")
+                .withLeaseDurationSeconds(300)
+                .withRenewTime(ZonedDateTime.now(ZoneOffset.UTC))
+                .endSpec()
+                .build();
+
+        client.leases().inNamespace("default").resource(heldByPodTwo).create();
+
+        // Try to renew as pod-1 (different holder)
+        Optional<Lease> result = leaseService.renewLease("m-held-by-other", "pod-1");
+
+        // Should refuse the steal
+        assertFalse(result.isPresent());
+
+        // Verify the holder was not changed
+        Lease lease = client.leases().inNamespace("default").withName("m-held-by-other").get();
+        assertEquals("pod-2", lease.getSpec().getHolderIdentity());
+    }
+
+    @Test
+    void renewLease_succeeds_whenLeaseHeldBySamePod() {
+        // Create a lease held by pod-1
+        Lease heldByPodOne = new LeaseBuilder()
+                .withNewMetadata()
+                .withName("m-held-by-self")
+                .withNamespace("default")
+                .endMetadata()
+                .withNewSpec()
+                .withHolderIdentity("pod-1")
+                .withLeaseDurationSeconds(300)
+                .withRenewTime(ZonedDateTime.now(ZoneOffset.UTC).minusSeconds(30))
+                .endSpec()
+                .build();
+
+        client.leases().inNamespace("default").resource(heldByPodOne).create();
+
+        // Renew as pod-1 (same holder)
+        Optional<Lease> result = leaseService.renewLease("m-held-by-self", "pod-1");
+
+        // Should succeed
+        assertTrue(result.isPresent());
+        assertEquals("pod-1", result.get().getSpec().getHolderIdentity());
+
+        // Verify renewTime was updated
+        Lease lease = client.leases().inNamespace("default").withName("m-held-by-self").get();
+        assertNotNull(lease.getSpec().getRenewTime());
+        assertTrue(lease.getSpec().getRenewTime().isAfter(heldByPodOne.getSpec().getRenewTime()));
+    }
+
+    @Test
+    void tryAcquireMemberLease_canAcquireExpiredLease() {
+        // Create an expired lease held by pod-2
+        Lease expired = new LeaseBuilder()
+                .withNewMetadata()
+                .withName("m-expired-other")
+                .withNamespace("default")
+                .withLabels(Map.of(
+                        "app.kubernetes.io/managed-by", "quarkus-flow",
+                        "app.kubernetes.io/component", "durable",
+                        "io.quarkiverse.flow.durable.k8s/pool", poolConfig.name(),
+                        "io.quarkiverse.flow.durable.k8s/is-leader", "false"))
+                .endMetadata()
+                .withNewSpec()
+                .withHolderIdentity("pod-2")
+                .withLeaseDurationSeconds(5)
+                .withRenewTime(ZonedDateTime.now(ZoneOffset.UTC).minusSeconds(60))
+                .endSpec()
+                .build();
+
+        client.leases().inNamespace("default").resource(expired).create();
+
+        // pod-1 should be able to acquire the expired lease
+        Optional<Lease> result = leaseService.tryAcquireMemberLease("pod-1", poolConfig.name());
+
+        assertTrue(result.isPresent());
+        assertEquals("pod-1", result.get().getSpec().getHolderIdentity());
+    }
 }
