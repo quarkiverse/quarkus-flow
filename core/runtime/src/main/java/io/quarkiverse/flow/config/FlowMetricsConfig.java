@@ -23,9 +23,12 @@ import io.smallrye.config.WithDefault;
  *
  * Then restart the application (no rebuild required).
  */
-@ConfigMapping(prefix = "quarkus.flow.metrics")
+@ConfigMapping(prefix = FlowMetricsConfig.PREFIX)
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface FlowMetricsConfig {
+
+    /* ConfigMapping#prefix related */
+    String PREFIX = FlowRuntimeConfig.FLOW_ROOT_PREFIX + ".metrics";
 
     /**
      * Default prefix applied to all exported metrics.

@@ -9,7 +9,6 @@ import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.eclipse.microprofile.health.Readiness;
 
 import io.quarkiverse.flow.durable.kube.config.FlowDurableKubeConfig;
-import io.quarkiverse.flow.durable.kube.config.LeaseGroupConfig;
 import io.quarkiverse.flow.durable.kube.config.PoolConfig;
 
 @Readiness
@@ -22,12 +21,6 @@ public class LeaseAcquisitionHealthCheck implements HealthCheck {
     MemberLeaseCoordinator memberLeaseCoordinator;
 
     @Inject
-    LeaseGroupConfig leaseConfig;
-
-    @Inject
-    PoolConfig poolConfig;
-
-    @Inject
     KubeInfoStrategy kubeInfo;
 
     @Inject
@@ -36,9 +29,12 @@ public class LeaseAcquisitionHealthCheck implements HealthCheck {
     @Inject
     FlowDurableKubeConfig durableKubeConfig;
 
+    @Inject
+    PoolConfig poolConfig;
+
     @Override
     public HealthCheckResponse call() {
-        boolean enabled = leaseConfig.member().enabled() && !localStrategy.enabled();
+        boolean enabled = durableKubeConfig.lease().member().enabled() && !localStrategy.enabled();
         boolean requireLease = durableKubeConfig.health().readiness().requireLease();
 
         String lease = memberLeaseCoordinator.currentLeaseOrNull();

@@ -1,15 +1,12 @@
 package io.quarkiverse.flow.config;
 
-import io.quarkus.runtime.annotations.ConfigPhase;
-import io.quarkus.runtime.annotations.ConfigRoot;
-import io.smallrye.config.ConfigMapping;
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 
 /**
  * Configuration for Serverless Workflow schema validation.
  */
-@ConfigMapping(prefix = "quarkus.flow.validation")
-@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+@ConfigGroup
 public interface FlowValidationConfig {
 
     /**

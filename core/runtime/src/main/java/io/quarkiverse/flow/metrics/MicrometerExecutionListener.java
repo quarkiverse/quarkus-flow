@@ -1,7 +1,5 @@
 package io.quarkiverse.flow.metrics;
 
-import static io.quarkiverse.flow.config.FlowMetricsConfig.DEFAULT_PREFIX;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -44,7 +42,7 @@ public class MicrometerExecutionListener implements WorkflowExecutionListener {
     @Inject
     public MicrometerExecutionListener(MeterRegistry meterRegistry, FlowMetricsConfig flowMetricsConfig) {
         this.meterRegistry = meterRegistry;
-        this.prefix = flowMetricsConfig.prefix().orElse(DEFAULT_PREFIX);
+        this.prefix = flowMetricsConfig.prefix().orElse(FlowMetricsConfig.PREFIX);
         this.enableDurations = flowMetricsConfig.durations().enabled();
         this.percentiles = parsePercentiles(flowMetricsConfig.durations().percentiles().orElse(List.of()));
     }

@@ -6,9 +6,11 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 
-@ConfigMapping(prefix = "quarkus.flow.tracing")
+@ConfigMapping(prefix = FlowTracingConfig.PREFIX)
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface FlowTracingConfig {
+
+    String PREFIX = FlowRuntimeConfig.FLOW_ROOT_PREFIX + ".tracing";
 
     /**
      * Whether to enable workflow execution tracing.

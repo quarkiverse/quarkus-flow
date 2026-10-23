@@ -7,7 +7,7 @@ import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.quarkiverse.flow.durable.kube.config.LeaseGroupConfig;
+import io.quarkiverse.flow.durable.kube.config.FlowDurableKubeConfig;
 import io.quarkiverse.flow.recorders.WorkflowApplicationBuilderCustomizer;
 import io.quarkus.runtime.Quarkus;
 import io.serverlessworkflow.impl.WorkflowApplication;
@@ -21,7 +21,7 @@ public class InjectLeaseWorkflowApplicationBuilderCustomizer implements Workflow
     MemberLeaseCoordinator memberLeaseCoordinator;
 
     @Inject
-    LeaseGroupConfig leaseConfig;
+    FlowDurableKubeConfig config;
 
     @Inject
     LocalStrategy localStrategy;
@@ -36,7 +36,7 @@ public class InjectLeaseWorkflowApplicationBuilderCustomizer implements Workflow
 
     @Override
     public void customize(WorkflowApplication.Builder builder) {
-        if (!leaseConfig.member().enabled()) {
+        if (!config.lease().member().enabled()) {
             return;
         }
 
@@ -52,7 +52,7 @@ public class InjectLeaseWorkflowApplicationBuilderCustomizer implements Workflow
         leaseStartupEvent.fire(new LeaseStartupEvent());
 
         try {
-            final String lease = memberLeaseCoordinator.awaitLease(leaseConfig.member().acquireTimeout());
+            final String lease = memberLeaseCoordinator.awaitLease(config.lease().member().acquireTimeout());
             builder.withId(lease);
             LOG.info("Flow: Kubernetes Lease to Workflow Application ID is {}", lease);
         } catch (LeaseAcquisitionException e) {

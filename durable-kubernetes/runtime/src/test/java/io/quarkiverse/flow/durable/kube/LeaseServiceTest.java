@@ -23,7 +23,7 @@ import io.fabric8.kubernetes.api.model.apps.ReplicaSetBuilder;
 import io.fabric8.kubernetes.api.model.coordination.v1.Lease;
 import io.fabric8.kubernetes.api.model.coordination.v1.LeaseBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.quarkiverse.flow.durable.kube.config.LeaseGroupConfig;
+import io.quarkiverse.flow.durable.kube.config.FlowDurableKubeConfig;
 import io.quarkiverse.flow.durable.kube.config.PoolConfig;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -43,10 +43,10 @@ public class LeaseServiceTest {
     KubeInfoStrategy kubeInfo;
 
     @Inject
-    PoolConfig poolConfig;
+    FlowDurableKubeConfig config;
 
     @Inject
-    LeaseGroupConfig leaseConfig;
+    PoolConfig poolConfig;
 
     @BeforeEach
     void setup() {
@@ -263,7 +263,7 @@ public class LeaseServiceTest {
         assertTrue(updatedOpt.isPresent());
 
         var updated = client.leases().inNamespace("default").withName(leaseName).get();
-        assertEquals(leaseConfig.member().duration(), updated.getSpec().getLeaseDurationSeconds());
+        assertEquals(config.lease().member().duration(), updated.getSpec().getLeaseDurationSeconds());
 
         // base labels enforced + pool/is-leader labels enforced + existing labels preserved
         Map<String, String> labels = updated.getMetadata().getLabels();

@@ -8,9 +8,11 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
-@ConfigMapping(prefix = "quarkus.flow.structured-logging")
+@ConfigMapping(prefix = FlowStructuredLoggingConfig.PREFIX)
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface FlowStructuredLoggingConfig {
+
+    String PREFIX = FlowRuntimeConfig.FLOW_ROOT_PREFIX + ".structured-logging";
 
     /**
      * Enables or disables structured logging for Quarkus Flow.
