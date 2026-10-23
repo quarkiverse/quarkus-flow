@@ -121,10 +121,10 @@ public class LeaseService {
         if (lease == null) {
             return Optional.empty();
         }
-        return renewLease(lease, holderIdentity);
+        return renewLease(lease, holderIdentity, false);
     }
 
-    private Optional<Lease> renewLease(Lease lease, String holderIdentity) {
+    private Optional<Lease> renewLease(Lease lease, String holderIdentity, boolean allowTakeover) {
         LOG.debug("Attempting to renew lease: {} for {}", lease.getMetadata().getName(), holderIdentity);
         final String ns = kubeInfo.namespace();
 
@@ -132,6 +132,15 @@ public class LeaseService {
             lease = new LeaseBuilder(lease).withNewSpec().endSpec().build();
 
         final String previousHolder = lease.getSpec().getHolderIdentity();
+
+        if (!allowTakeover
+                && previousHolder != null && !previousHolder.isBlank()
+                && !holderIdentity.equals(previousHolder)) {
+            LOG.debug("Refusing to renew lease {}: held by {}, not {}. Treating as lost.",
+                    lease.getMetadata().getName(), previousHolder, holderIdentity);
+            return Optional.empty();
+        }
+
         final ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
 
         lease.getSpec().setRenewTime(now);
@@ -177,7 +186,7 @@ public class LeaseService {
         if (lease == null)
             return false;
 
-        return isAvailableLease(lease, holderIdentity) && renewLease(lease, holderIdentity).isPresent();
+        return isAvailableLease(lease, holderIdentity) && renewLease(lease, holderIdentity, true).isPresent();
     }
 
     /**
@@ -202,7 +211,7 @@ public class LeaseService {
         // mine first
         for (Lease l : leases) {
             if (l.getSpec() != null && holderIdentity.equals(l.getSpec().getHolderIdentity())) {
-                Optional<Lease> renewed = renewLease(l, holderIdentity);
+                Optional<Lease> renewed = renewLease(l, holderIdentity, true);
                 if (renewed.isPresent())
                     return renewed;
             }
@@ -210,7 +219,7 @@ public class LeaseService {
 
         for (Lease l : leases) {
             if (isAvailableLease(l, holderIdentity)) {
-                Optional<Lease> renewed = renewLease(l, holderIdentity);
+                Optional<Lease> renewed = renewLease(l, holderIdentity, true);
                 if (renewed.isPresent()) {
                     return renewed;
                 }
@@ -241,7 +250,7 @@ public class LeaseService {
             LOG.debug("Bound lease '{}' is held by another pod and not expired", targetLeaseName);
             return Optional.empty();
         }
-        return renewLease(lease, holderIdentity);
+        return renewLease(lease, holderIdentity, true);
     }
 
     /**
