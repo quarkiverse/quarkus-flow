@@ -1,0 +1,9 @@
+document:
+  dsl: '1.0.0'
+  namespace: flow
+  name: expression-scope-descriptors
+  version: '1.0.0'
+do:
+  - describeContext:
+      set:
+        message: '${ $workflow.id + "|" + $task.name + "|" + $runtime.name }'
