@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +32,7 @@ import io.serverlessworkflow.impl.WorkflowInstance;
 public class FlowPlanner implements Planner {
 
     private static final Logger LOG = LoggerFactory.getLogger(FlowPlanner.class);
+    private static final String PLANNER_KEY_PREFIX = "flow.agent.planner:";
     private final AgenticSystemTopology topology;
     private final AgenticFlow flow;
     private final FlowContextPropagator contextPropagator = FlowContextPropagator.current();
@@ -39,6 +41,8 @@ public class FlowPlanner implements Planner {
     private Map<String, AgentExchange> currentExchanges;
     private AtomicInteger parallelAgents;
     private AgenticScope currentAgenticScope;
+    private String plannerAgentId;
+    private final AtomicReference<Throwable> abortCause = new AtomicReference<>();
 
     public FlowPlanner(AgenticSystemTopology topology, AgenticFlow flow) {
         this.topology = topology;
@@ -59,12 +63,17 @@ public class FlowPlanner implements Planner {
 
         // Store subagents in ordered list for index-based lookup
         this.subAgentsList = new ArrayList<>(initPlanningContext.subagents());
+        this.plannerAgentId = initPlanningContext.plannerAgent() != null ? initPlanningContext.plannerAgent().agentId() : null;
     }
 
     @Override
     public Action firstAction(PlanningContext planningContext) {
         final WorkflowInstance instance = flow.definition().instance(planningContext.agenticScope());
         planningContext.agenticScope().writeExecutionContext(instance.id(), this);
+        if (plannerAgentId != null) {
+            // Lets FlowAgentContextListener find this planner when the agentic system it drives fails
+            planningContext.agenticScope().writeExecutionContext(plannerKey(plannerAgentId), this);
+        }
         this.currentAgenticScope = planningContext.agenticScope();
 
         // Starts workflow on a different thread
@@ -80,7 +89,11 @@ public class FlowPlanner implements Planner {
         }).thenCompose(future -> future)
                 .whenComplete((r, e) -> {
                     if (e != null) {
-                        LOG.error("Workflow failed", e);
+                        if (abortCause.get() != null) {
+                            LOG.debug("Workflow failed because its agentic system failed", e);
+                        } else {
+                            LOG.error("Workflow failed", e);
+                        }
                     }
                     signalTermination();
                 });
@@ -177,6 +190,12 @@ public class FlowPlanner implements Planner {
             continuation.completeExceptionally(e);
         }
 
+        // A call queued after abort(Throwable) drained the queue (e.g. a late parallel branch) would never be taken
+        Throwable cause = abortCause.get();
+        if (cause != null) {
+            continuation.completeExceptionally(cause);
+        }
+
         return continuation;
     }
 
@@ -188,6 +207,46 @@ public class FlowPlanner implements Planner {
                             " (IDs: " + subAgentsList.stream().map(AgentInstance::agentId).toList() + ")");
         }
         return subAgentsList.get(index);
+    }
+
+    /**
+     * Fails the agent calls the generated workflow is waiting for, after the agentic system this planner drives has
+     * failed.
+     * <p>
+     * LangChain4j reports an agent's completion through {@link #nextAction(PlanningContext)}, but not its failure: when
+     * an agent (or a nested agentic system) throws, the planning loop just ends. Without this, the continuations the
+     * workflow's tasks join on would never complete, so the workflow instance would never end, its task would keep a
+     * thread blocked, and a persisted instance would never be removed. Failing them makes the workflow fail with the
+     * same cause.
+     *
+     * @param agenticScope the scope of the failed agentic system
+     * @param agentId the id of the agent whose invocation failed
+     * @param cause the failure
+     */
+    static void abort(AgenticScope agenticScope, String agentId, Throwable cause) {
+        if (agenticScope != null && agentId != null
+                && agenticScope.executionContext(plannerKey(agentId)) instanceof FlowPlanner planner) {
+            planner.abort(cause);
+        }
+    }
+
+    private void abort(Throwable cause) {
+        if (abortCause.compareAndSet(null, cause)) {
+            LOG.debug("Agentic system {} failed, failing its pending agent calls", plannerAgentId, cause);
+            currentExchanges.values().forEach(exchange -> exchange.continuation().completeExceptionally(cause));
+            currentExchanges.clear();
+            AgentExchange exchange;
+            while ((exchange = agentExchangeQueue.poll()) != null) {
+                exchange.continuation().completeExceptionally(cause);
+            }
+            // Signal the planning loop to exit gracefully
+            // Any exchanges queued after this will be caught by the abortCause check in executeAgent()
+            signalTermination();
+        }
+    }
+
+    private static String plannerKey(String agentId) {
+        return PLANNER_KEY_PREFIX + agentId;
     }
 
     private void signalTermination() {

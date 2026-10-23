@@ -12,6 +12,7 @@ import io.quarkus.deployment.builditem.nativeimage.LambdaCapturingTypeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.serverlessworkflow.impl.AuthorizationDescriptor;
 import io.serverlessworkflow.impl.WorkflowModelFactory;
 import io.serverlessworkflow.impl.additional.NamedWorkflowAdditionalObject;
 import io.serverlessworkflow.impl.auth.JWTConverter;
@@ -23,7 +24,12 @@ import io.serverlessworkflow.impl.executors.CallableTaskProxyBuilder;
 import io.serverlessworkflow.impl.executors.RunnableTaskBuilder;
 import io.serverlessworkflow.impl.executors.TaskExecutorFactory;
 import io.serverlessworkflow.impl.executors.http.HttpRequestDecorator;
+import io.serverlessworkflow.impl.expressions.DateTimeDescriptor;
+import io.serverlessworkflow.impl.expressions.ExpressionDescriptor;
 import io.serverlessworkflow.impl.expressions.ExpressionFactory;
+import io.serverlessworkflow.impl.expressions.RuntimeDescriptor;
+import io.serverlessworkflow.impl.expressions.TaskDescriptor;
+import io.serverlessworkflow.impl.expressions.WorkflowDescriptor;
 import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener;
 import io.serverlessworkflow.impl.resources.URITemplateResolver;
 import io.serverlessworkflow.impl.schema.SchemaValidatorFactory;
@@ -88,6 +94,28 @@ final class FlowNativeProcessor {
                 "org.hibernate.validator.internal.constraintvalidators.bv.size.SizeValidatorForMap",
                 "org.hibernate.validator.internal.constraintvalidators.bv.number.bound.decimal.DecimalMaxValidatorForInteger",
                 "org.hibernate.validator.internal.constraintvalidators.bv.number.bound.decimal.DecimalMinValidatorForInteger")
+                .queryConstructors(true)
+                .constructors(true)
+                .methods(true)
+                .fields(true)
+                .classes()
+                .build();
+    }
+
+    /**
+     * TODO: It is a "workaround" until we have a sdk-java release with the changes
+     * added on this <a href="https://github.com/open-workflow-specification/sdk-java/pull/1781">pull request</a>.
+     */
+    @BuildStep
+    ReflectiveClassBuildItem registerJQScopeDescriptorsForReflection() {
+        return ReflectiveClassBuildItem.builder(
+                RuntimeDescriptor.class,
+                WorkflowDescriptor.class,
+                TaskDescriptor.class,
+                DateTimeDescriptor.class,
+                DateTimeDescriptor.Epoch.class,
+                ExpressionDescriptor.class,
+                AuthorizationDescriptor.class)
                 .queryConstructors(true)
                 .constructors(true)
                 .methods(true)

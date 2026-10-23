@@ -27,6 +27,7 @@ import io.quarkiverse.flow.providers.CredentialsProviderSecretManager;
 import io.quarkiverse.flow.providers.FaultToleranceProvider;
 import io.quarkiverse.flow.providers.HttpClientProvider;
 import io.quarkiverse.flow.providers.JQScopeSupplier;
+import io.quarkiverse.flow.providers.PrioritizedJQExpressionFactory;
 import io.quarkiverse.flow.providers.QuarkusManagedExecutorServiceFactory;
 import io.quarkiverse.flow.providers.WorkflowTaskContext;
 import io.quarkiverse.flow.tracing.TraceLoggerExecutionListener;
@@ -44,7 +45,6 @@ import io.serverlessworkflow.impl.events.EventPublisher;
 import io.serverlessworkflow.impl.executors.CallableTask;
 import io.serverlessworkflow.impl.executors.CallableTaskProxyBuilder;
 import io.serverlessworkflow.impl.executors.http.HttpClientResolver;
-import io.serverlessworkflow.impl.expressions.jq.JQExpressionFactory;
 import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionCompletableListener;
 import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener;
 import io.serverlessworkflow.impl.model.jackson.JacksonModelFactory;
@@ -257,7 +257,7 @@ public class WorkflowApplicationCreator {
     }
 
     private void injectJQExpressionFactory(Builder builder) {
-        builder.withExpressionFactory(new JQExpressionFactory(jqScopeSupplier));
+        builder.withExpressionFactory(new PrioritizedJQExpressionFactory(jqScopeSupplier));
     }
 
     private void injectFaultTolerance(Builder builder) {

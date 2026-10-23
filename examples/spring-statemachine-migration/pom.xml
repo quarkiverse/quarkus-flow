@@ -22,7 +22,7 @@
         <surefire-plugin.version>3.6.0</surefire-plugin.version>
         <failsafe-plugin.version>3.6.0</failsafe-plugin.version>
         <version.assertj>3.27.7</version.assertj>
-        <version.awaitility>4.1.1</version.awaitility>
+        <version.awaitility>4.3.0</version.awaitility>
         <skipITs>true</skipITs>
     </properties>
 

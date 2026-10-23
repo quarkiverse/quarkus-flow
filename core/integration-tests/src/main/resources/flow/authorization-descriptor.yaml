@@ -1,0 +1,18 @@
+document:
+  dsl: '1.0.0'
+  namespace: flow
+  name: authorization-descriptor
+  version: '1.0.0'
+do:
+  - callProtectedApi:
+      call: http
+      with:
+        method: get
+        endpoint:
+          uri: '${ .baseUrl + "/api/protected" }'
+          authentication:
+            basic:
+              username: '${ $secret.expr.username }'
+              password: '${ $secret.expr.password }'
+      output:
+        as: '${ $authorization.scheme + "|" + $authorization.parameter }'
