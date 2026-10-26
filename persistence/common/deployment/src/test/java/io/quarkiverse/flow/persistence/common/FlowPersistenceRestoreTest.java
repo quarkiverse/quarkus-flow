@@ -81,23 +81,11 @@ class FlowPersistenceRestoreTest {
     }
 
     @Test
-    @DisplayName("Should skip restoring an instance already active in memory")
-    void test_restore_skips_instance_already_active_in_memory() {
+    @DisplayName("Should call start on every instance returned by scanAll, relying on WorkflowInstance.start() "
+            + "being idempotent for instances already active in memory")
+    void test_restore_calls_start_on_every_scanned_instance() {
         when(config.autoRestore()).thenReturn(true);
         when(reader.scanAll(definition)).thenReturn(Stream.of(instance));
-        when(definition.activeInstance("instance-1")).thenReturn(Optional.of(instance));
-
-        restore.restoreInstances(READY_EVENT);
-
-        verify(instance, never()).start();
-    }
-
-    @Test
-    @DisplayName("Should restore an instance not active in memory")
-    void test_restore_starts_instance_not_active_in_memory() {
-        when(config.autoRestore()).thenReturn(true);
-        when(reader.scanAll(definition)).thenReturn(Stream.of(instance));
-        when(definition.activeInstance("instance-1")).thenReturn(Optional.empty());
 
         restore.restoreInstances(READY_EVENT);
 

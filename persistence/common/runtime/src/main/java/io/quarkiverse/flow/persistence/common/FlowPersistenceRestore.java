@@ -83,13 +83,9 @@ public class FlowPersistenceRestore {
 
             try (Stream<WorkflowInstance> stream = handlers.reader().scanAll(def)) {
                 stream.forEach(instance -> {
-                    if (def.activeInstance(instance.id()).isEmpty()) {
-                        LOG.debug("Restoring workflow instance: {} with WorkflowInstance.status(): {}", instance.id(),
-                                instance.status());
-                        instance.start();
-                    } else {
-                        LOG.debug("Workflow instance: {} is already active in memory, skipping", instance.id());
-                    }
+                    LOG.debug("Restoring workflow instance: {} with WorkflowInstance.status(): {}", instance.id(),
+                            instance.status());
+                    instance.start();
                 });
             }
         }
