@@ -5,10 +5,13 @@ import static java.lang.reflect.Modifier.isStatic;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
@@ -16,25 +19,49 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import dev.langchain4j.agentic.declarative.K;
 import dev.langchain4j.agentic.declarative.LoopCounter;
 import dev.langchain4j.agentic.scope.AgenticScope;
+import dev.langchain4j.invocation.InvocationParameters;
 import dev.langchain4j.service.MemoryId;
+import dev.langchain4j.service.V;
 import io.serverlessworkflow.impl.jackson.JsonUtils;
 
 /**
  * Build-time utility to derive a JSON Schema for a workflow's input from a LangChain4j agent method signature.
  * <p>
  * This implementation uses Jandex APIs instead of reflection, allowing schema generation at build-time.
+ * <p>
+ * The schema describes the {@link AgenticScope} state map, which is what a generated agentic workflow is started
+ * with. Because it is <em>derived</em> rather than authored, it must permit everything Java and LangChain4j permit
+ * and only be strict where the method signature gives a sound guarantee:
+ * <ul>
+ * <li>parameters LangChain4j never writes to the state map (the scope itself, {@link InvocationParameters},
+ * {@code @MemoryId}, {@code @LoopCounter}, {@code @K}) are omitted;</li>
+ * <li>every non-primitive type is nullable, since nothing in a Java signature forbids {@code null};</li>
+ * <li>nested properties are never {@code required} (except primitive-typed ones) because their presence depends on
+ * the application's Jackson configuration, which is not visible at build time.</li>
+ * </ul>
  */
 final class JandexMethodInputJsonSchema {
 
     private static final DotName MEMORY_ID = DotName.createSimple(MemoryId.class.getName());
     private static final DotName AGENTIC_SCOPE = DotName.createSimple(AgenticScope.class.getName());
     private static final DotName LOOP_COUNTER = DotName.createSimple(LoopCounter.class.getName());
+    private static final DotName INVOCATION_PARAMETERS = DotName.createSimple(InvocationParameters.class.getName());
+    private static final DotName VARIABLE = DotName.createSimple(V.class.getName());
+    private static final DotName TYPED_KEY = DotName.createSimple(K.class.getName());
 
+    private static final DotName JSON_IGNORE = DotName.createSimple(JsonIgnore.class.getName());
+    private static final DotName JSON_PROPERTY = DotName.createSimple(JsonProperty.class.getName());
+
+    private static final DotName OPTIONAL = DotName.createSimple(Optional.class.getName());
+    private static final DotName OBJECT = DotName.createSimple(Object.class.getName());
     private static final DotName STRING = DotName.createSimple(String.class.getName());
     private static final DotName CHAR_SEQUENCE = DotName.createSimple(CharSequence.class.getName());
     private static final DotName BOOLEAN = DotName.createSimple(Boolean.class.getName());
@@ -77,31 +104,19 @@ final class JandexMethodInputJsonSchema {
         for (int i = 0; i < paramTypes.size(); i++) {
             Type paramType = paramTypes.get(i);
 
-            // Skip framework parameters
-            if (paramType.kind() == Type.Kind.CLASS) {
-                DotName typeName = paramType.name();
-                if (typeName.equals(AGENTIC_SCOPE)) {
-                    continue;
-                }
-            }
-
-            // Skip parameters with @MemoryId or @LoopCounter annotations
-            if (hasParameterAnnotation(method, i, MEMORY_ID) || hasParameterAnnotation(method, i, LOOP_COUNTER)) {
+            // Skip parameters LangChain4j never writes into the AgenticScope state map
+            if (isFrameworkParameter(index, method, i, paramType)) {
                 continue;
             }
 
-            // Get parameter name from Jandex, fallback to generic name if not available
-            String paramName = method.parameterName(i);
-            if (paramName == null || paramName.isEmpty()) {
-                paramName = "arg" + i;
+            String paramName = stateKeyFor(method, i);
+
+            properties.set(paramName, buildPropertySchema(index, paramType, true, isNullable(paramType)));
+
+            // Optional<T> is the one signature-level statement that a value may legitimately be absent
+            if (!isOptional(paramType)) {
+                requiredArray.add(paramName);
             }
-
-            String jsonType = mapJavaTypeToJsonType(index, paramType);
-            ObjectNode propNode = buildPropertySchema(index, paramType, true);
-            propNode.put("type", jsonType);
-
-            properties.set(paramName, propNode);
-            requiredArray.add(paramName);
         }
 
         if (properties.isEmpty()) {
@@ -116,17 +131,84 @@ final class JandexMethodInputJsonSchema {
     }
 
     /**
+     * A parameter is "framework" when LangChain4j routes it somewhere other than the state map, so it can never
+     * appear in the validated input.
+     * <p>
+     * {@code @K} parameters are keyed by the {@code TypedKey}'s runtime {@code name()}, which Jandex cannot resolve,
+     * so they are omitted too - unlisted properties are simply left unvalidated.
+     */
+    private static boolean isFrameworkParameter(IndexView index, MethodInfo method, int paramIndex, Type paramType) {
+        boolean frameworkType = (paramType.kind() == Type.Kind.CLASS)
+                && (paramType.name().equals(AGENTIC_SCOPE) || isAssignableFrom(index, paramType.name(), INVOCATION_PARAMETERS));
+
+        return frameworkType
+                || hasParameterAnnotation(method, paramIndex, MEMORY_ID)
+                || hasParameterAnnotation(method, paramIndex, LOOP_COUNTER)
+                || hasParameterAnnotation(method, paramIndex, TYPED_KEY);
+    }
+
+    /**
+     * The key this parameter is stored under in the {@link AgenticScope} state map, mirroring LangChain4j's
+     * {@code AgenticParameterNameResolver}: {@code @V("x")} wins over the declared parameter name.
+     */
+    private static String stateKeyFor(MethodInfo method, int paramIndex) {
+        return parameterAnnotation(method, paramIndex, VARIABLE)
+                .map(AnnotationInstance::value)
+                .map(AnnotationValue::asString)
+                .filter(name -> !name.isEmpty())
+                .or(() -> Optional.ofNullable(method.parameterName(paramIndex)).filter(name -> !name.isEmpty()))
+                .orElse("arg" + paramIndex);
+    }
+
+    /**
      * Check if a method parameter has a specific annotation.
      */
     private static boolean hasParameterAnnotation(MethodInfo method, int paramIndex, DotName annotation) {
-        for (AnnotationInstance ann : method.annotations()) {
-            if (ann.name().equals(annotation) && ann.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
-                if (ann.target().asMethodParameter().position() == paramIndex) {
-                    return true;
-                }
-            }
+        return parameterAnnotation(method, paramIndex, annotation).isPresent();
+    }
+
+    /**
+     * Look up a method parameter annotation so its members can be read.
+     */
+    private static Optional<AnnotationInstance> parameterAnnotation(MethodInfo method, int paramIndex, DotName annotation) {
+        return method.annotations()
+                .stream()
+                .filter(ann -> ann.name().equals(annotation))
+                .filter(ann -> ann.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER)
+                .filter(ann -> ann.target().asMethodParameter().position() == paramIndex)
+                .findFirst();
+    }
+
+    /**
+     * Every reference type is nullable: nothing in a Java signature says otherwise. Primitives are the sole
+     * exception - they can be neither {@code null} nor absent.
+     */
+    private static boolean isNullable(Type type) {
+        return type.kind() != Type.Kind.PRIMITIVE;
+    }
+
+    private static boolean isOptional(Type type) {
+        return type.name().equals(OPTIONAL);
+    }
+
+    private static Type optionalValueType(Type type) {
+        return ((type.kind() == Type.Kind.PARAMETERIZED_TYPE) && !type.asParameterizedType().arguments().isEmpty())
+                ? type.asParameterizedType().arguments().get(0)
+                : ClassType.create(OBJECT);
+    }
+
+    /**
+     * Writes the {@code type} keyword, widening it to a {@code ["<type>", "null"]} union when the value may be null.
+     */
+    private static void putType(ObjectNode node, String jsonType, boolean nullable) {
+        if (nullable) {
+            ArrayNode types = JsonUtils.array();
+            types.add(jsonType);
+            types.add("null");
+            node.set("type", types);
+        } else {
+            node.put("type", jsonType);
         }
-        return false;
     }
 
     /**
@@ -135,8 +217,9 @@ final class JandexMethodInputJsonSchema {
      * @param index the Jandex index
      * @param type type of the property
      * @param expandPojoOrRecord whether we are allowed to expand "one level deeper" for POJO-like classes
+     * @param nullable whether {@code null} is a legal value for this property
      */
-    private static ObjectNode buildPropertySchema(IndexView index, Type type, boolean expandPojoOrRecord) {
+    private static ObjectNode buildPropertySchema(IndexView index, Type type, boolean expandPojoOrRecord, boolean nullable) {
         ObjectNode node = JsonUtils.object();
 
         if (type.kind() == Type.Kind.PRIMITIVE) {
@@ -144,9 +227,14 @@ final class JandexMethodInputJsonSchema {
             return node;
         }
 
+        // Optional<T> describes T, always nullable
+        if (isOptional(type)) {
+            return buildPropertySchema(index, optionalValueType(type), expandPojoOrRecord, true);
+        }
+
         // Array - check before the CLASS check since arrays are not CLASS kind
         if (type.kind() == Type.Kind.ARRAY) {
-            node.put("type", "array");
+            putType(node, "array", nullable);
             ObjectNode items = JsonUtils.object();
             items.put("type", mapJavaTypeToJsonType(index, type.asArrayType().constituent()));
             node.set("items", items);
@@ -161,14 +249,14 @@ final class JandexMethodInputJsonSchema {
             // Check if it's a Collection or Map
             // Note: rawTypeInfo might be null if not indexed, so check name directly too
             if (rawTypeInfo != null && isAssignableFrom(index, rawTypeName, COLLECTION)) {
-                node.put("type", "array");
+                putType(node, "array", nullable);
                 ObjectNode items = JsonUtils.object();
                 items.put("type", "object");
                 node.set("items", items);
                 return node;
             }
             if (rawTypeInfo != null && isAssignableFrom(index, rawTypeName, MAP)) {
-                node.put("type", "object");
+                putType(node, "object", nullable);
                 ObjectNode additionalProps = JsonUtils.object();
                 additionalProps.put("type", "object");
                 node.set("additionalProperties", additionalProps);
@@ -181,14 +269,14 @@ final class JandexMethodInputJsonSchema {
                     typeNameStr.equals("java.util.ArrayList") ||
                     typeNameStr.equals("java.util.Set") ||
                     typeNameStr.equals("java.util.Collection")) {
-                node.put("type", "array");
+                putType(node, "array", nullable);
                 ObjectNode items = JsonUtils.object();
                 items.put("type", "object");
                 node.set("items", items);
                 return node;
             }
             if (typeNameStr.equals("java.util.Map") || typeNameStr.equals("java.util.HashMap")) {
-                node.put("type", "object");
+                putType(node, "object", nullable);
                 ObjectNode additionalProps = JsonUtils.object();
                 additionalProps.put("type", "object");
                 node.set("additionalProperties", additionalProps);
@@ -196,13 +284,13 @@ final class JandexMethodInputJsonSchema {
             }
 
             // Other parameterized types
-            node.put("type", "object");
+            putType(node, "object", nullable);
             return node;
         }
 
         if (type.kind() != Type.Kind.CLASS) {
             // Wildcards, type variables, etc.
-            node.put("type", "object");
+            putType(node, "object", nullable);
             return node;
         }
 
@@ -211,12 +299,15 @@ final class JandexMethodInputJsonSchema {
 
         // Enum
         if (classInfo != null && classInfo.isEnum()) {
-            node.put("type", "string");
+            putType(node, "string", nullable);
             ArrayNode enumValues = JsonUtils.array();
             for (FieldInfo field : classInfo.fields()) {
                 if (field.isEnumConstant()) {
                     enumValues.add(field.name());
                 }
+            }
+            if (nullable) {
+                enumValues.addNull();
             }
             node.set("enum", enumValues);
             return node;
@@ -224,7 +315,7 @@ final class JandexMethodInputJsonSchema {
 
         // Collection
         if (isAssignableFrom(index, typeName, COLLECTION)) {
-            node.put("type", "array");
+            putType(node, "array", nullable);
             ObjectNode items = JsonUtils.object();
             items.put("type", "object");
             node.set("items", items);
@@ -233,7 +324,7 @@ final class JandexMethodInputJsonSchema {
 
         // Map
         if (isAssignableFrom(index, typeName, MAP)) {
-            node.put("type", "object");
+            putType(node, "object", nullable);
             ObjectNode additionalProps = JsonUtils.object();
             additionalProps.put("type", "object");
             node.set("additionalProperties", additionalProps);
@@ -242,42 +333,63 @@ final class JandexMethodInputJsonSchema {
 
         // POJO expansion
         if (expandPojoOrRecord && isPojoLike(index, typeName)) {
-            return buildPojoSchema(index, classInfo);
+            return buildPojoSchema(index, classInfo, nullable);
         }
 
-        node.put("type", mapJavaTypeToJsonType(index, type));
+        putType(node, mapJavaTypeToJsonType(index, type), nullable);
         return node;
     }
 
     /**
      * Build a one-level object schema for records or POJO-ish classes.
      * Nested POJOs are not expanded recursively; they become type: "object".
+     * <p>
+     * Only primitive-typed properties are {@code required}: whether a reference-typed property is serialized at all
+     * depends on the application's Jackson configuration (naming strategy, {@code @JsonInclude}, programmatic
+     * customizers), none of which a build-time Jandex pass can see.
      */
-    private static ObjectNode buildPojoSchema(IndexView index, ClassInfo pojoType) {
+    private static ObjectNode buildPojoSchema(IndexView index, ClassInfo pojoType, boolean nullable) {
         ObjectNode root = JsonUtils.object();
-        root.put("type", "object");
+        putType(root, "object", nullable);
 
         ObjectNode properties = JsonUtils.object();
         ArrayNode required = JsonUtils.array();
 
         for (FieldInfo field : pojoType.fields()) {
-            if (isStatic(field.flags())) {
+            if (isStatic(field.flags()) || field.hasAnnotation(JSON_IGNORE)) {
                 continue;
             }
-            String fieldName = field.name();
+            String fieldName = jsonNameOf(field);
             Type fieldType = field.type();
 
-            ObjectNode fieldSchema = buildPropertySchema(index, fieldType, false);
+            ObjectNode fieldSchema = buildPropertySchema(index, fieldType, false, isNullable(fieldType));
             properties.set(fieldName, fieldSchema);
-            required.add(fieldName);
+
+            if (!isNullable(fieldType)) {
+                required.add(fieldName);
+            }
         }
 
         if (!properties.isEmpty()) {
             root.set("properties", properties);
-            root.set("required", required);
+
+            if (!required.isEmpty()) {
+                root.set("required", required);
+            }
         }
 
         return root;
+    }
+
+    /**
+     * The name this field is serialized under, honoring an explicit {@code @JsonProperty}.
+     */
+    private static String jsonNameOf(FieldInfo field) {
+        return Optional.ofNullable(field.annotation(JSON_PROPERTY))
+                .map(AnnotationInstance::value)
+                .map(AnnotationValue::asString)
+                .filter(name -> !name.isEmpty())
+                .orElseGet(field::name);
     }
 
     /**

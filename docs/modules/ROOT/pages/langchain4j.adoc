@@ -339,6 +339,44 @@ All of this happens without writing a single line of orchestration code.
 
 NOTE: See xref:concepts-agentic-langchain4j.adoc[Agentic AI Topology and Internals] for details on how the build-time compiler works.
 
+=== The Generated Input Schema
+
+Step 3 above derives an `input.schema` from the root agent method's signature, and Quarkus Flow validates every call against it (`quarkus.flow.validation.input.enabled`, `true` by default).
+
+The schema describes the `AgenticScope` state map, which is what the generated workflow is started with. Since it is derived rather than authored, it permits everything Java and LangChain4j permit and is strict only where the signature gives a sound guarantee:
+
+[cols="1,1",options="header"]
+|===
+| Signature element | Generated schema
+
+| `AgenticScope`, `InvocationParameters`, `@MemoryId`, `@LoopCounter`, `@K`
+| Omitted — LangChain4j never writes these into the state map
+
+| `@V("x") String bar`
+| Property `x` (the key LangChain4j actually uses), not `bar`
+
+| Any reference type
+| Nullable union, e.g. `"type": ["string", "null"]`
+
+| A primitive (`int`, `boolean`, …)
+| Strict single type, and `required`
+
+| `Optional<T>`
+| `T`, nullable, and not `required`
+
+| A record or POJO parameter
+| Expanded one level; only its primitive-typed properties are `required`
+|===
+
+Nested properties are deliberately not `required`: whether a reference-typed property is serialized at all depends on your application's Jackson configuration (naming strategy, `@JsonInclude`, programmatic `ObjectMapperCustomizer`), which the build-time scan cannot see. `@JsonIgnore` and `@JsonProperty("name")` on a field are honored so the emitted schema stays accurate as documentation in the Dev UI.
+
+If the derived schema ever gets in your way, turn validation off:
+
+[source,properties]
+----
+quarkus.flow.validation.input.enabled=false
+----
+
 == See also
 * xref:data-flow.adoc[Data flow and context management] — deeper dive into `inputFrom` and `exportAs`.
 * xref:dsl-cheatsheet.adoc[Java DSL cheatsheet] — a quick reference for all available workflow tasks.

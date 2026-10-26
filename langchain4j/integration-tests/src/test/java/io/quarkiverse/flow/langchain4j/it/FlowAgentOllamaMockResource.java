@@ -97,6 +97,14 @@ public class FlowAgentOllamaMockResource implements QuarkusTestResourceLifecycle
                         .withTransformerParameter("scoreCallCount", scoreCallCount)
                         .withBody(ollamaResponse("0.85"))));
 
+        // InputClassifier (#1111)
+        wireMock.stubFor(post(urlEqualTo("/api/chat"))
+                .withRequestBody(containing("Classify this input in one word"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(ollamaResponse("GREETING"))));
+
         // MoodExtractor
         wireMock.stubFor(post(urlEqualTo("/api/chat"))
                 .withRequestBody(containing("You are a psychological expert"))
