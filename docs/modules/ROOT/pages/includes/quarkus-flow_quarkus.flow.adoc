@@ -1722,7 +1722,7 @@ endif::add-copy-button-to-config-props[]
 --
 Whether to validate workflow input against the declared `input.schema` at execution time, rejecting non-conforming input.
 
-Disabled by default: non-conforming input is silently accepted, preserving the behavior Quarkus Flow has always had.
+Enabled by default: a declared `input.schema` is a real contract. Set to `false` to restore the pre-1.3.0 behavior, where non-conforming input was silently accepted.
 
 
 ifdef::add-copy-button-to-env-var[]
