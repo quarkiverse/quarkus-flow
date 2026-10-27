@@ -1,12 +1,12 @@
 import { LitElement, html, css } from 'lit';
 import '@vaadin/progress-bar';
 import {
-  renderOpenWorkflowSpecDiagramEditor,
-  unmountOpenWorkflowSpecDiagramEditor,
+  renderOpenWorkflowSpecTextEditor,
+  unmountOpenWorkflowSpecTextEditor,
 } from '../bundle.js';
 import { JsonRpc } from 'jsonrpc';
 
-const diagramEditorStylesUrl = new URL('../bundle.css', import.meta.url).href;
+const textEditorStylesUrl = new URL('../bundle.css', import.meta.url).href;
 
 export class OpenWorkflowSpecDiagramEditorElement extends LitElement {
   _workflowDefinition = null;
@@ -57,7 +57,7 @@ export class OpenWorkflowSpecDiagramEditorElement extends LitElement {
 
   render() {
     return html`
-      <link rel="stylesheet" href=${diagramEditorStylesUrl} />
+      <link rel="stylesheet" href=${textEditorStylesUrl} />
 
       ${this._isLoading
         ? html`
@@ -67,7 +67,15 @@ export class OpenWorkflowSpecDiagramEditorElement extends LitElement {
             </div>
           `
         : html`
-            <div id="container" class="openworkflowspec-diagram-editor-container"></div>
+            <div
+              id="container"
+              class="openworkflowspec-text-editor-container"
+              @mousemove=${
+                // Work around Monaco's incorrect mouseleave detection in Shadow DOM.
+                // https://github.com/microsoft/monaco-editor/issues/3409
+                (event) => event.stopPropagation()
+              }
+            ></div>
           `}
     `;
   }
@@ -116,9 +124,13 @@ export class OpenWorkflowSpecDiagramEditorElement extends LitElement {
       return;
     }
 
-    renderOpenWorkflowSpecDiagramEditor(container, {
-      content: this._workflowDefinition,
-      isReadOnly: this.readonly,
+    renderOpenWorkflowSpecTextEditor(container, {
+      content: this._workflowDefinition ?? '',
+      language: 'json',
+      createLanguageServiceWorker: () =>
+        new Worker(new URL('../worker.js', import.meta.url).href, { type: 'module' }),
+      // Allow editing to reproduce diagnostic hover issues in this PoC
+      isReadOnly: false,
       workflowKey: this.workflowKey,
     });
   }
@@ -127,7 +139,7 @@ export class OpenWorkflowSpecDiagramEditorElement extends LitElement {
     const container = this.renderRoot?.querySelector('#container');
 
     if (container) {
-      unmountOpenWorkflowSpecDiagramEditor(container);
+      unmountOpenWorkflowSpecTextEditor(container);
     }
   }
 }
