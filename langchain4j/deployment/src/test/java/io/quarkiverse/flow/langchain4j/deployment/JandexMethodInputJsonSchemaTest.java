@@ -171,7 +171,7 @@ class JandexMethodInputJsonSchemaTest {
         JsonNode arrayProp = properties.get("items");
         assertThat(typesOf(arrayProp)).containsExactly("array", "null");
         assertThat(arrayProp.get("items")).isNotNull();
-        assertThat(arrayProp.get("items").get("type").asText()).isEqualTo("string");
+        assertThat(typesOf(arrayProp.get("items"))).containsExactly("string", "null");
     }
 
     @Test
@@ -186,6 +186,26 @@ class JandexMethodInputJsonSchemaTest {
         ObjectNode properties = (ObjectNode) schema.get("properties");
         JsonNode collectionProp = properties.get("items");
         assertThat(typesOf(collectionProp)).containsExactly("array", "null");
+        // List<String> items are nullable strings, not objects
+        assertThat(typesOf(collectionProp.get("items"))).containsExactly("string", "null");
+    }
+
+    @Test
+    @DisplayName("test_untyped_collection_items_and_map_values_are_open")
+    void test_untyped_collection_items_and_map_values_are_open() throws Exception {
+        MethodInfo method = getMethod("withMap", Map.class);
+
+        JsonNode mapProp = JandexMethodInputJsonSchema.generateSchemaNode(index, method).get("properties").get("data");
+        // Map<String, Object> values may be anything
+        assertThat(mapProp.get("additionalProperties").isEmpty()).isTrue();
+
+        JsonNode typedMap = JandexMethodInputJsonSchema.generateSchemaNode(index, getMethod("withTypedMap", Map.class))
+                .get("properties").get("data");
+        assertThat(typesOf(typedMap.get("additionalProperties"))).containsExactly("number", "null");
+
+        JsonNode pojoList = JandexMethodInputJsonSchema.generateSchemaNode(index, getMethod("withRecordList", List.class))
+                .get("properties").get("records");
+        assertThat(typesOf(pojoList.get("items"))).containsExactly("object", "null");
     }
 
     @Test
@@ -223,10 +243,8 @@ class JandexMethodInputJsonSchemaTest {
         assertThat(typesOf(pojoProperties.get("name"))).containsExactly("string", "null");
         assertThat(typesOf(pojoProperties.get("age"))).containsExactly("number");
 
-        // Only the primitive property can be guaranteed present
-        ArrayNode pojoRequired = (ArrayNode) pojoProp.get("required");
-        assertThat(pojoRequired).hasSize(1);
-        assertThat(pojoRequired.get(0).asText()).isEqualTo("age");
+        // Jackson may omit even a primitive (e.g. NON_DEFAULT), so nothing nested is required
+        assertThat(pojoProp.has("required")).isFalse();
     }
 
     @Test
@@ -247,9 +265,7 @@ class JandexMethodInputJsonSchemaTest {
         assertThat(recordProperties.has("title")).isTrue();
         assertThat(recordProperties.has("count")).isTrue();
 
-        ArrayNode recordRequired = (ArrayNode) recordProp.get("required");
-        assertThat(recordRequired).hasSize(1);
-        assertThat(recordRequired.get(0).asText()).isEqualTo("count");
+        assertThat(recordProp.has("required")).isFalse();
     }
 
     @Test
@@ -265,18 +281,16 @@ class JandexMethodInputJsonSchemaTest {
     }
 
     @Test
-    @DisplayName("test_primitive_nested_property_stays_required")
-    void test_primitive_nested_property_stays_required() throws Exception {
+    @DisplayName("test_primitive_nested_property_is_not_required")
+    void test_primitive_nested_property_is_not_required() throws Exception {
         MethodInfo method = getMethod("withRecord", TestRecord.class);
 
         ObjectNode schema = JandexMethodInputJsonSchema.generateSchemaNode(index, method);
 
         JsonNode recordProp = schema.get("properties").get("record");
-        // An int can be neither null nor absent
+        // An int cannot be null, but Jackson's NON_DEFAULT may omit it
         assertThat(typesOf(recordProp.get("properties").get("count"))).containsExactly("number");
-        assertThat((ArrayNode) recordProp.get("required")).singleElement()
-                .extracting(JsonNode::asText)
-                .isEqualTo("count");
+        assertThat(recordProp.has("required")).isFalse();
     }
 
     @Test
@@ -288,7 +302,6 @@ class JandexMethodInputJsonSchemaTest {
 
         JsonNode recordProp = schema.get("properties").get("fields");
         assertThat(recordProp.get("properties").properties()).hasSize(2);
-        // No primitive properties at all, so no required entry is emitted
         assertThat(recordProp.has("required")).isFalse();
     }
 
@@ -335,9 +348,7 @@ class JandexMethodInputJsonSchemaTest {
         JsonNode recordProp = schema.get("properties").get("holder");
         // Optional<String> describes a nullable String rather than an opaque object wrapper
         assertThat(typesOf(recordProp.get("properties").get("note"))).containsExactly("string", "null");
-        assertThat((ArrayNode) recordProp.get("required")).singleElement()
-                .extracting(JsonNode::asText)
-                .isEqualTo("count");
+        assertThat(recordProp.has("required")).isFalse();
     }
 
     @Test
@@ -478,6 +489,12 @@ class JandexMethodInputJsonSchemaTest {
         }
 
         public void withMap(Map<String, Object> data) {
+        }
+
+        public void withTypedMap(Map<String, Integer> data) {
+        }
+
+        public void withRecordList(List<TestRecord> records) {
         }
 
         public void withPojo(TestPojo pojo) {

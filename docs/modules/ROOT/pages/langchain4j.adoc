@@ -359,16 +359,19 @@ The schema describes the `AgenticScope` state map, which is what the generated w
 | Nullable union, e.g. `"type": ["string", "null"]`
 
 | A primitive (`int`, `boolean`, …)
-| Strict single type, and `required`
+| Strict single type (never `null`); top-level parameters are `required`
 
 | `Optional<T>`
 | `T`, nullable, and not `required`
 
 | A record or POJO parameter
-| Expanded one level; only its primitive-typed properties are `required`
+| Expanded one level; none of its properties are `required`
+
+| `List<T>`, `T[]`, `Map<K, V>`
+| Items (or map values) typed from `T` (`V`) and nullable; open when the type argument is `Object`, a wildcard or a type variable
 |===
 
-Nested properties are deliberately not `required`: whether a reference-typed property is serialized at all depends on your application's Jackson configuration (naming strategy, `@JsonInclude`, programmatic `ObjectMapperCustomizer`), which the build-time scan cannot see. `@JsonIgnore` and `@JsonProperty("name")` on a field are honored so the emitted schema stays accurate as documentation in the Dev UI.
+Nested properties are deliberately not `required`: whether a property is serialized at all (even a primitive, with `@JsonInclude(NON_DEFAULT)`) depends on your application's Jackson configuration (naming strategy, `@JsonInclude`, programmatic `ObjectMapperCustomizer`), which the build-time scan cannot see. `@JsonIgnore` and `@JsonProperty("name")` on a field are honored so the emitted schema stays accurate as documentation in the Dev UI.
 
 If the derived schema ever gets in your way, turn validation off:
 

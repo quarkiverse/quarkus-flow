@@ -44,8 +44,9 @@ import io.serverlessworkflow.impl.jackson.JsonUtils;
  * <li>parameters LangChain4j never writes to the state map (the scope itself, {@link InvocationParameters},
  * {@code @MemoryId}, {@code @LoopCounter}, {@code @K}) are omitted;</li>
  * <li>every non-primitive type is nullable, since nothing in a Java signature forbids {@code null};</li>
- * <li>nested properties are never {@code required} (except primitive-typed ones) because their presence depends on
- * the application's Jackson configuration, which is not visible at build time.</li>
+ * <li>nested properties are never {@code required} because their presence depends on the application's Jackson
+ * configuration, which is not visible at build time;</li>
+ * <li>collection elements and map values are typed from their declared type argument and are nullable.</li>
  * </ul>
  */
 final class JandexMethodInputJsonSchema {
@@ -235,9 +236,7 @@ final class JandexMethodInputJsonSchema {
         // Array - check before the CLASS check since arrays are not CLASS kind
         if (type.kind() == Type.Kind.ARRAY) {
             putType(node, "array", nullable);
-            ObjectNode items = JsonUtils.object();
-            items.put("type", mapJavaTypeToJsonType(index, type.asArrayType().constituent()));
-            node.set("items", items);
+            node.set("items", elementSchema(index, type.asArrayType().constituent()));
             return node;
         }
 
@@ -250,16 +249,12 @@ final class JandexMethodInputJsonSchema {
             // Note: rawTypeInfo might be null if not indexed, so check name directly too
             if (rawTypeInfo != null && isAssignableFrom(index, rawTypeName, COLLECTION)) {
                 putType(node, "array", nullable);
-                ObjectNode items = JsonUtils.object();
-                items.put("type", "object");
-                node.set("items", items);
+                node.set("items", elementSchema(index, typeArgument(type, 1, 0)));
                 return node;
             }
             if (rawTypeInfo != null && isAssignableFrom(index, rawTypeName, MAP)) {
                 putType(node, "object", nullable);
-                ObjectNode additionalProps = JsonUtils.object();
-                additionalProps.put("type", "object");
-                node.set("additionalProperties", additionalProps);
+                node.set("additionalProperties", elementSchema(index, typeArgument(type, 2, 1)));
                 return node;
             }
 
@@ -270,16 +265,12 @@ final class JandexMethodInputJsonSchema {
                     typeNameStr.equals("java.util.Set") ||
                     typeNameStr.equals("java.util.Collection")) {
                 putType(node, "array", nullable);
-                ObjectNode items = JsonUtils.object();
-                items.put("type", "object");
-                node.set("items", items);
+                node.set("items", elementSchema(index, typeArgument(type, 1, 0)));
                 return node;
             }
             if (typeNameStr.equals("java.util.Map") || typeNameStr.equals("java.util.HashMap")) {
                 putType(node, "object", nullable);
-                ObjectNode additionalProps = JsonUtils.object();
-                additionalProps.put("type", "object");
-                node.set("additionalProperties", additionalProps);
+                node.set("additionalProperties", elementSchema(index, typeArgument(type, 2, 1)));
                 return node;
             }
 
@@ -316,18 +307,14 @@ final class JandexMethodInputJsonSchema {
         // Collection
         if (isAssignableFrom(index, typeName, COLLECTION)) {
             putType(node, "array", nullable);
-            ObjectNode items = JsonUtils.object();
-            items.put("type", "object");
-            node.set("items", items);
+            node.set("items", JsonUtils.object());
             return node;
         }
 
         // Map
         if (isAssignableFrom(index, typeName, MAP)) {
             putType(node, "object", nullable);
-            ObjectNode additionalProps = JsonUtils.object();
-            additionalProps.put("type", "object");
-            node.set("additionalProperties", additionalProps);
+            node.set("additionalProperties", JsonUtils.object());
             return node;
         }
 
@@ -341,19 +328,51 @@ final class JandexMethodInputJsonSchema {
     }
 
     /**
+     * Schema for a collection/array element or map value. Derived from the declared element type and always nullable
+     * (except primitives), since Java collections accept {@code null} elements. When the type is unknown
+     * ({@code Object}, wildcards, type variables) the schema is left open.
+     */
+    private static ObjectNode elementSchema(IndexView index, Type type) {
+        if (type == null) {
+            return JsonUtils.object();
+        }
+        if (type.kind() == Type.Kind.WILDCARD_TYPE) {
+            return type.asWildcardType().superBound() == null
+                    ? elementSchema(index, type.asWildcardType().extendsBound())
+                    : JsonUtils.object();
+        }
+        if (type.kind() == Type.Kind.TYPE_VARIABLE || type.kind() == Type.Kind.UNRESOLVED_TYPE_VARIABLE
+                || type.kind() == Type.Kind.TYPE_VARIABLE_REFERENCE || type.name().equals(OBJECT)) {
+            return JsonUtils.object();
+        }
+        return buildPropertySchema(index, type, false, isNullable(type));
+    }
+
+    /**
+     * The type argument at {@code position}, only trusted for {@code java.util} containers whose declared type
+     * parameters have the standard meaning; {@code null} (open schema) otherwise.
+     */
+    private static Type typeArgument(Type type, int expectedArguments, int position) {
+        if (type.kind() != Type.Kind.PARAMETERIZED_TYPE || !type.name().toString().startsWith("java.util.")) {
+            return null;
+        }
+        List<Type> arguments = type.asParameterizedType().arguments();
+        return arguments.size() == expectedArguments ? arguments.get(position) : null;
+    }
+
+    /**
      * Build a one-level object schema for records or POJO-ish classes.
      * Nested POJOs are not expanded recursively; they become type: "object".
      * <p>
-     * Only primitive-typed properties are {@code required}: whether a reference-typed property is serialized at all
-     * depends on the application's Jackson configuration (naming strategy, {@code @JsonInclude}, programmatic
-     * customizers), none of which a build-time Jandex pass can see.
+     * No property is {@code required}: whether a property is serialized at all depends on the application's Jackson
+     * configuration ({@code @JsonInclude} such as {@code NON_DEFAULT}, which can omit even primitives left at their
+     * default, naming strategies, programmatic customizers), none of which a build-time Jandex pass can see.
      */
     private static ObjectNode buildPojoSchema(IndexView index, ClassInfo pojoType, boolean nullable) {
         ObjectNode root = JsonUtils.object();
         putType(root, "object", nullable);
 
         ObjectNode properties = JsonUtils.object();
-        ArrayNode required = JsonUtils.array();
 
         for (FieldInfo field : pojoType.fields()) {
             if (isStatic(field.flags()) || field.hasAnnotation(JSON_IGNORE)) {
@@ -365,17 +384,10 @@ final class JandexMethodInputJsonSchema {
             ObjectNode fieldSchema = buildPropertySchema(index, fieldType, false, isNullable(fieldType));
             properties.set(fieldName, fieldSchema);
 
-            if (!isNullable(fieldType)) {
-                required.add(fieldName);
-            }
         }
 
         if (!properties.isEmpty()) {
             root.set("properties", properties);
-
-            if (!required.isEmpty()) {
-                root.set("required", required);
-            }
         }
 
         return root;
