@@ -48,7 +48,6 @@ import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.WAIT_TASK_
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.WORKFLOW_CREATE_ACTION;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.WORKFLOW_EXECUTE_ACTION;
 
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -90,12 +89,6 @@ import io.serverlessworkflow.impl.lifecycle.EventType;
 
 public class SpanUtils {
 
-    public enum TaskNameStrategy {
-        ACTION_AND_TASK_NAME,
-        ACTION_AND_TASK_ID,
-        DEBUG
-    }
-
     public static void appendWorkflowEvent(Span span, EventType eventType) {
         span.addEvent(eventType.toString());
     }
@@ -104,22 +97,8 @@ public class SpanUtils {
         span.addEvent(eventType.toString());
     }
 
-    public static String generateTaskSpanName(
-            TaskNameStrategy nameStrategy,
-            String taskInstanceId,
-            String taskName,
-            int taskInstanceIteration, int retryAttempt) {
-        switch (nameStrategy) {
-            case ACTION_AND_TASK_NAME:
-                return TASK_EXECUTE_ACTION + " " + taskName;
-            case ACTION_AND_TASK_ID:
-                return TASK_EXECUTE_ACTION + " " + taskInstanceId;
-            case DEBUG:
-                return taskInstanceId + "-" + " (" + taskName + ") # " + taskInstanceIteration + "(retry: " + retryAttempt
-                        + ")";
-            default:
-                throw new NoSuchElementException("TaskNameStrategy " + nameStrategy + "is not recognized.");
-        }
+    public static String generateTaskSpanName(String taskName) {
+        return TASK_EXECUTE_ACTION + " " + taskName;
     }
 
     public static String generateWorkflowCreateSpanName(String workflowName) {
