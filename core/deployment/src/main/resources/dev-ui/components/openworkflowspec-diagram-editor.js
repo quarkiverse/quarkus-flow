@@ -8,6 +8,18 @@ import { JsonRpc } from 'jsonrpc';
 
 const textEditorStylesUrl = new URL('../bundle.css', import.meta.url).href;
 
+self.MonacoEnvironment = {
+  getWorker(_workerId, label) {
+    if (label === 'editorWorkerService') {
+      return new Worker(
+        new URL('../editor-worker.js', import.meta.url).href,
+        { type: 'module' }
+      );
+    }
+    throw new Error(`Unexpected Monaco worker: ${label}`);
+  },
+};
+
 export class OpenWorkflowSpecDiagramEditorElement extends LitElement {
   _workflowDefinition = null;
 

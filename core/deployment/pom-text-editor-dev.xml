@@ -14,7 +14,7 @@
         <esbuild-maven-plugin.version>2.0.0</esbuild-maven-plugin.version>
         <react.version>19.3.1</react.version>
         <scheduler.version>0.28.0</scheduler.version>
-        <openworkflowspec.text-editor.version>0.0.0-489-1</openworkflowspec.text-editor.version>
+        <openworkflowspec.text-editor.version>0.0.0-493-1</openworkflowspec.text-editor.version>
         <use-sync-external-store.version>1.7.0</use-sync-external-store.version>
     </properties>
 
@@ -128,6 +128,7 @@
                     <!-- Do not copy the raw bundle sources, esbuild will generate the compiled versions -->
                     <exclude>dev-ui/bundle.js</exclude>
                     <exclude>dev-ui/worker.js</exclude>
+                    <exclude>dev-ui/editor-worker.js</exclude>
                 </excludes>
             </resource>
         </resources>
@@ -190,6 +191,17 @@
                             <entryPoint>worker.js</entryPoint>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>esbuild-editor-worker</id>
+                        <goals>
+                            <goal>esbuild</goal>
+                        </goals>
+                        <configuration>
+                            <sourceDirectory>src/main/resources/dev-ui</sourceDirectory>
+                            <outputDirectory>target/editor-worker-out</outputDirectory>
+                            <entryPoint>editor-worker.js</entryPoint>
+                        </configuration>
+                    </execution>
                 </executions>
 
                 <dependencies>
@@ -243,6 +255,9 @@
                             <resources>
                                 <resource>
                                     <directory>${project.build.directory}/worker-out</directory>
+                                </resource>
+                                <resource>
+                                    <directory>${project.build.directory}/editor-worker-out</directory>
                                 </resource>
                             </resources>
                         </configuration>
