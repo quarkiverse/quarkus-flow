@@ -23,7 +23,7 @@ public class WorkflowMetadataEntity extends MetadataEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumns({
             @JoinColumn(name = "applicationId", referencedColumnName = "applicationId", insertable = false, updatable = false),
-            @JoinColumn(name = "workflowInstanceId", referencedColumnName = "instanceId", insertable = false, updatable = false) })
+            @JoinColumn(name = "instanceId", referencedColumnName = "instanceId", insertable = false, updatable = false) })
     private WorkflowInstanceEntity workflowInstance;
 
     @Override
