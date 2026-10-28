@@ -48,7 +48,7 @@
         <io.serverlessworkflow.version>7.35.3.Final</io.serverlessworkflow.version>
         <io.cloudevents.version>5.1.0</io.cloudevents.version>
 
-        <io.quarkiverse.jackson-jq.version>2.6.2</io.quarkiverse.jackson-jq.version>
+        <io.quarkiverse.jackson-jq.version>2.6.3</io.quarkiverse.jackson-jq.version>
         <com.github.zafarkhaja.version>0.10.2</com.github.zafarkhaja.version>
         <io.quarkiverse.langchain4j.version>1.14.2</io.quarkiverse.langchain4j.version>
 
