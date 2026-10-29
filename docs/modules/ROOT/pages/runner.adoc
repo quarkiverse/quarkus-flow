@@ -211,15 +211,17 @@ export FLOW_INVOKER_KEY="invoker-secret-change-me"
 
 **Predefined roles:**
 
-* `flow-admin` - Full access to all endpoints and namespaces
-* `flow-invoker` - Execute workflows and read definitions (no write access)
+* `flow-admin` - Access to all endpoints in every namespace
+* `flow-invoker` - Access to all endpoints, restricted to the namespaces the key or token is authorized for
 
 **API Key usage:**
 
 [source,bash]
 ----
-curl -H "Authorization: Bearer ${FLOW_INVOKER_KEY}" \
-  http://localhost:8080/q/flow/exec/examples/hello-runner
+curl -X POST http://localhost:8080/q/flow/exec/examples/hello-runner \
+  -H "Authorization: Bearer ${FLOW_INVOKER_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "World"}'
 ----
 
 === OIDC (Enterprise SSO)
@@ -304,8 +306,10 @@ contain a namespace claim.
 
 [source,bash]
 ----
-curl -H "Authorization: Bearer ${JWT_TOKEN}" \
-  http://localhost:8080/q/flow/exec/examples/hello-runner
+curl -X POST http://localhost:8080/q/flow/exec/examples/hello-runner \
+  -H "Authorization: Bearer ${JWT_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "World"}'
 ----
 
 === Custom authentication
@@ -402,6 +406,9 @@ This ensures clients can rely on a consistent API contract: asynchronous executi
 
 For truly long-running workflows, use asynchronous execution and poll for status or implement callbacks (future feature).
 
+The `instanceId` returned by an asynchronous execution lets you track the instance with the <<workflow-instances,instances endpoints>> and control it with the <<instance-lifecycle,suspend, resume, and cancel endpoints>>. See the <<api-reference>> for every supported endpoint.
+
+[[execution-response-fields]]
 === Execution response fields
 
 Synchronous and asynchronous executions return different response structures:
@@ -504,24 +511,24 @@ NOTE: The OpenAPI document is publicly accessible even when authentication is en
 
 === Role-based access control (RBAC)
 
-The Runner enforces two predefined roles across all endpoints:
+Every Runner endpoint under `/q/flow` requires one of two predefined roles:
 
 [cols="1,2,3",options="header"]
 |===
 | Role
-| Access Level
 | Endpoints
+| Namespace restrictions
 
 | `flow-admin`
-| Full access
-| All definition and execution endpoints
+| All Runner endpoints
+| None. Administrators can access every namespace, with or without a namespace claim.
 
 | `flow-invoker`
-| Execute and read
-| `POST /q/flow/exec/*`, `GET /q/flow/definitions`, `GET /q/flow/instances`, `GET /q/flow/*/instances`
+| All Runner endpoints (execution, instance lifecycle, definitions, instances)
+| Limited to the authorized namespaces when namespace validation is enabled (see below).
 |===
 
-Configure roles per API key or extract them from OIDC JWT tokens.
+Requests without a valid identity are rejected with `401 Unauthorized`. Configure roles per API key or extract them from OIDC JWT tokens.
 
 === Namespace-based authorization (ABAC)
 
@@ -580,24 +587,104 @@ quarkus.flow.runner.security.namespace.validate=false
 
 When disabled, all authenticated users can access workflows in all namespaces. Only role-based authorization (RBAC) is enforced.
 
-=== Public workflow catalog
+=== Public OpenAPI document
 
-The `/q/flow/definitions` endpoint and OpenAPI documentation expose workflow metadata (namespace, name, version, summary) **without authentication**. This is by design to enable API discovery.
+When `quarkus-smallrye-openapi` is present, the OpenAPI document (`/q/openapi`) and Swagger UI are served **without authentication** to enable API discovery. With `quarkus.flow.runner.openapi.expand-workflows=true` (the default), the document includes one operation per registered workflow.
 
-**What is exposed:**
+**What the OpenAPI document exposes:**
 
 * Workflow identifiers (`namespace:name:version`)
-* Descriptions and summaries
+* Titles and summaries
 * Input schemas (for client-side validation)
 
-**What is protected:**
+**What is protected (requires authentication):**
 
-* Workflow execution (requires authentication)
-* Full workflow source code (requires authentication and `flow-admin` role)
+* Every Runner endpoint under `/q/flow`, including `GET /q/flow/definitions`
+* Workflow execution and instance lifecycle operations
+* Full workflow definitions (YAML/JSON source)
 
-If you need to hide the workflow catalog, customize the Runner resource via CDI interceptors or deploy behind an API gateway with path-based restrictions.
+To hide the workflow catalog from the OpenAPI document, set `quarkus.flow.runner.openapi.expand-workflows=false`, or restrict `/q/openapi` and `/q/swagger-ui` at an API gateway.
 
+[[api-reference]]
 == API reference
+
+=== Endpoint overview
+
+All endpoints are served under `/q/flow` and require the `flow-admin` or `flow-invoker` role (see <<security-modes>>). When namespace validation is enabled, the `\{namespace}` path parameter (or the `namespace` query parameter) is checked against the caller's authorized namespaces.
+
+[cols="1,3,3",options="header"]
+|===
+| Method
+| Path
+| Purpose
+
+| `POST`
+| `/q/flow/exec/\{namespace}/\{name}[/\{version}]`
+| Start a workflow instance asynchronously (`202 Accepted`)
+
+| `POST`
+| `/q/flow/exec/\{namespace}/\{name}[/\{version}]/sync`
+| Run a workflow instance and wait for its output (`200 OK`)
+
+| `POST`
+| `/q/flow/exec/\{namespace}/\{name}[/\{version}]/\{instanceId}/suspend`
+| Suspend a running instance
+
+| `POST`
+| `/q/flow/exec/\{namespace}/\{name}[/\{version}]/\{instanceId}/resume`
+| Resume a suspended instance
+
+| `POST`
+| `/q/flow/exec/\{namespace}/\{name}[/\{version}]/\{instanceId}/cancel`
+| Cancel an instance
+
+| `GET`
+| `/q/flow/definitions`
+| List workflow definitions
+
+| `GET`
+| `/q/flow/definitions/\{namespace}/\{name}[/\{version}]`
+| Get a workflow definition as YAML or JSON
+
+| `GET`
+| `/q/flow/instances`
+| List active instances on this Runner
+
+| `GET`
+| `/q/flow/\{namespace}/\{name}[/\{version}]/instances`
+| List active instances of one workflow on this Runner
+|===
+
+Segments in square brackets are optional: when `\{version}` is omitted, the Runner resolves the **latest** registered version (see <<multiple-workflow-versions>>).
+
+=== Common conventions
+
+**Authentication:** Send credentials in the `Authorization` header (`Authorization: Bearer <api-key-or-jwt>`). With `security.type=NONE`, no header is required.
+
+**Request bodies:** Execution endpoints accept `Content-Type: application/json`. The body is the workflow input and may be any JSON value (object, array, string, number, boolean). It is optional.
+
+**Common error responses:**
+
+[cols="1,4",options="header"]
+|===
+| Status
+| Meaning
+
+| `400 Bad Request`
+| Malformed JSON body, or an invalid query parameter value (for example, a terminal `status` filter on the instances endpoints).
+
+| `401 Unauthorized`
+| Missing or invalid credentials.
+
+| `403 Forbidden`
+| The caller is authenticated but not authorized for the requested namespace.
+
+| `404 Not Found`
+| The workflow definition, version, or instance does not exist on this Runner. The body is a plain-text message, for example `Workflow instance '<id>' not found`.
+
+| `415 Unsupported Media Type`
+| The `Accept` header of a definition request is neither `application/json` nor `application/yaml`.
+|===
 
 === Workflow execution
 
@@ -610,7 +697,9 @@ Execute the latest version of a workflow asynchronously (non-blocking).
 * `namespace` (string, required) - Workflow namespace
 * `name` (string, required) - Workflow name
 
+**Query parameters:**
 
+* `wait` (boolean, optional, default `false`) - *Deprecated.* When `true`, the request blocks until the workflow completes and returns `200 OK` with the execution metadata plus a `workflowOutput` field. Use the `/sync` endpoints instead.
 
 **Request body (JSON, optional):**
 
@@ -624,14 +713,15 @@ Execute the latest version of a workflow asynchronously (non-blocking).
 
 **Responses:**
 
-* **202 Accepted** - Workflow accepted for asynchronous processing
+* **202 Accepted** - Workflow accepted for asynchronous processing. Body: see <<execution-response-fields>>
 * **400 Bad Request** - Invalid input JSON
 * **401 Unauthorized** - Authentication required
 * **403 Forbidden** - Access denied to namespace
 * **404 Not Found** - No versions of the workflow found
-* **429 Too Many Requests** - Rate limit exceeded (if configured)
 
 NOTE: This endpoint strictly returns **202 Accepted** without workflow output, even if the workflow completes before the response is sent. This ensures a consistent contract where async execution never includes output in the response.
+
+TIP: Keep the `instanceId` from the response. You need it to suspend, resume, or cancel the instance (see <<instance-lifecycle>>).
 
 **Example:**
 
@@ -693,7 +783,6 @@ Execute the latest version of a workflow synchronously (blocking until completio
 * **401 Unauthorized** - Authentication required
 * **403 Forbidden** - Access denied to namespace
 * **404 Not Found** - Workflow not found
-* **429 Too Many Requests** - Rate limit exceeded (if configured)
 
 **Example:**
 
@@ -740,6 +829,126 @@ curl -X POST "http://localhost:8080/q/flow/exec/examples/order-processing/2.1.0/
   -d '{"orderId": "12345", "customerId": "alice@example.com"}'
 ----
 
+[[instance-lifecycle]]
+=== Instance lifecycle (suspend, resume, cancel)
+
+These endpoints control a workflow instance that was started on this Runner, identified by the `instanceId` returned from an <<execution-response-fields,asynchronous execution>> or listed by the <<workflow-instances,instances endpoints>>.
+
+Each operation is available in two forms:
+
+* `POST /q/flow/exec/\{namespace}/\{name}/\{version}/\{instanceId}/<operation>` - targets an instance of a specific workflow version
+* `POST /q/flow/exec/\{namespace}/\{name}/\{instanceId}/<operation>` - targets an instance of the **latest** workflow version
+
+IMPORTANT: The instance is looked up among the active instances of the resolved workflow version. If the instance was started on an older version than the latest one, the "latest" form returns `404 Not Found`. Use the versioned form (the `workflowVersion` field returned by the instances endpoints tells you which one) whenever more than one version is deployed.
+
+IMPORTANT: Only instances held in this Runner's **in-memory active instance registry** can be controlled. Completed, faulted, or cancelled instances, and instances running on another Runner replica, return `404 Not Found`.
+
+**Path parameters:**
+
+* `namespace` (string, required) - Workflow namespace (access validated if namespace authorization is enabled)
+* `name` (string, required) - Workflow name
+* `version` (string, required in the versioned form) - Workflow version
+* `instanceId` (string, required) - Workflow instance identifier
+
+**Request body:** None. Operations requested for the same instance are applied in the order they are received.
+
+**Responses (all operations):**
+
+* **200 OK** - The operation was applied. The response has no body.
+* **304 Not Modified** - The instance is not in a state that allows the operation (see the table below). No change was made.
+* **401 Unauthorized** - Authentication required
+* **403 Forbidden** - Access denied to namespace
+* **404 Not Found** - The workflow version or the active instance was not found on this Runner
+
+NOTE: HTTP `304` responses do not carry a body, so clients should not expect one. To check the current status of the instance, query `GET /q/flow/\{namespace}/\{name}/\{version}/instances`.
+
+[cols="1,3,3",options="header"]
+|===
+| Operation
+| Effect
+| Returns `304 Not Modified` when
+
+| `suspend`
+| The task currently running finishes, but the next task does not start until the instance is resumed. The instance status becomes `SUSPENDED`.
+| The instance is already suspended, or is no longer active.
+
+| `resume`
+| A suspended instance continues with its next task. The instance status becomes `RUNNING`.
+| The instance is not suspended, or is no longer active.
+
+| `cancel`
+| The Runner tries to cancel the current task. Once it ends, no further task runs and the instance remains `CANCELLED` permanently. Cancelled instances are removed from the active registry.
+| The instance is no longer active.
+|===
+
+==== POST /q/flow/exec/\{namespace}/\{name}[/\{version}]/\{instanceId}/suspend
+
+Suspend a running workflow instance.
+
+**Example:**
+
+[source,bash]
+----
+curl -i -X POST "http://localhost:8080/q/flow/exec/examples/order-processing/2.1.0/550e8400-e29b-41d4-a716-446655440000/suspend" \
+  -H "Authorization: Bearer ${API_KEY}"
+----
+
+[source,console]
+----
+HTTP/1.1 200 OK
+----
+
+==== POST /q/flow/exec/\{namespace}/\{name}[/\{version}]/\{instanceId}/resume
+
+Resume a suspended workflow instance.
+
+**Example:**
+
+[source,bash]
+----
+curl -i -X POST "http://localhost:8080/q/flow/exec/examples/order-processing/2.1.0/550e8400-e29b-41d4-a716-446655440000/resume" \
+  -H "Authorization: Bearer ${API_KEY}"
+----
+
+==== POST /q/flow/exec/\{namespace}/\{name}[/\{version}]/\{instanceId}/cancel
+
+Cancel a workflow instance. Cancellation is final: a cancelled instance cannot be resumed.
+
+**Example:**
+
+[source,bash]
+----
+curl -i -X POST "http://localhost:8080/q/flow/exec/examples/order-processing/2.1.0/550e8400-e29b-41d4-a716-446655440000/cancel" \
+  -H "Authorization: Bearer ${API_KEY}"
+----
+
+==== End-to-end example
+
+The following sequence starts a long-running workflow, suspends it, inspects it, resumes it, and finally cancels it:
+
+[source,bash]
+----
+BASE=http://localhost:8080/q/flow
+AUTH="Authorization: Bearer ${API_KEY}"
+
+# 1. Start the workflow asynchronously and capture the instance id
+INSTANCE_ID=$(curl -s -X POST "$BASE/exec/examples/order-processing/2.1.0" \
+  -H "$AUTH" -H "Content-Type: application/json" \
+  -d '{"orderId": "12345"}' | jq -r .instanceId)
+
+# 2. Suspend it (200 OK)
+curl -i -X POST "$BASE/exec/examples/order-processing/2.1.0/$INSTANCE_ID/suspend" -H "$AUTH"
+
+# 3. Confirm it is suspended
+curl -s "$BASE/examples/order-processing/2.1.0/instances?status=SUSPENDED" -H "$AUTH" | jq .
+
+# 4. Resume it (200 OK); resuming again returns 304 Not Modified
+curl -i -X POST "$BASE/exec/examples/order-processing/2.1.0/$INSTANCE_ID/resume" -H "$AUTH"
+
+# 5. Cancel it (200 OK); afterwards the instance is no longer active and returns 404
+curl -i -X POST "$BASE/exec/examples/order-processing/2.1.0/$INSTANCE_ID/cancel" -H "$AUTH"
+----
+
 === Workflow definitions
 
 ==== GET /q/flow/definitions
@@ -754,7 +963,15 @@ List all workflow definitions accessible to the authenticated user.
 
 * **200 OK** - Array of workflow metadata objects
 * **401 Unauthorized** - Authentication required
-* **403 Forbidden** - Access denied to requested namespace
+* **403 Forbidden** - Access denied to the namespace given in the `namespace` query parameter
+
+**Example:**
+
+[source,bash]
+----
+curl -H "Authorization: Bearer ${API_KEY}" \
+  "http://localhost:8080/q/flow/definitions?namespace=examples"
+----
 
 **Response body example:**
 
@@ -765,8 +982,12 @@ List all workflow definitions accessible to the authenticated user.
     "namespace": "examples",
     "name": "hello-runner",
     "version": "1.0.0",
-    "summary": "Simple greeting workflow for the Runner",
-    "_links": {
+    "dsl": "1.0.0",
+    "title": "Simple greeting workflow for the Runner",
+    "summary": null,
+    "metadata": {},
+    "inputSchema": { ... },
+    "links": {
       "self": {
         "href": "/q/flow/definitions/examples/hello-runner/1.0.0"
       },
@@ -778,7 +999,42 @@ List all workflow definitions accessible to the authenticated user.
 ]
 ----
 
-NOTE: Results are automatically filtered by the user's authorized namespaces when namespace validation is enabled.
+**Definition fields:**
+
+[cols="1,1,3"]
+|===
+|Field |Type |Description
+
+|`namespace`, `name`, `version`
+|string
+|Workflow identity, taken from the `document` section.
+
+|`dsl`
+|string
+|DSL version declared in `document.dsl`.
+
+|`title`, `summary`
+|string or `null`
+|Values of `document.title` and `document.summary`.
+
+|`metadata`
+|object
+|Contents of `document.metadata` (empty object when not set).
+
+|`inputSchema`
+|object or `null`
+|The workflow's `input.schema`, when declared.
+
+|`links.self.href`
+|string
+|Path to retrieve the full definition of this version.
+
+|`links.execute.href`
+|string
+|Path to execute this version asynchronously.
+|===
+
+NOTE: Without the `namespace` query parameter, results are automatically filtered to the caller's authorized namespaces when namespace validation is enabled.
 
 ==== GET /q/flow/definitions/\{namespace}/\{name}
 
@@ -791,7 +1047,7 @@ Get the full workflow definition for the latest version.
 
 **Request headers:**
 
-* `Accept: application/json` or `Accept: application/yaml` (controls response format)
+* `Accept: application/json` or `Accept: application/yaml` (controls response format; JSON is returned when the header is absent or `+*/*+`)
 
 **Responses:**
 
@@ -822,6 +1078,7 @@ Get the full workflow definition for a specific version.
 
 **Request headers and responses:** Same as the latest version endpoint.
 
+[[workflow-instances]]
 === Workflow instances
 
 These endpoints expose the workflow instances currently tracked in this runner's **in-memory active instance registry**. They report only what this specific pod/process is actively holding — not the full execution history persisted to a database. Use them to distinguish instances actively being processed on this runner from instances that are persisted but not running on any pod, for example when building a rebalancer service.
@@ -951,6 +1208,7 @@ include::includes/quarkus-flow-runner_quarkus.flow.adoc[leveloffset=+1]
 
 == Advanced topics
 
+[[multiple-workflow-versions]]
 === Multiple workflow versions
 
 The Runner supports running multiple versions of the same workflow simultaneously. Workflows are uniquely identified by the `namespace:name:version` tuple.
