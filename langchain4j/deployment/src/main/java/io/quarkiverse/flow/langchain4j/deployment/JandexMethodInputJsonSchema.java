@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -48,6 +49,10 @@ import io.serverlessworkflow.impl.jackson.JsonUtils;
  * configuration, which is not visible at build time;</li>
  * <li>collection elements and map values are typed from their declared type argument and are nullable.</li>
  * </ul>
+ * <p>
+ * An explicit non-null contract ({@code @NotNull} from Jakarta Validation or JetBrains, JSpecify {@code @NonNull}) is
+ * the author opting back into strictness: the annotated parameter or nested property is no longer nullable, and a
+ * nested one becomes {@code required}.
  */
 final class JandexMethodInputJsonSchema {
 
@@ -60,6 +65,12 @@ final class JandexMethodInputJsonSchema {
 
     private static final DotName JSON_IGNORE = DotName.createSimple(JsonIgnore.class.getName());
     private static final DotName JSON_PROPERTY = DotName.createSimple(JsonProperty.class.getName());
+
+    // Matched by name only, so none of these libraries is needed on the deployment classpath
+    private static final Set<DotName> NON_NULL_ANNOTATIONS = Set.of(
+            DotName.createSimple("jakarta.validation.constraints.NotNull"),
+            DotName.createSimple("org.jspecify.annotations.NonNull"),
+            DotName.createSimple("org.jetbrains.annotations.NotNull"));
 
     private static final DotName OPTIONAL = DotName.createSimple(Optional.class.getName());
     private static final DotName OBJECT = DotName.createSimple(Object.class.getName());
@@ -112,7 +123,8 @@ final class JandexMethodInputJsonSchema {
 
             String paramName = stateKeyFor(method, i);
 
-            properties.set(paramName, buildPropertySchema(index, paramType, true, isNullable(paramType)));
+            boolean nullable = isNullable(paramType) && !isParameterDeclaredNonNull(method, i, paramType);
+            properties.set(paramName, buildPropertySchema(index, paramType, true, nullable));
 
             // Optional<T> is the one signature-level statement that a value may legitimately be absent
             if (!isOptional(paramType)) {
@@ -186,6 +198,25 @@ final class JandexMethodInputJsonSchema {
      */
     private static boolean isNullable(Type type) {
         return type.kind() != Type.Kind.PRIMITIVE;
+    }
+
+    /**
+     * Whether the parameter carries an explicit non-null contract, either as a declaration annotation or as a
+     * {@code TYPE_USE} annotation on its type.
+     */
+    private static boolean isParameterDeclaredNonNull(MethodInfo method, int paramIndex, Type paramType) {
+        return NON_NULL_ANNOTATIONS.stream()
+                .anyMatch(name -> hasParameterAnnotation(method, paramIndex, name) || paramType.hasAnnotation(name));
+    }
+
+    /**
+     * Whether the field carries an explicit non-null contract. Only the field itself and its top-level type count, so
+     * {@code List<@NonNull String>} does not make the list non-null. Record component annotations reach the field
+     * when they target {@code FIELD} or {@code TYPE_USE}.
+     */
+    private static boolean isFieldDeclaredNonNull(FieldInfo field) {
+        return NON_NULL_ANNOTATIONS.stream()
+                .anyMatch(name -> field.hasDeclaredAnnotation(name) || field.type().hasAnnotation(name));
     }
 
     private static boolean isOptional(Type type) {
@@ -364,15 +395,22 @@ final class JandexMethodInputJsonSchema {
      * Build a one-level object schema for records or POJO-ish classes.
      * Nested POJOs are not expanded recursively; they become type: "object".
      * <p>
-     * No property is {@code required}: whether a property is serialized at all depends on the application's Jackson
-     * configuration ({@code @JsonInclude} such as {@code NON_DEFAULT}, which can omit even primitives left at their
-     * default, naming strategies, programmatic customizers), none of which a build-time Jandex pass can see.
+     * By default no property is {@code required}: whether a property is serialized at all depends on the
+     * application's Jackson configuration ({@code @JsonInclude} such as {@code NON_DEFAULT}, which can omit even
+     * primitives left at their default, naming strategies, programmatic customizers), none of which a build-time
+     * Jandex pass can see.
+     * <p>
+     * A reference-typed property with an explicit non-null contract is the exception: it is non-nullable and
+     * {@code required}, since a non-null value is serialized under the default inclusion. {@code Optional} and
+     * primitive properties are left as they are - an empty {@code Optional} is still {@code null} on the wire, and
+     * {@code NON_DEFAULT} may still omit a primitive.
      */
     private static ObjectNode buildPojoSchema(IndexView index, ClassInfo pojoType, boolean nullable) {
         ObjectNode root = JsonUtils.object();
         putType(root, "object", nullable);
 
         ObjectNode properties = JsonUtils.object();
+        ArrayNode requiredArray = JsonUtils.array();
 
         for (FieldInfo field : pojoType.fields()) {
             if (isStatic(field.flags()) || field.hasAnnotation(JSON_IGNORE)) {
@@ -381,13 +419,21 @@ final class JandexMethodInputJsonSchema {
             String fieldName = jsonNameOf(field);
             Type fieldType = field.type();
 
-            ObjectNode fieldSchema = buildPropertySchema(index, fieldType, false, isNullable(fieldType));
+            boolean strict = isNullable(fieldType) && !isOptional(fieldType) && isFieldDeclaredNonNull(field);
+
+            ObjectNode fieldSchema = buildPropertySchema(index, fieldType, false, isNullable(fieldType) && !strict);
             properties.set(fieldName, fieldSchema);
 
+            if (strict) {
+                requiredArray.add(fieldName);
+            }
         }
 
         if (!properties.isEmpty()) {
             root.set("properties", properties);
+        }
+        if (!requiredArray.isEmpty()) {
+            root.set("required", requiredArray);
         }
 
         return root;

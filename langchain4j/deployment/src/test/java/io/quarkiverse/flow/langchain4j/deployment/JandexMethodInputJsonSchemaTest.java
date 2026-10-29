@@ -47,6 +47,10 @@ class JandexMethodInputJsonSchemaTest {
         indexer.indexClass(NullableRecord.class);
         indexer.indexClass(OptionalFieldRecord.class);
         indexer.indexClass(JacksonAnnotatedPojo.class);
+        indexer.indexClass(NotNullRecord.class);
+        indexer.indexClass(JSpecifyRecord.class);
+        indexer.indexClass(JetBrainsRecord.class);
+        indexer.indexClass(NotNullIgnoredRecord.class);
         indexer.indexClass(TestKey.class);
         // Index collection hierarchy
         indexer.indexClass(java.util.Collection.class);
@@ -352,6 +356,80 @@ class JandexMethodInputJsonSchemaTest {
     }
 
     @Test
+    @DisplayName("test_not_null_nested_property_is_strict_and_required")
+    void test_not_null_nested_property_is_strict_and_required() throws Exception {
+        MethodInfo method = getMethod("withNotNullField", NotNullRecord.class);
+
+        ObjectNode schema = JandexMethodInputJsonSchema.generateSchemaNode(index, method);
+
+        JsonNode recordProp = schema.get("properties").get("fields");
+        assertThat(typesOf(recordProp.get("properties").get("category"))).containsExactly("string");
+        assertThat(typesOf(recordProp.get("properties").get("location"))).containsExactly("string", "null");
+        assertThat((ArrayNode) recordProp.get("required")).singleElement()
+                .extracting(JsonNode::asText)
+                .isEqualTo("category");
+    }
+
+    @Test
+    @DisplayName("test_jspecify_non_null_nested_property_is_strict_and_required")
+    void test_jspecify_non_null_nested_property_is_strict_and_required() throws Exception {
+        MethodInfo method = getMethod("withJSpecifyField", JSpecifyRecord.class);
+
+        ObjectNode schema = JandexMethodInputJsonSchema.generateSchemaNode(index, method);
+
+        JsonNode recordProp = schema.get("properties").get("fields");
+        assertThat(typesOf(recordProp.get("properties").get("category"))).containsExactly("string");
+        // A non-null element type says nothing about the list itself
+        assertThat(typesOf(recordProp.get("properties").get("tags"))).containsExactly("array", "null");
+        assertThat((ArrayNode) recordProp.get("required")).singleElement()
+                .extracting(JsonNode::asText)
+                .isEqualTo("category");
+    }
+
+    @Test
+    @DisplayName("test_jetbrains_not_null_nested_property_is_strict_and_required")
+    void test_jetbrains_not_null_nested_property_is_strict_and_required() throws Exception {
+        MethodInfo method = getMethod("withJetBrainsField", JetBrainsRecord.class);
+
+        ObjectNode schema = JandexMethodInputJsonSchema.generateSchemaNode(index, method);
+
+        JsonNode recordProp = schema.get("properties").get("fields");
+        assertThat(typesOf(recordProp.get("properties").get("category"))).containsExactly("string");
+        assertThat((ArrayNode) recordProp.get("required")).singleElement()
+                .extracting(JsonNode::asText)
+                .isEqualTo("category");
+    }
+
+    @Test
+    @DisplayName("test_not_null_on_optional_or_primitive_nested_property_is_not_required")
+    void test_not_null_on_optional_or_primitive_nested_property_is_not_required() throws Exception {
+        MethodInfo method = getMethod("withNotNullIgnoredFields", NotNullIgnoredRecord.class);
+
+        ObjectNode schema = JandexMethodInputJsonSchema.generateSchemaNode(index, method);
+
+        JsonNode recordProp = schema.get("properties").get("fields");
+        // An empty Optional is still null on the wire, and NON_DEFAULT may still omit a primitive
+        assertThat(typesOf(recordProp.get("properties").get("note"))).containsExactly("string", "null");
+        assertThat(typesOf(recordProp.get("properties").get("count"))).containsExactly("number");
+        assertThat(recordProp.has("required")).isFalse();
+    }
+
+    @Test
+    @DisplayName("test_not_null_parameter_is_not_nullable")
+    void test_not_null_parameter_is_not_nullable() throws Exception {
+        MethodInfo method = getMethod("withNotNullParam", String.class, String.class);
+
+        ObjectNode schema = JandexMethodInputJsonSchema.generateSchemaNode(index, method);
+
+        ObjectNode properties = (ObjectNode) schema.get("properties");
+        assertThat(typesOf(properties.get("text"))).containsExactly("string");
+        assertThat(typesOf(properties.get("other"))).containsExactly("string", "null");
+        assertThat((ArrayNode) schema.get("required"))
+                .extracting(JsonNode::asText)
+                .containsExactly("text", "other");
+    }
+
+    @Test
     @DisplayName("test_v_annotation_renames_property")
     void test_v_annotation_renames_property() throws Exception {
         MethodInfo method = getMethod("withVariableName", String.class);
@@ -529,6 +607,21 @@ class JandexMethodInputJsonSchemaTest {
 
         public void withOptionalField(OptionalFieldRecord holder) {
         }
+
+        public void withNotNullField(NotNullRecord fields) {
+        }
+
+        public void withJSpecifyField(JSpecifyRecord fields) {
+        }
+
+        public void withJetBrainsField(JetBrainsRecord fields) {
+        }
+
+        public void withNotNullIgnoredFields(NotNullIgnoredRecord fields) {
+        }
+
+        public void withNotNullParam(@jakarta.validation.constraints.NotNull String text, String other) {
+        }
     }
 
     public static class TestPojo {
@@ -560,6 +653,20 @@ class JandexMethodInputJsonSchemaTest {
     }
 
     public record OptionalFieldRecord(Optional<String> note, int count) {
+    }
+
+    public record NotNullRecord(@jakarta.validation.constraints.NotNull String category, String location) {
+    }
+
+    public record JSpecifyRecord(@org.jspecify.annotations.NonNull String category,
+            List<@org.jspecify.annotations.NonNull String> tags) {
+    }
+
+    public record JetBrainsRecord(@org.jetbrains.annotations.NotNull String category) {
+    }
+
+    public record NotNullIgnoredRecord(@jakarta.validation.constraints.NotNull Optional<String> note,
+            @jakarta.validation.constraints.NotNull int count) {
     }
 
     public static class JacksonAnnotatedPojo {
