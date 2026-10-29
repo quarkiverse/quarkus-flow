@@ -116,34 +116,59 @@ quarkus.flyway.migrate-at-start=true
 
 Then create a migration script at `src/main/resources/db/migration/` (e.g. `V1__create_tables.sql`) with the six tables required by the JPA provider (`workflow_instance_entity`, `cloud_event_entity`, `task_info_entity`, `hash_mapping_info_entity`, `task_metadata_entity`, `workflow_metadata_entity`). Use the complete script that matches your target database below, as-is — these are `quarkus-flow-db-migration`'s own scripts, included straight from the extension's source so they can't drift from what it actually ships:
 
-.H2
+.H2 — V1.0.0
 [source,sql]
 ----
 include::{examples-dir}/persistence/db-migration/h2/V1.0.0__CreateWorkflowSchema.sql[]
 ----
+.H2 — V1.0.1
+[source,sql]
+----
+include::{examples-dir}/persistence/db-migration/h2/V1.0.1__DropWorflowInstanceIdColumn.sql[]
+----
 
-.MySQL
+.MySQL — V1.0.0
 [source,sql]
 ----
 include::{examples-dir}/persistence/db-migration/mysql/V1.0.0__CreateWorkflowSchema.sql[]
 ----
+.MySQL — V1.0.1
+[source,sql]
+----
+include::{examples-dir}/persistence/db-migration/mysql/V1.0.1__DropWorflowInstanceIdColumn.sql[]
+----
 
-.PostgreSQL
+.PostgreSQL — V1.0.0
 [source,sql]
 ----
 include::{examples-dir}/persistence/db-migration/postgresql/V1.0.0__CreateWorkflowSchema.sql[]
 ----
+.PostgreSQL — V1.0.1
+[source,sql]
+----
+include::{examples-dir}/persistence/db-migration/postgresql/V1.0.1__DropWorflowInstanceIdColumn.sql[]
+----
 
-.Oracle
+.Oracle — V1.0.0
 [source,sql]
 ----
 include::{examples-dir}/persistence/db-migration/oracle/V1.0.0__CreateWorkflowSchema.sql[]
 ----
+.Oracle — V1.0.1
+[source,sql]
+----
+include::{examples-dir}/persistence/db-migration/oracle/V1.0.1__DropWorflowInstanceIdColumn.sql[]
+----
 
-.MSSQL
+.MSSQL — V1.0.0
 [source,sql]
 ----
 include::{examples-dir}/persistence/db-migration/mssql/V1.0.0__CreateWorkflowSchema.sql[]
+----
+.MSSQL — V1.0.1
+[source,sql]
+----
+include::{examples-dir}/persistence/db-migration/mssql/V1.0.1__DropWorflowInstanceIdColumn.sql[]
 ----
 
 [NOTE]
