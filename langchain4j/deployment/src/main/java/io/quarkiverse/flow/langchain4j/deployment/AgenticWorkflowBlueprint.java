@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.langchain4j.deployment;
 
 import static io.quarkiverse.flow.langchain4j.deployment.AgentIdConstants.DESCRIPTION_ANNOTATION_VALUE;
+import static io.quarkiverse.flow.langchain4j.deployment.AgentIdConstants.NAME_ANNOTATION_VALUE;
 import static io.quarkiverse.flow.langchain4j.deployment.AgentIdConstants.SUBAGENTS_ANNOTATION_VALUE;
 import static io.quarkiverse.flow.langchain4j.deployment.Lc4jAnnotationScannerUtil.scanActivationConditions;
 import static io.quarkiverse.flow.langchain4j.deployment.Lc4jAnnotationScannerUtil.scanLoopMetadata;
@@ -25,30 +26,34 @@ import io.quarkiverse.flow.langchain4j.annotations.ScheduleOn;
  * Contains topology information, sub-agents, and metadata needed to generate
  * the corresponding {@link io.quarkiverse.flow.langchain4j.workflow.AgenticFlow} class.
  */
-record AgenticWorkflowBlueprint(String description,
+record AgenticWorkflowBlueprint(String agentName,
+        String description,
         AgenticSystemTopology topology,
         List<Type> subAgents,
         ConditionalMetadata conditionalMetadata,
         LoopMetadata loopMetadata) {
 
-    public AgenticWorkflowBlueprint(String description,
+    public AgenticWorkflowBlueprint(String agentName,
+            String description,
             AgenticSystemTopology topology,
             List<Type> subAgents) {
-        this(description, topology, subAgents, null, null);
+        this(agentName, description, topology, subAgents, null, null);
     }
 
-    public AgenticWorkflowBlueprint(String description,
+    public AgenticWorkflowBlueprint(String agentName,
+            String description,
             AgenticSystemTopology topology,
             List<Type> subAgents,
             ConditionalMetadata conditionalMetadata) {
-        this(description, topology, subAgents, conditionalMetadata, null);
+        this(agentName, description, topology, subAgents, conditionalMetadata, null);
     }
 
-    public AgenticWorkflowBlueprint(String description,
+    public AgenticWorkflowBlueprint(String agentName,
+            String description,
             AgenticSystemTopology topology,
             List<Type> subAgents,
             LoopMetadata loopMetadata) {
-        this(description, topology, subAgents, null, loopMetadata);
+        this(agentName, description, topology, subAgents, null, loopMetadata);
     }
 
     /**
@@ -60,6 +65,7 @@ record AgenticWorkflowBlueprint(String description,
     static AgenticWorkflowBlueprint fromAgenticMethod(MethodInfo method) {
         if (method.hasAnnotation(SEQUENCE_AGENT))
             return new AgenticWorkflowBlueprint(
+                    getAgentName(method, SEQUENCE_AGENT),
                     getDescription(method, SEQUENCE_AGENT),
                     AgenticSystemTopology.SEQUENCE,
                     Arrays.stream(method.annotation(SEQUENCE_AGENT).value(SUBAGENTS_ANNOTATION_VALUE).asClassArray())
@@ -67,6 +73,7 @@ record AgenticWorkflowBlueprint(String description,
 
         if (method.hasAnnotation(CONDITIONAL_AGENT))
             return new AgenticWorkflowBlueprint(
+                    getAgentName(method, CONDITIONAL_AGENT),
                     getDescription(method, CONDITIONAL_AGENT),
                     AgenticSystemTopology.ROUTER,
                     Arrays.stream(method.annotation(CONDITIONAL_AGENT).value(SUBAGENTS_ANNOTATION_VALUE).asClassArray())
@@ -75,6 +82,7 @@ record AgenticWorkflowBlueprint(String description,
 
         if (method.hasAnnotation(LOOP_AGENT))
             return new AgenticWorkflowBlueprint(
+                    getAgentName(method, LOOP_AGENT),
                     getDescription(method, LOOP_AGENT),
                     AgenticSystemTopology.LOOP,
                     Arrays.stream(method.annotation(LOOP_AGENT).value(SUBAGENTS_ANNOTATION_VALUE).asClassArray()).toList(),
@@ -82,6 +90,7 @@ record AgenticWorkflowBlueprint(String description,
 
         if (method.hasAnnotation(PARALLEL_AGENT))
             return new AgenticWorkflowBlueprint(
+                    getAgentName(method, PARALLEL_AGENT),
                     getDescription(method, PARALLEL_AGENT),
                     AgenticSystemTopology.PARALLEL,
                     Arrays.stream(method.annotation(PARALLEL_AGENT).value(SUBAGENTS_ANNOTATION_VALUE).asClassArray())
@@ -92,6 +101,15 @@ record AgenticWorkflowBlueprint(String description,
 
     static boolean isSchedulable(MethodInfo method) {
         return method.hasAnnotation(ScheduleOn.class);
+    }
+
+    /**
+     * Extracts the agent name from an annotation, falling back to the method name when it is blank,
+     * as LangChain4j does.
+     */
+    private static String getAgentName(MethodInfo method, DotName annotationType) {
+        var nameValue = method.annotation(annotationType).value(NAME_ANNOTATION_VALUE);
+        return (nameValue != null) && !nameValue.asString().isBlank() ? nameValue.asString() : method.name();
     }
 
     /**

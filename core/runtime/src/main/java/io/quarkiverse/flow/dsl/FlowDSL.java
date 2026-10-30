@@ -722,6 +722,11 @@ public final class FlowDSL {
      * via {@link #withUniqueId(UniqueIdBiFunction, Class)}.
      *
      * <p>
+     * The task is marked as an agent invocation
+     * ({@link io.quarkiverse.flow.internal.WorkflowAgentMetadata#META_AGENT_TASK}), so integrations such as
+     * OpenTelemetry type it according to the GenAI semantic conventions, using the task name as the agent name.
+     *
+     * <p>
      * Signature expected: {@code (uniqueId, payload) -> result}
      *
      * @param fn (uniqueId, payload) -> result
@@ -731,11 +736,11 @@ public final class FlowDSL {
      * @return a call step
      */
     public static <T, R> FuncCallStep<T, R> agent(UniqueIdBiFunction<T, R> fn, Class<T> in) {
-        return withUniqueId(fn, in);
+        return withUniqueId(fn, in).markAsAgent();
     }
 
     public static <T, R> FuncCallStep<T, R> agent(UniqueIdBiFunction<T, R> fn) {
-        return withUniqueId(fn, ReflectionUtils.inferInputType(fn));
+        return withUniqueId(fn, ReflectionUtils.inferInputType(fn)).markAsAgent();
     }
 
     /**
@@ -753,11 +758,11 @@ public final class FlowDSL {
      */
     public static <T, R> FuncCallStep<T, R> agent(
             String name, UniqueIdBiFunction<T, R> fn, Class<T> in) {
-        return withUniqueId(name, fn, in);
+        return withUniqueId(name, fn, in).markAsAgent();
     }
 
     public static <T, R> FuncCallStep<T, R> agent(String name, UniqueIdBiFunction<T, R> fn) {
-        return withUniqueId(name, fn, ReflectionUtils.inferInputType(fn));
+        return withUniqueId(name, fn, ReflectionUtils.inferInputType(fn)).markAsAgent();
     }
 
     /**

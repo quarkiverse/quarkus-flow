@@ -14,6 +14,7 @@ import io.quarkiverse.flow.dsl.types.FilterFunction;
 import io.quarkiverse.flow.dsl.types.SerializableFunction;
 import io.quarkiverse.flow.dsl.types.SerializablePredicate;
 import io.quarkiverse.flow.dsl.types.utils.ReflectionUtils;
+import io.quarkiverse.flow.internal.WorkflowAgentMetadata;
 import io.serverlessworkflow.api.types.FlowDirectiveEnum;
 import io.serverlessworkflow.fluent.spec.TaskBaseBuilder;
 import io.serverlessworkflow.fluent.spec.TimeoutBuilder;
@@ -604,6 +605,15 @@ abstract class Step<SELF extends Step<SELF, B>, B> implements FuncTaskConfigurer
 
     public SELF timeout(Consumer<TimeoutBuilder> timeout) {
         this.postConfigurers.add(b -> ((TaskBaseBuilder<?>) b).timeout(timeout));
+        return self();
+    }
+
+    /**
+     * Queue marking the task as an agent invocation (see {@link WorkflowAgentMetadata#META_AGENT_TASK}). Used by
+     * {@link FlowDSL#agent(String, io.quarkiverse.flow.dsl.types.UniqueIdBiFunction) agent(..)}.
+     */
+    SELF markAsAgent() {
+        this.postConfigurers.add(b -> WorkflowAgentMetadata.markAgentTask(((TaskBaseBuilder<?>) b).getTask()));
         return self();
     }
 

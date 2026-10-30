@@ -1,5 +1,9 @@
 package io.quarkiverse.flow.opentelemetry.runtime;
 
+import static io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_AGENT_DESCRIPTION;
+import static io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_AGENT_NAME;
+import static io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME;
+import static io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiOperationNameIncubatingValues.INVOKE_AGENT;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.FLOW_TASK_ID_ATTR;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.FLOW_TASK_ITERATION_ATTR;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.FLOW_TASK_NAME_ATTR;
@@ -12,6 +16,9 @@ import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.FLOW_WF_IN
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.FLOW_WF_NAMESPACE_ATTR;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.FLOW_WF_NAME_ATTR;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.FLOW_WF_VERSION_ATTR;
+import static java.util.function.Predicate.not;
+
+import java.util.Optional;
 
 import jakarta.inject.Inject;
 
@@ -19,6 +26,8 @@ import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
+import io.quarkiverse.flow.internal.WorkflowAgentMetadata;
+import io.serverlessworkflow.api.types.Document;
 import io.serverlessworkflow.impl.TaskContext;
 import io.serverlessworkflow.impl.WorkflowDefinitionData;
 
@@ -37,10 +46,29 @@ public class SpanBuilderFactory {
     public SpanBuilder newWorkflowExecuteSpan(WorkflowDefinitionData workflowDefinition, String workflowInstanceId,
             Context parentContext,
             boolean isResumption, SpanContext... spanContextLink) {
-        return newWorkflowSpan(SpanUtils.generateWorkflowExecuteSpanName(workflowDefinition.id().name()), workflowDefinition,
+        SpanBuilder builder = newWorkflowSpan(SpanUtils.generateWorkflowExecuteSpanName(workflowDefinition.id().name()),
+                workflowDefinition,
                 workflowInstanceId, parentContext,
                 spanContextLink)
                 .setAttribute(FLOW_WF_EXECUTION_IS_RESUMPTION_ATTR, isResumption);
+        applyGenAiAgentAttributes(builder, workflowDefinition);
+        return builder;
+    }
+
+    /**
+     * Types the span as a GenAI {@code invoke_agent} operation when the workflow document marks the workflow as an
+     * agent invocation (see {@link WorkflowAgentMetadata#META_AGENT_NAME}). Other workflows are left untouched.
+     */
+    private static void applyGenAiAgentAttributes(SpanBuilder spanBuilder, WorkflowDefinitionData workflowDefinition) {
+        WorkflowAgentMetadata.agentNameOf(workflowDefinition.workflow())
+                .ifPresent(agentName -> {
+                    spanBuilder.setAttribute(GEN_AI_OPERATION_NAME, INVOKE_AGENT)
+                            .setAttribute(GEN_AI_AGENT_NAME, agentName);
+                    Optional.ofNullable(workflowDefinition.workflow().getDocument())
+                            .map(Document::getSummary)
+                            .filter(not(String::isBlank))
+                            .ifPresent(summary -> spanBuilder.setAttribute(GEN_AI_AGENT_DESCRIPTION, summary));
+                });
     }
 
     public SpanBuilder newWorkflowSpan(String name, WorkflowDefinitionData workflowDefinition, String workflowInstanceId,
@@ -81,6 +109,10 @@ public class SpanBuilderFactory {
                 .setAttribute(FLOW_TASK_ITERATION_ATTR, taskContext.iteration())
                 .setAttribute(FLOW_TASK_RETRYING_ATTR, taskContext.isRetrying())
                 .setAttribute(FLOW_TASK_RETRY_ATTEMPT_ATTR, taskContext.retryAttempt());
+        if (WorkflowAgentMetadata.isAgentTask(taskContext.task())) {
+            builder.setAttribute(GEN_AI_OPERATION_NAME, INVOKE_AGENT)
+                    .setAttribute(GEN_AI_AGENT_NAME, taskContext.taskName());
+        }
         if (parentContext != null) {
             builder.setParent(parentContext);
         }
