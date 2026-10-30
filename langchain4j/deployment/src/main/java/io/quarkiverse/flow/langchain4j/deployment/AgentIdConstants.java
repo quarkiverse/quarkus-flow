@@ -18,4 +18,9 @@ final class AgentIdConstants {
      * Annotation value name for description in topology annotations.
      */
     static final String DESCRIPTION_ANNOTATION_VALUE = "description";
+
+    /**
+     * Annotation value name for the agent name in topology annotations.
+     */
+    static final String NAME_ANNOTATION_VALUE = "name";
 }

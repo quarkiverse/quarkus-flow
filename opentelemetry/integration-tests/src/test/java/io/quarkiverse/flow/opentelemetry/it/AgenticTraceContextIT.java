@@ -1,6 +1,11 @@
 package io.quarkiverse.flow.opentelemetry.it;
 
+import static io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_AGENT_DESCRIPTION;
+import static io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_AGENT_NAME;
+import static io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME;
+import static io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiOperationNameIncubatingValues.INVOKE_AGENT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
@@ -43,6 +48,12 @@ class AgenticTraceContextIT {
 
     @Inject
     AgenticTracingFlow flow;
+
+    @Inject
+    OptInAgentFlow optInAgentFlow;
+
+    @Inject
+    AgentTaskFlow agentTaskFlow;
 
     @Inject
     InMemorySpanExporter exporter;
@@ -120,6 +131,76 @@ class AgenticTraceContextIT {
                         .asString()
                         .startsWith(TASK_SPAN_PREFIX)
                         .isNotEqualTo(TASK_SPAN_PREFIX + AgenticTracingFlow.TASK_NAME));
+    }
+
+    @Test
+    @DisplayName("test_generated_agentic_workflow_spans_are_typed_invoke_agent")
+    void test_generated_agentic_workflow_spans_are_typed_invoke_agent() throws Exception {
+        List<SpanData> spans = run();
+
+        // IntakeAgents.process (@SequenceAgent) and ExtractionAgent.extract (@ParallelAgent)
+        assertThat(spans)
+                .filteredOn(span -> span.getName().startsWith(WORKFLOW_SPAN_PREFIX))
+                .filteredOn(span -> !span.getName().equals(WORKFLOW_SPAN_PREFIX + AgenticTracingFlow.NAME))
+                .extracting(span -> span.getAttributes().get(GEN_AI_OPERATION_NAME),
+                        span -> span.getAttributes().get(GEN_AI_AGENT_NAME))
+                .containsExactlyInAnyOrder(
+                        tuple(INVOKE_AGENT, "process"),
+                        tuple(INVOKE_AGENT, "extract"));
+    }
+
+    @Test
+    @DisplayName("test_plain_workflow_and_task_spans_are_not_genai_typed")
+    void test_plain_workflow_and_task_spans_are_not_genai_typed() throws Exception {
+        List<SpanData> spans = run();
+
+        assertThat(span(spans, WORKFLOW_SPAN_PREFIX + AgenticTracingFlow.NAME).getAttributes().get(GEN_AI_OPERATION_NAME))
+                .as("the plain workflow invoking the agents")
+                .isNull();
+        assertThat(spans)
+                .filteredOn(span -> span.getName().startsWith(TASK_SPAN_PREFIX)
+                        || span.getName().startsWith(WORKFLOW_CREATE_SPAN_PREFIX))
+                .isNotEmpty()
+                .allSatisfy(span -> assertThat(span.getAttributes().get(GEN_AI_OPERATION_NAME))
+                        .as(span.getName())
+                        .isNull());
+    }
+
+    @Test
+    @DisplayName("test_workflow_opting_in_through_document_metadata_is_typed_invoke_agent")
+    void test_workflow_opting_in_through_document_metadata_is_typed_invoke_agent() throws Exception {
+        optInAgentFlow.instance("hello").start().get(30, TimeUnit.SECONDS);
+
+        String spanName = WORKFLOW_SPAN_PREFIX + OptInAgentFlow.NAME;
+        await().atMost(Duration.ofSeconds(10))
+                .until(() -> exporter.getFinishedSpanItems().stream()
+                        .anyMatch(span -> spanName.equals(span.getName())));
+
+        assertThat(span(exporter.getFinishedSpanItems(), spanName).getAttributes().asMap())
+                .containsEntry(GEN_AI_OPERATION_NAME, INVOKE_AGENT)
+                .containsEntry(GEN_AI_AGENT_NAME, OptInAgentFlow.AGENT_NAME)
+                .containsEntry(GEN_AI_AGENT_DESCRIPTION, OptInAgentFlow.SUMMARY);
+    }
+
+    @Test
+    @DisplayName("test_dsl_agent_task_span_is_typed_invoke_agent")
+    void test_dsl_agent_task_span_is_typed_invoke_agent() throws Exception {
+        agentTaskFlow.instance("Hello").start().get(30, TimeUnit.SECONDS);
+
+        String workflowSpanName = WORKFLOW_SPAN_PREFIX + AgentTaskFlow.NAME;
+        await().atMost(Duration.ofSeconds(10))
+                .until(() -> exporter.getFinishedSpanItems().stream()
+                        .anyMatch(span -> workflowSpanName.equals(span.getName())));
+        List<SpanData> spans = exporter.getFinishedSpanItems();
+
+        assertThat(span(spans, TASK_SPAN_PREFIX + AgentTaskFlow.AGENT_TASK_NAME).getAttributes().asMap())
+                .containsEntry(GEN_AI_OPERATION_NAME, INVOKE_AGENT)
+                .containsEntry(GEN_AI_AGENT_NAME, AgentTaskFlow.AGENT_TASK_NAME);
+        assertThat(List.of(span(spans, TASK_SPAN_PREFIX + AgentTaskFlow.PLAIN_TASK_NAME), span(spans, workflowSpanName)))
+                .as("the plain task and the workflow are not agent invocations")
+                .allSatisfy(span -> assertThat(span.getAttributes().get(GEN_AI_OPERATION_NAME))
+                        .as(span.getName())
+                        .isNull());
     }
 
     private List<SpanData> run() throws Exception {
