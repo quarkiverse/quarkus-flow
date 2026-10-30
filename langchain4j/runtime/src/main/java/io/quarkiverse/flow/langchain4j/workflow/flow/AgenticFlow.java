@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 import io.quarkiverse.flow.Flow;
+import io.quarkiverse.flow.internal.WorkflowAgentMetadata;
 import io.quarkiverse.flow.internal.WorkflowInvocationMetadata;
 import io.quarkiverse.flow.internal.WorkflowNameUtils;
 import io.quarkiverse.flow.langchain4j.workflow.service.FlowPlanner;
@@ -82,16 +83,16 @@ public abstract class AgenticFlow extends Flow {
 
     protected Consumer<DocumentBuilder> buildDocument() {
         WorkflowDefinitionId id = WorkflowNameUtils.newId(agentClassName());
-        Consumer<DocumentBuilder.WorkflowMetadataBuilder> metadata = invocationMetadata();
-        return d -> {
-            d.name(id.name())
-                    .namespace(id.namespace())
-                    .version(id.version())
-                    .summary(description());
-            if (metadata != null) {
-                d.metadata(metadata);
-            }
-        };
+        Consumer<DocumentBuilder.WorkflowMetadataBuilder> agentMetadata = WorkflowAgentMetadata.agentMetadata(agentName());
+        Consumer<DocumentBuilder.WorkflowMetadataBuilder> invocationMetadata = invocationMetadata();
+        Consumer<DocumentBuilder.WorkflowMetadataBuilder> metadata = invocationMetadata != null
+                ? agentMetadata.andThen(invocationMetadata)
+                : agentMetadata;
+        return d -> d.name(id.name())
+                .namespace(id.namespace())
+                .version(id.version())
+                .summary(description())
+                .metadata(metadata);
     }
 
     protected Object executeAgent(String instanceId, DefaultAgenticScope scope, int subAgentIndex) {
@@ -110,6 +111,20 @@ public abstract class AgenticFlow extends Flow {
 
     public String description() {
         return "";
+    }
+
+    /**
+     * Returns the name of the agent this workflow invokes, written to the workflow document metadata in every launch
+     * mode (see {@link WorkflowAgentMetadata#META_AGENT_NAME}).
+     * <p>
+     * Generated implementations return the {@code name} of the agentic annotation, or the annotated method name when
+     * it is blank. The default returns the simple name of {@link #agentClassName()}.
+     *
+     * @return the non-blank agent name
+     */
+    public String agentName() {
+        String className = agentClassName();
+        return className.substring(Math.max(className.lastIndexOf('.'), className.lastIndexOf('$')) + 1);
     }
 
     /**
@@ -144,7 +159,7 @@ public abstract class AgenticFlow extends Flow {
     /**
      * Returns the agent interface method name for DevUI invocation.
      * Default implementation returns null (prod mode).
-     * Overridden by Gizmo in dev mode only.
+     * Overridden by Gizmo in dev and test mode only.
      *
      * @return method name or null
      */
@@ -155,7 +170,7 @@ public abstract class AgenticFlow extends Flow {
     /**
      * Returns the agent interface method parameter type names for DevUI invocation.
      * Default implementation returns null (prod mode).
-     * Overridden by Gizmo in dev mode only.
+     * Overridden by Gizmo in dev and test mode only.
      *
      * @return parameter type names array or null
      */
@@ -166,10 +181,12 @@ public abstract class AgenticFlow extends Flow {
     /**
      * Returns the invocation metadata consumer for DevUI integration.
      * Returns null in prod mode (invokerMethodName() returns null).
-     * In dev mode, Gizmo overrides invokerMethodName() and invokerMethodParams(),
+     * In dev and test mode, Gizmo overrides invokerMethodName() and invokerMethodParams(),
      * allowing DevUI to invoke the agent interface method directly.
+     * <p>
+     * This is independent of the agent metadata from {@link #agentName()}, which is set in every launch mode.
      *
-     * @return Consumer for workflow metadata builder, or null if not in dev mode
+     * @return Consumer for workflow metadata builder, or null if not in dev or test mode
      */
     protected Consumer<DocumentBuilder.WorkflowMetadataBuilder> invocationMetadata() {
         String methodName = invokerMethodName();

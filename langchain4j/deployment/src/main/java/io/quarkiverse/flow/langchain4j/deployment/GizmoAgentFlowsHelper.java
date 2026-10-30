@@ -137,6 +137,12 @@ final class GizmoAgentFlowsHelper {
         }
     }
 
+    static void generateAgentNameMethod(ClassCreator classCreator, String agentName) {
+        try (MethodCreator mc = classCreator.getMethodCreator("agentName", String.class)) {
+            mc.returnValue(mc.load(agentName));
+        }
+    }
+
     static void generateAgentDescriptionMethod(ClassCreator classCreator, String description, String agentInterfaceFqcn) {
         try (MethodCreator mc = classCreator.getMethodCreator("description", String.class)) {
             if (description == null || description.isBlank()) {

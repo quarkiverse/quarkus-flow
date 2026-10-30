@@ -5,6 +5,7 @@ import static io.quarkiverse.flow.langchain4j.deployment.AgenticWorkflowBlueprin
 import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.computeTaskNames;
 import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.generateAgentClassNameMethod;
 import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.generateAgentDescriptionMethod;
+import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.generateAgentNameMethod;
 import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.generateClassName;
 import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.generateConditionalMetadataField;
 import static io.quarkiverse.flow.langchain4j.deployment.GizmoAgentFlowsHelper.generateInjectedAgentField;
@@ -186,6 +187,9 @@ public class FlowLangChain4jProcessor {
 
                 // Generate: List<String> subAgentTaskNames() { return List.of("methodName1", "methodName2"...); }
                 generateSubAgentTaskNamesMethod(classCreator, computeTaskNames(combinedIndex.getIndex(), workflow.subAgents()));
+
+                // Generate: String agentName() { return "..."; } (all launch modes, read by observability integrations)
+                generateAgentNameMethod(classCreator, workflow.agentName());
 
                 // Generate: String description() { return "..."; }
                 generateAgentDescriptionMethod(classCreator, workflow.description(), workflow.ifaceName());

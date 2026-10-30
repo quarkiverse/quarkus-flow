@@ -74,6 +74,18 @@ Workflow spans represent the overall execution of a workflow instance and includ
 | `flow.workflow.version`
 | String
 | Version of the executed workflow.
+
+| `gen_ai.operation.name`
+| String
+| `invoke_agent`. Only present when the workflow itself is an agent: a workflow generated from a LangChain4j agentic annotation, or one that opts in through its document metadata. See <<genai-semantic-conventions>>.
+
+| `gen_ai.agent.name`
+| String
+| Name of the agent. Only present when the workflow itself is an agent.
+
+| `gen_ai.agent.description`
+| String
+| The workflow's `document.summary`. Only present when the workflow itself is an agent and the summary is not blank.
 |===
 
 === Task Spans
@@ -130,6 +142,14 @@ Task spans represent the execution of a workflow task and includes the following
 | `flow.task.retry_attempt`
 | Integer
 | Number of retry if the task execution is a retry of a previous failing attempt, 0 in any other case.
+
+| `gen_ai.operation.name`
+| String
+| `invoke_agent`. Only present on tasks created with the Java DSL `agent(..)`. See <<genai-agent-tasks>>.
+
+| `gen_ai.agent.name`
+| String
+| Name of the invoked agent, which is the task name. Only present on tasks created with the Java DSL `agent(..)`.
 |===
 
 [TIP]
@@ -433,6 +453,7 @@ quarkus.flow.otel.task-span-current=false
 
 With this setting the task span is still recorded, but `Span.current()` inside the task body is whatever was current on the executing thread.
 
+[[agentic-workflows-trace-context]]
 === Agentic workflows
 
 When a task invokes a LangChain4j agentic system (`@SequenceAgent`, `@ParallelAgent`, `@ConditionalAgent`, `@LoopAgent`) through `quarkus-flow-langchain4j`, Quarkus Flow passes the trace context through the whole run:
@@ -460,3 +481,86 @@ workflow.create my-workflow
                                 └── task.execute summarize-1
                                     └── langchain4j.aiservices.SummaryAgent.summarize
 ----
+
+[[genai-semantic-conventions]]
+== GenAI Semantic Conventions
+
+Quarkus Flow types the spans of agent invocations according to the OpenTelemetry link:https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-agent-spans.md[GenAI agent span conventions]. GenAI-aware observability backends can then classify these spans as agents. Backends that keep only spans carrying a `gen_ai.*` attribute also keep them, even when the span ends in a later export batch than its AI children.
+
+Which span is typed depends on what the agent is:
+
+* When the workflow itself is an agent, its `workflow.execute` span is typed. This covers <<genai-generated-workflows,generated agentic workflows>> and <<genai-own-workflows,workflows that opt in>>.
+* When a task invokes an agent, its `task.execute` span is typed. This covers <<genai-agent-tasks,tasks created with the Java DSL `agent(..)`>>.
+
+A typed span gets these attributes:
+
+* `gen_ai.operation.name`: `invoke_agent`
+* `gen_ai.agent.name`: the agent name
+* `gen_ai.agent.description`: the workflow's `document.summary`, when it is not blank (workflow spans only)
+
+Span names and all `flow.*` attributes are kept. `workflow.create` spans and all other task spans are never typed: a plain workflow step is not an agent, and the conventions define no operation name for it.
+
+[[genai-generated-workflows]]
+=== Generated agentic workflows
+
+The workflows that `quarkus-flow-langchain4j` generates for `@SequenceAgent`, `@ParallelAgent`, `@ConditionalAgent` and `@LoopAgent` are typed automatically, in every launch mode. The agent name is the annotation's `name`, or the annotated method's name when `name` is not set. For the example in <<agentic-workflows-trace-context>>, `workflow.execute intake-agents` has `gen_ai.agent.name=process` and `workflow.execute extraction-agent` has `gen_ai.agent.name=extract`.
+
+Workflows built at runtime with `FlowAgentsBuilderService` are typed too. Their agent name is the simple name of the agent interface (`UntypedAgent` for untyped agents).
+
+[[genai-own-workflows]]
+=== Typing your own workflows
+
+Any other workflow opts in by setting the `io.quarkiverse.flow.agent.name` key in its document metadata. Its value becomes `gen_ai.agent.name`. Workflows without this key are never typed.
+
+With the Java DSL:
+
+[source,java]
+----
+@Override
+public Workflow descriptor() {
+    return workflow("triage")
+            .document(d -> d.summary("Triage an incoming request")
+                    .metadata(m -> m.metadata("io.quarkiverse.flow.agent.name", "triage")))
+            .tasks(/* ... */)
+            .build();
+}
+----
+
+In a YAML definition:
+
+[source,yaml]
+----
+document:
+  dsl: '1.0.0'
+  namespace: support
+  name: triage
+  version: '1.0.0'
+  summary: Triage an incoming request
+  metadata:
+    io.quarkiverse.flow.agent.name: triage
+----
+
+[[genai-agent-tasks]]
+=== Agent tasks
+
+Tasks created with the Java DSL `agent(..)` are agent invocations. Their `task.execute` span is typed, and the task name becomes `gen_ai.agent.name`. The workflow containing them is not typed, unless it is an agent itself.
+
+[source,java]
+----
+@Override
+public Workflow descriptor() {
+    return workflow("newsletter")
+            .tasks(agent("draftAgent", drafter::draft, NewsletterRequest.class), // <1>
+                    function("publish", publisher::publish, Draft.class))      // <2>
+            .build();
+}
+----
+<1> `task.execute draftAgent` has `gen_ai.operation.name=invoke_agent` and `gen_ai.agent.name=draftAgent`.
+<2> `task.execute publish` is not typed.
+
+Name your agent tasks: an unnamed `agent(..)` task gets a generated name such as `function-0`, which then becomes the agent name.
+
+=== Limitations
+
+* The GenAI semantic conventions are still incubating, so attribute names may change in future versions of the conventions and of Quarkus Flow.
+* `gen_ai.provider.name` is not set, although the conventions require it on `invoke_agent` spans. A workflow that orchestrates several agents has no single provider. The model call spans beneath it, such as LangChain4j's chat spans, carry the provider of each call.

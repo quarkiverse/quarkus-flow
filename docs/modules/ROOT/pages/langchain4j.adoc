@@ -339,6 +339,8 @@ All of this happens without writing a single line of orchestration code.
 
 NOTE: See xref:concepts-agentic-langchain4j.adoc[Agentic AI Topology and Internals] for details on how the build-time compiler works.
 
+TIP: With `quarkus-flow-opentelemetry`, the `workflow.execute` span of each generated workflow is typed as a GenAI `invoke_agent` operation, with `gen_ai.agent.name` set to the agent's name. See xref:opentelemetry.adoc#genai-semantic-conventions[GenAI Semantic Conventions].
+
 === The Generated Input Schema
 
 Step 3 above derives an `input.schema` from the root agent method's signature, and Quarkus Flow validates every call against it (`quarkus.flow.validation.input.enabled`, `true` by default).
