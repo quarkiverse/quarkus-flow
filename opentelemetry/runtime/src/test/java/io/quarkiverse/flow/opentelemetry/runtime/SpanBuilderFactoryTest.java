@@ -158,23 +158,10 @@ class SpanBuilderFactoryTest {
     }
 
     @Test
-    @DisplayName("test_agent_task_span_is_typed_invoke_agent")
-    void test_agent_task_span_is_typed_invoke_agent() {
-        var task = new CallFunction();
-        WorkflowAgentMetadata.markAgentTask(task);
-
-        assertThat(taskSpan(task, "triageAgent"))
-                .hasName("task.execute triageAgent")
-                .hasAttribute(GEN_AI_OPERATION_NAME, INVOKE_AGENT)
-                .hasAttribute(GEN_AI_AGENT_NAME, "triageAgent")
-                .hasAttributesSatisfying(attributes -> assertThat(attributes)
-                        .doesNotContainKey(GEN_AI_AGENT_DESCRIPTION));
-    }
-
-    @Test
-    @DisplayName("test_plain_task_span_is_not_typed")
-    void test_plain_task_span_is_not_typed() {
+    @DisplayName("test_task_span_is_never_genai_typed_by_the_factory")
+    void test_task_span_is_never_genai_typed_by_the_factory() {
         assertThat(taskSpan(new CallFunction(), "plainTask"))
+                .as("GenAI typing of agent tasks is applied by SpanUtils.enrichAgentCall, not by the factory")
                 .hasAttributesSatisfying(attributes -> assertThat(attributes)
                         .doesNotContainKey(GEN_AI_OPERATION_NAME)
                         .doesNotContainKey(GEN_AI_AGENT_NAME));

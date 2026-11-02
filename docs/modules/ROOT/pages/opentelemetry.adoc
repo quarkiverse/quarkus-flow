@@ -560,6 +560,8 @@ public Workflow descriptor() {
 
 Name your agent tasks: an unnamed `agent(..)` task gets a generated name such as `function-0`, which then becomes the agent name.
 
+Nothing is added to the workflow definition for this: `agent(..)` holds an `io.quarkiverse.flow.dsl.types.AgentFunction`, and that is what the OpenTelemetry extension recognizes. There is no task-level equivalent of the document metadata key above, and no way to mark a task in a YAML definition — a YAML workflow cannot call a Java function in the first place.
+
 === Limitations
 
 * The GenAI semantic conventions are still incubating, so attribute names may change in future versions of the conventions and of Quarkus Flow.

@@ -109,10 +109,6 @@ public class SpanBuilderFactory {
                 .setAttribute(FLOW_TASK_ITERATION_ATTR, taskContext.iteration())
                 .setAttribute(FLOW_TASK_RETRYING_ATTR, taskContext.isRetrying())
                 .setAttribute(FLOW_TASK_RETRY_ATTEMPT_ATTR, taskContext.retryAttempt());
-        if (WorkflowAgentMetadata.isAgentTask(taskContext.task())) {
-            builder.setAttribute(GEN_AI_OPERATION_NAME, INVOKE_AGENT)
-                    .setAttribute(GEN_AI_AGENT_NAME, taskContext.taskName());
-        }
         if (parentContext != null) {
             builder.setParent(parentContext);
         }

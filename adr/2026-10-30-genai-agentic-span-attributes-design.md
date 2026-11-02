@@ -3,7 +3,7 @@
 **Date:** 2026-10-30
 **Status:** Proposed
 **Issue:** [#1122](https://github.com/quarkiverse/quarkus-flow/issues/1122)
-**Related:** [#1056](https://github.com/quarkiverse/quarkus-flow/issues/1056), [#1065](https://github.com/quarkiverse/quarkus-flow/pull/1065), [ADR 2026-10-07 agentic trace context propagation](2026-10-07-opentelemetry-agentic-trace-context-propagation.md)
+**Related:** [#1056](https://github.com/quarkiverse/quarkus-flow/issues/1056), [#1065](https://github.com/quarkiverse/quarkus-flow/pull/1065), [#1138](https://github.com/quarkiverse/quarkus-flow/issues/1138), [#1139](https://github.com/quarkiverse/quarkus-flow/issues/1139), [ADR 2026-10-07 agentic trace context propagation](2026-10-07-opentelemetry-agentic-trace-context-propagation.md)
 
 ## Context
 
@@ -56,16 +56,22 @@ These spans are not stamped:
 - `task.execute`, except agent tasks (Decision 5): a plain Java step is not an agent, and the conventions have no operation name for "a step". Backend-specific typing stays in the backend's own integration.
 - Workflows without the marker.
 
-### 5. Agent tasks from the Java DSL
+### 5. Agent tasks from the Java DSL, recognized by the function type
 
-In a hand-written workflow the agent invocation is often a single task, created with the Java DSL `agent(..)`, rather than the whole workflow. Here the task is the invocation, so its span is typed, not the workflow's:
+In a hand-written workflow the agent invocation is often a single task, created with the Java DSL `agent(..)`, rather than the whole workflow. Here the task is the invocation, so its span is typed, not the workflow's.
 
-- `agent(..)` marks its task with the task-metadata flag `io.quarkiverse.flow.agent.task=true`. `withUniqueId(..)`, which `agent(..)` builds on, stays unmarked. The flag is merged into any existing task metadata.
-- When the flag is present, `SpanBuilderFactory.newTaskSpan` sets `gen_ai.operation.name=invoke_agent` and `gen_ai.agent.name` to the task name. A task has no summary, so there is no description.
+Nothing is written to the workflow document for this. `agent(..)` and `withUniqueId(..)` used to produce byte-identical tasks — a `call: Java` task holding the same `FilterFunction` wrapper — which is why a marker is needed at all. Instead of annotating the task, the DSL makes the **function itself** say what it is:
+
+- `core/runtime` gains `AgentFunction`, a marker sub-interface of `FilterFunction` in `io.quarkiverse.flow.dsl.types`. Every `agent(..)` overload builds its unique-id wrapper as an `AgentFunction`; `withUniqueId(..)` keeps building a plain `FilterFunction`.
+- The runtime is unaffected: `JavaCallFunctionBuilder` dispatches on `instanceof`, so an `AgentFunction` resolves to the same `JavaFilterFunctionCallExecutor` as before. `AgentFunction` must not extend `ContextFunction`, which that dispatch tests first.
+- `CallJava.functionOf(TaskBase)` exposes the function held by a `call: Java` task, so the layout of `with.function` stays core's business.
+- `SpanUtils.enrichAgentCall` — called from `OTelWorkflowExecutionListener` alongside the other task-span decorations — sets `gen_ai.operation.name=invoke_agent` and `gen_ai.agent.name` to the task name when the function is an `AgentFunction`. A task has no summary, so there is no description.
+- The marker is a type rather than a name, because the task name already identifies the agent and unnamed tasks get their name only when the task list is built.
 - The workflow containing agent tasks is not typed, unless it is an agent itself. A workflow can hold several agent tasks, and the conventions model each invocation as its own span.
-- The flag is a boolean rather than a name, because the task name already identifies the agent and unnamed tasks get their name only when the task list is built.
-- The sub-agent tasks of generated agentic workflows are plain function tasks and stay unflagged. A sub-agent that is itself a composite agent is a generated workflow with its own `invoke_agent` span, so flagging the task too would nest two agent spans for one invocation.
-- Detecting agent calls inside arbitrary task bodies, for example by introspecting flows that inject agents, is out of scope.
+- The sub-agent tasks of generated agentic workflows are plain function tasks and stay unmarked. A sub-agent that is itself a composite agent is a generated workflow with its own `invoke_agent` span, so marking the task too would nest two agent spans for one invocation.
+- Detecting agent calls inside arbitrary task bodies, for example by introspecting flows that inject agents, is out of scope. The runtime approach is tracked in [#1138](https://github.com/quarkiverse/quarkus-flow/issues/1138).
+
+A YAML workflow cannot express a Java agent call at all: `call: Java` needs live Java objects in `with.function`, `inputClass` and `outputClass`, and a YAML-parsed value is rejected by `JavaCallFunctionBuilder`. There is no other agent call type. So a type-level marker costs YAML authors nothing that a document-level one would have given them.
 
 ### 6. Use the semconv incubating constants
 
@@ -84,8 +90,11 @@ The attribute keys and the `invoke_agent` value come from `io.opentelemetry.semc
 - **Missing `gen_ai.provider.name`.** The conventions require it on `invoke_agent` spans, but a workflow that orchestrates several agents has no single provider. Flow omits it and documents this as a known deviation. The model (`chat`) spans underneath carry the real provider.
 - **Span name differs from the convention.** The conventions suggest `invoke_agent {gen_ai.agent.name}`. Flow keeps `workflow.execute <name>` for backwards compatibility. Backends that classify by attribute aren't affected.
 - **Incubating conventions.** The GenAI attribute names may change. Using the semconv constants means a semconv upgrade surfaces renames at compile time. The docs flag the attributes as following incubating conventions.
-- **The metadata keys become public contract** (`io.quarkiverse.flow.agent.name` on workflows, `io.quarkiverse.flow.agent.task` on tasks) even though their helper lives in an `internal` package. Renaming them later would be a breaking change for opted-in workflows.
+- **The metadata key becomes public contract** (`io.quarkiverse.flow.agent.name` on workflows) even though its helper lives in an `internal` package. Renaming it later would be a breaking change for opted-in workflows.
+- **`AgentFunction` becomes public API.** It lives in `io.quarkiverse.flow.dsl.types` next to the other function types, and is referenced by `quarkus-flow-opentelemetry`.
+- **The agent-task marker is runtime-only.** It travels with the captured lambda, so it survives a YAML round trip in the same JVM (the `SerializedLambda` records the functional interface) but means nothing to a consumer that has only the document, such as the DevUI JSON view or the runner loading YAML from disk. Those consumers cannot see a `call: Java` function either way.
 - **No duplicate agent spans today.** `quarkus-langchain4j-agentic` 1.14.2 does not emit `invoke_agent` spans for declarative composite agents. If it starts to, the two would need to be reconciled.
+- **`call: a2a` tasks are not typed yet.** An A2A call is an agent invocation and, unlike a Java call, the OTel module can recognize it with no marker at all: `SpanUtils.enrichA2A` already reads the agent card name. Left to [#1139](https://github.com/quarkiverse/quarkus-flow/issues/1139), since A2A is otherwise untested here.
 
 ## Alternatives Considered
 
@@ -96,11 +105,12 @@ The attribute keys and the `invoke_agent` value come from `io.opentelemetry.semc
 5. **Hardcode the `gen_ai.*` strings.** Rejected. The incubating artifact is already on the classpath, and its constants catch upstream renames at compile time.
 6. **Also type plain `task.execute` spans** (e.g. as `execute_tool`). Rejected. Plain steps are not tools or agents in GenAI terms, and mislabeling them would distort backend views. Tasks created with `agent(..)` are agent invocations and are typed (Decision 5).
 7. **Mark the whole workflow when it contains an `agent(..)` task.** Rejected. The workflow is not the agent, a workflow can contain several agent tasks with no single agent name, and the task span is the one that wraps the agent's model calls.
+8. **Flag `agent(..)` tasks with a task-metadata key** (`io.quarkiverse.flow.agent.task=true`), read by `SpanBuilderFactory.newTaskSpan`. This was the first implementation; rejected during review (PR #1136). It adds a second public metadata key to the workflow document to carry information the DSL already holds in the function object, and it buys nothing for YAML authors, who cannot write a Java agent call in the first place. `AgentFunction` (Decision 5) keeps the document clean and puts the detection in the OTel module, next to the other task-span decorations.
 
 ## Testing Strategy
 
 - OTel runtime unit tests on `SpanBuilderFactory`: stamped with the marker, unstamped without it, a blank marker ignored, `workflow.create` never stamped.
 - A LangChain4j runtime test showing that an `AgenticFlow` **without** the dev/test invoker overrides (the production shape) still writes the marker.
-- Core DSL tests: `agent(..)` flags its task, `withUniqueId(..)` does not, and the flag keeps existing task metadata.
-- OTel runtime unit tests on agent task spans: a flagged task is typed with its task name, and a plain task is not.
+- Core DSL tests: `agent(..)` tasks hold an `AgentFunction` while `withUniqueId(..)` and `function(..)` tasks do not, no task metadata is written, the task still resolves to `JavaFilterFunctionCallExecutor`, and the marker survives a YAML round trip.
+- OTel runtime unit tests on `SpanUtils.enrichAgentCall`: an `agent(..)` task is typed with its task name; `withUniqueId(..)`, `function(..)`, non-Java call tasks and a Java call with no arguments are not.
 - OTel integration tests (`AgenticTraceContextIT`): both generated workflows of `sequence(classify, parallel(details, summary))` are typed `invoke_agent` with the expected agent names, their task spans are not typed, a plain workflow is not typed, an opted-in Java DSL workflow is typed, and in a Java DSL workflow only the `agent(..)` task span is typed.

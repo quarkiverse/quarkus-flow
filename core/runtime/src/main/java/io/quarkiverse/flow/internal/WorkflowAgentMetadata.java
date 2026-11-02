@@ -7,8 +7,6 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import io.serverlessworkflow.api.types.Document;
-import io.serverlessworkflow.api.types.TaskBase;
-import io.serverlessworkflow.api.types.TaskMetadata;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.api.types.WorkflowMetadata;
 import io.serverlessworkflow.fluent.spec.DocumentBuilder;
@@ -20,14 +18,14 @@ import io.serverlessworkflow.fluent.spec.DocumentBuilder;
  * workflows set it in every launch mode, and any other workflow may set it to opt in. Integrations such as
  * OpenTelemetry use it to type the workflow according to the GenAI semantic conventions.
  * <p>
- * A single task can also be an agent invocation: tasks created with the Java DSL
+ * A single task can also be an agent invocation, but that is not recorded in the workflow document: tasks created
+ * with the Java DSL
  * {@link io.quarkiverse.flow.dsl.FlowDSL#agent(String, io.quarkiverse.flow.dsl.types.UniqueIdBiFunction) agent(..)}
- * carry {@link #META_AGENT_TASK} in their task metadata, and the task name is the agent name.
+ * hold an {@link io.quarkiverse.flow.dsl.types.AgentFunction}.
  * <p>
  * Metadata contract:
  * <ul>
  * <li>{@code META_AGENT_NAME} – workflow document metadata: non-blank name of the agent the workflow invokes</li>
- * <li>{@code META_AGENT_TASK} – task metadata: {@code true} when the task is an agent invocation</li>
  * </ul>
  */
 public final class WorkflowAgentMetadata {
@@ -36,11 +34,6 @@ public final class WorkflowAgentMetadata {
      * Name of the agent the workflow invokes. Its presence marks the workflow as an agent invocation.
      */
     public static final String META_AGENT_NAME = "io.quarkiverse.flow.agent.name";
-
-    /**
-     * Task metadata flag marking the task as an agent invocation. The task name is the agent name.
-     */
-    public static final String META_AGENT_TASK = "io.quarkiverse.flow.agent.task";
 
     private WorkflowAgentMetadata() {
     }
@@ -74,34 +67,5 @@ public final class WorkflowAgentMetadata {
                 .filter(String.class::isInstance)
                 .map(String.class::cast)
                 .filter(not(String::isBlank));
-    }
-
-    /**
-     * Marks the given task as an agent invocation, keeping any task metadata already present.
-     *
-     * @param task the task to mark
-     */
-    public static void markAgentTask(TaskBase task) {
-        Objects.requireNonNull(task, "task must not be null");
-        TaskMetadata metadata = Optional.ofNullable(task.getMetadata())
-                .orElseGet(TaskMetadata::new);
-        metadata.withAdditionalProperty(META_AGENT_TASK, Boolean.TRUE);
-        task.setMetadata(metadata);
-    }
-
-    /**
-     * Returns whether the given task is an agent invocation, i.e. its task metadata carries {@link #META_AGENT_TASK}
-     * set to {@code true}.
-     *
-     * @param task the task, may be {@code null}
-     * @return {@code true} if the task is an agent invocation
-     */
-    public static boolean isAgentTask(TaskBase task) {
-        return Optional.ofNullable(task)
-                .map(TaskBase::getMetadata)
-                .map(TaskMetadata::getAdditionalProperties)
-                .map(properties -> properties.get(META_AGENT_TASK))
-                .filter(Boolean.TRUE::equals)
-                .isPresent();
     }
 }
