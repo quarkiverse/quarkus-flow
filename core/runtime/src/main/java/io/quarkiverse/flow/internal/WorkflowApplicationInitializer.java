@@ -54,9 +54,10 @@ public class WorkflowApplicationInitializer {
             // Force the CDI container to fully initialize the WorkflowApplication.
             LOG.info("Flow: WorkflowApplication (id: '{}') is ready. Starting workflow definitions warmup.", application.id());
             warmUpWorkflowDefinitions();
+            applicationReadyEvent.fire(new WorkflowApplicationReadyEvent(application.id()));
+
             appInfo = new WorkflowApplicationInfo(application.id());
             LOG.info("Flow: Workflow definitions warmup complete.");
-            applicationReadyEvent.fire(new WorkflowApplicationReadyEvent(application.id()));
         } catch (Exception e) {
             LOG.error("Flow: Failed to initialize and warm up workflows", e);
             appInfo = new WorkflowApplicationInfo(e);
