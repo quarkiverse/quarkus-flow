@@ -8,6 +8,7 @@ import dev.langchain4j.agentic.observability.AgentListener;
 import dev.langchain4j.agentic.observability.AgentRequest;
 import dev.langchain4j.agentic.observability.AgentResponse;
 import dev.langchain4j.agentic.scope.AgenticScope;
+import io.quarkiverse.flow.internal.FlowAgentInvocationListener;
 import io.quarkiverse.flow.internal.FlowContextPropagator;
 
 /**
@@ -20,6 +21,10 @@ import io.quarkiverse.flow.internal.FlowContextPropagator;
  * <p>
  * It also tells a {@link FlowPlanner} when the agentic system it runs has failed (see
  * {@link #onAgentInvocationError(AgentInvocationError)}).
+ * <p>
+ * Once the requesting task's context is current, it notifies {@link FlowAgentInvocationListener} for leaf agents, so
+ * leaf sub-agents of a generated agentic workflow are detected the same way as leaf agents invoked directly from a task
+ * body (see {@link FlowAgentInvocationNotifier}, which covers that case).
  */
 public final class FlowAgentContextListener implements AgentListener {
 
@@ -41,6 +46,9 @@ public final class FlowAgentContextListener implements AgentListener {
         FlowContextPropagator.Snapshot snapshot = lookup(request.agenticScope(), request.agentId());
         if (snapshot != null) {
             OPEN_SCOPES.get().push(new OpenScope(request.agenticScope(), request.agentId(), snapshot.activate()));
+            if (request.agent().leaf()) {
+                FlowAgentInvocationListener.current().onAgentInvoked(request.agentName());
+            }
         }
     }
 

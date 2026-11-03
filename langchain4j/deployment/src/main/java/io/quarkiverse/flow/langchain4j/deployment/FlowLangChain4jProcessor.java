@@ -44,6 +44,7 @@ import io.quarkiverse.flow.langchain4j.workflow.AbstractSchedulableFlow;
 import io.quarkiverse.flow.langchain4j.workflow.builder.FlowAgentsBuilderService;
 import io.quarkiverse.flow.langchain4j.workflow.flow.AgenticFlow;
 import io.quarkiverse.flow.langchain4j.workflow.runtime.RuntimeWorkflowApplicationProvider;
+import io.quarkiverse.flow.langchain4j.workflow.service.FlowAgentInvocationNotifier;
 import io.quarkiverse.langchain4j.agentic.deployment.DetectedAiAgentBuildItem;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -83,6 +84,7 @@ public class FlowLangChain4jProcessor {
                 .addBeanClass(FlowLangChain4jApplicationBuilderCustomizer.class)
                 .addBeanClass(FlowAgentsBuilderService.class)
                 .addBeanClass(RuntimeWorkflowApplicationProvider.class)
+                .addBeanClass(FlowAgentInvocationNotifier.class)
                 .setUnremovable()
                 .build();
     }

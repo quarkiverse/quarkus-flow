@@ -4,6 +4,7 @@ import org.jboss.jandex.ClassInfo;
 
 import io.quarkiverse.flow.Flowable;
 import io.quarkiverse.flow.dsl.executors.DataTypeConverter;
+import io.quarkiverse.flow.internal.FlowAgentInvocationListener;
 import io.quarkiverse.flow.internal.FlowContextPropagator;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -57,6 +58,7 @@ final class FlowNativeProcessor {
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(URITemplateResolver.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(CallableTaskProxyBuilder.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(FlowContextPropagator.class.getName()));
+        sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(FlowAgentInvocationListener.class.getName()));
         sp.produce(ServiceProviderBuildItem.allProvidersFromClassPath(SchemaValidatorFactory.class.getName()));
     }
 

@@ -4,6 +4,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import io.quarkiverse.flow.dsl.types.AgentFunction;
 import io.quarkiverse.flow.dsl.types.CallJava;
 import io.quarkiverse.flow.opentelemetry.runtime.config.FlowOTelConfig;
 import io.serverlessworkflow.api.types.CallFunction;
@@ -30,6 +31,11 @@ import io.serverlessworkflow.impl.executors.CallableTaskProxyBuilder;
  * {@code apply} doesn't reliably reach their client spans, and in testing it sometimes attached a call to the span of a
  * different task. A {@code call: <function>} referring to a catalog or inline function can resolve to any of those, so
  * it is excluded too.
+ * <p>
+ * Also stores a {@link FlowTaskSpanRef} in the context it makes current, so a LangChain4j agent invoked from the task
+ * body can be detected and type the span as a GenAI {@code invoke_agent} operation at runtime. The ref is pre-seeded as
+ * already typed when the task holds an {@link AgentFunction}, since {@code SpanUtils#enrichAgentCall} already typed the
+ * span at build time in that case.
  */
 public class OTelTaskSpanProxy implements CallableTaskProxyBuilder {
 
@@ -79,7 +85,12 @@ public class OTelTaskSpanProxy implements CallableTaskProxyBuilder {
                 return delegate.apply(workflowContext, taskContext, input);
             }
 
-            Context taskSpanContext = taskSpanCtx.getStartSpan().storeInContext(taskSpanCtx.getParentContext());
+            boolean alreadyTyped = CallJava.functionOf(taskContext.task())
+                    .filter(AgentFunction.class::isInstance)
+                    .isPresent();
+            FlowTaskSpanRef taskSpanRef = new FlowTaskSpanRef(taskSpanCtx.getStartSpan(), alreadyTyped);
+            Context taskSpanContext = taskSpanCtx.getStartSpan().storeInContext(taskSpanCtx.getParentContext())
+                    .with(FlowTaskSpanRef.KEY, taskSpanRef);
             try (Scope ignored = taskSpanContext.makeCurrent()) {
                 return delegate.apply(workflowContext, taskContext, input);
             }

@@ -149,4 +149,53 @@ class OTelTaskSpanProxyTest {
             expectedSpan.end();
         }
     }
+
+    @Test
+    @DisplayName("should store a FlowTaskSpanRef resolving to the task span while the delegate runs, and none after")
+    void build_storesFlowTaskSpanRefForDelegate() throws Exception {
+        OTelTaskSpanProxy proxy = new OTelTaskSpanProxy(true);
+
+        Span expectedSpan = tracer.spanBuilder("test-task-span").startSpan();
+
+        InstrumentationContext taskCtx = mock(InstrumentationContext.class);
+        when(taskCtx.getStartSpan()).thenReturn(expectedSpan);
+        when(taskCtx.getParentContext()).thenReturn(Context.root());
+
+        WorkflowInstrumentationContext wfCtx = mock(WorkflowInstrumentationContext.class);
+        when(wfCtx.getTaskInstanceContext(any(), any(Integer.class), any(Integer.class))).thenReturn(taskCtx);
+
+        WorkflowMutableInstance instanceData = mock(WorkflowMutableInstance.class);
+        when(instanceData.findMetadata("OTEL_CONTEXT", WorkflowInstrumentationContext.class))
+                .thenReturn(java.util.Optional.of(wfCtx));
+        WorkflowContext workflowContext = mock(WorkflowContext.class);
+        when(workflowContext.instanceData()).thenReturn(instanceData);
+
+        try {
+            CallableTask delegate = (wf, task, input) -> {
+                assertThat(FlowTaskSpanRef.of(Context.current()))
+                        .isPresent()
+                        .get()
+                        .extracting(FlowTaskSpanRef::span)
+                        .isSameAs(expectedSpan);
+                return CompletableFuture.completedFuture(mock(WorkflowModel.class));
+            };
+
+            CallableTask wrapped = proxy.build(delegate);
+
+            TaskContext taskContext = mock(TaskContext.class);
+            WorkflowMutablePosition position = mock(WorkflowMutablePosition.class);
+            when(position.jsonPointer()).thenReturn("/do/0/test");
+            when(taskContext.position()).thenReturn(position);
+            when(taskContext.iteration()).thenReturn(0);
+            when(taskContext.retryAttempt()).thenReturn(0);
+
+            wrapped.apply(workflowContext, taskContext, mock(WorkflowModel.class)).get();
+
+            assertThat(FlowTaskSpanRef.of(Context.current()))
+                    .as("the FlowTaskSpanRef no longer resolves once the task body returns")
+                    .isEmpty();
+        } finally {
+            expectedSpan.end();
+        }
+    }
 }
