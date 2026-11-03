@@ -39,7 +39,7 @@ The application declares them as regular Maven dependencies:
 </dependency>
 ```
 
-That is all it takes. At **build time**, Quarkus Flow scans dependency JARs
+That is all it takes. At **build time**, Quarkus Flow scans direct dependency JARs
 containing the configured definitions directory (default `flow/`), validates
 the workflows, and generates the same CDI beans it would for application-owned
 files:

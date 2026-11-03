@@ -73,10 +73,10 @@ public interface FlowDefinitionsConfig {
      * Whether workflow definition files should also be discovered inside the application's
      * dependency JARs.
      * <p>
-     * When enabled, any dependency containing the configured definitions directory
+     * When enabled, any <b>direct</b> dependency containing the configured definitions directory
      * (see <code>quarkus.flow.definitions.dir</code>) contributes its workflow files at
-     * build time, exactly as if they were part of the application. This feature is intended
-     * for <b>direct</b> dependencies: declare workflow libraries explicitly in the application.
+     * build time, exactly as if they were part of the application. Transitive dependencies are
+     * not scanned: declare workflow libraries explicitly in the application.
      * Workflows provided by the application always override
      * dependency-provided workflows with the same <code>namespace:name:version</code>
      * identifier. The same identifier provided by two different dependencies fails the build.

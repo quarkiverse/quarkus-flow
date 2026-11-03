@@ -71,7 +71,7 @@ endif::add-copy-button-to-config-props[]
 --
 Whether workflow definition files should also be discovered inside the application's dependency JARs.
 
-When enabled, any dependency containing the configured definitions directory (see `quarkus.flow.definitions.dir`) contributes its workflow files at build time, exactly as if they were part of the application. This feature is intended for *direct* dependencies: declare workflow libraries explicitly in the application. Workflows provided by the application always override dependency-provided workflows with the same `namespace:name:version` identifier. The same identifier provided by two different dependencies fails the build.
+When enabled, any *direct* dependency containing the configured definitions directory (see `quarkus.flow.definitions.dir`) contributes its workflow files at build time, exactly as if they were part of the application. Transitive dependencies are not scanned: declare workflow libraries explicitly in the application. Workflows provided by the application always override dependency-provided workflows with the same `namespace:name:version` identifier. The same identifier provided by two different dependencies fails the build.
 
 Set to `false` to only discover workflows from the application's own resources.
 
