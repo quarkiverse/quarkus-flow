@@ -69,7 +69,7 @@ Only exact relative-path matches are overridden. For example, `src/test/resource
 
 === 1.1. Share workflows through dependency JARs
 
-Workflow files can also be contributed by JAR dependencies. Any dependency of the application that contains the configured definitions directory (default `flow/`) has its workflow files discovered at build time, exactly as if they were part of the application:
+Workflow files can also be contributed by JAR dependencies. Any direct dependency of the application that contains the configured definitions directory (default `flow/`) has its workflow files discovered at build time, exactly as if they were part of the application:
 
 [source,xml]
 ----
@@ -94,10 +94,11 @@ Because discovery happens at build time, dependency-provided workflows get the s
 
 The following rules apply:
 
-* This feature is intended for *direct* dependencies: declare workflow libraries explicitly in the application. Discovery does not resolve the dependency graph, so it relies on the archives marked by the definitions directory instead of filtering transitive dependencies out — relying on workflows pulled in indirectly is not supported.
+* Only *direct* dependencies are scanned: declare workflow libraries explicitly in the application. Workflows shipped by transitive dependencies are ignored.
+* Different dependencies may ship files with the same name (for example, `flow/shared.yaml`): each workflow is still loaded from its own definition, since dependency-provided files are copied under `META-INF/quarkus-flow/dependencies/` at build time.
 * The scanned directory is determined by the *consuming application's* `quarkus.flow.definitions.dir`. Libraries should ship workflows under the default `flow/` directory unless all consumers agree on a custom one.
 * If the application defines a workflow with the same `namespace`, `name`, and `version` as a dependency-provided one, the *application definition wins* and the dependency's is ignored (a log message is emitted).
-* If two *different dependencies* provide the same `namespace`, `name`, and `version`, the build fails — rename one of them to resolve the ambiguity.
+* If two *different dependencies* provide the same `namespace`, `name`, and `version`, or a single dependency defines it twice, the build fails — rename one of them to resolve the ambiguity.
 * Files inside dependency JARs are not live-reloaded in dev mode. To pick up changes, rebuild and reinstall the library (standard multi-module dev mode workspace support applies).
 
 To restrict discovery to the application's own resources, disable dependency scanning:
