@@ -1,5 +1,9 @@
 package io.quarkiverse.flow.opentelemetry.runtime;
 
+import static io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_AGENT_NAME;
+import static io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME;
+import static io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiOperationNameIncubatingValues.INVOKE_AGENT;
+import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.GEN_AI_INVOKE_AGENT_EVENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -15,9 +19,16 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions;
+import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.data.EventData;
+import io.opentelemetry.sdk.trace.data.SpanData;
+import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
+import io.quarkiverse.flow.dsl.types.AgentFunction;
 import io.quarkiverse.flow.dsl.types.CallJava;
 import io.serverlessworkflow.api.types.CallA2A;
 import io.serverlessworkflow.api.types.CallAsyncAPI;
@@ -196,6 +207,75 @@ class OTelTaskSpanProxyTest {
                     .isEmpty();
         } finally {
             expectedSpan.end();
+        }
+    }
+
+    @Test
+    @DisplayName("should pre-seed the FlowTaskSpanRef as already typed for agent(..) tasks, "
+            + "so runtime detection of a differently-named leaf agent call cannot overwrite the task's attributes")
+    void build_preSeedsAlreadyTypedForAgentTasks_soRuntimeDetectionCannotOverwriteTaskName() throws Exception {
+        InMemorySpanExporter exporter = InMemorySpanExporter.create();
+        SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
+                .addSpanProcessor(SimpleSpanProcessor.create(exporter))
+                .build();
+        Tracer agentTracer = tracerProvider.get("test");
+
+        AgentFunction<Object, Object> agentFunction = (input, wfCtx, tCtx) -> input;
+        CallFunction agentTask = CallJava.function(agentFunction, Object.class);
+
+        OTelTaskSpanProxy proxy = new OTelTaskSpanProxy(true);
+
+        SpanBuilder spanBuilder = agentTracer.spanBuilder("test-task-span");
+        SpanUtils.enrichAgentCall(spanBuilder, agentTask, "taskAgentName");
+        Span expectedSpan = spanBuilder.startSpan();
+
+        InstrumentationContext taskCtx = mock(InstrumentationContext.class);
+        when(taskCtx.getStartSpan()).thenReturn(expectedSpan);
+        when(taskCtx.getParentContext()).thenReturn(Context.root());
+
+        WorkflowInstrumentationContext wfCtx = mock(WorkflowInstrumentationContext.class);
+        when(wfCtx.getTaskInstanceContext(any(), any(Integer.class), any(Integer.class))).thenReturn(taskCtx);
+
+        WorkflowMutableInstance instanceData = mock(WorkflowMutableInstance.class);
+        when(instanceData.findMetadata("OTEL_CONTEXT", WorkflowInstrumentationContext.class))
+                .thenReturn(java.util.Optional.of(wfCtx));
+        WorkflowContext workflowContext = mock(WorkflowContext.class);
+        when(workflowContext.instanceData()).thenReturn(instanceData);
+
+        try {
+            CallableTask delegate = (wf, task, input) -> {
+                new OTelAgentInvocationListener(true).onAgentInvoked("leafAgentName");
+                return CompletableFuture.completedFuture(mock(WorkflowModel.class));
+            };
+
+            CallableTask wrapped = proxy.build(delegate);
+
+            TaskContext taskContext = mock(TaskContext.class);
+            when(taskContext.task()).thenReturn(agentTask);
+            WorkflowMutablePosition position = mock(WorkflowMutablePosition.class);
+            when(position.jsonPointer()).thenReturn("/do/0/test");
+            when(taskContext.position()).thenReturn(position);
+            when(taskContext.iteration()).thenReturn(0);
+            when(taskContext.retryAttempt()).thenReturn(0);
+
+            wrapped.apply(workflowContext, taskContext, mock(WorkflowModel.class)).get();
+        } finally {
+            expectedSpan.end();
+        }
+
+        try {
+            SpanData spanData = exporter.getFinishedSpanItems().stream().findFirst().orElseThrow();
+            OpenTelemetryAssertions.assertThat(spanData)
+                    .hasAttribute(GEN_AI_OPERATION_NAME, INVOKE_AGENT)
+                    .hasAttribute(GEN_AI_AGENT_NAME, "taskAgentName");
+            assertThat(spanData.getEvents())
+                    .extracting(EventData::getName)
+                    .containsExactly(GEN_AI_INVOKE_AGENT_EVENT);
+            assertThat(spanData.getEvents())
+                    .extracting(event -> event.getAttributes().get(GEN_AI_AGENT_NAME))
+                    .containsExactly("leafAgentName");
+        } finally {
+            tracerProvider.close();
         }
     }
 }
