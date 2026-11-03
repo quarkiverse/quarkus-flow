@@ -23,6 +23,8 @@ import io.serverlessworkflow.impl.WorkflowDefinition;
  * <li>{@code META_INVOKER_METHOD} – method name on that bean</li>
  * <li>{@code META_INVOKER_KIND} – free-form string (e.g. "langchain4j")</li>
  * </ul>
+ * <p>
+ * Whether a workflow is an agent invocation is recorded separately by {@link WorkflowAgentMetadata}.
  */
 public final class WorkflowInvocationMetadata {
 

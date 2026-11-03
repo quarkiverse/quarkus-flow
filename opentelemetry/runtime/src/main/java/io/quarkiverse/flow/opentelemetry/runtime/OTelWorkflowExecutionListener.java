@@ -216,7 +216,7 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
         String spanName = generateTaskSpanName(taskContext.taskName());
         SpanBuilder builder = spanBuilderFactory.newTaskSpan(spanName, ev.workflowContext().definition(), workflowInstanceId,
                 taskContext, parentContext);
-        enrichSpan(builder, ev.taskContext().task());
+        enrichSpan(builder, taskContext);
         Span startSpan = builder.startSpan();
 
         appendTaskEvent(startSpan, ev.type());
@@ -429,7 +429,9 @@ public class OTelWorkflowExecutionListener implements WorkflowExecutionListener 
                 taskContext.iteration(), taskContext.isRetrying(), taskContext.retryAttempt());
     }
 
-    private void enrichSpan(SpanBuilder span, TaskBase task) {
+    private void enrichSpan(SpanBuilder span, TaskContext taskContext) {
+        TaskBase task = taskContext.task();
         SpanUtils.getTaskSpanEnricher(task).enrich(span, task);
+        SpanUtils.enrichAgentCall(span, task, taskContext.taskName());
     }
 }

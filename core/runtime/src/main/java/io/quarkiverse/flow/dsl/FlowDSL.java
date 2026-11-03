@@ -16,6 +16,7 @@ import io.quarkiverse.flow.dsl.configurers.FuncCallHttpConfigurer;
 import io.quarkiverse.flow.dsl.configurers.FuncCallOpenAPIConfigurer;
 import io.quarkiverse.flow.dsl.configurers.FuncTaskConfigurer;
 import io.quarkiverse.flow.dsl.configurers.SwitchCaseConfigurer;
+import io.quarkiverse.flow.dsl.types.AgentFunction;
 import io.quarkiverse.flow.dsl.types.ContextFunction;
 import io.quarkiverse.flow.dsl.types.FilterFunction;
 import io.quarkiverse.flow.dsl.types.InstanceIdFunction;
@@ -722,6 +723,11 @@ public final class FlowDSL {
      * via {@link #withUniqueId(UniqueIdBiFunction, Class)}.
      *
      * <p>
+     * The task holds an {@link AgentFunction}, which is what makes it recognizable as an agent invocation. Nothing is
+     * written to the workflow document: integrations such as OpenTelemetry read the function from the task and type
+     * it according to the GenAI semantic conventions, using the task name as the agent name.
+     *
+     * <p>
      * Signature expected: {@code (uniqueId, payload) -> result}
      *
      * @param fn (uniqueId, payload) -> result
@@ -731,11 +737,11 @@ public final class FlowDSL {
      * @return a call step
      */
     public static <T, R> FuncCallStep<T, R> agent(UniqueIdBiFunction<T, R> fn, Class<T> in) {
-        return withUniqueId(fn, in);
+        return agentStep(null, fn, in, ReflectionUtils.inferResultType(fn));
     }
 
     public static <T, R> FuncCallStep<T, R> agent(UniqueIdBiFunction<T, R> fn) {
-        return withUniqueId(fn, ReflectionUtils.inferInputType(fn));
+        return agent(fn, ReflectionUtils.inferInputType(fn));
     }
 
     /**
@@ -753,11 +759,22 @@ public final class FlowDSL {
      */
     public static <T, R> FuncCallStep<T, R> agent(
             String name, UniqueIdBiFunction<T, R> fn, Class<T> in) {
-        return withUniqueId(name, fn, in);
+        return agentStep(name, fn, in, ReflectionUtils.inferResultType(fn));
     }
 
     public static <T, R> FuncCallStep<T, R> agent(String name, UniqueIdBiFunction<T, R> fn) {
-        return withUniqueId(name, fn, ReflectionUtils.inferInputType(fn));
+        return agent(name, fn, ReflectionUtils.inferInputType(fn));
+    }
+
+    /**
+     * Builds the call step behind every {@code agent(..)} overload. Same unique-id injection as
+     * {@link #withUniqueId(String, UniqueIdBiFunction, Class, Class)}, but the wrapping function is an
+     * {@link AgentFunction} so that the task can be recognized as an agent invocation.
+     */
+    private static <T, R> FuncCallStep<T, R> agentStep(
+            String name, UniqueIdBiFunction<T, R> fn, Class<T> in, Class<R> out) {
+        AgentFunction<T, R> agentFn = (payload, wctx, tctx) -> fn.apply(defaultUniqueId(wctx, tctx), payload);
+        return new FuncCallStep<>(name, agentFn, in, out);
     }
 
     /**
