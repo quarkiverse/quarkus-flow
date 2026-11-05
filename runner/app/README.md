@@ -215,7 +215,7 @@ If you prefer full control:
 
 ```bash
 # Step 1: Build with Maven (specify profile)
-./mvnw clean package -pl runner/app -am -P image-minimal -DskipTests -Dquarkus.profile="container,minimal"
+./mvnw clean package -pl runner/deployment,persistence/mvstore/deployment,oidc/deployment,scheduler/memory/deployment,runner/app -am -P image-minimal -DskipTests -Dquarkus.profile="container,minimal"
 
 # Step 2: Build Docker image
 cd runner/app
@@ -295,7 +295,7 @@ For more complex customization (different persistence modules, additional Quarku
 2. Modify `runner/app/pom.xml` to add/remove dependencies
 3. Build with your custom profile:
    ```bash
-   ./mvnw clean package -pl runner/app -am -P image-standard -DskipTests
+   ./mvnw clean package -pl runner/deployment,persistence/jpa/deployment,durable-kubernetes/deployment,oidc/deployment,scheduler/quartz/deployment,scheduler/db-migration-quartz/deployment,runner/app -am -P image-standard -DskipTests
    cd runner/app
    docker build -t my-custom-runner:1.0.0 .
    ```

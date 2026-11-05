@@ -179,13 +179,6 @@
                     <artifactId>quarkus-flow-scheduler</artifactId>
                     <version>${project.version}</version>
                 </dependency>
-                <!-- Include the extension's deployment module in -am reactor builds. -->
-                <dependency>
-                    <groupId>io.quarkiverse.flow</groupId>
-                    <artifactId>quarkus-flow-scheduler-deployment</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
             </dependencies>
         </profile>
 
@@ -226,19 +219,6 @@
                     <groupId>io.quarkiverse.flow</groupId>
                     <artifactId>quarkus-flow-db-migration-quartz</artifactId>
                     <version>${project.version}</version>
-                </dependency>
-                <!-- Include extension deployment modules in -am reactor builds. -->
-                <dependency>
-                    <groupId>io.quarkiverse.flow</groupId>
-                    <artifactId>quarkus-flow-quartz-scheduler-deployment</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>io.quarkiverse.flow</groupId>
-                    <artifactId>quarkus-flow-db-migration-quartz-deployment</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
                 </dependency>
             </dependencies>
         </profile>
@@ -281,20 +261,6 @@
                     <artifactId>quarkus-flow-db-migration-quartz</artifactId>
                     <version>${project.version}</version>
                 </dependency>
-                <!-- Include extension deployment modules in -am reactor builds. -->
-                <dependency>
-                    <groupId>io.quarkiverse.flow</groupId>
-                    <artifactId>quarkus-flow-quartz-scheduler-deployment</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>io.quarkiverse.flow</groupId>
-                    <artifactId>quarkus-flow-db-migration-quartz-deployment</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
-
                 <!-- Messaging: Kafka + Flow messaging support -->
                 <dependency>
                     <groupId>io.quarkus</groupId>
