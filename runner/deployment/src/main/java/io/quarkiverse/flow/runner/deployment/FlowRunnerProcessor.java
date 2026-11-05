@@ -22,7 +22,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.scheduler.deployment.ForceStartSchedulerBuildItem;
 
 class FlowRunnerProcessor {
 
@@ -58,7 +57,6 @@ class FlowRunnerProcessor {
     @BuildStep
     void registerFileWatcher(FlowRunnerSourceWatchConfig watchConfig,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<ForceStartSchedulerBuildItem> forceScheduler,
             BuildProducer<ExcludedTypeBuildItem> excludedTypes) {
         if (watchConfig.enabled()) {
             additionalBeans.produce(AdditionalBeanBuildItem.builder()
@@ -66,7 +64,6 @@ class FlowRunnerProcessor {
                     .setDefaultScope(DotName.createSimple(ApplicationScoped.class))
                     .addBeanClass(WorkflowFileWatcher.class)
                     .build());
-            forceScheduler.produce(new ForceStartSchedulerBuildItem());
         } else {
             excludedTypes.produce(new ExcludedTypeBuildItem(WorkflowFileWatcher.class.getName()));
         }
