@@ -295,7 +295,7 @@ For more complex customization (different persistence modules, additional Quarku
 2. Modify `runner/app/pom.xml` to add/remove dependencies
 3. Build with your custom profile:
    ```bash
-   ./mvnw clean package -pl runner/deployment,persistence/jpa/deployment,durable-kubernetes/deployment,oidc/deployment,scheduler/quartz/deployment,scheduler/db-migration-quartz/deployment,runner/app -am -P image-standard -DskipTests
+   ./mvnw clean package -pl runner/deployment,persistence/jpa/deployment,durable-kubernetes/deployment,oidc/deployment,scheduler/quartz/deployment,scheduler/db-migration-quartz/deployment,runner/app -am -P image-standard -DskipTests -Dquarkus.profile=container,standard
    cd runner/app
    docker build -t my-custom-runner:1.0.0 .
    ```

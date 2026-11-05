@@ -14,7 +14,7 @@ Maven automatically processes these manifests during build and outputs the filte
 
 ```bash
 # From project root
-mvn install -pl runner/deployment,persistence/jpa/deployment,durable-kubernetes/deployment,oidc/deployment,scheduler/quartz/deployment,scheduler/db-migration-quartz/deployment,runner/app -am -P image-standard
+mvn install -pl runner/deployment,persistence/jpa/deployment,durable-kubernetes/deployment,oidc/deployment,scheduler/quartz/deployment,scheduler/db-migration-quartz/deployment,runner/app -am -P image-standard -Dquarkus.profile=container,standard
 
 # Filtered manifests are now in runner/app/target/k8s
 ```
