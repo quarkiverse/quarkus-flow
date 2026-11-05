@@ -1,5 +1,6 @@
 package io.quarkiverse.flow.durable.kube;
 
+import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
@@ -14,16 +15,12 @@ import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.durable.kube.config.LeaseGroupConfig;
 import io.quarkiverse.flow.durable.kube.config.SchedulerGroupConfig;
-import io.quarkus.scheduler.Scheduled;
-import io.quarkus.scheduler.Scheduler;
+import io.quarkus.runtime.configuration.DurationConverter;
 
 public abstract class PoolController implements Runnable {
 
     private static final Logger LOG = LoggerFactory.getLogger(PoolController.class);
     protected ScheduledExecutorService executorService;
-
-    @Inject
-    Scheduler scheduler;
 
     @Inject
     LeaseService leaseService;
@@ -34,15 +31,15 @@ public abstract class PoolController implements Runnable {
     @Inject
     LocalStrategy localStrategy;
 
-    protected String computeSchedulerDelay() {
+    protected Duration computeSchedulerDelay() {
         String schedulerInitialDelay = schedulerConfig().initialDelay();
         if (SchedulerGroupConfig.SCHEDULER_INITIAL_DELAY_DEFAULT.equals(schedulerInitialDelay)) {
-            return String.format("%ds", ThreadLocalRandom.current().nextInt(5, 11));
+            return Duration.ofSeconds(ThreadLocalRandom.current().nextInt(5, 11));
         }
         if (schedulerInitialDelay.matches("\\d+")) {
-            return schedulerInitialDelay + "s";
+            return Duration.ofSeconds(Long.parseLong(schedulerInitialDelay));
         }
-        return schedulerInitialDelay;
+        return DurationConverter.parseDuration(schedulerInitialDelay);
     }
 
     protected void onLeaseStartup(@Observes LeaseStartupEvent ev) {
@@ -55,19 +52,20 @@ public abstract class PoolController implements Runnable {
             return;
         }
         LOG.info("Flow: Initializing pool controller '{}' scheduler", scheduledExecutorName);
-        executorService = Executors.newSingleThreadScheduledExecutor(Executors.defaultThreadFactory());
-        String delayed = computeSchedulerDelay();
+        executorService = Executors.newSingleThreadScheduledExecutor(task -> {
+            Thread thread = new Thread(task, "flow-pool-controller-" + scheduledExecutorName());
+            thread.setDaemon(true);
+            return thread;
+        });
+        Duration delayed = computeSchedulerDelay();
 
         LOG.debug("Setting delayed controller '{}' executor to {}", scheduledExecutorName, delayed);
 
-        executorService.schedule(this, Long.parseLong(delayed.replace("s", "")), TimeUnit.SECONDS);
-
-        scheduler.newJob(scheduledExecutorName)
-                .setInterval(schedulerConfig().interval())
-                .setConcurrentExecution(Scheduled.ConcurrentExecution.SKIP)
-                .setDelayed(delayed) // in a cluster, where all pods can start at once, we avoid pilling up requests to get the leader lease
-                .setTask(executionContext -> executorService.execute(this))
-                .schedule();
+        long intervalMillis = schedulerConfig().interval().toMillis();
+        if (intervalMillis <= 0) {
+            throw new IllegalArgumentException("Pool controller interval must be greater than zero");
+        }
+        executorService.scheduleWithFixedDelay(this, delayed.toMillis(), intervalMillis, TimeUnit.MILLISECONDS);
         LOG.info("Flow: Scheduler '{}' initialized", scheduledExecutorName);
     }
 
@@ -78,9 +76,9 @@ public abstract class PoolController implements Runnable {
         }
 
         try {
-            scheduler.unscheduleJob(scheduledExecutorName());
             if (executorService != null) {
-                executorService.shutdown();
+                executorService.shutdownNow();
+                executorService = null;
             }
 
             final String lease = leaseName();
