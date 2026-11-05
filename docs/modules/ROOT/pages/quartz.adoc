@@ -19,6 +19,13 @@ This guide shows how to:
 * Enable the Quartz Flow Scheduler.
 * Define a recurring schedule in your workflow.
 
+Quarkus Flow does not set Quartz clustering properties for applications that add the Quartz
+extension. Configure them explicitly for a JDBC job store. Each distinct application sharing a
+Quartz database needs a unique, stable `quarkus.quartz.instance-name`; all replicas of that
+application must use the same name. This value becomes Quartz's `SCHED_NAME`, which partitions
+the shared Quartz tables. Changing it leaves existing jobs under the old name. Set
+`quarkus.quartz.instance-id=AUTO` so each replica has its own Quartz instance ID.
+
 == Prerequisites
 
 * A Quarkus application with xref:getting-started.adoc[Quarkus Flow set up].
@@ -62,7 +69,9 @@ then set up your DB connection details and driver as indicated in link:https://q
 [source,properties]
 ----
 # Quartz configuration
+quarkus.quartz.instance-name=${quarkus.application.name}
 quarkus.quartz.clustered=true
+quarkus.quartz.instance-id=AUTO
 quarkus.quartz.store-type=jdbc-cmt
 quarkus.quartz.datasource=flow-quartz
 quarkus.quartz.misfire-policy.task-job=ignore-misfire-policy
