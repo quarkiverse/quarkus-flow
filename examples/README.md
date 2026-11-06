@@ -53,6 +53,7 @@ cd examples/<example-name>
 - [Petstore OpenAPI](petstore-openapi/README.md): The famous Petstore Demo calling HTTP services via an OpenAPI specification file descriptor.
 - [Resilient Task Orchestrator](resilient-task-orchestrator/README.md): Production-ready example demonstrating **event-driven task orchestration** with fault isolation, automatic retry, idempotent execution, and state reconciliation for safe resume after failures.
 - [Suspend Resume and Abort](suspend-resume-abort/README.md): A minimal example that illustrate suspend, resume and cancel workflow capabilities, plus durability.
+- [Workflows From JARs](workflows-from-jars/README.md): Two workflow libraries packaged as **plain JARs** consumed by an orchestrator application — build-time discovery of workflows from Maven dependencies, plus local override of a library-provided workflow.
 
 
 ## How to add new examples
