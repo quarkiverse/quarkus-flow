@@ -145,11 +145,11 @@ Task spans represent the execution of a workflow task and includes the following
 
 | `gen_ai.operation.name`
 | String
-| `invoke_agent`. Only present on tasks created with the Java DSL `agent(..)`. See <<genai-agent-tasks>>.
+| `invoke_agent`. Present on tasks created with the Java DSL `agent(..)` (see <<genai-agent-tasks>>), and on any other task that invokes a leaf LangChain4j agent, detected at runtime (see <<genai-runtime-detection>>).
 
 | `gen_ai.agent.name`
 | String
-| Name of the invoked agent, which is the task name. Only present on tasks created with the Java DSL `agent(..)`.
+| Name of the invoked agent. For tasks created with `agent(..)`, this is the task name. For agent calls detected at runtime, this is the LangChain4j agent name.
 |===
 
 [TIP]
@@ -490,7 +490,7 @@ Quarkus Flow types the spans of agent invocations according to the OpenTelemetry
 Which span is typed depends on what the agent is:
 
 * When the workflow itself is an agent, its `workflow.execute` span is typed. This covers <<genai-generated-workflows,generated agentic workflows>> and <<genai-own-workflows,workflows that opt in>>.
-* When a task invokes an agent, its `task.execute` span is typed. This covers <<genai-agent-tasks,tasks created with the Java DSL `agent(..)`>>.
+* When a task invokes an agent, its `task.execute` span is typed. This covers <<genai-agent-tasks,tasks created with the Java DSL `agent(..)`>>, and <<genai-runtime-detection,any other task that invokes a leaf LangChain4j agent>>, detected at runtime.
 
 A typed span gets these attributes:
 
@@ -562,7 +562,40 @@ Name your agent tasks: an unnamed `agent(..)` task gets a generated name such as
 
 Nothing is added to the workflow definition for this: `agent(..)` holds an `io.quarkiverse.flow.dsl.types.AgentFunction`, and that is what the OpenTelemetry extension recognizes. There is no task-level equivalent of the document metadata key above, and no way to mark a task in a YAML definition — a YAML workflow cannot call a Java function in the first place.
 
+[[genai-runtime-detection]]
+=== Agent calls detected at runtime
+
+A task built with the Java DSL's plain `function(..)` (or `consume(..)`) that calls a LangChain4j `@Agent` directly, rather than through `agent(..)`, is still an agent invocation — just one the build-time checks above cannot see, since nothing in the task's definition distinguishes it from any other Java call. Quarkus Flow detects this case at runtime instead: a LangChain4j `AgentListener` notifies the extension whenever a **leaf** agent (one with no sub-agents of its own) is invoked while a task's `task.execute` span is current, and the span is typed then.
+
+[source,java]
+----
+@Inject
+TriageAgent triageAgent;
+
+@Override
+public Workflow descriptor() {
+    return workflow("support")
+            .tasks(function("triage", email -> triageAgent.triage(email), String.class)) // <1>
+            .build();
+}
+----
+<1> `task.execute triage` is typed `gen_ai.operation.name=invoke_agent`, `gen_ai.agent.name=triage` (the LangChain4j agent's name, not the task name), once `triageAgent.triage(..)` runs.
+
+Composite agents (`@SequenceAgent`, `@ParallelAgent`, `@LoopAgent`, `@ConditionalAgent`) are not detected this way: they become <<genai-generated-workflows,generated agentic workflows>>, whose `workflow.execute` span is already typed, so detecting them here too would duplicate the typing. A leaf sub-agent of such a workflow *is* detected, since it has no `workflow.execute` span of its own.
+
+If a task invokes several agents, the span is typed with the first agent invoked; every invocation, including the first, also adds a `gen_ai.invoke_agent` span event naming the agent, so later calls are not lost.
+
+Enabled by default; disable with:
+
+[source,properties]
+----
+quarkus.flow.otel.genai.detect-agent-calls=false
+----
+
+Runtime detection requires `quarkus.flow.otel.task-span-current=true` (the default), since it relies on the task span being current while the task body runs.
+
 === Limitations
 
 * The GenAI semantic conventions are still incubating, so attribute names may change in future versions of the conventions and of Quarkus Flow.
 * `gen_ai.provider.name` is not set, although the conventions require it on `invoke_agent` spans. A workflow that orchestrates several agents has no single provider. The model call spans beneath it, such as LangChain4j's chat spans, carry the provider of each call.
+* Agent calls detected at runtime type a span that has already started: attributes added after `startSpan()` are invisible to samplers and to `onStart` `SpanProcessor` implementations. `gen_ai.*` attributes set at build time (generated agentic workflows, `agent(..)` tasks, opted-in workflows) are unaffected, since they are set on the `SpanBuilder` before the span starts.

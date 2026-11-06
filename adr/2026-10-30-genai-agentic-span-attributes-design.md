@@ -1,7 +1,7 @@
 # GenAI Semantic Convention Attributes on Agentic Workflow Spans - Design Specification
 
 **Date:** 2026-10-30
-**Status:** Proposed
+**Status:** Accepted
 **Issue:** [#1122](https://github.com/quarkiverse/quarkus-flow/issues/1122)
 **Related:** [#1056](https://github.com/quarkiverse/quarkus-flow/issues/1056), [#1065](https://github.com/quarkiverse/quarkus-flow/pull/1065), [#1138](https://github.com/quarkiverse/quarkus-flow/issues/1138), [#1139](https://github.com/quarkiverse/quarkus-flow/issues/1139), [ADR 2026-10-07 agentic trace context propagation](2026-10-07-opentelemetry-agentic-trace-context-propagation.md)
 
@@ -68,8 +68,8 @@ Nothing is written to the workflow document for this. `agent(..)` and `withUniqu
 - `SpanUtils.enrichAgentCall` — called from `OTelWorkflowExecutionListener` alongside the other task-span decorations — sets `gen_ai.operation.name=invoke_agent` and `gen_ai.agent.name` to the task name when the function is an `AgentFunction`. A task has no summary, so there is no description.
 - The marker is a type rather than a name, because the task name already identifies the agent and unnamed tasks get their name only when the task list is built.
 - The workflow containing agent tasks is not typed, unless it is an agent itself. A workflow can hold several agent tasks, and the conventions model each invocation as its own span.
-- The sub-agent tasks of generated agentic workflows are plain function tasks and stay unmarked. A sub-agent that is itself a composite agent is a generated workflow with its own `invoke_agent` span, so marking the task too would nest two agent spans for one invocation.
-- Detecting agent calls inside arbitrary task bodies, for example by introspecting flows that inject agents, is out of scope. The runtime approach is tracked in [#1138](https://github.com/quarkiverse/quarkus-flow/issues/1138).
+- The sub-agent tasks of generated agentic workflows are plain function tasks and stay unmarked **at build time**. A sub-agent that is itself a composite agent is a generated workflow with its own `invoke_agent` span, so marking the task too would nest two agent spans for one invocation — that part of this decision still holds. A sub-agent that is a **leaf** has no such nested workflow span, so leaving its task unmarked left it permanently invisible to GenAI-aware backends. [#1138](https://github.com/quarkiverse/quarkus-flow/issues/1138)'s runtime detection (see its own ADR) closes this gap: a leaf agent invocation, wherever it comes from, types the task span whose body is running when it happens — build-time detection via `AgentFunction` stays the mechanism for `agent(..)` tasks specifically, since it needs no runtime hook and pre-seeds the first-wins state the runtime path uses everywhere else.
+- Detecting agent calls inside arbitrary task bodies, for example by introspecting flows that inject agents, was out of scope for this ADR's build-time approach. The runtime approach, closing that gap, is designed in [#1138](https://github.com/quarkiverse/quarkus-flow/issues/1138)'s own ADR, `2026-11-03-runtime-agent-call-detection-design.md`.
 
 A YAML workflow cannot express a Java agent call at all: `call: Java` needs live Java objects in `with.function`, `inputClass` and `outputClass`, and a YAML-parsed value is rejected by `JavaCallFunctionBuilder`. There is no other agent call type. So a type-level marker costs YAML authors nothing that a document-level one would have given them.
 

@@ -155,6 +155,33 @@ class FlowAgentContextListenerTest {
         assertThat(FlowAgentContextListener.INSTANCE.inheritedBySubagents()).isTrue();
     }
 
+    @Test
+    @DisplayName("test_leaf_sub_agent_notifies_the_agent_invocation_listener_once_context_is_active")
+    void test_leaf_sub_agent_notifies_the_agent_invocation_listener_once_context_is_active() {
+        RecordingAgentInvocationListener.INVOKED_AGENT_NAMES.clear();
+        AgentInstance leafSubAgent = mock(AgentInstance.class);
+        when(leafSubAgent.agentId()).thenReturn("leaf-1");
+        when(leafSubAgent.name()).thenReturn("leaf-1");
+        when(leafSubAgent.leaf()).thenReturn(true);
+        storeSnapshot("leaf-1", "leaf-task");
+
+        FlowAgentContextListener.INSTANCE.beforeAgentInvocation(new AgentRequest(agenticScope, leafSubAgent, Map.of()));
+
+        assertThat(events).containsExactly("activate leaf-task");
+        assertThat(RecordingAgentInvocationListener.INVOKED_AGENT_NAMES).containsExactly("leaf-1");
+    }
+
+    @Test
+    @DisplayName("test_composite_sub_agent_does_not_notify_the_agent_invocation_listener")
+    void test_composite_sub_agent_does_not_notify_the_agent_invocation_listener() {
+        RecordingAgentInvocationListener.INVOKED_AGENT_NAMES.clear();
+        storeSnapshot(AGENT_ID, "task-ctx");
+
+        FlowAgentContextListener.INSTANCE.beforeAgentInvocation(new AgentRequest(agenticScope, agent, Map.of()));
+
+        assertThat(RecordingAgentInvocationListener.INVOKED_AGENT_NAMES).isEmpty();
+    }
+
     private void storeSnapshot(String agentId, String name) {
         storeSnapshot(agenticScope, agentId, name);
     }

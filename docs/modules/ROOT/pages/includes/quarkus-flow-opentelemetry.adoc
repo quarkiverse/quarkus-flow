@@ -51,5 +51,28 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |`+++true+++`
 
+a| [[quarkus-flow-opentelemetry_quarkus-flow-otel-genai-detect-agent-calls]] [.property-path]##link:#quarkus-flow-opentelemetry_quarkus-flow-otel-genai-detect-agent-calls[`+++quarkus.flow.otel.genai.detect-agent-calls+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.otel.genai.detect-agent-calls+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Detect LangChain4j agent invocations at runtime and type the enclosing task's `task.execute` span as a GenAI `invoke_agent` operation when one is detected.
+
+Set to `false` to disable this detection, for example when every agent call is already made through the Java DSL's `agent(..)` helper, which is detected at build time regardless of this setting.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_OTEL_GENAI_DETECT_AGENT_CALLS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_OTEL_GENAI_DETECT_AGENT_CALLS+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
 |===
 
