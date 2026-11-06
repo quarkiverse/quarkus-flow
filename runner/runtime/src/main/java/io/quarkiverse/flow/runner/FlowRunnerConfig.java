@@ -1,5 +1,6 @@
 package io.quarkiverse.flow.runner;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -139,8 +140,8 @@ public interface FlowRunnerConfig {
             /**
              * Polling interval for detecting new workflow files.
              * <p>
-             * Uses Quarkus scheduler interval format (e.g., {@code "5s"},
-             * {@code "10s"}, {@code "1m"}).
+             * Uses the Quarkus duration format (e.g., {@code "5s"},
+             * {@code "10s"}, {@code "1m"}, or an ISO-8601 duration).
              * <p>
              * This is a runtime property and can be changed without rebuilding
              * the application.
@@ -148,7 +149,7 @@ public interface FlowRunnerConfig {
              * @return the polling interval (default: 5s)
              */
             @WithDefault("5s")
-            String interval();
+            Duration interval();
         }
     }
 

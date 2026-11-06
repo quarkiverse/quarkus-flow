@@ -6,6 +6,9 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.event.Observes;
@@ -16,8 +19,6 @@ import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.internal.WorkflowApplicationReadyEvent;
 import io.quarkiverse.flow.internal.WorkflowRegistrarService;
-import io.quarkus.scheduler.Scheduled;
-import io.quarkus.scheduler.Scheduler;
 import io.serverlessworkflow.api.WorkflowReader;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
@@ -26,8 +27,6 @@ import io.serverlessworkflow.impl.WorkflowDefinitionId;
 public class WorkflowFileWatcher {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowFileWatcher.class.getName());
-    static final String JOB_IDENTITY = "flow-runner-file-watcher";
-
     @Inject
     WorkflowRegistrarService registrarService;
 
@@ -40,11 +39,9 @@ public class WorkflowFileWatcher {
     @Inject
     FlowRunnerConfig config;
 
-    @Inject
-    Scheduler scheduler;
-
     final Map<Path, WorkflowDefinitionId> registeredFiles = new HashMap<>();
     private volatile boolean active = false;
+    private ScheduledExecutorService watchExecutor;
 
     void onStart(@Observes WorkflowApplicationReadyEvent ev) {
         if (!config.enabled()) {
@@ -57,24 +54,49 @@ public class WorkflowFileWatcher {
         }
 
         buildBaseline();
-
-        scheduler.newJob(JOB_IDENTITY)
-                .setInterval(config.source().watch().interval())
-                .setConcurrentExecution(Scheduled.ConcurrentExecution.SKIP)
-                .setTask(executionContext -> poll())
-                .schedule();
-
-        active = true;
+        long intervalMillis = config.source().watch().interval().toMillis();
+        if (intervalMillis <= 0) {
+            throw new IllegalArgumentException(
+                    "quarkus.flow.runner.source.watch.interval must be greater than zero");
+        }
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(task -> {
+            Thread thread = new Thread(task, "flow-runner-file-watcher");
+            thread.setDaemon(true);
+            return thread;
+        });
+        try {
+            executor.scheduleWithFixedDelay(this::pollSafely, intervalMillis, intervalMillis, TimeUnit.MILLISECONDS);
+            watchExecutor = executor;
+            active = true;
+        } catch (RuntimeException e) {
+            executor.shutdownNow();
+            throw e;
+        }
         LOGGER.info("Flow Runner: File watcher started — monitoring {} with interval {} ({} files in baseline)",
                 config.source().path().get(), config.source().watch().interval(), registeredFiles.size());
     }
 
     @PreDestroy
     void stop() {
-        if (active) {
-            scheduler.unscheduleJob(JOB_IDENTITY);
+        ScheduledExecutorService executor = watchExecutor;
+        watchExecutor = null;
+        active = false;
+        if (executor != null) {
+            executor.shutdownNow();
             LOGGER.debug("Flow Runner: File watcher stopped");
         }
+    }
+
+    private void pollSafely() {
+        try {
+            poll();
+        } catch (RuntimeException e) {
+            LOGGER.warn("Flow Runner: File watcher — polling failed: {}", e.getMessage(), e);
+        }
+    }
+
+    boolean isWatching() {
+        return active && watchExecutor != null && !watchExecutor.isShutdown();
     }
 
     void buildBaseline() {

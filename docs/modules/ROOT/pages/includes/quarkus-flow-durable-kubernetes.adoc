@@ -69,8 +69,8 @@ ifndef::add-copy-button-to-env-var[]
 Environment variable: `+++QUARKUS_FLOW_DURABLE_KUBE_SCHEDULERS_LEADER_INTERVAL+++`
 endif::add-copy-button-to-env-var[]
 --
-|string
-|`+++30s+++`
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow-durable-kubernetes_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
+|`+++30S+++`
 
 a| [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-schedulers-leader-initial-delay]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-schedulers-leader-initial-delay[`+++quarkus.flow.durable.kube.schedulers.leader.initial-delay+++`]##
 ifdef::add-copy-button-to-config-props[]
@@ -111,8 +111,8 @@ ifndef::add-copy-button-to-env-var[]
 Environment variable: `+++QUARKUS_FLOW_DURABLE_KUBE_SCHEDULERS_MEMBER_INTERVAL+++`
 endif::add-copy-button-to-env-var[]
 --
-|string
-|`+++30s+++`
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow-durable-kubernetes_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
+|`+++30S+++`
 
 a| [[quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-schedulers-member-initial-delay]] [.property-path]##link:#quarkus-flow-durable-kubernetes_quarkus-flow-durable-kube-schedulers-member-initial-delay[`+++quarkus.flow.durable.kube.schedulers.member.initial-delay+++`]##
 ifdef::add-copy-button-to-config-props[]

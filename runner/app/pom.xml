@@ -173,6 +173,12 @@
                     <artifactId>quarkus-flow-mvstore</artifactId>
                     <version>${project.version}</version>
                 </dependency>
+                <!-- Workflow schedules use the in-memory Quarkus scheduler. -->
+                <dependency>
+                    <groupId>io.quarkiverse.flow</groupId>
+                    <artifactId>quarkus-flow-scheduler</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
             </dependencies>
         </profile>
 
@@ -201,6 +207,18 @@
                 <dependency>
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-jdbc-postgresql</artifactId>
+                </dependency>
+
+                <!-- Durable workflow schedules backed by the shared PostgreSQL Quartz job store. -->
+                <dependency>
+                    <groupId>io.quarkiverse.flow</groupId>
+                    <artifactId>quarkus-flow-quartz-scheduler</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>io.quarkiverse.flow</groupId>
+                    <artifactId>quarkus-flow-db-migration-quartz</artifactId>
+                    <version>${project.version}</version>
                 </dependency>
             </dependencies>
         </profile>
@@ -232,6 +250,17 @@
                     <artifactId>quarkus-jdbc-postgresql</artifactId>
                 </dependency>
 
+                <!-- Durable workflow schedules backed by the shared PostgreSQL Quartz job store. -->
+                <dependency>
+                    <groupId>io.quarkiverse.flow</groupId>
+                    <artifactId>quarkus-flow-quartz-scheduler</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>io.quarkiverse.flow</groupId>
+                    <artifactId>quarkus-flow-db-migration-quartz</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
                 <!-- Messaging: Kafka + Flow messaging support -->
                 <dependency>
                     <groupId>io.quarkus</groupId>

@@ -4,6 +4,9 @@ import static io.quarkiverse.flow.persistence.common.FlowPersistenceUtils.exclud
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import jakarta.annotation.PreDestroy;
@@ -16,8 +19,6 @@ import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.internal.WorkflowApplicationReadyEvent;
 import io.quarkus.arc.Unremovable;
-import io.quarkus.scheduler.Scheduled;
-import io.quarkus.scheduler.Scheduler;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
@@ -28,8 +29,6 @@ import io.serverlessworkflow.impl.persistence.PersistenceInstanceHandlers;
 @Unremovable
 public class FlowPersistenceRestore {
 
-    static final String JOB_IDENTITY = "flow-persistence-restore-scan";
-
     private static final Logger LOG = LoggerFactory.getLogger(FlowPersistenceRestore.class);
     @Inject
     PersistenceInstanceHandlers handlers;
@@ -37,10 +36,7 @@ public class FlowPersistenceRestore {
     WorkflowApplication application;
     @Inject
     FlowPersistenceConfig config;
-    @Inject
-    Scheduler scheduler;
-
-    private volatile boolean scanScheduled = false;
+    private ScheduledExecutorService scanExecutor;
 
     void restoreInstances(@Observes WorkflowApplicationReadyEvent event) {
         // Check runtime config to see if auto-restore is enabled
@@ -53,20 +49,35 @@ public class FlowPersistenceRestore {
 
         config.scanInterval().ifPresent(interval -> {
             LOG.info("Scheduling periodic workflow instance recovery scan every {}", interval);
-            scheduler.newJob(JOB_IDENTITY)
-                    .setInterval(interval.toString())
-                    .setConcurrentExecution(Scheduled.ConcurrentExecution.SKIP)
-                    .setTask(executionContext -> scanAndRestore())
-                    .schedule();
-            scanScheduled = true;
+            long intervalMillis = interval.toMillis();
+            if (intervalMillis <= 0) {
+                throw new IllegalArgumentException("quarkus.flow.persistence.scan-interval must be greater than zero");
+            }
+            scanExecutor = Executors.newSingleThreadScheduledExecutor(task -> {
+                Thread thread = new Thread(task, "flow-persistence-restore-scan");
+                thread.setDaemon(true);
+                return thread;
+            });
+            scanExecutor.scheduleWithFixedDelay(() -> {
+                try {
+                    scanAndRestore();
+                } catch (RuntimeException e) {
+                    LOG.warn("Periodic workflow instance recovery scan failed", e);
+                }
+            }, intervalMillis, intervalMillis, TimeUnit.MILLISECONDS);
         });
     }
 
     @PreDestroy
     void stop() {
-        if (scanScheduled) {
-            scheduler.unscheduleJob(JOB_IDENTITY);
+        if (scanExecutor != null) {
+            scanExecutor.shutdownNow();
+            scanExecutor = null;
         }
+    }
+
+    boolean isScanScheduled() {
+        return scanExecutor != null && !scanExecutor.isShutdown();
     }
 
     void scanAndRestore() {

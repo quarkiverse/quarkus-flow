@@ -10,14 +10,9 @@ import io.quarkiverse.flow.durable.kube.MemberLeaseCoordinator;
 import io.quarkiverse.flow.durable.kube.PoolLeaderController;
 import io.quarkiverse.flow.durable.kube.PoolMemberController;
 import io.quarkiverse.flow.durable.kube.config.FlowDurableKubeConfig;
-import io.quarkiverse.flow.durable.kube.config.LocalConfig;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.runtime.LaunchMode;
-import io.quarkus.scheduler.deployment.ForceStartSchedulerBuildItem;
 
 class FlowDurableKubernetesProcessor {
 
@@ -26,23 +21,6 @@ class FlowDurableKubernetesProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FEATURE);
-    }
-
-    /**
-     * Forces the internal Quarkus Scheduler to run since our module creates schedulers programmatically.
-     *
-     * @see <a href="https://quarkus.io/guides/all-builditems#scheduler">Build Items - Scheduler</a>
-     */
-    @BuildStep
-    void forceStartSchedulerBuildItem(LaunchModeBuildItem launchMode, LocalConfig localConfig,
-            BuildProducer<ForceStartSchedulerBuildItem> forceScheduler) {
-        boolean isDevOrTest = launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ||
-                launchMode.getLaunchMode() == LaunchMode.TEST;
-        // Skip our schedulers by default
-        boolean bypassActive = isDevOrTest && localConfig.localStrategyEnabled();
-        if (!bypassActive) {
-            forceScheduler.produce(new ForceStartSchedulerBuildItem());
-        }
     }
 
     @BuildStep

@@ -63,7 +63,7 @@ dev: ## Run in development mode (Quarkus dev mode with MVStore)
 	@echo "📍 Open http://localhost:8080 for the dashboard"
 	@echo "📍 Press 'w' to open OpenAPI docs"
 	@echo ""
-	@cd ../.. && mvn quarkus:dev -pl runner/app -am
+	@cd ../.. && mvn quarkus:dev -pl runner/deployment,persistence/mvstore/deployment,oidc/deployment,scheduler/memory/deployment,runner/app -am
 
 docker-compose-up: ## Start minimal variant with docker-compose
 	@echo "🐳 Starting minimal variant with docker-compose..."

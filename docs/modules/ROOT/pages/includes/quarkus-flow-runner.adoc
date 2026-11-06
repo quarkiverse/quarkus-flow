@@ -125,7 +125,7 @@ endif::add-copy-button-to-config-props[]
 --
 Polling interval for detecting new workflow files.
 
-Uses Quarkus scheduler interval format (e.g., `"5s"`, `"10s"`, `"1m"`).
+Uses the Quarkus duration format (e.g., `"5s"`, `"10s"`, `"1m"`, or an ISO-8601 duration).
 
 This is a runtime property and can be changed without rebuilding the application.
 
@@ -137,8 +137,8 @@ ifndef::add-copy-button-to-env-var[]
 Environment variable: `+++QUARKUS_FLOW_RUNNER_SOURCE_WATCH_INTERVAL+++`
 endif::add-copy-button-to-env-var[]
 --
-|string
-|`+++5s+++`
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-flow-runner_quarkus-flow[icon:question-circle[title=More information about the Duration format]]
+|`+++5S+++`
 
 a| [[quarkus-flow-runner_quarkus-flow-runner-security-type]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-type[`+++quarkus.flow.runner.security.type+++`]##
 ifdef::add-copy-button-to-config-props[]
@@ -370,3 +370,22 @@ endif::add-copy-button-to-env-var[]
 
 |===
 
+ifndef::no-duration-note[]
+[NOTE]
+[id=duration-note-anchor-quarkus-flow-runner_quarkus-flow]
+.About the Duration format
+====
+To write duration values, use the standard `java.time.Duration` format.
+See the link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#parse(java.lang.CharSequence)[Duration#parse() Java API documentation] for more information.
+
+You can also use a simplified format, starting with a number:
+
+* If the value is only a number, it represents time in seconds.
+* If the value is a number followed by `ms`, it represents time in milliseconds.
+
+In other cases, the simplified format is translated to the `java.time.Duration` format for parsing:
+
+* If the value is a number followed by `h`, `m`, or `s`, it is prefixed with `PT`.
+* If the value is a number followed by `d`, it is prefixed with `P`.
+====
+endif::no-duration-note[]

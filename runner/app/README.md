@@ -56,6 +56,7 @@ Three image variants are planned:
 docker pull quay.io/quarkiverse/quarkus-flow-runner:latest-minimal
 ```
 - **Persistence:** MVStore (file-based, local storage)
+- **Workflow scheduling:** In-memory scheduler (scheduled jobs are not persisted)
 - **Messaging:** None (no messaging dependencies)
 - **HA/Failover:** ❌ Not supported (file-based persistence)
 - **Durable Kubernetes:** ❌ Not included (requires shared persistence)
@@ -77,22 +78,34 @@ docker pull quay.io/quarkiverse/quarkus-flow-runner:latest-minimal
 docker pull quay.io/quarkiverse/quarkus-flow-runner:latest-standard
 ```
 - **Persistence:** JPA with PostgreSQL
+- **Workflow scheduling:** Clustered Quartz JDBC scheduler with Flyway-managed Quartz tables
 - **Messaging:** None (use messaging variant for Kafka)
 - **HA/Failover:** ✅ Supported (with JPA + durable-kubernetes)
 - **Durable Kubernetes:** ✅ Included
 - **Status:** ✅ Ready to use
 - **Best for:** Production deployments with high availability and shared database persistence
 
+Quartz uses the runner application name as its scheduler name by default. Applications that share a
+Quartz database must set a unique, stable `QUARKUS_QUARTZ_INSTANCE_NAME`; replicas of one
+application must use the same value. The Quartz datasource uses the workflow PostgreSQL connection
+by default and can be configured independently with `QUARKUS_DATASOURCE_FLOW_QUARTZ_*` variables.
+
 ### Messaging (~330MB) - ✅ WORKING
 ```bash
 docker pull quay.io/quarkiverse/quarkus-flow-runner:latest-messaging
 ```
 - **Persistence:** JPA with PostgreSQL
+- **Workflow scheduling:** Clustered Quartz JDBC scheduler with Flyway-managed Quartz tables
 - **Messaging:** Kafka (CloudEvents via SmallRye Reactive Messaging)
 - **HA/Failover:** ✅ Supported (with JPA + durable-kubernetes)
 - **Durable Kubernetes:** ✅ Included
 - **Status:** ✅ Ready to use (requires messaging config at runtime, see #645)
 - **Best for:** Event-driven workflows with high availability and Kafka integration
+
+Quartz uses the runner application name as its scheduler name by default. Applications that share a
+Quartz database must set a unique, stable `QUARKUS_QUARTZ_INSTANCE_NAME`; replicas of one
+application must use the same value. The Quartz datasource uses the workflow PostgreSQL connection
+by default and can be configured independently with `QUARKUS_DATASOURCE_FLOW_QUARTZ_*` variables.
 
 ## High Availability & Failover Architecture
 
@@ -202,7 +215,7 @@ If you prefer full control:
 
 ```bash
 # Step 1: Build with Maven (specify profile)
-./mvnw clean package -pl runner/app -am -P image-minimal -DskipTests -Dquarkus.profile="container,minimal"
+./mvnw clean package -pl runner/deployment,persistence/mvstore/deployment,oidc/deployment,scheduler/memory/deployment,runner/app -am -P image-minimal -DskipTests -Dquarkus.profile="container,minimal"
 
 # Step 2: Build Docker image
 cd runner/app
@@ -282,7 +295,7 @@ For more complex customization (different persistence modules, additional Quarku
 2. Modify `runner/app/pom.xml` to add/remove dependencies
 3. Build with your custom profile:
    ```bash
-   ./mvnw clean package -pl runner/app -am -P image-standard -DskipTests
+   ./mvnw clean package -pl runner/deployment,persistence/jpa/deployment,durable-kubernetes/deployment,oidc/deployment,scheduler/quartz/deployment,scheduler/db-migration-quartz/deployment,runner/app -am -P image-standard -DskipTests -Dquarkus.profile=container,standard
    cd runner/app
    docker build -t my-custom-runner:1.0.0 .
    ```

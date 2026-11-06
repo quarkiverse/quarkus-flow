@@ -1,9 +1,5 @@
 package io.quarkiverse.flow.persistence.common;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -24,8 +20,6 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import io.quarkiverse.flow.internal.WorkflowApplicationReadyEvent;
-import io.quarkus.scheduler.Scheduled;
-import io.quarkus.scheduler.Scheduler;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowDefinitionId;
@@ -59,9 +53,6 @@ class FlowPersistenceRestoreTest {
     @Mock
     FlowPersistenceConfig config;
 
-    @Mock
-    Scheduler scheduler;
-
     FlowPersistenceRestore restore;
 
     @BeforeEach
@@ -70,7 +61,6 @@ class FlowPersistenceRestoreTest {
         restore.application = application;
         restore.handlers = handlers;
         restore.config = config;
-        restore.scheduler = scheduler;
 
         when(application.workflowDefinitions()).thenReturn(Map.of(WORKFLOW_ID, definition));
         when(definition.id()).thenReturn(WORKFLOW_ID);
@@ -112,54 +102,45 @@ class FlowPersistenceRestoreTest {
 
         verifyNoInteractions(application);
         verifyNoInteractions(handlers);
-        verifyNoInteractions(scheduler);
     }
 
     @Test
-    @DisplayName("Should schedule a periodic scan job when scan-interval is configured")
-    void test_periodic_job_scheduled_when_scan_interval_configured() {
+    @DisplayName("Should start a local periodic scan when scan-interval is configured")
+    void test_periodic_scan_started_when_scan_interval_configured() {
         when(config.autoRestore()).thenReturn(true);
         when(config.scanInterval()).thenReturn(Optional.of(Duration.ofSeconds(30)));
         when(reader.scanAll(definition)).thenReturn(Stream.empty());
-        Scheduler.JobDefinition job = mockJobDefinition();
-        when(scheduler.newJob(FlowPersistenceRestore.JOB_IDENTITY)).thenReturn(job);
-
         restore.restoreInstances(READY_EVENT);
 
-        verify(scheduler).newJob(FlowPersistenceRestore.JOB_IDENTITY);
-        verify(job).setInterval(Duration.ofSeconds(30).toString());
-        verify(job).setConcurrentExecution(Scheduled.ConcurrentExecution.SKIP);
-        verify(job).schedule();
+        org.assertj.core.api.Assertions.assertThat(restore.isScanScheduled()).isTrue();
+        restore.stop();
     }
 
     @Test
-    @DisplayName("Should not schedule a periodic scan job when scan-interval is absent")
-    void test_periodic_job_not_scheduled_when_scan_interval_absent() {
+    @DisplayName("Should not start a periodic scan when scan-interval is absent")
+    void test_periodic_scan_not_started_when_scan_interval_absent() {
         when(config.autoRestore()).thenReturn(true);
         when(reader.scanAll(definition)).thenReturn(Stream.empty());
 
         restore.restoreInstances(READY_EVENT);
 
-        verify(scheduler, never()).newJob(anyString());
+        org.assertj.core.api.Assertions.assertThat(restore.isScanScheduled()).isFalse();
     }
 
     @Test
-    @DisplayName("Should unschedule the job on stop when it was scheduled")
-    void test_stop_unschedules_job_when_scheduled() {
+    @DisplayName("Should stop the periodic scan executor")
+    void test_stop_shuts_down_scan_executor() {
         when(config.autoRestore()).thenReturn(true);
         when(config.scanInterval()).thenReturn(Optional.of(Duration.ofSeconds(30)));
         when(reader.scanAll(definition)).thenReturn(Stream.empty());
-        Scheduler.JobDefinition job = mockJobDefinition();
-        when(scheduler.newJob(FlowPersistenceRestore.JOB_IDENTITY)).thenReturn(job);
         restore.restoreInstances(READY_EVENT);
-
         restore.stop();
 
-        verify(scheduler).unscheduleJob(FlowPersistenceRestore.JOB_IDENTITY);
+        org.assertj.core.api.Assertions.assertThat(restore.isScanScheduled()).isFalse();
     }
 
     @Test
-    @DisplayName("Should not unschedule anything on stop when no job was scheduled")
+    @DisplayName("Should stop cleanly when no periodic scan was configured")
     void test_stop_does_nothing_when_not_scheduled() {
         when(config.autoRestore()).thenReturn(true);
         when(reader.scanAll(definition)).thenReturn(Stream.empty());
@@ -167,14 +148,6 @@ class FlowPersistenceRestoreTest {
 
         restore.stop();
 
-        verify(scheduler, never()).unscheduleJob(anyString());
-    }
-
-    private Scheduler.JobDefinition mockJobDefinition() {
-        Scheduler.JobDefinition job = mock(Scheduler.JobDefinition.class);
-        when(job.setInterval(any())).thenReturn(job);
-        when(job.setConcurrentExecution(any())).thenReturn(job);
-        when(job.setTask(any(java.util.function.Consumer.class))).thenReturn(job);
-        return job;
+        org.assertj.core.api.Assertions.assertThat(restore.isScanScheduled()).isFalse();
     }
 }

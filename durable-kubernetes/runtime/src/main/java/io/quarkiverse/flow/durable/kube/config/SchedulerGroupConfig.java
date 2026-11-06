@@ -1,5 +1,7 @@
 package io.quarkiverse.flow.durable.kube.config;
 
+import java.time.Duration;
+
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 
@@ -25,7 +27,7 @@ public interface SchedulerGroupConfig {
          * @see <a href="https://quarkus.io/guides/scheduler-reference#intervals">Quarkus Scheduler Guide</a>
          */
         @WithDefault("30s")
-        String interval();
+        Duration interval();
 
         /**
          * Unless strictly necessary, don't set this property. It governs the initial time in seconds for the scheduler to
