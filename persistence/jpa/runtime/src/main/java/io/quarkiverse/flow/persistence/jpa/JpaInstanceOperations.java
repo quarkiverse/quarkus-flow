@@ -229,9 +229,7 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
 
     private Map<String, PersistenceTaskInfo> from(HashMappingCoordinator coordinator, String instanceId,
             Collection<TaskInfoEntity> taskEntities) {
-        // A task that ran more than once (a loop, a switch back to an earlier task) has one row per iteration, while
-        // PersistenceWorkflowInfo holds one entry per position. Keep the latest iteration, as the SDK's own stores do
-        // (they overwrite the entry for the position on every write)
+        // One row per iteration: keep the latest for each position
         return taskEntities.stream()
                 .collect(Collectors.toMap(TaskInfoEntity::jsonPointer, Function.identity(),
                         BinaryOperator.maxBy(Comparator.comparingInt(TaskInfoEntity::iteration))))
