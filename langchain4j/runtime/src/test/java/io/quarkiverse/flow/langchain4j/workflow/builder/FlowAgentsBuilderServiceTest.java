@@ -211,6 +211,27 @@ public class FlowAgentsBuilderServiceTest {
     }
 
     @Test
+    @DisplayName("newConditional_with_condition_description_still_honors_predicate")
+    void newConditional_with_condition_description_still_honors_predicate() {
+        var branchA = AgenticServices.agentAction(scope -> scope.writeState("branchA", true));
+        var branchB = AgenticServices.agentAction(scope -> scope.writeState("branchB", true));
+
+        UntypedAgent agent = builderService.newConditional()
+                .subAgents("type is A", scope -> "A".equals(scope.readState("type", "")), branchA)
+                .subAgents("type is B", scope -> "B".equals(scope.readState("type", "")), branchB)
+                .build();
+
+        ResultWithAgenticScope<String> result = agent.invokeWithAgenticScope(Map.of("type", "A"));
+
+        assertThat(result.agenticScope().readState("branchA", false))
+                .as("Described condition should still activate the matching branch")
+                .isTrue();
+        assertThat(result.agenticScope().readState("branchB", false))
+                .as("Described condition should still skip the non-matching branch")
+                .isFalse();
+    }
+
+    @Test
     @DisplayName("newConditional_with_nonexistent_class_throws_IllegalStateException")
     void newConditional_with_nonexistent_class_throws_IllegalStateException() {
         assertThatThrownBy(() -> builderService.newConditional(NonExistentConditionalAgent.class))

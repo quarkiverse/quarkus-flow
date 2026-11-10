@@ -10,6 +10,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -88,6 +90,39 @@ class GizmoAgentFlowsHelperTest {
                 generateConditionalMetadataField(creator, TestConditionalAgent.class.getName(), metadata, subAgents);
             }
         }).doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("generateConditionalMetadataField should generate conditionDescriptions with @ActivationCondition descriptions")
+    void test_generateConditionalMetadataField_generatesConditionDescriptions() throws Exception {
+        String agent1 = TestAgent1.class.getName();
+        String agent2 = TestAgent2.class.getName();
+        List<Type> subAgents = List.of(Type.create(DotName.createSimple(agent1), Type.Kind.CLASS),
+                Type.create(DotName.createSimple(agent2), Type.Kind.CLASS));
+        ConditionalMetadata metadata = new ConditionalMetadata(Map.of(
+                agent1, new PredicateMetadata("shouldActivateAgent1", List.of(AgenticScope.class.getName()),
+                        "Activation predicate for Agent1"),
+                agent2, new PredicateMetadata("shouldActivateAgent1", List.of(AgenticScope.class.getName()), "")));
+
+        String className = "test.GeneratedDescribedConditionalFlow";
+        Map<String, byte[]> classes = new HashMap<>();
+        try (ClassCreator creator = ClassCreator.builder().classOutput((name, data) -> classes.put(name, data))
+                .className(className).superClass(TestConditionalFlowBase.class).build()) {
+            generateConditionalMetadataField(creator, TestConditionalAgent.class.getName(), metadata, subAgents);
+        }
+
+        Class<?> generated = new ClassLoader(getClass().getClassLoader()) {
+            Class<?> define() {
+                byte[] bytes = classes.get(className.replace('.', '/'));
+                return defineClass(className, bytes, 0, bytes.length);
+            }
+        }.define();
+        Method conditionDescriptions = generated.getDeclaredMethod("conditionDescriptions");
+        conditionDescriptions.setAccessible(true);
+
+        // agent2 has a blank description, so only agent1 (index 0) gets an entry
+        assertThat(conditionDescriptions.invoke(generated.getDeclaredConstructor().newInstance()))
+                .isEqualTo(Map.of(0, "Activation predicate for Agent1"));
     }
 
     @Test
@@ -265,6 +300,21 @@ class GizmoAgentFlowsHelperTest {
     }
 
     // ========== Test Agent Classes ==========
+
+    /**
+     * Concrete base for loading a generated conditional flow, so its generated methods can be invoked.
+     */
+    public abstract static class TestConditionalFlowBase extends ConditionalAgenticFlow {
+        @Override
+        public String agentClassName() {
+            return TestConditionalAgent.class.getName();
+        }
+
+        @Override
+        protected List<String> subAgentTaskNames() {
+            return List.of("execute", "execute");
+        }
+    }
 
     /**
      * Test agent interface with a static predicate method for conditional activation
