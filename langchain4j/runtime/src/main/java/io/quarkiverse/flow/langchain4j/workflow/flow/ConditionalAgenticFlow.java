@@ -47,6 +47,20 @@ public abstract class ConditionalAgenticFlow extends AgenticFlow {
     }
 
     /**
+     * Returns human-readable descriptions of the activation conditions, indexed by subagent position.
+     * <p>
+     * When present, each description is exposed as the {@code description} entry of the matching subagent task
+     * metadata, so tools such as the Dev UI topology can render it. Subagents without an entry get no description.
+     * <p>
+     * Default implementation returns an empty map (no descriptions).
+     *
+     * @return map of subagent indices to activation condition descriptions
+     */
+    protected Map<Integer, String> conditionDescriptions() {
+        return Map.of();
+    }
+
+    /**
      * Sets the list of conditional agents created during builder API usage.
      * This is called by {@link io.quarkiverse.flow.langchain4j.workflow.service.FlowConditionalAgentService}
      * to populate the list from the parent ConditionalAgentServiceImpl.
@@ -70,6 +84,7 @@ public abstract class ConditionalAgenticFlow extends AgenticFlow {
     @Override
     public Workflow descriptor() {
         Map<Integer, Predicate<AgenticScope>> predicates = activationPredicates();
+        Map<Integer, String> descriptions = conditionDescriptions();
 
         return FlowWorkflowBuilder.workflow()
                 .document(buildDocument())
@@ -80,15 +95,21 @@ public abstract class ConditionalAgenticFlow extends AgenticFlow {
                         final int index = i; // capture for lambda
                         String taskName = taskNames.get(i) + "-" + i;
                         Predicate<AgenticScope> predicate = predicates.get(i);
+                        String description = descriptions.get(i);
                         tasks.function(
                                 taskName,
-                                fn -> fn.function(
-                                        (DefaultAgenticScope scope, WorkflowContextData ctx) -> executeAgent(
-                                                ctx.instanceData().id(), scope,
-                                                index),
-                                        DefaultAgenticScope.class)
-                                        .when(predicate == null ? scope -> true : predicate, AgenticScope.class)
-                                        .outputAs((out, wf, tf) -> agenticScopePassthrough(tf.rawInput())));
+                                fn -> {
+                                    fn.function(
+                                            (DefaultAgenticScope scope, WorkflowContextData ctx) -> executeAgent(
+                                                    ctx.instanceData().id(), scope,
+                                                    index),
+                                            DefaultAgenticScope.class);
+                                    if (description != null && !description.isBlank()) {
+                                        fn.metadata(meta -> meta.description(description));
+                                    }
+                                    fn.when(predicate == null ? scope -> true : predicate, AgenticScope.class)
+                                            .outputAs((out, wf, tf) -> agenticScopePassthrough(tf.rawInput()));
+                                });
                     }
                 })
                 .build();

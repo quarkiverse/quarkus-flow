@@ -1,6 +1,7 @@
 package io.quarkiverse.flow.langchain4j.workflow.runtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import java.util.Arrays;
 import java.util.List;
@@ -14,7 +15,12 @@ import org.junit.jupiter.api.Test;
 
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.scope.AgenticScope;
+import io.quarkiverse.flow.dsl.types.utils.TypesUtils;
 import io.quarkus.test.junit.QuarkusTest;
+import io.serverlessworkflow.api.types.TaskBase;
+import io.serverlessworkflow.api.types.TaskMetadata;
+import io.serverlessworkflow.api.types.Workflow;
+import io.serverlessworkflow.fluent.spec.TaskMetadataBuilder;
 
 @QuarkusTest
 @DisplayName("RuntimeConditionalAgenticFlow unit tests")
@@ -142,5 +148,63 @@ public class RuntimeConditionalAgenticFlowTest {
         // Should have 3 task names and 3 predicates
         assertThat(flow.subAgentTaskNames()).hasSize(3);
         assertThat(flow.activationPredicates()).hasSize(3);
+    }
+
+    @Test
+    @DisplayName("conditionDescriptions_initially_empty")
+    void conditionDescriptions_initially_empty() {
+        assertThat(flow.conditionDescriptions()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("addSubAgentWithPredicate_with_description_tracks_it_by_index")
+    void addSubAgentWithPredicate_with_description_tracks_it_by_index() {
+        var agent1 = AgenticServices.agentAction(scope -> {
+        });
+        var agent2 = AgenticServices.agentAction(scope -> {
+        });
+        var agent3 = AgenticServices.agentAction(scope -> {
+        });
+
+        flow.addSubAgentWithPredicate("medical requests", scope -> true, agent1);
+        flow.addSubAgentWithPredicate(scope -> true, agent2);
+        flow.addSubAgentWithPredicate("  ", scope -> true, agent3);
+
+        assertThat(flow.conditionDescriptions()).containsExactly(entry(0, "medical requests"));
+    }
+
+    @Test
+    @DisplayName("descriptor_exposes_condition_description_as_task_metadata")
+    void descriptor_exposes_condition_description_as_task_metadata() {
+        var agent = AgenticServices.agentAction(scope -> {
+        });
+        flow.addSubAgentWithPredicate("medical requests", scope -> true, agent);
+
+        TaskMetadata metadata = subAgentTask(flow.descriptor(), 0).getMetadata();
+
+        assertThat(metadata).isNotNull();
+        assertThat(metadata.getAdditionalProperties())
+                .containsEntry(TaskMetadataBuilder.DESCRIPTION, "medical requests")
+                // the description must not wipe the predicate the DSL keeps in the same metadata
+                .containsKey(TypesUtils.IF_PREDICATE);
+    }
+
+    @Test
+    @DisplayName("descriptor_omits_description_metadata_without_condition_description")
+    void descriptor_omits_description_metadata_without_condition_description() {
+        var agent1 = AgenticServices.agentAction(scope -> {
+        });
+        var agent2 = AgenticServices.agentAction(scope -> {
+        });
+        flow.addSubAgentWithPredicate("medical requests", scope -> true, agent1);
+        flow.addSubAgentWithPredicate(scope -> true, agent2);
+
+        assertThat(subAgentTask(flow.descriptor(), 1).getMetadata().getAdditionalProperties())
+                .doesNotContainKey(TaskMetadataBuilder.DESCRIPTION)
+                .containsKey(TypesUtils.IF_PREDICATE);
+    }
+
+    private static TaskBase subAgentTask(Workflow workflow, int index) {
+        return (TaskBase) workflow.getDo().get(index).getTask().getCallTask().get();
     }
 }

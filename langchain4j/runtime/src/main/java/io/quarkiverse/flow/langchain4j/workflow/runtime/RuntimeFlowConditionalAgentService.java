@@ -40,9 +40,9 @@ public final class RuntimeFlowConditionalAgentService<T> extends FlowConditional
     @Override
     public ConditionalAgentServiceImpl<T> subAgents(
             String conditionDescription, Predicate<AgenticScope> activationPredicate, Object... agents) {
-        // Description is passed to parent but we still need to track in our flow
+        // Description is passed to parent and also tracked in our flow as task metadata
         for (Object agent : agents) {
-            ((RuntimeConditionalAgenticFlow) flow).addSubAgentWithPredicate(activationPredicate, agent);
+            ((RuntimeConditionalAgenticFlow) flow).addSubAgentWithPredicate(conditionDescription, activationPredicate, agent);
         }
         return super.subAgents(conditionDescription, activationPredicate, agents);
     }
