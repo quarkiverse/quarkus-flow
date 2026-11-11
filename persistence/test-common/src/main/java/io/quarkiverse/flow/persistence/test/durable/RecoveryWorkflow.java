@@ -14,6 +14,8 @@ import io.serverlessworkflow.impl.WorkflowModel;
 @ApplicationScoped
 public class RecoveryWorkflow extends Flow {
 
+    public static final String WAIT_DECISION_TASK_NAME = "waitDecision";
+
     public static final String EVENT_NAME = "org.acme.user.recovery.Decision";
 
     @Override
@@ -28,7 +30,7 @@ public class RecoveryWorkflow extends Flow {
                             RecoveryResource.TASK2_TIMES.incrementAndGet();
                             return o.asMap();
                         }, WorkflowModel.class),
-                        listen("waitDecision", toOne(EVENT_NAME)),
+                        listen(WAIT_DECISION_TASK_NAME, toOne(EVENT_NAME)),
                         function("task4", o -> {
                             RecoveryResource.TASK4_TIMES.incrementAndGet();
                             return "after-decision";

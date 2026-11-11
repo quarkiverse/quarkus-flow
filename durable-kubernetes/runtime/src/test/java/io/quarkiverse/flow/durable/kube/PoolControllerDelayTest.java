@@ -2,6 +2,8 @@ package io.quarkiverse.flow.durable.kube;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.time.Duration;
+
 import jakarta.enterprise.inject.Vetoed;
 
 import org.junit.jupiter.api.Test;
@@ -51,8 +53,8 @@ class PoolControllerDelayTest {
     private static SchedulerGroupConfig.SchedulerConfig configWithDelay(String delay) {
         return new SchedulerGroupConfig.SchedulerConfig() {
             @Override
-            public String interval() {
-                return "30s";
+            public Duration interval() {
+                return Duration.ofSeconds(30);
             }
 
             @Override
@@ -66,17 +68,17 @@ class PoolControllerDelayTest {
     void computeSchedulerDelay_numeric_input_adds_suffix() {
         TestablePoolController controller = new TestablePoolController(configWithDelay("10"));
 
-        String delay = controller.computeSchedulerDelay();
+        Duration delay = controller.computeSchedulerDelay();
 
-        assertEquals("10s", delay);
+        assertEquals(Duration.ofSeconds(10), delay);
     }
 
     @Test
     void computeSchedulerDelay_suffixed_input_preserves_suffix() {
         TestablePoolController controller = new TestablePoolController(configWithDelay("10s"));
 
-        String delay = controller.computeSchedulerDelay();
+        Duration delay = controller.computeSchedulerDelay();
 
-        assertEquals("10s", delay);
+        assertEquals(Duration.ofSeconds(10), delay);
     }
 }

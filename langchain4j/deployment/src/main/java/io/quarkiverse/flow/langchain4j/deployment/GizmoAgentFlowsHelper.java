@@ -137,6 +137,12 @@ final class GizmoAgentFlowsHelper {
         }
     }
 
+    static void generateAgentNameMethod(ClassCreator classCreator, String agentName) {
+        try (MethodCreator mc = classCreator.getMethodCreator("agentName", String.class)) {
+            mc.returnValue(mc.load(agentName));
+        }
+    }
+
     static void generateAgentDescriptionMethod(ClassCreator classCreator, String description, String agentInterfaceFqcn) {
         try (MethodCreator mc = classCreator.getMethodCreator("description", String.class)) {
             if (description == null || description.isBlank()) {
@@ -207,6 +213,37 @@ final class GizmoAgentFlowsHelper {
                 mc.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Map.class, "put", Object.class, Object.class, Object.class),
                         map, key, predicate);
+            }
+
+            mc.returnValue(map);
+        }
+
+        generateConditionDescriptionsMethod(classCreator, conditionalMetadata, subAgents);
+    }
+
+    private static void generateConditionDescriptionsMethod(ClassCreator classCreator,
+            ConditionalMetadata conditionalMetadata, List<Type> subAgents) {
+        // Generate: Map<Integer, String> conditionDescriptions() { map.put(index, "description"); ... }
+        try (MethodCreator mc = classCreator.getMethodCreator("conditionDescriptions", Map.class)
+                .setModifiers(Modifier.PROTECTED)) {
+            // Same index resolution as activationPredicates(), so each description lands on its predicate's task
+            Map<String, Integer> classNameToIndex = new HashMap<>();
+            for (int i = 0; i < subAgents.size(); i++) {
+                classNameToIndex.put(subAgents.get(i).name().toString(), i);
+            }
+
+            ResultHandle map = mc.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+
+            for (Map.Entry<String, PredicateMetadata> entry : conditionalMetadata.activationConditions().entrySet()) {
+                String description = entry.getValue().description();
+                Integer index = classNameToIndex.get(entry.getKey());
+                if (index == null || description == null || description.isBlank()) {
+                    // a missing index is already reported by activationPredicates()
+                    continue;
+                }
+                mc.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(Map.class, "put", Object.class, Object.class, Object.class),
+                        map, mc.load(index), mc.load(description));
             }
 
             mc.returnValue(map);

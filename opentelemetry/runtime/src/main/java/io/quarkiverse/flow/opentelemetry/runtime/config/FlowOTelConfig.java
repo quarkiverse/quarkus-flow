@@ -2,6 +2,7 @@ package io.quarkiverse.flow.opentelemetry.runtime.config;
 
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -14,6 +15,7 @@ public interface FlowOTelConfig {
 
     String QUARKUS_FLOW_OTEL_ENABLED = "quarkus.flow.otel.enabled";
     String QUARKUS_FLOW_OTEL_TASK_SPAN_CURRENT = "quarkus.flow.otel.task-span-current";
+    String QUARKUS_FLOW_OTEL_GENAI_DETECT_AGENT_CALLS = "quarkus.flow.otel.genai.detect-agent-calls";
 
     /**
      * Enable OpenTelemetry for Quarkus Flows.
@@ -40,4 +42,23 @@ public interface FlowOTelConfig {
     @WithName("task-span-current")
     @WithDefault("true")
     boolean taskSpanCurrent();
+
+    /**
+     * GenAI semantic conventions configuration.
+     */
+    GenAi genai();
+
+    @ConfigGroup
+    interface GenAi {
+
+        /**
+         * Detect LangChain4j agent invocations at runtime and type the enclosing task's {@code task.execute} span as a
+         * GenAI {@code invoke_agent} operation when one is detected.
+         * <p>
+         * Set to {@code false} to disable this detection, for example when every agent call is already made through the
+         * Java DSL's {@code agent(..)} helper, which is detected at build time regardless of this setting.
+         */
+        @WithDefault("true")
+        boolean detectAgentCalls();
+    }
 }

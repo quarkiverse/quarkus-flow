@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +27,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.quarkiverse.flow.internal.WorkflowApplicationReadyEvent;
 import io.quarkiverse.flow.internal.WorkflowRegistrarService;
-import io.quarkus.scheduler.Scheduler;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
@@ -264,16 +264,27 @@ class WorkflowFileWatcherTest {
     void test_watcher_does_not_start_when_runner_disabled() throws IOException {
         when(mockConfig.enabled()).thenReturn(false);
 
-        Scheduler mockScheduler = mock(Scheduler.class);
-        watcher.scheduler = mockScheduler;
-
         Files.writeString(tempDir.resolve("new-workflow.yaml"),
                 WORKFLOW_YAML_TEMPLATE.formatted("test-ns", "new-workflow", "1.0.0"));
 
         watcher.onStart(new WorkflowApplicationReadyEvent("test"));
 
-        verify(mockScheduler, never()).newJob(any());
+        assertThat(watcher.isWatching()).isFalse();
         assertThat(watcher.registeredFiles).isEmpty();
+    }
+
+    @Test
+    @DisplayName("test_watcher_uses_a_local_executor_and_stops_cleanly")
+    void test_watcher_uses_a_local_executor_and_stops_cleanly() {
+        FlowRunnerConfig.Source.Watch watchConfig = mock(FlowRunnerConfig.Source.Watch.class);
+        when(mockSource.watch()).thenReturn(watchConfig);
+        when(watchConfig.interval()).thenReturn(Duration.ofSeconds(30));
+
+        watcher.onStart(new WorkflowApplicationReadyEvent("test"));
+        assertThat(watcher.isWatching()).isTrue();
+
+        watcher.stop();
+        assertThat(watcher.isWatching()).isFalse();
     }
 
     @Test

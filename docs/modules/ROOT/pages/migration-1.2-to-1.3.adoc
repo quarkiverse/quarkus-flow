@@ -57,6 +57,22 @@ quarkus.flow.validation.input.enabled=false
 
 Remove this property once all callers send conforming input.
 
+=== Generated agentic workflows
+
+`quarkus-flow-langchain4j` does not need you to declare an `input.schema`: it *derives* one at build time from the root agent method's signature, and that derived schema is validated like any other.
+
+Because it is derived rather than authored, it only asserts what the signature actually guarantees:
+
+* **Framework parameters are excluded.** An `AgenticScope`, an `InvocationParameters`, and `@MemoryId`, `@LoopCounter` or `@K` annotated parameters never reach the `AgenticScope` state map, so they are not part of the schema.
+* **Everything non-primitive is nullable.** A reference-typed parameter or record component accepts `null`, because nothing in a Java signature forbids it. Only primitives (`int`, `boolean`, …) get a strict single type.
+* **Nested properties are never required.** Only a primitive-typed property of an expanded record or POJO is marked `required`; whether a reference-typed property is serialized at all depends on your application's Jackson configuration, which is not visible at build time.
+* **Parameter names follow LangChain4j.** A `@V("x")` parameter is keyed as `x`, matching the key LangChain4j writes into the state map.
+* **`Optional<T>`** describes `T`, nullable, and is not `required`.
+
+NOTE: In 1.3.0 the derived schema was stricter than the state map LangChain4j actually produces, so ordinary calls — an all-null "nothing extracted yet" record, or any method taking an `InvocationParameters` — were rejected before any agent ran (https://github.com/quarkiverse/quarkus-flow/issues/1111[#1111]). If you hit this on 1.3.0, upgrade, or set `quarkus.flow.validation.input.enabled=false` as a stopgap.
+
+TIP: `@K`-annotated parameters are keyed by the `TypedKey`'s runtime `name()`, which cannot be resolved at build time, so they are omitted from the schema and left unvalidated.
+
 == New: database schema migration extensions
 
 === Quartz Flyway script moved to its own extension

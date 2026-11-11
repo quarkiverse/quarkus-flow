@@ -38,7 +38,7 @@ kubectl get nodes -o wide
 
 step "3. Build dependencies and process k8s manifests (Maven filtering)"
 mvn -DskipTests -Dquarkus.log.level=OFF -Dquarkus.langchain4j.ollama.devservices.enabled=false -ntp \
-    -pl runner/app -am install
+    -pl runner/deployment,persistence/jpa/deployment,durable-kubernetes/deployment,oidc/deployment,scheduler/quartz/deployment,scheduler/db-migration-quartz/deployment,runner/app -am -P image-standard -Dquarkus.profile=container,standard install
 # Maven filtering replaces ${project.version} in manifests
 
 step "4. Build runner standard image"

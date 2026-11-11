@@ -82,6 +82,8 @@ public final class SpanConstants {
     public static final String TASK_EMIT_EVENT_SOURCE_ATTR = "flow.task.emit.event.source";
     public static final String TASK_EMIT_EVENT_SUBJECT_ATTR = "flow.task.emit.event.subject";
 
+    public static final String GEN_AI_INVOKE_AGENT_EVENT = "gen_ai.invoke_agent";
+
     private SpanConstants() {
     };
 }

@@ -26,7 +26,10 @@ It does not run a separate "AI Engine" at runtime. Instead, during the Quarkus b
 2. **Translation:** For each annotated method, it programmatically generates a standard `WorkflowDefinition` bean.
 * A `@SequenceAgent` is translated into a linear sequence of standard `call` tasks.
 * A `@ParallelAgent` is translated into a `fork` / `join` state topology.
-3. **Registration:** These generated definitions are injected into the Workflow Registry.
+3. **Schema derivation:** The root agent method's signature is turned into the workflow's `input.schema`, which the engine then validates every call against.
+4. **Registration:** These generated definitions are injected into the Workflow Registry.
+
+The derived schema describes the `AgenticScope` state map the workflow instance is started with - not the Java signature verbatim. Parameters LangChain4j routes elsewhere (the scope itself, `InvocationParameters`, `@MemoryId`, `@LoopCounter`, `@K`) are omitted, `@V` names win over declared parameter names, and anything non-primitive is nullable. See xref:langchain4j.adoc#_the_generated_input_schema[The Generated Input Schema] for the full set of rules and the escape hatch.
 
 Because of this build-time translation, the generated AI workflows benefit from the exact same runtime execution speeds, tracing, and Dev UI visualizers as a workflow you wrote manually using the Java DSL.
 

@@ -1,5 +1,8 @@
 package io.quarkiverse.flow.opentelemetry.runtime;
 
+import static io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_AGENT_NAME;
+import static io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME;
+import static io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiOperationNameIncubatingValues.INVOKE_AGENT;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_A2A_AGENT_CARD_ENDPOINT_ATTR;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_A2A_AGENT_CARD_NAME_ATTR;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.CALL_A2A_METHOD_ATTR;
@@ -48,12 +51,13 @@ import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.WAIT_TASK_
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.WORKFLOW_CREATE_ACTION;
 import static io.quarkiverse.flow.opentelemetry.runtime.SpanConstants.WORKFLOW_EXECUTE_ACTION;
 
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Function;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
+import io.quarkiverse.flow.dsl.types.AgentFunction;
+import io.quarkiverse.flow.dsl.types.CallJava;
 import io.serverlessworkflow.api.types.A2AArguments;
 import io.serverlessworkflow.api.types.CallA2A;
 import io.serverlessworkflow.api.types.CallFunction;
@@ -90,12 +94,6 @@ import io.serverlessworkflow.impl.lifecycle.EventType;
 
 public class SpanUtils {
 
-    public enum TaskNameStrategy {
-        ACTION_AND_TASK_NAME,
-        ACTION_AND_TASK_ID,
-        DEBUG
-    }
-
     public static void appendWorkflowEvent(Span span, EventType eventType) {
         span.addEvent(eventType.toString());
     }
@@ -104,22 +102,8 @@ public class SpanUtils {
         span.addEvent(eventType.toString());
     }
 
-    public static String generateTaskSpanName(
-            TaskNameStrategy nameStrategy,
-            String taskInstanceId,
-            String taskName,
-            int taskInstanceIteration, int retryAttempt) {
-        switch (nameStrategy) {
-            case ACTION_AND_TASK_NAME:
-                return TASK_EXECUTE_ACTION + " " + taskName;
-            case ACTION_AND_TASK_ID:
-                return TASK_EXECUTE_ACTION + " " + taskInstanceId;
-            case DEBUG:
-                return taskInstanceId + "-" + " (" + taskName + ") # " + taskInstanceIteration + "(retry: " + retryAttempt
-                        + ")";
-            default:
-                throw new NoSuchElementException("TaskNameStrategy " + nameStrategy + "is not recognized.");
-        }
+    public static String generateTaskSpanName(String taskName) {
+        return TASK_EXECUTE_ACTION + " " + taskName;
     }
 
     public static String generateWorkflowCreateSpanName(String workflowName) {
@@ -189,6 +173,23 @@ public class SpanUtils {
 
     private static void enrichCallFunction(SpanBuilder span, CallFunction task) {
         setIfNotNull(span, CALL_TASK_FUNCTION_NAME_ATTR, task.getCall());
+    }
+
+    /**
+     * Types the span as a GenAI {@code invoke_agent} operation when the task invokes an agent, that is when it is a
+     * {@code call: Java} task holding an {@link AgentFunction}. This is what the Java DSL
+     * {@link io.quarkiverse.flow.dsl.FlowDSL#agent(String, io.quarkiverse.flow.dsl.types.UniqueIdBiFunction)
+     * agent(..)} produces. The task name is the agent name. Any other task is left untouched.
+     *
+     * @param span the span being built
+     * @param task the task
+     * @param taskName the task name, used as the agent name
+     */
+    public static void enrichAgentCall(SpanBuilder span, TaskBase task, String taskName) {
+        if (CallJava.functionOf(task).filter(AgentFunction.class::isInstance).isPresent()) {
+            span.setAttribute(GEN_AI_OPERATION_NAME, INVOKE_AGENT)
+                    .setAttribute(GEN_AI_AGENT_NAME, taskName);
+        }
     }
 
     private static void enrichA2A(SpanBuilder span, CallA2A task) {

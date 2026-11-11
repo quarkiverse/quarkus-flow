@@ -23,8 +23,9 @@ public interface FlowValidationConfig {
          * Whether to validate workflow input against the declared {@code input.schema}
          * at execution time, rejecting non-conforming input.
          * <p>
-         * Disabled by default: non-conforming input is silently accepted, preserving
-         * the behavior Quarkus Flow has always had.
+         * Enabled by default: a declared {@code input.schema} is a real contract. Set to
+         * {@code false} to restore the pre-1.3.0 behavior, where non-conforming input was
+         * silently accepted.
          */
         @WithDefault("true")
         boolean enabled();

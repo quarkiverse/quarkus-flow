@@ -29,10 +29,28 @@ VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -pl ru
 
 echo "📌 Project version: ${VERSION}"
 
+# Quarkus resolves extension deployment artifacts from the reactor model, but -am
+# follows Maven dependency edges only. Select the deployment modules for this image.
+case "${VARIANT}" in
+    minimal)
+        DEPLOYMENT_MODULES="runner/deployment,persistence/mvstore/deployment,oidc/deployment,scheduler/memory/deployment"
+        ;;
+    standard)
+        DEPLOYMENT_MODULES="runner/deployment,persistence/jpa/deployment,durable-kubernetes/deployment,oidc/deployment,scheduler/quartz/deployment,scheduler/db-migration-quartz/deployment"
+        ;;
+    messaging)
+        DEPLOYMENT_MODULES="runner/deployment,persistence/jpa/deployment,durable-kubernetes/deployment,messaging/deployment,oidc/deployment,scheduler/quartz/deployment,scheduler/db-migration-quartz/deployment"
+        ;;
+    *)
+        echo "❌ Unknown variant: ${VARIANT}"
+        exit 1
+        ;;
+esac
+
 IMAGE_TAG="quay.io/quarkiverse/quarkus-flow-runner:${VERSION}-${VARIANT}"
 
 # Build with variant profile and container,variant Quarkus profiles
-mvn clean package -pl runner/app -am -P "image-${VARIANT}" -DskipTests -Dquarkus.profile="container,${VARIANT}"
+mvn clean package -pl "${DEPLOYMENT_MODULES},runner/app" -am -P "image-${VARIANT}" -DskipTests -Dquarkus.profile="container,${VARIANT}"
 
 echo ""
 echo "📦 Building Docker image: ${IMAGE_TAG}..."

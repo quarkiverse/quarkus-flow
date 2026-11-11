@@ -44,6 +44,10 @@ public final class FlowAgenticWorkflowBuildItem extends MultiBuildItem {
         return blueprint.subAgents();
     }
 
+    public String agentName() {
+        return blueprint.agentName();
+    }
+
     public String description() {
         return blueprint.description();
     }

@@ -7,6 +7,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.quarkiverse.flow.internal.FlowAgentInvocationListener;
 import io.quarkiverse.flow.internal.FlowContextPropagator;
 import io.quarkiverse.flow.opentelemetry.runtime.OTelWorkflowExecutionListener;
 import io.quarkiverse.flow.opentelemetry.runtime.SpanBuilderFactory;
@@ -48,7 +49,8 @@ class FlowOTelProcessor {
                     new RemovedResourceBuildItem(ArtifactKey.fromString("io.quarkiverse.flow:quarkus-flow-opentelemetry"),
                             Set.of("META-INF/services/" + EmittedEventDecorator.class.getName(),
                                     "META-INF/services/" + CallableTaskProxyBuilder.class.getName(),
-                                    "META-INF/services/" + FlowContextPropagator.class.getName())));
+                                    "META-INF/services/" + FlowContextPropagator.class.getName(),
+                                    "META-INF/services/" + FlowAgentInvocationListener.class.getName())));
             LOGGER.warn(
                     "Quarkus Flow extension 'quarkus-flow-opentelemetry' is present, but Quarkus OpenTelemetry is disabled. Quarkus Flow OpenTelemetry requires both quarkus.otel.enabled=true and quarkus.otel.traces.enabled=true. Current values: quarkus.otel.enabled={}, quarkus.otel.traces.enabled={}",
                     otelEnabled, tracingEnabled);

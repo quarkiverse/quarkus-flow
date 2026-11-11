@@ -20,6 +20,7 @@ import dev.langchain4j.agentic.declarative.ParallelExecutor;
 import dev.langchain4j.agentic.declarative.SequenceAgent;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
+import dev.langchain4j.invocation.InvocationParameters;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 
@@ -315,6 +316,41 @@ public class Agents {
     }
 
     public record EveningPlan(String movie, String meal) {
+    }
+
+    /**
+     * Deliberately nullable: all-null means "nothing extracted yet", the ordinary starting state of an extraction
+     * pipeline (#1111).
+     */
+    public record ExtractedFields(String category, String location) {
+    }
+
+    /**
+     * Root of an extraction system whose input is an all-null record plus an {@link InvocationParameters} - the shape
+     * the generated input schema used to reject before any agent could run (#1111).
+     */
+    public interface ExtractionRootAgent {
+        @SequenceAgent(outputKey = "extracted", subAgents = { InputClassifier.class, FieldExtractor.class })
+        ExtractedFields process(String input, ExtractedFields soFar, InvocationParameters invocationParameters);
+    }
+
+    public interface InputClassifier {
+        @UserMessage("Classify this input in one word: {{input}}")
+        @Agent(description = "Classifies the input", outputKey = "classification")
+        String classify(@V("input") String input);
+    }
+
+    /**
+     * A plain (non-AI) agent step, reached only once the upfront input validation has passed.
+     */
+    public static final class FieldExtractor {
+        private FieldExtractor() {
+        }
+
+        @Agent(description = "Extracts fields from the input", outputKey = "extracted")
+        public static ExtractedFields extract(@V("input") String input) {
+            return new ExtractedFields("DEMO-CATEGORY", "DEMO-LOCATION");
+        }
     }
 
 }

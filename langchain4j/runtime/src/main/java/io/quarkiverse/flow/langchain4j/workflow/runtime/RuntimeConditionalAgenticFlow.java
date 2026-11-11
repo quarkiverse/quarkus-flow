@@ -22,6 +22,7 @@ public class RuntimeConditionalAgenticFlow extends ConditionalAgenticFlow {
     private final String agentClassName;
     private final List<String> agentTaskNames = new ArrayList<>();
     private final Map<Integer, Predicate<AgenticScope>> predicates = new HashMap<>();
+    private final Map<Integer, String> descriptions = new HashMap<>();
     private final RuntimeWorkflowApplicationProvider runtimeAppProvider;
 
     public RuntimeConditionalAgenticFlow(String agentClassName, RuntimeWorkflowApplicationProvider runtimeAppProvider) {
@@ -43,6 +44,11 @@ public class RuntimeConditionalAgenticFlow extends ConditionalAgenticFlow {
     @Override
     protected Map<Integer, Predicate<AgenticScope>> activationPredicates() {
         return predicates;
+    }
+
+    @Override
+    protected Map<Integer, String> conditionDescriptions() {
+        return descriptions;
     }
 
     public void addConditionalAgents(List<ConditionalAgent> conditionalAgents) {
@@ -70,8 +76,15 @@ public class RuntimeConditionalAgenticFlow extends ConditionalAgenticFlow {
     }
 
     public void addSubAgentWithPredicate(Predicate<AgenticScope> predicate, Object agent) {
+        addSubAgentWithPredicate(null, predicate, agent);
+    }
+
+    public void addSubAgentWithPredicate(String conditionDescription, Predicate<AgenticScope> predicate, Object agent) {
         int index = agentTaskNames.size();
         predicates.put(index, predicate);
+        if (conditionDescription != null && !conditionDescription.isBlank()) {
+            descriptions.put(index, conditionDescription);
+        }
         addSubAgentTaskName(agent.getClass().getName());
     }
 

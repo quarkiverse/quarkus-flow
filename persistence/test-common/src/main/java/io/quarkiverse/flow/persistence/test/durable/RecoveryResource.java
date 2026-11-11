@@ -21,7 +21,7 @@ public class RecoveryResource {
 
     public static final AtomicInteger TASK1_TIMES = new AtomicInteger(0);
     public static final AtomicInteger TASK2_TIMES = new AtomicInteger(0);
-    public static final AtomicInteger TASK3_TIMES = new AtomicInteger(0);
+    public static final AtomicInteger TASK_3_WAIT_DECISION_TASK = new AtomicInteger(0);
     public static final AtomicInteger TASK4_TIMES = new AtomicInteger(0);
     public static final AtomicInteger TASK5_TIMES = new AtomicInteger(0);
 
@@ -34,7 +34,7 @@ public class RecoveryResource {
     public static void reset() {
         TASK1_TIMES.set(0);
         TASK2_TIMES.set(0);
-        TASK3_TIMES.set(0);
+        TASK_3_WAIT_DECISION_TASK.set(0);
         TASK4_TIMES.set(0);
         TASK5_TIMES.set(0);
     }
@@ -48,7 +48,7 @@ public class RecoveryResource {
     @GET
     @Path("/status")
     public Response status() {
-        return Response.ok(new RecoveryResult(TASK1_TIMES.get(), TASK2_TIMES.get(), TASK3_TIMES.get(),
+        return Response.ok(new RecoveryResult(TASK1_TIMES.get(), TASK2_TIMES.get(), TASK_3_WAIT_DECISION_TASK.get(),
                 TASK4_TIMES.get(), TASK5_TIMES.get())).build();
     }
 

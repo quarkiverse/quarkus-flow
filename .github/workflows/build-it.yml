@@ -185,7 +185,7 @@ jobs:
             # at build time; -am only follows plain <dependency> edges, not Quarkus's dynamic
             # runtime->deployment artifact resolution, so the *-deployment modules must be
             # listed explicitly or the augmentation step fails looking for them.
-            modules: runner/runtime,runner/deployment,runner/integration-tests,runner/app,core/deployment,messaging/deployment,persistence/common/runtime,persistence/common/deployment,persistence/test-common,persistence/mvstore/runtime,persistence/mvstore/deployment
+            modules: runner/runtime,runner/deployment,runner/integration-tests,runner/app,core/deployment,messaging/deployment,persistence/common/runtime,persistence/common/deployment,persistence/test-common,persistence/mvstore/runtime,persistence/mvstore/deployment,scheduler/memory/deployment
           - name: opentelemetry
             modules: core/deployment,messaging/deployment,opentelemetry/runtime,opentelemetry/deployment,opentelemetry/integration-tests
 
