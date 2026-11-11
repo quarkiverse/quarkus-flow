@@ -14,7 +14,7 @@
         <esbuild-maven-plugin.version>2.0.0</esbuild-maven-plugin.version>
         <react.version>19.3.1</react.version>
         <scheduler.version>0.28.0</scheduler.version>
-        <openworkflowspec.text-editor.version>0.0.0-493-1</openworkflowspec.text-editor.version>
+        <openworkflowspec.text-editor.version>0.0.0-1120</openworkflowspec.text-editor.version>
         <use-sync-external-store.version>1.7.0</use-sync-external-store.version>
     </properties>
 
@@ -237,6 +237,12 @@
                         <groupId>org.mvnpm</groupId>
                         <artifactId>use-sync-external-store</artifactId>
                         <version>${use-sync-external-store.version}</version>
+                    </dependency>
+
+                    <dependency>
+                        <groupId>org.mvnpm</groupId>
+                        <artifactId>monaco-editor</artifactId>
+                        <version>0.57.0</version>
                     </dependency>
                 </dependencies>
             </plugin>

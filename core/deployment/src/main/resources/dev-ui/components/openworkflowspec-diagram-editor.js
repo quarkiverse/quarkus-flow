@@ -138,7 +138,7 @@ export class OpenWorkflowSpecDiagramEditorElement extends LitElement {
 
     renderOpenWorkflowSpecTextEditor(container, {
       content: this._workflowDefinition ?? '',
-      language: 'json',
+      language: 'yaml',
       createLanguageServiceWorker: () =>
         new Worker(new URL('../worker.js', import.meta.url).href, { type: 'module' }),
       // Allow editing to reproduce diagnostic hover issues in this PoC
