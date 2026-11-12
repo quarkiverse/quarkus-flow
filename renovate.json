@@ -23,10 +23,9 @@
       "matchPackagePrefixes": ["io.quarkiverse"]
     },
     {
-      "groupName": "Quarkiverse extensions (examples)",
+      "groupName": "LangChain4j",
       "matchManagers": ["maven"],
-      "matchFileNames": ["examples/**/pom.xml"],
-      "matchPackagePrefixes": ["io.quarkiverse"]
+      "matchPackagePrefixes": ["io.quarkiverse.langchain4j"]
     },
     {
       "groupName": "Infrastructure and Containers",
