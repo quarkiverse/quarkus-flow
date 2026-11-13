@@ -27,6 +27,7 @@
         <module>runner</module>
         <module>docs-rag</module>
         <module>opentelemetry</module>
+        <module>testing</module>
     </modules>
 
     <scm>
