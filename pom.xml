@@ -44,7 +44,7 @@
         <quarkus.log.level>OFF</quarkus.log.level>
 
         <quarkus.version>3.40.1.1</quarkus.version>
-        <jandex.version>3.6.0</jandex.version>
+        <jandex.version>3.6.1</jandex.version>
         <io.serverlessworkflow.version>7.35.3.Final</io.serverlessworkflow.version>
         <io.cloudevents.version>5.1.0</io.cloudevents.version>
 
