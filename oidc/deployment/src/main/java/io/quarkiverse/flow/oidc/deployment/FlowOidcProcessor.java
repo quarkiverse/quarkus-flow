@@ -59,7 +59,7 @@ public class FlowOidcProcessor {
             List<DiscoveredWorkflowBuildItem> discoveredWorkflows) {
 
         for (DiscoveredWorkflowBuildItem discoveredWorkflow : discoveredWorkflows) {
-            if (discoveredWorkflow.fromSpec()) {
+            if (discoveredWorkflow.fromSpecFile()) {
                 final List<TokenAuthPolicy> policies = TokenAuthPolicyExtractor
                         .extractStaticTokenAuthPolicies(discoveredWorkflow.workflowFromSpec());
 
