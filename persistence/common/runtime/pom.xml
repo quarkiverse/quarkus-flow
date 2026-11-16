@@ -21,6 +21,11 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow-persistence-spi</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.serverlessworkflow</groupId>
             <artifactId>serverlessworkflow-persistence-api</artifactId>
             <version>${io.serverlessworkflow.version}</version>

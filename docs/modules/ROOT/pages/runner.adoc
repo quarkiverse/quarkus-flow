@@ -653,6 +653,10 @@ All endpoints are served under `/q/flow` and require the `flow-admin` or `flow-i
 | `GET`
 | `/q/flow/\{namespace}/\{name}[/\{version}]/instances`
 | List active instances of one workflow on this Runner
+
+| `GET`
+| `/q/flow/\{namespace}/\{name}/\{version}/discovery/\{instanceId}`
+| Discover an instance across shards (cross-pod lookup)
 |===
 
 Segments in square brackets are optional: when `\{version}` is omitted, the Runner resolves the **latest** registered version (see <<multiple-workflow-versions>>).
@@ -1201,6 +1205,98 @@ curl -H "Authorization: Bearer ${API_KEY}" \
 
 IMPORTANT: This registry is in-memory and per-pod.
 It does not persist across restarts and, when running multiple Runner replicas, each replica only reports the instances it is currently holding.
+
+[[instance-discovery]]
+=== Workflow-scoped instance discovery (Cross-shard lookup)
+
+This endpoint discovers workflow instances across all shards (pods) of a runtime serving a given workflow definition. Unlike the `instances` endpoints which report only in-memory instances on the current pod, the discovery endpoint searches both the in-memory registry and the durable instance store, returning instance metadata plus the owning application shard identifier.
+
+This is useful for clients (e.g., API gateways) that need to locate an instance's owning pod without direct access to the persistence store.
+
+==== GET /q/flow/\{namespace}/\{name}/\{version}/discovery/\{instanceId}
+
+Resolve a workflow instance across all shards of the runtime, returning lightweight metadata without the workflow payload.
+
+**Path parameters:**
+
+* `namespace` (string, required) - Workflow namespace (access validated if namespace authorization enabled)
+* `name` (string, required) - Workflow name
+* `version` (string, required) - Workflow version (semantic version format)
+* `instanceId` (string, required) - Workflow instance identifier
+
+**Responses:**
+
+* **200 OK** - Instance found. Body: see <<discovery-response-fields>>
+* **401 Unauthorized** - Authentication required
+* **403 Forbidden** - Access denied to namespace
+* **404 Not Found** - Workflow definition or instance not found
+
+**Example:**
+
+[source,bash]
+----
+curl -H "Authorization: Bearer ${API_KEY}" \
+  http://localhost:8080/q/flow/examples/order-processing/2.1.0/discovery/550e8400-e29b-41d4-a716-446655440000
+----
+
+**Example response (200 OK):**
+
+[source,json]
+----
+{
+  "namespace": "examples",
+  "name": "order-processing",
+  "version": "2.1.0",
+  "instanceId": "550e8400-e29b-41d4-a716-446655440000",
+  "applicationId": "quarkus-flow-runner",
+  "status": "RUNNING",
+  "startedAt": "2026-06-11T10:15:30.123Z"
+}
+----
+
+[[discovery-response-fields]]
+==== Discovery response fields
+
+[cols="1,1,3"]
+|===
+|Field |Type |Description
+
+|`namespace`
+|string
+|Workflow namespace.
+
+|`name`
+|string
+|Workflow name.
+
+|`version`
+|string
+|Workflow version.
+
+|`instanceId`
+|string
+|Unique identifier of the workflow instance.
+
+|`applicationId`
+|string
+|Identifier of the workflow application (the owning shard/pod) that created and manages this instance. Use this value to correlate with other per-pod operations (e.g., suspend, resume, cancel).
+
+|`status`
+|string
+|Current status of the instance. Only non-terminal statuses are returned: `PENDING`, `RUNNING`, `WAITING`, `SUSPENDED`. Terminal instances (`COMPLETED`, `FAULTED`, `CANCELLED`) are automatically removed from the active registry and will not be discovered.
+
+|`startedAt`
+|string (ISO-8601)
+|Timestamp when the instance started.
+|===
+
+**Lookup behavior:**
+
+The Runner first searches the in-memory active instance registry on each pod. If not found, it falls back to the durable persistence store (if configured: JPA/PostgreSQL, Redis, or Infinispan). An instance is found if it exists in memory OR in the durable store. This enables discovery to work even in ephemeral, single-pod deployments where instances are held only in memory — as long as the instance is active on that pod.
+
+**Terminal instances:**
+
+Once an instance reaches a terminal state (`COMPLETED`, `FAULTED`, or `CANCELLED`), it is removed from the active registry by the engine. The discovery endpoint will not return terminated instances — a `404 Not Found` response indicates either the instance does not exist, or it has completed/failed and been purged from the active registry.
 
 == Configuration reference
 

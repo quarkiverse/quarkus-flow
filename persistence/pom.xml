@@ -9,6 +9,7 @@
     <packaging>pom</packaging>
     <name>Quarkus Flow :: Persistence</name>
     <modules>
+        <module>spi</module>
         <module>redis</module>
         <module>infinispan</module>
         <module>common</module>
