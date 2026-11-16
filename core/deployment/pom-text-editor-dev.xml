@@ -239,11 +239,6 @@
                         <version>${use-sync-external-store.version}</version>
                     </dependency>
 
-                    <dependency>
-                        <groupId>org.mvnpm</groupId>
-                        <artifactId>monaco-editor</artifactId>
-                        <version>0.57.0</version>
-                    </dependency>
                 </dependencies>
             </plugin>
 

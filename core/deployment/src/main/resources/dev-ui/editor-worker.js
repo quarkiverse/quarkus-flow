@@ -1,1 +1,1 @@
-import "monaco-editor/editor/editor.worker.js";
+import "@openworkflowspec/text-editor/editor-worker";
