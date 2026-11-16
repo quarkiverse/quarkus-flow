@@ -1,5 +1,7 @@
 package io.quarkiverse.flow.persistence.redis;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
 
@@ -10,8 +12,6 @@ import io.quarkiverse.flow.persistence.spi.InstanceLocator;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.hash.HashCommands;
 import io.quarkus.redis.datasource.keys.KeyCommands;
-import io.quarkus.redis.datasource.keys.KeyScanArgs;
-import io.quarkus.redis.datasource.keys.KeyScanCursor;
 import io.serverlessworkflow.impl.WorkflowStatus;
 import io.serverlessworkflow.impl.marshaller.MarshallingUtils;
 import io.serverlessworkflow.impl.marshaller.WorkflowBufferFactory;
@@ -19,65 +19,55 @@ import io.serverlessworkflow.impl.marshaller.WorkflowBufferFactory;
 @ApplicationScoped
 public class RedisInstanceLocator implements InstanceLocator {
 
-    private static final String SEPARATOR = ":";
-    private static final String DATE = "date";
     private static final String STATUS = "status";
-    private static final String BLOB_PREFIX = "blob:";
-    private static final String CE_PREFIX = "CE:";
+    private static final String DATE = "date";
+    static final String APPLICATION_ID = "applicationId";
 
-    private final RedisDataSource ds;
     private final WorkflowBufferFactory factory;
-    private final KeyCommands<String> keyCommands;
     private final HashCommands<String, String, byte[]> hashCommands;
+    private final HashCommands<String, String, byte[]> indexCommands;
+    private final KeyCommands<String> keyCommands;
 
     public RedisInstanceLocator(RedisDataSource ds, WorkflowBufferFactory factory) {
-        this.ds = ds;
         this.factory = factory;
-        this.keyCommands = ds.key(String.class);
         this.hashCommands = ds.hash(String.class, String.class, byte[].class);
+        this.indexCommands = ds.hash(String.class, String.class, byte[].class);
+        this.keyCommands = ds.key(String.class);
     }
 
     @Override
     public Optional<InstanceLocation> locate(String namespace, String name, String version, String instanceId) {
-        String matchPattern = "*:" + namespace + ":" + name + ":" + version + ":" + instanceId;
-        KeyScanCursor<String> cursor = keyCommands.scan(new KeyScanArgs().match(matchPattern).count(500));
+        String indexKey = indexKey(namespace, name, version, instanceId);
+        byte[] applicationIdBytes = indexCommands.hget(indexKey, APPLICATION_ID);
+        if (applicationIdBytes == null) {
+            return Optional.empty();
+        }
+        String applicationId = new String(applicationIdBytes, StandardCharsets.UTF_8);
 
-        while (cursor.hasNext()) {
-            for (String key : cursor.next()) {
-                // Skip companion keys that are not instance hashes
-                if (key.startsWith(BLOB_PREFIX) || key.startsWith(CE_PREFIX)) {
-                    continue;
-                }
-
-                // Validate key structure: should have exactly 5 colon-separated segments
-                String[] segments = key.split("\\Q" + SEPARATOR + "\\E", -1);
-                if (segments.length != 5 || !segments[4].equals(instanceId)) {
-                    continue;
-                }
-
-                String applicationId = segments[0];
-
-                // Read instance data from the hash
-                Map<String, byte[]> instanceData = hashCommands.hgetall(key);
-                if (instanceData.isEmpty()) {
-                    continue;
-                }
-
-                byte[] statusBytes = instanceData.get(STATUS);
-                byte[] dateBytes = instanceData.get(DATE);
-
-                if (statusBytes == null || dateBytes == null) {
-                    continue;
-                }
-
-                WorkflowStatus status = MarshallingUtils.readEnum(factory, statusBytes, WorkflowStatus.class);
-                java.time.Instant startedAt = MarshallingUtils.readInstant(factory, dateBytes);
-
-                return Optional.of(new InstanceLocation(namespace, name, version, instanceId, applicationId, status,
-                        startedAt));
-            }
+        String instanceKey = instanceKey(applicationId, namespace, name, version, instanceId);
+        Map<String, byte[]> instanceData = hashCommands.hgetall(instanceKey);
+        byte[] statusBytes = instanceData.get(STATUS);
+        byte[] dateBytes = instanceData.get(DATE);
+        if (statusBytes == null || dateBytes == null) {
+            // The instance may have been removed after its index was written.
+            keyCommands.del(indexKey);
+            return Optional.empty();
         }
 
-        return Optional.empty();
+        WorkflowStatus status = MarshallingUtils.readEnum(factory, statusBytes, WorkflowStatus.class);
+        java.time.Instant startedAt = MarshallingUtils.readInstant(factory, dateBytes);
+        return Optional.of(new InstanceLocation(namespace, name, version, instanceId, applicationId, status, startedAt));
+    }
+
+    static String indexKey(String namespace, String name, String version, String instanceId) {
+        return "instanceId:" + encode(instanceId) + ":" + encode(namespace) + ":" + encode(name) + ":" + encode(version);
+    }
+
+    static String instanceKey(String applicationId, String namespace, String name, String version, String instanceId) {
+        return applicationId + ":" + namespace + ":" + name + ":" + version + ":" + instanceId;
+    }
+
+    private static String encode(String value) {
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(value.getBytes(StandardCharsets.UTF_8));
     }
 }

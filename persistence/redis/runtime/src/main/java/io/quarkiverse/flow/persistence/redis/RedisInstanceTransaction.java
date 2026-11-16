@@ -175,6 +175,10 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     @Override
     public void writeInstanceData(WorkflowContextData workflowContext) {
         String instanceId = key(workflowContext);
+        String discoveryIndexKey = discoveryIndexKey(workflowContext);
+        operations.add(tx -> hashCommands(tx).hset(discoveryIndexKey,
+                RedisInstanceLocator.APPLICATION_ID,
+                workflowContext.definition().application().id().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
         operations.add(tx -> hashCommands(tx).hset(instanceId, DATE,
                 MarshallingUtils.writeInstant(factory, workflowContext.instanceData().startedAt())));
         operations.add(tx -> hashCommands(tx).hset(instanceId, INPUT,
@@ -250,15 +254,24 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     @Override
     public void removeProcessInstance(WorkflowContextData workflowContext) {
         String key = key(workflowContext);
+        String discoveryIndexKey = discoveryIndexKey(workflowContext);
         if (hashCommands.hexists(key, SCHEMA_VERSION)) {
             operations.add(tx -> keyCommands(tx).del(key));
+            operations.add(tx -> keyCommands(tx).del(discoveryIndexKey));
             String setKey = blobSetKey(key);
             setCommands.smembers(setKey).forEach(k -> operations.add(tx -> keyCommands(tx).del(k)));
             operations.add(tx -> keyCommands(tx).del(setKey));
             hashCoordinator.afterRemove(workflowContext.instanceData().id());
         } else {
             legacyRemoveProcessInstance(workflowContext);
+            operations.add(tx -> keyCommands(tx).del(discoveryIndexKey));
         }
+    }
+
+    private String discoveryIndexKey(WorkflowContextData workflowContext) {
+        var id = workflowContext.definition().id();
+        return RedisInstanceLocator.indexKey(id.namespace(), id.name(), id.version(),
+                workflowContext.instanceData().id());
     }
 
     private void legacyRemoveProcessInstance(WorkflowContextData workflowContext) {

@@ -1,7 +1,7 @@
 # Workflow-Scoped Instance Discovery (Cross-Shard Lookup) - Design Specification
 
 **Date:** 2026-11-13
-**Status:** Proposed
+**Status:** Accepted
 **Issue:** [#1161](https://github.com/quarkiverse/quarkus-flow/issues/1161)
 **Related:** [kubesmarts/logic-operator#39](https://github.com/kubesmarts/logic-operator/issues/39) (the consumer), [2026-05-05 Workflow Runner REST API design](2026-05-05-workflow-runner-rest-api-design.md)
 
@@ -36,7 +36,7 @@ The existing `GET /q/flow/instances` (local, in-memory, this-pod active registry
 The persistence layer gains a lookup keyed by `(namespace, name, version, instanceId)` that returns the owning `applicationId` plus the metainfo above — searching **across shards** but restricted to the given workflow:
 
 - **JPA:** `WHERE key.instanceId = ? AND workflowNamespace = ? AND workflowName = ? AND workflowVersion = ?` (drops the local-`applicationId` pin that `readWorkflowInfo` applies).
-- **Redis:** `SCAN MATCH *:{namespace}:{name}:{version}:{instanceId}`, disambiguating the instance hash key from the companion `blob:` key (which carries an extra leading segment).
+- **Redis:** a deterministic discovery-index hash keyed as `instanceId:{instanceId}:{namespace}:{name}:{version}` and storing `applicationId`. The index is written with new instance data and deleted with the instance.
 
 When no durable store is configured (ephemeral mode, or the per-pod `mvstore`), the runner falls back to the in-memory active registry. This is a deliberate, documented limitation: an ephemeral **multi-pod** deployment cannot resolve cross-pod, acceptable because ephemeral deployments are expected to be single-replica.
 
@@ -46,9 +46,9 @@ When no durable store is configured (ephemeral mode, or the per-pod `mvstore`), 
 
 Because the database is shared across runners that each own distinct definitions, scoping the query to `(namespace, name, version)` guarantees the resolved instance was created by the runtime running **that** definition; `applicationId` then pins the owning pod within that runtime. This rests on `(namespace, name, version)` being unique to a single runtime — which holds in the operator, where `LogicFlowDefinition` coordinates are unique. (If the same coordinates ever ran in two clusters sharing one database, workflow-id scoping alone would not separate them; that is explicitly not the deployment model.)
 
-### 4. Redis uses `SCAN`; a secondary index is deferred
+### 4. Redis uses a discovery index
 
-With `applicationId` unknown at lookup time, the Redis match is a leading-wildcard `SCAN` — O(keyspace), since `MATCH` is not indexed. This is acceptable because the lookup runs **only on a gateway cache miss** (a rare control-plane path, not per-operation), `SCAN` is cursor-based and **non-blocking**, and the gateway caches the result. A secondary index is **deferred** until a resolve-latency metric shows it is warranted. When implemented, the lookup should set a sane `SCAN COUNT`, carry a timeout, and emit a resolve-latency metric — that metric is the trigger for adding the index.
+The Redis locator reads a deterministic index keyed by `(namespace, name, version, instanceId)`, avoiding a keyspace scan. New instances receive an index entry in the same Redis transaction as their instance data; instance removal deletes that entry. Existing instances created before this index is deployed are not discoverable through Redis until they terminate. This compatibility gap is accepted for the current project; there is no scan fallback or backfill.
 
 ### 5. Authorization
 
@@ -58,5 +58,5 @@ The resource carries `namespace`/`name`/`version` in its path, so it follows the
 
 - Repurposing `/instances` or changing `ActiveInstancesResponse` / `InstanceSnapshot`.
 - The gateway-side consumption (logic-operator#39): calling this endpoint via the runtime ClusterIP Service on a cache miss, caching the `applicationId`, resolving `applicationId → pod` live, and handling pod-unreachable / stale-lease.
-- A Redis secondary index (deferred; see Decision 4).
+- Backfilling discovery-index entries for existing Redis instances.
 - Redis Cluster co-location (hash-tagging) and rebalancer-driven index maintenance.

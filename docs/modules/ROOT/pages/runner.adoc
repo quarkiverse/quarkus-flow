@@ -1294,6 +1294,8 @@ curl -H "Authorization: Bearer ${API_KEY}" \
 
 The Runner first searches the in-memory active instance registry on each pod. If not found, it falls back to the durable persistence store (if configured: JPA/PostgreSQL, Redis, or Infinispan). An instance is found if it exists in memory OR in the durable store. This enables discovery to work even in ephemeral, single-pod deployments where instances are held only in memory — as long as the instance is active on that pod.
 
+Redis uses a discovery index for instances created after this feature is deployed. Redis instances already running during an upgrade are not discoverable through persistence until they terminate; local in-memory instances remain discoverable on their owning pod. No full-keyspace scan or index backfill is performed.
+
 **Terminal instances:**
 
 Once an instance reaches a terminal state (`COMPLETED`, `FAULTED`, or `CANCELLED`), it is removed from the active registry by the engine. The discovery endpoint will not return terminated instances — a `404 Not Found` response indicates either the instance does not exist, or it has completed/failed and been purged from the active registry.

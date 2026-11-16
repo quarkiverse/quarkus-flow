@@ -2,7 +2,9 @@ package io.quarkiverse.flow.persistence.redis.test;
 
 import static org.assertj.core.api.Assertions.*;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Optional;
 
 import jakarta.inject.Inject;
@@ -17,6 +19,7 @@ import io.quarkiverse.flow.persistence.spi.InstanceLocation;
 import io.quarkiverse.flow.persistence.spi.InstanceLocator;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.hash.HashCommands;
+import io.quarkus.redis.datasource.keys.KeyCommands;
 import io.quarkus.test.junit.QuarkusTest;
 import io.serverlessworkflow.impl.WorkflowStatus;
 import io.serverlessworkflow.impl.marshaller.MarshallingUtils;
@@ -37,6 +40,8 @@ public class RedisInstanceLocatorIT {
     WorkflowBufferFactory factory;
 
     private HashCommands<String, String, byte[]> hashCommands;
+    private HashCommands<String, String, byte[]> indexCommands;
+    private KeyCommands<String> keyCommands;
     private String testNamespace;
     private String testName;
     private String testVersion;
@@ -46,25 +51,30 @@ public class RedisInstanceLocatorIT {
     @BeforeEach
     void setup() {
         hashCommands = ds.hash(String.class, String.class, byte[].class);
+        indexCommands = ds.hash(String.class, String.class, byte[].class);
+        keyCommands = ds.key(String.class);
         testNamespace = "test-ns";
         testName = "test-workflow";
         testVersion = "1.0.0";
         testInstanceId = "instance-123";
         testApplicationId = "app-001";
+        keyCommands.del(instanceKey(testApplicationId, testNamespace, testName, testVersion, testInstanceId));
+        keyCommands.del(indexKey(testInstanceId, testNamespace, testName, testVersion));
+        keyCommands.del(instanceKey(testApplicationId, testNamespace, "workflow1", "1.0.0", testInstanceId));
+        keyCommands.del(indexKey(testInstanceId, testNamespace, "workflow1", "1.0.0"));
+        keyCommands.del(instanceKey(testApplicationId, "other-ns", "workflow2", "2.0.0", testInstanceId));
+        keyCommands.del(indexKey(testInstanceId, "other-ns", "workflow2", "2.0.0"));
     }
 
     @Test
     @DisplayName("locate should find an instance hash when it exists under some applicationId")
     void locate_should_find_instance_when_exists() {
         // Given: an instance hash exists in Redis
-        String instanceKey = testApplicationId + ":" + testNamespace + ":" + testName + ":" + testVersion + ":"
-                + testInstanceId;
         Instant startedAt = Instant.now();
         WorkflowStatus status = WorkflowStatus.RUNNING;
 
         // Store test instance data
-        hashCommands.hset(instanceKey, "status", MarshallingUtils.writeEnum(factory, status));
-        hashCommands.hset(instanceKey, "date", MarshallingUtils.writeInstant(factory, startedAt));
+        storeInstance(testApplicationId, testNamespace, testName, testVersion, testInstanceId, status, startedAt);
 
         // When: we locate the instance
         Optional<InstanceLocation> result = instanceLocator.locate(testNamespace, testName, testVersion,
@@ -100,17 +110,13 @@ public class RedisInstanceLocatorIT {
     @DisplayName("locate should not return instance with same instanceId but different workflow id")
     void locate_should_enforce_workflow_isolation() {
         // Given: two instances with same instanceId but different workflow ids
-        String instance_key_1 = testApplicationId + ":" + testNamespace + ":workflow1:1.0.0:" + testInstanceId;
-        String instance_key_2 = testApplicationId + ":other-ns:workflow2:2.0.0:" + testInstanceId;
         Instant startedAt = Instant.now();
         WorkflowStatus status = WorkflowStatus.RUNNING;
 
         // Store both instances
-        hashCommands.hset(instance_key_1, "status", MarshallingUtils.writeEnum(factory, status));
-        hashCommands.hset(instance_key_1, "date", MarshallingUtils.writeInstant(factory, startedAt));
+        storeInstance(testApplicationId, testNamespace, "workflow1", "1.0.0", testInstanceId, status, startedAt);
 
-        hashCommands.hset(instance_key_2, "status", MarshallingUtils.writeEnum(factory, status));
-        hashCommands.hset(instance_key_2, "date", MarshallingUtils.writeInstant(factory, startedAt));
+        storeInstance(testApplicationId, "other-ns", "workflow2", "2.0.0", testInstanceId, status, startedAt);
 
         // When: we locate with the first workflow id
         Optional<InstanceLocation> result = instanceLocator.locate(testNamespace, "workflow1", "1.0.0",
@@ -128,64 +134,34 @@ public class RedisInstanceLocatorIT {
     }
 
     @Test
-    @DisplayName("locate should not mistake a blob-prefixed key with matching suffix for the instance")
-    void locate_should_skip_blob_prefixed_keys() {
-        // Given: a blob key with a matching instanceId suffix
+    @DisplayName("locate should not scan for instances without a discovery index")
+    void locate_should_not_find_legacy_instance_without_index() {
         String instanceKey = testApplicationId + ":" + testNamespace + ":" + testName + ":" + testVersion + ":"
                 + testInstanceId;
-        String blobKey = "blob:" + testApplicationId + ":" + testNamespace + ":" + testName + ":" + testVersion + ":"
-                + testInstanceId;
-        Instant startedAt = Instant.now();
-        WorkflowStatus status = WorkflowStatus.RUNNING;
+        hashCommands.hset(instanceKey, "status", MarshallingUtils.writeEnum(factory, WorkflowStatus.RUNNING));
+        hashCommands.hset(instanceKey, "date", MarshallingUtils.writeInstant(factory, Instant.now()));
 
-        // Store the blob key (which should be skipped)
-        hashCommands.hset(blobKey, "dummy", "data".getBytes());
-
-        // Store the actual instance key
-        hashCommands.hset(instanceKey, "status", MarshallingUtils.writeEnum(factory, status));
-        hashCommands.hset(instanceKey, "date", MarshallingUtils.writeInstant(factory, startedAt));
-
-        // When: we locate the instance
-        Optional<InstanceLocation> result = instanceLocator.locate(testNamespace, testName, testVersion,
-                testInstanceId);
-
-        // Then: we get the instance, not the blob
-        assertThat(result).isPresent();
-        InstanceLocation location = result.get();
-        assertThat(location.applicationId()).isEqualTo(testApplicationId);
-        assertThat(location.status()).isEqualTo(status);
-        // Compare with tolerance to account for nanosecond vs microsecond precision differences
-        assertThat(location.startedAt().toEpochMilli()).isEqualTo(startedAt.toEpochMilli());
+        assertThat(instanceLocator.locate(testNamespace, testName, testVersion, testInstanceId)).isEmpty();
     }
 
-    @Test
-    @DisplayName("locate should not mistake a CE-prefixed key with matching suffix for the instance")
-    void locate_should_skip_ce_prefixed_keys() {
-        // Given: a cloud event key with a matching pattern suffix
-        String instanceKey = testApplicationId + ":" + testNamespace + ":" + testName + ":" + testVersion + ":"
-                + testInstanceId;
-        String ceKey = "CE:" + testApplicationId + ":" + testNamespace + ":" + testName + ":" + testVersion + ":"
-                + testInstanceId;
-        Instant startedAt = Instant.now();
-        WorkflowStatus status = WorkflowStatus.RUNNING;
-
-        // Store the CE key (which should be skipped)
-        hashCommands.hset(ceKey, "source", "event-source".getBytes());
-
-        // Store the actual instance key
+    private void storeInstance(String applicationId, String namespace, String name, String version, String instanceId,
+            WorkflowStatus status, Instant startedAt) {
+        String instanceKey = instanceKey(applicationId, namespace, name, version, instanceId);
         hashCommands.hset(instanceKey, "status", MarshallingUtils.writeEnum(factory, status));
         hashCommands.hset(instanceKey, "date", MarshallingUtils.writeInstant(factory, startedAt));
+        indexCommands.hset(indexKey(instanceId, namespace, name, version), "applicationId",
+                applicationId.getBytes(StandardCharsets.UTF_8));
+    }
 
-        // When: we locate the instance
-        Optional<InstanceLocation> result = instanceLocator.locate(testNamespace, testName, testVersion,
-                testInstanceId);
+    private String instanceKey(String applicationId, String namespace, String name, String version, String instanceId) {
+        return applicationId + ":" + namespace + ":" + name + ":" + version + ":" + instanceId;
+    }
 
-        // Then: we get the instance, not the CE key
-        assertThat(result).isPresent();
-        InstanceLocation location = result.get();
-        assertThat(location.applicationId()).isEqualTo(testApplicationId);
-        assertThat(location.status()).isEqualTo(status);
-        // Compare with tolerance to account for nanosecond vs microsecond precision differences
-        assertThat(location.startedAt().toEpochMilli()).isEqualTo(startedAt.toEpochMilli());
+    private String indexKey(String instanceId, String namespace, String name, String version) {
+        return "instanceId:" + encode(instanceId) + ":" + encode(namespace) + ":" + encode(name) + ":" + encode(version);
+    }
+
+    private String encode(String value) {
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(value.getBytes(StandardCharsets.UTF_8));
     }
 }
