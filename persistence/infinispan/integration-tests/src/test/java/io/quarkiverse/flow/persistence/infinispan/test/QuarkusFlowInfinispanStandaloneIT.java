@@ -10,7 +10,6 @@ import io.quarkiverse.flow.persistence.spi.InstanceLocator;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.serverlessworkflow.impl.marshaller.WorkflowBufferFactory;
 import io.serverlessworkflow.impl.persistence.PersistenceInstanceHandlers;
 import io.serverlessworkflow.impl.persistence.test.AbstractHandlerPersistenceTest;
 
@@ -28,12 +27,9 @@ public class QuarkusFlowInfinispanStandaloneIT extends AbstractHandlerPersistenc
     @Inject
     RedisDataSource redisDataSource;
 
-    @Inject
-    WorkflowBufferFactory bufferFactory;
-
     @Test
     void discovery_locator_uses_infinispan_resp_store() {
-        InfinispanInstanceLocatorAssertions.locatesIndexedInstance(locator, redisDataSource, bufferFactory);
+        InfinispanInstanceLocatorAssertions.locatesIndexedInstance(locator, redisDataSource);
     }
 
     @Override
