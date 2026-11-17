@@ -2,11 +2,15 @@ package io.quarkiverse.flow.persistence.infinispan.test;
 
 import jakarta.inject.Inject;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
+import io.quarkiverse.flow.persistence.spi.InstanceLocator;
+import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.serverlessworkflow.impl.marshaller.WorkflowBufferFactory;
 import io.serverlessworkflow.impl.persistence.PersistenceInstanceHandlers;
 import io.serverlessworkflow.impl.persistence.test.AbstractHandlerPersistenceTest;
 
@@ -17,6 +21,20 @@ public class QuarkusFlowInfinispanClusteredIT extends AbstractHandlerPersistence
 
     @Inject
     PersistenceInstanceHandlers handlers;
+
+    @Inject
+    InstanceLocator locator;
+
+    @Inject
+    RedisDataSource redisDataSource;
+
+    @Inject
+    WorkflowBufferFactory bufferFactory;
+
+    @Test
+    void discovery_locator_uses_clustered_infinispan_resp_store() {
+        InfinispanInstanceLocatorAssertions.locatesIndexedInstance(locator, redisDataSource, bufferFactory);
+    }
 
     @Override
     protected PersistenceInstanceHandlers getPersistenceHandlers() {
