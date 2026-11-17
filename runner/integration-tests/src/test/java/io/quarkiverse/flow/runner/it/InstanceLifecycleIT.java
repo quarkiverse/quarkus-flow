@@ -23,7 +23,7 @@ class InstanceLifecycleIT {
 
     private static final String VERSIONED_BASE = "/q/flow/exec/test-namespace/long-running/1.0.0/";
     private static final String LATEST_BASE = "/q/flow/exec/test-namespace/long-running/";
-    private static final String INSTANCES = "/q/flow/test-namespace/long-running/1.0.0/instances";
+    private static final String INSTANCES = "/q/flow/instances/test-namespace/long-running/1.0.0";
 
     @Test
     @DisplayName("test_suspend_resume_cancel_with_versioned_routes")

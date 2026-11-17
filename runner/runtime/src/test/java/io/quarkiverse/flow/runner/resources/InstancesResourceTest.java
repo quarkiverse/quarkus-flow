@@ -191,7 +191,7 @@ class InstancesResourceTest {
         assertThat(body(response).instances()).isEmpty();
     }
 
-    // --- tests: GET /q/flow/{namespace}/{name}/instances (latest version) ---
+    // --- tests: GET /q/flow/instances/{namespace}/{name} (latest version) ---
 
     @Test
     @DisplayName("test_latest_version_endpoint_resolves_highest_version")
@@ -218,7 +218,7 @@ class InstancesResourceTest {
         assertThat(response.getStatus()).isEqualTo(404);
     }
 
-    // --- tests: GET /q/flow/{namespace}/{name}/{version}/instances ---
+    // --- tests: GET /q/flow/instances/{namespace}/{name}/{version} ---
 
     @Test
     @DisplayName("test_scoped_endpoint_filters_by_namespace_name_and_version")
@@ -259,5 +259,38 @@ class InstancesResourceTest {
         Response response = resource.listActiveInstancesForWorkflowVersion("default", "flow-a", "9.9.9", null);
 
         assertThat(response.getStatus()).isEqualTo(404);
+    }
+
+    // --- tests: deprecated GET /q/flow/{namespace}/{name}[/{version}]/instances ---
+
+    @Test
+    @DisplayName("test_deprecated_latest_version_endpoint_delegates_to_new_endpoint")
+    @SuppressWarnings("removal")
+    void test_deprecated_latest_version_endpoint_delegates_to_new_endpoint() {
+        seedDefinitions(
+                seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
+                seed("i2", "flow-a", "default", "2.0.0", WorkflowStatus.RUNNING));
+
+        Response response = resource.deprecatedListActiveInstancesForWorkflow("default", "flow-a", null);
+
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(body(response).instances()).extracting(InstanceSnapshot::instanceId).containsExactly("i2");
+    }
+
+    @Test
+    @DisplayName("test_deprecated_scoped_endpoint_delegates_to_new_endpoint")
+    @SuppressWarnings("removal")
+    void test_deprecated_scoped_endpoint_delegates_to_new_endpoint() {
+        seedDefinitions(
+                seed("i1", "flow-a", "default", "1.0.0", WorkflowStatus.RUNNING),
+                seed("i2", "flow-a", "default", "1.0.0", WorkflowStatus.SUSPENDED));
+
+        Response response = resource.deprecatedListActiveInstancesForWorkflowVersion("default", "flow-a", "1.0.0",
+                WorkflowStatus.SUSPENDED);
+
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(body(response).instances()).extracting(InstanceSnapshot::instanceId).containsExactly("i2");
+        assertThat(resource.deprecatedListActiveInstancesForWorkflowVersion("default", "flow-a", "9.9.9", null)
+                .getStatus()).isEqualTo(404);
     }
 }
