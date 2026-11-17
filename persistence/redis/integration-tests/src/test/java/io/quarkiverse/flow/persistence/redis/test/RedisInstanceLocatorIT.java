@@ -88,9 +88,6 @@ public class RedisInstanceLocatorIT {
         assertThat(location.version()).isEqualTo(testVersion);
         assertThat(location.instanceId()).isEqualTo(testInstanceId);
         assertThat(location.applicationId()).isEqualTo(testApplicationId);
-        assertThat(location.status()).isEqualTo(status);
-        // Compare with tolerance to account for nanosecond vs microsecond precision differences
-        assertThat(location.startedAt().toEpochMilli()).isEqualTo(startedAt.toEpochMilli());
     }
 
     @Test

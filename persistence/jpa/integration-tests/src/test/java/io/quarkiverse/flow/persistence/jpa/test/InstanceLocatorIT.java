@@ -138,7 +138,7 @@ public class InstanceLocatorIT {
     }
 
     @Test
-    @DisplayName("locate includes status and startedAt in result")
+    @DisplayName("locate includes the owning application id")
     @Transactional
     void locate_includes_metadata() throws Exception {
         Instant startedAt = Instant.now();
@@ -152,8 +152,7 @@ public class InstanceLocatorIT {
         assertThat(result)
                 .isPresent()
                 .hasValueSatisfying(location -> {
-                    assertThat(location.status()).isEqualTo(WorkflowStatus.RUNNING);
-                    assertThat(location.startedAt()).isEqualTo(startedAt);
+                    assertThat(location.applicationId()).isEqualTo(APP_ID_1);
                 });
     }
 }

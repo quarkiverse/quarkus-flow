@@ -65,7 +65,7 @@ public class DiscoveryResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Resolve workflow instance location", description = "Resolves where a workflow instance lives across the shards of the runtime serving that workflow. "
             + "First checks the in-memory active registry on this pod, then falls back to the durable persistence backend if configured. "
-            + "Returns lightweight metainfo: owning applicationId, status, and startedAt timestamp. "
+            + "Returns the owning applicationId. "
             + "Namespace access is validated when namespace authorization is enabled.")
     @APIResponse(responseCode = "200", description = "Instance location resolved", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = InstanceLocation.class)))
     @APIResponse(responseCode = "401", description = "Authentication required - missing or invalid credentials")
@@ -85,7 +85,7 @@ public class DiscoveryResource {
             if (activeInstance.isPresent()) {
                 WorkflowInstance instance = activeInstance.get();
                 InstanceLocation location = new InstanceLocation(namespace, name, version, instanceId,
-                        application.id(), instance.status(), instance.startedAt());
+                        application.id());
                 return Response.ok(location).build();
             }
         }

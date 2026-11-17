@@ -27,8 +27,6 @@ public class JpaInstanceLocator implements InstanceLocator {
                         e.getWorkflowName(),
                         e.getWorkflowVersion(),
                         e.getInstanceId(),
-                        e.getApplicationId(),
-                        e.getStatus(),
-                        e.getStartedAt()));
+                        e.getApplicationId()));
     }
 }

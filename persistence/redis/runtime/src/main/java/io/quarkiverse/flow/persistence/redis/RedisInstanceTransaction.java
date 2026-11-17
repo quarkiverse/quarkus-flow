@@ -254,17 +254,15 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
     @Override
     public void removeProcessInstance(WorkflowContextData workflowContext) {
         String key = key(workflowContext);
-        String discoveryIndexKey = discoveryIndexKey(workflowContext);
         if (hashCommands.hexists(key, SCHEMA_VERSION)) {
             operations.add(tx -> keyCommands(tx).del(key));
-            operations.add(tx -> keyCommands(tx).del(discoveryIndexKey));
+            operations.add(tx -> keyCommands(tx).del(discoveryIndexKey(workflowContext)));
             String setKey = blobSetKey(key);
             setCommands.smembers(setKey).forEach(k -> operations.add(tx -> keyCommands(tx).del(k)));
             operations.add(tx -> keyCommands(tx).del(setKey));
             hashCoordinator.afterRemove(workflowContext.instanceData().id());
         } else {
             legacyRemoveProcessInstance(workflowContext);
-            operations.add(tx -> keyCommands(tx).del(discoveryIndexKey));
         }
     }
 

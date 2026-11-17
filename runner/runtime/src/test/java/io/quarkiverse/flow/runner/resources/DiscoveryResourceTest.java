@@ -73,10 +73,9 @@ class DiscoveryResourceTest {
     // --- tests ---
 
     @Test
-    @DisplayName("test_memory_hit_returns_200_with_application_id_and_instance_metadata")
-    void test_memory_hit_returns_200_with_application_id_and_instance_metadata() {
-        Instant now = Instant.now();
-        WorkflowInstance instance = mockInstance("inst-1", WorkflowStatus.RUNNING, now);
+    @DisplayName("test_memory_hit_returns_200_with_application_id")
+    void test_memory_hit_returns_200_with_application_id() {
+        WorkflowInstance instance = mockInstance("inst-1", WorkflowStatus.RUNNING, Instant.now());
 
         WorkflowDefinition definition = mock(WorkflowDefinition.class);
         WorkflowDefinitionId defId = new WorkflowDefinitionId("default", "flow-a", "1.0.0");
@@ -94,8 +93,6 @@ class DiscoveryResourceTest {
         assertThat(location.version()).isEqualTo("1.0.0");
         assertThat(location.instanceId()).isEqualTo("inst-1");
         assertThat(location.applicationId()).isEqualTo("runner-pod-0");
-        assertThat(location.status()).isEqualTo(WorkflowStatus.RUNNING);
-        assertThat(location.startedAt()).isEqualTo(now);
     }
 
     @Test
@@ -105,9 +102,8 @@ class DiscoveryResourceTest {
         when(mockApplication.workflowDefinitions()).thenReturn(java.util.Map.of());
 
         // Locator is configured and returns a location
-        Instant persistedTime = Instant.parse("2026-11-16T10:00:00Z");
         InstanceLocation persistedLocation = new InstanceLocation("default", "flow-a", "1.0.0", "inst-2",
-                "runner-pod-1", WorkflowStatus.WAITING, persistedTime);
+                "runner-pod-1");
         when(mockLocatorInstance.isResolvable()).thenReturn(true);
         when(mockLocatorInstance.get()).thenReturn(mockLocator);
         when(mockLocator.locate("default", "flow-a", "1.0.0", "inst-2"))
@@ -118,8 +114,6 @@ class DiscoveryResourceTest {
         assertThat(response.getStatus()).isEqualTo(200);
         InstanceLocation location = body(response);
         assertThat(location.applicationId()).isEqualTo("runner-pod-1");
-        assertThat(location.status()).isEqualTo(WorkflowStatus.WAITING);
-        assertThat(location.startedAt()).isEqualTo(persistedTime);
     }
 
     @Test
@@ -161,7 +155,7 @@ class DiscoveryResourceTest {
 
         // Locator is configured and returns a location
         InstanceLocation location = new InstanceLocation("default", "flow-b", "1.0.0", "inst-5",
-                "runner-pod-2", WorkflowStatus.PENDING, Instant.now());
+                "runner-pod-2");
         when(mockLocatorInstance.isResolvable()).thenReturn(true);
         when(mockLocatorInstance.get()).thenReturn(mockLocator);
         when(mockLocator.locate("default", "flow-b", "1.0.0", "inst-5"))
@@ -186,7 +180,7 @@ class DiscoveryResourceTest {
 
         // Locator finds it in persistence
         InstanceLocation location = new InstanceLocation("default", "flow-c", "1.0.0", "inst-6",
-                "runner-pod-3", WorkflowStatus.COMPLETED, Instant.now());
+                "runner-pod-3");
         when(mockLocatorInstance.isResolvable()).thenReturn(true);
         when(mockLocatorInstance.get()).thenReturn(mockLocator);
         when(mockLocator.locate("default", "flow-c", "1.0.0", "inst-6"))
@@ -195,6 +189,6 @@ class DiscoveryResourceTest {
         Response response = resource.discover("default", "flow-c", "1.0.0", "inst-6");
 
         assertThat(response.getStatus()).isEqualTo(200);
-        assertThat(body(response).status()).isEqualTo(WorkflowStatus.COMPLETED);
+        assertThat(body(response).applicationId()).isEqualTo("runner-pod-3");
     }
 }
