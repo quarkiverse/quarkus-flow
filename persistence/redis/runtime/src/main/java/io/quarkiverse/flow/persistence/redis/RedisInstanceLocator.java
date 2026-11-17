@@ -35,7 +35,7 @@ public class RedisInstanceLocator implements InstanceLocator {
     }
 
     static String indexKey(String namespace, String name, String version, String instanceId) {
-        return "instanceId:" + encode(instanceId) + ":" + encode(namespace) + ":" + encode(name) + ":" + encode(version);
+        return encode(instanceId) + ":" + encode(namespace) + ":" + encode(name) + ":" + encode(version);
     }
 
     private static String encode(String value) {

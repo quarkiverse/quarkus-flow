@@ -155,7 +155,7 @@ public class RedisInstanceLocatorIT {
     }
 
     private String indexKey(String instanceId, String namespace, String name, String version) {
-        return "instanceId:" + encode(instanceId) + ":" + encode(namespace) + ":" + encode(name) + ":" + encode(version);
+        return encode(instanceId) + ":" + encode(namespace) + ":" + encode(name) + ":" + encode(version);
     }
 
     private String encode(String value) {
