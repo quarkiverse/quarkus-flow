@@ -651,7 +651,7 @@ All endpoints are served under `/q/flow` and require the `flow-admin` or `flow-i
 | List active instances on this Runner
 
 | `GET`
-| `/q/flow/\{namespace}/\{name}[/\{version}]/instances`
+| `/q/flow/instances/\{namespace}/\{name}[/\{version}]`
 | List active instances of one workflow on this Runner
 
 | `GET`
@@ -864,7 +864,7 @@ IMPORTANT: Only instances held in this Runner's **in-memory active instance regi
 * **403 Forbidden** - Access denied to namespace
 * **404 Not Found** - The workflow version or the active instance was not found on this Runner
 
-NOTE: HTTP `304` responses do not carry a body, so clients should not expect one. To check the current status of the instance, query `GET /q/flow/\{namespace}/\{name}/\{version}/instances`.
+NOTE: HTTP `304` responses do not carry a body, so clients should not expect one. To check the current status of the instance, query `GET /q/flow/instances/\{namespace}/\{name}/\{version}`.
 
 [cols="1,3,3",options="header"]
 |===
@@ -944,7 +944,7 @@ INSTANCE_ID=$(curl -s -X POST "$BASE/exec/examples/order-processing/2.1.0" \
 curl -i -X POST "$BASE/exec/examples/order-processing/2.1.0/$INSTANCE_ID/suspend" -H "$AUTH"
 
 # 3. Confirm it is suspended
-curl -s "$BASE/examples/order-processing/2.1.0/instances?status=SUSPENDED" -H "$AUTH" | jq .
+curl -s "$BASE/instances/examples/order-processing/2.1.0?status=SUSPENDED" -H "$AUTH" | jq .
 
 # 4. Resume it (200 OK); resuming again returns 304 Not Modified
 curl -i -X POST "$BASE/exec/examples/order-processing/2.1.0/$INSTANCE_ID/resume" -H "$AUTH"
@@ -1133,7 +1133,7 @@ curl -H "Authorization: Bearer ${API_KEY}" \
 
 NOTE: When namespace authorization is enabled, the returned instances are filtered to the definitions in the user's authorized namespaces (`flow-admin` bypasses this filtering).
 
-==== GET /q/flow/\{namespace}/\{name}/instances
+==== GET /q/flow/instances/\{namespace}/\{name}
 
 List active in-memory workflow instances for the **latest version** of the given namespace/name.
 
@@ -1144,7 +1144,7 @@ List active in-memory workflow instances for the **latest version** of the given
 
 **Query parameters and responses:** Same as `GET /q/flow/instances`, plus **404 Not Found** if the workflow definition does not exist.
 
-==== GET /q/flow/\{namespace}/\{name}/\{version}/instances
+==== GET /q/flow/instances/\{namespace}/\{name}/\{version}
 
 List active in-memory workflow instances for a specific namespace/name/version.
 
@@ -1161,7 +1161,7 @@ List active in-memory workflow instances for a specific namespace/name/version.
 [source,bash]
 ----
 curl -H "Authorization: Bearer ${API_KEY}" \
-  http://localhost:8080/q/flow/examples/order-processing/2.1.0/instances
+  http://localhost:8080/q/flow/instances/examples/order-processing/2.1.0
 ----
 
 ==== Instance fields

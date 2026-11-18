@@ -39,10 +39,10 @@ import io.serverlessworkflow.impl.WorkflowStatus;
  * <pre>
  * GET /q/flow/instances
  * GET /q/flow/instances?status=RUNNING
- * GET /q/flow/{namespace}/{name}/instances
- * GET /q/flow/{namespace}/{name}/instances?status=RUNNING
- * GET /q/flow/{namespace}/{name}/{version}/instances
- * GET /q/flow/{namespace}/{name}/{version}/instances?status=RUNNING
+ * GET /q/flow/instances/{namespace}/{name}
+ * GET /q/flow/instances/{namespace}/{name}?status=RUNNING
+ * GET /q/flow/instances/{namespace}/{name}/{version}
+ * GET /q/flow/instances/{namespace}/{name}/{version}?status=RUNNING
  * </pre>
  */
 @FlowRunnerEndpoint
@@ -80,7 +80,7 @@ public class InstancesResource {
     }
 
     @GET
-    @Path("/{namespace}/{name}/instances")
+    @Path("/instances/{namespace}/{name}")
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "List active in-memory workflow instances (latest version)", description = "Returns the workflow instances currently tracked in this runner's in-memory active instance "
             + "registry for the latest version of the given namespace/name. Only non-terminal instances (not yet "
@@ -101,7 +101,7 @@ public class InstancesResource {
     }
 
     @GET
-    @Path("/{namespace}/{name}/{version}/instances")
+    @Path("/instances/{namespace}/{name}/{version}")
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "List active in-memory workflow instances for a specific version", description = "Returns the workflow instances currently tracked in this runner's in-memory active instance "
             + "registry for the given namespace, name, and version. Only non-terminal instances (not yet "
@@ -119,6 +119,49 @@ public class InstancesResource {
             @Parameter(description = "Filter by workflow status (optional). Only non-terminal values accepted: PENDING, RUNNING, WAITING, SUSPENDED") @QueryParam("status") @ActiveStatus WorkflowStatus status) {
 
         return listActiveInstancesForDefinition(new WorkflowDefinitionId(namespace, name, version), status);
+    }
+
+    /**
+     * @deprecated use {@code GET /q/flow/instances/{namespace}/{name}} instead.
+     */
+    @GET
+    @Path("/{namespace}/{name}/instances")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "List active in-memory workflow instances (latest version) - deprecated", description = "Deprecated: use GET /q/flow/instances/{namespace}/{name} instead.")
+    @APIResponse(responseCode = "200", description = "Active in-memory workflow instances for the requested workflow on this runner", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ActiveInstancesResponse.class)))
+    @APIResponse(responseCode = "400", description = "Invalid status filter — terminal statuses (COMPLETED, FAULTED, CANCELLED) and unknown values are not allowed")
+    @APIResponse(responseCode = "401", description = "Authentication required - missing or invalid credentials")
+    @APIResponse(responseCode = "403", description = "Access denied to requested namespace")
+    @APIResponse(responseCode = "404", description = "Workflow definition not found")
+    @Deprecated(forRemoval = true)
+    public Response deprecatedListActiveInstancesForWorkflow(
+            @Parameter(description = "Workflow namespace (access validated if namespace authorization enabled)", required = true) @PathParam("namespace") String namespace,
+            @Parameter(description = "Workflow name", required = true) @PathParam("name") String name,
+            @Parameter(description = "Filter by workflow status (optional). Only non-terminal values accepted: PENDING, RUNNING, WAITING, SUSPENDED") @QueryParam("status") @ActiveStatus WorkflowStatus status) {
+
+        return listActiveInstancesForWorkflow(namespace, name, status);
+    }
+
+    /**
+     * @deprecated use {@code GET /q/flow/instances/{namespace}/{name}/{version}} instead.
+     */
+    @GET
+    @Path("/{namespace}/{name}/{version}/instances")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "List active in-memory workflow instances for a specific version - deprecated", description = "Deprecated: use GET /q/flow/instances/{namespace}/{name}/{version} instead.")
+    @APIResponse(responseCode = "200", description = "Active in-memory workflow instances for the requested workflow on this runner", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ActiveInstancesResponse.class)))
+    @APIResponse(responseCode = "400", description = "Invalid status filter — terminal statuses (COMPLETED, FAULTED, CANCELLED) and unknown values are not allowed")
+    @APIResponse(responseCode = "401", description = "Authentication required - missing or invalid credentials")
+    @APIResponse(responseCode = "403", description = "Access denied to requested namespace")
+    @APIResponse(responseCode = "404", description = "Workflow definition not found")
+    @Deprecated(forRemoval = true)
+    public Response deprecatedListActiveInstancesForWorkflowVersion(
+            @Parameter(description = "Workflow namespace (access validated if namespace authorization enabled)", required = true) @PathParam("namespace") String namespace,
+            @Parameter(description = "Workflow name", required = true) @PathParam("name") String name,
+            @Parameter(description = "Workflow version", required = true) @PathParam("version") String version,
+            @Parameter(description = "Filter by workflow status (optional). Only non-terminal values accepted: PENDING, RUNNING, WAITING, SUSPENDED") @QueryParam("status") @ActiveStatus WorkflowStatus status) {
+
+        return listActiveInstancesForWorkflowVersion(namespace, name, version, status);
     }
 
     private Response listActiveInstancesForDefinition(WorkflowDefinitionId id, WorkflowStatus status) {

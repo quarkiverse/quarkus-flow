@@ -86,7 +86,7 @@ class InstancesResourceIT {
                 .untilAsserted(() -> {
                     Map<String, Object> response = given()
                             .when()
-                            .get("/q/flow/test-namespace/long-running/1.0.0/instances")
+                            .get("/q/flow/instances/test-namespace/long-running/1.0.0")
                             .then()
                             .statusCode(200)
                             .extract()
@@ -99,7 +99,7 @@ class InstancesResourceIT {
         // A version that doesn't exist should 404
         given()
                 .when()
-                .get("/q/flow/test-namespace/long-running/9.9.9/instances")
+                .get("/q/flow/instances/test-namespace/long-running/9.9.9")
                 .then()
                 .statusCode(404);
     }
@@ -124,7 +124,7 @@ class InstancesResourceIT {
                 .untilAsserted(() -> {
                     Map<String, Object> response = given()
                             .when()
-                            .get("/q/flow/test-namespace/long-running/instances")
+                            .get("/q/flow/instances/test-namespace/long-running")
                             .then()
                             .statusCode(200)
                             .extract()
@@ -137,7 +137,7 @@ class InstancesResourceIT {
         // An unrelated workflow name should not see it
         Map<String, Object> otherWorkflowResponse = given()
                 .when()
-                .get("/q/flow/test-namespace/simple-greeting/instances")
+                .get("/q/flow/instances/test-namespace/simple-greeting")
                 .then()
                 .statusCode(200)
                 .extract()
@@ -151,7 +151,7 @@ class InstancesResourceIT {
     void test_latest_version_endpoint_returns_404_for_unknown_workflow() {
         given()
                 .when()
-                .get("/q/flow/test-namespace/unknown-workflow/instances")
+                .get("/q/flow/instances/test-namespace/unknown-workflow")
                 .then()
                 .statusCode(404);
     }
@@ -253,7 +253,7 @@ class InstancesResourceIT {
         // The fast workflow completed — it should NOT be in the active instances list
         Map<String, Object> response = given()
                 .when()
-                .get("/q/flow/test-namespace/simple-greeting/1.0.0/instances")
+                .get("/q/flow/instances/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(200)
                 .extract()
@@ -261,5 +261,41 @@ class InstancesResourceIT {
 
         List<?> instances = (List<?>) response.get("instances");
         assertThat(instances).isEmpty();
+    }
+
+    @Test
+    @DisplayName("test_deprecated_paths_still_list_active_instances")
+    void test_deprecated_paths_still_list_active_instances() {
+        given()
+                .contentType("application/json")
+                .body(Map.of("testId", "instances-test-deprecated-1"))
+                .queryParam("wait", "false")
+                .when()
+                .post("/q/flow/exec/test-namespace/long-running/1.0.0")
+                .then()
+                .statusCode(202);
+
+        await()
+                .atMost(Duration.ofSeconds(3))
+                .pollInterval(Duration.ofMillis(200))
+                .untilAsserted(() -> {
+                    Map<String, Object> latest = given()
+                            .when()
+                            .get("/q/flow/test-namespace/long-running/instances")
+                            .then()
+                            .statusCode(200)
+                            .extract()
+                            .as(Map.class);
+                    assertThat((List<?>) latest.get("instances")).isNotEmpty();
+
+                    Map<String, Object> versioned = given()
+                            .when()
+                            .get("/q/flow/test-namespace/long-running/1.0.0/instances")
+                            .then()
+                            .statusCode(200)
+                            .extract()
+                            .as(Map.class);
+                    assertThat((List<?>) versioned.get("instances")).isNotEmpty();
+                });
     }
 }

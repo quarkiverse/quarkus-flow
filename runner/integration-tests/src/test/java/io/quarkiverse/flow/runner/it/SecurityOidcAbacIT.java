@@ -345,7 +345,7 @@ class SecurityOidcAbacIT {
                 .statusCode(200);
     }
 
-    // --- GET /q/flow/{namespace}/{name}/instances (latest version) ---
+    // --- GET /q/flow/instances/{namespace}/{name} (latest version) ---
 
     @Test
     @TestSecurity(user = "alice", roles = "flow-invoker")
@@ -354,7 +354,7 @@ class SecurityOidcAbacIT {
     void test_list_active_instances_for_workflow_allowed_in_authorized_namespace() {
         given()
                 .when()
-                .get("/q/flow/test-namespace/simple-greeting/instances")
+                .get("/q/flow/instances/test-namespace/simple-greeting")
                 .then()
                 .statusCode(200);
     }
@@ -366,12 +366,12 @@ class SecurityOidcAbacIT {
     void test_list_active_instances_for_workflow_denied_in_unauthorized_namespace() {
         given()
                 .when()
-                .get("/q/flow/test-namespace/simple-greeting/instances")
+                .get("/q/flow/instances/test-namespace/simple-greeting")
                 .then()
                 .statusCode(403);
     }
 
-    // --- GET /q/flow/{namespace}/{name}/{version}/instances ---
+    // --- GET /q/flow/instances/{namespace}/{name}/{version} ---
 
     @Test
     @TestSecurity(user = "alice", roles = "flow-invoker")
@@ -380,7 +380,7 @@ class SecurityOidcAbacIT {
     void test_list_active_instances_for_workflow_version_allowed_in_authorized_namespace() {
         given()
                 .when()
-                .get("/q/flow/test-namespace/simple-greeting/1.0.0/instances")
+                .get("/q/flow/instances/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(200);
     }
@@ -392,7 +392,7 @@ class SecurityOidcAbacIT {
     void test_list_active_instances_for_workflow_version_denied_in_unauthorized_namespace() {
         given()
                 .when()
-                .get("/q/flow/test-namespace/simple-greeting/1.0.0/instances")
+                .get("/q/flow/instances/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(403);
     }
@@ -412,14 +412,32 @@ class SecurityOidcAbacIT {
 
         given()
                 .when()
-                .get("/q/flow/test-namespace/simple-greeting/instances")
+                .get("/q/flow/instances/test-namespace/simple-greeting")
                 .then()
                 .statusCode(200);
 
         given()
                 .when()
-                .get("/q/flow/test-namespace/simple-greeting/1.0.0/instances")
+                .get("/q/flow/instances/test-namespace/simple-greeting/1.0.0")
                 .then()
                 .statusCode(200);
+    }
+
+    @Test
+    @TestSecurity(user = "bob", roles = "flow-invoker")
+    @OidcSecurity(claims = { @Claim(key = "namespace", value = "team-a") })
+    @DisplayName("test_deprecated_instances_paths_denied_in_unauthorized_namespace")
+    void test_deprecated_instances_paths_denied_in_unauthorized_namespace() {
+        given()
+                .when()
+                .get("/q/flow/test-namespace/simple-greeting/instances")
+                .then()
+                .statusCode(403);
+
+        given()
+                .when()
+                .get("/q/flow/test-namespace/simple-greeting/1.0.0/instances")
+                .then()
+                .statusCode(403);
     }
 }
