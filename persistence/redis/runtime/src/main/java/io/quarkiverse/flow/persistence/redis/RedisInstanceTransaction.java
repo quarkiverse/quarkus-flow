@@ -475,28 +475,25 @@ public class RedisInstanceTransaction implements PersistenceInstanceTransaction 
         }
 
         public PersistenceWorkflowInfo next() {
-
-            while (true) {
-
-                // As long as the current batch is empty, load more Redis scan pages.
-                while (!keys.hasNext()) {
-
-                    if (!cursor.hasNext()) {
-                        return null;
-                    }
-
-                    this.keys = cursor.next().iterator();
+            PersistenceWorkflowInfo info = null;
+            do {
+                if (!keys.hasNext() && cursor.hasNext()) {
+                    keys = cursor.next().iterator();
                 }
+                info = readNextInfo();
+            } while (info == null && cursor.hasNext());
+            return info;
+        }
 
+        private PersistenceWorkflowInfo readNextInfo() {
+            while (keys.hasNext()) {
                 String key = keys.next();
-
                 PersistenceWorkflowInfo info = readPersistenceInfo(key, lastChunk(key));
-
-                // Skip keys that have been deleted in the meantime.
                 if (info != null) {
                     return info;
                 }
             }
+            return null;
         }
     }
 
