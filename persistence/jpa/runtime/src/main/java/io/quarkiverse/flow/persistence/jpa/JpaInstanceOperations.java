@@ -1,12 +1,15 @@
 package io.quarkiverse.flow.persistence.jpa;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -226,7 +229,13 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
 
     private Map<String, PersistenceTaskInfo> from(HashMappingCoordinator coordinator, String instanceId,
             Collection<TaskInfoEntity> taskEntities) {
-        return taskEntities.stream().collect(Collectors.toMap(e -> e.jsonPointer(), t -> from(coordinator, instanceId, t)));
+        // One row per iteration: keep the latest for each position
+        return taskEntities.stream()
+                .collect(Collectors.toMap(TaskInfoEntity::jsonPointer, Function.identity(),
+                        BinaryOperator.maxBy(Comparator.comparingInt(TaskInfoEntity::iteration))))
+                .values()
+                .stream()
+                .collect(Collectors.toMap(TaskInfoEntity::jsonPointer, t -> from(coordinator, instanceId, t)));
     }
 
     private PersistenceTaskInfo from(HashMappingCoordinator coordinator, String instanceId, TaskInfoEntity taskEntity) {
