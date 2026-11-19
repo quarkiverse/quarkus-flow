@@ -161,6 +161,17 @@
         </pluginManagement>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <user.language>en</user.language>
+                        <user.country>US</user.country>
+                    </systemPropertyVariables>
+                    <argLine>-Duser.language=en -Duser.country=US</argLine>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>net.revelc.code.formatter</groupId>
                 <artifactId>formatter-maven-plugin</artifactId>
                 <executions>
@@ -198,7 +209,7 @@
         </plugins>
     </build>
 
-    <profiles>
+    <profiles> <!-- Bei Version Set drauf achten, dass alles ausgewählte dabei ist -->
         <profile>
             <id>docs</id>
             <activation>
