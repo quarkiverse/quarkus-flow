@@ -1,14 +1,16 @@
-
 package io.quarkiverse.flow.persistence.redis;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Constructor;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
@@ -21,6 +23,8 @@ import io.serverlessworkflow.impl.marshaller.WorkflowBufferFactory;
 import io.serverlessworkflow.impl.persistence.hashing.HashFactory;
 
 class PersistenceWorkflowInfoGeneratorTest {
+
+    private static final Duration SCAN_TIMEOUT = Duration.ofSeconds(2);
 
     private RedisInstanceTransaction createTransaction() {
         HashFactory hashFactory = mock(HashFactory.class);
@@ -35,7 +39,6 @@ class PersistenceWorkflowInfoGeneratorTest {
                 hashFactory);
     }
 
-    @SuppressWarnings("unchecked")
     private Object createGenerator(
             RedisInstanceTransaction transaction,
             KeyScanCursor<String> cursor) throws Exception {
@@ -55,10 +58,26 @@ class PersistenceWorkflowInfoGeneratorTest {
         return method.invoke(generator);
     }
 
+    private void assertCompletesWithinTimeout(ThrowingTestBlock block) {
+        assertThatCode(() -> {
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                try {
+                    block.run();
+                } catch (RuntimeException e) {
+                    throw e;
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            future.get(SCAN_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+        }).doesNotThrowAnyException();
+    }
+
     @Test
     void shouldContinueWhenFirstScanBatchIsEmpty() {
-        assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
+        assertCompletesWithinTimeout(() -> {
             RedisInstanceTransaction transaction = createTransaction();
+            @SuppressWarnings("unchecked")
             KeyScanCursor<String> cursor = mock(KeyScanCursor.class);
 
             when(cursor.hasNext()).thenReturn(true, true, false);
@@ -66,14 +85,15 @@ class PersistenceWorkflowInfoGeneratorTest {
 
             Object generator = createGenerator(transaction, cursor);
 
-            assertNull(invokeNext(generator));
+            assertThat(invokeNext(generator)).isNull();
         });
     }
 
     @Test
     void shouldContinueAcrossMultipleEmptyScanBatches() {
-        assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
+        assertCompletesWithinTimeout(() -> {
             RedisInstanceTransaction transaction = createTransaction();
+            @SuppressWarnings("unchecked")
             KeyScanCursor<String> cursor = mock(KeyScanCursor.class);
 
             when(cursor.hasNext()).thenReturn(true, true, true, true, false);
@@ -85,25 +105,27 @@ class PersistenceWorkflowInfoGeneratorTest {
 
             Object generator = createGenerator(transaction, cursor);
 
-            assertNull(invokeNext(generator));
+            assertThat(invokeNext(generator)).isNull();
         });
     }
 
     @Test
     void shouldReturnNullWhenCursorHasNoBatches() throws Exception {
         RedisInstanceTransaction transaction = createTransaction();
+        @SuppressWarnings("unchecked")
         KeyScanCursor<String> cursor = mock(KeyScanCursor.class);
 
         when(cursor.hasNext()).thenReturn(false);
 
         Object generator = createGenerator(transaction, cursor);
 
-        assertNull(invokeNext(generator));
+        assertThat(invokeNext(generator)).isNull();
     }
 
     @Test
     void shouldReturnNullAfterEmptyBatchAndExhaustedCursor() throws Exception {
         RedisInstanceTransaction transaction = createTransaction();
+        @SuppressWarnings("unchecked")
         KeyScanCursor<String> cursor = mock(KeyScanCursor.class);
 
         when(cursor.hasNext()).thenReturn(true, false);
@@ -111,6 +133,11 @@ class PersistenceWorkflowInfoGeneratorTest {
 
         Object generator = createGenerator(transaction, cursor);
 
-        assertNull(invokeNext(generator));
+        assertThat(invokeNext(generator)).isNull();
+    }
+
+    @FunctionalInterface
+    private interface ThrowingTestBlock {
+        void run() throws Exception;
     }
 }
