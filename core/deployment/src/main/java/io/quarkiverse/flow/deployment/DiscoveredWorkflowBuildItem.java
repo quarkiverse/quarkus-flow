@@ -12,6 +12,7 @@ import io.serverlessworkflow.impl.WorkflowDefinitionId;
  * A workflow can be discovered either from:
  * <ul>
  * <li>a workflow specification file (YAML/JSON)</li>
+ * <li>a workflow specification file (YAML/JSON) inside a dependency JAR</li>
  * <li>application source code</li>
  * </ul>
  * <p>
@@ -20,20 +21,23 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
 
     private final From from;
     private String definitionResourcePath;
+    private String sourceResourcePath;
     private WorkflowDefinitionId workflowDefinitionId;
     private Workflow workflowFromSpec;
     private String specIdentifier;
     private String className;
 
-    private DiscoveredWorkflowBuildItem(String definitionResourcePath, Workflow workflow) {
+    private DiscoveredWorkflowBuildItem(String definitionResourcePath, String sourceResourcePath, Workflow workflow,
+            From from) {
         this.definitionResourcePath = definitionResourcePath;
+        this.sourceResourcePath = sourceResourcePath;
         this.workflowDefinitionId = WorkflowDefinitionId.of(workflow);
         this.specIdentifier = WorkflowNameUtils.yamlDescriptorIdentifier(
                 workflowDefinitionId.namespace(),
                 workflowDefinitionId.name(),
                 workflowDefinitionId.version());
         this.workflowFromSpec = workflow;
-        this.from = From.SPEC;
+        this.from = from;
     }
 
     private DiscoveredWorkflowBuildItem(String className) {
@@ -42,14 +46,33 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
     }
 
     /**
-     * Creates a build item for a workflow discovered from a specification file.
+     * Creates a build item for a workflow discovered from a specification file
+     * in the application's own resources (root archive).
      *
      * @param definitionResourcePath the classpath workflow definition resource path
      * @param workflow the parsed workflow model
      * @return a new {@link DiscoveredWorkflowBuildItem}
      */
     public static DiscoveredWorkflowBuildItem fromSpec(String definitionResourcePath, Workflow workflow) {
-        return new DiscoveredWorkflowBuildItem(definitionResourcePath, workflow);
+        return new DiscoveredWorkflowBuildItem(definitionResourcePath, definitionResourcePath, workflow, From.SPEC);
+    }
+
+    /**
+     * Creates a build item for a workflow discovered from a specification file
+     * inside a dependency JAR.
+     * <p>
+     * Different dependencies may ship files with the same classpath path (e.g. {@code flow/shared.yaml}),
+     * and the classpath only exposes one of them. Dependency-provided definitions are therefore loaded at
+     * runtime from a unique, build-generated copy instead of their original location.
+     *
+     * @param sourceResourcePath the original path of the definition inside the dependency JAR
+     * @param generatedResourcePath the unique, build-generated classpath resource path used at runtime
+     * @param workflow the parsed workflow model
+     * @return a new {@link DiscoveredWorkflowBuildItem}
+     */
+    public static DiscoveredWorkflowBuildItem fromDependencySpec(String sourceResourcePath, String generatedResourcePath,
+            Workflow workflow) {
+        return new DiscoveredWorkflowBuildItem(generatedResourcePath, sourceResourcePath, workflow, From.DEPENDENCY_SPEC);
     }
 
     /**
@@ -100,15 +123,33 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
 
     /**
      * @return {@code true} if the workflow was discovered from a specification file
+     *         in the application's own resources
      */
     public boolean fromSpec() {
         return From.SPEC == this.from;
     }
 
     /**
+     * @return {@code true} if the workflow was discovered from a specification file
+     *         inside a dependency JAR
+     */
+    public boolean fromDependencySpec() {
+        return From.DEPENDENCY_SPEC == this.from;
+    }
+
+    /**
+     * @return {@code true} if the workflow was discovered from a specification file (YAML/JSON),
+     *         either in the application's own resources or inside a dependency JAR
+     */
+    public boolean fromSpecFile() {
+        return fromSpec() || fromDependencySpec();
+    }
+
+    /**
      * Returns the classpath resource path for this workflow definition.
      * <p/>
-     * May be used to read a workflow definition, usually with {@link WorkflowReader}
+     * May be used to read a workflow definition, usually with {@link WorkflowReader}.
+     * For {@link From#DEPENDENCY_SPEC} workflows, this is the unique build-generated copy of the definition.
      *
      * @return the resource path (e.g., "flow/subdir/order-workflow.yaml")
      */
@@ -117,7 +158,17 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
     }
 
     /**
-     * @return Workflow descriptor parsed from {@link From#SPEC}, null otherwise.
+     * Returns the original location of the definition file, as found in the application or dependency archive.
+     * Equal to {@link #definitionResourcePath()} for {@link From#SPEC} workflows.
+     *
+     * @return the original resource path (e.g., "flow/subdir/order-workflow.yaml"), null for source workflows
+     */
+    public String sourceResourcePath() {
+        return sourceResourcePath;
+    }
+
+    /**
+     * @return Workflow descriptor parsed from {@link From#SPEC} or {@link From#DEPENDENCY_SPEC}, null otherwise.
      */
     public Workflow workflowFromSpec() {
         return workflowFromSpec;
@@ -131,6 +182,10 @@ public final class DiscoveredWorkflowBuildItem extends MultiBuildItem {
         /**
          * Workflow definition described as a YAML or JSON file in a target path.
          */
-        SPEC
+        SPEC,
+        /**
+         * Workflow definition described as a YAML or JSON file inside a dependency JAR.
+         */
+        DEPENDENCY_SPEC
     }
 }

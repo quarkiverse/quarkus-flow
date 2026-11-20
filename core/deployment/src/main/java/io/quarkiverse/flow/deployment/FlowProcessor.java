@@ -106,7 +106,7 @@ class FlowProcessor {
                     String.format("Invalid semantic version '%s' in workflow '%s:%s' (resource: %s). " +
                             "Expected format: MAJOR.MINOR.PATCH (e.g., '1.0.0')",
                             discoveredWorkflow.version(), discoveredWorkflow.namespace(), discoveredWorkflow.name(),
-                            discoveredWorkflow.definitionResourcePath()),
+                            discoveredWorkflow.sourceResourcePath()),
                     e);
         }
     }
@@ -238,7 +238,7 @@ class FlowProcessor {
         }
 
         List<DiscoveredWorkflowBuildItem> fromSpec = discoveredWorkflows.stream()
-                .filter(DiscoveredWorkflowBuildItem::fromSpec)
+                .filter(DiscoveredWorkflowBuildItem::fromSpecFile)
                 .toList();
 
         for (DiscoveredWorkflowBuildItem d : fromSpec) {
@@ -298,7 +298,8 @@ class FlowProcessor {
             WorkflowDefinitionRecorder recorder,
             FlowDefinitionsConfig flowDefinitionsConfig) {
 
-        List<DiscoveredWorkflowBuildItem> fromSpec = workflows.stream().filter(DiscoveredWorkflowBuildItem::fromSpec)
+        List<DiscoveredWorkflowBuildItem> fromSpec = workflows.stream()
+                .filter(DiscoveredWorkflowBuildItem::fromSpecFile)
                 .toList();
 
         GeneratedBeanGizmoAdaptor gizmo = new GeneratedBeanGizmoAdaptor(classes);
@@ -358,9 +359,11 @@ class FlowProcessor {
 
         // Watch workflow resource files for changes in dev mode
         // Since workflows are now loaded from classpath resources, we watch the resource paths
+        // Dependency-provided paths are a no-op for packaged JARs, but enable live reload when
+        // the dependency is a local module in a multi-module dev mode workspace
         List<String> resourcePaths = workflows.stream()
-                .filter(DiscoveredWorkflowBuildItem::fromSpec)
-                .map(DiscoveredWorkflowBuildItem::definitionResourcePath)
+                .filter(DiscoveredWorkflowBuildItem::fromSpecFile)
+                .map(DiscoveredWorkflowBuildItem::sourceResourcePath)
                 .toList();
 
         for (String resourcePath : resourcePaths) {
