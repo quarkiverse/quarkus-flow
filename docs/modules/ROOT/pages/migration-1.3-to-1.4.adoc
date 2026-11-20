@@ -1,0 +1,42 @@
+= Migration Guide: 1.3.x to 1.4.0
+include::includes/attributes.adoc[]
+
+Quarkus Flow 1.4.0 includes a breaking change for the pre-built runner images:
+
+* **Breaking**: the `standard` and `messaging` runner images now use snake_case table and column names for JPA persistence, matching the `quarkus-flow-db-migration` Flyway scripts.
+
+== Breaking change: runner images use snake_case database names
+
+=== Why the change?
+
+In 1.3.x, the `standard` and `messaging` runner images were built with Hibernate ORM's default naming, so they expected tables like `WorkflowInstanceEntity` with columns like `applicationId`.
+The xref:db-migration.adoc[`quarkus-flow-db-migration`] Flyway scripts create `workflow_instance_entity` with `application_id` instead, so a runner pointed at a Flyway-managed schema never became ready (https://github.com/quarkiverse/quarkus-flow/issues/1173[#1173]).
+
+`quarkus.hibernate-orm.physical-naming-strategy` is fixed at build time, so it could not be fixed on the published image with `QUARKUS_HIBERNATE_ORM_PHYSICAL_NAMING_STRATEGY` either.
+1.4.0 builds the JPA variants with `CamelCaseToUnderscoresNamingStrategy`, the same setting `db-migration.adoc` asks applications to use.
+
+=== What changed
+
+[cols="1,1",options="header"]
+|===
+| Before (1.3.x) | After (1.4.0)
+
+| Hibernate ORM default naming
+| `quarkus.hibernate-orm.physical-naming-strategy=org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy`
+
+| Tables such as `workflowinstanceentity`, `taskinfoentity`, `cloudevententity` (PostgreSQL folds the unquoted names to lowercase)
+| Tables such as `workflow_instance_entity`, `task_info_entity`, `cloud_event_entity`
+
+| A schema created by the `quarkus-flow-db-migration` scripts failed with readiness `DOWN`
+| A schema created by the `quarkus-flow-db-migration` scripts works
+|===
+
+Only the `standard` and `messaging` images are affected. The `minimal` image uses MVStore and has no tables.
+Quartz `QRTZ_*` tables are managed by `quarkus-flow-db-migration-quartz` and are unchanged.
+
+NOTE: Applications that embed Quarkus Flow and its JPA persistence directly, instead of using the runner image, are unaffected. They keep whatever naming strategy they configure themselves.
+
+=== Who needs to act
+
+* **Your runner database was created by the `quarkus-flow-db-migration` scripts:** no action. The runner works against it starting with 1.4.0.
+* **Your runner database was created by the runner itself** (the image default, `schema-management.strategy=update`): the 1.4.0 image does not read the old tables. On startup it creates the new snake_case tables next to them, empty, so instances stored in the old tables are no longer visible to the runner. Let in-flight instances finish, then drop the old tables *before* starting 1.4.0, otherwise their index names clash with the new tables and those indexes are not created.

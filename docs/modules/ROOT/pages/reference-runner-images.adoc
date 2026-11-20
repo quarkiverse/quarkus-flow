@@ -555,6 +555,10 @@ quarkus.datasource.jdbc.url=jdbc:postgresql://postgresql:5432/flowdb
 quarkus.datasource.username=flowuser
 # Password via env var: QUARKUS_DATASOURCE_PASSWORD
 
+# snake_case tables/columns, matching the quarkus-flow-db-migration Flyway scripts
+# (build-time, fixed in the published image)
+quarkus.hibernate-orm.physical-naming-strategy=org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+
 # Durable Kubernetes HA
 quarkus.flow.durable.kube.enabled=true
 quarkus.flow.durable.kube.pool.name=flow-runner-standard
