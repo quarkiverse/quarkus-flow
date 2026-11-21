@@ -39,8 +39,6 @@ export class QwcFlow extends QwcHotReloadElement {
        .diagram-view-body {
            flex: 1 1 auto;
            min-height: 520px;
-           position: relative;
-           overflow: hidden;
        }
 
        .diagram-editor {
