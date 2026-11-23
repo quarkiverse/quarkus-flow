@@ -7,6 +7,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.agentic.declarative.ActivationCondition;
@@ -350,6 +352,50 @@ public class Agents {
         @Agent(description = "Extracts fields from the input", outputKey = "extracted")
         public static ExtractedFields extract(@V("input") String input) {
             return new ExtractedFields("DEMO-CATEGORY", "DEMO-LOCATION");
+        }
+    }
+
+    /**
+     * Written by Jackson as its label, not its constant name: the generated schema used to list the constant names and
+     * reject it.
+     */
+    public enum Priority {
+        LOW("low priority"),
+        HIGH("high priority");
+
+        private final String label;
+
+        Priority(String label) {
+            this.label = label;
+        }
+
+        @JsonValue
+        public String label() {
+            return label;
+        }
+    }
+
+    public record PrioritizedFields(Priority priority) {
+    }
+
+    /**
+     * Root of a system whose input carries a {@code @JsonValue} enum both in a record and as collection elements.
+     */
+    public interface PrioritizingRootAgent {
+        @SequenceAgent(outputKey = "prioritized", subAgents = { InputClassifier.class, PriorityAssigner.class })
+        PrioritizedFields process(String input, PrioritizedFields soFar, List<Priority> asked);
+    }
+
+    /**
+     * A plain (non-AI) agent step, reached only once the upfront input validation has passed.
+     */
+    public static final class PriorityAssigner {
+        private PriorityAssigner() {
+        }
+
+        @Agent(description = "Assigns a priority to the input", outputKey = "prioritized")
+        public static PrioritizedFields assign(@V("input") String input) {
+            return new PrioritizedFields(Priority.HIGH);
         }
     }
 

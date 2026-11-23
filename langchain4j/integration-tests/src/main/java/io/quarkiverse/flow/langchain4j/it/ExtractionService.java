@@ -1,5 +1,7 @@
 package io.quarkiverse.flow.langchain4j.it;
 
+import java.util.List;
+
 import jakarta.enterprise.context.ApplicationScoped;
 
 import dev.langchain4j.invocation.InvocationParameters;
@@ -15,13 +17,20 @@ import dev.langchain4j.invocation.InvocationParameters;
 public class ExtractionService {
 
     private final Agents.ExtractionRootAgent rootAgent;
+    private final Agents.PrioritizingRootAgent prioritizingAgent;
 
-    ExtractionService(Agents.ExtractionRootAgent rootAgent) {
+    ExtractionService(Agents.ExtractionRootAgent rootAgent, Agents.PrioritizingRootAgent prioritizingAgent) {
         this.rootAgent = rootAgent;
+        this.prioritizingAgent = prioritizingAgent;
     }
 
     public Agents.ExtractedFields extract(String input) {
         return rootAgent.process(input, new Agents.ExtractedFields(null, null),
                 InvocationParameters.from("tenant", "acme"));
+    }
+
+    public Agents.PrioritizedFields prioritize(String input) {
+        return prioritizingAgent.process(input, new Agents.PrioritizedFields(Agents.Priority.LOW),
+                List.of(Agents.Priority.HIGH));
     }
 }

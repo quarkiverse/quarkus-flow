@@ -14,7 +14,8 @@ import io.quarkus.test.junit.QuarkusTest;
 /**
  * End-to-end coverage for #1111: the input schema derived from an agent method signature must permit everything
  * LangChain4j actually puts into the {@code AgenticScope} state map - an all-null record and an
- * {@code InvocationParameters} that never reaches the state map at all.
+ * {@code InvocationParameters} that never reaches the state map at all - and an enum that Jackson writes through
+ * {@code @JsonValue}.
  */
 @QuarkusTest
 @QuarkusTestResource(value = FlowAgentOllamaMockResource.class, restrictToAnnotatedClass = true)
@@ -42,5 +43,14 @@ public class GeneratedAgenticInputSchemaIT {
                 .isNotNull()
                 .extracting(Agents.ExtractedFields::category, Agents.ExtractedFields::location)
                 .containsExactly("DEMO-CATEGORY", "DEMO-LOCATION");
+    }
+
+    @Test
+    @DisplayName("test_json_value_enum_in_a_record_and_a_list_passes_input_validation")
+    void test_json_value_enum_in_a_record_and_a_list_passes_input_validation() {
+        // This used to be rejected upfront with "does not have a value in the enumeration [\"HIGH\", \"LOW\", null]"
+        assertThat(extractionService.prioritize("hello there"))
+                .extracting(Agents.PrioritizedFields::priority)
+                .isEqualTo(Agents.Priority.HIGH);
     }
 }

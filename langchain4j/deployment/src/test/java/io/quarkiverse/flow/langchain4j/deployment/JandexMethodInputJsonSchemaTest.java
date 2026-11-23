@@ -19,11 +19,15 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
 import dev.langchain4j.agentic.declarative.K;
 import dev.langchain4j.agentic.declarative.LoopCounter;
@@ -52,6 +56,18 @@ class JandexMethodInputJsonSchemaTest {
         indexer.indexClass(JetBrainsRecord.class);
         indexer.indexClass(NotNullIgnoredRecord.class);
         indexer.indexClass(TestKey.class);
+        indexer.indexClass(RenamedEnum.class);
+        indexer.indexClass(LabeledEnum.class);
+        indexer.indexClass(FieldValueEnum.class);
+        indexer.indexClass(CodedEnum.class);
+        indexer.indexClass(Labeled.class);
+        indexer.indexClass(InheritedLabelEnum.class);
+        indexer.indexClass(DisabledValueEnum.class);
+        indexer.indexClass(DisabledInheritedValueEnum.class);
+        indexer.indexClass(OrdinalEnum.class);
+        indexer.indexClass(StringShapeEnum.class);
+        indexer.indexClass(SerializedEnum.class);
+        indexer.indexClass(LabeledEnumRecord.class);
         // Index collection hierarchy
         indexer.indexClass(java.util.Collection.class);
         indexer.indexClass(java.lang.Iterable.class);
@@ -160,6 +176,108 @@ class JandexMethodInputJsonSchemaTest {
                 .isNotNull()
                 .hasSize(4);
         assertThat(enumValues.toString()).contains("RED", "GREEN", "BLUE", "null");
+    }
+
+    @Test
+    @DisplayName("test_json_property_on_enum_constants_renames_enum_values")
+    void test_json_property_on_enum_constants_renames_enum_values() throws Exception {
+        JsonNode enumProp = propertyOf("withRenamedEnum", "theme", RenamedEnum.class);
+
+        assertThat(typesOf(enumProp)).containsExactly("string", "null");
+        assertThat(enumValuesOf(enumProp)).containsExactlyInAnyOrder("light", "DARK", "null");
+    }
+
+    @Test
+    @DisplayName("test_json_value_method_on_enum_drops_the_enum_list")
+    void test_json_value_method_on_enum_drops_the_enum_list() throws Exception {
+        JsonNode enumProp = propertyOf("withLabeledEnum", "priority", LabeledEnum.class);
+
+        // Jackson writes the label, which is only known at runtime: listing the constant names would reject it
+        assertThat(typesOf(enumProp)).containsExactly("string", "null");
+        assertThat(enumProp.has("enum")).isFalse();
+    }
+
+    @Test
+    @DisplayName("test_json_value_field_on_enum_drops_the_enum_list")
+    void test_json_value_field_on_enum_drops_the_enum_list() throws Exception {
+        JsonNode enumProp = propertyOf("withFieldValueEnum", "level", FieldValueEnum.class);
+
+        assertThat(typesOf(enumProp)).containsExactly("string", "null");
+        assertThat(enumProp.has("enum")).isFalse();
+    }
+
+    @Test
+    @DisplayName("test_json_value_type_types_the_enum")
+    void test_json_value_type_types_the_enum() throws Exception {
+        JsonNode enumProp = propertyOf("withCodedEnum", "code", CodedEnum.class);
+
+        assertThat(typesOf(enumProp)).containsExactly("number", "null");
+        assertThat(enumProp.has("enum")).isFalse();
+    }
+
+    @Test
+    @DisplayName("test_json_value_inherited_from_an_interface_drops_the_enum_list")
+    void test_json_value_inherited_from_an_interface_drops_the_enum_list() throws Exception {
+        JsonNode enumProp = propertyOf("withInheritedLabelEnum", "size", InheritedLabelEnum.class);
+
+        assertThat(typesOf(enumProp)).containsExactly("string", "null");
+        assertThat(enumProp.has("enum")).isFalse();
+    }
+
+    @Test
+    @DisplayName("test_disabled_json_value_keeps_the_constant_names")
+    void test_disabled_json_value_keeps_the_constant_names() throws Exception {
+        JsonNode enumProp = propertyOf("withDisabledValueEnum", "mode", DisabledValueEnum.class);
+
+        assertThat(enumValuesOf(enumProp)).containsExactlyInAnyOrder("ON", "OFF", "null");
+    }
+
+    @Test
+    @DisplayName("test_json_value_false_disables_an_inherited_json_value")
+    void test_json_value_false_disables_an_inherited_json_value() throws Exception {
+        JsonNode enumProp = propertyOf("withDisabledInheritedValueEnum", "weight", DisabledInheritedValueEnum.class);
+
+        assertThat(enumValuesOf(enumProp)).containsExactlyInAnyOrder("LIGHT", "HEAVY", "null");
+    }
+
+    @Test
+    @DisplayName("test_non_string_json_format_shape_leaves_the_enum_open")
+    void test_non_string_json_format_shape_leaves_the_enum_open() throws Exception {
+        JsonNode enumProp = propertyOf("withOrdinalEnum", "rank", OrdinalEnum.class);
+
+        // Written as its ordinal
+        assertThat(enumProp.isEmpty()).isTrue();
+    }
+
+    @Test
+    @DisplayName("test_string_json_format_shape_keeps_the_constant_names")
+    void test_string_json_format_shape_keeps_the_constant_names() throws Exception {
+        JsonNode enumProp = propertyOf("withStringShapeEnum", "side", StringShapeEnum.class);
+
+        assertThat(enumValuesOf(enumProp)).containsExactlyInAnyOrder("LEFT", "RIGHT", "null");
+    }
+
+    @Test
+    @DisplayName("test_json_serialize_on_enum_leaves_it_open")
+    void test_json_serialize_on_enum_leaves_it_open() throws Exception {
+        JsonNode enumProp = propertyOf("withSerializedEnum", "flavor", SerializedEnum.class);
+
+        assertThat(enumProp.isEmpty()).isTrue();
+    }
+
+    @Test
+    @DisplayName("test_json_value_enum_in_a_record_and_a_collection_drops_the_enum_list")
+    void test_json_value_enum_in_a_record_and_a_collection_drops_the_enum_list() throws Exception {
+        MethodInfo method = getMethod("withLabeledEnumInRecordAndList", LabeledEnumRecord.class, List.class);
+
+        ObjectNode properties = (ObjectNode) JandexMethodInputJsonSchema.generateSchemaNode(index, method).get("properties");
+
+        JsonNode nested = properties.get("holder").get("properties").get("priority");
+        JsonNode element = properties.get("asked").get("items");
+        assertThat(List.of(nested, element)).allSatisfy(enumProp -> {
+            assertThat(typesOf(enumProp)).containsExactly("string", "null");
+            assertThat(enumProp.has("enum")).isFalse();
+        });
     }
 
     @Test
@@ -507,6 +625,21 @@ class JandexMethodInputJsonSchemaTest {
         assertThat(schema).isNull();
     }
 
+    private JsonNode propertyOf(String methodName, String propertyName, Class<?> paramType) {
+        ObjectNode schema = JandexMethodInputJsonSchema.generateSchemaNode(index, getMethod(methodName, paramType));
+
+        assertThat(schema).isNotNull();
+        return schema.get("properties").get(propertyName);
+    }
+
+    private static List<String> enumValuesOf(JsonNode property) {
+        assertThat(property.get("enum")).isNotNull();
+
+        return StreamSupport.stream(property.get("enum").spliterator(), false)
+                .map(JsonNode::asText)
+                .toList();
+    }
+
     /**
      * The declared JSON Schema types of a property, normalising the single-type and {@code ["x", "null"]} union
      * forms into one list.
@@ -622,6 +755,39 @@ class JandexMethodInputJsonSchemaTest {
 
         public void withNotNullParam(@jakarta.validation.constraints.NotNull String text, String other) {
         }
+
+        public void withRenamedEnum(RenamedEnum theme) {
+        }
+
+        public void withLabeledEnum(LabeledEnum priority) {
+        }
+
+        public void withFieldValueEnum(FieldValueEnum level) {
+        }
+
+        public void withCodedEnum(CodedEnum code) {
+        }
+
+        public void withInheritedLabelEnum(InheritedLabelEnum size) {
+        }
+
+        public void withDisabledValueEnum(DisabledValueEnum mode) {
+        }
+
+        public void withDisabledInheritedValueEnum(DisabledInheritedValueEnum weight) {
+        }
+
+        public void withOrdinalEnum(OrdinalEnum rank) {
+        }
+
+        public void withStringShapeEnum(StringShapeEnum side) {
+        }
+
+        public void withSerializedEnum(SerializedEnum flavor) {
+        }
+
+        public void withLabeledEnumInRecordAndList(LabeledEnumRecord holder, List<LabeledEnum> asked) {
+        }
     }
 
     public static class TestPojo {
@@ -686,5 +852,112 @@ class JandexMethodInputJsonSchemaTest {
     }
 
     public static class TestKey implements TypedKey<String> {
+    }
+
+    public enum RenamedEnum {
+        @JsonProperty("light")
+        LIGHT,
+        DARK
+    }
+
+    public enum LabeledEnum {
+        LOW("low priority"),
+        HIGH("high priority");
+
+        private final String label;
+
+        LabeledEnum(String label) {
+            this.label = label;
+        }
+
+        @JsonValue
+        public String label() {
+            return label;
+        }
+    }
+
+    public enum FieldValueEnum {
+        DEBUG("debug"),
+        INFO("info");
+
+        @JsonValue
+        private final String value;
+
+        FieldValueEnum(String value) {
+            this.value = value;
+        }
+    }
+
+    public enum CodedEnum {
+        OK(200),
+        NOT_FOUND(404);
+
+        private final int code;
+
+        CodedEnum(int code) {
+            this.code = code;
+        }
+
+        @JsonValue
+        public int code() {
+            return code;
+        }
+    }
+
+    public interface Labeled {
+        @JsonValue
+        String label();
+    }
+
+    public enum InheritedLabelEnum implements Labeled {
+        SMALL,
+        LARGE;
+
+        @Override
+        public String label() {
+            return name().toLowerCase();
+        }
+    }
+
+    public enum DisabledValueEnum {
+        ON,
+        OFF;
+
+        @JsonValue(false)
+        public String label() {
+            return name().toLowerCase();
+        }
+    }
+
+    public enum DisabledInheritedValueEnum implements Labeled {
+        LIGHT,
+        HEAVY;
+
+        @Override
+        @JsonValue(false)
+        public String label() {
+            return name().toLowerCase();
+        }
+    }
+
+    @JsonFormat(shape = JsonFormat.Shape.NUMBER)
+    public enum OrdinalEnum {
+        FIRST,
+        SECOND
+    }
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    public enum StringShapeEnum {
+        LEFT,
+        RIGHT
+    }
+
+    @JsonSerialize(using = ToStringSerializer.class)
+    public enum SerializedEnum {
+        VANILLA,
+        CHOCOLATE
+    }
+
+    public record LabeledEnumRecord(LabeledEnum priority) {
     }
 }
