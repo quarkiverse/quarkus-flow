@@ -54,7 +54,7 @@
 
         <!-- Tests and Docs -->
         <org.assertj.version>3.27.7</org.assertj.version>
-        <quarkus-antora.version>3.40.0</quarkus-antora.version>
+        <quarkus-antora.version>4.0.0</quarkus-antora.version>
         <version.org.jacoco>0.8.16</version.org.jacoco>
         <io.quarkiverse.playwright>2.5.0</io.quarkiverse.playwright>
         <com.h2database.version>2.5.252</com.h2database.version>
