@@ -371,9 +371,12 @@ The schema describes the `AgenticScope` state map, which is what the generated w
 
 | `List<T>`, `T[]`, `Map<K, V>`
 | Items (or map values) typed from `T` (`V`) and nullable; open when the type argument is `Object`, a wildcard or a type variable
+
+| An enum
+| An `enum` list of the constant names, or their `@JsonProperty` names. With a `@JsonValue` method or field, typed from it with no `enum` list, since the values are only known at runtime; with `@JsonSerialize` or a non-string `@JsonFormat` shape, left open
 |===
 
-Nested properties are deliberately not `required`: whether a property is serialized at all (even a primitive, with `@JsonInclude(NON_DEFAULT)`) depends on your application's Jackson configuration (naming strategy, `@JsonInclude`, programmatic `ObjectMapperCustomizer`), which the build-time scan cannot see. `@JsonIgnore` and `@JsonProperty("name")` on a field are honored so the emitted schema stays accurate as documentation in the Dev UI.
+Nested properties are deliberately not `required`: whether a property is serialized at all (even a primitive, with `@JsonInclude(NON_DEFAULT)`) depends on your application's Jackson configuration (naming strategy, `@JsonInclude`, programmatic `ObjectMapperCustomizer`), which the build-time scan cannot see. `@JsonIgnore` and `@JsonProperty("name")` on a field are honored so the emitted schema stays accurate as documentation in the Dev UI. Global `ObjectMapper` features that change how enums are written (`WRITE_ENUMS_USING_TO_STRING`, `WRITE_ENUMS_USING_INDEX`) aren't visible either; with one of those, turn validation off.
 
 If the derived schema ever gets in your way, turn validation off:
 

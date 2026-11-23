@@ -5,6 +5,7 @@ import static java.lang.reflect.Modifier.isStatic;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -20,8 +21,11 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -54,6 +58,12 @@ import io.serverlessworkflow.impl.jackson.JsonUtils;
  * An explicit non-null contract ({@code @NotNull} from Jakarta Validation or JetBrains, JSpecify {@code @NonNull}) is
  * the author opting back into strictness: the annotated parameter or nested property is no longer nullable, and a
  * nested one becomes {@code required}.
+ * <p>
+ * An enum is described by the values Jackson writes for it: the constant names, or their {@code @JsonProperty}
+ * names. When the values can't be known at build time (a {@code @JsonValue} method or field, {@code @JsonSerialize},
+ * or a non-string {@code @JsonFormat} shape on the enum), no {@code enum} list is emitted. Global
+ * {@code ObjectMapper} features ({@code WRITE_ENUMS_USING_TO_STRING}, {@code WRITE_ENUMS_USING_INDEX}) are not visible
+ * at build time either; with those, turn validation off.
  */
 final class JandexMethodInputJsonSchema {
 
@@ -66,6 +76,16 @@ final class JandexMethodInputJsonSchema {
 
     private static final DotName JSON_IGNORE = DotName.createSimple(JsonIgnore.class.getName());
     private static final DotName JSON_PROPERTY = DotName.createSimple(JsonProperty.class.getName());
+    private static final DotName JSON_VALUE = DotName.createSimple(JsonValue.class.getName());
+    private static final DotName JSON_FORMAT = DotName.createSimple(JsonFormat.class.getName());
+    private static final DotName JSON_SERIALIZE = DotName.createSimple(JsonSerialize.class.getName());
+
+    // The @JsonFormat shapes that still write an enum as its (possibly @JsonProperty-renamed) name
+    private static final Set<String> NAME_SHAPES = Set.of(
+            JsonFormat.Shape.ANY.name(),
+            JsonFormat.Shape.NATURAL.name(),
+            JsonFormat.Shape.SCALAR.name(),
+            JsonFormat.Shape.STRING.name());
 
     // Matched by name only, so none of these libraries is needed on the deployment classpath
     private static final Set<DotName> NON_NULL_ANNOTATIONS = Set.of(
@@ -322,18 +342,7 @@ final class JandexMethodInputJsonSchema {
 
         // Enum
         if (classInfo != null && classInfo.isEnum()) {
-            putType(node, "string", nullable);
-            ArrayNode enumValues = JsonUtils.array();
-            for (FieldInfo field : classInfo.fields()) {
-                if (field.isEnumConstant()) {
-                    enumValues.add(field.name());
-                }
-            }
-            if (nullable) {
-                enumValues.addNull();
-            }
-            node.set("enum", enumValues);
-            return node;
+            return buildEnumSchema(index, classInfo, nullable);
         }
 
         // Collection
@@ -357,6 +366,88 @@ final class JandexMethodInputJsonSchema {
 
         putType(node, mapJavaTypeToJsonType(index, type), nullable);
         return node;
+    }
+
+    /**
+     * Schema for an enum, describing what Jackson writes for it.
+     * <ul>
+     * <li>{@code @JsonSerialize}, or a {@code @JsonFormat} shape other than a string one, on the enum: the values
+     * aren't known at build time, so the schema is left open.</li>
+     * <li>A {@code @JsonValue} method or field: the values are only known at runtime, so the schema is typed from the
+     * accessor's type, without an {@code enum} list.</li>
+     * <li>Otherwise the constants' names, or their {@code @JsonProperty} names.</li>
+     * </ul>
+     */
+    private static ObjectNode buildEnumSchema(IndexView index, ClassInfo enumInfo, boolean nullable) {
+        ObjectNode node = JsonUtils.object();
+
+        if (enumInfo.hasDeclaredAnnotation(JSON_SERIALIZE) || !hasNameShape(enumInfo)) {
+            return node;
+        }
+
+        Optional<Type> jsonValueType = jsonValueType(index, enumInfo);
+        if (jsonValueType.isPresent()) {
+            putType(node, mapJavaTypeToJsonType(index, jsonValueType.get()), nullable);
+            return node;
+        }
+
+        putType(node, "string", nullable);
+        ArrayNode enumValues = JsonUtils.array();
+        for (FieldInfo field : enumInfo.fields()) {
+            if (field.isEnumConstant()) {
+                enumValues.add(jsonNameOf(field));
+            }
+        }
+        // A nullable enum must accept null as an enum value too, otherwise the union type is unsatisfiable
+        if (nullable) {
+            enumValues.addNull();
+        }
+        node.set("enum", enumValues);
+        return node;
+    }
+
+    private static boolean hasNameShape(ClassInfo enumInfo) {
+        return Optional.ofNullable(enumInfo.declaredAnnotation(JSON_FORMAT))
+                .map(format -> format.value("shape"))
+                .map(AnnotationValue::asEnum)
+                .map(NAME_SHAPES::contains)
+                .orElse(true);
+    }
+
+    /**
+     * The type of the enum's enabled {@code @JsonValue} accessor (a method or a field). A {@code @JsonValue} declared on
+     * the enum decides, even {@code @JsonValue(false)}, which disables an inherited accessor; otherwise the interfaces it
+     * implements are looked up, since Jackson inherits the annotation from an overridden method.
+     */
+    private static Optional<Type> jsonValueType(IndexView index, ClassInfo classInfo) {
+        Optional<JsonValueAccessor> declared = classInfo.methods()
+                .stream()
+                .filter(method -> method.hasDeclaredAnnotation(JSON_VALUE))
+                .map(method -> new JsonValueAccessor(method.declaredAnnotation(JSON_VALUE), method.returnType()))
+                .findFirst()
+                .or(() -> classInfo.fields()
+                        .stream()
+                        .filter(field -> field.hasDeclaredAnnotation(JSON_VALUE))
+                        .map(field -> new JsonValueAccessor(field.declaredAnnotation(JSON_VALUE), field.type()))
+                        .findFirst());
+
+        return declared.isPresent()
+                ? declared.filter(JsonValueAccessor::isEnabled).map(JsonValueAccessor::type)
+                : classInfo.interfaceNames()
+                        .stream()
+                        .map(index::getClassByName)
+                        .filter(Objects::nonNull)
+                        .map(iface -> jsonValueType(index, iface))
+                        .flatMap(Optional::stream)
+                        .findFirst();
+    }
+
+    private record JsonValueAccessor(AnnotationInstance annotation, Type type) {
+        boolean isEnabled() {
+            return Optional.ofNullable(annotation.value())
+                    .map(AnnotationValue::asBoolean)
+                    .orElse(true);
+        }
     }
 
     /**
@@ -441,7 +532,7 @@ final class JandexMethodInputJsonSchema {
     }
 
     /**
-     * The name this field is serialized under, honoring an explicit {@code @JsonProperty}.
+     * The name this field (or enum constant) is serialized under, honoring an explicit {@code @JsonProperty}.
      */
     private static String jsonNameOf(FieldInfo field) {
         return Optional.ofNullable(field.annotation(JSON_PROPERTY))
