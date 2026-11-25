@@ -385,6 +385,49 @@ If the derived schema ever gets in your way, turn validation off:
 quarkus.flow.validation.input.enabled=false
 ----
 
+[[flow-agent-listener]]
+== 7. Listen to Agent Invocations
+
+The sub-agents of a generated agentic workflow run on the planner thread or on LangChain4j's executor, not on the thread of the workflow task that requested them. Quarkus Flow makes that task's context current, such as its OpenTelemetry `task.execute` span, while each agent runs.
+
+A LangChain4j `AgentListener` can't rely on that context: LangChain4j doesn't define the order in which it notifies listeners, so a listener may run before Quarkus Flow has made the context current, or after it has restored the previous one. To observe agent invocations in the context of the task that requested them, implement `io.quarkiverse.flow.langchain4j.FlowAgentListener` instead. Quarkus Flow calls it itself, while the task's context is current.
+
+`FlowAgentListener` has the same invocation callbacks as `AgentListener`, all with empty default implementations:
+
+* `beforeAgentInvocation(AgentRequest)`: before the agent runs, with its inputs
+* `afterAgentInvocation(AgentResponse)`: after it completes, with its output
+* `onAgentInvocationError(AgentInvocationError)`: when it fails, with the cause
+
+Expose your implementation as a CDI bean. For example, to record each agent's inputs and output on the span of the task that ran it:
+
+[source,java]
+----
+@ApplicationScoped
+public class AgentIoRecorder implements FlowAgentListener {
+
+    @Override
+    public void beforeAgentInvocation(AgentRequest request) {
+        Span.current().setAttribute("app.agent.inputs", request.inputs().toString());
+    }
+
+    @Override
+    public void afterAgentInvocation(AgentResponse response) {
+        Span.current().setAttribute("app.agent.output", String.valueOf(response.output()));
+    }
+}
+----
+
+Which agents are reported:
+
+* Every leaf agent, wherever it's invoked from.
+* Every agentic system that Quarkus Flow builds, generated from an annotation or built with `FlowAgentsBuilderService`.
+
+An agent that Quarkus Flow doesn't hand to another thread, such as the root agentic system or a leaf agent called from a task body, sees the context of the thread that invoked it. Inside a task body, that's the task's own context.
+
+Several implementations are called in the order of their `@Priority`, highest first. An exception thrown by one is logged and doesn't stop the others or the agent.
+
+IMPORTANT: Don't also implement `AgentListener` in the same bean. Quarkus LangChain4j registers every `AgentListener` bean on every agent, so LangChain4j would also call it directly, outside the task's context. For the callbacks `FlowAgentListener` doesn't have, such as `onAgenticSystemSuspended`, use a separate `AgentListener` bean.
+
 == See also
 * xref:data-flow.adoc[Data flow and context management] — deeper dive into `inputFrom` and `exportAs`.
 * xref:dsl-cheatsheet.adoc[Java DSL cheatsheet] — a quick reference for all available workflow tasks.

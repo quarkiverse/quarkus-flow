@@ -18,6 +18,7 @@ import dev.langchain4j.agentic.observability.AgentResponse;
 import dev.langchain4j.agentic.planner.AgentInstance;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import io.quarkiverse.flow.internal.FlowContextPropagator;
+import io.quarkiverse.flow.langchain4j.FlowAgentListener;
 
 class FlowAgentContextListenerTest {
 
@@ -27,6 +28,8 @@ class FlowAgentContextListenerTest {
     private final AgenticScope agenticScope = mock(AgenticScope.class);
     private final AgenticScope otherAgenticScope = mock(AgenticScope.class);
     private final AgentInstance agent = agent(AGENT_ID);
+    private final FlowAgentContextListener recordingContextListener = new FlowAgentContextListener(
+            () -> new FlowAgentListenerDispatcher(List.of(new RecordingFlowAgentListener(events))));
 
     @AfterEach
     void drainOpenScopes() {
@@ -180,6 +183,103 @@ class FlowAgentContextListenerTest {
         FlowAgentContextListener.INSTANCE.beforeAgentInvocation(new AgentRequest(agenticScope, agent, Map.of()));
 
         assertThat(RecordingAgentInvocationListener.INVOKED_AGENT_NAMES).isEmpty();
+    }
+
+    @Test
+    @DisplayName("test_flow_agent_listener_is_notified_while_the_task_context_is_current")
+    void test_flow_agent_listener_is_notified_while_the_task_context_is_current() {
+        storeSnapshot(AGENT_ID, "task-ctx");
+
+        recordingContextListener.beforeAgentInvocation(new AgentRequest(agenticScope, agent, Map.of()));
+        recordingContextListener.afterAgentInvocation(response(agent));
+
+        assertThat(events).containsExactly("activate task-ctx", "before agent-1", "after agent-1", "close task-ctx");
+    }
+
+    @Test
+    @DisplayName("test_flow_agent_listener_is_notified_of_a_failure_before_the_task_context_is_closed")
+    void test_flow_agent_listener_is_notified_of_a_failure_before_the_task_context_is_closed() {
+        storeSnapshot(AGENT_ID, "task-ctx");
+
+        recordingContextListener.beforeAgentInvocation(new AgentRequest(agenticScope, agent, Map.of()));
+        recordingContextListener
+                .onAgentInvocationError(new AgentInvocationError(agenticScope, agent, Map.of(), new RuntimeException()));
+
+        assertThat(events).containsExactly("activate task-ctx", "before agent-1", "error agent-1", "close task-ctx");
+    }
+
+    @Test
+    @DisplayName("test_flow_agent_listeners_of_nested_agents_see_their_own_task_context")
+    void test_flow_agent_listeners_of_nested_agents_see_their_own_task_context() {
+        AgentInstance inner = agent("agent-2");
+        storeSnapshot(AGENT_ID, "outer-task");
+        storeSnapshot("agent-2", "inner-task");
+
+        recordingContextListener.beforeAgentInvocation(new AgentRequest(agenticScope, agent, Map.of()));
+        recordingContextListener.beforeAgentInvocation(new AgentRequest(agenticScope, inner, Map.of()));
+        recordingContextListener.afterAgentInvocation(response(inner));
+        recordingContextListener.afterAgentInvocation(response(agent));
+
+        assertThat(events).containsExactly(
+                "activate outer-task",
+                "before agent-1",
+                "activate inner-task",
+                "before agent-2",
+                "after agent-2",
+                "close inner-task",
+                "after agent-1",
+                "close outer-task");
+    }
+
+    @Test
+    @DisplayName("test_flow_agent_listener_is_notified_of_a_composite_agent_flow_planner_does_not_run")
+    void test_flow_agent_listener_is_notified_of_a_composite_agent_flow_planner_does_not_run() {
+        // the root agentic system: no stored context, nothing to activate
+        recordingContextListener.beforeAgentInvocation(new AgentRequest(agenticScope, agent, Map.of()));
+        recordingContextListener.afterAgentInvocation(response(agent));
+        recordingContextListener
+                .onAgentInvocationError(new AgentInvocationError(agenticScope, agent, Map.of(), new RuntimeException()));
+
+        assertThat(events).containsExactly("before agent-1", "after agent-1", "error agent-1");
+    }
+
+    @Test
+    @DisplayName("test_flow_agent_listener_is_not_notified_by_the_context_listener_of_a_leaf_agent_flow_planner_does_not_run")
+    void test_flow_agent_listener_is_not_notified_by_the_context_listener_of_a_leaf_agent_flow_planner_does_not_run() {
+        // FlowAgentInvocationNotifier notifies those, on the thread that invoked them
+        AgentInstance leaf = agent("leaf-1");
+        when(leaf.leaf()).thenReturn(true);
+
+        recordingContextListener.beforeAgentInvocation(new AgentRequest(agenticScope, leaf, Map.of()));
+        recordingContextListener.afterAgentInvocation(response(leaf));
+        recordingContextListener
+                .onAgentInvocationError(new AgentInvocationError(agenticScope, leaf, Map.of(), new RuntimeException()));
+
+        assertThat(events).isEmpty();
+    }
+
+    @Test
+    @DisplayName("test_failing_flow_agent_listener_neither_stops_the_others_nor_leaks_the_task_context")
+    void test_failing_flow_agent_listener_neither_stops_the_others_nor_leaks_the_task_context() {
+        FlowAgentListener failing = new FlowAgentListener() {
+            @Override
+            public void beforeAgentInvocation(AgentRequest request) {
+                throw new IllegalStateException("before");
+            }
+
+            @Override
+            public void afterAgentInvocation(AgentResponse response) {
+                throw new IllegalStateException("after");
+            }
+        };
+        FlowAgentContextListener listener = new FlowAgentContextListener(
+                () -> new FlowAgentListenerDispatcher(List.of(failing, new RecordingFlowAgentListener(events))));
+        storeSnapshot(AGENT_ID, "task-ctx");
+
+        listener.beforeAgentInvocation(new AgentRequest(agenticScope, agent, Map.of()));
+        listener.afterAgentInvocation(response(agent));
+
+        assertThat(events).containsExactly("activate task-ctx", "before agent-1", "after agent-1", "close task-ctx");
     }
 
     private void storeSnapshot(String agentId, String name) {

@@ -482,6 +482,8 @@ workflow.create my-workflow
                                     └── langchain4j.aiservices.SummaryAgent.summarize
 ----
 
+TIP: To add your own attributes to the span of the task that ran an agent, such as the agent's inputs and output, implement a `FlowAgentListener` rather than a LangChain4j `AgentListener`. See xref:langchain4j.adoc#flow-agent-listener[Listen to Agent Invocations].
+
 [[genai-semantic-conventions]]
 == GenAI Semantic Conventions
 

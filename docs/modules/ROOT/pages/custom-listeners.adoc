@@ -81,5 +81,6 @@ Custom listeners should be reserved for advanced, domain-specific use cases (lik
 
 * xref:structured-logging.adoc[Export workflow data via structured logs] — Built-in listener for exporting workflow execution data to external systems.
 * xref:data-flow.adoc[Data Flow and Context Management] — Understand the context objects passed into your listener events.
+* xref:langchain4j.adoc#flow-agent-listener[Listen to Agent Invocations] — Observe LangChain4j agent invocations in the context of the task that requested them.
 * xref:concepts-architecture.adoc[Engine Architecture] — Learn more about the underlying engine lifecycle that triggers these events.
 * xref:test-debug.adoc[Test and debug workflows] — Strategies for testing your workflows and custom listeners.

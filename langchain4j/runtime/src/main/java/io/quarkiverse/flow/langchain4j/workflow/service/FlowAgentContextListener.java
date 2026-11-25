@@ -2,6 +2,7 @@ package io.quarkiverse.flow.langchain4j.workflow.service;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.function.Supplier;
 
 import dev.langchain4j.agentic.observability.AgentInvocationError;
 import dev.langchain4j.agentic.observability.AgentListener;
@@ -10,6 +11,7 @@ import dev.langchain4j.agentic.observability.AgentResponse;
 import dev.langchain4j.agentic.scope.AgenticScope;
 import io.quarkiverse.flow.internal.FlowAgentInvocationListener;
 import io.quarkiverse.flow.internal.FlowContextPropagator;
+import io.quarkiverse.flow.langchain4j.FlowAgentListener;
 
 /**
  * Makes the context of the workflow task that requested an agent current while that agent runs.
@@ -25,16 +27,26 @@ import io.quarkiverse.flow.internal.FlowContextPropagator;
  * Once the requesting task's context is current, it notifies {@link FlowAgentInvocationListener} for leaf agents, so
  * leaf sub-agents of a generated agentic workflow are detected the same way as leaf agents invoked directly from a task
  * body (see {@link FlowAgentInvocationNotifier}, which covers that case).
+ * <p>
+ * It notifies the {@link FlowAgentListener} beans of the agents it opened a context for while that context is current:
+ * after activating it, and before closing it. It also notifies them of the composite agents {@code FlowPlanner} doesn't
+ * run, such as the root agentic system, on the thread that invoked them: it is registered on every agentic system that
+ * Quarkus Flow builds, while LangChain4j doesn't give the {@code AgentListener} beans, and so
+ * {@link FlowAgentInvocationNotifier}, to composite agents before Quarkus LangChain4j 2.0.
  */
 public final class FlowAgentContextListener implements AgentListener {
 
-    public static final FlowAgentContextListener INSTANCE = new FlowAgentContextListener();
+    public static final FlowAgentContextListener INSTANCE = new FlowAgentContextListener(
+            FlowAgentListenerDispatcher::fromContainer);
 
     static final String CONTEXT_KEY_PREFIX = "flow.agent.context:";
 
     private static final ThreadLocal<Deque<OpenScope>> OPEN_SCOPES = ThreadLocal.withInitial(ArrayDeque::new);
 
-    private FlowAgentContextListener() {
+    private final Supplier<FlowAgentListenerDispatcher> dispatcher;
+
+    FlowAgentContextListener(Supplier<FlowAgentListenerDispatcher> dispatcher) {
+        this.dispatcher = dispatcher;
     }
 
     static String contextKey(String agentId) {
@@ -49,12 +61,21 @@ public final class FlowAgentContextListener implements AgentListener {
             if (request.agent().leaf()) {
                 FlowAgentInvocationListener.current().onAgentInvoked(request.agentName());
             }
+            dispatcher.get().beforeAgentInvocation(request);
+        } else if (!request.agent().leaf()) {
+            dispatcher.get().beforeAgentInvocation(request);
         }
     }
 
     @Override
     public void afterAgentInvocation(AgentResponse response) {
-        close(response.agentId());
+        try {
+            if (isOpenFor(response.agentId()) || !response.agent().leaf()) {
+                dispatcher.get().afterAgentInvocation(response);
+            }
+        } finally {
+            close(response.agentId());
+        }
     }
 
     /**
@@ -66,8 +87,14 @@ public final class FlowAgentContextListener implements AgentListener {
      */
     @Override
     public void onAgentInvocationError(AgentInvocationError error) {
-        close(error.agentId());
-        FlowPlanner.abort(error.agenticScope(), error.agentId(), error.error());
+        try {
+            if (isOpenFor(error.agentId()) || !error.agent().leaf()) {
+                dispatcher.get().onAgentInvocationError(error);
+            }
+        } finally {
+            close(error.agentId());
+            FlowPlanner.abort(error.agenticScope(), error.agentId(), error.error());
+        }
     }
 
     /**
@@ -103,10 +130,14 @@ public final class FlowAgentContextListener implements AgentListener {
                 : null;
     }
 
-    private static void close(String agentId) {
+    private static boolean isOpenFor(String agentId) {
         Deque<OpenScope> scopes = OPEN_SCOPES.get();
-        if (!scopes.isEmpty() && scopes.peek().agentId().equals(agentId)) {
-            scopes.pop().scope().close();
+        return !scopes.isEmpty() && scopes.peek().agentId().equals(agentId);
+    }
+
+    private static void close(String agentId) {
+        if (isOpenFor(agentId)) {
+            OPEN_SCOPES.get().pop().scope().close();
         }
     }
 

@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import io.quarkiverse.flow.opentelemetry.it.SpanRecordingFlowAgentListener.Callback;
+import io.quarkiverse.flow.opentelemetry.it.SpanRecordingFlowAgentListener.Invocation;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
@@ -65,9 +67,13 @@ class AgenticTraceContextIT {
     @Inject
     InMemorySpanExporter exporter;
 
+    @Inject
+    SpanRecordingFlowAgentListener flowAgentListener;
+
     @BeforeEach
     void reset() {
         exporter.reset();
+        flowAgentListener.reset();
         AgenticTracingFlow.lastCurrentSpanId = null;
     }
 
@@ -154,6 +160,54 @@ class AgenticTraceContextIT {
                 .containsExactlyInAnyOrder(
                         tuple(INVOKE_AGENT, "process"),
                         tuple(INVOKE_AGENT, "extract"));
+    }
+
+    @Test
+    @DisplayName("test_flow_agent_listener_sees_the_span_of_the_task_that_requested_each_agent")
+    void test_flow_agent_listener_sees_the_span_of_the_task_that_requested_each_agent() throws Exception {
+        List<SpanData> spans = run();
+        Map<String, SpanData> byId = spans.stream().collect(Collectors.toMap(SpanData::getSpanId, Function.identity()));
+
+        // "process" is invoked from the runAgents task body; "classify" and "extract" are run by FlowPlanner for the
+        // tasks of the "process" workflow, and "details" and "summarize" for the tasks of the "extract" workflow, in
+        // parallel on LangChain4j's executor. The task that requested "extract" created its workflow.create span.
+        String processTask = span(spans, TASK_SPAN_PREFIX + AgenticTracingFlow.TASK_NAME).getSpanId();
+        String extractTask = byId.get(agentWorkflowSpan(spans, "extract").getParentSpanId()).getParentSpanId();
+        String classifyTask = agentTaskSpan(spans, "classify").getSpanId();
+        String detailsTask = agentTaskSpan(spans, "details").getSpanId();
+        String summarizeTask = agentTaskSpan(spans, "summarize").getSpanId();
+
+        assertThat(flowAgentListener.invocations())
+                .extracting(Invocation::callback, Invocation::agentName, Invocation::spanId, Invocation::recording)
+                .containsExactlyInAnyOrder(
+                        tuple(Callback.BEFORE, "process", processTask, true),
+                        tuple(Callback.AFTER, "process", processTask, true),
+                        tuple(Callback.BEFORE, "classify", classifyTask, true),
+                        tuple(Callback.AFTER, "classify", classifyTask, true),
+                        tuple(Callback.BEFORE, "extract", extractTask, true),
+                        tuple(Callback.AFTER, "extract", extractTask, true),
+                        tuple(Callback.BEFORE, "details", detailsTask, true),
+                        tuple(Callback.AFTER, "details", detailsTask, true),
+                        tuple(Callback.BEFORE, "summarize", summarizeTask, true),
+                        tuple(Callback.AFTER, "summarize", summarizeTask, true));
+    }
+
+    @Test
+    @DisplayName("test_flow_agent_listener_sees_the_task_span_of_a_leaf_agent_called_from_a_task_body")
+    void test_flow_agent_listener_sees_the_task_span_of_a_leaf_agent_called_from_a_task_body() throws Exception {
+        leafAgentCallFlow.instance("My car was stolen.").start().get(30, TimeUnit.SECONDS);
+
+        String taskSpanName = TASK_SPAN_PREFIX + LeafAgentCallFlow.TASK_NAME;
+        await().atMost(Duration.ofSeconds(10))
+                .until(() -> exporter.getFinishedSpanItems().stream()
+                        .anyMatch(span -> taskSpanName.equals(span.getName())));
+        String taskSpan = span(exporter.getFinishedSpanItems(), taskSpanName).getSpanId();
+
+        assertThat(flowAgentListener.invocations())
+                .extracting(Invocation::callback, Invocation::agentName, Invocation::spanId, Invocation::recording)
+                .containsExactly(
+                        tuple(Callback.BEFORE, "triage", taskSpan, true),
+                        tuple(Callback.AFTER, "triage", taskSpan, true));
     }
 
     @Test
@@ -276,6 +330,22 @@ class AgenticTraceContextIT {
                         .filter(span -> span.getName().startsWith(WORKFLOW_SPAN_PREFIX))
                         .count() >= 3);
         return exporter.getFinishedSpanItems();
+    }
+
+    private static SpanData agentTaskSpan(List<SpanData> spans, String agentName) {
+        return agentSpan(spans, TASK_SPAN_PREFIX, agentName);
+    }
+
+    private static SpanData agentWorkflowSpan(List<SpanData> spans, String agentName) {
+        return agentSpan(spans, WORKFLOW_SPAN_PREFIX, agentName);
+    }
+
+    private static SpanData agentSpan(List<SpanData> spans, String prefix, String agentName) {
+        return spans.stream()
+                .filter(span -> span.getName().startsWith(prefix))
+                .filter(span -> agentName.equals(span.getAttributes().get(GEN_AI_AGENT_NAME)))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("No " + prefix + "span for agent " + agentName));
     }
 
     private static SpanData span(List<SpanData> spans, String name) {
