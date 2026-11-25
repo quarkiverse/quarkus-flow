@@ -223,6 +223,13 @@ public interface FlowRunnerConfig {
         Namespace namespace();
 
         /**
+         * Embedded authentication mechanism configuration.
+         *
+         * @return the embedded authentication configuration
+         */
+        Embed embed();
+
+        /**
          * Authentication types.
          */
         enum Type {
@@ -355,6 +362,106 @@ public interface FlowRunnerConfig {
              */
             @WithDefault("true")
             boolean validate();
+        }
+
+        /**
+         * Embedded authentication mechanisms.
+         * <p>
+         * Groups authentication mechanisms that are embedded in the runner
+         * itself, as opposed to external identity providers (OIDC) or
+         * statically configured secrets (API keys).
+         */
+        interface Embed {
+
+            /**
+             * Kubernetes ServiceAccount authentication configuration.
+             *
+             * @return the Kubernetes ServiceAccount configuration
+             */
+            Kubernetes kubernetes();
+
+            /**
+             * Kubernetes ServiceAccount authentication.
+             * <p>
+             * Authenticates requests made by Kubernetes pods using their
+             * projected ServiceAccount tokens, validated against the
+             * Kubernetes API server TokenReview endpoint. When active, this
+             * mechanism complements the configured {@code type} mechanism.
+             * <p>
+             * Configuration example:
+             *
+             * <pre>
+             * # Activate only when running inside Kubernetes (default)
+             * quarkus.flow.runner.security.embed.kubernetes.enabled=auto
+             *
+             * # Restrict which ServiceAccounts are trusted (namespace/name)
+             * quarkus.flow.runner.security.embed.kubernetes.trusted-service-accounts=flow-ns/workflow-invoker
+             *
+             * # Tune the TokenReview result cache
+             * quarkus.flow.runner.security.embed.kubernetes.cache-max-entries=256
+             * </pre>
+             *
+             * @see <a href="https://github.com/quarkiverse/quarkus-flow/issues/1160">Issue #1160</a>
+             */
+            interface Kubernetes {
+                /**
+                 * Whether the Kubernetes ServiceAccount authentication mechanism
+                 * is enabled.
+                 * <p>
+                 * Accepted values:
+                 * <ul>
+                 * <li>{@code auto} (default) - active only when running inside
+                 * a Kubernetes cluster ({@code KUBERNETES_SERVICE_HOST} set and
+                 * the ServiceAccount token file readable)</li>
+                 * <li>{@code true} - always active, even outside a cluster
+                 * (mainly for tests)</li>
+                 * <li>{@code false} - never active</li>
+                 * </ul>
+                 *
+                 * @return the enabled value: {@code auto}, {@code true}, or
+                 *         {@code false}
+                 */
+                @WithDefault("auto")
+                String enabled();
+
+                /**
+                 * ServiceAccounts trusted by this mechanism, in
+                 * {@code namespace/name} format.
+                 * <p>
+                 * When unset (empty set), trust-by-default applies: any
+                 * Kubernetes ServiceAccount authenticated via TokenReview is
+                 * accepted with the {@code flow-invoker} role. Listing
+                 * ServiceAccounts here only grants them the {@code *}
+                 * (all) namespaces authorization.
+                 *
+                 * @return the set of trusted ServiceAccounts in
+                 *         {@code namespace/name} format, or empty when unset
+                 */
+                Optional<Set<String>> trustedServiceAccounts();
+
+                /**
+                 * Maximum number of TokenReview results kept in the cache.
+                 * <p>
+                 * Validated token identities are cached to avoid hitting the
+                 * Kubernetes API server on every request.
+                 *
+                 * @return the maximum number of cache entries (default: 256)
+                 */
+                @WithDefault("256")
+                int cacheMaxEntries();
+
+                /**
+                 * Kubernetes API server URL.
+                 * <p>
+                 * Test seam: when unset, defaults to
+                 * {@code https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT_HTTPS},
+                 * the in-cluster API server address.
+                 *
+                 * @return the API server URL, or empty to use the in-cluster
+                 *         default
+                 */
+                Optional<String> apiServerUrl();
+            }
         }
     }
 
