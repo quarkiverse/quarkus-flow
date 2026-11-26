@@ -7,6 +7,8 @@ import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -19,6 +21,8 @@ import io.quarkus.test.security.TestSecurity;
  */
 @QuarkusTest
 @TestProfile(ReaderRoleEnforcementTest.NoneSecurityProfile.class)
+// Windows CI runners have no Docker; see the module's test application.properties
+@DisabledOnOs(OS.WINDOWS)
 @DisplayName("Reader Role Enforcement")
 class ReaderRoleEnforcementTest {
 

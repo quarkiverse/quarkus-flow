@@ -16,6 +16,8 @@ import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
@@ -37,6 +39,8 @@ import io.quarkus.test.junit.TestProfile;
  * Bearer credential of the review request.
  */
 @QuarkusTest
+// Windows CI runners have no Docker; see the module's test application.properties
+@DisabledOnOs(OS.WINDOWS)
 @TestProfile(TokenReviewClientTest.Profile.class)
 @DisplayName("TokenReview client tests")
 class TokenReviewClientTest {
