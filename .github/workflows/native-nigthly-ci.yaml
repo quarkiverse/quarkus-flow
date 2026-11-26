@@ -36,17 +36,6 @@ jobs:
           java-version: 25
           cache: maven
       
-      - name: Setup Ollama
-        uses: ai-action/setup-ollama@v2
-
-      - uses: actions/cache@v6
-        with:
-          path: ~/.ollama
-          key: ${{ runner.os }}-ollama
-
-      - name: Run llama3.2 model
-        run: ollama run llama3.2
-
       - name: Build with Maven (Native, Mandrel on JDK 25, skip docs, single-threaded)
         id: native-build
         continue-on-error: true
