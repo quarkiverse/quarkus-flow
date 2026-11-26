@@ -2,8 +2,7 @@ package io.quarkiverse.flow.runner.security.kubernetes;
 
 import static io.quarkiverse.flow.runner.security.AuthzConsts.CLAIM_NAMESPACES;
 
-import java.time.Duration;
-import java.time.Instant;
+import java.io.IOException;
 import java.util.Optional;
 import java.util.Set;
 
@@ -24,6 +23,7 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -64,15 +64,15 @@ public class KubernetesServiceAccountAuthenticationMechanism implements HttpAuth
     private static final Logger LOG = Logger.getLogger(KubernetesServiceAccountAuthenticationMechanism.class);
 
     /**
-     * Fallback cache lifetime for positive TokenReview results that omit the
-     * expiration timestamp.
+     * RoutingContext attribute set in {@link #authenticate} when the request
+     * carries an SA-shaped Bearer token (i.e. this mechanism actually engaged
+     * for that request). {@link #getChallenge} only issues a challenge when
+     * the attribute is present, so abstained requests never get this
+     * mechanism's Bearer challenge — other mechanisms' challenges stay
+     * authoritative for their own credentials.
      */
-    static final Duration POSITIVE_CACHE_FALLBACK = Duration.ofMinutes(5);
-
-    /**
-     * Cache lifetime for negative (not authenticated) TokenReview results.
-     */
-    static final Duration NEGATIVE_CACHE_TTL = Duration.ofMinutes(1);
+    static final String ENGAGED_ATTRIBUTE = KubernetesServiceAccountAuthenticationMechanism.class.getName()
+            + ".engaged";
 
     @Inject
     FlowRunnerConfig config;
@@ -105,6 +105,10 @@ public class KubernetesServiceAccountAuthenticationMechanism implements HttpAuth
             return Uni.createFrom().nullItem();
         }
 
+        // This mechanism engaged for the request: remember it so getChallenge
+        // only challenges requests it actually handled (never abstained ones).
+        context.put(ENGAGED_ATTRIBUTE, Boolean.TRUE);
+
         // 4. Cache hit → use it; otherwise ask the API server (fail closed).
         Optional<TokenReviewClient.TokenReviewResult> cached = tokenReviewCache.get(token);
         if (cached.isPresent()) {
@@ -115,23 +119,34 @@ public class KubernetesServiceAccountAuthenticationMechanism implements HttpAuth
             return Uni.createFrom().item(buildIdentity(result));
         }
 
-        final TokenReviewClient.TokenReviewResult result;
-        try {
-            result = tokenReviewClient.review(token);
-        } catch (Exception e) {
-            LOG.debugf(e, "TokenReview request failed for an incoming ServiceAccount token");
-            return Uni.createFrom().failure(
-                    new AuthenticationFailedException("Kubernetes API server unavailable: " + e.getMessage()));
-        }
-        tokenReviewCache.put(token, result, cacheExpiry(result));
-
-        // 5. Not authenticated → fail.
-        if (!result.authenticated()) {
-            return Uni.createFrom().failure(new AuthenticationFailedException("Invalid ServiceAccount token"));
-        }
-
-        // 6. Authenticated → build the identity.
-        return Uni.createFrom().item(buildIdentity(result));
+        // 5. Miss → review off the event loop. The TokenReview call is a
+        // blocking JDK HttpClient send (bounded by TokenReviewClient's
+        // request timeout); Quarkus invokes authenticate on the vert.x event
+        // loop, so the review must run on a worker thread to avoid stalling
+        // the Runner (and starving the loop under repeated requests).
+        return Uni.createFrom().item(() -> {
+            try {
+                return tokenReviewClient.review(token);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        })
+                .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
+                .onFailure().transform(e -> {
+                    Throwable cause = e.getCause() != null ? e.getCause() : e;
+                    LOG.debugf(cause, "TokenReview request failed for an incoming ServiceAccount token");
+                    return new AuthenticationFailedException(
+                            "Kubernetes API server unavailable: " + cause.getMessage());
+                })
+                .onItem().invoke(result -> tokenReviewCache.put(token, result, result.expiresAt()))
+                .onItem().transform(result -> {
+                    // 6. Not authenticated → fail.
+                    if (!result.authenticated()) {
+                        throw new AuthenticationFailedException("Invalid ServiceAccount token");
+                    }
+                    // 7. Authenticated → build the identity.
+                    return buildIdentity(result);
+                });
     }
 
     /**
@@ -150,7 +165,10 @@ public class KubernetesServiceAccountAuthenticationMechanism implements HttpAuth
 
     @Override
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
-        if (!isActive()) {
+        // Only challenge requests this mechanism actually engaged on (SA-shaped
+        // Bearer token seen in authenticate); abstained requests must surface
+        // the challenge of whichever mechanism owns them.
+        if (!isActive() || context.get(ENGAGED_ATTRIBUTE) == null) {
             return Uni.createFrom().nullItem();
         }
         return Uni.createFrom().item(new ChallengeData(401, "Bearer", "Invalid or missing ServiceAccount token"));
@@ -162,19 +180,6 @@ public class KubernetesServiceAccountAuthenticationMechanism implements HttpAuth
      */
     boolean isActive() {
         return KubernetesInCluster.isMechanismActive(config);
-    }
-
-    /**
-     * Computes the cache expiry for a TokenReview result: positive results are
-     * cached until the verified expiration (with a fallback when the API
-     * server omits it); negative results are cached briefly.
-     */
-    private static Instant cacheExpiry(TokenReviewClient.TokenReviewResult result) {
-        if (!result.authenticated()) {
-            return Instant.now().plus(NEGATIVE_CACHE_TTL);
-        }
-        return result.expiresAt() != null ? result.expiresAt()
-                : Instant.now().plus(POSITIVE_CACHE_FALLBACK);
     }
 
     /**

@@ -11,12 +11,12 @@ import java.security.KeyStore;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
@@ -27,7 +27,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import io.quarkiverse.flow.runner.FlowRunnerConfig;
 import io.quarkus.arc.Unremovable;
-import io.quarkus.runtime.StartupEvent;
 
 /**
  * HTTP client for the Kubernetes TokenReview API.
@@ -80,6 +79,14 @@ public class TokenReviewClient {
     static final String CA_CERT_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt";
 
     /**
+     * Timeout for a single TokenReview request. Bounded so that a hung
+     * kube-apiserver cannot stall the runner indefinitely; a timeout surfaces
+     * as {@link java.net.http.HttpTimeoutException} (an {@link IOException}
+     * subclass) and follows the existing fail-closed 401 path.
+     */
+    static final Duration REVIEW_TIMEOUT = Duration.ofSeconds(10);
+
+    /**
      * Jackson mapper used to build requests and parse responses.
      */
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -94,12 +101,6 @@ public class TokenReviewClient {
     @Inject
     public TokenReviewClient(FlowRunnerConfig config) {
         this.config = config;
-    }
-
-    void init(@Observes StartupEvent event) {
-        // Nothing eager: the HTTP client is created lazily on first use so
-        // that startup never fails outside a Kubernetes cluster.
-        LOG.debug("TokenReviewClient initialized (HTTP client deferred to first use)");
     }
 
     /**
@@ -131,6 +132,7 @@ public class TokenReviewClient {
         HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(resolveApiServerUrl() + TOKEN_REVIEWS_PATH))
                 .header("Content-Type", "application/json")
+                .timeout(REVIEW_TIMEOUT)
                 .POST(HttpRequest.BodyPublishers.ofString(body.toString()));
 
         String ownToken = readOwnServiceAccountToken();

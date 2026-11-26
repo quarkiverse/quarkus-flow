@@ -31,6 +31,13 @@ public final class KubernetesInCluster {
      */
     static final String TOKEN_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/token";
 
+    /**
+     * Cached in-cluster detection: consulted on (potentially) every request via
+     * the mechanism's {@code isActive} check, but it involves an environment
+     * lookup plus a filesystem probe, so it is computed once per JVM.
+     */
+    private static volatile Boolean inCluster;
+
     private KubernetesInCluster() {
         // Utility class
     }
@@ -41,12 +48,19 @@ public final class KubernetesInCluster {
      * Returns {@code true} if and only if the {@code KUBERNETES_SERVICE_HOST}
      * environment variable is set and the ServiceAccount token file at
      * {@code /var/run/secrets/kubernetes.io/serviceaccount/token} is a readable
-     * file.
+     * file. The result is computed once and cached (neither the environment
+     * nor the projected token file can appear or disappear while the JVM
+     * runs).
      *
      * @return {@code true} when running inside a Kubernetes cluster
      */
     public static boolean isRunningInCluster() {
-        return System.getenv(SERVICE_HOST_ENV) != null && Files.isReadable(Path.of(TOKEN_PATH));
+        Boolean cached = inCluster;
+        if (cached == null) {
+            cached = System.getenv(SERVICE_HOST_ENV) != null && Files.isReadable(Path.of(TOKEN_PATH));
+            inCluster = cached;
+        }
+        return cached;
     }
 
     /**

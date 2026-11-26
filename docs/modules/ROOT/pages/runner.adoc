@@ -623,6 +623,8 @@ When the Runner is deployed inside a Kubernetes cluster, it can authenticate req
 2. The Runner validates the token against the Kubernetes API server `TokenReview` endpoint, authenticating as its own ServiceAccount.
 3. Validated identities are cached (see `cache-max-entries`) to avoid hitting the API server on every request.
 
+Note that cached positive results honor token revocation only at the next TokenReview, so a revoked SA token can remain readable until its cached entry expires — in practice bounded by the projected-token TTLs (and the cache fallback TTL).
+
 **Client usage (Go):**
 
 [source,go]
@@ -677,7 +679,6 @@ quarkus.flow.runner.security.service.kubernetes.cache-max-entries=256
 # Kubernetes API server URL (test seam; unset = in-cluster default)
 #quarkus.flow.runner.security.service.kubernetes.api-server-url=https://kube-apiserver:6443
 ----
-
 
 [[api-reference]]
 == API reference

@@ -3,6 +3,7 @@ package io.quarkiverse.flow.runner.security.kubernetes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -28,10 +29,6 @@ import io.vertx.ext.web.RoutingContext;
 @DisplayName("Kubernetes ServiceAccount authentication mechanism tests")
 class KubernetesServiceAccountAuthenticationMechanismTest {
 
-    /**
-     * A decodable (but unverified) JWT whose payload claims
-     * namespace=infrans and serviceAccountName=gateway.
-     */
     /**
      * A decodable (but unverified) JWT whose payload claims
      * namespace=infrans and serviceAccountName=gateway.
@@ -216,6 +213,67 @@ class KubernetesServiceAccountAuthenticationMechanismTest {
 
             assertThat(identity).isNull();
             verify(tokenReviewClient, never()).review(anyString());
+            // Abstained requests must not be marked as engaged (no challenge later)
+            verify(routingContext, never()).put(eq(KubernetesServiceAccountAuthenticationMechanism.ENGAGED_ATTRIBUTE),
+                    eq(Boolean.TRUE));
+        }
+    }
+
+    @Nested
+    @DisplayName("Challenge scoping")
+    class ChallengeScoping {
+
+        @Test
+        @DisplayName("authenticate_marks_engaged_request")
+        void authenticate_marks_engaged_request() throws IOException {
+            when(tokenReviewClient.review(SA_TOKEN)).thenReturn(
+                    new TokenReviewClient.TokenReviewResult(true, "system:serviceaccount:infrans:gateway",
+                            Instant.now().plusSeconds(600)));
+
+            mechanism.authenticate(routingContext, null).await().indefinitely();
+
+            verify(routingContext).put(KubernetesServiceAccountAuthenticationMechanism.ENGAGED_ATTRIBUTE,
+                    Boolean.TRUE);
+        }
+
+        @Test
+        @DisplayName("challenge_issued_only_for_engaged_requests")
+        void challenge_issued_only_for_engaged_requests() {
+            when(routingContext.get(KubernetesServiceAccountAuthenticationMechanism.ENGAGED_ATTRIBUTE))
+                    .thenReturn(Boolean.TRUE);
+
+            io.quarkus.vertx.http.runtime.security.ChallengeData challenge = mechanism
+                    .getChallenge(routingContext).await().indefinitely();
+
+            assertThat(challenge).isNotNull();
+            assertThat(challenge.status).isEqualTo(401);
+        }
+
+        @Test
+        @DisplayName("no_challenge_when_mechanism_abstained")
+        void no_challenge_when_mechanism_abstained() {
+            // No ENGAGED_ATTRIBUTE on the context: the mechanism abstained on
+            // this request, so another mechanism's challenge must win.
+            when(routingContext.get(KubernetesServiceAccountAuthenticationMechanism.ENGAGED_ATTRIBUTE))
+                    .thenReturn(null);
+
+            io.quarkus.vertx.http.runtime.security.ChallengeData challenge = mechanism
+                    .getChallenge(routingContext).await().indefinitely();
+
+            assertThat(challenge).isNull();
+        }
+
+        @Test
+        @DisplayName("no_challenge_when_inactive")
+        void no_challenge_when_inactive() {
+            active = false;
+            when(routingContext.get(KubernetesServiceAccountAuthenticationMechanism.ENGAGED_ATTRIBUTE))
+                    .thenReturn(Boolean.TRUE);
+
+            io.quarkus.vertx.http.runtime.security.ChallengeData challenge = mechanism
+                    .getChallenge(routingContext).await().indefinitely();
+
+            assertThat(challenge).isNull();
         }
     }
 }

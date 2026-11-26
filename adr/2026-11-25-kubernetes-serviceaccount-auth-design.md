@@ -37,7 +37,8 @@ Kubernetes auth is **not** a new `Security.Type` value. It is an additional
 - it is not explicitly disabled
   (`quarkus.flow.runner.security.service.kubernetes.enabled=false`).
 
-Out of the cluster, no bean is registered and no filter is added — zero overhead and
+The bean is always registered but deactivates at runtime when not in-cluster (or
+when disabled), so it abstains on every request — effectively zero overhead and
 zero behavior change for non-Kubernetes deployments. The mechanism is compatible with
 any configured `type`: an external user's OIDC JWT continues through OIDC; a cluster
 service's SA token is handled by the Kubernetes path.
@@ -158,8 +159,8 @@ exclusive `KUBERNETES` security type without forcing a breaking property rename.
   an accepted trade-off for v1 (platform-level trust), revisitable via an explicit
   whitelist without breaking the mechanism.
 - Existing `NONE`, `API_KEY`, and `OIDC` behavior is unchanged: the mechanism
-  abstains on any token that is not SA-shaped and does not register at all
-  off-cluster.
+  abstains on any token that is not SA-shaped and deactivates at runtime
+  off-cluster (or when disabled).
 
 ## Alternatives considered
 
@@ -184,7 +185,7 @@ exclusive `KUBERNETES` security type without forcing a breaking property rename.
   — valid/expired/garbage tokens; role enforcement across all endpoints (reader
   allowed on GETs, denied on exec/lifecycle/mutations); namespace scoping (403 for
   foreign namespace, `*` for trusted); coexistence with API_KEY and OIDC modes
-  (external tokens unaffected); mechanism not registered off-cluster.
+  (external tokens unaffected); mechanism deactivated off-cluster.
 - No real cluster interaction in CI; mocked LLM/API rules apply as usual.
 
 ## Documentation
