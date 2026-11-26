@@ -13,7 +13,7 @@ import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.QuarkusTestProfile.TestResourceEntry;
 
 /**
- * Test profile for the embedded Kubernetes ServiceAccount authentication
+ * Test profile for the service-to-service Kubernetes ServiceAccount authentication
  * mechanism (issue #1160).
  * <p>
  * Security type is NONE so that only the Kubernetes mechanism is expected to
@@ -39,11 +39,11 @@ public class SecurityKubernetesProfile implements QuarkusTestProfile {
         // authentication for ServiceAccount-shaped tokens
         config.put("quarkus.flow.runner.security.type", "none");
 
-        // Always activate the embedded Kubernetes SA mechanism (even off-cluster)
-        config.put("quarkus.flow.runner.security.embed.kubernetes.enabled", "true");
+        // Always activate the Kubernetes SA service-to-service mechanism (even off-cluster)
+        config.put("quarkus.flow.runner.security.service.kubernetes.enabled", "true");
 
         // Trusted ServiceAccounts (full Kubernetes usernames)
-        config.put("quarkus.flow.runner.security.embed.kubernetes.trusted-service-accounts", TRUSTED_SA);
+        config.put("quarkus.flow.runner.security.service.kubernetes.trusted-service-accounts", TRUSTED_SA);
 
         // Namespace validation must be ON for the ABAC cases
         config.put("quarkus.flow.runner.security.namespace.validate", "true");
@@ -85,7 +85,7 @@ public class SecurityKubernetesProfile implements QuarkusTestProfile {
             server = new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort());
             server.start();
             WireMock.configureFor("localhost", server.port());
-            return Map.of("quarkus.flow.runner.security.embed.kubernetes.api-server-url", server.baseUrl());
+            return Map.of("quarkus.flow.runner.security.service.kubernetes.api-server-url", server.baseUrl());
         }
 
         @Override

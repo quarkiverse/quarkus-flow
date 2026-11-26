@@ -41,14 +41,11 @@ import io.vertx.ext.web.RoutingContext;
  * <p>
  * Authenticated ServiceAccounts receive the
  * {@link AuthzConsts#ROLE_SERVICE_READER} role. ServiceAccounts listed in
- * {@code quarkus.flow.runner.security.embed.kubernetes.trusted-service-accounts}
+ * {@code quarkus.flow.runner.security.service.kubernetes.trusted-service-accounts}
  * (full Kubernetes usernames such as {@code system:serviceaccount:infrans:gateway})
  * get the {@code *} (all) namespaces authorization attribute; all others are
  * scoped to their own namespace.
- *
- * @see <a href="https://github.com/quarkiverse/quarkus-flow/issues/1160">Issue #1160</a>
- */
-/**
+ * <p>
  * Consulted before the default authentication priority band (see
  * {@link #getPriority()}): Quarkus consults mechanisms in priority order and
  * ties are resolved nondeterministically, so this composable mechanism must
@@ -56,6 +53,8 @@ import io.vertx.ext.web.RoutingContext;
  * catch-all mechanisms such as the NONE-mode permit-all mechanism (which never
  * abstains) answer the request. It abstains on any other credential, so it
  * never competes with the API-key or OIDC mechanisms.
+ *
+ * @see <a href="https://github.com/quarkiverse/quarkus-flow/issues/1160">Issue #1160</a>
  */
 @ApplicationScoped
 @Unremovable
@@ -198,7 +197,7 @@ public class KubernetesServiceAccountAuthenticationMechanism implements HttpAuth
     }
 
     private Set<String> namespacesFor(String username) {
-        if (username != null && config.security().embed().kubernetes().trustedServiceAccounts()
+        if (username != null && config.security().service().kubernetes().trustedServiceAccounts()
                 .map(trusted -> trusted.contains(username))
                 .orElse(false)) {
             return Set.of(AuthzConsts.ALL_NAMESPACES);

@@ -223,11 +223,11 @@ public interface FlowRunnerConfig {
         Namespace namespace();
 
         /**
-         * Embedded authentication mechanism configuration.
+         * Service-to-service authentication mechanism configuration.
          *
-         * @return the embedded authentication configuration
+         * @return the service-to-service authentication configuration
          */
-        Embed embed();
+        Service service();
 
         /**
          * Authentication types.
@@ -365,13 +365,13 @@ public interface FlowRunnerConfig {
         }
 
         /**
-         * Embedded authentication mechanisms.
+         * Service-to-service authentication mechanisms.
          * <p>
-         * Groups authentication mechanisms that are embedded in the runner
-         * itself, as opposed to external identity providers (OIDC) or
-         * statically configured secrets (API keys).
+         * Groups authentication mechanisms for service-to-service
+         * communication (workload identity), as opposed to external identity
+         * providers (OIDC) or statically configured secrets (API keys).
          */
-        interface Embed {
+        interface Service {
 
             /**
              * Kubernetes ServiceAccount authentication configuration.
@@ -392,13 +392,13 @@ public interface FlowRunnerConfig {
              *
              * <pre>
              * # Activate only when running inside Kubernetes (default)
-             * quarkus.flow.runner.security.embed.kubernetes.enabled=auto
+             * quarkus.flow.runner.security.service.kubernetes.enabled=auto
              *
              * # Restrict which ServiceAccounts are trusted (full usernames)
-             * quarkus.flow.runner.security.embed.kubernetes.trusted-service-accounts=system:serviceaccount:flow-ns:workflow-invoker
+             * quarkus.flow.runner.security.service.kubernetes.trusted-service-accounts=system:serviceaccount:flow-ns:workflow-invoker
              *
              * # Tune the TokenReview result cache
-             * quarkus.flow.runner.security.embed.kubernetes.cache-max-entries=256
+             * quarkus.flow.runner.security.service.kubernetes.cache-max-entries=256
              * </pre>
              *
              * @see <a href="https://github.com/quarkiverse/quarkus-flow/issues/1160">Issue #1160</a>

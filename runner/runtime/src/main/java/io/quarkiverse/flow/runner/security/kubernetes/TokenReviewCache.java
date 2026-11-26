@@ -23,7 +23,7 @@ import io.quarkus.arc.Unremovable;
  * <p>
  * Keys are SHA-256 hashes of the raw token, so the raw (secret) token bytes
  * are never stored as map keys. Entries are bounded by
- * {@code quarkus.flow.runner.security.embed.kubernetes.cache-max-entries}
+ * {@code quarkus.flow.runner.security.service.kubernetes.cache-max-entries}
  * via LRU eviction ({@code LinkedHashMap} in access order). Expiry is checked
  * lazily at {@link #get(String)} time:
  * <ul>
@@ -160,7 +160,7 @@ public class TokenReviewCache {
     }
 
     private int maxEntries() {
-        return Math.max(1, config.security().embed().kubernetes().cacheMaxEntries());
+        return Math.max(1, config.security().service().kubernetes().cacheMaxEntries());
     }
 
     /**

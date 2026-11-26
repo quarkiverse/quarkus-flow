@@ -22,7 +22,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 
 /**
- * End-to-end integration tests for the embedded Kubernetes ServiceAccount
+ * End-to-end integration tests for the service-to-service Kubernetes ServiceAccount
  * authentication mechanism (issue #1160), with the Kubernetes API server
  * mocked by WireMock.
  * <p>

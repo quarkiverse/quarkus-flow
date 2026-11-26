@@ -69,12 +69,12 @@ class KubernetesServiceAccountAuthenticationMechanismTest {
         request = mock(HttpServerRequest.class);
 
         FlowRunnerConfig.Security security = mock(FlowRunnerConfig.Security.class);
-        FlowRunnerConfig.Security.Embed embed = mock(FlowRunnerConfig.Security.Embed.class);
-        FlowRunnerConfig.Security.Embed.Kubernetes kubernetes = mock(FlowRunnerConfig.Security.Embed.Kubernetes.class);
+        FlowRunnerConfig.Security.Service service = mock(FlowRunnerConfig.Security.Service.class);
+        FlowRunnerConfig.Security.Service.Kubernetes kubernetes = mock(FlowRunnerConfig.Security.Service.Kubernetes.class);
 
         when(config.security()).thenReturn(security);
-        when(security.embed()).thenReturn(embed);
-        when(embed.kubernetes()).thenReturn(kubernetes);
+        when(security.service()).thenReturn(service);
+        when(service.kubernetes()).thenReturn(kubernetes);
         when(kubernetes.trustedServiceAccounts()).thenReturn(Optional.empty());
 
         when(routingContext.request()).thenReturn(request);
@@ -93,7 +93,7 @@ class KubernetesServiceAccountAuthenticationMechanismTest {
     }
 
     private void trusted(String... serviceAccounts) {
-        when(config.security().embed().kubernetes().trustedServiceAccounts())
+        when(config.security().service().kubernetes().trustedServiceAccounts())
                 .thenReturn(Optional.of(Set.of(serviceAccounts)));
     }
 

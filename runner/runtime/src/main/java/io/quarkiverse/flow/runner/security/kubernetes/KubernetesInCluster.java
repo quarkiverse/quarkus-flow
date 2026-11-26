@@ -7,7 +7,7 @@ import io.quarkiverse.flow.runner.FlowRunnerConfig;
 
 /**
  * Detects whether the application is running inside a Kubernetes cluster and
- * whether the embedded Kubernetes ServiceAccount authentication mechanism
+ * whether the service-to-service Kubernetes ServiceAccount authentication mechanism
  * should be activated.
  * <p>
  * In-cluster detection follows the same conventions as the official Kubernetes
@@ -50,11 +50,11 @@ public final class KubernetesInCluster {
     }
 
     /**
-     * Checks whether the embedded Kubernetes ServiceAccount authentication
+     * Checks whether the service-to-service Kubernetes ServiceAccount authentication
      * mechanism is active for the given configuration.
      * <p>
      * The decision is driven by
-     * {@code quarkus.flow.runner.security.embed.kubernetes.enabled}:
+     * {@code quarkus.flow.runner.security.service.kubernetes.enabled}:
      * <ul>
      * <li>{@code true} - always active, regardless of the environment</li>
      * <li>{@code false} - never active</li>
@@ -66,7 +66,7 @@ public final class KubernetesInCluster {
      * @return {@code true} when the mechanism should be activated
      */
     public static boolean isMechanismActive(FlowRunnerConfig config) {
-        String enabled = config.security().embed().kubernetes().enabled();
+        String enabled = config.security().service().kubernetes().enabled();
         return computeActive(enabled, isRunningInCluster());
     }
 

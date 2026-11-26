@@ -35,7 +35,7 @@ Kubernetes auth is **not** a new `Security.Type` value. It is an additional
 - the Runner runs in-cluster (presence of `KUBERNETES_SERVICE_HOST` and a readable
   `/var/run/secrets/kubernetes.io/serviceaccount/token`), and
 - it is not explicitly disabled
-  (`quarkus.flow.runner.security.embed.kubernetes.enabled=false`).
+  (`quarkus.flow.runner.security.service.kubernetes.enabled=false`).
 
 Out of the cluster, no bean is registered and no filter is added — zero overhead and
 zero behavior change for non-Kubernetes deployments. The mechanism is compatible with
@@ -82,7 +82,7 @@ Trust-by-default, scoped by namespace:
 - **Trusted service accounts**, listed in:
 
   ```properties
-  quarkus.flow.runner.security.embed.kubernetes.trusted-service-accounts=system:serviceaccount:infrans:gateway
+  quarkus.flow.runner.security.service.kubernetes.trusted-service-accounts=system:serviceaccount:infrans:gateway
   ```
 
   receive the same role but are authorized for **all namespaces** (`*`). This covers
@@ -134,9 +134,9 @@ operator.
 ## Configuration namespace
 
 All properties for this mechanism live under
-`quarkus.flow.runner.security.embed.kubernetes.*` (e.g. `enabled`,
-`trusted-service-accounts`, `cache-max-entries`). The `embed` segment marks it as a
-composable mechanism layered on top of the configured `security.type`, and reserves
+`quarkus.flow.runner.security.service.kubernetes.*` (e.g. `enabled`,
+`trusted-service-accounts`, `cache-max-entries`). The `service` segment marks it as a
+service-to-service mechanism layered on top of the configured `security.type`, and reserves
 the `quarkus.flow.runner.security.kubernetes.*` namespace for a potential future
 exclusive `KUBERNETES` security type without forcing a breaking property rename.
 

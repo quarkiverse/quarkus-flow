@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * Performs an <em>unverified</em> peek at the payload claims of a JSON Web
  * Token to decide whether it <em>looks like</em> a Kubernetes ServiceAccount
  * token. This is used solely to route incoming credentials to the correct
- * authentication mechanism (for example, choosing between the embedded
+ * authentication mechanism (for example, choosing between the service-to-service
  * Kubernetes ServiceAccount mechanism and another mechanism).
  * <p>
  * <ul>

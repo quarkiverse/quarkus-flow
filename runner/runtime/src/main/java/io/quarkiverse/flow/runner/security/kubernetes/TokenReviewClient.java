@@ -224,7 +224,7 @@ public class TokenReviewClient {
      * variables.
      */
     private String resolveApiServerUrl() {
-        Optional<String> configured = config.security().embed().kubernetes().apiServerUrl();
+        Optional<String> configured = config.security().service().kubernetes().apiServerUrl();
         if (configured.isPresent()) {
             // Explicit override (tests): plain HTTP, no client certificate.
             return trimTrailingSlash(configured.get());
@@ -264,7 +264,7 @@ public class TokenReviewClient {
 
     private HttpClient buildClient() {
         HttpClient.Builder builder = HttpClient.newBuilder();
-        if (config.security().embed().kubernetes().apiServerUrl().isEmpty()) {
+        if (config.security().service().kubernetes().apiServerUrl().isEmpty()) {
             // In-cluster default: trust the projected cluster CA certificate.
             try {
                 KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());

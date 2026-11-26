@@ -15,19 +15,19 @@ class KubernetesInClusterTest {
 
     private FlowRunnerConfig config;
     private FlowRunnerConfig.Security security;
-    private FlowRunnerConfig.Security.Embed embed;
-    private FlowRunnerConfig.Security.Embed.Kubernetes kubernetes;
+    private FlowRunnerConfig.Security.Service service;
+    private FlowRunnerConfig.Security.Service.Kubernetes kubernetes;
 
     @BeforeEach
     void setUp() {
         config = mock(FlowRunnerConfig.class);
         security = mock(FlowRunnerConfig.Security.class);
-        embed = mock(FlowRunnerConfig.Security.Embed.class);
-        kubernetes = mock(FlowRunnerConfig.Security.Embed.Kubernetes.class);
+        service = mock(FlowRunnerConfig.Security.Service.class);
+        kubernetes = mock(FlowRunnerConfig.Security.Service.Kubernetes.class);
 
         when(config.security()).thenReturn(security);
-        when(security.embed()).thenReturn(embed);
-        when(embed.kubernetes()).thenReturn(kubernetes);
+        when(security.service()).thenReturn(service);
+        when(service.kubernetes()).thenReturn(kubernetes);
     }
 
     @Test
