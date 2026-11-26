@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.runner.security;
+package io.quarkiverse.flow.runner.security.kubernetes;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

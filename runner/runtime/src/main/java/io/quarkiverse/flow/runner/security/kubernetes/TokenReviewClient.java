@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.runner.security;
+package io.quarkiverse.flow.runner.security.kubernetes;
 
 import java.io.IOException;
 import java.net.URI;

@@ -25,11 +25,11 @@ import io.quarkus.test.junit.QuarkusTestProfile.TestResourceEntry;
 public class SecurityKubernetesProfile implements QuarkusTestProfile {
 
     /**
-     * Trusted ServiceAccount key ({@code namespace/name} format) configured in
-     * {@code trusted-service-accounts}: grants the {@code *} (all) namespaces
+     * Trusted ServiceAccount, configured in {@code trusted-service-accounts}
+     * as a full Kubernetes username: grants the {@code *} (all) namespaces
      * authorization.
      */
-    static final String TRUSTED_SA = "infrans/gateway";
+    static final String TRUSTED_SA = "system:serviceaccount:infrans:gateway";
 
     @Override
     public Map<String, String> getConfigOverrides() {
@@ -42,7 +42,7 @@ public class SecurityKubernetesProfile implements QuarkusTestProfile {
         // Always activate the embedded Kubernetes SA mechanism (even off-cluster)
         config.put("quarkus.flow.runner.security.embed.kubernetes.enabled", "true");
 
-        // Trusted ServiceAccounts (namespace/name format)
+        // Trusted ServiceAccounts (full Kubernetes usernames)
         config.put("quarkus.flow.runner.security.embed.kubernetes.trusted-service-accounts", TRUSTED_SA);
 
         // Namespace validation must be ON for the ABAC cases

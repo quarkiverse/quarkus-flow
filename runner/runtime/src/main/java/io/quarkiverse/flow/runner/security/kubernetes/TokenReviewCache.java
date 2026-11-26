@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.runner.security;
+package io.quarkiverse.flow.runner.security.kubernetes;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

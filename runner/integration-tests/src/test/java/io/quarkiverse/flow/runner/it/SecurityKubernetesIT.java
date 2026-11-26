@@ -114,8 +114,10 @@ class SecurityKubernetesIT {
     @Test
     @DisplayName("test_service_account_reader_role_cannot_execute_workflow")
     void test_service_account_reader_role_cannot_execute_workflow() {
-        String token = saToken("infrans", "gateway-exec");
-        stubTokenReview(token, true, "system:serviceaccount:infrans:gateway-exec");
+        // Same trusted token as case 1 (namespaces = *): the 403 can only come
+        // from the exec endpoint rejecting the flow-service-reader role
+        String token = saToken("infrans", "gateway");
+        stubTokenReview(token, true, "system:serviceaccount:infrans:gateway");
 
         given()
                 .header("Authorization", "Bearer " + token)

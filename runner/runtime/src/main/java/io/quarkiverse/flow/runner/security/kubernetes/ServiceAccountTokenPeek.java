@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.runner.security;
+package io.quarkiverse.flow.runner.security.kubernetes;
 
 import java.util.Base64;
 import java.util.Optional;

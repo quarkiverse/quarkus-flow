@@ -394,8 +394,8 @@ public interface FlowRunnerConfig {
              * # Activate only when running inside Kubernetes (default)
              * quarkus.flow.runner.security.embed.kubernetes.enabled=auto
              *
-             * # Restrict which ServiceAccounts are trusted (namespace/name)
-             * quarkus.flow.runner.security.embed.kubernetes.trusted-service-accounts=flow-ns/workflow-invoker
+             * # Restrict which ServiceAccounts are trusted (full usernames)
+             * quarkus.flow.runner.security.embed.kubernetes.trusted-service-accounts=system:serviceaccount:flow-ns:workflow-invoker
              *
              * # Tune the TokenReview result cache
              * quarkus.flow.runner.security.embed.kubernetes.cache-max-entries=256
@@ -425,17 +425,17 @@ public interface FlowRunnerConfig {
                 String enabled();
 
                 /**
-                 * ServiceAccounts trusted by this mechanism, in
-                 * {@code namespace/name} format.
+                 * ServiceAccounts trusted by this mechanism, as full
+                 * Kubernetes usernames ({@code system:serviceaccount:<namespace>:<name>}).
                  * <p>
-                 * When unset (empty set), trust-by-default applies: any
-                 * Kubernetes ServiceAccount authenticated via TokenReview is
-                 * accepted with the {@code flow-invoker} role. Listing
-                 * ServiceAccounts here only grants them the {@code *}
+                 * Any ServiceAccount authenticated via TokenReview is accepted
+                 * with the {@code flow-service-reader} role. Listing
+                 * ServiceAccounts here additionally grants them the {@code *}
                  * (all) namespaces authorization.
                  *
-                 * @return the set of trusted ServiceAccounts in
-                 *         {@code namespace/name} format, or empty when unset
+                 * @return the set of trusted ServiceAccounts as full
+                 *         usernames ({@code system:serviceaccount:<namespace>:<name>}),
+                 *         or empty when unset
                  */
                 Optional<Set<String>> trustedServiceAccounts();
 

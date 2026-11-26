@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.runner.security;
+package io.quarkiverse.flow.runner.security.kubernetes;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import io.quarkiverse.flow.runner.FlowRunnerConfig;
+import io.quarkiverse.flow.runner.security.AuthzConsts;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.core.http.HttpServerRequest;
@@ -103,7 +104,7 @@ class KubernetesServiceAccountAuthenticationMechanismTest {
         @Test
         @DisplayName("valid_trusted_sa_gets_role_and_all_namespaces")
         void valid_trusted_sa_gets_role_and_all_namespaces() throws IOException {
-            trusted("infrans/gateway");
+            trusted("system:serviceaccount:infrans:gateway");
             when(tokenReviewClient.review(SA_TOKEN)).thenReturn(
                     new TokenReviewClient.TokenReviewResult(true, "system:serviceaccount:infrans:gateway",
                             Instant.now().plusSeconds(600)));

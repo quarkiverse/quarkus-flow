@@ -1,4 +1,4 @@
-package io.quarkiverse.flow.runner.security;
+package io.quarkiverse.flow.runner.security.kubernetes;
 
 import static io.quarkiverse.flow.runner.security.AuthzConsts.CLAIM_NAMESPACES;
 
@@ -15,6 +15,7 @@ import jakarta.ws.rs.Priorities;
 import org.jboss.logging.Logger;
 
 import io.quarkiverse.flow.runner.FlowRunnerConfig;
+import io.quarkiverse.flow.runner.security.AuthzConsts;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.IdentityProviderManager;
@@ -41,14 +42,24 @@ import io.vertx.ext.web.RoutingContext;
  * Authenticated ServiceAccounts receive the
  * {@link AuthzConsts#ROLE_SERVICE_READER} role. ServiceAccounts listed in
  * {@code quarkus.flow.runner.security.embed.kubernetes.trusted-service-accounts}
- * (in {@code namespace/name} format) get the {@code *} (all) namespaces
- * authorization attribute; all others are scoped to their own namespace.
+ * (full Kubernetes usernames such as {@code system:serviceaccount:infrans:gateway})
+ * get the {@code *} (all) namespaces authorization attribute; all others are
+ * scoped to their own namespace.
  *
  * @see <a href="https://github.com/quarkiverse/quarkus-flow/issues/1160">Issue #1160</a>
  */
+/**
+ * Consulted before the default authentication priority band (see
+ * {@link #getPriority()}): Quarkus consults mechanisms in priority order and
+ * ties are resolved nondeterministically, so this composable mechanism must
+ * get the chance to handle ServiceAccount-shaped Bearer tokens before
+ * catch-all mechanisms such as the NONE-mode permit-all mechanism (which never
+ * abstains) answer the request. It abstains on any other credential, so it
+ * never competes with the API-key or OIDC mechanisms.
+ */
 @ApplicationScoped
 @Unremovable
-@Priority(Priorities.AUTHENTICATION)
+@Priority(Priorities.AUTHENTICATION + 100)
 public class KubernetesServiceAccountAuthenticationMechanism implements HttpAuthenticationMechanism {
 
     private static final Logger LOG = Logger.getLogger(KubernetesServiceAccountAuthenticationMechanism.class);
@@ -124,6 +135,20 @@ public class KubernetesServiceAccountAuthenticationMechanism implements HttpAuth
         return Uni.createFrom().item(buildIdentity(result));
     }
 
+    /**
+     * Consulted before the default authentication priority band: Quarkus
+     * consults mechanisms ordered by this value (the default of 1000 is shared
+     * by every mechanism that does not override it, and ties are resolved
+     * nondeterministically), so this composable mechanism must outrank
+     * catch-all mechanisms such as the NONE-mode permit-all mechanism (which
+     * never abstains) to get the chance to handle ServiceAccount-shaped Bearer
+     * tokens.
+     */
+    @Override
+    public int getPriority() {
+        return Priorities.AUTHENTICATION + 100;
+    }
+
     @Override
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
         if (!isActive()) {
@@ -174,24 +199,11 @@ public class KubernetesServiceAccountAuthenticationMechanism implements HttpAuth
 
     private Set<String> namespacesFor(String username) {
         if (username != null && config.security().embed().kubernetes().trustedServiceAccounts()
-                .map(trusted -> trusted.contains(peekNamespacedName(username)))
+                .map(trusted -> trusted.contains(username))
                 .orElse(false)) {
             return Set.of(AuthzConsts.ALL_NAMESPACES);
         }
         String namespace = TokenReviewClient.parseNamespace(username);
         return namespace != null ? Set.of(namespace) : Set.of();
-    }
-
-    /**
-     * Formats a ServiceAccount username as the {@code namespace/name} key used
-     * by the trusted-service-accounts configuration.
-     */
-    private static String peekNamespacedName(String username) {
-        String namespace = TokenReviewClient.parseNamespace(username);
-        if (namespace == null) {
-            return username;
-        }
-        String[] parts = username.split(":");
-        return parts.length == 4 ? namespace + "/" + parts[3] : username;
     }
 }
