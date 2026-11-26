@@ -57,9 +57,9 @@ public class SecurityKubernetesProfile implements QuarkusTestProfile {
         // Use random port to avoid conflicts
         config.put("quarkus.http.test-port", "0");
 
-        // The WireMock kube-apiserver (KubeApiServerResource) is the only API
-        // server for the extension-managed client: no Dev Services cluster
-        config.put("quarkus.kubernetes-client.devservices.enabled", "false");
+        // NOTE: quarkus.kubernetes-client.devservices.enabled is build-time
+        // config and cannot be set here; it is disabled for this module in
+        // src/test/resources/application.properties.
 
         return config;
     }

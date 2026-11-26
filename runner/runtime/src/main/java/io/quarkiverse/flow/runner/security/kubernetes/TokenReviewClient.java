@@ -110,7 +110,9 @@ public class TokenReviewClient {
         try {
             response = call.get(REVIEW_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (TimeoutException e) {
-            // Interrupt the underlying call so a hung connection does not linger.
+            // cancel(true) does not interrupt the already-running supplier; the
+            // hung request lingers only until the HTTP client's own timeouts,
+            // while this thread fails closed immediately.
             call.cancel(true);
             throw new IOException("TokenReview request timed out after " + REVIEW_TIMEOUT_SECONDS + "s", e);
         } catch (InterruptedException e) {

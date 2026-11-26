@@ -121,10 +121,9 @@ class TokenReviewClientTest {
     @Test
     @DisplayName("test_review_unreachable_api_server_propagates")
     void testReviewUnreachableApiServerPropagates() throws Exception {
-        // No stub registered for a distinct token: a request with no matching
-        // stub is answered with a 404 confrontation by WireMock, proving the
-        // error path through the fabric8 client. (Kept minimal: transport
-        // failure propagation is covered by the 500 case above.)
+        // No matching stub answers with a 404, proving the error path through
+        // the fabric8 client. (Kept minimal: transport failure propagation is
+        // covered by the 500 case above.)
         Profile.KubeApiServer.server().stubFor(post(urlPathEqualTo(TOKEN_REVIEWS_PATH))
                 .withRequestBody(containing("unknown-stub-token"))
                 .willReturn(aResponse().withStatus(404)));
@@ -157,10 +156,12 @@ class TokenReviewClientTest {
 
         @Override
         public Map<String, String> getConfigOverrides() {
+            // NOTE: quarkus.kubernetes-client.devservices.enabled is build-time
+            // config and cannot be set here; it is disabled for this module in
+            // src/test/resources/application.properties.
             return Map.of(
                     "quarkus.flow.runner.security.type", "none",
                     "quarkus.kubernetes-client.token", RUNNER_SA_TOKEN,
-                    "quarkus.kubernetes-client.devservices.enabled", "false",
                     "quarkus.http.test-port", "0");
         }
 
