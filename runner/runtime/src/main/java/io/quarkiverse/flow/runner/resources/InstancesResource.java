@@ -47,7 +47,6 @@ import io.serverlessworkflow.impl.WorkflowStatus;
  */
 @FlowRunnerEndpoint
 @Path("/q/flow")
-@RolesAllowed({ AuthzConsts.ROLE_ADMIN, AuthzConsts.ROLE_INVOKER })
 @Tag(name = "Workflow Instances", description = "Query in-memory active workflow instances on this runner")
 @SecurityRequirement(name = "BearerAuth")
 public class InstancesResource {
@@ -60,6 +59,7 @@ public class InstancesResource {
 
     @GET
     @Path("/instances")
+    @RolesAllowed({ AuthzConsts.ROLE_ADMIN, AuthzConsts.ROLE_INVOKER, AuthzConsts.ROLE_SERVICE_READER })
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "List active in-memory workflow instances", description = "Returns the workflow instances currently tracked in this runner's in-memory active instance registry, "
             + "across every registered workflow definition. "
@@ -81,6 +81,7 @@ public class InstancesResource {
 
     @GET
     @Path("/instances/{namespace}/{name}")
+    @RolesAllowed({ AuthzConsts.ROLE_ADMIN, AuthzConsts.ROLE_INVOKER, AuthzConsts.ROLE_SERVICE_READER })
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "List active in-memory workflow instances (latest version)", description = "Returns the workflow instances currently tracked in this runner's in-memory active instance "
             + "registry for the latest version of the given namespace/name. Only non-terminal instances (not yet "
@@ -102,6 +103,7 @@ public class InstancesResource {
 
     @GET
     @Path("/instances/{namespace}/{name}/{version}")
+    @RolesAllowed({ AuthzConsts.ROLE_ADMIN, AuthzConsts.ROLE_INVOKER, AuthzConsts.ROLE_SERVICE_READER })
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "List active in-memory workflow instances for a specific version", description = "Returns the workflow instances currently tracked in this runner's in-memory active instance "
             + "registry for the given namespace, name, and version. Only non-terminal instances (not yet "
@@ -126,6 +128,7 @@ public class InstancesResource {
      */
     @GET
     @Path("/{namespace}/{name}/instances")
+    @RolesAllowed({ AuthzConsts.ROLE_ADMIN, AuthzConsts.ROLE_INVOKER, AuthzConsts.ROLE_SERVICE_READER })
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "List active in-memory workflow instances (latest version) - deprecated", description = "Deprecated: use GET /q/flow/instances/{namespace}/{name} instead.")
     @APIResponse(responseCode = "200", description = "Active in-memory workflow instances for the requested workflow on this runner", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ActiveInstancesResponse.class)))
@@ -147,6 +150,7 @@ public class InstancesResource {
      */
     @GET
     @Path("/{namespace}/{name}/{version}/instances")
+    @RolesAllowed({ AuthzConsts.ROLE_ADMIN, AuthzConsts.ROLE_INVOKER, AuthzConsts.ROLE_SERVICE_READER })
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "List active in-memory workflow instances for a specific version - deprecated", description = "Deprecated: use GET /q/flow/instances/{namespace}/{name}/{version} instead.")
     @APIResponse(responseCode = "200", description = "Active in-memory workflow instances for the requested workflow on this runner", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ActiveInstancesResponse.class)))

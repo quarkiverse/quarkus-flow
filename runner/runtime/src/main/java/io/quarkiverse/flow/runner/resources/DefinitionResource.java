@@ -39,7 +39,6 @@ import io.serverlessworkflow.impl.WorkflowDefinition;
 
 @FlowRunnerEndpoint
 @Path("/q/flow/definitions")
-@RolesAllowed({ AuthzConsts.ROLE_ADMIN, AuthzConsts.ROLE_INVOKER })
 @Tag(name = "Workflow Definitions", description = "Browse and retrieve workflow definitions")
 @SecurityRequirement(name = "BearerAuth")
 public class DefinitionResource {
@@ -51,6 +50,7 @@ public class DefinitionResource {
     NamespaceAuthorizationService namespaceAuth;
 
     @GET
+    @RolesAllowed({ AuthzConsts.ROLE_ADMIN, AuthzConsts.ROLE_INVOKER, AuthzConsts.ROLE_SERVICE_READER })
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "List workflow definitions", description = "Returns metadata for all registered workflow definitions. "
             +
@@ -92,6 +92,7 @@ public class DefinitionResource {
 
     @GET
     @Path("/{namespace}/{name}")
+    @RolesAllowed({ AuthzConsts.ROLE_ADMIN, AuthzConsts.ROLE_INVOKER, AuthzConsts.ROLE_SERVICE_READER })
     @Produces({ MediaType.APPLICATION_JSON, "application/yaml" })
     @Operation(summary = "Get workflow definition (latest version)", description = "Returns the full workflow definition for the latest version in the requested format (JSON or YAML). "
             +
@@ -125,6 +126,7 @@ public class DefinitionResource {
 
     @GET
     @Path("/{namespace}/{name}/{version}")
+    @RolesAllowed({ AuthzConsts.ROLE_ADMIN, AuthzConsts.ROLE_INVOKER, AuthzConsts.ROLE_SERVICE_READER })
     @Produces({ MediaType.APPLICATION_JSON, "application/yaml" })
     @Operation(summary = "Get workflow definition (specific version)", description = "Returns the full workflow definition for a specific version in the requested format (JSON or YAML). "
             +
