@@ -55,6 +55,35 @@ service's SA token is handled by the Kubernetes path.
   itself using its own pod-mounted SA credentials (standard in-cluster client config).
   The API server performs cryptographic verification, expiry checks, and identity
   extraction.
+- **API access via fabric8 (`quarkus-kubernetes-client`):** the TokenReview call is
+  made through the fabric8 Kubernetes client provided by the Quarkus extension
+  (`KubernetesClient.tokenReviews()`), not a hand-rolled HTTP client. The extension
+  resolves in-cluster configuration (API server URL, CA certificate, SA token with
+  bound-token rotation) and is native-image supported. `TokenReviewClient` is a thin
+  adapter: it builds a `TokenReview` resource, creates it, and maps the verified
+  response. Requests carry a timeout and the blocking call runs off the event loop
+  (see Consequences).
+- **Dependency weight (evidence-based outcome):** fabric8 transitively pulls a
+  large set of `kubernetes-model-*` artifacts, most of which the Runner never
+  touches. Individual model-jar exclusions were attempted first and abandoned —
+  fabric8's `KubernetesClientImpl` eagerly constructs API-group clients at build
+  time, and excluding `kubernetes-model-batch` alone fails client creation with
+  `NoClassDefFoundError`. The working approach follows the Quarkus Kubernetes
+  Client guide ("depend only on the modules you need"): all `io.fabric8`
+  transitives are wildcard-excluded from `quarkus-kubernetes-client` and
+  `kubernetes-client-api`, and only the hand-picked modules the TokenReview
+  path needs are re-added — `kubernetes-client-api`, `kubernetes-client`
+  (impl), `kubernetes-model-core`, `kubernetes-model-common`,
+  `kubernetes-model-admissionregistration` (hosts
+  `io.fabric8.kubernetes.api.model.authentication.TokenReview`), the four
+  group models `KubernetesClientImpl`'s default handler registration eagerly
+  references (`apps`, `batch`, `certificates`, `extensions`), and
+  `kubernetes-httpclient-vertx` (the HTTP transport the extension normally
+  provides) — roughly half of fabric8's default transitive set. All versions
+  remain quarkus-bom-managed. The fabric8 7.9.0 generated-class
+  code-injection advisory is acknowledged and accepted as low-risk here — the
+  Runner processes no CRD schemas — pending the Quarkus BOM picking up the
+  fixed version.
 - **Audiences:** no audience restriction is configured by default. Pods using the
   default SA token mounted at `/var/run/secrets/kubernetes.io/serviceaccount/token`
   carry the API server's own audience, which `TokenReview` accepts without
@@ -153,8 +182,16 @@ exclusive `KUBERNETES` security type without forcing a breaking property rename.
 - In-cluster Runners gain service-to-service authentication with no client-side
   secret management; the Logic Operator can drop its `NONE` assumption.
 - The kube-apiserver becomes a dependency for authenticating SA tokens (mitigated by
-  result caching); if the API server is unreachable, SA-token requests fail closed
-  with 401 while other auth paths are unaffected.
+  result caching and a bounded request timeout); if the API server is unreachable or
+  slow, SA-token requests fail closed with 401 while other auth paths are unaffected.
+- The runner gains a runtime dependency on `quarkus-kubernetes-client` (fabric8).
+  This departs from the original "no new runtime dependencies" constraint, accepted
+  because the extension already backs the `durable-kubernetes` module in this
+  repository and replaces fragile hand-rolled in-cluster TLS/token plumbing with
+  maintained, native-image-supported machinery. Transitive `kubernetes-model-*`
+  artifacts unused by the TokenReview path are excluded at the POM level to keep
+  runner images thin (see API access, above); both modules share the extension's
+  single client and configuration, which is the desired behavior (same cluster).
 - Any valid SA token in the cluster can read workflow metadata in its own namespace —
   an accepted trade-off for v1 (platform-level trust), revisitable via an explicit
   whitelist without breaking the mechanism.
@@ -173,6 +210,16 @@ exclusive `KUBERNETES` security type without forcing a breaking property rename.
   configuration, and adds issuer/JWKS reachability concerns. TokenReview delegates
   all of that to the API server. May be revisited if per-request API-server latency
   ever matters.
+- **Hand-rolled JDK `HttpClient` (initial implementation)** — implemented first to
+  avoid new dependencies, then replaced by fabric8: it required manually building the
+  in-cluster `SSLContext` from the mounted CA certificate, reading the rotating SA
+  token file per request, and hand-parsing the TokenReview JSON, with no
+  native-image guarantee. fabric8 already backs `durable-kubernetes` and solves all
+  of this in maintained code.
+- **Quarkus/MicroProfile REST Client** — rejected: it is designed for typed
+  third-party APIs with static configuration; the in-cluster trust setup (PEM CA →
+  truststore, rotating token injection) would remain as manual as the hand-rolled
+  client, and it adds a runtime dependency without removing any of the plumbing.
 - **Explicit SA whitelist as the default trust model** — rejected for v1 in favor of
   trust-by-default with namespace scoping (see Trust model); the whitelist exists
   only to grant cross-namespace breadth.
@@ -181,7 +228,8 @@ exclusive `KUBERNETES` security type without forcing a breaking property rename.
 
 - Unit tests: token routing (SA-shaped vs not), identity mapping, trusted-vs-scoped
   namespace resolution, cache behavior.
-- Integration tests: mocked kube-apiserver (WireMock) serving TokenReview responses
+- Integration tests: mocked kube-apiserver (WireMock serving TokenReview responses,
+  or `quarkus-test-kubernetes-client`'s mock server)
   — valid/expired/garbage tokens; role enforcement across all endpoints (reader
   allowed on GETs, denied on exec/lifecycle/mutations); namespace scoping (403 for
   foreign namespace, `*` for trusted); coexistence with API_KEY and OIDC modes

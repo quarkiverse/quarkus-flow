@@ -57,6 +57,10 @@ public class SecurityKubernetesProfile implements QuarkusTestProfile {
         // Use random port to avoid conflicts
         config.put("quarkus.http.test-port", "0");
 
+        // The WireMock kube-apiserver (KubeApiServerResource) is the only API
+        // server for the extension-managed client: no Dev Services cluster
+        config.put("quarkus.kubernetes-client.devservices.enabled", "false");
+
         return config;
     }
 
@@ -72,7 +76,8 @@ public class SecurityKubernetesProfile implements QuarkusTestProfile {
 
     /**
      * Starts a WireMock server standing in for the Kubernetes API server and
-     * points {@code api-server-url} at it. The TokenReview client sends no
+     * points the extension-managed Kubernetes client at it via the standard
+     * {@code quarkus.kubernetes-client.*} properties. The client sends no
      * {@code Authorization} header off-cluster (no projected token file), so
      * the stubs accept any credentials.
      */
@@ -85,7 +90,9 @@ public class SecurityKubernetesProfile implements QuarkusTestProfile {
             server = new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort());
             server.start();
             WireMock.configureFor("localhost", server.port());
-            return Map.of("quarkus.flow.runner.security.service.kubernetes.api-server-url", server.baseUrl());
+            return Map.of(
+                    "quarkus.kubernetes-client.api-server-url", server.baseUrl(),
+                    "quarkus.kubernetes-client.trust-certs", "true");
         }
 
         @Override

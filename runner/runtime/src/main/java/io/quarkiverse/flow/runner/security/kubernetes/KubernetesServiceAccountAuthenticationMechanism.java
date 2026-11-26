@@ -120,7 +120,7 @@ public class KubernetesServiceAccountAuthenticationMechanism implements HttpAuth
         }
 
         // 5. Miss → review off the event loop. The TokenReview call is a
-        // blocking JDK HttpClient send (bounded by TokenReviewClient's
+        // blocking fabric8 client request (bounded by TokenReviewClient's
         // request timeout); Quarkus invokes authenticate on the vert.x event
         // loop, so the review must run on a worker thread to avoid stalling
         // the Runner (and starving the loop under repeated requests).

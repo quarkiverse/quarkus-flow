@@ -675,10 +675,9 @@ quarkus.flow.runner.security.service.kubernetes.trusted-service-accounts=system:
 
 # Maximum number of cached TokenReview results (default: 256)
 quarkus.flow.runner.security.service.kubernetes.cache-max-entries=256
-
-# Kubernetes API server URL (test seam; unset = in-cluster default)
-#quarkus.flow.runner.security.service.kubernetes.api-server-url=https://kube-apiserver:6443
 ----
+
+The TokenReview call is made through the `quarkus-kubernetes-client` extension's client, so API-server overrides (URL, TLS, request timeout) use the standard `quarkus.kubernetes-client.*` properties; by default the in-cluster configuration is detected automatically.
 
 [[api-reference]]
 == API reference

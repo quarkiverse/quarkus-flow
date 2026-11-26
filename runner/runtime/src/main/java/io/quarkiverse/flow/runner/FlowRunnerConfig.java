@@ -400,6 +400,11 @@ public interface FlowRunnerConfig {
              * # Tune the TokenReview result cache
              * quarkus.flow.runner.security.service.kubernetes.cache-max-entries=256
              * </pre>
+             * <p>
+             * The TokenReview call itself is made through the
+             * {@code quarkus-kubernetes-client} extension's client; API-server
+             * overrides (URL, TLS) use the standard
+             * {@code quarkus.kubernetes-client.*} properties.
              *
              * @see <a href="https://github.com/quarkiverse/quarkus-flow/issues/1160">Issue #1160</a>
              */
@@ -449,18 +454,6 @@ public interface FlowRunnerConfig {
                  */
                 @WithDefault("256")
                 int cacheMaxEntries();
-
-                /**
-                 * Kubernetes API server URL.
-                 * <p>
-                 * Test seam: when unset, defaults to
-                 * {@code https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT_HTTPS},
-                 * the in-cluster API server address.
-                 *
-                 * @return the API server URL, or empty to use the in-cluster
-                 *         default
-                 */
-                Optional<String> apiServerUrl();
             }
         }
     }

@@ -1,42 +1,31 @@
 package io.quarkiverse.flow.runner.security.kubernetes;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.KeyStore;
-import java.security.SecureRandom;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateFactory;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
-import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import io.quarkiverse.flow.runner.FlowRunnerConfig;
+import io.fabric8.kubernetes.api.model.authentication.TokenReview;
+import io.fabric8.kubernetes.api.model.authentication.TokenReviewBuilder;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.arc.Unremovable;
 
 /**
- * HTTP client for the Kubernetes TokenReview API.
+ * Thin adapter over the fabric8 Kubernetes client for the TokenReview API.
  * <p>
  * Validates incoming Kubernetes ServiceAccount tokens by asking the cluster's
  * API server to review them:
  *
  * <pre>
- * POST &lt;apiServerUrl&gt;/apis/authentication.k8s.io/v1/tokenreviews
- * Authorization: Bearer &lt;runner's own ServiceAccount token&gt;
+ * POST /apis/authentication.k8s.io/v1/tokenreviews
  * {"spec":{"token":"&lt;incoming token&gt;"}}
  * </pre>
  * <p>
@@ -44,16 +33,26 @@ import io.quarkus.arc.Unremovable;
  * validation; the returned {@link TokenReviewResult} carries the verified
  * identity.
  * <p>
- * When {@code apiServerUrl} is unset (the default, in-cluster case), the URL
- * is derived from the standard {@code KUBERNETES_SERVICE_HOST} and
- * {@code KUBERNETES_SERVICE_PORT_HTTPS} environment variables and the TLS
- * trust store is built from the projected cluster CA certificate at
- * {@code /var/run/secrets/kubernetes.io/serviceaccount/ca.crt}. When the URL
- * is explicitly overridden (mainly for tests), plain HTTP and no client
- * certificate are assumed.
+ * The call is made through the {@link KubernetesClient} bean provided by the
+ * {@code quarkus-kubernetes-client} extension, which resolves in-cluster
+ * configuration (API server URL, CA certificate, the Runner's own rotating
+ * ServiceAccount token) and is native-image supported. API-server overrides
+ * (mainly for tests) use the standard {@code quarkus.kubernetes-client.*}
+ * properties ({@code api-server-url}, {@code trust-certs}, ...), shared with the
+ * {@code durable-kubernetes} module's client.
  * <p>
- * The {@link java.net.http.HttpClient} is created lazily on first use so that
- * bean construction never fails outside a cluster.
+ * <strong>Timeout:</strong> the extension's
+ * {@code quarkus.kubernetes-client.request-timeout} is a global client setting
+ * with no per-call hard default this class can rely on, so the blocking review
+ * call is additionally bounded here by a {@value #REVIEW_TIMEOUT_SECONDS}s
+ * {@link CompletableFuture} wait; a timeout surfaces as an {@link IOException}
+ * and follows the existing fail-closed 401 path. The mechanism already runs
+ * the review off the event loop on a worker thread.
+ * <p>
+ * Fail-closed semantics: transport failures propagate as
+ * {@link io.fabric8.kubernetes.client.KubernetesClientException} (or
+ * {@link IOException} on timeout/interrupt); the calling authentication
+ * mechanism maps any failure to a 401.
  *
  * @see <a href="https://github.com/quarkiverse/quarkus-flow/issues/1160">Issue #1160</a>
  */
@@ -64,43 +63,16 @@ public class TokenReviewClient {
     private static final Logger LOG = Logger.getLogger(TokenReviewClient.class);
 
     /**
-     * TokenReview endpoint path on the Kubernetes API server.
+     * Hard timeout in seconds for a single TokenReview request. Bounded so that
+     * a hung kube-apiserver cannot stall the runner indefinitely.
      */
-    static final String TOKEN_REVIEWS_PATH = "/apis/authentication.k8s.io/v1/tokenreviews";
+    static final long REVIEW_TIMEOUT_SECONDS = 10;
 
-    /**
-     * Path of the projected ServiceAccount token inside a pod.
-     */
-    static final String TOKEN_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/token";
-
-    /**
-     * Path of the projected cluster CA certificate inside a pod.
-     */
-    static final String CA_CERT_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt";
-
-    /**
-     * Timeout for a single TokenReview request. Bounded so that a hung
-     * kube-apiserver cannot stall the runner indefinitely; a timeout surfaces
-     * as {@link java.net.http.HttpTimeoutException} (an {@link IOException}
-     * subclass) and follows the existing fail-closed 401 path.
-     */
-    static final Duration REVIEW_TIMEOUT = Duration.ofSeconds(10);
-
-    /**
-     * Jackson mapper used to build requests and parse responses.
-     */
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-
-    private final FlowRunnerConfig config;
-
-    /**
-     * Lazily created HTTP client (never built off-cluster unless used).
-     */
-    private volatile HttpClient httpClient;
+    private final KubernetesClient client;
 
     @Inject
-    public TokenReviewClient(FlowRunnerConfig config) {
-        this.config = config;
+    public TokenReviewClient(KubernetesClient client) {
+        this.client = client;
     }
 
     /**
@@ -118,40 +90,38 @@ public class TokenReviewClient {
     /**
      * Asks the Kubernetes API server to review (authenticate) the given token.
      * <p>
-     * On connect failure or non-2xx response the exception is propagated; the
+     * On failure, timeout, or interruption the exception is propagated; the
      * calling authentication mechanism maps it to a 401 (fail closed).
      *
      * @param token the incoming (untrusted) ServiceAccount token to validate
      * @return the verified review result; never {@code null}
-     * @throws IOException on connect failure or non-2xx API server response
+     * @throws IOException on timeout or interruption of the review call
      */
     public TokenReviewResult review(String token) throws IOException {
-        ObjectNode body = MAPPER.createObjectNode();
-        body.putObject("spec").put("token", token);
+        TokenReview request = new TokenReviewBuilder()
+                .withNewSpec()
+                .withToken(token)
+                .endSpec()
+                .build();
 
-        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
-                .uri(URI.create(resolveApiServerUrl() + TOKEN_REVIEWS_PATH))
-                .header("Content-Type", "application/json")
-                .timeout(REVIEW_TIMEOUT)
-                .POST(HttpRequest.BodyPublishers.ofString(body.toString()));
-
-        String ownToken = readOwnServiceAccountToken();
-        if (ownToken != null) {
-            requestBuilder.header("Authorization", "Bearer " + ownToken);
-        }
-
+        TokenReview response;
+        CompletableFuture<TokenReview> call = CompletableFuture.supplyAsync(
+                () -> client.tokenReviews().create(request));
         try {
-            HttpResponse<String> response = client().send(requestBuilder.build(),
-                    HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new IOException(
-                        "TokenReview request failed with HTTP status " + response.statusCode());
-            }
-            return parseResult(response.body());
+            response = call.get(REVIEW_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            // Interrupt the underlying call so a hung connection does not linger.
+            call.cancel(true);
+            throw new IOException("TokenReview request timed out after " + REVIEW_TIMEOUT_SECONDS + "s", e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            call.cancel(true);
             throw new IOException("TokenReview request interrupted", e);
+        } catch (ExecutionException e) {
+            // KubernetesClientException and friends propagate unwrapped.
+            throw rethrowUnchecked(e.getCause() != null ? e.getCause() : e);
         }
+        return mapResult(response);
     }
 
     /**
@@ -175,120 +145,33 @@ public class TokenReviewClient {
         return parts[2].isEmpty() ? null : parts[2];
     }
 
-    /**
-     * Reads the runner's own ServiceAccount token used to authenticate
-     * against the API server.
-     * <p>
-     * Package-private and overridable as a test seam. Returns {@code null}
-     * when the token file is not available (off-cluster); in that case no
-     * Authorization header is sent.
-     *
-     * @return the token content, or {@code null}
-     */
-    String readOwnServiceAccountToken() {
-        try {
-            Path path = Path.of(TOKEN_PATH);
-            if (Files.isReadable(path)) {
-                return Files.readString(path).trim();
-            }
-        } catch (IOException e) {
-            LOG.warnf(e, "Could not read the ServiceAccount token at %s", TOKEN_PATH);
+    private TokenReviewResult mapResult(TokenReview response) {
+        if (response.getStatus() == null) {
+            return new TokenReviewResult(false, null, null);
         }
-        return null;
-    }
+        Boolean authenticated = response.getStatus().getAuthenticated();
+        String username = response.getStatus().getUser() != null
+                ? response.getStatus().getUser().getUsername()
+                : null;
 
-    private TokenReviewResult parseResult(String responseBody) throws IOException {
-        JsonNode status;
-        try {
-            status = MAPPER.readTree(responseBody).path("status");
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-            throw new IOException("Could not parse TokenReview response", e);
-        }
-        boolean authenticated = status.path("authenticated").asBoolean(false);
-        JsonNode userNode = status.path("user");
-        String username = userNode.hasNonNull("username") ? userNode.get("username").asText() : null;
-
+        // fabric8's TokenReviewStatus does not model expirationTimestamp
+        // (a known gap); the API server's response captures it as an
+        // additional property via @JsonAnySetter.
         Instant expiresAt = null;
-        JsonNode expiration = status.get("expirationTimestamp");
-        if (expiration != null && !expiration.isNull()) {
+        Object expiration = response.getStatus().getAdditionalProperties().get("expirationTimestamp");
+        if (expiration != null) {
             try {
-                expiresAt = Instant.parse(expiration.asText());
+                expiresAt = Instant.parse(String.valueOf(expiration));
             } catch (DateTimeParseException e) {
-                LOG.warnf(e, "Unparseable TokenReview expirationTimestamp: %s", expiration.asText());
+                LOG.warnf(e, "Unparseable TokenReview expirationTimestamp: %s", expiration);
             }
         }
-        return new TokenReviewResult(authenticated, username, expiresAt);
+        return new TokenReviewResult(Boolean.TRUE.equals(authenticated), username, expiresAt);
     }
 
-    /**
-     * Resolves the API server base URL: the configured override when present,
-     * otherwise the in-cluster default derived from the standard environment
-     * variables.
-     */
-    private String resolveApiServerUrl() {
-        Optional<String> configured = config.security().service().kubernetes().apiServerUrl();
-        if (configured.isPresent()) {
-            // Explicit override (tests): plain HTTP, no client certificate.
-            return trimTrailingSlash(configured.get());
-        }
-        String host = System.getenv("KUBERNETES_SERVICE_HOST");
-        String port = System.getenv("KUBERNETES_SERVICE_PORT_HTTPS");
-        if (host == null || port == null) {
-            throw new IllegalStateException(
-                    "KUBERNETES_SERVICE_HOST/KUBERNETES_SERVICE_PORT_HTTPS not set and no "
-                            + "API server URL configured; the TokenReview client requires an "
-                            + "explicit apiServerUrl outside a cluster");
-        }
-        return "https://" + host + ":" + port;
-    }
-
-    private static String trimTrailingSlash(String url) {
-        return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
-    }
-
-    /**
-     * Returns the lazily created HTTP client. When the API server URL is the
-     * in-cluster default, the client trusts the cluster CA certificate.
-     */
-    private HttpClient client() {
-        HttpClient local = httpClient;
-        if (local == null) {
-            synchronized (this) {
-                local = httpClient;
-                if (local == null) {
-                    local = buildClient();
-                    httpClient = local;
-                }
-            }
-        }
-        return local;
-    }
-
-    private HttpClient buildClient() {
-        HttpClient.Builder builder = HttpClient.newBuilder();
-        if (config.security().service().kubernetes().apiServerUrl().isEmpty()) {
-            // In-cluster default: trust the projected cluster CA certificate.
-            try {
-                KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-                keyStore.load(null, null);
-                CertificateFactory factory = CertificateFactory.getInstance("X.509");
-                int i = 0;
-                try (var caStream = Files.newInputStream(Path.of(CA_CERT_PATH))) {
-                    for (Certificate certificate : factory.generateCertificates(caStream)) {
-                        keyStore.setCertificateEntry("ca-" + i++, certificate);
-                    }
-                }
-                javax.net.ssl.TrustManagerFactory trustManagerFactory = javax.net.ssl.TrustManagerFactory.getInstance(
-                        javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm());
-                trustManagerFactory.init(keyStore);
-                javax.net.ssl.SSLContext sslContext = javax.net.ssl.SSLContext.getInstance("TLS");
-                sslContext.init(null, trustManagerFactory.getTrustManagers(), new SecureRandom());
-                builder.sslContext(sslContext);
-            } catch (Exception e) {
-                throw new IllegalStateException(
-                        "Could not build the SSL context from " + CA_CERT_PATH, e);
-            }
-        }
-        return builder.build();
+    private static <T extends Throwable> T rethrowUnchecked(Throwable throwable) throws T {
+        @SuppressWarnings("unchecked")
+        T asT = (T) throwable;
+        throw asT;
     }
 }

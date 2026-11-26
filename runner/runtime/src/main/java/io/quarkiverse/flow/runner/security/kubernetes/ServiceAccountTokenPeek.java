@@ -1,5 +1,7 @@
 package io.quarkiverse.flow.runner.security.kubernetes;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Optional;
 
@@ -77,8 +79,8 @@ public final class ServiceAccountTokenPeek {
         JsonNode payload;
         try {
             byte[] decoded = Base64.getUrlDecoder().decode(segment(segments[1]));
-            payload = MAPPER.readTree(new String(decoded, java.nio.charset.StandardCharsets.UTF_8));
-        } catch (IllegalArgumentException | java.io.IOException e) {
+            payload = MAPPER.readTree(new String(decoded, StandardCharsets.UTF_8));
+        } catch (IllegalArgumentException | IOException e) {
             return Optional.empty();
         }
         if (payload == null || !payload.isObject()) {
