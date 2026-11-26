@@ -39,6 +39,10 @@ public class SecurityConfigValidator {
                 LOGGER.info("Flow Runner: OIDC authentication enabled");
             }
         }
+
+        if (KubernetesInCluster.isMechanismActive(config)) {
+            LOGGER.info("Flow Runner: Kubernetes ServiceAccount authentication enabled (composable)");
+        }
     }
 
 }

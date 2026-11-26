@@ -15,7 +15,6 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Optional;
 
-import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -28,7 +27,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import io.quarkiverse.flow.runner.FlowRunnerConfig;
 import io.quarkus.arc.Unremovable;
-import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 
 /**
@@ -273,9 +271,10 @@ public class TokenReviewClient {
                 keyStore.load(null, null);
                 CertificateFactory factory = CertificateFactory.getInstance("X.509");
                 int i = 0;
-                for (Certificate certificate : factory.generateCertificates(
-                        Files.newInputStream(Path.of(CA_CERT_PATH)))) {
-                    keyStore.setCertificateEntry("ca-" + i++, certificate);
+                try (var caStream = Files.newInputStream(Path.of(CA_CERT_PATH))) {
+                    for (Certificate certificate : factory.generateCertificates(caStream)) {
+                        keyStore.setCertificateEntry("ca-" + i++, certificate);
+                    }
                 }
                 javax.net.ssl.TrustManagerFactory trustManagerFactory = javax.net.ssl.TrustManagerFactory.getInstance(
                         javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm());
@@ -289,19 +288,5 @@ public class TokenReviewClient {
             }
         }
         return builder.build();
-    }
-
-    void onDestroy(@Observes ShutdownEvent event) {
-        shutdown();
-    }
-
-    @PreDestroy
-    void shutdown() {
-        HttpClient local = httpClient;
-        if (local != null) {
-            // Nothing to close explicitly on Java 17 (no shutdownNow); the
-            // client's executor keeps no non-daemon threads by default.
-            LOG.debug("TokenReviewClient shutting down");
-        }
     }
 }

@@ -13,6 +13,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.util.Optional;
 
 import org.junit.jupiter.api.AfterEach;
@@ -106,7 +107,7 @@ class TokenReviewClientTest {
                 .willReturn(aResponse().withStatus(500)));
 
         assertThatThrownBy(() -> client.review("any-token"))
-                .isInstanceOf(Exception.class);
+                .isInstanceOf(IOException.class);
     }
 
     @Test
