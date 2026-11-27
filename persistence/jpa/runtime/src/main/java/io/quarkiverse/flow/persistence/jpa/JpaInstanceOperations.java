@@ -227,9 +227,7 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
      * Returns the persisted instances of the given definition, read lazily inside a new transaction.
      * <p>
      * The transaction is always a new one: if the calling thread already has a transaction, it is suspended, so it is
-     * neither reused nor committed here, and it is resumed when the returned stream is closed. The transaction is
-     * managed with the {@link TransactionManager}, which, unlike {@code QuarkusTransaction.begin()}, does not need an
-     * active request context.
+     * neither reused nor committed here, and it is resumed when the returned stream is closed.
      * <p>
      * Callers must close the returned stream on the same thread that called this method, for example with
      * try-with-resources; otherwise the transaction is never committed and the suspended one is never resumed.
