@@ -1,11 +1,11 @@
 import * as React from "react";
 import { createRoot } from "react-dom/client";
-import { DiagramEditor } from "@openworkflowspec/diagram-editor";
-import "@openworkflowspec/diagram-editor/styles.css";
+import { TextEditor } from "@openworkflowspec/text-editor";
+import "@openworkflowspec/text-editor/styles.css";
 
 const roots = new WeakMap();
 
-export function renderOpenWorkflowSpecDiagramEditor(container, props) {
+export function renderOpenWorkflowSpecTextEditor(container, props) {
   let root = roots.get(container);
 
   if (!root) {
@@ -13,12 +13,12 @@ export function renderOpenWorkflowSpecDiagramEditor(container, props) {
     roots.set(container, root);
   }
 
-    root.render(React.createElement(DiagramEditor, {key: props.workflowKey, ...props}));
+  root.render(React.createElement(TextEditor, { key: props.workflowKey, ...props }));
 
   return root;
 }
 
-export function unmountOpenWorkflowSpecDiagramEditor(container) {
+export function unmountOpenWorkflowSpecTextEditor(container) {
   const root = roots.get(container);
 
   if (root) {
