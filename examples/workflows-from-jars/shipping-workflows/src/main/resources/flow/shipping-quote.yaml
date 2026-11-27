@@ -1,0 +1,12 @@
+document:
+  dsl: '1.0.0'
+  namespace: shipping
+  name: quote
+  version: '1.0.0'
+
+do:
+  - quoteShipping:
+      set:
+        carrier: FlowExpress
+        weightKg: '${ .weightKg }'
+        cost: '${ 5 + (.weightKg * 1.5) }'
