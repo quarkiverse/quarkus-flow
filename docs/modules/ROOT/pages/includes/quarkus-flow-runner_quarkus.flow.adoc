@@ -239,6 +239,79 @@ endif::add-copy-button-to-env-var[]
 |boolean
 |`+++true+++`
 
+a| [[quarkus-flow-runner_quarkus-flow-runner-security-service-kubernetes-enabled]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-service-kubernetes-enabled[`+++quarkus.flow.runner.security.service.kubernetes.enabled+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.security.service.kubernetes.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether the Kubernetes ServiceAccount authentication mechanism is enabled.
+
+Accepted values:
+
+ * `auto` (default) - active only when running inside a Kubernetes cluster (`KUBERNETES_SERVICE_HOST` set and the ServiceAccount token file readable)
+ * `true` - always active, even outside a cluster (mainly for tests)
+ * `false` - never active
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_SERVICE_KUBERNETES_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_SERVICE_KUBERNETES_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|`+++auto+++`
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-security-service-kubernetes-trusted-service-accounts]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-service-kubernetes-trusted-service-accounts[`+++quarkus.flow.runner.security.service.kubernetes.trusted-service-accounts+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.security.service.kubernetes.trusted-service-accounts+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+ServiceAccounts trusted by this mechanism, as full Kubernetes usernames (`system:serviceaccount:<namespace>:<name>`).
+
+Any ServiceAccount authenticated via TokenReview is accepted with the `flow-service-reader` role. Listing ServiceAccounts here additionally grants them the `++*++` (all) namespaces authorization.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_SERVICE_KUBERNETES_TRUSTED_SERVICE_ACCOUNTS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_SERVICE_KUBERNETES_TRUSTED_SERVICE_ACCOUNTS+++`
+endif::add-copy-button-to-env-var[]
+--
+|list of string
+|
+
+a| [[quarkus-flow-runner_quarkus-flow-runner-security-service-kubernetes-cache-max-entries]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-security-service-kubernetes-cache-max-entries[`+++quarkus.flow.runner.security.service.kubernetes.cache-max-entries+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.flow.runner.security.service.kubernetes.cache-max-entries+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Maximum number of TokenReview results kept in the cache.
+
+Validated token identities are cached to avoid hitting the Kubernetes API server on every request.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_FLOW_RUNNER_SECURITY_SERVICE_KUBERNETES_CACHE_MAX_ENTRIES+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_FLOW_RUNNER_SECURITY_SERVICE_KUBERNETES_CACHE_MAX_ENTRIES+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++256+++`
+
 a| [[quarkus-flow-runner_quarkus-flow-runner-openapi-expand-workflows]] [.property-path]##link:#quarkus-flow-runner_quarkus-flow-runner-openapi-expand-workflows[`+++quarkus.flow.runner.openapi.expand-workflows+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.flow.runner.openapi.expand-workflows+++[]

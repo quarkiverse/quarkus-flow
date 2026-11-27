@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.runner.FlowRunnerConfig;
+import io.quarkiverse.flow.runner.security.kubernetes.KubernetesInCluster;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -38,6 +39,10 @@ public class SecurityConfigValidator {
                 }
                 LOGGER.info("Flow Runner: OIDC authentication enabled");
             }
+        }
+
+        if (KubernetesInCluster.isMechanismActive(config)) {
+            LOGGER.info("Flow Runner: Kubernetes ServiceAccount authentication enabled (composable)");
         }
     }
 

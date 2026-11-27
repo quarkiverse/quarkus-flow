@@ -6,6 +6,8 @@ import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -21,6 +23,8 @@ import io.quarkus.test.security.oidc.OidcSecurity;
  * approach for testing OIDC-protected endpoints in Quarkus.
  */
 @QuarkusTest
+// Relies on Dev Services for Keycloak (Testcontainers); Windows CI runners have no Docker
+@DisabledOnOs(OS.WINDOWS)
 @TestProfile(SecurityOidcProfile.class)
 @DisplayName("Security: OIDC Authentication")
 class SecurityOidcIT {

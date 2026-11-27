@@ -164,6 +164,8 @@ do:
 
 The Runner supports three authentication modes. For this tutorial, start with `NONE` for local testing, then configure proper authentication for production.
 
+NOTE: When deployed inside Kubernetes, an additional composable mechanism authenticates pods via their ServiceAccount tokens, layered on top of whichever mode you choose below. See xref:runner.adoc#kubernetes-serviceaccount-authentication[Kubernetes ServiceAccount authentication].
+
 === NONE (Development only)
 
 WARNING: This mode disables all authentication. Use only for local development. Production deployments MUST use OIDC or API_KEY authentication.
@@ -604,6 +606,78 @@ When `quarkus-smallrye-openapi` is present, the OpenAPI document (`/q/openapi`) 
 * Full workflow definitions (YAML/JSON source)
 
 To hide the workflow catalog from the OpenAPI document, set `quarkus.flow.runner.openapi.expand-workflows=false`, or restrict `/q/openapi` and `/q/swagger-ui` at an API gateway.
+
+[[kubernetes-serviceaccount-authentication]]
+=== Kubernetes ServiceAccount authentication (composable)
+
+When the Runner is deployed inside a Kubernetes cluster, it can authenticate requests made by other pods using their projected ServiceAccount (SA) tokens. This mechanism is **composable**: it activates automatically when running in-cluster and works alongside ANY `security.type` (`NONE`, `API_KEY`, or `OIDC`). External users' tokens simply flow through their own configured mechanism untouched.
+
+**Activation conditions** (with the default `enabled=auto`):
+
+* The `KUBERNETES_SERVICE_HOST` environment variable is set, and
+* The pod's ServiceAccount token file (`/var/run/secrets/kubernetes.io/serviceaccount/token`) is readable.
+
+**How it works:**
+
+1. A client pod sends its SA token in the `Authorization: Bearer <token>` header.
+2. The Runner validates the token against the Kubernetes API server `TokenReview` endpoint, authenticating as its own ServiceAccount.
+3. Validated identities are cached (see `cache-max-entries`) to avoid hitting the API server on every request.
+
+Note that cached positive results honor token revocation only at the next TokenReview, so a revoked SA token can remain readable until its cached entry expires — in practice bounded by the projected-token TTLs (and the cache fallback TTL).
+
+**Client usage (Go):**
+
+[source,go]
+----
+import (
+    "net/http"
+    "k8s.io/client-go/rest"
+)
+
+config, err := rest.InClusterConfig() // reads the pod's SA token
+if err != nil {
+    return err // not running in a pod
+}
+
+req, _ := http.NewRequest("GET",
+    "http://flow-runner.flow-ns.svc:8080/q/flow/definitions", nil)
+req.Header.Set("Authorization", "Bearer "+config.BearerToken)
+resp, err := http.DefaultClient.Do(req)
+----
+
+**Trust model:**
+
+* **Trust by default**: any ServiceAccount that passes TokenReview is accepted with the `flow-service-reader` role, scoped to its **own namespace**.
+* ServiceAccounts listed in `trusted-service-accounts` (full username format `system:serviceaccount:<namespace>:<name>`) are additionally authorized for **all namespaces** (`*`).
+* `flow-service-reader` is **GET-only**: it grants access to the read endpoints (workflow definitions, workflow instances, and instance discovery). It does not allow workflow execution, instance lifecycle operations (suspend/resume/cancel), or any other mutation. Namespace-based authorization (ABAC) is still enforced on top — this mechanism does not bypass it.
+
+**Required Kubernetes setup:**
+
+The Runner's own ServiceAccount must be allowed to delegate token authentication to the API server:
+
+[source,bash]
+----
+kubectl create clusterrolebinding flow-runner-tokenreview \
+  --clusterrole=system:auth-delegator \
+  --serviceaccount=<runner-namespace>:<runner-serviceaccount>
+----
+
+**Configuration:**
+
+.application.properties
+[source,properties]
+----
+# Activate only when running inside Kubernetes (default)
+quarkus.flow.runner.security.service.kubernetes.enabled=auto
+
+# Grant cross-namespace read access to specific ServiceAccounts (full usernames)
+quarkus.flow.runner.security.service.kubernetes.trusted-service-accounts=system:serviceaccount:flow-ns:workflow-invoker
+
+# Maximum number of cached TokenReview results (default: 256)
+quarkus.flow.runner.security.service.kubernetes.cache-max-entries=256
+----
+
+The TokenReview call is made through the `quarkus-kubernetes-client` extension's client, so API-server overrides (URL, TLS, request timeout) use the standard `quarkus.kubernetes-client.*` properties; by default the in-cluster configuration is detected automatically.
 
 [[api-reference]]
 == API reference

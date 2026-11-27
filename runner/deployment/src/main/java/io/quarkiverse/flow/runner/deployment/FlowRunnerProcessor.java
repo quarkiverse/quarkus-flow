@@ -16,6 +16,9 @@ import io.quarkiverse.flow.runner.security.ApiKeyAuthenticationMechanism;
 import io.quarkiverse.flow.runner.security.NamespaceAuthorizationFilter;
 import io.quarkiverse.flow.runner.security.NamespaceAuthorizationService;
 import io.quarkiverse.flow.runner.security.PermitAllAuthenticationMechanism;
+import io.quarkiverse.flow.runner.security.kubernetes.KubernetesServiceAccountAuthenticationMechanism;
+import io.quarkiverse.flow.runner.security.kubernetes.TokenReviewCache;
+import io.quarkiverse.flow.runner.security.kubernetes.TokenReviewClient;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.ExcludedTypeBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -40,6 +43,9 @@ class FlowRunnerProcessor {
                 .addBeanClass(NamespaceAuthorizationFilter.class)
                 .addBeanClass(ApiKeyAuthenticationMechanism.class)
                 .addBeanClass(PermitAllAuthenticationMechanism.class)
+                .addBeanClass(KubernetesServiceAccountAuthenticationMechanism.class)
+                .addBeanClass(TokenReviewClient.class)
+                .addBeanClass(TokenReviewCache.class)
                 .build();
     }
 

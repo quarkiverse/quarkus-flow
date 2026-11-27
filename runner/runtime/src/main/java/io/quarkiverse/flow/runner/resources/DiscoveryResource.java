@@ -46,7 +46,6 @@ import io.serverlessworkflow.impl.WorkflowInstance;
  */
 @FlowRunnerEndpoint
 @Path("/q/flow")
-@RolesAllowed({ AuthzConsts.ROLE_ADMIN, AuthzConsts.ROLE_INVOKER })
 @Tag(name = "Workflow Instance Discovery", description = "Resolve workflow instance location across shards")
 @SecurityRequirement(name = "BearerAuth")
 public class DiscoveryResource {
@@ -62,6 +61,7 @@ public class DiscoveryResource {
 
     @GET
     @Path("/{namespace}/{name}/{version}/discovery/{instanceId}")
+    @RolesAllowed({ AuthzConsts.ROLE_ADMIN, AuthzConsts.ROLE_INVOKER, AuthzConsts.ROLE_SERVICE_READER })
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Resolve workflow instance location", description = "Resolves where a workflow instance lives across the shards of the runtime serving that workflow. "
             + "First checks the in-memory active registry on this pod, then falls back to the durable persistence backend if configured. "

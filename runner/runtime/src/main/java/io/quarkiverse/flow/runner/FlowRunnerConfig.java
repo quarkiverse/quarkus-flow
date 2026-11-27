@@ -223,6 +223,13 @@ public interface FlowRunnerConfig {
         Namespace namespace();
 
         /**
+         * Service-to-service authentication mechanism configuration.
+         *
+         * @return the service-to-service authentication configuration
+         */
+        Service service();
+
+        /**
          * Authentication types.
          */
         enum Type {
@@ -355,6 +362,99 @@ public interface FlowRunnerConfig {
              */
             @WithDefault("true")
             boolean validate();
+        }
+
+        /**
+         * Service-to-service authentication mechanisms.
+         * <p>
+         * Groups authentication mechanisms for service-to-service
+         * communication (workload identity), as opposed to external identity
+         * providers (OIDC) or statically configured secrets (API keys).
+         */
+        interface Service {
+
+            /**
+             * Kubernetes ServiceAccount authentication configuration.
+             *
+             * @return the Kubernetes ServiceAccount configuration
+             */
+            Kubernetes kubernetes();
+
+            /**
+             * Kubernetes ServiceAccount authentication.
+             * <p>
+             * Authenticates requests made by Kubernetes pods using their
+             * projected ServiceAccount tokens, validated against the
+             * Kubernetes API server TokenReview endpoint. When active, this
+             * mechanism complements the configured {@code type} mechanism.
+             * <p>
+             * Configuration example:
+             *
+             * <pre>
+             * # Activate only when running inside Kubernetes (default)
+             * quarkus.flow.runner.security.service.kubernetes.enabled=auto
+             *
+             * # Restrict which ServiceAccounts are trusted (full usernames)
+             * quarkus.flow.runner.security.service.kubernetes.trusted-service-accounts=system:serviceaccount:flow-ns:workflow-invoker
+             *
+             * # Tune the TokenReview result cache
+             * quarkus.flow.runner.security.service.kubernetes.cache-max-entries=256
+             * </pre>
+             * <p>
+             * The TokenReview call itself is made through the
+             * {@code quarkus-kubernetes-client} extension's client; API-server
+             * overrides (URL, TLS) use the standard
+             * {@code quarkus.kubernetes-client.*} properties.
+             *
+             * @see <a href="https://github.com/quarkiverse/quarkus-flow/issues/1160">Issue #1160</a>
+             */
+            interface Kubernetes {
+                /**
+                 * Whether the Kubernetes ServiceAccount authentication mechanism
+                 * is enabled.
+                 * <p>
+                 * Accepted values:
+                 * <ul>
+                 * <li>{@code auto} (default) - active only when running inside
+                 * a Kubernetes cluster ({@code KUBERNETES_SERVICE_HOST} set and
+                 * the ServiceAccount token file readable)</li>
+                 * <li>{@code true} - always active, even outside a cluster
+                 * (mainly for tests)</li>
+                 * <li>{@code false} - never active</li>
+                 * </ul>
+                 *
+                 * @return the enabled value: {@code auto}, {@code true}, or
+                 *         {@code false}
+                 */
+                @WithDefault("auto")
+                String enabled();
+
+                /**
+                 * ServiceAccounts trusted by this mechanism, as full
+                 * Kubernetes usernames ({@code system:serviceaccount:<namespace>:<name>}).
+                 * <p>
+                 * Any ServiceAccount authenticated via TokenReview is accepted
+                 * with the {@code flow-service-reader} role. Listing
+                 * ServiceAccounts here additionally grants them the {@code *}
+                 * (all) namespaces authorization.
+                 *
+                 * @return the set of trusted ServiceAccounts as full
+                 *         usernames ({@code system:serviceaccount:<namespace>:<name>}),
+                 *         or empty when unset
+                 */
+                Optional<Set<String>> trustedServiceAccounts();
+
+                /**
+                 * Maximum number of TokenReview results kept in the cache.
+                 * <p>
+                 * Validated token identities are cached to avoid hitting the
+                 * Kubernetes API server on every request.
+                 *
+                 * @return the maximum number of cache entries (default: 256)
+                 */
+                @WithDefault("256")
+                int cacheMaxEntries();
+            }
         }
     }
 
