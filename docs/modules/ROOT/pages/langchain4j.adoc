@@ -390,7 +390,7 @@ quarkus.flow.validation.input.enabled=false
 
 The sub-agents of a generated agentic workflow run on the planner thread or on LangChain4j's executor, not on the thread of the workflow task that requested them. Quarkus Flow makes that task's context current, such as its OpenTelemetry `task.execute` span, while each agent runs.
 
-A LangChain4j `AgentListener` can't rely on that context: LangChain4j doesn't define the order in which it notifies listeners, so a listener may run before Quarkus Flow has made the context current, or after it has restored the previous one. To observe agent invocations in the context of the task that requested them, implement `io.quarkiverse.flow.langchain4j.FlowAgentListener` instead. Quarkus Flow calls it itself, while the task's context is current.
+A LangChain4j `AgentListener` can't rely on that context: LangChain4j doesn't define the order in which it notifies listeners, so a listener may run before Quarkus Flow has made the context current, or after it has restored the previous one. To observe agent invocations in the context of the task that requested them, implement `io.quarkiverse.flow.langchain4j.FlowAgentListener` instead. Quarkus Flow calls it itself, while the task's context is current. Before the completion and failure callbacks, Quarkus Flow makes the task's context current again, so `Span.current()` is the task's span even if another listener has made a span of its own current since the agent started.
 
 `FlowAgentListener` has the same invocation callbacks as `AgentListener`, all with empty default implementations:
 

@@ -37,9 +37,11 @@ Every invocation is reported exactly once:
 
 | Agent | Called by | Context |
 |---|---|---|
-| Leaf or composite sub-agent run by `FlowPlanner` | `FlowAgentContextListener`, after activating the snapshot and before closing it | The requesting task's |
+| Leaf or composite sub-agent run by `FlowPlanner` | `FlowAgentContextListener`, after activating the snapshot and before closing it. It activates the snapshot again around the completion and failure callbacks | The requesting task's |
 | Composite agent Quarkus Flow builds but doesn't run through `FlowPlanner`, such as the root agentic system | `FlowAgentContextListener` | The invoking thread's |
 | Leaf agent not run by `FlowPlanner`, such as one called from a task body | `FlowAgentInvocationNotifier` | The invoking thread's, which is the task's own inside a task body |
+
+Between `beforeAgentInvocation` and the completion or failure callback, another `AgentListener` can make a child context current, such as a span of its own. Checking that the context Flow opened is still at the top of its stack doesn't detect that, so `FlowAgentContextListener` activates the stored snapshot again around those callbacks and closes it before closing the original scope. It does so only when there is a `FlowAgentListener`. The agents in the other two rows see whatever the invoking thread has current, as a plain `AgentListener` does.
 
 `FlowAgentContextListener` is registered on every agentic system that Quarkus Flow builds and inherited by their sub-agents. `FlowAgentInvocationNotifier` is a CDI `AgentListener` bean. Before Quarkus LangChain4j 2.0, those beans are registered on leaf agents only, so composite agents have to be reported by `FlowAgentContextListener`. The notifier skips composite agents, so nothing is reported twice once Quarkus LangChain4j 2.0 registers the beans on composite agents too.
 
@@ -69,6 +71,6 @@ Each implementation is called in its own `try`/`catch`. An exception is logged a
 
 ## Testing Strategy
 
-- `FlowAgentContextListenerTest` checks the callback order against activating and closing the context, for success, failure and nested agents, and that a failing implementation neither stops the others nor leaks the context.
+- `FlowAgentContextListenerTest` checks the callback order against activating and closing the context, for success, failure and nested agents, and that a failing implementation neither stops the others nor leaks the context. It also checks that the completion and failure callbacks see the task's context when a child context was made current after `beforeAgentInvocation`.
 - `FlowAgentInvocationNotifierTest` checks that the notifier covers leaf agents not run by `FlowPlanner`, and only those.
 - `AgenticTraceContextIT` records `Span.current()` in each callback for `sequence(classify, parallel(details, summary))` and for a leaf agent called from a task body. It checks that every agent, including the root and the parallel sub-agents, sees the span of the task that requested it, still recording, in both callbacks.

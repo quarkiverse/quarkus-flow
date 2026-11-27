@@ -14,7 +14,9 @@ import dev.langchain4j.agentic.observability.AgentResponse;
  * {@code task.execute} span, for the duration of each invocation. A plain {@link AgentListener} can't rely on that
  * context, because LangChain4j doesn't define the order in which it notifies listeners. Quarkus Flow calls a
  * {@code FlowAgentListener} itself, after it has made the task's context current and before it restores the previous
- * one, so the context is current in every callback, whatever the order of the other listeners.
+ * one, so the context is current in every callback, whatever the order of the other listeners. Quarkus Flow makes the
+ * task's context current again for {@link #afterAgentInvocation} and {@link #onAgentInvocationError}, so a child context
+ * that another listener made current in the meantime, such as a span of its own, doesn't hide it.
  * <p>
  * Every leaf agent invocation in the application is reported, and every invocation of an agentic system that Quarkus
  * Flow builds, whether it is generated from an annotation or built with {@code FlowAgentsBuilderService}. An agent that

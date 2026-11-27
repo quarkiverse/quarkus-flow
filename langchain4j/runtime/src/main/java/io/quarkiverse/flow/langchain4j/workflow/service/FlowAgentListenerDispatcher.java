@@ -48,6 +48,10 @@ public class FlowAgentListenerDispatcher {
         return (bean != null) ? bean : NONE;
     }
 
+    boolean hasListeners() {
+        return !listeners.isEmpty();
+    }
+
     void beforeAgentInvocation(AgentRequest request) {
         for (FlowAgentListener listener : listeners) {
             try {
