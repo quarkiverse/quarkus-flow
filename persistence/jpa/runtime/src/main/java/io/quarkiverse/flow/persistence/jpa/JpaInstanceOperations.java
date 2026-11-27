@@ -18,6 +18,14 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
+import jakarta.transaction.HeuristicMixedException;
+import jakarta.transaction.HeuristicRollbackException;
+import jakarta.transaction.InvalidTransactionException;
+import jakarta.transaction.NotSupportedException;
+import jakarta.transaction.RollbackException;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.Transaction;
+import jakarta.transaction.TransactionManager;
 import jakarta.transaction.Transactional;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -26,7 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.builder.CloudEventBuilder;
-import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.serverlessworkflow.impl.TaskContext;
 import io.serverlessworkflow.impl.TaskContextData;
 import io.serverlessworkflow.impl.WorkflowContextData;
@@ -78,6 +85,9 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
 
     @Inject
     EntityManager em;
+
+    @Inject
+    TransactionManager transactionManager;
 
     @PostConstruct
     void init() {
@@ -211,15 +221,82 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
         find(workflowContext).setStatus(null);
     }
 
+    /**
+     * Returns the persisted instances of the given definition, read lazily inside a new transaction.
+     * <p>
+     * The transaction is always a new one: if the calling thread already has a transaction, it is suspended, so it is
+     * neither reused nor committed here, and it is resumed when the returned stream is closed.
+     * <p>
+     * Callers must close the returned stream on the same thread that called this method, for example with
+     * try-with-resources; otherwise the transaction is never committed and the suspended one is never resumed.
+     */
     @Override
     public Stream<PersistenceWorkflowInfo> scanAll(String applicationId, WorkflowDefinition definition) {
         HashMappingCoordinator coordinator = hashFactory.mapCoordinator(this::retrieveBlobData, this::writeBlobData);
-        QuarkusTransaction.begin();
         WorkflowDefinitionId id = definition.id();
-        return repository.stream(
-                "select x from WorkflowInstanceEntity x where x.key.applicationId=?1 and x.workflowNamespace=?2 and x.workflowName=?3 and x.workflowVersion=?4",
-                applicationId, id.namespace(), id.name(), id.version()).map(i -> from(coordinator, i))
-                .onClose(() -> QuarkusTransaction.commit());
+        Transaction suspended = suspend();
+        begin(suspended);
+        try {
+            return repository.stream(
+                    "select x from WorkflowInstanceEntity x where x.key.applicationId=?1 and x.workflowNamespace=?2 and x.workflowName=?3 and x.workflowVersion=?4",
+                    applicationId, id.namespace(), id.name(), id.version()).map(i -> from(coordinator, i))
+                    .onClose(() -> {
+                        try {
+                            commit();
+                        } finally {
+                            resume(suspended);
+                        }
+                    });
+        } catch (RuntimeException e) {
+            rollbackAndResume(suspended);
+            throw e;
+        }
+    }
+
+    private Transaction suspend() {
+        try {
+            return transactionManager.suspend();
+        } catch (SystemException e) {
+            throw new IllegalStateException("Failed to suspend the current transaction", e);
+        }
+    }
+
+    private void begin(Transaction suspended) {
+        try {
+            transactionManager.begin();
+        } catch (NotSupportedException | SystemException e) {
+            resume(suspended);
+            throw new IllegalStateException("Failed to begin a new transaction", e);
+        }
+    }
+
+    private void commit() {
+        try {
+            transactionManager.commit();
+        } catch (RollbackException | HeuristicMixedException | HeuristicRollbackException | SystemException e) {
+            throw new IllegalStateException("Failed to commit the transaction", e);
+        }
+    }
+
+    private void rollbackAndResume(Transaction suspended) {
+        try {
+            transactionManager.rollback();
+        } catch (SystemException e) {
+            LOG.warn("Failed to roll back the transaction", e);
+        } finally {
+            resume(suspended);
+        }
+    }
+
+    private void resume(Transaction suspended) {
+        if (suspended == null) {
+            return;
+        }
+        try {
+            transactionManager.resume(suspended);
+        } catch (InvalidTransactionException | SystemException e) {
+            throw new IllegalStateException("Failed to resume the suspended transaction", e);
+        }
     }
 
     private PersistenceWorkflowInfo from(HashMappingCoordinator coordinator, WorkflowInstanceEntity x) {
