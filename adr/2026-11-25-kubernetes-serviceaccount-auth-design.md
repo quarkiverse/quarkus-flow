@@ -75,8 +75,8 @@ service's SA token is handled by the Kubernetes path.
   path needs are re-added — `kubernetes-client-api`, `kubernetes-client`
   (impl), `kubernetes-model-core`, `kubernetes-model-common`,
   `kubernetes-model-admissionregistration` (hosts
-  `io.fabric8.kubernetes.api.model.authentication.TokenReview`), the four
-  group models `KubernetesClientImpl`'s default handler registration eagerly
+  `io.fabric8.kubernetes.api.model.authentication.TokenReview`), the group
+  models `KubernetesClientImpl`'s default handler registration eagerly
   references (`apps`, `batch`, `certificates`, `extensions`), and
   `kubernetes-httpclient-vertx` (the HTTP transport the extension normally
   provides) — roughly half of fabric8's default transitive set. All versions
@@ -84,6 +84,16 @@ service's SA token is handled by the Kubernetes path.
   code-injection advisory is acknowledged and accepted as low-risk here — the
   Runner processes no CRD schemas — pending the Quarkus BOM picking up the
   fixed version.
+- **Per-module closure ownership (lesson from the kind CI):** a wildcard
+  exclusion in one library module resolves nearest for every downstream
+  consumer and can silently strip jars another module needs — the runner
+  images lost `kubernetes-model-coordination` and
+  `kubernetes-model-autoscaling` this way, killing the durable-kubernetes
+  member-lease acquisition with an invisible `NoClassDefFoundError`. Every
+  module using the fabric8 client now declares its own hand-picked module
+  set (durable-kubernetes includes `coordination` and `autoscaling` for its
+  lease paths), images resolve the union of the declared sets, and each
+  module's tests guard its own closure.
 - **Audiences:** no audience restriction is configured by default. Pods using the
   default SA token mounted at `/var/run/secrets/kubernetes.io/serviceaccount/token`
   carry the API server's own audience, which `TokenReview` accepts without
