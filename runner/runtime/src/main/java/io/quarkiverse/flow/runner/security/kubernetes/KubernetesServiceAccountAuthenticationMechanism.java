@@ -11,7 +11,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
 
-import org.jboss.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.quarkiverse.flow.runner.FlowRunnerConfig;
 import io.quarkiverse.flow.runner.security.AuthzConsts;
@@ -61,7 +62,7 @@ import io.vertx.ext.web.RoutingContext;
 @Priority(Priorities.AUTHENTICATION + 100)
 public class KubernetesServiceAccountAuthenticationMechanism implements HttpAuthenticationMechanism {
 
-    private static final Logger LOG = Logger.getLogger(KubernetesServiceAccountAuthenticationMechanism.class);
+    private static final Logger LOG = LoggerFactory.getLogger(KubernetesServiceAccountAuthenticationMechanism.class);
 
     /**
      * RoutingContext attribute set in {@link #authenticate} when the request
@@ -134,7 +135,7 @@ public class KubernetesServiceAccountAuthenticationMechanism implements HttpAuth
                 .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
                 .onFailure().transform(e -> {
                     Throwable cause = e.getCause() != null ? e.getCause() : e;
-                    LOG.debugf(cause, "TokenReview request failed for an incoming ServiceAccount token");
+                    LOG.debug("TokenReview request failed for an incoming ServiceAccount token", cause);
                     return new AuthenticationFailedException(
                             "Kubernetes API server unavailable: " + cause.getMessage());
                 })

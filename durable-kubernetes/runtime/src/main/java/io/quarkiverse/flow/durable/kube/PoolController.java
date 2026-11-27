@@ -65,7 +65,20 @@ public abstract class PoolController implements Runnable {
         if (intervalMillis <= 0) {
             throw new IllegalArgumentException("Pool controller interval must be greater than zero");
         }
-        executorService.scheduleWithFixedDelay(this, delayed.toMillis(), intervalMillis, TimeUnit.MILLISECONDS);
+        // Wrap the task so NOTHING is swallowed: ScheduledExecutorService silently
+        // cancels a periodic task whose runnable throws, and the controllers'
+        // own catch(Exception) cannot see Errors (e.g. NoClassDefFoundError from
+        // a missing fabric8 model jar, which once killed member-lease
+        // acquisition without a single log line). Catching Throwable here keeps
+        // the schedule alive AND makes every failure loud.
+        executorService.scheduleWithFixedDelay(() -> {
+            try {
+                run();
+            } catch (Throwable t) {
+                LOG.error("Flow: pool controller '{}' tick failed; continuing with the next cycle",
+                        scheduledExecutorName(), t);
+            }
+        }, delayed.toMillis(), intervalMillis, TimeUnit.MILLISECONDS);
         LOG.info("Flow: Scheduler '{}' initialized", scheduledExecutorName);
     }
 

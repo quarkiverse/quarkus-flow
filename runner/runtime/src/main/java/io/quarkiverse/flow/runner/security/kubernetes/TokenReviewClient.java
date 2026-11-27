@@ -11,7 +11,8 @@ import java.util.concurrent.TimeoutException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import org.jboss.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.fabric8.kubernetes.api.model.authentication.TokenReview;
 import io.fabric8.kubernetes.api.model.authentication.TokenReviewBuilder;
@@ -60,7 +61,7 @@ import io.quarkus.arc.Unremovable;
 @Unremovable
 public class TokenReviewClient {
 
-    private static final Logger LOG = Logger.getLogger(TokenReviewClient.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TokenReviewClient.class);
 
     /**
      * Hard timeout in seconds for a single TokenReview request. Bounded so that
@@ -165,7 +166,7 @@ public class TokenReviewClient {
             try {
                 expiresAt = Instant.parse(String.valueOf(expiration));
             } catch (DateTimeParseException e) {
-                LOG.warnf(e, "Unparseable TokenReview expirationTimestamp: %s", expiration);
+                LOG.warn("Unparseable TokenReview expirationTimestamp: {}", expiration, e);
             }
         }
         return new TokenReviewResult(Boolean.TRUE.equals(authenticated), username, expiresAt);
