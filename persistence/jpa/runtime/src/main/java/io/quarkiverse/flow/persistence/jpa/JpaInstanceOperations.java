@@ -34,8 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.builder.CloudEventBuilder;
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InjectableContext;
 import io.serverlessworkflow.impl.TaskContext;
 import io.serverlessworkflow.impl.TaskContextData;
 import io.serverlessworkflow.impl.WorkflowContextData;
@@ -237,14 +235,6 @@ public class JpaInstanceOperations implements PersistenceInstanceOperations {
         HashMappingCoordinator coordinator = hashFactory.mapCoordinator(this::retrieveBlobData, this::writeBlobData);
         WorkflowDefinitionId id = definition.id();
         Transaction suspended = suspend();
-        InjectableContext.ContextState requestContext = Arc.container().requestContext().getStateIfActive();
-        LOG.debug("scanAll: beginning a new transaction, suspended caller transaction: {}, request context: {}",
-                suspended != null,
-                requestContext == null ? "inactive" : "active " + Integer.toHexString(requestContext.hashCode()));
-        // It needs an active request context, and we may not have one. In prod mode,
-        // the startup restore runs async (WorkflowApplicationInitializer#doStart) with the request context of the
-        // StartupEvent notification, which main destroys when its observers return
-        // (https://quarkus.io/guides/cdi-reference#request-context-lifecycle), and the periodic scan has none.
         begin(suspended);
         try {
             return repository.stream(
